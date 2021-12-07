@@ -392,7 +392,9 @@ components:
         network_identifier:
           $ref: "#/components/schemas/NetworkIdentifier"
         account_identifier:
-          "$ref": "#/components/schemas/AccountIdentifier"
+          $ref: "#/components/schemas/AccountIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
       example:
         network_identifier:
           network: mainnet
@@ -430,6 +432,8 @@ components:
           $ref: "#/components/schemas/NetworkIdentifier"
         account_identifier:
           $ref: "#/components/schemas/AccountIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
       example:
         network_identifier:
           network: mainnet
@@ -472,6 +476,8 @@ components:
           $ref: "#/components/schemas/NetworkIdentifier"
         account_identifier:
           $ref: "#/components/schemas/AccountIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
       example:
         network_identifier:
           network: mainnet
@@ -518,6 +524,8 @@ components:
           $ref: "#/components/schemas/NetworkIdentifier"
         account_identifier:
           $ref: "#/components/schemas/AccountIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
         cursor:
           type: string
         limit:
@@ -651,6 +659,8 @@ components:
       properties:
         network_identifier:
           $ref: "#/components/schemas/NetworkIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
       example:
         network_identifier:
           network: mainnet
@@ -680,6 +690,8 @@ components:
       properties:
         network_identifier:
           $ref: "#/components/schemas/NetworkIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
         actions:
           type: array
           items:
@@ -809,7 +821,9 @@ components:
         network_identifier:
           $ref: "#/components/schemas/NetworkIdentifier"
         token_identifier:
-          "$ref": "#/components/schemas/TokenIdentifier"
+          $ref: "#/components/schemas/TokenIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
       example:
         network_identifier:
           network: mainnet
@@ -842,6 +856,22 @@ components:
         version:
           type: integer
           format: int64
+    PartialLedgerStateIdentifier:
+      description: Allows a client to request a response in relation to a certain ledger position.
+        Up to one property should be provided. If none are provided, the top of the ledger is assumed.
+      type: object
+      properties:
+        version:
+          type: integer
+          format: int64
+        timestamp:
+          type: string
+        epoch:
+          type: integer
+          format: int64
+        round:
+          type: integer
+          format: int64
     TokenResponse:
       type: object
       required:
@@ -859,6 +889,8 @@ components:
       properties:
         network_identifier:
           $ref: "#/components/schemas/NetworkIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
       example:
         network_identifier:
           network: mainnet
@@ -936,6 +968,8 @@ components:
           $ref: "#/components/schemas/NetworkIdentifier"
         transaction_identifier:
           $ref: "#/components/schemas/TransactionIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
       example:
         network_identifier:
           network: mainnet
@@ -961,6 +995,8 @@ components:
           $ref: "#/components/schemas/NetworkIdentifier"
         validator_identifier:
           $ref: "#/components/schemas/ValidatorIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
       example:
         network_identifier:
           network: mainnet
@@ -983,6 +1019,8 @@ components:
       properties:
         network_identifier:
           $ref: "#/components/schemas/NetworkIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
       example:
         network_identifier:
           network: mainnet
