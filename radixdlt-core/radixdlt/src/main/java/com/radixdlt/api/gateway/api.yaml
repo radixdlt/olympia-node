@@ -729,12 +729,12 @@ components:
     TransactionFinalizeRequest:
       type: object
       required:
-        - network
+        - network_identifier
         - unsigned_transaction
         - signature
       properties:
-        network:
-          type: string
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
         unsigned_transaction:
           type: string
         signature:
