@@ -746,6 +746,7 @@ public final class CoreModelMapper {
 
 	public EngineConfiguration engineConfiguration(RERulesConfig config) {
 		return new EngineConfiguration()
+			.nativeToken(nativeToken())
 			.maximumMessageLength(255) // TODO: Remove hardcode
 			.maximumValidatorFeeIncrease(ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE)
 			.feeTable(feeTable(config.getFeeTable()))

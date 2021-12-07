@@ -155,7 +155,6 @@ public class EngineConfigurationHandlerTest {
 		var response = sut.handleRequest(request);
 
 		// Assert
-		assertThat(response.getNativeToken()).isEqualTo(coreModelMapper.nativeToken());
 		assertThat(response.getCheckpoints()).hasSize(1);
 		assertThat(response.getCheckpoints().get(0).getCheckpointTransaction())
 			.isEqualTo(Bytes.toHexString(genesis.getTxns().get(0).getPayload()));

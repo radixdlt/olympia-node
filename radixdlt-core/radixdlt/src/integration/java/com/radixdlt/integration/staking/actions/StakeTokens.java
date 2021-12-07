@@ -63,7 +63,7 @@
 
 package com.radixdlt.integration.staking.actions;
 
-import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationResponse;
+import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponseNodeIdentifiers;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
@@ -83,8 +83,8 @@ public final class StakeTokens implements NodeTransactionAction {
 	}
 
 	@Override
-	public OperationGroup toOperationGroup(EngineConfigurationResponse configurationResponse, NetworkStatusResponseNodeIdentifiers nodeIdentifiers) {
-		var nativeToken = configurationResponse.getNativeToken();
+	public OperationGroup toOperationGroup(EngineConfiguration configuration, NetworkStatusResponseNodeIdentifiers nodeIdentifiers) {
+		var nativeToken = configuration.getNativeToken();
 		return new OperationGroup()
 			.addOperationsItem(
 				new Operation()

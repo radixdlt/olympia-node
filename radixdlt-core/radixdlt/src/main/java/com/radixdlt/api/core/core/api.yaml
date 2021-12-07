@@ -2129,12 +2129,9 @@ components:
     EngineConfigurationResponse:
       type: object
       required:
-        - native_token
         - forks
         - checkpoints
       properties:
-        native_token:
-          $ref: "#/components/schemas/TokenResourceIdentifier"
         checkpoints:
           type: array
           items:
@@ -2239,6 +2236,7 @@ components:
     EngineConfiguration:
       type: object
       required:
+        - native_token
         - maximum_message_length
         - maximum_validators
         - token_symbol_pattern
@@ -2254,6 +2252,8 @@ components:
         - reserved_symbols
         - fee_table
       properties:
+        native_token:
+          $ref: "#/components/schemas/TokenResourceIdentifier"
         maximum_message_length:
           type: integer
         maximum_validators:

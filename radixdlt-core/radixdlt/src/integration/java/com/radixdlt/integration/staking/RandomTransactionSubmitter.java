@@ -154,7 +154,8 @@ public final class RandomTransactionSubmitter implements DeterministicActor {
 			default -> throw new IllegalStateException("Unexpected value: " + next);
 		};
 
-		var operationGroup = action.toOperationGroup(engineConfigurationResponse, nodeIdentifiers);
+		var configuration = engineConfigurationResponse.getForks().get(0).getEngineConfiguration();
+		var operationGroup = action.toOperationGroup(configuration, nodeIdentifiers);
 
 		try {
 			var buildResponse = buildHandler.handleRequest(new ConstructionBuildRequest()

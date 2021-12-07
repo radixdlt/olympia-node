@@ -169,7 +169,7 @@ public class ApiBalanceChecker implements DeterministicActor {
 		try {
 			return engineConfigurationHandler.handleRequest(new EngineConfigurationRequest()
 				.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			).getNativeToken();
+			).getForks().get(0).getEngineConfiguration().getNativeToken();
 		} catch (CoreApiException e) {
 			throw new IllegalStateException(e);
 		}

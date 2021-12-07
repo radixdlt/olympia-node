@@ -104,7 +104,6 @@ public final class EngineConfigurationHandler extends CoreJsonRpcHandler<EngineC
 		var response = new EngineConfigurationResponse();
 		forks.forEach((epoch, config) -> response.addForksItem(modelMapper.fork(config)));
 		response.addCheckpointsItem(genesisCheckpoint());
-		response.nativeToken(modelMapper.nativeToken());
 		return response;
 	}
 

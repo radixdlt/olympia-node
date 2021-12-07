@@ -27,6 +27,7 @@ import java.util.Objects;
  * EngineConfiguration
  */
 @JsonPropertyOrder({
+  EngineConfiguration.JSON_PROPERTY_NATIVE_TOKEN,
   EngineConfiguration.JSON_PROPERTY_MAXIMUM_MESSAGE_LENGTH,
   EngineConfiguration.JSON_PROPERTY_MAXIMUM_VALIDATORS,
   EngineConfiguration.JSON_PROPERTY_TOKEN_SYMBOL_PATTERN,
@@ -42,8 +43,11 @@ import java.util.Objects;
   EngineConfiguration.JSON_PROPERTY_RESERVED_SYMBOLS,
   EngineConfiguration.JSON_PROPERTY_FEE_TABLE
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-06T10:25:38.875558-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-06T21:41:23.542373-06:00[America/Chicago]")
 public class EngineConfiguration {
+  public static final String JSON_PROPERTY_NATIVE_TOKEN = "native_token";
+  private TokenResourceIdentifier nativeToken;
+
   public static final String JSON_PROPERTY_MAXIMUM_MESSAGE_LENGTH = "maximum_message_length";
   private Integer maximumMessageLength;
 
@@ -85,6 +89,32 @@ public class EngineConfiguration {
 
   public static final String JSON_PROPERTY_FEE_TABLE = "fee_table";
   private FeeTable feeTable;
+
+
+  public EngineConfiguration nativeToken(TokenResourceIdentifier nativeToken) {
+    this.nativeToken = nativeToken;
+    return this;
+  }
+
+   /**
+   * Get nativeToken
+   * @return nativeToken
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_NATIVE_TOKEN)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public TokenResourceIdentifier getNativeToken() {
+    return nativeToken;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_NATIVE_TOKEN)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setNativeToken(TokenResourceIdentifier nativeToken) {
+    this.nativeToken = nativeToken;
+  }
 
 
   public EngineConfiguration maximumMessageLength(Integer maximumMessageLength) {
@@ -468,7 +498,8 @@ public class EngineConfiguration {
       return false;
     }
     EngineConfiguration engineConfiguration = (EngineConfiguration) o;
-    return Objects.equals(this.maximumMessageLength, engineConfiguration.maximumMessageLength) &&
+    return Objects.equals(this.nativeToken, engineConfiguration.nativeToken) &&
+        Objects.equals(this.maximumMessageLength, engineConfiguration.maximumMessageLength) &&
         Objects.equals(this.maximumValidators, engineConfiguration.maximumValidators) &&
         Objects.equals(this.tokenSymbolPattern, engineConfiguration.tokenSymbolPattern) &&
         Objects.equals(this.unstakingDelayEpochLength, engineConfiguration.unstakingDelayEpochLength) &&
@@ -486,13 +517,14 @@ public class EngineConfiguration {
 
   @Override
   public int hashCode() {
-    return Objects.hash(maximumMessageLength, maximumValidators, tokenSymbolPattern, unstakingDelayEpochLength, minimumCompletedProposalsPercentage, maximumTransactionSize, maximumTransactionsPerRound, validatorFeeIncreaseDebouncerEpochLength, maximumRoundsPerEpoch, maximumValidatorFeeIncrease, minimumStake, rewardsPerProposal, reservedSymbols, feeTable);
+    return Objects.hash(nativeToken, maximumMessageLength, maximumValidators, tokenSymbolPattern, unstakingDelayEpochLength, minimumCompletedProposalsPercentage, maximumTransactionSize, maximumTransactionsPerRound, validatorFeeIncreaseDebouncerEpochLength, maximumRoundsPerEpoch, maximumValidatorFeeIncrease, minimumStake, rewardsPerProposal, reservedSymbols, feeTable);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class EngineConfiguration {\n");
+    sb.append("    nativeToken: ").append(toIndentedString(nativeToken)).append("\n");
     sb.append("    maximumMessageLength: ").append(toIndentedString(maximumMessageLength)).append("\n");
     sb.append("    maximumValidators: ").append(toIndentedString(maximumValidators)).append("\n");
     sb.append("    tokenSymbolPattern: ").append(toIndentedString(tokenSymbolPattern)).append("\n");

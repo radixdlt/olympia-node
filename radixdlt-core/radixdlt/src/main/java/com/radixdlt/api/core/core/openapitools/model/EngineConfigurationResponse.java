@@ -27,46 +27,16 @@ import java.util.Objects;
  * EngineConfigurationResponse
  */
 @JsonPropertyOrder({
-  EngineConfigurationResponse.JSON_PROPERTY_NATIVE_TOKEN,
   EngineConfigurationResponse.JSON_PROPERTY_CHECKPOINTS,
   EngineConfigurationResponse.JSON_PROPERTY_FORKS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-06T10:25:38.875558-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-06T21:41:23.542373-06:00[America/Chicago]")
 public class EngineConfigurationResponse {
-  public static final String JSON_PROPERTY_NATIVE_TOKEN = "native_token";
-  private TokenResourceIdentifier nativeToken;
-
   public static final String JSON_PROPERTY_CHECKPOINTS = "checkpoints";
   private List<EngineCheckpoint> checkpoints = new ArrayList<>();
 
   public static final String JSON_PROPERTY_FORKS = "forks";
   private List<Fork> forks = new ArrayList<>();
-
-
-  public EngineConfigurationResponse nativeToken(TokenResourceIdentifier nativeToken) {
-    this.nativeToken = nativeToken;
-    return this;
-  }
-
-   /**
-   * Get nativeToken
-   * @return nativeToken
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NATIVE_TOKEN)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public TokenResourceIdentifier getNativeToken() {
-    return nativeToken;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_NATIVE_TOKEN)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNativeToken(TokenResourceIdentifier nativeToken) {
-    this.nativeToken = nativeToken;
-  }
 
 
   public EngineConfigurationResponse checkpoints(List<EngineCheckpoint> checkpoints) {
@@ -143,21 +113,19 @@ public class EngineConfigurationResponse {
       return false;
     }
     EngineConfigurationResponse engineConfigurationResponse = (EngineConfigurationResponse) o;
-    return Objects.equals(this.nativeToken, engineConfigurationResponse.nativeToken) &&
-        Objects.equals(this.checkpoints, engineConfigurationResponse.checkpoints) &&
+    return Objects.equals(this.checkpoints, engineConfigurationResponse.checkpoints) &&
         Objects.equals(this.forks, engineConfigurationResponse.forks);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(nativeToken, checkpoints, forks);
+    return Objects.hash(checkpoints, forks);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class EngineConfigurationResponse {\n");
-    sb.append("    nativeToken: ").append(toIndentedString(nativeToken)).append("\n");
     sb.append("    checkpoints: ").append(toIndentedString(checkpoints)).append("\n");
     sb.append("    forks: ").append(toIndentedString(forks)).append("\n");
     sb.append("}");
