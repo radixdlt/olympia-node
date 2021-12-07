@@ -186,10 +186,10 @@ public class PMT {
 			 	switch (commonPath.whichRemainderIsLeft()) {
 					case OLD:
 						var remainder = commonPath.getRemainder(PMTPath.Subtree.OLD);
-						var newLeaf = new PMTLeaf(remainder.getFirstNibble(), remainder.getTailNibbles(), val);
+						var newLeaf = new PMTLeaf(remainder.getTailNibbles(), val);
 						var newBranch = new PMTBranch(
 								current.getValue(),
-								new PMTBranch.PMTBranchChild(newLeaf.getBranchNibble(), represent(newLeaf))
+								new PMTBranch.PMTBranchChild(remainder.getFirstNibble(), represent(newLeaf))
 						);
 						var newExt = insertExtension(commonPath, newBranch);
 						acc.setNewTip(newExt == null ? newBranch : newExt);
@@ -198,10 +198,10 @@ public class PMT {
 						break;
 					case NEW:
 						remainder = commonPath.getRemainder(PMTPath.Subtree.NEW);
-						newLeaf = new PMTLeaf(remainder.getFirstNibble(), remainder.getTailNibbles(), current.value);
+						newLeaf = new PMTLeaf(remainder.getTailNibbles(), current.value);
 						newBranch = new PMTBranch(
 								val,
-								new PMTBranch.PMTBranchChild(newLeaf.getBranchNibble(), represent(newLeaf))
+								new PMTBranch.PMTBranchChild(remainder.getFirstNibble(), represent(newLeaf))
 						);
 						newExt = insertExtension(commonPath, newBranch);
 						acc.setNewTip(newExt == null ? newBranch : newExt);
@@ -211,12 +211,12 @@ public class PMT {
 					case BOTH:
 						var remainderNew = commonPath.getRemainder(PMTPath.Subtree.NEW);
 						var remainderOld = commonPath.getRemainder(PMTPath.Subtree.OLD);
-						var newLeafNew = new PMTLeaf(remainderNew.getFirstNibble(), remainderNew.getTailNibbles(), val);
-						var newLeafOld = new PMTLeaf(remainderOld.getFirstNibble(), remainderOld.getTailNibbles(), current.value);
+						var newLeafNew = new PMTLeaf(remainderNew.getTailNibbles(), val);
+						var newLeafOld = new PMTLeaf(remainderOld.getTailNibbles(), current.value);
 						newBranch = new PMTBranch(
 								null,
-								new PMTBranch.PMTBranchChild(newLeafNew.getBranchNibble(), represent(newLeafNew)),
-								new PMTBranch.PMTBranchChild(newLeafOld.getBranchNibble(), represent(newLeafOld))
+								new PMTBranch.PMTBranchChild(remainderNew.getFirstNibble(), represent(newLeafNew)),
+								new PMTBranch.PMTBranchChild(remainderOld.getFirstNibble(), represent(newLeafOld))
 						);
 						newExt = insertExtension(commonPath, newBranch);
 						acc.setNewTip(newExt == null ? newBranch : newExt);
@@ -251,7 +251,7 @@ public class PMT {
 						var nextHash = currentBranch.getNextHash(key);
 						PMTNode subTip;
 						if (nextHash == null || nextHash.length == 0) {
-							var newLeaf = new PMTLeaf(key.getFirstNibble(), key.getTailNibbles(), val);
+							var newLeaf = new PMTLeaf(key.getTailNibbles(), val);
 							acc.add(newLeaf);
 							subTip = newLeaf;
 						} else {
@@ -274,7 +274,7 @@ public class PMT {
 						var newShorter = splitExtension(remainder, current, acc);
 						var newBranch = new PMTBranch(
 							val,
-							new PMTBranch.PMTBranchChild(newShorter.getBranchNibble(), represent(newShorter))
+							new PMTBranch.PMTBranchChild(remainder.getFirstNibble(), represent(newShorter))
 						);
 						var newExt = insertExtension(commonPath, newBranch);
 						acc.setNewTip(newExt == null ? newBranch : newExt);
@@ -297,12 +297,12 @@ public class PMT {
 					case BOTH:
 						var remainderNew = commonPath.getRemainder(PMTPath.Subtree.NEW);
 						var remainderOld = commonPath.getRemainder(PMTPath.Subtree.OLD);
-						var newLeaf = new PMTLeaf(remainderNew.getFirstNibble(), remainderNew.getTailNibbles(), val);
+						var newLeaf = new PMTLeaf(remainderNew.getTailNibbles(), val);
 						newShorter = splitExtension(remainderOld, current, acc);
 						newBranch = new PMTBranch(
 								null,
-								new PMTBranch.PMTBranchChild(newLeaf.getBranchNibble(), represent(newLeaf)),
-								new PMTBranch.PMTBranchChild(newShorter.getBranchNibble(), represent(newShorter))
+								new PMTBranch.PMTBranchChild(remainderNew.getFirstNibble(), represent(newLeaf)),
+								new PMTBranch.PMTBranchChild(remainderOld.getFirstNibble(), represent(newShorter))
 						);
 						newExt = insertExtension(commonPath, newBranch);
 						acc.setNewTip(newExt == null ? newBranch : newExt);
@@ -337,9 +337,9 @@ public class PMT {
 
 			// XXX TODO: should this go to cache?! (now it won't as it's not added to accumulator)
 			// XXX TODO: this is probably illegal. See page 21 of the yellowpaper
-			return new PMTExt(remainder.getFirstNibble(), remainder.getTailNibbles(), current.getValue());
+			return new PMTExt(remainder.getTailNibbles(), current.getValue());
 		} else {
-			var newShorter = new PMTExt(remainder.getFirstNibble(), remainder.getTailNibbles(), current.getValue());
+			var newShorter = new PMTExt(remainder.getTailNibbles(), current.getValue());
 			acc.add(newShorter);
 			return newShorter;
 		}
