@@ -63,8 +63,8 @@
  */
 package com.radixdlt.api.service;
 
-import com.radixdlt.api.service.network.NetworkInfoService;
-import com.radixdlt.api.service.network.ScheduledStatsCollecting;
+import com.radixdlt.api.core.system.health.HealthInfoService;
+import com.radixdlt.api.core.system.health.ScheduledStatsCollecting;
 import org.junit.Test;
 
 import com.radixdlt.counters.SystemCounters;
@@ -76,60 +76,35 @@ import java.util.stream.IntStream;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
-import static com.radixdlt.api.service.network.NodeStatus.BOOTING;
-import static com.radixdlt.api.service.network.NodeStatus.STALLED;
-import static com.radixdlt.api.service.network.NodeStatus.SYNCING;
-import static com.radixdlt.api.service.network.NodeStatus.UP;
-import static com.radixdlt.api.service.network.NetworkInfoService.DEMAND_KEY;
-import static com.radixdlt.api.service.network.NetworkInfoService.LEDGER_KEY;
-import static com.radixdlt.api.service.network.NetworkInfoService.TARGET_KEY;
-import static com.radixdlt.api.service.network.NetworkInfoService.THROUGHPUT_KEY;
+import static com.radixdlt.api.core.system.health.NodeStatus.BOOTING;
+import static com.radixdlt.api.core.system.health.NodeStatus.STALLED;
+import static com.radixdlt.api.core.system.health.NodeStatus.SYNCING;
+import static com.radixdlt.api.core.system.health.NodeStatus.UP;
+import static com.radixdlt.api.core.system.health.HealthInfoService.LEDGER_KEY;
+import static com.radixdlt.api.core.system.health.HealthInfoService.TARGET_KEY;
 import static com.radixdlt.counters.SystemCounters.CounterType;
 
-public class NetworkInfoServiceTest {
+public class HealthInfoServiceTest {
 	@SuppressWarnings("unchecked")
 	private final ScheduledEventDispatcher<ScheduledStatsCollecting> dispatcher = mock(ScheduledEventDispatcher.class);
 	private final SystemCounters systemCounters = new SystemCountersImpl();
-	private final NetworkInfoService networkInfoService = new NetworkInfoService(systemCounters, dispatcher);
-
-	@Test
-	public void testDemand() {
-		assertEquals(0, networkInfoService.demand());
-
-		systemCounters.set(DEMAND_KEY, 2L);
-		updateStats(5, DEMAND_KEY, false);
-
-		systemCounters.set(DEMAND_KEY, 0L);
-		updateStats(5, DEMAND_KEY, false);
-
-		assertEquals(1, networkInfoService.demand());
-	}
-
-	@Test
-	public void testThroughput() {
-		assertEquals(0, networkInfoService.throughput());
-
-		systemCounters.add(THROUGHPUT_KEY, 1L);
-		updateStats(10, THROUGHPUT_KEY, true);
-
-		assertEquals(1, networkInfoService.throughput());
-	}
+	private final HealthInfoService healthInfoService = new HealthInfoService(systemCounters, dispatcher);
 
 	@Test
 	public void testNodeStatus() {
-		assertEquals(BOOTING, networkInfoService.nodeStatus());
+		assertEquals(BOOTING, healthInfoService.nodeStatus());
 
 		updateStatsSync(10, TARGET_KEY, 5, LEDGER_KEY);
 
-		assertEquals(SYNCING, networkInfoService.nodeStatus());
+		assertEquals(SYNCING, healthInfoService.nodeStatus());
 
 		updateStatsSync(10, TARGET_KEY, 15, LEDGER_KEY);
 
-		assertEquals(UP, networkInfoService.nodeStatus());
+		assertEquals(UP, healthInfoService.nodeStatus());
 
 		updateStatsSync(10, TARGET_KEY, 0, LEDGER_KEY);
 
-		assertEquals(STALLED, networkInfoService.nodeStatus());
+		assertEquals(STALLED, healthInfoService.nodeStatus());
 	}
 
 	private void updateStatsSync(int count1, CounterType key1, int count2, CounterType key2) {
@@ -138,7 +113,7 @@ public class NetworkInfoServiceTest {
 		IntStream.range(0, count).forEach(__ -> {
 			systemCounters.increment(key1);
 			systemCounters.increment(key2);
-			networkInfoService.updateStats().process(ScheduledStatsCollecting.create());
+			healthInfoService.updateStats().process(ScheduledStatsCollecting.create());
 		});
 
 		var remaining = Math.max(count1, count2) - count;
@@ -146,7 +121,7 @@ public class NetworkInfoServiceTest {
 
 		IntStream.range(0, remaining).forEach(__ -> {
 			systemCounters.increment(key);
-			networkInfoService.updateStats().process(ScheduledStatsCollecting.create());
+			healthInfoService.updateStats().process(ScheduledStatsCollecting.create());
 		});
 	}
 
@@ -155,7 +130,7 @@ public class NetworkInfoServiceTest {
 			if (increment) {
 				systemCounters.increment(counterType);
 			}
-			networkInfoService.updateStats().process(ScheduledStatsCollecting.create());
+			healthInfoService.updateStats().process(ScheduledStatsCollecting.create());
 		});
 	}
 }

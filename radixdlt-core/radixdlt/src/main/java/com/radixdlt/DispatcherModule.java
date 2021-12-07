@@ -64,7 +64,7 @@
 
 package com.radixdlt;
 
-import com.radixdlt.api.service.network.ScheduledStatsCollecting;
+import com.radixdlt.api.core.system.health.ScheduledStatsCollecting;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;

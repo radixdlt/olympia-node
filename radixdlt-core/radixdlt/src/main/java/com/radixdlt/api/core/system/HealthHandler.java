@@ -65,19 +65,19 @@ package com.radixdlt.api.core.system;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.core.system.openapitools.model.HealthResponse;
-import com.radixdlt.api.service.network.NetworkInfoService;
+import com.radixdlt.api.core.system.health.HealthInfoService;
 
 final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
-	private final NetworkInfoService networkInfoService;
+	private final HealthInfoService healthInfoService;
 
 	@Inject
-	HealthHandler(NetworkInfoService networkInfoService) {
-		this.networkInfoService = networkInfoService;
+	HealthHandler(HealthInfoService healthInfoService) {
+		this.healthInfoService = healthInfoService;
 	}
 
 	@Override
 	public HealthResponse handleRequest() {
-		var nodeStatus = networkInfoService.nodeStatus();
+		var nodeStatus = healthInfoService.nodeStatus();
 		switch (nodeStatus) {
 			case UP -> {
 				return new HealthResponse().status(HealthResponse.StatusEnum.UP);

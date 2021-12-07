@@ -64,7 +64,7 @@
 package com.radixdlt.api.core.system.prometheus;
 
 import com.radixdlt.api.Endpoints;
-import com.radixdlt.api.service.network.NetworkInfoService;
+import com.radixdlt.api.core.system.health.HealthInfoService;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Self;
@@ -124,7 +124,7 @@ public class PrometheusService {
 	private static final String COUNTER_PREFIX = "info_counters_";
 
 	private final SystemCounters systemCounters;
-	private final NetworkInfoService networkInfoService;
+	private final HealthInfoService healthInfoService;
 	private final Addressing addressing;
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final BFTNode self;
@@ -136,7 +136,7 @@ public class PrometheusService {
 		@Endpoints Map<String, Boolean> endpointStatuses,
 		SystemCounters systemCounters,
 		PeersView peersView,
-		NetworkInfoService networkInfoService,
+		HealthInfoService healthInfoService,
 		InMemorySystemInfo inMemorySystemInfo,
 		@Self BFTNode self,
 		Addressing addressing
@@ -144,7 +144,7 @@ public class PrometheusService {
 		this.endpointStatuses = endpointStatuses;
 		this.systemCounters = systemCounters;
 		this.peersView = peersView;
-		this.networkInfoService = networkInfoService;
+		this.healthInfoService = healthInfoService;
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.self = self;
 		this.addressing = addressing;
@@ -192,7 +192,7 @@ public class PrometheusService {
 		addBranchAndCommit(builder);
 		addValidatorAddress(builder);
 		addAccumulatorState(builder);
-		appendField(builder, "health", networkInfoService.nodeStatus().name());
+		appendField(builder, "health", healthInfoService.nodeStatus().name());
 		appendField(builder, "key", self.getKey().toHex());
 
 		return builder.append("}").toString();

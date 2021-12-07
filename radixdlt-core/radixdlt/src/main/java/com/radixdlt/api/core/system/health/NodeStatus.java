@@ -61,65 +61,12 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.util;
+package com.radixdlt.api.core.system.health;
 
-import com.google.common.base.Throwables;
-import com.radixdlt.api.gateway.transaction.InvalidTransactionException;
-import com.radixdlt.api.gateway.transaction.StateConflictException;
-import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.networks.Addressing;
-import org.json.JSONObject;
-
-public enum ApiErrorCode {
-	INTERNAL_SERVER_ERROR(Throwable.class, 1) {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			var root = Throwables.getRootCause(e);
-			return new JSONObject()
-				.put("exception", e.toString())
-				.put("cause", e.getMessage())
-				.putOpt("root", root == null ? null : root.toString());
-		}
-	},
-	MEMPOOL_FULL(MempoolFullException.class, 100) {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			return new JSONObject();
-		}
-	},
-	STATE_CONFLICT(StateConflictException.class, 101) {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			var ex = (StateConflictException) e;
-			// TODO: elaborate
-			return new JSONObject();
-		}
-	},
-	INVALID_TRANSACTION(InvalidTransactionException.class, 102) {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			var ex = (InvalidTransactionException) e;
-			// TODO: elaborate
-			return new JSONObject()
-				.put("message", ex.getMessage());
-		}
-	};
-
-	private final Class<? extends Throwable> exceptionClass;
-	private final int code;
-
-	ApiErrorCode(Class<? extends Throwable> exceptionClass, int code) {
-		this.exceptionClass = exceptionClass;
-		this.code = code;
-	}
-
-	public Class<? extends Throwable> getExceptionClass() {
-		return exceptionClass;
-	}
-
-	public int getCode() {
-		return code;
-	}
-
-	public abstract JSONObject getDetails(Throwable e, Addressing addressing);
+public enum NodeStatus {
+	BOOTING,
+	SYNCING,
+	UP,
+	STALLED,
+	OUT_OF_SYNC
 }

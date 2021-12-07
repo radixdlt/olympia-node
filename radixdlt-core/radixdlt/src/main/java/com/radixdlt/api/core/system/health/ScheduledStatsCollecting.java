@@ -61,33 +61,12 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.service.network;
+package com.radixdlt.api.core.system.health;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.Runners;
+public enum ScheduledStatsCollecting {
+	INSTANCE;
 
-public class NetworkInfoServiceModule extends AbstractModule {
-	@Override
-	protected void configure() {
-		var eventBinder = Multibinder
-			.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
-			.permitDuplicates();
-		eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
-		bind(NetworkInfoService.class).in(Scopes.SINGLETON);
-	}
-
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> networkInfoService(NetworkInfoService networkInfoService) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			ScheduledStatsCollecting.class,
-			networkInfoService.updateStats()
-		);
+	public static ScheduledStatsCollecting create() {
+		return INSTANCE;
 	}
 }
