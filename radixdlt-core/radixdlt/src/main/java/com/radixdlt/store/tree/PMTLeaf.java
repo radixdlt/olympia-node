@@ -7,13 +7,8 @@ public final class PMTLeaf extends PMTNode {
 	public static final int EVEN_PREFIX = 2;
 	public static final int ODD_PREFIX = 3;
 
-	public PMTLeaf(PMTKey allNibbles, byte[] newValue) {
-		this(null, allNibbles, newValue);
-	}
-
-	PMTLeaf(PMTKey branchNibble, PMTKey keyNibbles, byte[] newValue) {
+	public PMTLeaf(PMTKey keyNibbles, byte[] newValue) {
 		this.nodeType = NodeType.LEAF;
-		this.branchNibble = branchNibble;
 		this.keyNibbles = keyNibbles;
 		this.value = newValue;
 	}
