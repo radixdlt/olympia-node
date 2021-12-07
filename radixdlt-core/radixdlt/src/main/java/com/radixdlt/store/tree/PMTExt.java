@@ -14,18 +14,11 @@ public final class PMTExt extends PMTNode {
 	}
 
 	public byte[] serialize() {
-		// INFO: It doesn't make sense for Extension to have empty key-part.
-		//       We rewrite hash pointer to Branches' nibble position
-		// TODO check if this is correct, we should probably forbid this state in the constructor
-		if (keyNibbles.isEmpty()) {
-			return this.getValue();
-		} else {
-			var nibblesWithPrefix = TreeUtils.applyPrefix(this.getKey().getKey(), ODD_PREFIX, EVEN_PREFIX);
-			byte[] bytesWithPrefix = TreeUtils.fromNibblesToBytes(nibblesWithPrefix);
-			return RLP.encodeList(
-					RLP.encodeElement(bytesWithPrefix),
-					RLP.encodeElement(value)
-			);
-		}
+		var nibblesWithPrefix = TreeUtils.applyPrefix(this.getKey().getKey(), ODD_PREFIX, EVEN_PREFIX);
+		byte[] bytesWithPrefix = TreeUtils.fromNibblesToBytes(nibblesWithPrefix);
+		return RLP.encodeList(
+				RLP.encodeElement(bytesWithPrefix),
+				RLP.encodeElement(value)
+		);
 	}
 }
