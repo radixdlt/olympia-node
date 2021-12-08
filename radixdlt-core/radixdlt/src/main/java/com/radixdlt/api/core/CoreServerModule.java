@@ -111,10 +111,9 @@ public final class CoreServerModule extends AbstractModule {
 
 	@Override
 	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class));
-		install(new CoreApiModule(NodeServer.class, transactionsEnable));
+		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class);
+		install(new SystemApiModule());
+		install(new CoreApiModule(transactionsEnable));
 	}
 
 	private static class IntervalServerErrorExceptionHandler implements HttpHandler {
@@ -143,7 +142,7 @@ public final class CoreServerModule extends AbstractModule {
 	@ProvidesIntoMap
 	@StringMapKey(Runners.NODE_API)
 	@Singleton
-	public ModuleRunner coreHttpServer(@NodeServer Map<HandlerRoute, HttpHandler> handlers) {
+	public ModuleRunner coreHttpServer(Map<HandlerRoute, HttpHandler> handlers) {
 		return new HttpServerRunner(
 			handlers,
 			new IntervalServerErrorExceptionHandler(),
@@ -151,14 +150,5 @@ public final class CoreServerModule extends AbstractModule {
 			bindAddress,
 			"core"
 		);
-	}
-
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
 	}
 }

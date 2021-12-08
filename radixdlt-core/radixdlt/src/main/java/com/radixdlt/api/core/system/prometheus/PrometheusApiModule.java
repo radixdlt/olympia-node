@@ -72,18 +72,16 @@ import io.undertow.server.HttpHandler;
 import java.lang.annotation.Annotation;
 
 public final class PrometheusApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
 	private final String path;
 
-	public PrometheusApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
+	public PrometheusApiModule(String path) {
 		this.path = path;
 	}
 
 	@Override
 	protected void configure() {
 		bind(PrometheusHandler.class).in(Scopes.SINGLETON);
-		MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class, annotationType)
+		MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class)
 			.addBinding(HandlerRoute.get(path))
 			.to(PrometheusHandler.class);
 	}

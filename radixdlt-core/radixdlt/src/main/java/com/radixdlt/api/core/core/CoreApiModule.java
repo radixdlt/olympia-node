@@ -88,21 +88,17 @@ import com.radixdlt.api.util.HandlerRoute;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import io.undertow.server.HttpHandler;
 
-import java.lang.annotation.Annotation;
-
 public class CoreApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
 	private final boolean transactionsEnable;
 
-	public CoreApiModule(Class<? extends Annotation> annotationType, boolean transactionsEnable) {
-		this.annotationType = annotationType;
+	public CoreApiModule(boolean transactionsEnable) {
 		this.transactionsEnable = transactionsEnable;
 	}
 
 	@Override
 	public void configure() {
 		var routeBinder = MapBinder.newMapBinder(
-			binder(), HandlerRoute.class, HttpHandler.class, annotationType
+			binder(), HandlerRoute.class, HttpHandler.class
 		);
 
 		routeBinder.addBinding(HandlerRoute.post("/entity")).to(EntityHandler.class);

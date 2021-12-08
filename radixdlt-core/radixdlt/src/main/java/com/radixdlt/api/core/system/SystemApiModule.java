@@ -81,12 +81,6 @@ import io.undertow.server.HttpHandler;
 import java.lang.annotation.Annotation;
 
 public class SystemApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-
-	public SystemApiModule(Class<? extends Annotation> annotationType) {
-		this.annotationType = annotationType;
-	}
-
 	@Override
 	protected void configure() {
 		var eventBinder = Multibinder
@@ -95,14 +89,14 @@ public class SystemApiModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
 		bind(HealthInfoService.class).in(Scopes.SINGLETON);
 
-		var binder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class, annotationType);
+		var binder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class);
 		binder.addBinding(HandlerRoute.get("/system/configuration")).to(SystemConfigurationHandler.class);
 		binder.addBinding(HandlerRoute.get("/system/metrics")).to(SystemMetricsHandler.class);
 		binder.addBinding(HandlerRoute.get("/system/health")).to(HealthHandler.class);
 		binder.addBinding(HandlerRoute.get("/system/version")).to(VersionHandler.class);
 		binder.addBinding(HandlerRoute.get("/system/peers")).to(PeersHandler.class);
 		binder.addBinding(HandlerRoute.get("/system/addressbook")).to(AddressBookHandler.class);
-		install(new PrometheusApiModule(annotationType, "/prometheus/metrics"));
+		install(new PrometheusApiModule("/prometheus/metrics"));
 	}
 
 	@ProvidesIntoSet
