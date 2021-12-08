@@ -68,7 +68,6 @@ public class ValidatorMetadata extends DataObject {
    * The name for the validator.
    * @return name
   **/
-  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "The name for the validator.")
   @JsonProperty(JSON_PROPERTY_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
@@ -94,7 +93,6 @@ public class ValidatorMetadata extends DataObject {
    * A url which points to more information about the validator.
    * @return url
   **/
-  @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "A url which points to more information about the validator.")
   @JsonProperty(JSON_PROPERTY_URL)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)

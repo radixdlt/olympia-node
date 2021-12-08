@@ -106,10 +106,8 @@ public final class ApiModule extends AbstractModule {
 	private static class IntervalServerErrorExceptionHandler implements HttpHandler {
 		@Override
 		public void handleRequest(HttpServerExchange exchange) throws Exception {
+			// TODO: Find a place to log this
 			var ex = exchange.getAttachment(ExceptionHandler.THROWABLE);
-			// TODO: Move this somewhere else
-			ex.printStackTrace();
-
 			var rootCause = Throwables.getRootCause(ex);
 			var unexpectedError = new UnexpectedError()
 				.code(500)

@@ -134,6 +134,10 @@ import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+/**
+ * Test which runs a 20 node consensus network. Random transactions are submitted and nodes
+ * are rebooted while checks occur on the api to make sure that invariants are not broken.
+ */
 @RunWith(Parameterized.class)
 public class ApiTest {
 	private static final Logger logger = LogManager.getLogger();

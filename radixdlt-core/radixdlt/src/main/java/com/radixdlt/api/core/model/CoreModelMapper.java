@@ -1142,12 +1142,12 @@ public final class CoreModelMapper {
 		transaction.metadata(metadata);
 
 		// If user transaction is signed then we can return back complete information
-		if (txn.getSignedBy().isPresent()) {
-			metadata.signedBy(publicKey(txn.getSignedBy().get()));
+		txn.getSignedBy().ifPresent(publicKey -> {
+			metadata.signedBy(publicKey(publicKey));
 			metadata.size(txn.getTxn().getPayload().length);
 			metadata.hex(Bytes.toHexString(txn.getTxn().getPayload()));
 			transaction.transactionIdentifier(transactionIdentifier(txn.getTxnId()));
-		}
+		});
 
 		return transaction;
 	}

@@ -65,7 +65,10 @@ package com.radixdlt.integration.api;
 
 import java.util.function.Supplier;
 
-public class ActorConfiguration {
+/**
+ * Configuration which describes how often an actor will be called upon to act in a deterministic test.
+ */
+public final class ActorConfiguration {
 	private final Supplier<DeterministicActor> actorSupplier;
 	private final int numerator;
 	private final int denominator;

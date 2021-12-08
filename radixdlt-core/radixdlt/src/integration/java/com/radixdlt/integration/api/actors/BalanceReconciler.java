@@ -83,7 +83,11 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class BalanceReconciler implements DeterministicActor {
+/**
+ * Reconciles the balances that are computed by reading the transaction stream and
+ * the /entity endpoint
+ */
+public final class BalanceReconciler implements DeterministicActor {
 	private final Map<EntityIdentifier, Map<ResourceIdentifier, BigInteger>> balances = new HashMap<>();
 	private long currentStateVersion = 0L;
 

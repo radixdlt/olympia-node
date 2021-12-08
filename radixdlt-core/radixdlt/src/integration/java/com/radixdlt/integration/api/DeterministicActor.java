@@ -67,6 +67,9 @@ import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 
 import java.util.Random;
 
+/**
+ * Executes an actor in a deterministic test
+ */
 public interface DeterministicActor {
 	String execute(MultiNodeDeterministicRunner runner, Random random) throws Exception;
 }

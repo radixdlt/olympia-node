@@ -73,6 +73,10 @@ import java.util.Random;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Verifies that the amount of inflation occurring on the native token
+ * matches the rewards per proposal configuration
+ */
 public final class NativeTokenRewardsChecker implements DeterministicActor {
 	private static final Logger logger = LogManager.getLogger();
 

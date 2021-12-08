@@ -68,6 +68,9 @@ import com.radixdlt.integration.api.DeterministicActor;
 
 import java.util.Random;
 
+/**
+ * Randomly restarts a node in a deterministic test
+ */
 public final class RandomNodeRestarter implements DeterministicActor {
 	@Override
 	public String execute(MultiNodeDeterministicRunner runner, Random random) {

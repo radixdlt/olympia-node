@@ -109,6 +109,9 @@ import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Helper class to execute api commands
+ */
 final class NodeApiClient {
 	private final EntityHandler entityHandler;
 	private final NetworkConfigurationHandler networkConfigurationHandler;

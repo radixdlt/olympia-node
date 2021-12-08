@@ -78,6 +78,10 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Reads the balances from the api of all accounts and verifies that it matches
+ * the state in the Radix Engine.
+ */
 public final class ApiBalanceToRadixEngineChecker implements DeterministicActor {
 	public List<ResourceAmount> getAccountUnstakes(REAddr addr, NodeApiClient nodeClient) {
 		return PrivateKeys.numeric(1).limit(20)

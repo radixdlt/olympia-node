@@ -75,6 +75,9 @@ import com.radixdlt.utils.UInt256;
 
 import java.math.BigInteger;
 
+/**
+ * Utility class for reading info in the radix engine
+ */
 public final class RadixEngineReader {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 

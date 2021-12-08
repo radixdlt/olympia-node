@@ -97,6 +97,9 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Submits a random transaction through a random node in a deterministic test.
+ */
 public final class ApiTxnSubmitter implements DeterministicActor {
 	private int tokenId = 0;
 
