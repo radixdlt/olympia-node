@@ -64,8 +64,12 @@
 package com.radixdlt.integration.api.actors;
 
 import com.google.inject.Key;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
+import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.integration.api.actors.actions.CreateTokenDefinition;
 import com.radixdlt.integration.api.actors.actions.NodeTransactionAction;
 import com.radixdlt.integration.api.actors.actions.RegisterValidator;
 import com.radixdlt.integration.api.actors.actions.SetAllowDelegationFlag;
@@ -77,12 +81,49 @@ import com.radixdlt.integration.api.actors.actions.UnstakeStakeUnits;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
+import com.radixdlt.utils.UInt256;
 
 import java.util.Random;
+import java.util.stream.Collectors;
 
 public final class ApiTxnSubmitter implements DeterministicActor {
 	private Amount nextAmount(Random random) {
 		return Amount.ofTokens(random.nextInt(10) * 10 + 1);
+	}
+
+	private TransferTokens transferTokens(NodeApiClient nodeClient, EntityIdentifier to, Random random) throws Exception {
+		var publicKey = nodeClient.getPublicKey();
+		var accountIdentifier = nodeClient.deriveAccount(publicKey);
+		var response = nodeClient.getEntity(accountIdentifier);
+		var tokenTypes = response.getBalances()
+			.stream()
+			.map(ResourceAmount::getResourceIdentifier)
+			.filter(TokenResourceIdentifier.class::isInstance)
+			.map(TokenResourceIdentifier.class::cast)
+			.collect(Collectors.toList());
+
+		TokenResourceIdentifier tokenResourceIdentifier;
+		if (tokenTypes.isEmpty()) {
+			tokenResourceIdentifier = nodeClient.nativeToken();
+		} else {
+			var nextIndex = random.nextInt(tokenTypes.size());
+			tokenResourceIdentifier = tokenTypes.get(nextIndex);
+		}
+
+		return new TransferTokens(nextAmount(random), tokenResourceIdentifier, to);
+	}
+
+	private CreateTokenDefinition createTokenDefinition(NodeApiClient nodeClient, EntityIdentifier to, Random random) throws Exception {
+		var publicKey = nodeClient.getPublicKey();
+		var accountIdentifier = nodeClient.deriveAccount(publicKey);
+		if (random.nextBoolean()) {
+			return CreateTokenDefinition.mutableTokenSupply("test" + random.nextInt(1000), accountIdentifier);
+		} else {
+			var uint256Bytes = new byte[UInt256.BYTES];
+			random.nextBytes(uint256Bytes);
+			var amount = UInt256.from(uint256Bytes);
+			return CreateTokenDefinition.fixedTokenSupply("test" + random.nextInt(1000), amount, to);
+		}
 	}
 
 	@Override
@@ -94,7 +135,7 @@ public final class ApiTxnSubmitter implements DeterministicActor {
 		var otherNodeIndex = random.nextInt(size);
 		var otherKey = runner.getNode(otherNodeIndex)
 			.getInstance(Key.get(ECPublicKey.class, Self.class));
-		var next = random.nextInt(8);
+		var next = random.nextInt(9);
 
 		// Don't let the last validator unregister
 		if (next == 4 && nodeIndex <= 0) {
@@ -102,7 +143,7 @@ public final class ApiTxnSubmitter implements DeterministicActor {
 		}
 
 		NodeTransactionAction action = switch (next) {
-			case 0 -> new TransferTokens(nextAmount(random), nodeClient.nativeToken(), nodeClient.deriveAccount(otherKey));
+			case 0 -> transferTokens(nodeClient, nodeClient.deriveAccount(otherKey), random);
 			case 1 -> new StakeTokens(nextAmount(random), nodeClient.deriveValidator(otherKey));
 			case 2 -> new UnstakeStakeUnits(nextAmount(random), nodeClient.deriveValidator(otherKey).getAddress());
 			case 3 -> new RegisterValidator(true);
@@ -110,6 +151,7 @@ public final class ApiTxnSubmitter implements DeterministicActor {
 			case 5 -> new SetValidatorFee(random.nextInt(ValidatorUpdateRakeConstraintScrypt.RAKE_MAX + 1));
 			case 6 -> new SetValidatorOwner(nodeClient.deriveAccount(otherKey));
 			case 7 -> new SetAllowDelegationFlag(random.nextBoolean());
+			case 8 -> createTokenDefinition(nodeClient, nodeClient.deriveAccount(otherKey), random);
 			default -> throw new IllegalStateException("Unexpected value: " + next);
 		};
 

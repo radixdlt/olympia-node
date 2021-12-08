@@ -64,16 +64,94 @@
 package com.radixdlt.integration.api.actors.actions;
 
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadata;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataToken;
+import com.radixdlt.api.core.core.openapitools.model.Data;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
+import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorRegistered;
+import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
+import com.radixdlt.api.core.core.openapitools.model.TokenData;
+import com.radixdlt.api.core.core.openapitools.model.TokenMetadata;
+import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
+import com.radixdlt.utils.UInt256;
 
 import java.util.function.Function;
 
-public sealed interface NodeTransactionAction permits RegisterValidator, SetAllowDelegationFlag, SetValidatorFee,
-	SetValidatorOwner, StakeTokens, TransferTokens, UnstakeStakeUnits, CreateTokenDefinition {
-	OperationGroup toOperationGroup(
+public final class CreateTokenDefinition implements NodeTransactionAction {
+	private final String symbol;
+	private final UInt256 amount;
+	private final EntityIdentifier owner;
+	private final EntityIdentifier to;
+
+	private CreateTokenDefinition(String symbol, UInt256 amount, EntityIdentifier owner, EntityIdentifier to) {
+		this.symbol = symbol;
+		this.amount = amount;
+		this.owner = owner;
+		this.to = to;
+	}
+
+	public static CreateTokenDefinition fixedTokenSupply(String symbol, UInt256 amount, EntityIdentifier to) {
+		return new CreateTokenDefinition(symbol, amount, null, to);
+	}
+
+	public static CreateTokenDefinition mutableTokenSupply(String symbol, EntityIdentifier owner) {
+		return new CreateTokenDefinition(symbol, null, owner, null);
+	}
+
+	@Override
+	public OperationGroup toOperationGroup(
 		EngineConfiguration configuration,
 		Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction
-	);
+	) {
+		var entityIdentifier = identifierFunction.apply(new ConstructionDeriveRequestMetadataToken()
+			.symbol(symbol)
+			.type("Token")
+		);
+
+		var operationGroup = new OperationGroup();
+		operationGroup.addOperationsItem(
+			new Operation()
+				.type("Data")
+				.data(new Data().action(Data.ActionEnum.CREATE)
+					.dataObject(new TokenData()
+						.isMutable(amount == null)
+						.granularity("1")
+						.owner(owner)
+						.type(PreparedValidatorRegistered.class.getSimpleName())
+					)
+				)
+				.entityIdentifier(entityIdentifier)
+		);
+
+		if (amount != null) {
+			operationGroup.addOperationsItem(
+				new Operation()
+					.type("Resource")
+					.amount(new ResourceAmount()
+						.value(amount.toString())
+						.resourceIdentifier(new TokenResourceIdentifier().rri(entityIdentifier.getAddress()).type("Token"))
+					)
+					.entityIdentifier(to)
+			);
+		}
+
+		operationGroup.addOperationsItem(
+			new Operation()
+				.type("Data")
+				.data(new Data().action(Data.ActionEnum.CREATE)
+					.dataObject(new TokenMetadata()
+						.symbol(symbol)
+						.name("some_name")
+						.description("some_description")
+						.url("")
+						.iconUrl("")
+					)
+				)
+				.entityIdentifier(entityIdentifier)
+		);
+
+		return operationGroup;
+	}
 }

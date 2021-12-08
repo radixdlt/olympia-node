@@ -214,6 +214,11 @@ final class NodeApiClient {
 		return response.getCurrentStateIdentifier();
 	}
 
+	public PublicKey getPublicKey() throws Exception {
+		var response = keyListHandler.handleRequest(new KeyListRequest().networkIdentifier(networkIdentifier()));
+		return response.getPublicKeys().get(0).getPublicKey();
+	}
+
 	public EpochView getEpochView() throws Exception {
 		var statusResponse = engineStatusHandler
 			.handleRequest(new EngineStatusRequest().networkIdentifier(networkIdentifier()));
