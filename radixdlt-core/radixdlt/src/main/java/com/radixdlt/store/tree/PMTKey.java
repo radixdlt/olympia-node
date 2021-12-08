@@ -37,7 +37,7 @@ public class PMTKey {
 				return new PMTKey(new byte[0]);
 			}
 		} else {
-			return firstNibble;
+			return tailNibbles;
 		}
 	}
 
