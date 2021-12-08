@@ -63,116 +63,24 @@
 
 package com.radixdlt.api.core.core.model;
 
-import com.google.common.base.Suppliers;
-import com.radixdlt.api.core.core.openapitools.model.Data;
-import com.radixdlt.application.system.state.EpochData;
-import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Supplier;
+public final class NotEnoughNativeTokensForFeesException extends TxBuilderException {
+	private final UInt256 fee;
+	private final UInt256 available;
 
-public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
-	private final Forks forks;
-	private final List<List<EntityOperation>> operationGroups;
-	private final String message;
-
-	public OperationTxBuilder(
-		String message,
-		List<List<EntityOperation>> operationGroups,
-		Forks forks
-	) {
-		this.message = message;
-		this.operationGroups = operationGroups;
-		this.forks = forks;
+	public NotEnoughNativeTokensForFeesException(UInt256 fee, UInt256 available) {
+		super("Fee is " + fee + " but only " + available + " available");
+		this.fee = fee;
+		this.available = available;
 	}
 
-	private void executeResourceOperation(
-		Entity entity,
-		ResourceOperation operation,
-		TxBuilder txBuilder,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		if (operation == null) {
-			return;
-		}
-
-		var amount = operation.getAmount();
-		if (operation.isDeposit()) {
-			entity.deposit(amount, txBuilder, config);
-		} else {
-			var retrieval = entity.withdraw(amount.getResource());
-			var feeInReserve = Optional.ofNullable(txBuilder.getFeeReserve()).orElse(UInt256.ZERO);
-
-			var change = txBuilder.downFungible(
-				retrieval.getIndex(),
-				retrieval.getPredicate(),
-				amount.getAmount(),
-				available -> new NotEnoughResourcesException(amount.getResource(), amount.getAmount(), available, feeInReserve)
-			);
-
-			if (!change.isZero()) {
-				var changeAmount = new ResourceUnsignedAmount(amount.getResource(), change);
-				entity.deposit(changeAmount, txBuilder, config);
-			}
-		}
+	public UInt256 getFee() {
+		return fee;
 	}
 
-	private void executeDataOperation(
-		Entity entity,
-		DataOperation operation,
-		TxBuilder txBuilder,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		if (operation == null) {
-			return;
-		}
-
-		var dataAction = operation.getDataAction();
-		if (dataAction == Data.ActionEnum.CREATE) {
-			var parsedDataObject = operation.getParsedDataObject();
-			entity.overwriteDataObject(parsedDataObject, txBuilder, config);
-		} else {
-			throw new IllegalStateException("DataAction: " + dataAction + " not supported yet.");
-		}
-	}
-
-	private void execute(
-		EntityOperation operation,
-		TxBuilder txBuilder,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		var entity = operation.getEntity();
-		var resourceOperation = operation.getResourceOperation();
-		executeResourceOperation(entity, resourceOperation, txBuilder, config);
-
-		var dataOperation = operation.getDataOperation();
-		executeDataOperation(entity, dataOperation, txBuilder, config);
-	}
-
-	@Override
-	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-
-		var configSupplier = Suppliers.memoize(() -> {
-			var epochData = txBuilder.findSystem(EpochData.class);
-			return forks.get(epochData.getEpoch()).getConfig();
-		});
-
-		for (var operationGroup : this.operationGroups) {
-			for (var operation : operationGroup) {
-				execute(operation, txBuilder, configSupplier);
-			}
-			txBuilder.end();
-		}
-
-		if (this.message != null) {
-			txBuilder.message(Bytes.fromHexString(message));
-		}
+	public UInt256 getAvailable() {
+		return available;
 	}
 }

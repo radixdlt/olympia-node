@@ -71,6 +71,7 @@ import com.radixdlt.api.core.core.handlers.MempoolTransactionHandler;
 import com.radixdlt.api.core.core.model.CoreApiException;
 import com.radixdlt.api.core.core.model.CoreModelMapper;
 import com.radixdlt.api.core.core.model.EntityOperation;
+import com.radixdlt.api.core.core.model.NotEnoughNativeTokensForFeesException;
 import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.ResourceOperation;
 import com.radixdlt.api.core.core.model.TokenResource;
@@ -197,7 +198,7 @@ public class MempoolTransactionHandlerTest {
 			));
 		var operationTxBuilder = new OperationTxBuilder(null, entityOperationGroups, forks);
 		var builder = radixEngine.constructWithFees(
-			operationTxBuilder, false, from
+			operationTxBuilder, false, from, NotEnoughNativeTokensForFeesException::new
 		);
 		return builder.signAndBuild(hashSigner::sign);
 	}

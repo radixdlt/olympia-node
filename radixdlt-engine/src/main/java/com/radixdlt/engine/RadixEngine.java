@@ -466,7 +466,8 @@ public final class RadixEngine<M> {
 	public TxBuilder constructWithFees(
 		TxBuilderExecutable executable,
 		boolean disableResourceAllocAndDestroy,
-		REAddr feePayer
+		REAddr feePayer,
+		BiFunction<UInt256, UInt256, TxBuilderException> notEnoughFeesExceptionSupplier
 	) throws TxBuilderException {
 		int maxTries = 5;
 		var perByteFee = this.actionConstructors.getPerByteFee().orElse(UInt256.ZERO);
@@ -478,7 +479,9 @@ public final class RadixEngine<M> {
 						txBuilder.toLowLevelBuilder().disableResourceAllocAndDestroy();
 					}
 
-					this.actionConstructors.construct(new FeeReservePut(feePayer, feeGuess.get()), txBuilder);
+					txBuilder.putFeeReserve(feePayer, feeGuess.get(), available -> notEnoughFeesExceptionSupplier.apply(feeGuess.get(), available));
+					txBuilder.end();
+
 					executable.execute(txBuilder);
 					this.actionConstructors.construct(new FeeReserveComplete(feePayer), txBuilder);
 				});

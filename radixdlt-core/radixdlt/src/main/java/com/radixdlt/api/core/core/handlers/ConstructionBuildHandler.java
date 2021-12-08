@@ -67,6 +67,7 @@ import com.google.inject.Inject;
 import com.radixdlt.api.core.core.model.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.model.CoreApiException;
 import com.radixdlt.api.core.core.model.CoreModelMapper;
+import com.radixdlt.api.core.core.model.NotEnoughNativeTokensForFeesException;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildResponse;
 import com.radixdlt.atom.TxBuilder;
@@ -102,7 +103,12 @@ public final class ConstructionBuildHandler extends CoreJsonRpcHandler<Construct
 		var disable = disableAllocAndDestroy != null && !disableAllocAndDestroy;
 		TxBuilder builder;
 		try {
-			builder = radixEngine.constructWithFees(operationTxBuilder, disable, feePayer.getAccountAddress());
+			builder = radixEngine.constructWithFees(
+				operationTxBuilder,
+				disable,
+				feePayer.getAccountAddress(),
+				NotEnoughNativeTokensForFeesException::new
+			);
 		} catch (TxBuilderException e) {
 			throw CoreApiException.badRequest(modelMapper.builderErrorDetails(e));
 		}

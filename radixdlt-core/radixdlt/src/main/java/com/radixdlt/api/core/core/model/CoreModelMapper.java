@@ -73,7 +73,6 @@ import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportResourceDep
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportResourceWithdrawException;
 import com.radixdlt.api.core.core.model.entities.ExitingStakeVaultEntity;
 import com.radixdlt.api.core.core.model.entities.InvalidDataObjectException;
-import com.radixdlt.api.core.core.model.entities.NotEnoughResourcesException;
 import com.radixdlt.api.core.core.model.entities.SystemEntity;
 import com.radixdlt.api.core.core.model.entities.ValidatorSystemEntity;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportDataObjectException;
@@ -266,7 +265,13 @@ public final class CoreModelMapper {
 				.available(new ResourceAmount()
 					.resourceIdentifier(resourceIdentifier)
 					.value(notEnoughResourcesException.getAvailable().toString()))
+				.fee(nativeTokenAmount(notEnoughResourcesException.getFee()))
 				.type(NotEnoughResourcesError.class.getSimpleName());
+		} else if (e instanceof NotEnoughNativeTokensForFeesException notEnoughNativeTokensForFeesException) {
+			return new NotEnoughNativeTokensForFeesError()
+				.available(nativeTokenAmount(notEnoughNativeTokensForFeesException.getAvailable()))
+				.feeEstimate(nativeTokenAmount(notEnoughNativeTokensForFeesException.getFee()))
+				.type(NotEnoughNativeTokensForFeesException.class.getSimpleName());
 		}
 
 		throw new IllegalStateException(e);

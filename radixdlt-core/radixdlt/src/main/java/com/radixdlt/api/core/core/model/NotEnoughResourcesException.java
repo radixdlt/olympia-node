@@ -61,22 +61,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.model.entities;
+package com.radixdlt.api.core.core.model;
 
-import com.radixdlt.api.core.core.model.Resource;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.utils.UInt256;
 
-public class NotEnoughResourcesException extends TxBuilderException {
+public final class NotEnoughResourcesException extends TxBuilderException {
+	private final UInt256 fee;
 	private final UInt256 requested;
 	private final UInt256 available;
 	private final Resource resource;
 
-	public NotEnoughResourcesException(Resource resource, UInt256 requested, UInt256 available) {
+	public NotEnoughResourcesException(Resource resource, UInt256 requested, UInt256 available, UInt256 fee) {
 		super("Requested " + requested + " but only " + available + " available");
 		this.resource = resource;
 		this.requested = requested;
 		this.available = available;
+		this.fee = fee;
+	}
+
+	public UInt256 getFee() {
+		return fee;
 	}
 
 	public Resource getResource() {

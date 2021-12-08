@@ -67,27 +67,28 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.api.core.core.handlers.ConstructionParseHandler;
-import com.radixdlt.api.core.core.model.EntityOperation;
-import com.radixdlt.api.core.core.model.NotEnoughNativeTokensForFeesException;
-import com.radixdlt.api.core.core.model.OperationTxBuilder;
-import com.radixdlt.api.core.core.model.ResourceOperation;
-import com.radixdlt.api.core.core.model.TokenResource;
-import com.radixdlt.api.core.core.model.entities.AccountVaultEntity;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionParseRequest;
+import com.radixdlt.api.core.core.handlers.ConstructionBuildHandler;
+import com.radixdlt.api.core.core.model.CoreApiException;
+import com.radixdlt.api.core.core.model.CoreModelMapper;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.NotEnoughNativeTokensForFeesError;
+import com.radixdlt.api.core.core.openapitools.model.NotEnoughResourcesError;
+import com.radixdlt.api.core.core.openapitools.model.Operation;
+import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
+import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
+import com.radixdlt.api.core.core.openapitools.model.ResourceIdentifier;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.qualifier.NumPeers;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
@@ -95,19 +96,21 @@ import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.util.List;
+import java.math.BigInteger;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class ConstructionParseMessageTest {
+public class ConstructionBuildFeeTest {
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
@@ -120,14 +123,14 @@ public class ConstructionParseMessageTest {
 	);
 
 	@Inject
-	private ConstructionParseHandler sut;
+	private ConstructionBuildHandler sut;
+	@Inject
+	private CoreModelMapper coreModelMapper;
 	@Inject
 	@Self
 	private ECPublicKey self;
 	@Inject
 	private SingleNodeDeterministicRunner runner;
-	@Inject
-	private RadixEngine<LedgerAndBFTProof> radixEngine;
 	@Inject
 	private Forks forks;
 
@@ -136,8 +139,8 @@ public class ConstructionParseMessageTest {
 		var injector = Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
 			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(
-				RERulesConfig.testingDefault().overrideFeeTable(FeeTable.noFees()).overrideMaxRounds(1000)
+			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()
+				.overrideFeeTable(FeeTable.create(Amount.ofSubunits(UInt256.ONE), Map.of()))
 			),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
@@ -158,49 +161,84 @@ public class ConstructionParseMessageTest {
 		injector.injectMembers(this);
 	}
 
-	private byte[] buildUnsignedTxnWithMessage(String message) throws Exception {
-		var accountAddress = REAddr.ofPubKeyAccount(self);
-		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
-		var entityOperationGroups =
-			List.of(List.of(
-				EntityOperation.from(
-					AccountVaultEntity.from(accountAddress),
-					ResourceOperation.withdraw(
-						TokenResource.from("xrd", REAddr.ofNativeToken()),
-						liquidAmount.toSubunits()
-					)
-				),
-				EntityOperation.from(
-					AccountVaultEntity.from(otherAddress),
-					ResourceOperation.deposit(
-						TokenResource.from("xrd", REAddr.ofNativeToken()),
-						liquidAmount.toSubunits()
+	private ConstructionBuildRequest buildTransfer(
+		ResourceIdentifier resourceIdentifier,
+		UInt256 amount,
+		EntityIdentifier from,
+		EntityIdentifier to
+	) {
+		return new ConstructionBuildRequest()
+			.networkIdentifier(new NetworkIdentifier().network("localnet"))
+			.feePayer(from)
+			.addOperationGroupsItem(new OperationGroup()
+				.addOperationsItem(new Operation()
+					.entityIdentifier(from)
+					.amount(new ResourceAmount()
+						.resourceIdentifier(resourceIdentifier)
+						.value("-" + amount.toString())
 					)
 				)
-			));
-		var operationTxBuilder = new OperationTxBuilder(message, entityOperationGroups, forks);
-		var builder = radixEngine.constructWithFees(
-			operationTxBuilder, false, accountAddress, NotEnoughNativeTokensForFeesException::new
-		);
-		var unsignedTransaction = builder.buildForExternalSign();
-		return unsignedTransaction.blob();
+				.addOperationsItem(new Operation()
+					.entityIdentifier(to)
+					.amount(new ResourceAmount()
+						.resourceIdentifier(resourceIdentifier)
+						.value(amount.toString())
+					)
+				)
+			);
 	}
 
 	@Test
-	public void parsing_transaction_with_message_should_show_message() throws Exception {
+	public void no_balance_should_cause_a_not_enough_for_fees_error() {
 		// Arrange
 		runner.start();
-		var hex = "deadbeefdeadbeef";
-		var unsignedTxn = buildUnsignedTxnWithMessage(hex);
-		var request = new ConstructionParseRequest()
-			.signed(false)
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.transaction(Bytes.toHexString(unsignedTxn));
 
 		// Act
 		// Assert
-		var response = sut.handleRequest(request);
-		assertThat(response.getMetadata()).isNotNull();
-		assertThat(response.getMetadata().getMessage()).isEqualTo(hex);
+		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+		var request = buildTransfer(
+			coreModelMapper.nativeToken(),
+			UInt256.ONE,
+			coreModelMapper.entityIdentifier(otherAddress),
+			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self))
+		);
+		assertThatThrownBy(() -> sut.handleRequest(request))
+			.isInstanceOfSatisfying(CoreApiException.class, e -> {
+				var error = e.toError();
+				assertThat(error.getDetails()).isInstanceOfSatisfying(NotEnoughNativeTokensForFeesError.class, err -> {
+					assertThat(err.getAvailable()).isEqualTo(coreModelMapper.nativeTokenAmount(UInt256.ZERO));
+				});
+				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+			});
+	}
+
+	@Test
+	public void trying_to_send_whole_balance_should_fail() {
+		// Arrange
+		runner.start();
+
+		// Act
+		// Assert
+		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+		var request = buildTransfer(
+			coreModelMapper.nativeToken(),
+			liquidAmount.toSubunits(),
+			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
+			coreModelMapper.entityIdentifier(otherAddress)
+		);
+		assertThatThrownBy(() -> sut.handleRequest(request))
+			.isInstanceOfSatisfying(CoreApiException.class, e -> {
+				var error = e.toError();
+				assertThat(error.getDetails()).isInstanceOfSatisfying(NotEnoughResourcesError.class, err -> {
+					assertThat(err.getFee().getResourceIdentifier()).isEqualTo(coreModelMapper.nativeToken());
+					assertThat(new BigInteger(err.getFee().getValue())).isGreaterThan(BigInteger.ZERO);
+					assertThat(err.getAvailable().getResourceIdentifier()).isEqualTo(coreModelMapper.nativeToken());
+					assertThat(new BigInteger(err.getAvailable().getValue())).isGreaterThan(BigInteger.ZERO);
+					assertThat(err.getAttemptedToTake().getResourceIdentifier()).isEqualTo(coreModelMapper.nativeToken());
+					assertThat(new BigInteger(err.getAttemptedToTake().getValue()))
+						.isEqualTo(new BigInteger(1, liquidAmount.toSubunits().toByteArray()));
+				});
+				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+			});
 	}
 }

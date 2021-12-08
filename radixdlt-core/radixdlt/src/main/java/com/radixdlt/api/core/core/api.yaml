@@ -2268,7 +2268,7 @@ components:
       properties:
         public_key:
           $ref: "#/components/schemas/PublicKey"
-        entity_identifiers:
+        identifiers:
           $ref: "#/components/schemas/PublicKeyIdentifiers"
     PublicKeyIdentifiers:
       type: object
@@ -3081,14 +3081,29 @@ components:
           properties:
             mempool_transaction_count:
               type: integer
-    NotEnoughResourcesError:
+    NotEnoughNativeTokensForFeesError:
       allOf:
         - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - available
+            - fee_estimate
+          properties:
+            available:
+              $ref: "#/components/schemas/ResourceAmount"
+            fee_estimate:
+              $ref: "#/components/schemas/ResourceAmount"
+    NotEnoughResourcesError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - fee
+            - available
             - attempted_to_take
           properties:
+            fee:
+              $ref: "#/components/schemas/ResourceAmount"
             available:
               $ref: "#/components/schemas/ResourceAmount"
             attempted_to_take:
@@ -3273,6 +3288,7 @@ components:
           InvalidTransactionError: "#/components/schemas/InvalidTransactionError"
           MempoolFullError: "#/components/schemas/MempoolFullError"
           AboveMaximumValidatorFeeIncreaseError: "#/components/schemas/AboveMaximumValidatorFeeIncreaseError"
+          NotEnoughNativeTokensForFeesError: "#/components/schemas/NotEnoughNativeTokensForFeesError"
           NotEnoughResourcesError: "#/components/schemas/NotEnoughResourcesError"
           BelowMinimumStakeError: "#/components/schemas/BelowMinimumStakeError"
           DataObjectNotSupportedByEntityError: "#/components/schemas/DataObjectNotSupportedByEntityError"

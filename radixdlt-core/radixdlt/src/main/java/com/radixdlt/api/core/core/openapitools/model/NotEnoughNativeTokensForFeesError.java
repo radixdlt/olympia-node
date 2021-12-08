@@ -26,12 +26,11 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * NotEnoughResourcesError
+ * NotEnoughNativeTokensForFeesError
  */
 @JsonPropertyOrder({
-  NotEnoughResourcesError.JSON_PROPERTY_FEE,
-  NotEnoughResourcesError.JSON_PROPERTY_AVAILABLE,
-  NotEnoughResourcesError.JSON_PROPERTY_ATTEMPTED_TO_TAKE
+  NotEnoughNativeTokensForFeesError.JSON_PROPERTY_AVAILABLE,
+  NotEnoughNativeTokensForFeesError.JSON_PROPERTY_FEE_ESTIMATE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-08T01:11:37.598362-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
@@ -67,44 +66,15 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = TransactionNotFoundError.class, name = "TransactionNotFoundError"),
 })
 
-public class NotEnoughResourcesError extends CoreError {
-  public static final String JSON_PROPERTY_FEE = "fee";
-  private ResourceAmount fee;
-
+public class NotEnoughNativeTokensForFeesError extends CoreError {
   public static final String JSON_PROPERTY_AVAILABLE = "available";
   private ResourceAmount available;
 
-  public static final String JSON_PROPERTY_ATTEMPTED_TO_TAKE = "attempted_to_take";
-  private ResourceAmount attemptedToTake;
+  public static final String JSON_PROPERTY_FEE_ESTIMATE = "fee_estimate";
+  private ResourceAmount feeEstimate;
 
 
-  public NotEnoughResourcesError fee(ResourceAmount fee) {
-    this.fee = fee;
-    return this;
-  }
-
-   /**
-   * Get fee
-   * @return fee
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FEE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public ResourceAmount getFee() {
-    return fee;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_FEE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFee(ResourceAmount fee) {
-    this.fee = fee;
-  }
-
-
-  public NotEnoughResourcesError available(ResourceAmount available) {
+  public NotEnoughNativeTokensForFeesError available(ResourceAmount available) {
     this.available = available;
     return this;
   }
@@ -130,34 +100,34 @@ public class NotEnoughResourcesError extends CoreError {
   }
 
 
-  public NotEnoughResourcesError attemptedToTake(ResourceAmount attemptedToTake) {
-    this.attemptedToTake = attemptedToTake;
+  public NotEnoughNativeTokensForFeesError feeEstimate(ResourceAmount feeEstimate) {
+    this.feeEstimate = feeEstimate;
     return this;
   }
 
    /**
-   * Get attemptedToTake
-   * @return attemptedToTake
+   * Get feeEstimate
+   * @return feeEstimate
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ATTEMPTED_TO_TAKE)
+  @JsonProperty(JSON_PROPERTY_FEE_ESTIMATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ResourceAmount getAttemptedToTake() {
-    return attemptedToTake;
+  public ResourceAmount getFeeEstimate() {
+    return feeEstimate;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ATTEMPTED_TO_TAKE)
+  @JsonProperty(JSON_PROPERTY_FEE_ESTIMATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAttemptedToTake(ResourceAmount attemptedToTake) {
-    this.attemptedToTake = attemptedToTake;
+  public void setFeeEstimate(ResourceAmount feeEstimate) {
+    this.feeEstimate = feeEstimate;
   }
 
 
   /**
-   * Return true if this NotEnoughResourcesError object is equal to o.
+   * Return true if this NotEnoughNativeTokensForFeesError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -167,26 +137,24 @@ public class NotEnoughResourcesError extends CoreError {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    NotEnoughResourcesError notEnoughResourcesError = (NotEnoughResourcesError) o;
-    return Objects.equals(this.fee, notEnoughResourcesError.fee) &&
-        Objects.equals(this.available, notEnoughResourcesError.available) &&
-        Objects.equals(this.attemptedToTake, notEnoughResourcesError.attemptedToTake) &&
+    NotEnoughNativeTokensForFeesError notEnoughNativeTokensForFeesError = (NotEnoughNativeTokensForFeesError) o;
+    return Objects.equals(this.available, notEnoughNativeTokensForFeesError.available) &&
+        Objects.equals(this.feeEstimate, notEnoughNativeTokensForFeesError.feeEstimate) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(fee, available, attemptedToTake, super.hashCode());
+    return Objects.hash(available, feeEstimate, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class NotEnoughResourcesError {\n");
+    sb.append("class NotEnoughNativeTokensForFeesError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    fee: ").append(toIndentedString(fee)).append("\n");
     sb.append("    available: ").append(toIndentedString(available)).append("\n");
-    sb.append("    attemptedToTake: ").append(toIndentedString(attemptedToTake)).append("\n");
+    sb.append("    feeEstimate: ").append(toIndentedString(feeEstimate)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -234,8 +202,8 @@ static {
   mappings.put("StateIdentifierNotFoundError", StateIdentifierNotFoundError.class);
   mappings.put("SubstateDependencyNotFoundError", SubstateDependencyNotFoundError.class);
   mappings.put("TransactionNotFoundError", TransactionNotFoundError.class);
-  mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
-  JSON.registerDiscriminator(NotEnoughResourcesError.class, "type", mappings);
+  mappings.put("NotEnoughNativeTokensForFeesError", NotEnoughNativeTokensForFeesError.class);
+  JSON.registerDiscriminator(NotEnoughNativeTokensForFeesError.class, "type", mappings);
 }
 }
 
