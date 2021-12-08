@@ -64,28 +64,22 @@
 
 package com.radixdlt.network.messaging;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.radix.network.messaging.Message;
-
 import com.google.inject.Provider;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.network.messaging.serialization.MessageSerialization;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.utils.Compress;
-import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.functional.Result;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.utils.TimeSupplier;
+
 import java.time.Duration;
 import java.util.Objects;
 
-import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
 import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
-
-import static java.util.Optional.ofNullable;
 
 /**
  * Handles incoming messages. Deserializes raw messages and validates them.
@@ -96,33 +90,41 @@ final class MessagePreprocessor {
 	private final long messageTtlMs;
 	private final SystemCounters counters;
 	private final TimeSupplier timeSource;
-	private final Serialization serialization;
+	private final MessageSerialization messageSerialization;
 	private final Provider<PeerControl> peerControl;
 
 	MessagePreprocessor(
 		SystemCounters counters,
 		MessageCentralConfiguration config,
 		TimeSupplier timeSource,
-		Serialization serialization,
+		MessageSerialization messageSerialization,
 		Provider<PeerControl> peerControl
 	) {
 		this.messageTtlMs = Objects.requireNonNull(config).messagingTimeToLive(30_000L);
 		this.counters = Objects.requireNonNull(counters);
 		this.timeSource = Objects.requireNonNull(timeSource);
-		this.serialization = Objects.requireNonNull(serialization);
+		this.messageSerialization = Objects.requireNonNull(messageSerialization);
 		this.peerControl = Objects.requireNonNull(peerControl);
 	}
 
 	Result<MessageFromPeer<Message>> process(InboundMessage inboundMessage) {
 		final byte[] messageBytes = inboundMessage.message();
 		this.counters.add(CounterType.NETWORKING_BYTES_RECEIVED, messageBytes.length);
-		final var result = deserialize(inboundMessage, messageBytes)
+
+		final var result = messageSerialization.deserialize(messageBytes)
+			.onFailure(e -> {
+				log.error("Failed to deserialize a message from peer {}: {}", inboundMessage.source(), e);
+				peerControl.get().banPeer(inboundMessage.source(), Duration.ofMinutes(5), "Failed to deserialize inbound message");
+			})
 			.flatMap(message -> processMessage(inboundMessage.source(), message));
+
 		this.counters.increment(CounterType.MESSAGES_INBOUND_RECEIVED);
+
 		result.fold(
 			unused -> this.counters.increment(CounterType.MESSAGES_INBOUND_DISCARDED),
 			unused -> this.counters.increment(CounterType.MESSAGES_INBOUND_PROCESSED)
 		);
+
 		return result;
 	}
 
@@ -133,18 +135,6 @@ final class MessagePreprocessor {
 			return MESSAGE_EXPIRED.result();
 		} else {
 			return Result.ok(new MessageFromPeer<>(source, message));
-		}
-	}
-
-	private Result<Message> deserialize(InboundMessage inboundMessage, byte[] in) {
-		try {
-			byte[] uncompressed = Compress.uncompress(in);
-
-			return Result.fromOptional(IO_ERROR, ofNullable(serialization.fromDson(uncompressed, Message.class)));
-		} catch (IOException e) {
-			log.error(String.format("Failed to deserialize message from peer %s", inboundMessage.source()), e);
-			peerControl.get().banPeer(inboundMessage.source(), Duration.ofMinutes(5), "Failed to deserialize inbound message");
-			return IO_ERROR.result();
 		}
 	}
 }

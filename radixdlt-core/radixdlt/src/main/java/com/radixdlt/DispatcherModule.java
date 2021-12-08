@@ -78,6 +78,9 @@ import com.radixdlt.network.p2p.liveness.PeerPingTimeout;
 import com.radixdlt.network.p2p.liveness.PeersLivenessCheckTrigger;
 import com.radixdlt.network.p2p.liveness.Ping;
 import com.radixdlt.network.p2p.liveness.Pong;
+import com.radixdlt.network.p2p.proxy.ProxyCertificatesAnnouncement;
+import com.radixdlt.network.p2p.proxy.GrantedProxyCertificate;
+import com.radixdlt.network.p2p.proxy.RenewIssuedProxyCertificatesTrigger;
 import com.radixdlt.statecomputer.REOutput;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -279,19 +282,25 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.remoteDispatcherProvider(PeersResponse.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<DiscoverPeers>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(DiscoverPeers.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<RemoteEventDispatcher<GrantedProxyCertificate>>() { })
+			.toProvider(Dispatchers.remoteDispatcherProvider(GrantedProxyCertificate.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<RemoteEventDispatcher<ProxyCertificatesAnnouncement>>() { })
+			.toProvider(Dispatchers.remoteDispatcherProvider(ProxyCertificatesAnnouncement.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<RenewIssuedProxyCertificatesTrigger>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(RenewIssuedProxyCertificatesTrigger.class)).in(Scopes.SINGLETON);
 	}
 
 	private void configureSync() {
 		bind(new TypeLiteral<RemoteEventDispatcher<StatusRequest>>() { })
-				.toProvider(Dispatchers.remoteDispatcherProvider(StatusRequest.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.remoteDispatcherProvider(StatusRequest.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<RemoteEventDispatcher<StatusResponse>>() { })
-				.toProvider(Dispatchers.remoteDispatcherProvider(StatusResponse.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.remoteDispatcherProvider(StatusResponse.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<RemoteEventDispatcher<SyncRequest>>() { })
-				.toProvider(Dispatchers.remoteDispatcherProvider(SyncRequest.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.remoteDispatcherProvider(SyncRequest.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<RemoteEventDispatcher<SyncResponse>>() { })
-				.toProvider(Dispatchers.remoteDispatcherProvider(SyncResponse.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.remoteDispatcherProvider(SyncResponse.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<RemoteEventDispatcher<LedgerStatusUpdate>>() { })
-				.toProvider(Dispatchers.remoteDispatcherProvider(LedgerStatusUpdate.class)).in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.remoteDispatcherProvider(LedgerStatusUpdate.class)).in(Scopes.SINGLETON);
 	}
 
 	@Provides

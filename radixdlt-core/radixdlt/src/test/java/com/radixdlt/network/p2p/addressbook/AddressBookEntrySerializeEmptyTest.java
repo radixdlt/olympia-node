@@ -84,6 +84,6 @@ public class AddressBookEntrySerializeEmptyTest extends SerializeMessageObject<A
 		final var bannedUntil = rnd.nextBoolean()
 			? Optional.of(Instant.ofEpochMilli(Math.abs(rnd.nextLong())))
 			: Optional.<Instant>empty();
-		return new AddressBookEntry(NodeId.fromPublicKey(keyPair.getPublicKey()), bannedUntil, ImmutableSet.of());
+		return new AddressBookEntry(NodeId.fromPublicKey(keyPair.getPublicKey()), bannedUntil, ImmutableSet.of(), ImmutableSet.of());
 	}
 }

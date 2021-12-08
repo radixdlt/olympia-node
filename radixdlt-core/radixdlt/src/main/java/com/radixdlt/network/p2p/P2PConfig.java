@@ -65,9 +65,15 @@
 package com.radixdlt.network.p2p;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.serialization.DeserializeException;
 
+import java.time.Duration;
 import java.util.Arrays;
+
+import static java.util.function.Predicate.not;
 
 /**
  * Static configuration data for P2P layer.
@@ -147,12 +153,34 @@ public interface P2PConfig {
 	long pingTimeout();
 
 	/**
+	 * Specifies whether this node should act as a proxy.
+	 */
+	boolean proxyEnabled();
+
+	/**
+	 * A list of authorized proxy nodes.
+	 */
+	ImmutableSet<NodeId> authorizedProxies();
+
+	/**
+	 * A list of nodes that this node acts as a proxy for.
+	 * Used only if proxyEnabled = true.
+	 */
+	ImmutableSet<NodeId> authorizedProxiedPeers();
+
+	/**
+	 * Specifies how long the issued proxy certificate remains valid.
+	 * Certificates are automatically re-issued when they expire.
+	 */
+	Duration issuedProxyCertificateValidityDuration();
+
+	/**
 	 * Create a configuration from specified {@link RuntimeProperties}.
 	 *
 	 * @param properties the properties to read the configuration from
 	 * @return The configuration
 	 */
-	static P2PConfig fromRuntimeProperties(RuntimeProperties properties) {
+	static P2PConfig fromRuntimeProperties(Addressing addressing, RuntimeProperties properties) {
 		return new P2PConfig() {
 			@Override
 			public ImmutableList<String> seedNodes() {
@@ -220,6 +248,44 @@ public interface P2PConfig {
 			@Override
 			public long pingTimeout() {
 				return properties.get("network.p2p.ping_timeout", 5000);
+			}
+
+			@Override
+			public boolean proxyEnabled() {
+				return properties.get("network.p2p.proxy.enabled", false);
+			}
+
+			@Override
+			public ImmutableSet<NodeId> authorizedProxies() {
+				final var rawList = properties.get("network.p2p.proxy.authorized_proxies", "");
+				return Arrays.stream(rawList.split(","))
+					.filter(not(String::isEmpty))
+					.map(this::parseNodeId)
+					.collect(ImmutableSet.toImmutableSet());
+			}
+
+			@Override
+			public ImmutableSet<NodeId> authorizedProxiedPeers() {
+				final var rawList = properties.get("network.p2p.proxy.authorized_proxied_nodes", "");
+				return Arrays.stream(rawList.split(","))
+					.filter(not(String::isEmpty))
+					.map(this::parseNodeId)
+					.collect(ImmutableSet.toImmutableSet());
+			}
+
+			@Override
+			public Duration issuedProxyCertificateValidityDuration() {
+				final var valueMs =
+					properties.get("network.p2p.proxy.issued_certificate_validity_duration", 3600000);
+				return Duration.ofMillis(valueMs);
+			}
+
+			private NodeId parseNodeId(String s) {
+				try {
+					return NodeId.fromPublicKey(addressing.forNodes().parse(s));
+				} catch (DeserializeException e) {
+					throw new RuntimeException("Can't parse node ID from " + s, e);
+				}
 			}
 		};
 	}

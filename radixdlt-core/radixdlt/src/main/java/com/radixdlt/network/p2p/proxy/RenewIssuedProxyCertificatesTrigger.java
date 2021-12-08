@@ -62,39 +62,23 @@
  * permissions under this License.
  */
 
-package org.radix.network.messages;
+package com.radixdlt.network.p2p.proxy;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.network.p2p.RadixNodeUri;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerId2;
-import org.radix.network.messaging.Message;
+/**
+ * Local event that triggers proxy certificate renewal.
+ */
+public final class RenewIssuedProxyCertificatesTrigger {
 
-import java.util.Objects;
-
-@SerializerId2("p2p.discovery.peers_response")
-public final class PeersResponseMessage extends Message {
-	@JsonProperty("peers")
-	@DsonOutput(Output.ALL)
-	private final ImmutableSet<RadixNodeUri> peers;
-
-	@JsonCreator
-	public PeersResponseMessage(
-		@JsonProperty("peers") ImmutableSet<RadixNodeUri> peers
-	) {
-		this.peers = peers == null ? ImmutableSet.of() : peers;
+	public static RenewIssuedProxyCertificatesTrigger create() {
+		return new RenewIssuedProxyCertificatesTrigger();
 	}
 
-	public ImmutableSet<RadixNodeUri> getPeers() {
-		return peers;
+	private RenewIssuedProxyCertificatesTrigger() {
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), peers);
+		return String.format("%s{}", this.getClass().getSimpleName());
 	}
 
 	@Override
@@ -102,14 +86,11 @@ public final class PeersResponseMessage extends Message {
 		if (this == o) {
 			return true;
 		}
-
-		return (o instanceof PeersResponseMessage that)
-			   && Objects.equals(peers, that.peers)
-			   && Objects.equals(getTimestamp(), that.getTimestamp());
+		return o instanceof RenewIssuedProxyCertificatesTrigger;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(peers, getTimestamp());
+		return 1;
 	}
 }

@@ -64,12 +64,13 @@
 
 package com.radixdlt.network.p2p.test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.properties.RuntimeProperties;
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -92,7 +93,11 @@ public class DeterministicP2PNetworkTest {
 	}
 
 	protected void setupTestRunner(int numNodes, RuntimeProperties properties) throws Exception {
-		this.testNetworkRunner = P2PTestNetworkRunner.create(numNodes, P2PConfig.fromRuntimeProperties(properties));
+		this.testNetworkRunner = P2PTestNetworkRunner.create(numNodes, properties);
+	}
+
+	protected void setupTestRunner(ImmutableList<P2PTestNetworkRunner.NodeProps> nodes) throws Exception {
+		this.testNetworkRunner = P2PTestNetworkRunner.create(nodes);
 	}
 
 	protected void processForCount(int messageCount) {
@@ -129,5 +134,9 @@ public class DeterministicP2PNetworkTest {
 
 	protected RadixNodeUri uriOfNode(int nodeIndex) {
 		return testNetworkRunner.getUri(nodeIndex);
+	}
+
+	protected NodeId nodeIdOf(int nodeIndex) {
+		return uriOfNode(nodeIndex).getNodeId();
 	}
 }

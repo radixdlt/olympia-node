@@ -70,6 +70,8 @@ import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
+import com.radixdlt.network.p2p.proxy.ProxyCertificate;
+import com.radixdlt.network.p2p.proxy.ProxyCertificateData;
 import org.radix.serialization.SerializeMessageObject;
 
 import java.time.Instant;
@@ -100,6 +102,15 @@ public class AddressBookEntrySerializeTest extends SerializeMessageObject<Addres
 			? Optional.of(rnd.nextBoolean() ? LatestConnectionStatus.FAILURE : LatestConnectionStatus.SUCCESS)
 			: Optional.<LatestConnectionStatus>empty();
 		final var addressEntry = new PeerAddressEntry(uri, latestConnectionStatus, blacklistedUntil);
-		return new AddressBookEntry(NodeId.fromPublicKey(keyPair.getPublicKey()), bannedUntil, ImmutableSet.of(addressEntry));
+		final var proxyCertData =
+			ProxyCertificateData.create(
+				NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey()),
+				System.currentTimeMillis(),
+				1
+			);
+		final var proxyCerts = ImmutableSet.of(
+			ProxyCertificate.create(proxyCertData, ECKeyPair.generateNew().sign(proxyCertData.hashToSign())).verify().get());
+
+		return new AddressBookEntry(NodeId.fromPublicKey(keyPair.getPublicKey()), bannedUntil, ImmutableSet.of(addressEntry), proxyCerts);
 	}
 }

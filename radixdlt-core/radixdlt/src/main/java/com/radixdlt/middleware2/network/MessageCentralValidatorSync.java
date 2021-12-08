@@ -64,7 +64,7 @@
 
 package com.radixdlt.middleware2.network;
 
-import org.radix.network.messaging.Message;
+import com.radixdlt.network.messaging.Message;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;

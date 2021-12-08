@@ -81,6 +81,7 @@ import com.radixdlt.network.p2p.PeerEvent.PeerLostLiveness;
 import com.radixdlt.network.p2p.PeerEvent.PeerConnectionTimeout;
 import com.radixdlt.network.p2p.PeerEvent.PeerHandshakeFailed;
 import com.radixdlt.network.p2p.PeerEvent.PeerBanned;
+import com.radixdlt.network.p2p.proxy.ProxyCertificateManager;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
@@ -114,6 +115,7 @@ public final class PeerManager {
 	private final Provider<AddressBook> addressBook;
 	private final Provider<PendingOutboundChannelsManager> pendingOutboundChannelsManager;
 	private final SystemCounters counters;
+	private final Provider<ProxyCertificateManager> proxyCertificateManager;
 
 	private final Object lock = new Object();
 	private final Map<NodeId, Set<PeerChannel>> activeChannels = new ConcurrentHashMap<>();
@@ -126,7 +128,8 @@ public final class PeerManager {
 		Addressing addressing,
 		Provider<AddressBook> addressBook,
 		Provider<PendingOutboundChannelsManager> pendingOutboundChannelsManager,
-		SystemCounters counters
+		SystemCounters counters,
+		Provider<ProxyCertificateManager> proxyCertificateManager
 	) {
 		this.self = Objects.requireNonNull(self.getNodeId());
 		this.config = Objects.requireNonNull(config);
@@ -134,6 +137,7 @@ public final class PeerManager {
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.pendingOutboundChannelsManager = Objects.requireNonNull(pendingOutboundChannelsManager);
 		this.counters = Objects.requireNonNull(counters);
+		this.proxyCertificateManager = Objects.requireNonNull(proxyCertificateManager);
 
 		log.info("Node URI: {}",  self);
 	}
@@ -142,13 +146,68 @@ public final class PeerManager {
 		return Observable.merge(inboundMessagesFromChannels);
 	}
 
-	public CompletableFuture<PeerChannel> findOrCreateChannel(NodeId nodeId) {
+	public CompletableFuture<PeerChannel> findOrCreateDirectChannel(NodeId nodeId) {
 		synchronized (lock) {
 			final var checkResult = this.canConnectTo(nodeId);
 			return checkResult.fold(
 				error -> CompletableFuture.failedFuture(new RuntimeException(error.message())),
 				unused -> this.findOrCreateChannelInternal(nodeId)
 			);
+		}
+	}
+
+	public CompletableFuture<PeerChannel> findOrCreateProxyChannel(NodeId nodeId) {
+		synchronized (lock) {
+			final var maybeActiveChannel = this.proxyCertificateManager.get().getVerifiedProxiesForNode(nodeId)
+				.stream()
+				.filter(activeChannels::containsKey)
+				.map(activeChannels::get)
+				.flatMap(Set::stream)
+				.findAny();
+
+			if (maybeActiveChannel.isPresent()) {
+				return CompletableFuture.completedFuture(maybeActiveChannel.get());
+			} else {
+				final var maybeAddress = this.addressBook.get()
+					.findBestCandidateProxyFor(nodeId);
+				if (maybeAddress.isPresent()) {
+					final var channelFuture = connect(maybeAddress.get());
+					return channelFuture.thenCompose(channel -> {
+						final var isValidProxy = proxyCertificateManager.get()
+							.getVerifiedProxiesForNode(nodeId)
+							.contains(channel.getRemoteNodeId());
+						if (isValidProxy) {
+							return CompletableFuture.completedFuture(channel);
+						} else {
+							channel.disconnect();
+							return CompletableFuture.failedFuture(new RuntimeException("No available proxy node"));
+						}
+					});
+				} else {
+					return CompletableFuture.failedFuture(new RuntimeException("No available proxy node"));
+				}
+			}
+		}
+	}
+
+	public CompletableFuture<PeerChannel> findOrCreateConfiguredProxyChannel(NodeId nodeId) {
+		// nodeId is unused, a configured proxy node should work for any peer
+		synchronized (lock) {
+			final var maybeActiveChannel = config.authorizedProxies().stream()
+				.map(this::channelFor)
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.findAny();
+			if (maybeActiveChannel.isPresent()) {
+				return CompletableFuture.completedFuture(maybeActiveChannel.get());
+			} else {
+				final var maybeAddress = this.addressBook.get().findBestKnownAddressOf(config.authorizedProxies());
+				if (maybeAddress.isPresent()) {
+					return connect(maybeAddress.get());
+				} else {
+					return CompletableFuture.failedFuture(new RuntimeException("No available configured proxy node"));
+				}
+			}
 		}
 	}
 
@@ -252,6 +311,11 @@ public final class PeerManager {
 			}
 
 			updateChannelsCounters();
+
+			// note: the order here is important, when pendingOutboundChannelsManager completes the channel Future,
+			// we need proxyCertificateManager to reflect the latest received proxy certs.
+			this.proxyCertificateManager.get().handlePeerConnected(peerConnected);
+			this.pendingOutboundChannelsManager.get().handlePeerConnected(peerConnected);
 		}
 	}
 
@@ -309,6 +373,7 @@ public final class PeerManager {
 					updateChannelsCounters();
 				}
 			}
+			this.proxyCertificateManager.get().handlePeerDisconnected(peerDisconnected);
 		}
 	}
 
@@ -359,6 +424,7 @@ public final class PeerManager {
 
 	private void handlePeerHandshakeFailed(PeerHandshakeFailed peerHandshakeFailed) {
 		peerHandshakeFailed.getChannel().getUri().ifPresent(this.addressBook.get()::blacklist);
+		this.pendingOutboundChannelsManager.get().handlePeerHandshakeFailed(peerHandshakeFailed);
 	}
 
 	private void updateChannelsCounters() {

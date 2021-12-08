@@ -5,13 +5,10 @@ import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
-import org.radix.network.messaging.Message;
 import org.reflections.Reflections;
 
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public class BasicContainerSubTypesEqualsVerifierTest {
@@ -22,25 +19,15 @@ public class BasicContainerSubTypesEqualsVerifierTest {
         subTypes.addAll(findSubTypesInPkg("org.radix"));
         subTypes.addAll(findSubTypesInPkg("com.radixdlt"));
 
-        final Map<Class<?>, List<String>> ignoredFieldsByClass = Map.of(
-                Message.class, List.of("instance"));
-
         subTypes.stream()
                 .filter(clazz -> !Modifier.isAbstract(clazz.getModifiers()))
-                .forEach(clazz -> {
-                    final String[] ignoredFields =
-                        ignoredFieldsByClass.entrySet().stream()
-                            .filter(e -> e.getKey().isAssignableFrom(clazz))
-                            .flatMap(e -> e.getValue().stream())
-                            .toArray(String[]::new);
-
+                .forEach(clazz ->
                     EqualsVerifier.forClass(clazz)
                         .withRedefinedSuperclass()
                         .suppress(Warning.NONFINAL_FIELDS)
-                        .withIgnoredFields(ignoredFields)
                         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-                        .verify();
-        });
+                        .verify()
+		);
     }
 
     private Set<Class<? extends BasicContainer>> findSubTypesInPkg(String packagePrefix) {

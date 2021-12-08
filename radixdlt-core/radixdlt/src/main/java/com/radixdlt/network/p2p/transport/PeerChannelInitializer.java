@@ -64,6 +64,7 @@
 
 package com.radixdlt.network.p2p.transport;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyOps;
@@ -71,6 +72,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.network.p2p.proxy.ProxyCertificate;
 import com.radixdlt.network.p2p.transport.logging.LogSink;
 import com.radixdlt.network.p2p.transport.logging.LoggingHandler;
 import com.radixdlt.networks.Addressing;
@@ -104,6 +106,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 	private final P2PConfig config;
 	private final Addressing addressing;
 	private final int networkId;
+	private final ImmutableSet<ProxyCertificate> grantedProxyCertificates;
 	private final SystemCounters counters;
 	private final Serialization serialization;
 	private final SecureRandom secureRandom;
@@ -115,6 +118,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		P2PConfig config,
 		Addressing addressing,
 		int networkId,
+		ImmutableSet<ProxyCertificate> grantedProxyCertificates,
 		SystemCounters counters,
 		Serialization serialization,
 		SecureRandom secureRandom,
@@ -125,6 +129,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		this.config = Objects.requireNonNull(config);
 		this.addressing = Objects.requireNonNull(addressing);
 		this.networkId = networkId;
+		this.grantedProxyCertificates = Objects.requireNonNull(grantedProxyCertificates);
 		this.counters = Objects.requireNonNull(counters);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
@@ -208,6 +213,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 			config,
 			addressing,
 			networkId,
+			grantedProxyCertificates,
 			counters,
 			serialization,
 			secureRandom,

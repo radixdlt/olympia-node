@@ -68,7 +68,7 @@ import com.radixdlt.network.p2p.NodeId;
 
 import java.util.Objects;
 
-public final class MessageFromPeer<T> {
+public final class MessageFromPeer<T extends Message> {
 	private final NodeId source;
 	private final T message;
 

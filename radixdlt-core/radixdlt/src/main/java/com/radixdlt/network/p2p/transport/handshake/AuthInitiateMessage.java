@@ -66,8 +66,10 @@ package com.radixdlt.network.p2p.transport.handshake;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.network.p2p.proxy.ProxyCertificate;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -98,21 +100,34 @@ public final class AuthInitiateMessage {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final int networkId;
 
+	@JsonProperty("proxyCertificates")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private final ImmutableSet<ProxyCertificate> proxyCertificates;
+
 	@JsonCreator
 	public static AuthInitiateMessage deserialize(
 		@JsonProperty(value = "signature", required = true) ECDSASignature signature,
 		@JsonProperty(value = "publicKey", required = true) HashCode publicKey,
 		@JsonProperty(value = "nonce", required = true) HashCode nonce,
-		@JsonProperty("networkId") int networkId
+		@JsonProperty("networkId") int networkId,
+		@JsonProperty("proxyCertificates") ImmutableSet<ProxyCertificate> proxyCertificates
 	) {
-		return new AuthInitiateMessage(signature, publicKey, nonce, networkId);
+		return new AuthInitiateMessage(signature, publicKey, nonce, networkId,
+			proxyCertificates != null ? proxyCertificates : ImmutableSet.of());
 	}
 
-	public AuthInitiateMessage(ECDSASignature signature, HashCode publicKey, HashCode nonce, int networkId) {
+	public AuthInitiateMessage(
+		ECDSASignature signature,
+		HashCode publicKey,
+		HashCode nonce,
+		int networkId,
+		ImmutableSet<ProxyCertificate> proxyCertificates
+	) {
 		this.signature = signature;
 		this.publicKey = publicKey;
 		this.nonce = nonce;
 		this.networkId = networkId;
+		this.proxyCertificates = proxyCertificates;
 	}
 
 	public ECDSASignature getSignature() {
@@ -131,6 +146,10 @@ public final class AuthInitiateMessage {
 		return networkId;
 	}
 
+	public ImmutableSet<ProxyCertificate> getProxyCertificates() {
+		return proxyCertificates;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -141,11 +160,12 @@ public final class AuthInitiateMessage {
 			   && Objects.equals(signature, that.signature)
 			   && Objects.equals(publicKey, that.publicKey)
 			   && Objects.equals(nonce, that.nonce)
-			   && networkId == that.networkId;
+			   && networkId == that.networkId
+			   && Objects.equals(proxyCertificates, that.proxyCertificates);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(signature, publicKey, nonce, networkId);
+		return Objects.hash(signature, publicKey, nonce, networkId, proxyCertificates);
 	}
 }

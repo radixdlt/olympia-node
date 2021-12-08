@@ -1,10 +1,11 @@
 package com.radixdlt.network.messaging;
 
+import com.radixdlt.network.messaging.serialization.CompressedMessageSerialization;
+import com.radixdlt.network.messaging.serialization.MessageSerialization;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.radix.network.messaging.Message;
 import org.radix.time.Time;
 
 import com.google.common.collect.Streams;
@@ -27,12 +28,8 @@ import com.radixdlt.middleware2.network.SyncRequestMessage;
 import com.radixdlt.middleware2.network.SyncResponseMessage;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
 
-import java.io.IOException;
 import java.security.PrivilegedAction;
 import java.time.Duration;
 import java.util.Collection;
@@ -72,7 +69,8 @@ public class MessagePreprocessorTest {
 		tuple(new SyncRequestMessage(mock(DtoLedgerProof.class)), "currentHeader"),
 		tuple(new SyncResponseMessage(mock(DtoTxnsAndProof.class)), "commands")
 	);
-	private static final Serialization SERIALIZATION = DefaultSerialization.getInstance();
+	private static final MessageSerialization SERIALIZATION =
+		new CompressedMessageSerialization(DefaultSerialization.getInstance());
 
 	private final SystemCountersImpl counters = new SystemCountersImpl();
 	private final MessageCentralConfiguration config = mock(MessageCentralConfiguration.class);
@@ -136,8 +134,8 @@ public class MessagePreprocessorTest {
 
 	private static byte[] serialize(Message message) {
 		try {
-			return Compress.compress(SERIALIZATION.toDson(message, DsonOutput.Output.WIRE));
-		} catch (IOException e) {
+			return SERIALIZATION.serialize(message).toOptional().orElseThrow();
+		} catch (Exception e) {
 			fail("Unable to serialize message of type " + message.getClass()
 					 + " because of " + e.getMessage());
 			throw new RuntimeException("unreachable"); // tame compiler

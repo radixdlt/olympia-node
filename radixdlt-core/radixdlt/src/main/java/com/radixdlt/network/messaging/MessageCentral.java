@@ -68,7 +68,6 @@ import java.io.IOException;
 
 import com.radixdlt.network.p2p.NodeId;
 import io.reactivex.rxjava3.core.Observable;
-import org.radix.network.messaging.Message;
 
 /**
  * Central processing facility for inbound and outbound messages.

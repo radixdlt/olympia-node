@@ -75,7 +75,7 @@ import com.radixdlt.network.messaging.MessageFromPeer;
 import com.radixdlt.network.p2p.NodeId;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
-import org.radix.network.messaging.Message;
+import com.radixdlt.network.messaging.Message;
 
 import java.util.Objects;
 

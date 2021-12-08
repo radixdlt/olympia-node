@@ -66,11 +66,15 @@ package com.radixdlt.network.messaging;
 
 import java.util.Objects;
 
+import com.google.inject.Provides;
 import com.google.inject.Singleton;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.network.messaging.serialization.CompressedMessageSerialization;
+import com.radixdlt.network.messaging.serialization.MessageSerialization;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.serialization.Serialization;
 
 /**
  * Guice configuration for {@link MessageCentral} that includes a UDP
@@ -97,5 +101,10 @@ public final class MessageCentralModule extends AbstractModule {
 
 		// MessageCentral dependencies
 		bind(MessageCentralConfiguration.class).toInstance(this.config);
+	}
+
+	@Provides
+	public MessageSerialization messageSerialization(Serialization serialization) {
+		return new CompressedMessageSerialization(serialization);
 	}
 }

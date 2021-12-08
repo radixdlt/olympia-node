@@ -62,37 +62,44 @@
  * permissions under this License.
  */
 
-package org.radix.network.messages;
+package com.radixdlt.network.p2p.proxy;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.radixdlt.serialization.SerializerId2;
-import org.radix.network.messaging.Message;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.Objects;
 
-@SerializerId2("p2p.liveness.ping")
-public final class PeerPingMessage extends Message {
-	@JsonCreator
-	public PeerPingMessage() {
+/**
+ * Remote event containing new proxy certificates that were granted to the sender.
+ */
+public final class ProxyCertificatesAnnouncement {
+
+	private final ImmutableSet<ProxyCertificate> proxyCertificates;
+
+	public static ProxyCertificatesAnnouncement create(ImmutableSet<ProxyCertificate> proxyCertificates) {
+		return new ProxyCertificatesAnnouncement(proxyCertificates);
 	}
 
-	@Override
-	public String toString() {
-		return String.format("%s[]", getClass().getSimpleName());
+	private ProxyCertificatesAnnouncement(ImmutableSet<ProxyCertificate> proxyCertificates) {
+		this.proxyCertificates = proxyCertificates;
+	}
+
+	public ImmutableSet<ProxyCertificate> proxyCertificates() {
+		return proxyCertificates;
 	}
 
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
+		} else if (o instanceof ProxyCertificatesAnnouncement that) {
+			return Objects.equals(proxyCertificates, that.proxyCertificates);
+		} else {
+			return false;
 		}
-
-		return (o instanceof PeerPingMessage that)
-			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(getTimestamp());
+		return Objects.hash(proxyCertificates);
 	}
 }

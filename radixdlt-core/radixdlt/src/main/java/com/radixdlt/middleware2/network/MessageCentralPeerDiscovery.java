@@ -64,8 +64,8 @@
 
 package com.radixdlt.middleware2.network;
 
-import org.radix.network.messages.GetPeersMessage;
-import org.radix.network.messages.PeersResponseMessage;
+import com.radixdlt.network.p2p.discovery.messages.GetPeersMessage;
+import com.radixdlt.network.p2p.discovery.messages.PeersResponseMessage;
 
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -80,12 +80,10 @@ import java.util.Objects;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Network interface for peer discovery messages the MessageCentral
  */
-@Singleton
 public final class MessageCentralPeerDiscovery {
 	private final MessageCentral messageCentral;
 

@@ -65,7 +65,6 @@
 package com.radixdlt.network.messaging;
 
 import io.reactivex.rxjava3.subjects.PublishSubject;
-import org.radix.network.messaging.Message;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;

@@ -64,8 +64,8 @@
 
 package com.radixdlt.middleware2.network;
 
-import org.radix.network.messages.PeerPingMessage;
-import org.radix.network.messages.PeerPongMessage;
+import com.radixdlt.network.p2p.liveness.messages.PeerPingMessage;
+import com.radixdlt.network.p2p.liveness.messages.PeerPongMessage;
 
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -80,12 +80,10 @@ import java.util.Objects;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Network interface for peer liveness messages using the MessageCentral
  */
-@Singleton
 public final class MessageCentralPeerLiveness {
 	private final MessageCentral messageCentral;
 

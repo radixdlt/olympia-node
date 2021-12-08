@@ -66,7 +66,9 @@ package com.radixdlt.network.p2p.transport.handshake;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
+import com.radixdlt.network.p2p.proxy.ProxyCertificate;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -89,17 +91,23 @@ public final class AuthResponseMessage {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final HashCode nonce;
 
+	@JsonProperty("proxyCertificates")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private final ImmutableSet<ProxyCertificate> proxyCertificates;
+
 	@JsonCreator
 	public static AuthResponseMessage deserialize(
 		@JsonProperty(value = "ephemeralPublicKey", required = true) HashCode ephemeralPublicKey,
-		@JsonProperty(value = "nonce", required = true) HashCode nonce
+		@JsonProperty(value = "nonce", required = true) HashCode nonce,
+		@JsonProperty("proxyCertificates") ImmutableSet<ProxyCertificate> proxyCertificates
 	) {
-		return new AuthResponseMessage(ephemeralPublicKey, nonce);
+		return new AuthResponseMessage(ephemeralPublicKey, nonce, proxyCertificates != null ? proxyCertificates : ImmutableSet.of());
 	}
 
-	public AuthResponseMessage(HashCode ephemeralPublicKey, HashCode nonce) {
+	public AuthResponseMessage(HashCode ephemeralPublicKey, HashCode nonce, ImmutableSet<ProxyCertificate> proxyCertificates) {
 		this.ephemeralPublicKey = ephemeralPublicKey;
 		this.nonce = nonce;
+		this.proxyCertificates = proxyCertificates;
 	}
 
 	public HashCode getEphemeralPublicKey() {
@@ -110,6 +118,10 @@ public final class AuthResponseMessage {
 		return nonce;
 	}
 
+	public ImmutableSet<ProxyCertificate> getProxyCertificates() {
+		return proxyCertificates;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -118,11 +130,12 @@ public final class AuthResponseMessage {
 
 		return (o instanceof AuthResponseMessage that)
 			   && Objects.equals(ephemeralPublicKey, that.ephemeralPublicKey)
-			   && Objects.equals(nonce, that.nonce);
+			   && Objects.equals(nonce, that.nonce)
+			   && Objects.equals(proxyCertificates, that.proxyCertificates);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(ephemeralPublicKey, nonce);
+		return Objects.hash(ephemeralPublicKey, nonce, proxyCertificates);
 	}
 }

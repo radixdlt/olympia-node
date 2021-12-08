@@ -64,15 +64,17 @@
 
 package com.radixdlt.network.p2p.transport.handshake;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.proxy.ProxyCertificate;
 
 import java.util.Optional;
 
 public interface AuthHandshakeResult {
 
-	static AuthHandshakeSuccess success(ECPublicKey remotePubKey, Secrets secrets) {
-		return new AuthHandshakeSuccess(NodeId.fromPublicKey(remotePubKey), secrets);
+	static AuthHandshakeSuccess success(ECPublicKey remotePubKey, Secrets secrets, ImmutableSet<ProxyCertificate> proxyCertificates) {
+		return new AuthHandshakeSuccess(NodeId.fromPublicKey(remotePubKey), secrets, proxyCertificates);
 	}
 
 	static AuthHandshakeError error(String msg, Optional<NodeId> maybeNodeId) {
@@ -82,10 +84,12 @@ public interface AuthHandshakeResult {
 	final class AuthHandshakeSuccess implements AuthHandshakeResult {
 		private final NodeId remoteNodeId;
 		private final Secrets secrets;
+		private final ImmutableSet<ProxyCertificate> proxyCertificates;
 
-		private AuthHandshakeSuccess(NodeId remoteNodeId, Secrets secrets) {
+		private AuthHandshakeSuccess(NodeId remoteNodeId, Secrets secrets, ImmutableSet<ProxyCertificate> proxyCertificates) {
 			this.remoteNodeId = remoteNodeId;
 			this.secrets = secrets;
+			this.proxyCertificates = proxyCertificates;
 		}
 
 		public NodeId getRemoteNodeId() {
@@ -94,6 +98,10 @@ public interface AuthHandshakeResult {
 
 		public Secrets getSecrets() {
 			return secrets;
+		}
+
+		public ImmutableSet<ProxyCertificate> getProxyCertificates() {
+			return proxyCertificates;
 		}
 	}
 

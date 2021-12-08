@@ -70,7 +70,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import org.radix.network.messaging.Message;
+import com.radixdlt.network.messaging.Message;
 
 import java.util.Objects;
 

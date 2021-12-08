@@ -64,6 +64,7 @@
 
 package com.radixdlt.network.p2p.transport.handshake;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECIESCoder;
@@ -73,6 +74,7 @@ import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.proxy.ProxyCertificate;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
@@ -114,6 +116,7 @@ public final class AuthHandshaker {
 	private final byte[] nonce;
 	private final ECKeyPair ephemeralKey;
 	private final int networkId;
+	private final ImmutableSet<ProxyCertificate> grantedProxyCertificates;
 	private boolean isInitiator = false;
 	private Optional<byte[]> initiatePacketOpt = Optional.empty();
 	private Optional<byte[]> responsePacketOpt = Optional.empty();
@@ -123,14 +126,16 @@ public final class AuthHandshaker {
 		Serialization serialization,
 		SecureRandom secureRandom,
 		ECKeyOps ecKeyOps,
-		int networkId
+		int networkId,
+		ImmutableSet<ProxyCertificate> grantedProxyCertificates
 	) {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
 		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
+		this.networkId = networkId;
+		this.grantedProxyCertificates = Objects.requireNonNull(grantedProxyCertificates);
 		this.nonce = randomBytes(NONCE_SIZE);
 		this.ephemeralKey = ECKeyPair.generateNew();
-		this.networkId = networkId;
 	}
 
 	public byte[] initiate(ECPublicKey remotePubKey) {
@@ -163,7 +168,8 @@ public final class AuthHandshaker {
 			signature,
 			HashCode.fromBytes(ecKeyOps.nodePubKey().getBytes()),
 			HashCode.fromBytes(nonce),
-			networkId
+			networkId,
+			grantedProxyCertificates
 		);
 	}
 
@@ -186,7 +192,8 @@ public final class AuthHandshaker {
 
 			final var response = new AuthResponseMessage(
 				HashCode.fromBytes(ephemeralKey.getPublicKey().getBytes()),
-				HashCode.fromBytes(nonce)
+				HashCode.fromBytes(nonce),
+				grantedProxyCertificates
 			);
 			final var encodedResponse = serialization.toDson(response, DsonOutput.Output.WIRE);
 
@@ -212,7 +219,8 @@ public final class AuthHandshaker {
 			this.responsePacketOpt = Optional.of(packet);
 			this.remotePubKeyOpt = Optional.of(remotePubKey);
 
-			final var handshakeResult = finalizeHandshake(remoteEphemeralKey, message.getNonce());
+			final var handshakeResult =
+				finalizeHandshake(remoteEphemeralKey, message.getNonce(), message.getProxyCertificates());
 
 			return Pair.of(packet, handshakeResult);
 		} catch (PublicKeyException | InvalidCipherTextException | IOException ex) {
@@ -240,7 +248,7 @@ public final class AuthHandshaker {
 			data.getBytes(0, responsePacket);
 			this.responsePacketOpt = Optional.of(responsePacket);
 			final var remoteEphemeralKey = ECPublicKey.fromBytes(message.getEphemeralPublicKey().asBytes());
-			return finalizeHandshake(remoteEphemeralKey, message.getNonce());
+			return finalizeHandshake(remoteEphemeralKey, message.getNonce(), message.getProxyCertificates());
 		} catch (PublicKeyException | InvalidCipherTextException ex) {
 			return AuthHandshakeResult.error(
 				String.format("Handshake decryption failed (%s)", ex.getMessage()),
@@ -256,7 +264,11 @@ public final class AuthHandshaker {
 		return ECPublicKey.recoverFrom(HashCode.fromBytes(signed), signature).orElseThrow();
 	}
 
-	private AuthHandshakeSuccess finalizeHandshake(ECPublicKey remoteEphemeralKey, HashCode remoteNonce) {
+	private AuthHandshakeSuccess finalizeHandshake(
+		ECPublicKey remoteEphemeralKey,
+		HashCode remoteNonce,
+		ImmutableSet<ProxyCertificate> proxyCertificates
+	) {
 		final var initiatePacket = initiatePacketOpt.get();
 		final var responsePacket = responsePacketOpt.get();
 		final var remotePubKey = remotePubKeyOpt.get();
@@ -287,7 +299,7 @@ public final class AuthHandshaker {
 			macSecrets.getSecond()
 		);
 
-		return AuthHandshakeResult.success(remotePubKey, secrets);
+		return AuthHandshakeResult.success(remotePubKey, secrets, proxyCertificates);
 	}
 
 	private Pair<KeccakDigest, KeccakDigest> macSecretSetup(

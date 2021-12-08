@@ -62,23 +62,23 @@
  * permissions under this License.
  */
 
-package org.radix.network.messages;
+package com.radixdlt.network.p2p.liveness.messages;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.radixdlt.serialization.SerializerId2;
-import org.radix.network.messaging.Message;
+import com.radixdlt.network.messaging.Message;
 
 import java.util.Objects;
 
-@SerializerId2("p2p.discovery.get_peers")
-public final class GetPeersMessage extends Message {
+@SerializerId2("p2p.liveness.ping")
+public final class PeerPingMessage extends Message {
 	@JsonCreator
-	public GetPeersMessage() {
+	public PeerPingMessage() {
 	}
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName();
+		return String.format("%s[]", getClass().getSimpleName());
 	}
 
 	@Override
@@ -87,12 +87,12 @@ public final class GetPeersMessage extends Message {
 			return true;
 		}
 
-		return (o instanceof GetPeersMessage that)
+		return (o instanceof PeerPingMessage that)
 			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(getTimestamp());
+		return Objects.hash(getTimestamp());
 	}
 }

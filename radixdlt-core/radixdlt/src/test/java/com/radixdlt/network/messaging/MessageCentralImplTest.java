@@ -2,20 +2,27 @@ package com.radixdlt.network.messaging;
 
 import com.google.inject.Provider;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.middleware2.network.ConsensusEventMessage;
+import com.radixdlt.network.messaging.serialization.CompressedMessageSerialization;
 import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;
+import com.radixdlt.network.p2p.proxy.ProxyCertificateManager;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
+import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.radix.network.messaging.Message;
 
 import java.util.Comparator;
 
@@ -36,6 +43,9 @@ public class MessageCentralImplTest {
     private PeerManager peerManager;
 
     @Mock
+    private ProxyCertificateManager proxyCertificateManager;
+
+    @Mock
     private InboundMessage inboundMessage;
 
     @Mock
@@ -51,7 +61,7 @@ public class MessageCentralImplTest {
     private Provider<PeerControl> peerControl;
 
     @Test
-    public void when_messagesOf_is_called__then_underlying_pipeline_should_run_on_rxjava_computation_pool() throws Exception {
+    public void when_messagesOf_is_called__then_underlying_pipeline_should_run_on_a_dedicated_thread_pool() throws Exception {
         // given
         when(messageCentralConfig.messagingOutboundQueueMax(anyInt())).thenReturn(1);
 
@@ -70,10 +80,21 @@ public class MessageCentralImplTest {
         when(outboundEventQueueFactory.createEventQueue(anyInt(), any(Comparator.class)))
             .thenReturn(new SimplePriorityBlockingQueue<>(1, OutboundMessageEvent.comparator()));
 
+        final var p2PConfig = P2PConfig.fromRuntimeProperties(
+            Addressing.ofNetwork(Network.LOCALNET),
+            new RuntimeProperties(new JSONObject(), new String[] {})
+        );
+
+        final var self = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
+
         MessageCentralImpl messageCentral = new MessageCentralImpl(
+            self,
+            self.toString(),
             messageCentralConfig,
-            serialization,
+            p2PConfig,
+            new CompressedMessageSerialization(serialization),
             peerManager,
+            proxyCertificateManager,
             timeSupplier,
             outboundEventQueueFactory,
             systemCounters,
@@ -91,6 +112,6 @@ public class MessageCentralImplTest {
         observer.await();
 
         //then
-        observer.assertValue(v -> v.startsWith("RxComputationThreadPool"));
+        observer.assertValue(v -> v.startsWith("MessageCentralInboundProcessor"));
     }
 }

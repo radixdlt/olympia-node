@@ -70,6 +70,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.StartProcessor;
+import com.radixdlt.utils.ExecutorUtils;
 import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
@@ -227,28 +228,8 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 			if (compositeDisposable != null) {
 				compositeDisposable.dispose();
 				compositeDisposable = null;
-
-				this.shutdownAndAwaitTermination();
+				ExecutorUtils.shutdownAndAwaitTermination(this.executorService);
 			}
-		}
-	}
-
-	private void shutdownAndAwaitTermination() {
-		this.executorService.shutdown(); // Disable new tasks from being submitted
-		try {
-			// Wait a while for existing tasks to terminate
-			if (!this.executorService.awaitTermination(2, TimeUnit.SECONDS)) {
-				this.executorService.shutdownNow(); // Cancel currently executing tasks
-				// Wait a while for tasks to respond to being cancelled
-				if (!this.executorService.awaitTermination(2, TimeUnit.SECONDS)) {
-					System.err.println("Pool " + this.threadName + " did not terminate");
-				}
-			}
-		} catch (InterruptedException ie) {
-			// (Re-)Cancel if current thread also interrupted
-			this.executorService.shutdownNow();
-			// Preserve interrupt status
-			Thread.currentThread().interrupt();
 		}
 	}
 }

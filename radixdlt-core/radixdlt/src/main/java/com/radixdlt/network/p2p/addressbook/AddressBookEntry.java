@@ -70,6 +70,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
+import com.radixdlt.network.p2p.proxy.VerifiedProxyCertificate;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -98,11 +99,16 @@ public final class AddressBookEntry {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final ImmutableSet<PeerAddressEntry> knownAddresses;
 
+	@JsonProperty("proxyCertificates")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private final ImmutableSet<VerifiedProxyCertificate> proxyCertificates;
+
 	@JsonCreator
 	private static AddressBookEntry deserialize(
 		@JsonProperty(value = "nodeId", required = true) NodeId nodeId,
 		@JsonProperty("bannedUntil") long rawBannedUntil,
-		@JsonProperty("knownAddresses") ImmutableSet<PeerAddressEntry> knownAddresses
+		@JsonProperty("knownAddresses") ImmutableSet<PeerAddressEntry> knownAddresses,
+		@JsonProperty("proxyCertificates") ImmutableSet<VerifiedProxyCertificate> proxyCertificates
 	) {
 		final var bannedUntil = rawBannedUntil > 0
 			? Optional.of(Instant.ofEpochMilli(rawBannedUntil))
@@ -110,7 +116,8 @@ public final class AddressBookEntry {
 		return new AddressBookEntry(
 			nodeId,
 			bannedUntil,
-			knownAddresses != null ? knownAddresses : ImmutableSet.of()
+			knownAddresses != null ? knownAddresses : ImmutableSet.of(),
+			proxyCertificates != null ? proxyCertificates : ImmutableSet.of()
 		);
 	}
 
@@ -119,18 +126,23 @@ public final class AddressBookEntry {
 	}
 
 	public static AddressBookEntry createBanned(NodeId nodeId, Instant bannedUntil) {
-		return new AddressBookEntry(nodeId, Optional.of(bannedUntil), ImmutableSet.of());
+		return new AddressBookEntry(nodeId, Optional.of(bannedUntil), ImmutableSet.of(), ImmutableSet.of());
 	}
 
 	public static AddressBookEntry createWithLatestConnectionStatus(RadixNodeUri uri, LatestConnectionStatus latestConnectionStatus) {
 		return create(uri, Optional.of(latestConnectionStatus));
 	}
 
+	public static AddressBookEntry createWithProxyCertificates(NodeId nodeId, ImmutableSet<VerifiedProxyCertificate> proxyCertificates) {
+		return new AddressBookEntry(nodeId, Optional.empty(), ImmutableSet.of(), proxyCertificates);
+	}
+
 	public static AddressBookEntry createBlacklisted(RadixNodeUri uri, Instant blacklistedUntil) {
 		return new AddressBookEntry(
 			uri.getNodeId(),
 			Optional.empty(),
-			ImmutableSet.of(new PeerAddressEntry(uri, Optional.empty(), Optional.of(blacklistedUntil)))
+			ImmutableSet.of(new PeerAddressEntry(uri, Optional.empty(), Optional.of(blacklistedUntil))),
+			ImmutableSet.of()
 		);
 	}
 
@@ -138,14 +150,21 @@ public final class AddressBookEntry {
 		return new AddressBookEntry(
 			uri.getNodeId(),
 			Optional.empty(),
-			ImmutableSet.of(new AddressBookEntry.PeerAddressEntry(uri, latestConnectionStatus, Optional.empty()))
+			ImmutableSet.of(new AddressBookEntry.PeerAddressEntry(uri, latestConnectionStatus, Optional.empty())),
+			ImmutableSet.of()
 		);
 	}
 
-	AddressBookEntry(NodeId nodeId, Optional<Instant> bannedUntil, ImmutableSet<PeerAddressEntry> knownAddresses) {
+	AddressBookEntry(
+		NodeId nodeId,
+		Optional<Instant> bannedUntil,
+		ImmutableSet<PeerAddressEntry> knownAddresses,
+		ImmutableSet<VerifiedProxyCertificate> proxyCertificates
+	) {
 		this.nodeId = Objects.requireNonNull(nodeId);
 		this.bannedUntil = bannedUntil;
 		this.knownAddresses = Objects.requireNonNull(knownAddresses);
+		this.proxyCertificates = Objects.requireNonNull(proxyCertificates);
 	}
 
 	@JsonProperty("bannedUntil")
@@ -170,8 +189,12 @@ public final class AddressBookEntry {
 		return knownAddresses;
 	}
 
+	public ImmutableSet<VerifiedProxyCertificate> getProxyCertificates() {
+		return proxyCertificates;
+	}
+
 	public AddressBookEntry withBanUntil(Instant banUntil) {
-		return new AddressBookEntry(nodeId, Optional.of(banUntil), knownAddresses);
+		return new AddressBookEntry(nodeId, Optional.of(banUntil), knownAddresses, proxyCertificates);
 	}
 
 	public AddressBookEntry addUriIfNotExists(RadixNodeUri uri) {
@@ -183,7 +206,7 @@ public final class AddressBookEntry {
 				.addAll(this.knownAddresses)
 				.add(newAddressEntry)
 				.build();
-			return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
+			return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses, proxyCertificates);
 		}
 	}
 
@@ -211,14 +234,14 @@ public final class AddressBookEntry {
 				.addAll(knownAddressesWithoutTheOldOne)
 				.add(updatedAddressEntry)
 				.build();
-			return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
+			return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses, proxyCertificates);
 		} else {
 			final var newAddressEntry = new PeerAddressEntry(uri, Optional.of(latestConnectionStatus), Optional.empty());
 			final var newKnownAddresses = ImmutableSet.<PeerAddressEntry>builder()
 				.addAll(this.knownAddresses)
 				.add(newAddressEntry)
 				.build();
-			return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
+			return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses, proxyCertificates);
 		}
 	}
 
@@ -237,29 +260,33 @@ public final class AddressBookEntry {
 				.addAll(knownAddressesWithoutTheOldOne)
 				.add(updatedAddressEntry)
 				.build();
-			return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
+			return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses, proxyCertificates);
 		} else {
 			final var newAddressEntry = new PeerAddressEntry(uri, Optional.empty(), Optional.of(blacklistedUntil));
 			final var newKnownAddresses = ImmutableSet.<PeerAddressEntry>builder()
 				.addAll(this.knownAddresses)
 				.add(newAddressEntry)
 				.build();
-			return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
+			return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses, proxyCertificates);
 		}
 	}
 
-	public AddressBookEntry cleanupExpiredBlacklsitedUris() {
+	public AddressBookEntry cleanupExpiredBlacklistedUris() {
 		final var newKnownAddresses = knownAddresses.stream()
 			.filter(not(PeerAddressEntry::blacklistExpired))
 			.collect(ImmutableSet.toImmutableSet());
-		return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
+		return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses, proxyCertificates);
+	}
+
+	public AddressBookEntry withProxyCertificates(ImmutableSet<VerifiedProxyCertificate> proxyCertificates) {
+		return new AddressBookEntry(nodeId, bannedUntil, knownAddresses, proxyCertificates);
 	}
 
 	@Override
 	public String toString() {
 		return String.format(
-			"%s[nodeId=%s, bannedUntil=%s, knownAddresses=%s]", getClass().getSimpleName(),
-			nodeId, bannedUntil, knownAddresses
+			"%s[nodeId=%s, bannedUntil=%s, knownAddresses=%s, proxyCerts=%s]", getClass().getSimpleName(),
+			nodeId, bannedUntil, knownAddresses, proxyCertificates
 		);
 	}
 
@@ -272,12 +299,13 @@ public final class AddressBookEntry {
 		return (o instanceof AddressBookEntry that)
 			&& Objects.equals(bannedUntil, that.bannedUntil)
 			&& Objects.equals(nodeId, that.nodeId)
-			&& Objects.equals(knownAddresses, that.knownAddresses);
+			&& Objects.equals(knownAddresses, that.knownAddresses)
+			&& Objects.equals(proxyCertificates, that.proxyCertificates);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(nodeId, bannedUntil, knownAddresses);
+		return Objects.hash(nodeId, bannedUntil, knownAddresses, proxyCertificates);
 	}
 
 	@SerializerId2("network.p2p.addressbook.peer_address_entry")

@@ -66,20 +66,30 @@ package com.radixdlt.network.messaging;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Stopwatch;
 import com.google.inject.Provider;
 import com.radixdlt.api.system.health.MovingAverage;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.network.messaging.router.MessageRouter;
+import com.radixdlt.network.messaging.serialization.MessageSerialization;
 import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;
+import com.radixdlt.network.p2p.proxy.ProxyCertificateManager;
+import com.radixdlt.utils.ExecutorUtils;
+import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.network.messaging.Message;
 import org.radix.time.Time;
 import org.radix.utils.SimpleThreadPool;
 
@@ -88,7 +98,6 @@ import com.google.inject.Inject;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.serialization.Serialization;
 
 public final class MessageCentralImpl implements MessageCentral {
 	private static final Logger log = LogManager.getLogger();
@@ -111,7 +120,11 @@ public final class MessageCentralImpl implements MessageCentral {
 	private long totalMessageQueuedTime = 0L;
 	private long totalMessageProcessingTime = 0L;
 
+	// Inbound message handling
 	private final Observable<MessageFromPeer<Message>> peerMessages;
+
+	private final ScheduledExecutorService inboundProcessorExecutorService;
+	private final Disposable inboundProcessorDisposable;
 
 	// Outbound message handling
 	private final SimpleBlockingQueue<OutboundMessageEvent> outboundQueue;
@@ -119,9 +132,13 @@ public final class MessageCentralImpl implements MessageCentral {
 
 	@Inject
 	public MessageCentralImpl(
+		@Self NodeId self,
+		@Self String selfName,
 		MessageCentralConfiguration config,
-		Serialization serialization,
+		P2PConfig p2pConfig,
+		MessageSerialization messageSerialization,
 		PeerManager peerManager,
+		ProxyCertificateManager proxyCertificateManager,
 		TimeSupplier timeSource,
 		EventQueueFactory<OutboundMessageEvent> outboundEventQueueFactory,
 		SystemCounters counters,
@@ -134,12 +151,13 @@ public final class MessageCentralImpl implements MessageCentral {
 		);
 
 		Objects.requireNonNull(timeSource);
-		Objects.requireNonNull(serialization);
+		Objects.requireNonNull(messageSerialization);
 
 		this.messageDispatcher = new MessageDispatcher(
+			self,
 			counters,
 			config,
-			serialization,
+			messageSerialization,
 			timeSource,
 			peerManager
 		);
@@ -148,7 +166,7 @@ public final class MessageCentralImpl implements MessageCentral {
 			counters,
 			config,
 			timeSource,
-			serialization,
+			messageSerialization,
 			peerControl
 		);
 
@@ -162,13 +180,32 @@ public final class MessageCentralImpl implements MessageCentral {
 		);
 		this.outboundThreadPool.start();
 
-		this.peerMessages = peerManager.messages()
-			.observeOn(Schedulers.computation())
+		this.inboundProcessorExecutorService = Executors
+			.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("MessageCentralInboundProcessor" + selfName));
+		final var inboundProcessorScheduler = Schedulers.from(inboundProcessorExecutorService);
+
+		final var processedMessages = peerManager.messages()
+			.observeOn(inboundProcessorScheduler)
 			.map(this::processInboundMessage)
 			.filter(Optional::isPresent)
-			.map(Optional::get)
-			.publish()
-			.autoConnect();
+			.map(Optional::get);
+
+		final var messageRouter = new MessageRouter(self, p2pConfig, proxyCertificateManager, processedMessages);
+		this.peerMessages = messageRouter.messagesToProcess()
+			.map(MessageRouter.RoutingResult.Process::messageFromPeer);
+
+		final var forwardDisposable = messageRouter.messagesToForward()
+			.observeOn(inboundProcessorScheduler)
+			.subscribe(routingResult -> {
+				this.counters.increment(CounterType.NETWORKING_ROUTING_FORWARDED_MESSAGES);
+				this.send(routingResult.forwardTo(), routingResult.messageEnvelope());
+			});
+
+		final var dropDisposable = messageRouter.messagesToDrop()
+			.observeOn(inboundProcessorScheduler)
+			.subscribe(unused -> this.counters.increment(CounterType.NETWORKING_ROUTING_DROPPED_MESSAGES));
+
+		this.inboundProcessorDisposable = new CompositeDisposable(forwardDisposable, dropDisposable);
 	}
 
 	private Optional<MessageFromPeer<Message>> processInboundMessage(InboundMessage inboundMessage) {
@@ -197,7 +234,10 @@ public final class MessageCentralImpl implements MessageCentral {
 		}
 	}
 
-	private <T> void logPreprocessedMessageAndUpdateCounters(MessageFromPeer<T> message, Stopwatch processingStopwatch) {
+	private <T extends Message> void logPreprocessedMessageAndUpdateCounters(
+		MessageFromPeer<T> message,
+		Stopwatch processingStopwatch
+	) {
 		final var messageProcessingTime = processingStopwatch.elapsed(TimeUnit.MILLISECONDS);
 		avgMessageProcessingTime.update(messageProcessingTime);
 		totalMessageProcessingTime = Math.max(totalMessageProcessingTime + messageProcessingTime, 0L);
@@ -225,6 +265,8 @@ public final class MessageCentralImpl implements MessageCentral {
 	@Override
 	public void close() {
 		this.outboundThreadPool.stop();
+		this.inboundProcessorDisposable.dispose();
+		ExecutorUtils.shutdownAndAwaitTermination(this.inboundProcessorExecutorService);
 	}
 
 	@Override

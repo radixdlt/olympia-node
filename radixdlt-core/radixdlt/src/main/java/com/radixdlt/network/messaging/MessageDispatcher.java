@@ -64,58 +64,52 @@
 
 package com.radixdlt.network.messaging;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.network.messaging.router.MessageEnvelope;
+import com.radixdlt.network.messaging.serialization.MessageSerialization;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.network.p2p.PeerManager;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.utils.Compress;
 
+import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.network.messaging.Message;
 
-import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
 import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
 
-/*
- * This could be moved into MessageCentralImpl at some stage, but has been
- * separated out so that we can check if all the functionality here is
- * required, and remove the stuff we don't want to keep.
- */
-class MessageDispatcher {
+final class MessageDispatcher {
 	private static final Logger log = LogManager.getLogger();
 
+	private final NodeId self;
 	private final long messageTtlMs;
 	private final SystemCounters counters;
-	private final Serialization serialization;
+	private final MessageSerialization messageSerialization;
 	private final TimeSupplier timeSource;
 	private final PeerManager peerManager;
 
 	MessageDispatcher(
+		NodeId self,
 		SystemCounters counters,
 		MessageCentralConfiguration config,
-		Serialization serialization,
+		MessageSerialization messageSerialization,
 		TimeSupplier timeSource,
 		PeerManager peerManager
 	) {
+		this.self = Objects.requireNonNull(self);
 		this.messageTtlMs = Objects.requireNonNull(config).messagingTimeToLive(30_000L);
 		this.counters = Objects.requireNonNull(counters);
-		this.serialization = Objects.requireNonNull(serialization);
+		this.messageSerialization = Objects.requireNonNull(messageSerialization);
 		this.timeSource = Objects.requireNonNull(timeSource);
 		this.peerManager = Objects.requireNonNull(peerManager);
 	}
 
-	CompletableFuture<Result<Object>> send(final OutboundMessageEvent outboundMessage) {
+	CompletableFuture<Result<Void>> send(final OutboundMessageEvent outboundMessage) {
 		final var message = outboundMessage.message();
 		final var receiver = outboundMessage.receiver();
 
@@ -126,39 +120,81 @@ class MessageDispatcher {
 			return CompletableFuture.completedFuture(MESSAGE_EXPIRED.result());
 		}
 
-		final var bytes = serialize(message);
-
-		return peerManager.findOrCreateChannel(outboundMessage.receiver())
-			.thenApply(channel -> send(channel, bytes))
-			.thenApply(this::updateStatistics)
-			.exceptionally(t -> completionException(t, receiver, message));
+		/* first, we try to send the message directly to the receiver */
+		return sendDirectly(outboundMessage.receiver(), outboundMessage.message())
+			/* if no direct channel is available, we try using a configured proxy node */
+			.exceptionallyCompose(ex -> sendViaConfiguredProxy(outboundMessage.receiver(), outboundMessage.message()))
+			/* if no configured proxy is available, we try through a certified proxy node */
+			.exceptionallyCompose(ex -> sendViaCertifiedProxy(outboundMessage.receiver(), outboundMessage.message()))
+			/* update the counter if any of above send attempts succeeded and map to Result */
+			.thenApply(res -> {
+				this.counters.increment(CounterType.MESSAGES_OUTBOUND_SENT);
+				return Result.ok(res);
+			})
+			/* log an error when message send fails */
+			.exceptionally(ex -> logSendError(ex, outboundMessage.receiver(), outboundMessage.message()))
+			/* recover any Result.failure from the wrapper exception or create a new Failure obj */
+			.exceptionallyCompose(ex -> ex instanceof FailureException
+				? CompletableFuture.completedFuture(((FailureException) ex).failure.result())
+				: CompletableFuture.completedFuture(Result.fail(Failure.failure(1, ex.getMessage())))
+			)
+			/* in either success or failure case, update the "processed" counter */
+			.whenComplete((unused1, unused2) -> this.counters.increment(CounterType.MESSAGES_OUTBOUND_PROCESSED));
 	}
 
-	private Result<Object> send(PeerChannel channel, byte[] bytes) {
-		this.counters.add(CounterType.NETWORKING_BYTES_SENT, bytes.length);
-		return channel.send(bytes);
+	private CompletableFuture<Void> sendDirectly(NodeId receiver, Message message) {
+		return peerManager.findOrCreateDirectChannel(receiver)
+			.thenCompose(channel -> serializeAndSend(channel, message));
 	}
 
-	private Result<Object> completionException(Throwable cause, NodeId receiver, Message message) {
+	private CompletableFuture<Void> sendViaCertifiedProxy(NodeId receiver, Message message) {
+		return peerManager.findOrCreateProxyChannel(receiver)
+			.thenCompose(channel -> wrapWithEnvelopeAndSend(channel, receiver, message));
+	}
+
+	private CompletableFuture<Void> sendViaConfiguredProxy(NodeId receiver, Message message) {
+		return peerManager.findOrCreateConfiguredProxyChannel(receiver)
+			.thenComposeAsync(channel -> wrapWithEnvelopeAndSend(channel, receiver, message));
+	}
+
+	private CompletableFuture<Void> wrapWithEnvelopeAndSend(PeerChannel channel, NodeId receiver, Message message) {
+		final var messageToSend = message instanceof MessageEnvelope
+			? message
+			: MessageEnvelope.create(self, receiver, message);
+		return serializeAndSend(channel, messageToSend);
+	}
+
+	private CompletableFuture<Void> serializeAndSend(PeerChannel channel, Message message) {
+		return toFuture(messageSerialization.serialize(message))
+			.thenCompose(serializedMessage -> {
+				this.counters.add(CounterType.NETWORKING_SENT_BYTES, serializedMessage.length);
+				return toFuture(channel.send(serializedMessage));
+			});
+	}
+
+	private Result<Void> logSendError(Throwable ex, NodeId receiver, Message message) {
 		final var msg = String.format("Send %s to %s failed", message.getClass().getSimpleName(), receiver);
-		log.warn("{}: {}", msg, cause.getMessage());
-		return IO_ERROR.result();
+		log.warn("{}: {}", msg, ex.getMessage());
+		return Result.ok(null /* Void type - unused */);
 	}
 
-	private Result<Object> updateStatistics(Result<Object> result) {
-		this.counters.increment(CounterType.MESSAGES_OUTBOUND_PROCESSED);
-		if (result.isSuccess()) {
-			this.counters.increment(CounterType.MESSAGES_OUTBOUND_SENT);
-		}
-		return result;
+	private <T> CompletableFuture<T> toFuture(Result<T> res) {
+		return res.fold(
+			failure -> CompletableFuture.failedFuture(new FailureException(failure)),
+			CompletableFuture::completedFuture
+		);
 	}
 
-	private byte[] serialize(Message out) {
-		try {
-			byte[] uncompressed = serialization.toDson(out, Output.WIRE);
-			return Compress.compress(uncompressed);
-		} catch (IOException e) {
-			throw new UncheckedIOException("While serializing message", e);
+	/**
+	 * Local helper class for dealing with the trichotomy of
+	 * Result.ok, Result.failure and CompletableFuture exception.
+	 * Makes it easier to work only with exceptions when composing futures
+	 * and then recover back to the Result with a correct Failure at the end.
+	 */
+	private static final class FailureException extends Exception {
+		final Failure failure;
+		FailureException(Failure failure) {
+			this.failure = failure;
 		}
 	}
 }

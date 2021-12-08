@@ -70,6 +70,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
+import com.google.inject.Stage;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.DefaultSerialization;
@@ -87,6 +88,8 @@ import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.network.messaging.MessageCentral;
+import com.radixdlt.network.messaging.MessageCentralModule;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.P2PModule;
 import com.radixdlt.network.p2p.PeerDiscoveryModule;
@@ -94,6 +97,7 @@ import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
 import com.radixdlt.network.p2p.PeerManager;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
+import com.radixdlt.network.p2p.proxy.ProxyCertificateManager;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
@@ -103,8 +107,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
-import org.apache.commons.cli.ParseException;
-import org.json.JSONObject;
+import com.radixdlt.utils.TimeSupplier;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
@@ -113,6 +116,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public final class P2PTestNetworkRunner {
+
+	public static record NodeProps(ECKeyPair keyPair, RuntimeProperties properties) { }
 
 	private final ImmutableList<TestNode> nodes;
 	private final DeterministicNetwork deterministicNetwork;
@@ -125,13 +130,18 @@ public final class P2PTestNetworkRunner {
 		this.deterministicNetwork = Objects.requireNonNull(deterministicNetwork);
 	}
 
-	public static P2PTestNetworkRunner create(int numNodes, P2PConfig p2pConfig) throws Exception {
-		final var nodesKeys = IntStream.range(0, numNodes)
+	public static P2PTestNetworkRunner create(int numNodes, RuntimeProperties properties) throws Exception {
+		final var nodesProps = IntStream.range(0, numNodes)
 			.mapToObj(unused -> ECKeyPair.generateNew())
+			.map(key -> new NodeProps(key, properties))
 			.collect(ImmutableList.toImmutableList());
 
+		return create(nodesProps);
+	}
+
+	public static P2PTestNetworkRunner create(ImmutableList<NodeProps> nodes) throws Exception {
 		final var network = new DeterministicNetwork(
-			nodesKeys.stream().map(key -> BFTNode.create(key.getPublicKey())).collect(Collectors.toList()),
+			nodes.stream().map(node -> BFTNode.create(node.keyPair().getPublicKey())).collect(Collectors.toList()),
 			MessageSelector.firstSelector(),
 			MessageMutator.nothing()
 		);
@@ -139,11 +149,13 @@ public final class P2PTestNetworkRunner {
 		final var p2pNetwork = new MockP2PNetwork();
 
 		final var builder = ImmutableList.<TestNode>builder();
-		for (int i = 0; i < numNodes; i++) {
-			final var nodeKey = nodesKeys.get(i);
+		for (int i = 0; i < nodes.size(); i++) {
+			final var nodeProps = nodes.get(i);
+			final var properties = nodeProps.properties();
+			final var nodeKey = nodeProps.keyPair();
 			final var uri = RadixNodeUri.fromPubKeyAndAddress(
-				1, nodeKey.getPublicKey(), "127.0.0.1", p2pConfig.listenPort() + i);
-			final var injector = createInjector(p2pNetwork, network, p2pConfig, nodeKey, uri, i);
+				1, nodeKey.getPublicKey(), "127.0.0.1", 30000 + i);
+			final var injector = createInjector(p2pNetwork, network, properties, nodeKey, uri, i);
 			builder.add(new TestNode(injector, uri, nodeKey));
 		}
 
@@ -157,20 +169,21 @@ public final class P2PTestNetworkRunner {
 	private static Injector createInjector(
 		MockP2PNetwork p2pNetwork,
 		DeterministicNetwork network,
-		P2PConfig p2pConfig,
+		RuntimeProperties properties,
 		ECKeyPair nodeKey,
 		RadixNodeUri selfUri,
 		int selfNodeIndex
-	) throws ParseException {
-		final var properties = new RuntimeProperties(new JSONObject(), new String[] {});
+	) {
 		return Guice.createInjector(
+				Stage.PRODUCTION,
 				Modules.override(new P2PModule(properties)).with(
 					new AbstractModule() {
 						@Override
 						protected void configure() {
 							bind(PeerOutboundBootstrap.class)
 								.toInstance(uri -> p2pNetwork.createChannel(selfNodeIndex, uri));
-							bind(P2PConfig.class).toInstance(p2pConfig);
+							bind(P2PConfig.class).toInstance(
+								P2PConfig.fromRuntimeProperties(Addressing.ofNetwork(Network.LOCALNET), properties));
 							bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
 							bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 						}
@@ -179,6 +192,7 @@ public final class P2PTestNetworkRunner {
 				new PeerDiscoveryModule(),
 				new PeerLivenessMonitorModule(),
 				new DispatcherModule(),
+				new MessageCentralModule(properties),
 				new AbstractModule() {
 					@Override
 					protected void configure() {
@@ -204,6 +218,7 @@ public final class P2PTestNetworkRunner {
 						bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
 						bind(DeterministicProcessor.class);
 						Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
+						bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 					}
 				}
 		);
@@ -212,6 +227,11 @@ public final class P2PTestNetworkRunner {
 	public void cleanup() {
 		this.nodes.forEach(node -> {
 			node.injector.getInstance(DatabaseEnvironment.class).stop();
+			try {
+				node.injector.getInstance(MessageCentral.class).close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		});
 	}
 
@@ -225,6 +245,18 @@ public final class P2PTestNetworkRunner {
 
 	public AddressBook addressBook(int nodeIndex) {
 		return getInstance(nodeIndex, AddressBook.class);
+	}
+
+	public ProxyCertificateManager proxyCertManager(int nodeIndex) {
+		return getInstance(nodeIndex, ProxyCertificateManager.class);
+	}
+
+	public MessageCentral messageCentral(int nodeIndex) {
+		return getInstance(nodeIndex, MessageCentral.class);
+	}
+
+	public long counter(int nodeIndex, SystemCounters.CounterType counterType) {
+		return getInstance(nodeIndex, SystemCounters.class).get(counterType);
 	}
 
 	public <T> T getInstance(int nodeIndex, Class<T> clazz) {

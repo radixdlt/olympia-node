@@ -214,6 +214,8 @@ public interface SystemCounters {
 		NETWORKING_P2P_ACTIVE_OUTBOUND_CHANNELS("networking.p2p.active_outbound_channels"),
 		NETWORKING_P2P_ACTIVE_CHANNELS("networking.p2p.active_channels"),
 		NETWORKING_P2P_CHANNELS_INITIALIZED("networking.p2p.channels_initialized"),
+		NETWORKING_ROUTING_DROPPED_MESSAGES("networking.routing.dropped_messages"),
+		NETWORKING_ROUTING_FORWARDED_MESSAGES("networking.routing.forwarded_messages"),
 
 		SIGNATURES_SIGNED("signatures.signed"),
 		SIGNATURES_VERIFIED("signatures.verified"),

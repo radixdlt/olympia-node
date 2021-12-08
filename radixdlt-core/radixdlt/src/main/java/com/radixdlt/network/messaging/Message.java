@@ -62,29 +62,19 @@
  * permissions under this License.
  */
 
-package org.radix.network.messaging;
+package com.radixdlt.network.messaging;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.utils.Compress;
-import com.radixdlt.utils.Ints;
 import org.radix.containers.BasicContainer;
 import org.radix.time.Time;
-
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class Message extends BasicContainer {
 	@Override
 	public short version() {
 		return 100;
 	}
-
-	private static final AtomicLong instances = new AtomicLong();
-
-	private long instance = Message.instances.incrementAndGet();
 
 	@JsonProperty("timestamp")
 	@DsonOutput(value = {Output.API, Output.PERSIST})
@@ -98,19 +88,8 @@ public abstract class Message extends BasicContainer {
 		return this.timestamp;
 	}
 
-	public byte[] toByteArray(Serialization serialization) throws IOException {
-		byte[] bytes = serialization.toDson(this, Output.WIRE);
-		byte[] data = Compress.compress(bytes);
-
-		byte[] byteArray = new byte[data.length + Integer.BYTES];
-		Ints.copyTo(data.length, byteArray, 0);
-		System.arraycopy(data, 0, byteArray, Integer.BYTES, data.length);
-
-		return byteArray;
-	}
-
 	@Override
 	public String toString() {
-		return this.instance + " -> " + this.getClass().getSimpleName() + ":" + this.hashCode() + " @ " + this.getTimestamp();
+		return this.getClass().getSimpleName() + ":" + this.hashCode() + " @ " + this.getTimestamp();
 	}
 }

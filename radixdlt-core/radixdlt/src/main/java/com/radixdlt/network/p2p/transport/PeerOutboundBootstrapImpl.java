@@ -71,6 +71,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.RadixNodeUri;
+import com.radixdlt.network.p2p.proxy.ProxyCertificateManager;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.serialization.Serialization;
@@ -92,6 +93,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 	private final SecureRandom secureRandom;
 	private final ECKeyOps ecKeyOps;
 	private final EventDispatcher<PeerEvent> peerEventDispatcher;
+	private final ProxyCertificateManager proxyCertificateManager;
 
 	private final NioEventLoopGroup clientWorkerGroup;
 
@@ -104,7 +106,8 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 		Serialization serialization,
 		SecureRandom secureRandom,
 		ECKeyOps ecKeyOps,
-		EventDispatcher<PeerEvent> peerEventDispatcher
+		EventDispatcher<PeerEvent> peerEventDispatcher,
+		ProxyCertificateManager proxyCertificateManager
 	) {
 		this.config = Objects.requireNonNull(config);
 		this.addressing = Objects.requireNonNull(addressing);
@@ -114,6 +117,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 		this.secureRandom = Objects.requireNonNull(secureRandom);
 		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
+		this.proxyCertificateManager = Objects.requireNonNull(proxyCertificateManager);
 
 		this.clientWorkerGroup = new NioEventLoopGroup();
 	}
@@ -129,6 +133,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 				config,
 				addressing,
 				networkId,
+				proxyCertificateManager.getReceivedProxyCertificates(),
 				counters,
 				serialization,
 				secureRandom,

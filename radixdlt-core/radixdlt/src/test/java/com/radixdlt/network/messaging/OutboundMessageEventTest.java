@@ -68,9 +68,8 @@ import java.util.ArrayList;
 
 import com.radixdlt.network.p2p.NodeId;
 import org.junit.Test;
-import org.radix.network.messages.PeerPingMessage;
-import org.radix.network.messages.PeerPongMessage;
-import org.radix.network.messaging.Message;
+import com.radixdlt.network.p2p.liveness.messages.PeerPingMessage;
+import com.radixdlt.network.p2p.liveness.messages.PeerPongMessage;
 
 import com.google.common.collect.Lists;
 import nl.jqno.equalsverifier.EqualsVerifier;

@@ -85,6 +85,8 @@ public interface ECKeyOps {
 	 */
 	byte[] eciesDecrypt(byte[] cipher, byte[] macData) throws InvalidCipherTextException;
 
+	ECDSASignature sign(byte[] data);
+
 	/**
 	 * Returns this node's public key.
 	 */
@@ -102,6 +104,11 @@ public interface ECKeyOps {
 			@Override
 			public byte[] eciesDecrypt(byte[] cipher, byte[] macData) throws InvalidCipherTextException {
 				return ECIESCoder.decrypt(new BigInteger(1, keyPair.getPrivateKey()), cipher, macData);
+			}
+
+			@Override
+			public ECDSASignature sign(byte[] data) {
+				return keyPair.sign(data);
 			}
 
 			@Override

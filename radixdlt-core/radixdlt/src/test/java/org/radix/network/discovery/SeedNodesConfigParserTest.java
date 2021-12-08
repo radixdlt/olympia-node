@@ -70,6 +70,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.NodeAddressing;
 import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.network.p2p.discovery.util.SeedNodesConfigParser;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import org.junit.Before;

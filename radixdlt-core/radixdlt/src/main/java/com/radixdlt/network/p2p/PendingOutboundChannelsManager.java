@@ -115,17 +115,7 @@ public final class PendingOutboundChannelsManager {
 		}
 	}
 
-	public EventProcessor<PeerEvent> peerEventProcessor() {
-		return peerEvent -> {
-			if (peerEvent instanceof PeerEvent.PeerConnected) {
-				this.handlePeerConnected((PeerEvent.PeerConnected) peerEvent);
-			} else if (peerEvent instanceof PeerEvent.PeerHandshakeFailed) {
-				this.handlePeerHandshakeFailed((PeerEvent.PeerHandshakeFailed) peerEvent);
-			}
-		};
-	}
-
-	private void handlePeerConnected(PeerEvent.PeerConnected peerConnected) {
+	void handlePeerConnected(PeerEvent.PeerConnected peerConnected) {
 		synchronized (lock) {
 			final var channel = peerConnected.getChannel();
 			final var maybeFuture = this.pendingChannels.remove(channel.getRemoteNodeId());
@@ -135,7 +125,7 @@ public final class PendingOutboundChannelsManager {
 		}
 	}
 
-	private void handlePeerHandshakeFailed(PeerEvent.PeerHandshakeFailed peerHandshakeFailed) {
+	void handlePeerHandshakeFailed(PeerEvent.PeerHandshakeFailed peerHandshakeFailed) {
 		synchronized (lock) {
 			peerHandshakeFailed.getChannel().getUri().ifPresent(uri -> {
 				final var maybeFuture = this.pendingChannels.remove(uri.getNodeId());

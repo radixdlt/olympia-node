@@ -64,9 +64,11 @@
 
 package com.radixdlt.network.p2p;
 
+import com.radixdlt.network.messaging.serialization.MessageSerialization;
 import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
 import org.junit.After;
 import org.junit.Test;
+import com.radixdlt.network.p2p.liveness.messages.PeerPingMessage;
 
 import java.time.Duration;
 import java.util.Set;
@@ -87,7 +89,7 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 
 		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(uriOfNode(1)));
 		final var channelFuture = testNetworkRunner.peerManager(0)
-			.findOrCreateChannel(uriOfNode(1).getNodeId());
+			.findOrCreateDirectChannel(uriOfNode(1).getNodeId());
 
 		processForCount(3);
 
@@ -105,30 +107,32 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 
 		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(uriOfNode(1), uriOfNode(2), uriOfNode(3), uriOfNode(4)));
 		final var channel1Future = testNetworkRunner.peerManager(0)
-			.findOrCreateChannel(uriOfNode(1).getNodeId());
+			.findOrCreateDirectChannel(nodeIdOf(1));
 
 		final var channel2Future = testNetworkRunner.peerManager(0)
-			.findOrCreateChannel(uriOfNode(2).getNodeId());
+			.findOrCreateDirectChannel(nodeIdOf(2));
 
 		final var channel3Future = testNetworkRunner.peerManager(0)
-			.findOrCreateChannel(uriOfNode(3).getNodeId());
+			.findOrCreateDirectChannel(nodeIdOf(3));
 
 		processAll();
 
+		final var messageSer = testNetworkRunner.getInstance(0, MessageSerialization.class);
+
 		// two messages sent over node1 channel
-		channel1Future.get().send(new byte[] {0x01});
-		channel1Future.get().send(new byte[] {0x02});
+		channel1Future.get().send(messageSer.serialize(new PeerPingMessage()).toOptional().get());
+		channel1Future.get().send(messageSer.serialize(new PeerPingMessage()).toOptional().get());
 
 		// one messages sent over node2 channel
-		channel2Future.get().send(new byte[] {0x03});
+		channel2Future.get().send(messageSer.serialize(new PeerPingMessage()).toOptional().get());
 
 		// three messages sent over node3 channel
-		channel3Future.get().send(new byte[] {0x01});
-		channel3Future.get().send(new byte[] {0x01});
-		channel3Future.get().send(new byte[] {0x01});
+		channel3Future.get().send(messageSer.serialize(new PeerPingMessage()).toOptional().get());
+		channel3Future.get().send(messageSer.serialize(new PeerPingMessage()).toOptional().get());
+		channel3Future.get().send(messageSer.serialize(new PeerPingMessage()).toOptional().get());
 
 		final var channel4Future = testNetworkRunner.peerManager(0)
-			.findOrCreateChannel(uriOfNode(4).getNodeId());
+			.findOrCreateDirectChannel(uriOfNode(4).getNodeId());
 
 		processAll();
 
@@ -153,7 +157,7 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 
 		// try outbound connection (to node3)
 		final var channel1Future = testNetworkRunner.peerManager(0)
-			.findOrCreateChannel(uriOfNode(3).getNodeId());
+			.findOrCreateDirectChannel(uriOfNode(3).getNodeId());
 
 		processAll();
 
@@ -164,7 +168,7 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 		// try inbound connection (from node1)
 
 		final var channel2Future = testNetworkRunner.peerManager(1)
-			.findOrCreateChannel(uriOfNode(0).getNodeId());
+			.findOrCreateDirectChannel(uriOfNode(0).getNodeId());
 
 		processAll();
 
@@ -180,7 +184,7 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(uriOfNode(1)));
 
 		final var channel1Future = testNetworkRunner.peerManager(0)
-		.findOrCreateChannel(uriOfNode(1).getNodeId());
+		.findOrCreateDirectChannel(uriOfNode(1).getNodeId());
 
 		processAll();
 

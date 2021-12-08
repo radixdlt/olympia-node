@@ -64,6 +64,7 @@
 
 package com.radixdlt.network.p2p.transport;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
@@ -112,8 +113,8 @@ public final class FrameCodecTest {
 	}
 
 	private Pair<Secrets, Secrets> agreeSecrets(ECKeyPair nodeKey1, ECKeyPair nodeKey2) throws Exception {
-		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01);
-		final var handshaker2 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x01);
+		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01, ImmutableSet.of());
+		final var handshaker2 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x01, ImmutableSet.of());
 
 		final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
 		final var handshaker2ResultPair = handshaker2.handleInitialMessage(Unpooled.wrappedBuffer(initMessage));

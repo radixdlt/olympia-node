@@ -62,154 +62,76 @@
  * permissions under this License.
  */
 
-package org.radix.network.discovery;
+package com.radixdlt.network.messaging.router;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.network.messaging.Message;
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerId2;
 
-import com.radixdlt.properties.RuntimeProperties;
+import java.util.Objects;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+@SerializerId2("network.p2p.message_envelope")
+public final class MessageEnvelope extends Message {
+	@JsonProperty("author")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private final NodeId author;
 
-public class Whitelist {
-	private static final Logger networkLog = LogManager.getLogger();
+	@JsonProperty("recipient")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private final NodeId recipient;
 
-	private Set<String> parameters = new HashSet<>();
+	@JsonProperty("message")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private final Message message;
 
-	public Whitelist(String parameters) {
-		if (parameters == null) {
-			return;
-		}
-
-		String[] split = parameters.split(",");
-
-		for (String parameter : split) {
-			if (parameter.trim().length() == 0) {
-				continue;
-			}
-
-			this.parameters.add(parameter.trim());
-		}
+	@JsonCreator
+	private static MessageEnvelope deserialize(
+		@JsonProperty("author") NodeId author,
+		@JsonProperty("recipient") NodeId recipient,
+		@JsonProperty("message") Message message
+	) {
+		return new MessageEnvelope(author, recipient, message);
 	}
 
-	private int[] convert(String host) {
-		String[] segments;
-		int[] output;
-
-		if (host.contains(".")) {            // IPV4 //
-			output = new int[4];
-			segments = host.split("\\.");
-		} else if (host.contains(":")) {    // IPV6 //
-			output = new int[8];
-			segments = host.split(":");
-		} else {
-			return new int[]{0, 0, 0, 0};
-		}
-
-		Arrays.fill(output, Integer.MAX_VALUE);
-		for (int s = 0; s < segments.length; s++) {
-			if (segments[s].equalsIgnoreCase("*")) {
-				break;
-			}
-
-			output[s] = Integer.valueOf(segments[s]);
-		}
-
-		return output;
+	public static MessageEnvelope create(NodeId author, NodeId recipient, Message message) {
+		return new MessageEnvelope(author, recipient, message);
 	}
 
-	private boolean isRange(String parameter) {
-		if (parameter.contains("-")) {
+	private MessageEnvelope(NodeId author, NodeId recipient, Message message) {
+		this.author = author;
+		this.recipient = recipient;
+		this.message = message;
+	}
+
+	public NodeId getAuthor() {
+		return author;
+	}
+
+	public NodeId getRecipient() {
+		return recipient;
+	}
+
+	public Message getMessage() {
+		return message;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
 		}
-
-			return false;
-		}
-
-	private boolean isInRange(String parameter, String address) {
-		String[] hosts = parameter.split("-");
-
-		if (hosts.length != 2) {
-			throw new IllegalStateException("Range is invalid");
-		}
-
-		int[] target = convert(address);
-		int[] low = convert(hosts[0]);
-		int[] high = convert(hosts[1]);
-
-		if (low.length != high.length || target.length != low.length) {
-			return false;
-		}
-
-		for (int s = 0; s < low.length; s++) {
-			if (low[s] < high[s]) {
-				int[] swap = low;
-				low = high;
-				high = swap;
-				break;
-			}
-
-			if (target[s] < low[s] || target[s] > high[s]) {
-				return false;
-			}
-		}
-
-		return true;
+		return o instanceof MessageEnvelope that
+			&& getTimestamp() == that.getTimestamp()
+			&& Objects.equals(author, that.author)
+			&& Objects.equals(recipient, that.recipient)
+			&& Objects.equals(message, that.message);
 	}
 
-	private boolean isMask(String parameter) {
-		if (parameter.contains("*") || parameter.contains("::")) {
-			return true;
-		}
-
-			return false;
-		}
-
-	private boolean isMasked(String parameter, String address) {
-		int[] target = convert(address);
-		int[] mask = convert(parameter);
-
-		if (target.length != mask.length) {
-			return false;
-		}
-
-		for (int s = 0; s < mask.length; s++) {
-			if (mask[s] == Integer.MAX_VALUE) {
-				return true;
-			} else if (target[s] != mask[s]) {
-				return false;
-			}
-		}
-
-		return false;
-	}
-
-	public boolean isWhitelisted(String hostName) {
-		if (parameters.isEmpty()) {
-			return true;
-		}
-
-		try {
-			String hostAddress = InetAddress.getByName(hostName).getHostAddress();
-			for (String parameter : parameters) {
-				if (parameter.equalsIgnoreCase(hostName)
-					|| isRange(parameter) && isInRange(parameter, hostAddress)
-					|| isMask(parameter) && isMasked(parameter, hostAddress)) {
-					return true;
-				}
-			}
-		} catch (UnknownHostException ex) {
-			networkLog.error("While checking whitelist", ex);
-		}
-
-		return false;
-	}
-
-	public static Whitelist from(RuntimeProperties properties) {
-		return new Whitelist(properties.get("network.whitelist", ""));
+	@Override
+	public int hashCode() {
+		return Objects.hash(getTimestamp(), author, recipient, message);
 	}
 }

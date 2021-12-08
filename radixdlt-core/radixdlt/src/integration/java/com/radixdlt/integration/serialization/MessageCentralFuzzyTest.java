@@ -1,8 +1,12 @@
 package com.radixdlt.integration.serialization;
 
+import com.radixdlt.network.messaging.Message;
+import com.radixdlt.network.messaging.serialization.CompressedMessageSerialization;
+import com.radixdlt.network.messaging.serialization.MessageSerialization;
+import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.network.p2p.proxy.ProxyCertificateManager;
 import org.junit.Test;
-import org.radix.network.messages.PeerPingMessage;
-import org.radix.network.messaging.Message;
+import com.radixdlt.network.p2p.liveness.messages.PeerPingMessage;
 import org.radix.time.Time;
 
 import com.radixdlt.DefaultSerialization;
@@ -17,8 +21,6 @@ import com.radixdlt.network.messaging.SimplePriorityBlockingQueue;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
 
 import java.security.SecureRandom;
@@ -42,28 +44,36 @@ public class MessageCentralFuzzyTest {
 	private static final int NUM_TEST_MESSAGES = 1000;
 
 	private final Random random = new SecureRandom();
-	private final Serialization serialization = DefaultSerialization.getInstance();
+	private final MessageSerialization serialization =
+		new CompressedMessageSerialization(DefaultSerialization.getInstance());
 
 	@Test
 	@SuppressWarnings("unchecked")
 	public void fuzzy_messaged_are_not_accepted() throws Exception {
+		final var self = ECKeyPair.generateNew();
 		var inboundMessages = PublishSubject.<InboundMessage>create();
-		var config = mock(MessageCentralConfiguration.class);
+		var messageCentralConfig = mock(MessageCentralConfiguration.class);
+		var p2pConfig = mock(P2PConfig.class);
 		var peerControl = mock(PeerControl.class);
 		var peerManager = mock(PeerManager.class);
+		var proxyCertificateManager = mock(ProxyCertificateManager.class);
 		var queueFactory = mock(EventQueueFactory.class);
 
-		when(config.messagingOutboundQueueMax(anyInt())).thenReturn(1);
-		when(config.messagingTimeToLive(anyLong())).thenReturn(30_000L);
+		when(messageCentralConfig.messagingOutboundQueueMax(anyInt())).thenReturn(1);
+		when(messageCentralConfig.messagingTimeToLive(anyLong())).thenReturn(30_000L);
 		when(peerManager.messages()).thenReturn(inboundMessages);
 
 		when(queueFactory.createEventQueue(anyInt(), any(Comparator.class)))
 			.thenReturn(new SimplePriorityBlockingQueue<>(1, OutboundMessageEvent.comparator()));
 
 		var messageCentral = new MessageCentralImpl(
-			config,
+			NodeId.fromPublicKey(self.getPublicKey()),
+			"self",
+			messageCentralConfig,
+			p2pConfig,
 			serialization,
 			peerManager,
+			proxyCertificateManager,
 			Time::currentTimestamp,
 			queueFactory,
 			new SystemCountersImpl(),
@@ -88,7 +98,7 @@ public class MessageCentralFuzzyTest {
 
 	private void emitSingleValidMessage(PublishSubject<InboundMessage> subject) {
 		try {
-			var bytes = Compress.compress(serialization.toDson(new PeerPingMessage(), DsonOutput.Output.WIRE));
+			var bytes = serialization.serialize(new PeerPingMessage()).toOptional().get();
 			var valid = new InboundMessage(Time.currentTimestamp(), randomNodeId(), bytes);
 			subject.onNext(valid);
 		} catch (Exception e) {

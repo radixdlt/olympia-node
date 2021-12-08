@@ -83,6 +83,7 @@ import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
 import com.radixdlt.middleware2.network.MessageCentralMempool;
 import com.radixdlt.middleware2.network.MessageCentralPeerDiscovery;
 import com.radixdlt.middleware2.network.MessageCentralPeerLiveness;
+import com.radixdlt.middleware2.network.MessageCentralPeerProxy;
 import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
@@ -90,6 +91,8 @@ import com.radixdlt.network.p2p.discovery.GetPeers;
 import com.radixdlt.network.p2p.discovery.PeersResponse;
 import com.radixdlt.network.p2p.liveness.Ping;
 import com.radixdlt.network.p2p.liveness.Pong;
+import com.radixdlt.network.p2p.proxy.ProxyCertificatesAnnouncement;
+import com.radixdlt.network.p2p.proxy.GrantedProxyCertificate;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -104,7 +107,7 @@ public final class MessagingModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		// provides (for SharedMempool)
+		// Network mempool messages
 		bind(MessageCentralMempool.class).in(Scopes.SINGLETON);
 
 		// Network BFT/Epoch Sync messages
@@ -114,6 +117,14 @@ public final class MessagingModule extends AbstractModule {
 
 		// Network BFT messages
 		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
+
+		// Network ledger sync messages
+		bind(MessageCentralLedgerSync.class).in(Scopes.SINGLETON);
+
+		// Network P2P protocol messages
+		bind(MessageCentralPeerDiscovery.class).in(Scopes.SINGLETON);
+		bind(MessageCentralPeerLiveness.class).in(Scopes.SINGLETON);
+		bind(MessageCentralPeerProxy.class).in(Scopes.SINGLETON);
 	}
 
 	@ProvidesIntoSet
@@ -190,6 +201,16 @@ public final class MessagingModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> grantedProxyCertificateDispatcher(MessageCentralPeerProxy messageCentralPeerProxy) {
+		return RxRemoteDispatcher.create(GrantedProxyCertificate.class, messageCentralPeerProxy.grantedProxyCertificateDispatcher());
+	}
+
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> proxyCertificatesAnnouncementDispatcher(MessageCentralPeerProxy messageCentralPeerProxy) {
+		return RxRemoteDispatcher.create(ProxyCertificatesAnnouncement.class, messageCentralPeerProxy.proxyCertificatesAnnouncementDispatcher());
+	}
+
+	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> ledgerStatusUpdateDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
 		return RxRemoteDispatcher.create(LedgerStatusUpdate.class, messageCentralLedgerSync.ledgerStatusUpdateDispatcher());
 	}
@@ -204,7 +225,8 @@ public final class MessagingModule extends AbstractModule {
 		MessageCentralBFTNetwork messageCentralBFT,
 		MessageCentralValidatorSync messageCentralBFTSync,
 		MessageCentralPeerLiveness messageCentralPeerLiveness,
-		MessageCentralPeerDiscovery messageCentralPeerDiscovery
+		MessageCentralPeerDiscovery messageCentralPeerDiscovery,
+		MessageCentralPeerProxy messageCentralPeerProxy
 	) {
 		return new RxRemoteEnvironment() {
 			@Override
@@ -239,6 +261,10 @@ public final class MessagingModule extends AbstractModule {
 					return messageCentralPeerDiscovery.getPeersEvents().map(m -> (RemoteEvent<T>) m);
 				} else if (remoteEventClass == PeersResponse.class) {
 					return messageCentralPeerDiscovery.peersResponses().map(m -> (RemoteEvent<T>) m);
+				} else if (remoteEventClass == GrantedProxyCertificate.class) {
+					return messageCentralPeerProxy.grantedProxyCertificates().map(m -> (RemoteEvent<T>) m);
+				} else if (remoteEventClass == ProxyCertificatesAnnouncement.class) {
+					return messageCentralPeerProxy.proxyCertificatesAnnouncements().map(m -> (RemoteEvent<T>) m);
 				} else {
 					throw new IllegalStateException();
 				}

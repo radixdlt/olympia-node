@@ -62,37 +62,44 @@
  * permissions under this License.
  */
 
-package org.radix.network.messages;
+package com.radixdlt.network.messaging.serialization;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.radixdlt.serialization.SerializerId2;
-import org.radix.network.messaging.Message;
+import com.radixdlt.network.messaging.Message;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.utils.Compress;
+import com.radixdlt.utils.functional.Result;
 
+import java.io.IOException;
 import java.util.Objects;
 
-@SerializerId2("p2p.liveness.pong")
-public final class PeerPongMessage extends Message {
-	@JsonCreator
-	public PeerPongMessage() {
+import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
+
+public final class CompressedMessageSerialization implements MessageSerialization {
+
+	private final Serialization underlyingSerialization;
+
+	public CompressedMessageSerialization(Serialization underlyingSerialization) {
+		this.underlyingSerialization = Objects.requireNonNull(underlyingSerialization);
 	}
 
 	@Override
-	public String toString() {
-		return String.format("%s[]", getClass().getSimpleName());
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
+	public Result<byte[]> serialize(Message message) {
+		try {
+			byte[] uncompressed = underlyingSerialization.toDson(message, DsonOutput.Output.WIRE);
+			return Result.ok(Compress.compress(uncompressed));
+		} catch (IOException e) {
+			return IO_ERROR.result();
 		}
-
-		return (o instanceof PeerPongMessage that)
-			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
-	public int hashCode() {
-		return Objects.hash(getTimestamp());
+	public Result<Message> deserialize(byte[] input) {
+		try {
+			final var uncompressed = Compress.uncompress(input);
+			return Result.ok(underlyingSerialization.fromDson(uncompressed, Message.class));
+		} catch (IOException e) {
+			return IO_ERROR.result();
+		}
 	}
 }

@@ -66,7 +66,7 @@ package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.radixdlt.serialization.SerializerId2;
-import org.radix.network.messaging.Message;
+import com.radixdlt.network.messaging.Message;
 
 import java.util.Objects;
 

@@ -64,6 +64,7 @@
 
 package com.radixdlt.network.p2p.transport;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
@@ -72,6 +73,7 @@ import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.PeerEvent;
+import com.radixdlt.network.p2p.proxy.ProxyCertificate;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeError;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
@@ -137,6 +139,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 
 	private ChannelState state = ChannelState.INACTIVE;
 	private NodeId remoteNodeId;
+	private ImmutableSet<ProxyCertificate> proxyCertificates;
 	private FrameCodec frameCodec;
 
 	private final RateCalculator outMessagesStats = new RateCalculator(Duration.ofSeconds(10), 128);
@@ -145,6 +148,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 		P2PConfig config,
 		Addressing addressing,
 		int networkId,
+		ImmutableSet<ProxyCertificate> grantedProxyCertificates,
 		SystemCounters counters,
 		Serialization serialization,
 		SecureRandom secureRandom,
@@ -159,7 +163,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
 		this.uri = Objects.requireNonNull(uri);
 		uri.ifPresent(u -> this.remoteNodeId = u.getNodeId());
-		this.authHandshaker = new AuthHandshaker(serialization, secureRandom, ecKeyOps, networkId);
+		this.authHandshaker = new AuthHandshaker(serialization, secureRandom, ecKeyOps, networkId, grantedProxyCertificates);
 		this.nettyChannel = Objects.requireNonNull(nettyChannel);
 		this.remoteAddress = Objects.requireNonNull(remoteAddress);
 
@@ -207,6 +211,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 		if (handshakeResult instanceof AuthHandshakeSuccess) {
 			final var successResult = (AuthHandshakeSuccess) handshakeResult;
 			this.remoteNodeId = successResult.getRemoteNodeId();
+			this.proxyCertificates = successResult.getProxyCertificates();
 			this.frameCodec = new FrameCodec(successResult.getSecrets());
 			this.state = ChannelState.ACTIVE;
 			log.trace("Successful auth handshake: {}", this.toString());
@@ -217,6 +222,10 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 			peerEventDispatcher.dispatch(PeerHandshakeFailed.create(this));
 			this.disconnect();
 		}
+	}
+
+	public ImmutableSet<ProxyCertificate> proxyCertificates() {
+		return this.proxyCertificates;
 	}
 
 	private void handleMessage(ByteBuf buf) throws IOException {
@@ -289,7 +298,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 		this.nettyChannel.writeAndFlush(data);
 	}
 
-	public Result<Object> send(byte[] data) {
+	public Result<Void> send(byte[] data) {
 		synchronized (this.lock) {
 			if (this.state != ChannelState.ACTIVE) {
 				return IO_ERROR.result();
@@ -302,7 +311,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 					}
 					this.write(buf);
 					this.outMessagesStats.tick();
-					return Result.ok(new Object());
+					return Result.ok(null /* using null for Void type */);
 				} catch (IOException e) {
 					return IO_ERROR.result();
 				}

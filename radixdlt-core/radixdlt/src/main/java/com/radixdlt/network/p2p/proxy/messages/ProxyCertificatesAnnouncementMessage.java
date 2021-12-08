@@ -62,83 +62,53 @@
  * permissions under this License.
  */
 
-package org.radix.network.discovery;
+package com.radixdlt.network.p2p.proxy.messages;
 
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.UnknownHostException;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import com.google.inject.Inject;
-import com.radixdlt.identifiers.NodeAddressing;
-import com.radixdlt.network.p2p.RadixNodeUri;
-import com.radixdlt.network.p2p.P2PConfig;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.utils.Pair;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.network.messaging.Message;
+import com.radixdlt.network.p2p.proxy.ProxyCertificate;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerId2;
 
-// TODO: move to PeerDiscovery
-public final class SeedNodesConfigParser {
-	private final int defaultPort;
-	private final Set<String> unresolvedUris = new HashSet<>();
-	private final Set<RadixNodeUri> resolvedSeedNodes = new HashSet<>();
-	private final Addressing addressing;
-	private final int networkId;
+import java.util.Objects;
 
-	@Inject
-	public SeedNodesConfigParser(P2PConfig config, @NetworkId int networkId, Addressing addressing) {
-		this.networkId = networkId;
-		this.addressing = addressing;
-		this.defaultPort = config.defaultPort();
-		this.unresolvedUris.addAll(config.seedNodes());
-		this.resolveHostNames();
+@SerializerId2("p2p.proxy.proxy_certificates_announcement")
+public final class ProxyCertificatesAnnouncementMessage extends Message {
+	@JsonProperty("proxyCertificates")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private final ImmutableSet<ProxyCertificate> proxyCertificates;
+
+	@JsonCreator
+	public ProxyCertificatesAnnouncementMessage(
+		@JsonProperty("proxyCertificates") ImmutableSet<ProxyCertificate> proxyCertificates
+	) {
+		this.proxyCertificates = Objects.requireNonNull(proxyCertificates);
 	}
 
-	public Set<RadixNodeUri> getResolvedSeedNodes() {
-		this.resolveHostNames();
-		return this.resolvedSeedNodes;
+	public ImmutableSet<ProxyCertificate> getProxyCertificates() {
+		return proxyCertificates;
 	}
 
-	private void resolveHostNames() {
-		if (this.unresolvedUris.isEmpty()) {
-			return;
+	@Override
+	public String toString() {
+		return getClass().getSimpleName();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
 		}
 
-		final var newlyResolvedHosts = this.unresolvedUris.stream()
-			.map(host -> Pair.of(host, resolveRadixNodeUri(host)))
-			.filter(p -> p.getSecond().isPresent())
-			.collect(ImmutableSet.toImmutableSet());
-
-		final var newlyResolvedHostsNames = newlyResolvedHosts.stream().map(Pair::getFirst)
-			.collect(ImmutableSet.toImmutableSet());
-
-		this.unresolvedUris.removeAll(newlyResolvedHostsNames);
-
-		this.resolvedSeedNodes.addAll(
-			newlyResolvedHosts.stream()
-				.map(p -> p.getSecond().get())
-				.collect(Collectors.toList())
-		);
+		return (o instanceof ProxyCertificatesAnnouncementMessage that)
+			&& Objects.equals(proxyCertificates, that.getProxyCertificates())
+			&& Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
-	private Optional<RadixNodeUri> resolveRadixNodeUri(String rawUri) {
-		try {
-			final var parsedUri = new URI(rawUri);
-			final var resolved = InetAddress.getByName(parsedUri.getHost());
-			// FIXME: This is a bit messy, should have clearer logic on the checks
-			return Optional.of(RadixNodeUri.fromPubKeyAndAddress(
-				networkId,
-				addressing.forNodes().parse(parsedUri.getUserInfo()),
-				resolved.getHostAddress(),
-				parsedUri.getPort() > 0 ? parsedUri.getPort() : defaultPort
-			));
-		} catch (UnknownHostException | URISyntaxException | DeserializeException e) {
-			return Optional.empty();
-		}
+	@Override
+	public int hashCode() {
+		return Objects.hash(proxyCertificates, getTimestamp());
 	}
 }

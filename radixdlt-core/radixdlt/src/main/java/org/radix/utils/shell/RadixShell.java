@@ -85,6 +85,7 @@ import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.network.messaging.Message;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageFromPeer;
 import com.radixdlt.network.p2p.NodeId;
@@ -104,13 +105,13 @@ import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
-import org.radix.network.messaging.Message;
 import org.radix.utils.LedgerFileSync;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
+import java.security.interfaces.ECKey;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -135,6 +136,7 @@ public final class RadixShell {
 		private ImmutableSet.Builder<String> moduleRunnersBuilder = new ImmutableSet.Builder<>();
 		private ImmutableMap.Builder<String, String> customProperties = new ImmutableMap.Builder<>();
 		private Optional<String> dataDir = Optional.empty();
+		private Optional<ECKeyPair> customKeyPair = Optional.empty();
 		private final String nodeKeyPass = System.getenv("RADIX_NODE_KEYSTORE_PASSWORD");
 
 		public NodeBuilder() throws ParseException {
@@ -157,6 +159,11 @@ public final class RadixShell {
 
 		public NodeBuilder network(Network network) {
 			this.network = network;
+			return this;
+		}
+
+		public NodeBuilder keyPair(ECKeyPair keyPair) {
+			this.customKeyPair = Optional.of(keyPair);
 			return this;
 		}
 
@@ -197,7 +204,7 @@ public final class RadixShell {
 
 			final var nodeKeyFile = new File(properties.get("node.key.path"));
 			if (!nodeKeyFile.exists()) {
-				final var newKeyPair = ECKeyPair.generateNew();
+				final var newKeyPair = this.customKeyPair.orElseGet(ECKeyPair::generateNew);
 				RadixKeyStore.fromFile(nodeKeyFile, nodeKeyPass.toCharArray(), true)
 					.writeKeyPair("node", newKeyPair);
 			}

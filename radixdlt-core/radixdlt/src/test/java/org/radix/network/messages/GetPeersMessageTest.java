@@ -66,6 +66,7 @@ package org.radix.network.messages;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.network.p2p.discovery.messages.GetPeersMessage;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
@@ -89,9 +90,8 @@ public class GetPeersMessageTest extends SerializeMessageObject<GetPeersMessage>
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(GetPeersMessage.class)
-				.withIgnoredFields("instance")
-				.suppress(Warning.NONFINAL_FIELDS)
-				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-				.verify();
+			.suppress(Warning.NONFINAL_FIELDS)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
 	}
 }

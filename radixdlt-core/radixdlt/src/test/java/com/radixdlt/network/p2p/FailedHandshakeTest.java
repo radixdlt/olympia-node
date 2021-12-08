@@ -100,7 +100,7 @@ public final class FailedHandshakeTest extends DeterministicP2PNetworkTest {
 		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(messedUpUri));
 
 		final var channel1Future = testNetworkRunner.peerManager(0)
-			.findOrCreateChannel(messedUpUri.getNodeId());
+			.findOrCreateDirectChannel(messedUpUri.getNodeId());
 
 		processAll();
 

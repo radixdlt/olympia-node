@@ -77,7 +77,7 @@ import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.network.discovery.SeedNodesConfigParser;
+import com.radixdlt.network.p2p.discovery.util.SeedNodesConfigParser;
 
 import javax.inject.Inject;
 import java.time.Duration;

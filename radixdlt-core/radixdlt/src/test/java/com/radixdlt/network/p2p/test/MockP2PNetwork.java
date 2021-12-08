@@ -72,6 +72,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.RadixNodeUri;
+import com.radixdlt.network.p2p.proxy.ProxyCertificateManager;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
@@ -110,6 +111,7 @@ final class MockP2PNetwork {
 			clientPeer.injector.getInstance(P2PConfig.class),
 			Addressing.ofNetwork(Network.LOCALNET),
 			1,
+			clientPeer.injector.getInstance(ProxyCertificateManager.class).getReceivedProxyCertificates(),
 			clientPeer.injector.getInstance(SystemCounters.class),
 			clientPeer.injector.getInstance(Serialization.class),
 			new SecureRandom(),
@@ -124,6 +126,7 @@ final class MockP2PNetwork {
 			serverPeer.injector.getInstance(P2PConfig.class),
 			Addressing.ofNetwork(Network.LOCALNET),
 			1,
+			serverPeer.injector.getInstance(ProxyCertificateManager.class).getReceivedProxyCertificates(),
 			serverPeer.injector.getInstance(SystemCounters.class),
 			serverPeer.injector.getInstance(Serialization.class),
 			new SecureRandom(),
