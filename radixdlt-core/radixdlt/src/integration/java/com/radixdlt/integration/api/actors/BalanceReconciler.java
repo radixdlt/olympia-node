@@ -63,12 +63,12 @@
 
 package com.radixdlt.integration.api.actors;
 
-import com.radixdlt.api.core.core.openapitools.model.CommittedTransaction;
-import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.Operation;
-import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
-import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
-import com.radixdlt.api.core.core.openapitools.model.ResourceIdentifier;
+import com.radixdlt.api.core.openapitools.model.CommittedTransaction;
+import com.radixdlt.api.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.openapitools.model.Operation;
+import com.radixdlt.api.core.openapitools.model.OperationGroup;
+import com.radixdlt.api.core.openapitools.model.ResourceAmount;
+import com.radixdlt.api.core.openapitools.model.ResourceIdentifier;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 import com.radixdlt.integration.api.DeterministicActor;
 

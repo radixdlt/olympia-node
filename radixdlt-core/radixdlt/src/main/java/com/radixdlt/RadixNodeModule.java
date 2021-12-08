@@ -118,6 +118,8 @@ import java.util.List;
  * Module which manages everything in a single node
  */
 public final class RadixNodeModule extends AbstractModule {
+	private static final int DEFAULT_CORE_PORT = 3333;
+	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
 	private static final Logger log = LogManager.getLogger();
 
 	private final RuntimeProperties properties;
@@ -279,6 +281,9 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new PeerLivenessMonitorModule());
 
 		// API
-		install(new ApiModule(properties));
+		String bindAddress = properties.get("api.bind.address", DEFAULT_BIND_ADDRESS);
+		int port = properties.get("api.port", DEFAULT_CORE_PORT);
+		boolean enableTransactions = properties.get("api.transactions.enable", false);
+		install(new ApiModule(bindAddress, port, enableTransactions));
 	}
 }
