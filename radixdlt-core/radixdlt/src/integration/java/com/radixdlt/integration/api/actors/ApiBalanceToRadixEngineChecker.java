@@ -63,8 +63,8 @@
 
 package com.radixdlt.integration.api.actors;
 
-import com.radixdlt.api.core.core.model.CoreModelMapper;
-import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
+import com.radixdlt.api.core.model.CoreModelMapper;
+import com.radixdlt.api.core.openapitools.model.ResourceAmount;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;

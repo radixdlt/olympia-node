@@ -70,7 +70,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Stopwatch;
 import com.google.inject.Provider;
-import com.radixdlt.api.core.system.health.MovingAverage;
+import com.radixdlt.api.system.health.MovingAverage;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;

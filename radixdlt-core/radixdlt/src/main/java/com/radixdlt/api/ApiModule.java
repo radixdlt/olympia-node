@@ -63,33 +63,79 @@
 
 package com.radixdlt.api;
 
+import com.google.common.base.Throwables;
 import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.api.core.CoreServerModule;
-import com.radixdlt.properties.RuntimeProperties;
+import com.google.inject.Singleton;
+import com.google.inject.multibindings.MapBinder;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.ModuleRunner;
+import com.radixdlt.api.core.CoreApiModule;
+import com.radixdlt.api.core.openapitools.JSON;
+import com.radixdlt.api.core.openapitools.model.InternalServerError;
+import com.radixdlt.api.core.openapitools.model.UnexpectedError;
+import com.radixdlt.api.system.SystemApiModule;
+import com.radixdlt.api.util.HandlerRoute;
+import com.radixdlt.api.util.HttpServerRunner;
+import com.radixdlt.environment.Runners;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.ExceptionHandler;
+import io.undertow.util.Headers;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public final class ApiModule extends AbstractModule {
-	private static final int DEFAULT_CORE_PORT = 3333;
-	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+	private final int port;
+	private final String bindAddress;
+	private final boolean enableTransactions;
 
-	private final RuntimeProperties properties;
-
-	public ApiModule(RuntimeProperties properties) {
-		this.properties = properties;
+	public ApiModule(String bindAddress, int port, boolean enableTransactions) {
+		this.bindAddress = bindAddress;
+		this.port = port;
+		this.enableTransactions = enableTransactions;
 	}
 
 	@Override
 	public void configure() {
-		var endpointStatus = new HashMap<String, Boolean>();
-		var transactionsEnable = properties.get("api.transactions.enable", false);
-		endpointStatus.put("transactions", transactionsEnable);
+		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class);
+		install(new SystemApiModule());
+		install(new CoreApiModule(enableTransactions));
+	}
 
-		int port = properties.get("api.core.port", DEFAULT_CORE_PORT);
-		var bindAddress = properties.get("api.core.bind.address", DEFAULT_BIND_ADDRESS);
-		install(new CoreServerModule(port, bindAddress, transactionsEnable));
-		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
+	private static class IntervalServerErrorExceptionHandler implements HttpHandler {
+		@Override
+		public void handleRequest(HttpServerExchange exchange) throws Exception {
+			var ex = exchange.getAttachment(ExceptionHandler.THROWABLE);
+			// TODO: Move this somewhere else
+			ex.printStackTrace();
+
+			var rootCause = Throwables.getRootCause(ex);
+			var unexpectedError = new UnexpectedError()
+				.code(500)
+				.message("Internal Server Error")
+				.details(new InternalServerError()
+					.cause(rootCause.getMessage())
+					.exception(rootCause.getClass().getSimpleName())
+					.type("InternalServerErrorDetails")
+				);
+			exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "application/json");
+			exchange.setStatusCode(500);
+			exchange.getResponseSender().send(JSON.getDefault().getMapper().writeValueAsString(unexpectedError));
+		}
+	}
+
+
+	@ProvidesIntoMap
+	@StringMapKey(Runners.NODE_API)
+	@Singleton
+	public ModuleRunner coreHttpServer(Map<HandlerRoute, HttpHandler> handlers) {
+		return new HttpServerRunner(
+			handlers,
+			new IntervalServerErrorExceptionHandler(),
+			port,
+			bindAddress,
+			"core"
+		);
 	}
 }

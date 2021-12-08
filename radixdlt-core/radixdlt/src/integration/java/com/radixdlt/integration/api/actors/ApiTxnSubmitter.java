@@ -64,16 +64,16 @@
 package com.radixdlt.integration.api.actors;
 
 import com.google.inject.Key;
-import com.radixdlt.api.core.core.model.CoreApiException;
-import com.radixdlt.api.core.core.openapitools.model.AboveMaximumValidatorFeeIncreaseError;
-import com.radixdlt.api.core.core.openapitools.model.BelowMinimumStakeError;
-import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.MempoolFullError;
-import com.radixdlt.api.core.core.openapitools.model.NotEnoughResourcesError;
-import com.radixdlt.api.core.core.openapitools.model.NotValidatorOwnerError;
-import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
-import com.radixdlt.api.core.core.openapitools.model.TokenData;
-import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
+import com.radixdlt.api.core.model.CoreApiException;
+import com.radixdlt.api.core.openapitools.model.AboveMaximumValidatorFeeIncreaseError;
+import com.radixdlt.api.core.openapitools.model.BelowMinimumStakeError;
+import com.radixdlt.api.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.openapitools.model.MempoolFullError;
+import com.radixdlt.api.core.openapitools.model.NotEnoughResourcesError;
+import com.radixdlt.api.core.openapitools.model.NotValidatorOwnerError;
+import com.radixdlt.api.core.openapitools.model.ResourceAmount;
+import com.radixdlt.api.core.openapitools.model.TokenData;
+import com.radixdlt.api.core.openapitools.model.TokenResourceIdentifier;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.integration.api.DeterministicActor;

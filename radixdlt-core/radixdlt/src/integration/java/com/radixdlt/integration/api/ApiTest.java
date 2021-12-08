@@ -66,7 +66,7 @@ package com.radixdlt.integration.api;
 import com.google.common.collect.EvictingQueue;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.core.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
+import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.integration.FailOnEvent;

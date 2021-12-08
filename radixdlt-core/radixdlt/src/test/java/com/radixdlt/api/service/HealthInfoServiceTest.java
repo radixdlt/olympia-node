@@ -63,8 +63,8 @@
  */
 package com.radixdlt.api.service;
 
-import com.radixdlt.api.core.system.health.HealthInfoService;
-import com.radixdlt.api.core.system.health.ScheduledStatsCollecting;
+import com.radixdlt.api.system.health.HealthInfoService;
+import com.radixdlt.api.system.health.ScheduledStatsCollecting;
 import org.junit.Test;
 
 import com.radixdlt.counters.SystemCounters;
@@ -76,12 +76,12 @@ import java.util.stream.IntStream;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
-import static com.radixdlt.api.core.system.health.NodeStatus.BOOTING;
-import static com.radixdlt.api.core.system.health.NodeStatus.STALLED;
-import static com.radixdlt.api.core.system.health.NodeStatus.SYNCING;
-import static com.radixdlt.api.core.system.health.NodeStatus.UP;
-import static com.radixdlt.api.core.system.health.HealthInfoService.LEDGER_KEY;
-import static com.radixdlt.api.core.system.health.HealthInfoService.TARGET_KEY;
+import static com.radixdlt.api.system.health.NodeStatus.BOOTING;
+import static com.radixdlt.api.system.health.NodeStatus.STALLED;
+import static com.radixdlt.api.system.health.NodeStatus.SYNCING;
+import static com.radixdlt.api.system.health.NodeStatus.UP;
+import static com.radixdlt.api.system.health.HealthInfoService.LEDGER_KEY;
+import static com.radixdlt.api.system.health.HealthInfoService.TARGET_KEY;
 import static com.radixdlt.counters.SystemCounters.CounterType;
 
 public class HealthInfoServiceTest {
