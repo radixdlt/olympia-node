@@ -63,11 +63,17 @@
 
 package com.radixdlt.integration.api.actors.actions;
 
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadata;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
-import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
+
+import java.util.function.Function;
 
 public sealed interface NodeTransactionAction permits RegisterValidator, SetAllowDelegationFlag, SetValidatorFee,
 	SetValidatorOwner, StakeTokens, TransferTokens, UnstakeStakeUnits {
-	OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers);
+	OperationGroup toOperationGroup(
+		EngineConfiguration configuration,
+		Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction
+	);
 }

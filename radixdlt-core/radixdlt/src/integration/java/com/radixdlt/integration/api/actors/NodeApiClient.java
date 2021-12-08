@@ -83,6 +83,7 @@ import com.radixdlt.api.core.core.openapitools.model.CommittedTransaction;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequest;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadata;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataAccount;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataValidator;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
@@ -99,6 +100,7 @@ import com.radixdlt.api.core.core.openapitools.model.NodeSignRequest;
 import com.radixdlt.api.core.core.openapitools.model.NotEnoughResourcesError;
 import com.radixdlt.api.core.core.openapitools.model.NotValidatorOwnerError;
 import com.radixdlt.api.core.core.openapitools.model.PartialStateIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.PublicKey;
 import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
 import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
@@ -165,6 +167,26 @@ final class NodeApiClient {
 		return coreModelMapper.nativeToken();
 	}
 
+	public PublicKey selfPublicKey() throws Exception {
+		var nodeIdentifiersResponse = nodeIdentifiersHandler.handleRequest(new NodeIdentifiersRequest()
+			.networkIdentifier(networkIdentifier())
+		);
+		return nodeIdentifiersResponse.getNodeIdentifiers().getPublicKey();
+	}
+
+	public EntityIdentifier selfDerive(ConstructionDeriveRequestMetadata metadata) {
+		try {
+			var response = constructionDeriveHandler.handleRequest(new ConstructionDeriveRequest()
+				.networkIdentifier(networkIdentifier())
+				.publicKey(selfPublicKey())
+				.metadata(metadata)
+			);
+			return response.getEntityIdentifier();
+		} catch (Exception e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
 	public EntityIdentifier deriveValidator(ECPublicKey key) throws Exception {
 		var response = this.constructionDeriveHandler.handleRequest(new ConstructionDeriveRequest()
 			.networkIdentifier(networkIdentifier())
@@ -174,13 +196,17 @@ final class NodeApiClient {
 		return response.getEntityIdentifier();
 	}
 
-	public EntityIdentifier deriveAccount(ECPublicKey key) throws Exception {
+	public EntityIdentifier deriveAccount(PublicKey publicKey) throws Exception {
 		var response = this.constructionDeriveHandler.handleRequest(new ConstructionDeriveRequest()
 			.networkIdentifier(networkIdentifier())
-			.publicKey(coreModelMapper.publicKey(key))
+			.publicKey(publicKey)
 			.metadata(new ConstructionDeriveRequestMetadataAccount())
 		);
 		return response.getEntityIdentifier();
+	}
+
+	public EntityIdentifier deriveAccount(ECPublicKey key) throws Exception {
+		return deriveAccount(coreModelMapper.publicKey(key));
 	}
 
 	public StateIdentifier getStateIdentifier() throws Exception {
@@ -272,20 +298,23 @@ final class NodeApiClient {
 		);
 		var nodeIdentifiersResponse = nodeIdentifiersHandler.handleRequest(new NodeIdentifiersRequest().networkIdentifier(networkIdentifier));
 		var nodeIdentifiers = nodeIdentifiersResponse.getNodeIdentifiers();
+		var nodePublicKey = nodeIdentifiers.getPublicKey();
 		var configuration = engineConfigurationResponse.getForks().get(0).getEngineConfiguration();
-		var operationGroup = action.toOperationGroup(configuration, nodeIdentifiers);
+
+		var accountIdentifier = deriveAccount(nodePublicKey);
+		var operationGroup = action.toOperationGroup(configuration, this::selfDerive);
 
 		try {
 			var buildResponse = constructionBuildHandler.handleRequest(new ConstructionBuildRequest()
 				.networkIdentifier(networkIdentifier)
-				.feePayer(nodeIdentifiers.getAccountEntityIdentifier())
+				.feePayer(accountIdentifier)
 				.operationGroups(List.of(operationGroup))
 			);
 			var unsignedTransaction = buildResponse.getUnsignedTransaction();
 
 			var response = nodeSignHandler.handleRequest(new NodeSignRequest()
 				.networkIdentifier(networkIdentifier)
-				.publicKey(nodeIdentifiers.getPublicKey())
+				.publicKey(nodePublicKey)
 				.unsignedTransaction(unsignedTransaction)
 			);
 

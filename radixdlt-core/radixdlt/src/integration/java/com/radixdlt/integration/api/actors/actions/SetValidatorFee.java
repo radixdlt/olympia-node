@@ -63,12 +63,16 @@
 
 package com.radixdlt.integration.api.actors.actions;
 
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadata;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataValidator;
 import com.radixdlt.api.core.core.openapitools.model.Data;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
-import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorFee;
+
+import java.util.function.Function;
 
 public final class SetValidatorFee implements NodeTransactionAction {
 	private final int fee;
@@ -78,14 +82,17 @@ public final class SetValidatorFee implements NodeTransactionAction {
 	}
 
 	@Override
-	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
+	public OperationGroup toOperationGroup(
+		EngineConfiguration configuration,
+		Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction
+	) {
 		return new OperationGroup().addOperationsItem(
 			new Operation()
 				.type("Data")
 				.data(new Data().action(Data.ActionEnum.CREATE)
 					.dataObject(new PreparedValidatorFee().fee(fee).type(PreparedValidatorFee.class.getSimpleName()))
 				)
-				.entityIdentifier(nodeIdentifiers.getValidatorEntityIdentifier())
+				.entityIdentifier(identifierFunction.apply(new ConstructionDeriveRequestMetadataValidator().type("Validator")))
 		);
 	}
 }

@@ -63,28 +63,40 @@
 
 package com.radixdlt.integration.api.actors.actions;
 
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadata;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataAccount;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataPreparedStakes;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
-import com.radixdlt.api.core.core.openapitools.model.SubEntity;
-import com.radixdlt.api.core.core.openapitools.model.SubEntityMetadata;
 import com.radixdlt.application.tokens.Amount;
+
+import java.util.function.Function;
 
 public final class StakeTokens implements NodeTransactionAction {
 	private final Amount amount;
-	private final String validatorAddress;
+	private final EntityIdentifier validator;
 
-	public StakeTokens(Amount amount, String validatorAddress) {
+	public StakeTokens(Amount amount, EntityIdentifier validator) {
 		this.amount = amount;
-		this.validatorAddress = validatorAddress;
+		this.validator = validator;
 	}
 
 	@Override
-	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
+	public OperationGroup toOperationGroup(
+		EngineConfiguration configuration,
+		Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction
+	) {
 		var nativeToken = configuration.getNativeToken();
+		var from = identifierFunction.apply(new ConstructionDeriveRequestMetadataAccount()
+			.type("Account")
+		);
+		var to = identifierFunction.apply(new ConstructionDeriveRequestMetadataPreparedStakes()
+			.validator(validator)
+			.type("PreparedStakes")
+		);
 		return new OperationGroup()
 			.addOperationsItem(
 				new Operation()
@@ -93,7 +105,7 @@ public final class StakeTokens implements NodeTransactionAction {
 						.resourceIdentifier(nativeToken)
 						.value("-" + amount.toSubunits().toString())
 					)
-					.entityIdentifier(nodeIdentifiers.getAccountEntityIdentifier())
+					.entityIdentifier(from)
 			)
 			.addOperationsItem(
 				new Operation()
@@ -102,13 +114,7 @@ public final class StakeTokens implements NodeTransactionAction {
 						.resourceIdentifier(nativeToken)
 						.value(amount.toSubunits().toString())
 					)
-					.entityIdentifier(new EntityIdentifier()
-						.address(nodeIdentifiers.getAccountEntityIdentifier().getAddress())
-						.subEntity(new SubEntity()
-							.address("prepared_stakes")
-							.metadata(new SubEntityMetadata().validatorAddress(validatorAddress))
-						)
-					)
+					.entityIdentifier(to)
 			);
 	}
 }

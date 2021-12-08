@@ -103,7 +103,7 @@ public final class ApiTxnSubmitter implements DeterministicActor {
 
 		NodeTransactionAction action = switch (next) {
 			case 0 -> new TransferTokens(nextAmount(random), nodeClient.nativeToken(), nodeClient.deriveAccount(otherKey));
-			case 1 -> new StakeTokens(nextAmount(random), nodeClient.deriveValidator(otherKey).getAddress());
+			case 1 -> new StakeTokens(nextAmount(random), nodeClient.deriveValidator(otherKey));
 			case 2 -> new UnstakeStakeUnits(nextAmount(random), nodeClient.deriveValidator(otherKey).getAddress());
 			case 3 -> new RegisterValidator(true);
 			case 4 -> new RegisterValidator(false);

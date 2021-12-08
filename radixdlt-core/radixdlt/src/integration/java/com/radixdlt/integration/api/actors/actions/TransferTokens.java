@@ -63,15 +63,17 @@
 
 package com.radixdlt.integration.api.actors.actions;
 
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadata;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataAccount;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
 import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
 import com.radixdlt.application.tokens.Amount;
 
+import java.util.function.Function;
 
 public final class TransferTokens implements NodeTransactionAction {
 	private final Amount amount;
@@ -85,7 +87,11 @@ public final class TransferTokens implements NodeTransactionAction {
 	}
 
 	@Override
-	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
+	public OperationGroup toOperationGroup(
+		EngineConfiguration configuration,
+		Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction
+	) {
+		var from = identifierFunction.apply(new ConstructionDeriveRequestMetadataAccount().type("Account"));
 		return new OperationGroup()
 			.addOperationsItem(
 				new Operation()
@@ -94,7 +100,7 @@ public final class TransferTokens implements NodeTransactionAction {
 						.resourceIdentifier(tokenResourceIdentifier)
 						.value("-" + amount.toSubunits().toString())
 					)
-					.entityIdentifier(nodeIdentifiers.getAccountEntityIdentifier())
+					.entityIdentifier(from)
 			)
 			.addOperationsItem(
 				new Operation()

@@ -63,13 +63,16 @@
 
 package com.radixdlt.integration.api.actors.actions;
 
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadata;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataValidator;
 import com.radixdlt.api.core.core.openapitools.model.Data;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorOwner;
+
+import java.util.function.Function;
 
 public final class SetValidatorOwner implements NodeTransactionAction {
 	private final EntityIdentifier owner;
@@ -79,14 +82,17 @@ public final class SetValidatorOwner implements NodeTransactionAction {
 	}
 
 	@Override
-	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
+	public OperationGroup toOperationGroup(
+		EngineConfiguration configuration,
+		Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction
+	) {
 		return new OperationGroup().addOperationsItem(
 			new Operation()
 				.type("Data")
 				.data(new Data().action(Data.ActionEnum.CREATE)
 					.dataObject(new PreparedValidatorOwner().owner(owner).type(PreparedValidatorOwner.class.getSimpleName()))
 				)
-				.entityIdentifier(nodeIdentifiers.getValidatorEntityIdentifier())
+				.entityIdentifier(identifierFunction.apply(new ConstructionDeriveRequestMetadataValidator().type("Validator")))
 		);
 	}
 }
