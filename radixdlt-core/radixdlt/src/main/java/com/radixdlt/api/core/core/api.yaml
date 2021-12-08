@@ -1651,7 +1651,7 @@ components:
           description: Public key to be derived from
           "$ref": "#/components/schemas/PublicKey"
         metadata:
-          descriptin: Data which specifies the type of entity to derive
+          description: Data which specifies the type of entity to derive
           "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
       example:
         network_identifier:
@@ -1684,6 +1684,10 @@ components:
           Account: "#/components/schemas/ConstructionDeriveRequestMetadataAccount"
           Validator: "#/components/schemas/ConstructionDeriveRequestMetadataValidator"
           Token: "#/components/schemas/ConstructionDeriveRequestMetadataToken"
+          PreparedStakes: "#/components/schemas/ConstructionDeriveRequestMetadataPreparedStakes"
+          PreparedUnstakes: "#/components/schemas/ConstructionDeriveRequestMetadataPreparedUnstakes"
+          ExitingUnstakes: "#/components/schemas/ConstructionDeriveRequestMetadataExitingUnstakes"
+          ValidatorSystem: "#/components/schemas/ConstructionDeriveRequestMetadataValidatorSystem"
     ConstructionDeriveRequestMetadataAccount:
       allOf:
         - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
@@ -1700,6 +1704,34 @@ components:
             symbol:
               description: The symbol of the token
               type: string
+    ConstructionDeriveRequestMetadataPreparedStakes:
+      allOf:
+        - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+        - type: object
+          required:
+            - validator
+          properties:
+            validator:
+              $ref: "#/components/schemas/EntityIdentifier"
+    ConstructionDeriveRequestMetadataPreparedUnstakes:
+      allOf:
+        - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+    ConstructionDeriveRequestMetadataExitingUnstakes:
+      allOf:
+        - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+        - type: object
+          required:
+            - validator
+            - epoch_unlock
+          properties:
+            validator:
+              $ref: "#/components/schemas/EntityIdentifier"
+            epoch_unlock:
+              type: integer
+              format: int64
+    ConstructionDeriveRequestMetadataValidatorSystem:
+      allOf:
+        - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
     ConstructionBuildRequest:
       type: object
       required:
@@ -3126,6 +3158,15 @@ components:
               $ref: "#/components/schemas/EntityIdentifier"
             user:
               $ref: "#/components/schemas/EntityIdentifier"
+    NotValidatorEntityError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - entity
+          properties:
+            entity:
+              $ref: "#/components/schemas/EntityIdentifier"
     InvalidDataObjectError:
       allOf:
         - $ref: "#/components/schemas/CoreError"
@@ -3230,6 +3271,7 @@ components:
           DataObjectNotSupportedByEntityError: "#/components/schemas/DataObjectNotSupportedByEntityError"
           ResourceDepositOperationNotSupportedByEntityError: "#/components/schemas/ResourceDepositOperationNotSupportedByEntityError"
           ResourceWithdrawOperationNotSupportedByEntityError: "#/components/schemas/ResourceWithdrawOperationNotSupportedByEntityError"
+          NotValidatorEntityError: "#/components/schemas/NotValidatorEntityError"
           NotValidatorOwnerError: "#/components/schemas/NotValidatorOwnerError"
           InvalidDataObjectError: "#/components/schemas/InvalidDataObjectError"
           MessageTooLongError: "#/components/schemas/MessageTooLongError"

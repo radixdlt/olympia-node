@@ -1146,6 +1146,13 @@ public final class CoreModelMapper {
 			.hash(txnId.toString());
 	}
 
+	public CoreApiException notValidatorEntityException(EntityIdentifier entityIdentifier) {
+		return CoreApiException.badRequest(new NotValidatorEntityError()
+			.entity(entityIdentifier)
+			.type(NotValidatorEntityError.class.getSimpleName())
+		);
+	}
+
 	public CoreApiException parseException(TxnParseException exception) {
 		var cause = Throwables.getRootCause(exception);
 		return CoreApiException.badRequest(

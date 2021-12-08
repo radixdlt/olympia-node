@@ -13,19 +13,24 @@
 
 package com.radixdlt.api.core.core.openapitools.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.radixdlt.api.core.core.openapitools.JSON;
+import io.swagger.annotations.ApiModelProperty;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 /**
- * ConstructionDeriveRequestMetadataAccount
+ * ConstructionDeriveRequestMetadataExitingUnstakes
  */
 @JsonPropertyOrder({
+  ConstructionDeriveRequestMetadataExitingUnstakes.JSON_PROPERTY_VALIDATOR,
+  ConstructionDeriveRequestMetadataExitingUnstakes.JSON_PROPERTY_EPOCH_UNLOCK
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-07T20:43:40.639055-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
@@ -38,10 +43,68 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataValidatorSystem.class, name = "ValidatorSystem"),
 })
 
-public class ConstructionDeriveRequestMetadataAccount extends ConstructionDeriveRequestMetadata {
+public class ConstructionDeriveRequestMetadataExitingUnstakes extends ConstructionDeriveRequestMetadata {
+  public static final String JSON_PROPERTY_VALIDATOR = "validator";
+  private EntityIdentifier validator;
+
+  public static final String JSON_PROPERTY_EPOCH_UNLOCK = "epoch_unlock";
+  private Long epochUnlock;
+
+
+  public ConstructionDeriveRequestMetadataExitingUnstakes validator(EntityIdentifier validator) {
+    this.validator = validator;
+    return this;
+  }
+
+   /**
+   * Get validator
+   * @return validator
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALIDATOR)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public EntityIdentifier getValidator() {
+    return validator;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VALIDATOR)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValidator(EntityIdentifier validator) {
+    this.validator = validator;
+  }
+
+
+  public ConstructionDeriveRequestMetadataExitingUnstakes epochUnlock(Long epochUnlock) {
+    this.epochUnlock = epochUnlock;
+    return this;
+  }
+
+   /**
+   * Get epochUnlock
+   * @return epochUnlock
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_EPOCH_UNLOCK)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getEpochUnlock() {
+    return epochUnlock;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_EPOCH_UNLOCK)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setEpochUnlock(Long epochUnlock) {
+    this.epochUnlock = epochUnlock;
+  }
+
 
   /**
-   * Return true if this ConstructionDeriveRequestMetadataAccount object is equal to o.
+   * Return true if this ConstructionDeriveRequestMetadataExitingUnstakes object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -51,19 +114,24 @@ public class ConstructionDeriveRequestMetadataAccount extends ConstructionDerive
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    return super.equals(o);
+    ConstructionDeriveRequestMetadataExitingUnstakes constructionDeriveRequestMetadataExitingUnstakes = (ConstructionDeriveRequestMetadataExitingUnstakes) o;
+    return Objects.equals(this.validator, constructionDeriveRequestMetadataExitingUnstakes.validator) &&
+        Objects.equals(this.epochUnlock, constructionDeriveRequestMetadataExitingUnstakes.epochUnlock) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode());
+    return Objects.hash(validator, epochUnlock, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ConstructionDeriveRequestMetadataAccount {\n");
+    sb.append("class ConstructionDeriveRequestMetadataExitingUnstakes {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    validator: ").append(toIndentedString(validator)).append("\n");
+    sb.append("    epochUnlock: ").append(toIndentedString(epochUnlock)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -88,8 +156,8 @@ static {
   mappings.put("Token", ConstructionDeriveRequestMetadataToken.class);
   mappings.put("Validator", ConstructionDeriveRequestMetadataValidator.class);
   mappings.put("ValidatorSystem", ConstructionDeriveRequestMetadataValidatorSystem.class);
-  mappings.put("ConstructionDeriveRequestMetadataAccount", ConstructionDeriveRequestMetadataAccount.class);
-  JSON.registerDiscriminator(ConstructionDeriveRequestMetadataAccount.class, "type", mappings);
+  mappings.put("ConstructionDeriveRequestMetadataExitingUnstakes", ConstructionDeriveRequestMetadataExitingUnstakes.class);
+  JSON.registerDiscriminator(ConstructionDeriveRequestMetadataExitingUnstakes.class, "type", mappings);
 }
 }
 
