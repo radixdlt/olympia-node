@@ -61,54 +61,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.handlers;
+package com.radixdlt.api.core.core.reconstruction;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.core.core.model.CoreJsonRpcHandler;
-import com.radixdlt.api.core.core.model.CoreApiException;
-import com.radixdlt.api.core.core.model.CoreModelMapper;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitResponse;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.google.inject.Provider;
+import com.radixdlt.api.core.core.model.SubstateOperation;
+import com.radixdlt.atom.SubstateId;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
-public final class ConstructionSubmitHandler extends CoreJsonRpcHandler<ConstructionSubmitRequest, ConstructionSubmitResponse> {
-	private final RadixEngineStateComputer radixEngineStateComputer;
-	private final CoreModelMapper modelMapper;
+public final class RecoverableSubstateVirtualShutdown implements RecoverableSubstate {
+	private final byte typeByte;
+	private final SubstateId substateId;
 
-	@Inject
-	ConstructionSubmitHandler(
-		RadixEngineStateComputer radixEngineStateComputer,
-		CoreModelMapper modelMapper
-	) {
-		super(ConstructionSubmitRequest.class);
-
-		this.radixEngineStateComputer = radixEngineStateComputer;
-		this.modelMapper = modelMapper;
+	public RecoverableSubstateVirtualShutdown(byte typeByte, SubstateId substateId) {
+		this.typeByte = typeByte;
+		this.substateId = substateId;
 	}
 
 	@Override
-	public ConstructionSubmitResponse handleRequest(ConstructionSubmitRequest request) throws CoreApiException {
-		modelMapper.verifyNetwork(request.getNetworkIdentifier());
-
-		var txn = modelMapper.txn(request.getSignedTransaction());
+	public SubstateOperation recover(Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider) {
+		var radixEngine = radixEngineProvider.get();
+		var keyBuf = substateId.getVirtualKey().orElseThrow();
+		Particle substate;
 		try {
-			radixEngineStateComputer.addToMempool(txn);
-			return new ConstructionSubmitResponse()
-				.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
-				.duplicate(false);
-		} catch (MempoolDuplicateException e) {
-			return new ConstructionSubmitResponse()
-				.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
-				.duplicate(true);
-		} catch (MempoolFullException e) {
-			throw modelMapper.mempoolFullException(e);
-		} catch (MempoolRejectedException e) {
-			var reException = (RadixEngineException) e.getCause();
-			throw modelMapper.radixEngineException(reException);
+			substate = radixEngine.getVirtualSubstateDeserialization().keyToSubstate(typeByte, keyBuf);
+		} catch (DeserializeException e) {
+			throw new IllegalStateException("Could not deserialize virtual substate.");
 		}
+		return new SubstateOperation(substate, substateId, false);
 	}
 }

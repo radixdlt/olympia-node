@@ -89,6 +89,7 @@ import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.constraintmachine.VirtualSubstateDeserialization;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -527,9 +528,21 @@ public final class RadixEngine<M> {
 		}
 	}
 
+	public SubstateSerialization getSubstateSerialization() {
+		synchronized (stateUpdateEngineLock) {
+			return serialization;
+		}
+	}
+
 	public SubstateDeserialization getSubstateDeserialization() {
 		synchronized (stateUpdateEngineLock) {
 			return constraintMachine.getDeserialization();
+		}
+	}
+
+	public VirtualSubstateDeserialization getVirtualSubstateDeserialization() {
+		synchronized (stateUpdateEngineLock) {
+			return constraintMachine.getVirtualDeserialization();
 		}
 	}
 

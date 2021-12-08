@@ -136,6 +136,10 @@ public final class ConstraintMachine {
 		return deserialization;
 	}
 
+	public VirtualSubstateDeserialization getVirtualDeserialization() {
+		return virtualSubstateDeserialization;
+	}
+
 	private static final class CMValidationState {
 		private final Map<REAddr, TokenResource> localResources = new HashMap<>();
 		private final Map<Integer, Pair<Substate, Supplier<ByteBuffer>>> localUpParticles = new HashMap<>();
@@ -404,6 +408,7 @@ public final class ConstraintMachine {
 					var index = SubstateIndex.create(raw, validationState.deserialization.byteToClass(raw[0]));
 					var substateCursor = validationState.getIndexedCursor(index);
 					var tmp = stateUpdates;
+					final int tmpInstIndex = instIndex;
 					var iterator = new Iterator<Particle>() {
 						@Override
 						public boolean hasNext() {
@@ -417,7 +422,7 @@ public final class ConstraintMachine {
 							var substate = substateCursor.next();
 							if (inst.getMicroOp().getOp() == REOp.DOWNINDEX) {
 								var typeByte = deserialization.classToByte(substate.getParticle().getClass());
-								tmp.add(REStateUpdate.of(REOp.DOWN, substate.getId(), typeByte, substate.getParticle(), null));
+								tmp.add(REStateUpdate.of(REOp.DOWN, tmpInstIndex, substate.getId(), typeByte, substate.getParticle(), null));
 							}
 							return substate.getParticle();
 						}
@@ -469,7 +474,7 @@ public final class ConstraintMachine {
 
 					var op = inst.getMicroOp().getOp();
 					var typeByte = deserialization.classToByte(nextParticle.getClass());
-					stateUpdates.add(REStateUpdate.of(op, substateId, typeByte, nextParticle, substateBuffer));
+					stateUpdates.add(REStateUpdate.of(op, instIndex, substateId, typeByte, nextParticle, substateBuffer));
 					var eventId = OpSignature.ofSubstateUpdate(op, nextParticle.getClass());
 					var methodProcedure = loadProcedure(reducerState, eventId);
 					reducerState = callProcedure(methodProcedure, nextParticle, reducerState, readableAddrs, context);

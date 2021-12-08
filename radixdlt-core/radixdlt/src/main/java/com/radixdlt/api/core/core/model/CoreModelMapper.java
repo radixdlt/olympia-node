@@ -61,19 +61,14 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.model;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.model.DataOperation;
-import com.radixdlt.api.core.core.model.Entity;
-import com.radixdlt.api.core.core.model.ResourceOperation;
-import com.radixdlt.api.core.core.model.SubstateTypeMapping;
 import com.radixdlt.api.core.core.model.entities.AccountVaultEntity;
-import com.radixdlt.api.core.core.model.EntityOperation;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportResourceDepositException;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportResourceWithdrawException;
 import com.radixdlt.api.core.core.model.entities.ExitingStakeVaultEntity;
@@ -82,11 +77,8 @@ import com.radixdlt.api.core.core.model.entities.NotEnoughResourcesException;
 import com.radixdlt.api.core.core.model.entities.SystemEntity;
 import com.radixdlt.api.core.core.model.entities.ValidatorSystemEntity;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportDataObjectException;
-import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.entities.PreparedStakeVaultEntity;
 import com.radixdlt.api.core.core.model.entities.PreparedUnstakeVaultEntity;
-import com.radixdlt.api.core.core.model.Resource;
-import com.radixdlt.api.core.core.model.StakeUnitResource;
 import com.radixdlt.api.core.core.model.entities.TokenEntity;
 import com.radixdlt.api.core.core.model.entities.ValidatorEntity;
 import com.radixdlt.api.core.core.openapitools.model.*;
@@ -1039,16 +1031,29 @@ public final class CoreModelMapper {
 			.action(bootUp ? Data.ActionEnum.CREATE : Data.ActionEnum.DELETE));
 	}
 
+	public Operation operation(
+		Particle substate,
+		SubstateId substateId,
+		boolean isBootUp,
+		Function<REAddr, String> addressToSymbol
+	) {
+		var operation = new Operation();
+		var typeId = SubstateTypeId.valueOf(substate.getClass());
+		operation.type(SubstateTypeMapping.getType(typeId));
+		operation.substate(substate(substateId, isBootUp));
+		operation.entityIdentifier(entityIdentifier(substate, addressToSymbol));
+		if (substate instanceof ResourceInBucket resourceInBucket && !resourceInBucket.getAmount().isZero()) {
+			operation.amount(resourceOperation(resourceInBucket, isBootUp, addressToSymbol));
+		}
+		data(substate, isBootUp).ifPresent(operation::data);
+		return operation;
+	}
+
 	public Operation operation(REStateUpdate update, Function<REAddr, String> addressToSymbol) {
 		var operation = new Operation();
 		var substate = (Particle) update.getParsed();
 		operation.type(SubstateTypeMapping.getType(SubstateTypeId.valueOf(update.typeByte())));
 		operation.substate(substate(update.getId(), update.isBootUp()));
-		/*
-			.putOpt("metadata", update.isShutDown() ? null : new JSONObject()
-				.put("substate_data_hex", Bytes.toHexString(update.getRawSubstateBytes().getData()))
-			);
-		 */
 		operation.entityIdentifier(entityIdentifier(substate, addressToSymbol));
 		if (substate instanceof ResourceInBucket resourceInBucket && !resourceInBucket.getAmount().isZero()) {
 			operation.amount(resourceOperation(resourceInBucket, update.isBootUp(), addressToSymbol));

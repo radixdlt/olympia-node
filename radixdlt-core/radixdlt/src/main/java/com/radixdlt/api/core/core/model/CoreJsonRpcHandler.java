@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.model;
 
 import com.radixdlt.api.core.core.openapitools.JSON;
 import com.radixdlt.api.core.core.openapitools.model.InvalidJsonError;

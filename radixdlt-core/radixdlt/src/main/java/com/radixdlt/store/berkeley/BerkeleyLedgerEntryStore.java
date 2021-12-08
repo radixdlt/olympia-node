@@ -81,6 +81,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.store.ResourceStore;
 import com.radixdlt.utils.UInt256;
+import com.sleepycat.je.Get;
 import com.sleepycat.je.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -990,6 +991,39 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		} finally {
 			addTime(startTime, CounterType.ELAPSED_BDB_LEDGER_ENTRIES, CounterType.COUNT_BDB_LEDGER_ENTRIES);
 		}
+	}
+
+	public Stream<Txn> getCommittedTxns(long stateVersion) {
+		var txnCursor = txnDatabase.openCursor(null, null);
+		var iterator = new Iterator<Txn>() {
+			final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(stateVersion + 1));
+			final DatabaseEntry value = new DatabaseEntry();
+			OperationStatus status = txnCursor.get(key, value, Get.SEARCH, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
+
+			@Override
+			public boolean hasNext() {
+				return status == SUCCESS;
+			}
+
+			@Override
+			public Txn next() {
+				if (status != SUCCESS) {
+					throw new NoSuchElementException();
+				}
+				var offset = fromByteArray(value.getData());
+				byte[] txnBytes;
+				try {
+					txnBytes = txnLog.read(offset);
+				} catch (IOException e) {
+					throw new IllegalStateException("Unable to read transaction", e);
+				}
+				Txn next = Txn.create(txnBytes);
+
+				status = txnCursor.getNext(key, value, null);
+				return next;
+			}
+		};
+		return Streams.stream(iterator).onClose(txnCursor::close);
 	}
 
 	@Override

@@ -61,54 +61,44 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.handlers;
+package com.radixdlt.api.core.core.reconstruction;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.core.core.model.CoreJsonRpcHandler;
-import com.radixdlt.api.core.core.model.CoreApiException;
-import com.radixdlt.api.core.core.model.CoreModelMapper;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitResponse;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.google.inject.Provider;
+import com.radixdlt.api.core.core.model.SubstateOperation;
+import com.radixdlt.atom.SubstateId;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
-public final class ConstructionSubmitHandler extends CoreJsonRpcHandler<ConstructionSubmitRequest, ConstructionSubmitResponse> {
-	private final RadixEngineStateComputer radixEngineStateComputer;
-	private final CoreModelMapper modelMapper;
+import java.nio.ByteBuffer;
 
-	@Inject
-	ConstructionSubmitHandler(
-		RadixEngineStateComputer radixEngineStateComputer,
-		CoreModelMapper modelMapper
-	) {
-		super(ConstructionSubmitRequest.class);
+public class RecoverableSubstateShutdown implements RecoverableSubstate {
+	private final ByteBuffer substateBuffer;
+	private final SubstateId substateId;
+	private final boolean isBootUp;
 
-		this.radixEngineStateComputer = radixEngineStateComputer;
-		this.modelMapper = modelMapper;
+	public RecoverableSubstateShutdown(ByteBuffer substateBuffer, SubstateId substateId, boolean isBootUp) {
+		this.substateBuffer = substateBuffer;
+		this.substateId = substateId;
+		this.isBootUp = isBootUp;
+	}
+
+	private Particle deserialize(RadixEngine<LedgerAndBFTProof> radixEngine) {
+		var deserialization = radixEngine.getSubstateDeserialization();
+		try {
+			return deserialization.deserialize(substateBuffer);
+		} catch (DeserializeException e) {
+			throw new IllegalStateException("Failed to deserialize substate.", e);
+		}
 	}
 
 	@Override
-	public ConstructionSubmitResponse handleRequest(ConstructionSubmitRequest request) throws CoreApiException {
-		modelMapper.verifyNetwork(request.getNetworkIdentifier());
-
-		var txn = modelMapper.txn(request.getSignedTransaction());
-		try {
-			radixEngineStateComputer.addToMempool(txn);
-			return new ConstructionSubmitResponse()
-				.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
-				.duplicate(false);
-		} catch (MempoolDuplicateException e) {
-			return new ConstructionSubmitResponse()
-				.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
-				.duplicate(true);
-		} catch (MempoolFullException e) {
-			throw modelMapper.mempoolFullException(e);
-		} catch (MempoolRejectedException e) {
-			var reException = (RadixEngineException) e.getCause();
-			throw modelMapper.radixEngineException(reException);
-		}
+	public SubstateOperation recover(Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider) {
+		return new SubstateOperation(
+			deserialize(radixEngineProvider.get()),
+			substateId,
+			isBootUp
+		);
 	}
 }

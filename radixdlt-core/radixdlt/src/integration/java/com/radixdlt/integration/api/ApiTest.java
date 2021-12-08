@@ -65,7 +65,7 @@ package com.radixdlt.integration.api;
 
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.core.core.BerkeleyProcessedTransactionsStore;
+import com.radixdlt.api.core.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.integration.FailOnEvent;
@@ -253,9 +253,9 @@ public class ApiTest {
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
 					bindConstant().annotatedWith(NetworkId.class).to(Network.LOCALNET.getId());
-					bind(BerkeleyProcessedTransactionsStore.class).in(Scopes.SINGLETON);
+					bind(BerkeleyRecoverableProcessedTxnStore.class).in(Scopes.SINGLETON);
 					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-						.addBinding().to(BerkeleyProcessedTransactionsStore.class);
+						.addBinding().to(BerkeleyRecoverableProcessedTxnStore.class);
 				}
 
 				@Provides

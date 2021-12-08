@@ -67,6 +67,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.core.core.model.CoreApiException;
+import com.radixdlt.api.core.core.model.CoreModelMapper;
 import com.radixdlt.api.core.core.handlers.NodeSignHandler;
 import com.radixdlt.api.core.core.model.EntityOperation;
 import com.radixdlt.api.core.core.model.OperationTxBuilder;

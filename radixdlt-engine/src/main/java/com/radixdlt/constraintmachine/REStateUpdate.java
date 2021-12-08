@@ -79,26 +79,39 @@ public final class REStateUpdate {
 	private final byte typeByte;
 	private final Object parsed;
 	private final Supplier<ByteBuffer> stateBuf;
+	private final int instructionIndex;
 
-	private REStateUpdate(REOp op, SubstateId id, byte typeByte, Object parsed, Supplier<ByteBuffer> stateBuf) {
+	private REStateUpdate(REOp op, int instructionIndex, SubstateId id, byte typeByte, Object parsed, Supplier<ByteBuffer> stateBuf) {
 		Objects.requireNonNull(op);
 
 		this.op = op;
+		this.instructionIndex = instructionIndex;
 		this.id = id;
 		this.typeByte = typeByte;
 		this.parsed = parsed;
 		this.stateBuf = stateBuf;
 	}
 
-	public static REStateUpdate of(REOp op, SubstateId substateId, byte typeByte, Object parsed, Supplier<ByteBuffer> stateBuf) {
+	public static REStateUpdate of(
+		REOp op,
+		int instructionIndex,
+		SubstateId substateId,
+		byte typeByte,
+		Object parsed,
+		Supplier<ByteBuffer> stateBuf
+	) {
 		if (op != REOp.DOWN && op != REOp.UP) {
 			throw new IllegalArgumentException();
 		}
-		return new REStateUpdate(op, substateId, typeByte, parsed, stateBuf);
+		return new REStateUpdate(op, instructionIndex, substateId, typeByte, parsed, stateBuf);
 	}
 
 	public byte typeByte() {
 		return typeByte;
+	}
+
+	public int getInstructionIndex() {
+		return instructionIndex;
 	}
 
 	public SubstateId getId() {

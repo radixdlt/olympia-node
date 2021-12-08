@@ -61,30 +61,26 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.reconstruction;
 
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.radixdlt.api.core.core.openapitools.JSON;
-import com.radixdlt.api.core.core.openapitools.model.CommittedTransaction;
 import com.radixdlt.application.system.state.RoundData;
-import com.radixdlt.application.tokens.state.TokenResourceMetadata;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -103,51 +99,90 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
-import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
-public final class BerkeleyProcessedTransactionsStore implements BerkeleyAdditionalStore {
-	private static final String PROCESSED_TRANSACTIONS_DB_NAME = "radix.transactions";
+public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAdditionalStore {
+	private static final String RECOVERABLE_TRANSACTIONS_DB_NAME = "radix.recoverable_txns";
+	private static final String ACCUMULATOR_HASH_DB_NAME = "radix.accumulator_hash";
 	private Database processedTransactionsDatabase; // Txns by index; Append-only
+	private Database accumulatorDatabase; // Txns by index; Append-only
+
 	private final AtomicReference<Instant> timestamp = new AtomicReference<>();
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 	private final LedgerAccumulator ledgerAccumulator;
-	private final CoreModelMapper modelMapper;
-	private HashCode accumulator;
+	private final Serialization serialization;
+	private AccumulatorState accumulatorState;
 
 	@Inject
-	public BerkeleyProcessedTransactionsStore(
+	public BerkeleyRecoverableProcessedTxnStore(
+		Serialization serialization,
 		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
-		LedgerAccumulator ledgerAccumulator,
-		CoreModelMapper modelMapper
+		LedgerAccumulator ledgerAccumulator
 	) {
+		this.serialization = serialization;
 		// TODO: Fix this when we move AdditionalStore to be a RadixEngine construct rather than Berkeley construct
 		this.radixEngineProvider = radixEngineProvider;
 		this.ledgerAccumulator = ledgerAccumulator;
-		this.modelMapper = modelMapper;
 	}
 
 	@Override
 	public void open(DatabaseEnvironment dbEnv) {
-		processedTransactionsDatabase = dbEnv.getEnvironment().openDatabase(null, PROCESSED_TRANSACTIONS_DB_NAME, new DatabaseConfig()
+		processedTransactionsDatabase = dbEnv.getEnvironment().openDatabase(null, RECOVERABLE_TRANSACTIONS_DB_NAME, new DatabaseConfig()
 			.setAllowCreate(true)
 			.setTransactional(true)
 			.setKeyPrefixing(true)
 			.setBtreeComparator(lexicographicalComparator())
 		);
 
-		var key = new DatabaseEntry(new byte[0]);
-		var value = new DatabaseEntry();
-		if (processedTransactionsDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
-			accumulator = HashCode.fromBytes(value.getData());
-		} else {
-			accumulator = HashUtils.zero256();
+		accumulatorDatabase = dbEnv.getEnvironment().openDatabase(null, ACCUMULATOR_HASH_DB_NAME, new DatabaseConfig()
+			.setAllowCreate(true)
+			.setTransactional(true)
+			.setKeyPrefixing(true)
+			.setBtreeComparator(lexicographicalComparator())
+		);
+
+		try (var cursor = accumulatorDatabase.openCursor(null, null)) {
+			var key = new DatabaseEntry(Longs.toByteArray(Long.MAX_VALUE));
+			var value = new DatabaseEntry();
+			cursor.getSearchKeyRange(key, value, null);
+			var status = cursor.getPrev(key, value, null);
+			if (status == SUCCESS) {
+				var accumulatorHash = HashCode.fromBytes(value.getData());
+				var stateVersion = Longs.fromByteArray(key.getData());
+				this.accumulatorState = new AccumulatorState(stateVersion, accumulatorHash);
+			} else {
+				this.accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+			}
 		}
 	}
 
-	public Stream<CommittedTransaction> get(long index) {
+	@Override
+	public void close() {
+		if (processedTransactionsDatabase != null) {
+			processedTransactionsDatabase.close();
+		}
+
+		if (accumulatorDatabase != null) {
+			accumulatorDatabase.close();
+		}
+	}
+
+	public Optional<HashCode> getAccumulator(long stateVersion) {
+		if (stateVersion == 0) {
+			return Optional.of(HashUtils.zero256());
+		}
+		var key = new DatabaseEntry(Longs.toByteArray(stateVersion));
+		var value = new DatabaseEntry();
+		var result = accumulatorDatabase.get(null, key, value, null);
+		if (result != SUCCESS) {
+			return Optional.empty();
+		}
+		return Optional.of(HashCode.fromBytes(value.getData()));
+	}
+
+	public Stream<RecoverableProcessedTxn> get(long index) {
 		var cursor = processedTransactionsDatabase.openCursor(null, null);
-		var iterator = new Iterator<CommittedTransaction>() {
+		var iterator = new Iterator<RecoverableProcessedTxn>() {
 			final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(index));
 			final DatabaseEntry value = new DatabaseEntry();
 			OperationStatus status = cursor.get(key, value, Get.SEARCH, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
@@ -158,13 +193,13 @@ public final class BerkeleyProcessedTransactionsStore implements BerkeleyAdditio
 			}
 
 			@Override
-			public CommittedTransaction next() {
+			public RecoverableProcessedTxn next() {
 				if (status != SUCCESS) {
 					throw new NoSuchElementException();
 				}
-				CommittedTransaction next;
+				RecoverableProcessedTxn next;
 				try {
-					next = JSON.getDefault().getMapper().readValue(value.getData(), CommittedTransaction.class);
+					next = serialization.fromDson(Compress.uncompress(value.getData()), RecoverableProcessedTxn.class);
 				} catch (IOException e) {
 					throw new IllegalStateException("Failed to deserialize committed transaction.");
 				}
@@ -177,25 +212,11 @@ public final class BerkeleyProcessedTransactionsStore implements BerkeleyAdditio
 	}
 
 	@Override
-	public void close() {
-		if (processedTransactionsDatabase != null) {
-			processedTransactionsDatabase.close();
-		}
-	}
-
-	private Particle deserialize(byte[] data) {
-		var deserialization = radixEngineProvider.get().getSubstateDeserialization();
-		try {
-			return deserialization.deserialize(data);
-		} catch (DeserializeException e) {
-			throw new IllegalStateException("Failed to deserialize substate.");
-		}
-	}
-
-	@Override
 	public void process(Transaction dbTxn, REProcessedTxn txn, long stateVersion, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
-		// TODO: Have lower level logic send real accumulator values
-		var accumulatorState = new AccumulatorState(stateVersion - 1, accumulator);
+		if (accumulatorState.getStateVersion() != stateVersion - 1) {
+			throw new IllegalStateException("Accumulator out of sync.");
+		}
+
 		var nextAccumulatorState = ledgerAccumulator.accumulate(accumulatorState, txn.getTxnId().asHashCode());
 		txn.stateUpdates()
 			.filter(u -> u.getParsed() instanceof RoundData)
@@ -204,22 +225,20 @@ public final class BerkeleyProcessedTransactionsStore implements BerkeleyAdditio
 			.map(RoundData::asInstant)
 			.forEach(timestamp::set);
 
-		Function<REAddr, String> addressToSymbol = addr -> {
-			var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-			var data = mapper.apply(mapKey).orElseThrow().getData();
-			// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
-			var metadata = (TokenResourceMetadata) deserialize(data);
-			return metadata.getSymbol();
-		};
-
-		var transaction = modelMapper.committedTransaction(txn, nextAccumulatorState, addressToSymbol);
+		var substateSerialization = radixEngineProvider.get().getSubstateSerialization();
+		var stored = RecoverableProcessedTxn.from(txn, substateSerialization);
 		byte[] data;
 		try {
-			data = JSON.getDefault().getMapper().writeValueAsBytes(transaction);
+			data = Compress.compress(serialization.toDson(stored, DsonOutput.Output.ALL));
+			//data = Compress.compress(JSON.getDefault().getMapper().writeValueAsBytes(stored));
+			//var groups = JSON.getDefault().getMapper().writeValueAsBytes(stored.getOperationGroups());
+			//var identifier = JSON.getDefault().getMapper().writeValueAsBytes(stored.getStateIdentifier());
+			//System.out.println(data.length);
 		} catch (IOException e) {
 			throw new IllegalStateException(e);
 		}
-		this.accumulator = nextAccumulatorState.getAccumulatorHash();
+
+		this.accumulatorState = nextAccumulatorState;
 
 		var key = new DatabaseEntry(Longs.toByteArray(stateVersion - 1));
 		var value = new DatabaseEntry(data);
@@ -228,8 +247,9 @@ public final class BerkeleyProcessedTransactionsStore implements BerkeleyAdditio
 			throw new IllegalStateException("Unexpected operation status " + result);
 		}
 
+		var versionEntry = new DatabaseEntry(Longs.toByteArray(nextAccumulatorState.getStateVersion()));
 		var accumulatorHashEntry = new DatabaseEntry(nextAccumulatorState.getAccumulatorHash().asBytes());
-		result = processedTransactionsDatabase.put(dbTxn, new DatabaseEntry(new byte[0]), accumulatorHashEntry);
+		result = accumulatorDatabase.put(dbTxn, versionEntry, accumulatorHashEntry);
 		if (result != SUCCESS) {
 			throw new IllegalStateException("Unexpected operation status " + result);
 		}

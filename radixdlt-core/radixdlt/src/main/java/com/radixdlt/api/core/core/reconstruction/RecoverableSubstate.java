@@ -61,54 +61,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.handlers;
+package com.radixdlt.api.core.core.reconstruction;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.core.core.model.CoreJsonRpcHandler;
-import com.radixdlt.api.core.core.model.CoreApiException;
-import com.radixdlt.api.core.core.model.CoreModelMapper;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitResponse;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.google.inject.Provider;
+import com.radixdlt.api.core.core.model.SubstateOperation;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
-public final class ConstructionSubmitHandler extends CoreJsonRpcHandler<ConstructionSubmitRequest, ConstructionSubmitResponse> {
-	private final RadixEngineStateComputer radixEngineStateComputer;
-	private final CoreModelMapper modelMapper;
-
-	@Inject
-	ConstructionSubmitHandler(
-		RadixEngineStateComputer radixEngineStateComputer,
-		CoreModelMapper modelMapper
-	) {
-		super(ConstructionSubmitRequest.class);
-
-		this.radixEngineStateComputer = radixEngineStateComputer;
-		this.modelMapper = modelMapper;
-	}
-
-	@Override
-	public ConstructionSubmitResponse handleRequest(ConstructionSubmitRequest request) throws CoreApiException {
-		modelMapper.verifyNetwork(request.getNetworkIdentifier());
-
-		var txn = modelMapper.txn(request.getSignedTransaction());
-		try {
-			radixEngineStateComputer.addToMempool(txn);
-			return new ConstructionSubmitResponse()
-				.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
-				.duplicate(false);
-		} catch (MempoolDuplicateException e) {
-			return new ConstructionSubmitResponse()
-				.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
-				.duplicate(true);
-		} catch (MempoolFullException e) {
-			throw modelMapper.mempoolFullException(e);
-		} catch (MempoolRejectedException e) {
-			var reException = (RadixEngineException) e.getCause();
-			throw modelMapper.radixEngineException(reException);
-		}
-	}
+public interface RecoverableSubstate {
+	SubstateOperation recover(Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider);
 }
