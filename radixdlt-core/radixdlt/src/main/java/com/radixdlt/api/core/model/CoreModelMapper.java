@@ -342,7 +342,8 @@ public final class CoreModelMapper {
 				switch (subEntity.getAddress()) {
 					case "prepared_stakes" -> {
 						var metadata = subEntity.getMetadata();
-						if (metadata == null || metadata.getEpochUnlock() != null || metadata.getValidatorAddress() == null) {
+						// TODO: Reenable check on epochUnlock, removed for now to support clients with default values
+						if (metadata == null /*|| metadata.getEpochUnlock() != null*/ || metadata.getValidatorAddress() == null) {
 							throw invalidSubEntity(subEntity);
 						}
 						var validator = addressing.forValidators().parseOrThrow(metadata.getValidatorAddress(), s -> invalidAddress(address));
