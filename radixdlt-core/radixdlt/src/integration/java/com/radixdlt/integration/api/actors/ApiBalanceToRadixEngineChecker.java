@@ -61,82 +61,55 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.handlers;
+package com.radixdlt.integration.api.actors;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.core.core.CoreJsonRpcHandler;
-import com.radixdlt.api.core.core.CoreApiException;
 import com.radixdlt.api.core.core.CoreModelMapper;
-import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
-import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponse;
-import com.radixdlt.api.core.core.openapitools.model.SyncStatus;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineReader;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.store.LastProof;
+import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.PrivateKeys;
 
-public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatusRequest, NetworkStatusResponse> {
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final LedgerProof lastProof;
-	private final AccumulatorState preGenesisAccumulatorState;
-	private final AccumulatorState genesisAccumulatorState;
-	private final CoreModelMapper coreModelMapper;
-	private final PeersView peersView;
-	private final SystemCounters systemCounters;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
 
-	@Inject
-	NetworkStatusHandler(
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		@Genesis VerifiedTxnsAndProof txnsAndProof,
-		@LastProof LedgerProof lastProof,
-		LedgerAccumulator ledgerAccumulator,
-		PeersView peersView,
-		CoreModelMapper coreModelMapper,
-		SystemCounters systemCounters
-	) {
-		super(NetworkStatusRequest.class);
+import static org.assertj.core.api.Assertions.assertThat;
 
-		this.radixEngine = radixEngine;
-		this.lastProof = lastProof;
-		this.preGenesisAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
-		this.genesisAccumulatorState = ledgerAccumulator.accumulate(
-			preGenesisAccumulatorState, txnsAndProof.getTxns().get(0).getId().asHashCode()
-		);
-		this.peersView = peersView;
-		this.coreModelMapper = coreModelMapper;
-		this.systemCounters = systemCounters;
-	}
-
-	private LedgerProof getCurrentProof() {
-		var ledgerAndBFTProof = radixEngine.read(RadixEngineReader::getMetadata);
-		return ledgerAndBFTProof == null ? lastProof : ledgerAndBFTProof.getProof();
+public final class ApiBalanceToRadixEngineChecker implements DeterministicActor {
+	public List<ResourceAmount> getAccountUnstakes(REAddr addr, NodeApiClient nodeClient) {
+		return PrivateKeys.numeric(1).limit(20)
+			.map(ECKeyPair::getPublicKey)
+			.flatMap(validatorKey -> nodeClient.getUnstakes(addr, validatorKey).stream())
+			.collect(Collectors.toList());
 	}
 
 	@Override
-	public NetworkStatusResponse handleRequest(NetworkStatusRequest request) throws CoreApiException {
-		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
+	public void execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
+		var injector = runner.getNode(0);
+		var nodeClient = injector.getInstance(NodeApiClient.class);
+		var coreModelMapper = injector.getInstance(CoreModelMapper.class);
+		var radixEngineReader = injector.getInstance(RadixEngineReader.class);
 
-		var currentProof = getCurrentProof();
-		var response = new NetworkStatusResponse()
-			.currentStateEpoch(currentProof.getEpoch())
-			.currentStateRound(currentProof.getView().number())
-			.currentStateTimestamp(currentProof.timestamp())
-			.preGenesisStateIdentifier(coreModelMapper.stateIdentifier(preGenesisAccumulatorState))
-			.genesisStateIdentifier(coreModelMapper.stateIdentifier(genesisAccumulatorState))
-			.currentStateIdentifier(coreModelMapper.stateIdentifier(currentProof.getAccumulatorState()))
-			.syncStatus(new SyncStatus()
-				.currentStateVersion(systemCounters.get(SystemCounters.CounterType.LEDGER_STATE_VERSION))
-				.targetStateVersion(systemCounters.get(SystemCounters.CounterType.SYNC_TARGET_STATE_VERSION))
-			);
-		peersView.peers().map(coreModelMapper::peer).forEach(response::addPeersItem);
-		return response;
+		// Check that sum of api balances matches radixEngine numbers
+		var totalTokenBalance = PrivateKeys.numeric(1).limit(20)
+			.map(ECKeyPair::getPublicKey)
+			.map(REAddr::ofPubKeyAccount)
+			.flatMap(addr -> nodeClient.getEntity(coreModelMapper.entityIdentifier(addr)).getBalances().stream())
+			.filter(r -> r.getResourceIdentifier().equals(nodeClient.nativeToken()))
+			.map(r -> new BigInteger(r.getValue()))
+			.reduce(BigInteger.ZERO, BigInteger::add);
+		assertThat(totalTokenBalance).isEqualTo(radixEngineReader.getTotalNativeTokensInAccounts());
+
+		// Check that sum of api exiting stake balances matches radixEngine numbers
+		var totalUnstakingBalance = PrivateKeys.numeric(1).limit(20)
+			.map(ECKeyPair::getPublicKey)
+			.map(REAddr::ofPubKeyAccount)
+			.flatMap(addr -> getAccountUnstakes(addr, nodeClient).stream())
+			.filter(r -> r.getResourceIdentifier().equals(nodeClient.nativeToken()))
+			.map(r -> new BigInteger(r.getValue()))
+			.reduce(BigInteger.ZERO, BigInteger::add);
+		assertThat(totalUnstakingBalance).isEqualTo(radixEngineReader.getTotalExittingStake());
 	}
 }

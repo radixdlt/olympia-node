@@ -61,42 +61,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.api;
+package com.radixdlt.integration.api.actors.actions;
 
-import com.google.inject.Inject;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.state.ExitingStake;
-import com.radixdlt.application.tokens.state.PreparedStake;
-import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.api.core.core.openapitools.model.Data;
+import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
+import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
+import com.radixdlt.api.core.core.openapitools.model.Operation;
+import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
+import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorRegistered;
 
-import java.math.BigInteger;
+public final class RegisterValidator implements NodeTransactionAction {
+	private final boolean register;
 
-public final class RadixEngineReader {
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-
-	@Inject
-	public RadixEngineReader(RadixEngine<LedgerAndBFTProof> radixEngine) {
-		this.radixEngine = radixEngine;
+	public RegisterValidator(boolean register) {
+		this.register = register;
 	}
 
-	public BigInteger getTotalExittingStake() {
-		var totalStakeExitting = radixEngine.read(reader -> reader.reduce(ExitingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
-		return new BigInteger(1, totalStakeExitting.toByteArray());
-	}
-
-	public BigInteger getTotalTokensInAccounts() {
-		var totalTokens = radixEngine.read(reader -> reader.reduce(TokensInAccount.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
-		return new BigInteger(1, totalTokens.toByteArray());
-	}
-
-	public UInt256 getTotalNativeTokens() {
-		var totalTokens = radixEngine.read(reader -> reader.reduce(TokensInAccount.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
-		var totalStaked = radixEngine.read(reader -> reader.reduce(ValidatorStakeData.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
-		var totalStakePrepared = radixEngine.read(reader -> reader.reduce(PreparedStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
-		var totalStakeExitting = radixEngine.read(reader -> reader.reduce(ExitingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
-		return totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting);
+	@Override
+	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
+		return new OperationGroup().addOperationsItem(
+			new Operation()
+				.type("Data")
+				.data(new Data().action(Data.ActionEnum.CREATE)
+					.dataObject(new PreparedValidatorRegistered().registered(register)
+						.type(PreparedValidatorRegistered.class.getSimpleName())
+					)
+				)
+				.entityIdentifier(nodeIdentifiers.getValidatorEntityIdentifier())
+		);
 	}
 }

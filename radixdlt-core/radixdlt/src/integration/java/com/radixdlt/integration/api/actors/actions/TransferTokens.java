@@ -61,91 +61,49 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.api;
+package com.radixdlt.integration.api.actors.actions;
 
-import com.radixdlt.api.core.core.CoreModelMapper;
+import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
+import com.radixdlt.api.core.core.openapitools.model.Operation;
+import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
+import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.math.BigInteger;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class ApiBalanceChecker implements DeterministicActor {
-	private static final Logger logger = LogManager.getLogger();
 
 
-	private final MultiNodeDeterministicRunner runner;
-	private UInt256 lastNativeTokenCount;
-	private Long lastEpoch;
+public final class TransferTokens implements NodeTransactionAction {
+	private final Amount amount;
+	private final TokenResourceIdentifier tokenResourceIdentifier;
+	private final EntityIdentifier to;
 
-	public ApiBalanceChecker(MultiNodeDeterministicRunner runner) {
-		this.runner = runner;
-	}
-
-
-	public List<ResourceAmount> getAccountUnstakes(REAddr addr, NodeApiClient nodeClient) {
-		return PrivateKeys.numeric(1).limit(20)
-			.map(ECKeyPair::getPublicKey)
-			.flatMap(validatorKey -> nodeClient.getUnstakes(addr, validatorKey).stream())
-			.collect(Collectors.toList());
+	public TransferTokens(Amount amount, TokenResourceIdentifier tokenResourceIdentifier, EntityIdentifier to) {
+		this.amount = amount;
+		this.tokenResourceIdentifier = tokenResourceIdentifier;
+		this.to = to;
 	}
 
 	@Override
-	public void execute() throws Exception {
-		var injector = this.runner.getNode(0);
-		var nodeClient = injector.getInstance(NodeApiClient.class);
-		var coreModelMapper = injector.getInstance(CoreModelMapper.class);
-		var radixEngineReader = injector.getInstance(RadixEngineReader.class);
-
-		var epochView = nodeClient.getEpochView();
-		var epoch = epochView.getEpoch();
-		var totalNativeTokenCount = radixEngineReader.getTotalNativeTokens();
-		if (lastEpoch != null) {
-			logger.info("total_xrd: {} last_check: {}", Amount.ofSubunits(totalNativeTokenCount), Amount.ofSubunits(lastNativeTokenCount));
-			if (epoch - lastEpoch > 1) {
-				var numEpochs = epoch - lastEpoch;
-				var maxEmissions = UInt256.from(nodeClient.getRoundsPerEpoch())
-					.multiply(nodeClient.getRewardsPerProposal())
-					.multiply(UInt256.from(numEpochs));
-				assertThat(totalNativeTokenCount).isGreaterThan(lastNativeTokenCount);
-				var diff = totalNativeTokenCount.subtract(lastNativeTokenCount);
-				assertThat(diff).isLessThanOrEqualTo(maxEmissions);
-			}
-		} else {
-			logger.info("total_xrd: {}", Amount.ofSubunits(totalNativeTokenCount));
-		}
-
-		lastEpoch = epoch;
-		lastNativeTokenCount = totalNativeTokenCount;
-
-		// Check that sum of api balances matches radixEngine numbers
-		var totalTokenBalance = PrivateKeys.numeric(1).limit(20)
-			.map(ECKeyPair::getPublicKey)
-			.map(REAddr::ofPubKeyAccount)
-			.flatMap(addr -> nodeClient.getBalances(coreModelMapper.entityIdentifier(addr)).stream())
-			.filter(r -> r.getResourceIdentifier().equals(nodeClient.nativeToken()))
-			.map(r -> new BigInteger(r.getValue()))
-			.reduce(BigInteger.ZERO, BigInteger::add);
-		assertThat(totalTokenBalance).isEqualTo(radixEngineReader.getTotalTokensInAccounts());
-
-		// Check that sum of api exiting stake balances matches radixEngine numbers
-		var totalUnstakingBalance = PrivateKeys.numeric(1).limit(20)
-			.map(ECKeyPair::getPublicKey)
-			.map(REAddr::ofPubKeyAccount)
-			.flatMap(addr -> getAccountUnstakes(addr, nodeClient).stream())
-			.filter(r -> r.getResourceIdentifier().equals(nodeClient.nativeToken()))
-			.map(r -> new BigInteger(r.getValue()))
-			.reduce(BigInteger.ZERO, BigInteger::add);
-		assertThat(totalUnstakingBalance).isEqualTo(radixEngineReader.getTotalExittingStake());
+	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
+		return new OperationGroup()
+			.addOperationsItem(
+				new Operation()
+					.type("Resource")
+					.amount(new ResourceAmount()
+						.resourceIdentifier(tokenResourceIdentifier)
+						.value("-" + amount.toSubunits().toString())
+					)
+					.entityIdentifier(nodeIdentifiers.getAccountEntityIdentifier())
+			)
+			.addOperationsItem(
+				new Operation()
+					.type("Resource")
+					.amount(new ResourceAmount()
+						.resourceIdentifier(tokenResourceIdentifier)
+						.value(amount.toSubunits().toString())
+					)
+					.entityIdentifier(to)
+			);
 	}
 }

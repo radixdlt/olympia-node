@@ -156,8 +156,6 @@ public class NetworkStatusHandlerTest {
 		var response = sut.handleRequest(request);
 
 		// Assert
-		assertThat(response.getCurrentStateEpoch()).isEqualTo(1L);
-		assertThat(response.getCurrentStateRound()).isEqualTo(0L);
 		var genesisStateIdentifier = mapper.stateIdentifier(genesis.getProof().getAccumulatorState());
 		assertThat(response.getCurrentStateIdentifier()).isEqualTo(genesisStateIdentifier);
 		assertThat(response.getGenesisStateIdentifier()).isEqualTo(genesisStateIdentifier);

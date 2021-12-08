@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.api.actions;
+package com.radixdlt.integration.api.actors.actions;
 
 import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
@@ -69,29 +69,28 @@ import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
-import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.StakeUnitResourceIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.SubEntity;
 import com.radixdlt.application.tokens.Amount;
 
-
-public final class TransferTokens implements NodeTransactionAction {
+public final class UnstakeStakeUnits implements NodeTransactionAction {
 	private final Amount amount;
-	private final TokenResourceIdentifier tokenResourceIdentifier;
-	private final EntityIdentifier to;
+	private final String validatorAddress;
 
-	public TransferTokens(Amount amount, TokenResourceIdentifier tokenResourceIdentifier, EntityIdentifier to) {
+	public UnstakeStakeUnits(Amount amount, String validatorAddress) {
 		this.amount = amount;
-		this.tokenResourceIdentifier = tokenResourceIdentifier;
-		this.to = to;
+		this.validatorAddress = validatorAddress;
 	}
 
 	@Override
 	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
+		var resourceIdentifier = new StakeUnitResourceIdentifier().validatorAddress(validatorAddress).type("StakeUnits");
 		return new OperationGroup()
 			.addOperationsItem(
 				new Operation()
 					.type("Resource")
 					.amount(new ResourceAmount()
-						.resourceIdentifier(tokenResourceIdentifier)
+						.resourceIdentifier(resourceIdentifier)
 						.value("-" + amount.toSubunits().toString())
 					)
 					.entityIdentifier(nodeIdentifiers.getAccountEntityIdentifier())
@@ -100,10 +99,14 @@ public final class TransferTokens implements NodeTransactionAction {
 				new Operation()
 					.type("Resource")
 					.amount(new ResourceAmount()
-						.resourceIdentifier(tokenResourceIdentifier)
+						.resourceIdentifier(resourceIdentifier)
 						.value(amount.toSubunits().toString())
 					)
-					.entityIdentifier(to)
+					.entityIdentifier(
+						new EntityIdentifier()
+							.address(nodeIdentifiers.getAccountEntityIdentifier().getAddress())
+							.subEntity(new SubEntity().address("prepared_unstakes"))
+					)
 			);
 	}
 }

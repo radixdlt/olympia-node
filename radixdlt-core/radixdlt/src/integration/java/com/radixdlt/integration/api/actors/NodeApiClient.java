@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.api;
+package com.radixdlt.integration.api.actors;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.core.core.CoreApiException;
@@ -73,10 +73,14 @@ import com.radixdlt.api.core.core.handlers.EngineConfigurationHandler;
 import com.radixdlt.api.core.core.handlers.EngineStatusHandler;
 import com.radixdlt.api.core.core.handlers.EntityHandler;
 import com.radixdlt.api.core.core.handlers.NetworkConfigurationHandler;
+import com.radixdlt.api.core.core.handlers.NetworkStatusHandler;
 import com.radixdlt.api.core.core.handlers.NodeIdentifiersHandler;
 import com.radixdlt.api.core.core.handlers.NodeSignHandler;
+import com.radixdlt.api.core.core.handlers.TransactionsHandler;
 import com.radixdlt.api.core.core.openapitools.model.AboveMaximumValidatorFeeIncreaseError;
 import com.radixdlt.api.core.core.openapitools.model.BelowMinimumStakeError;
+import com.radixdlt.api.core.core.openapitools.model.CommittedTransaction;
+import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataAccount;
@@ -86,19 +90,23 @@ import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationRequest;
 import com.radixdlt.api.core.core.openapitools.model.EngineStatusRequest;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
+import com.radixdlt.api.core.core.openapitools.model.EntityResponse;
 import com.radixdlt.api.core.core.openapitools.model.MempoolFullError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
 import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiersRequest;
 import com.radixdlt.api.core.core.openapitools.model.NodeSignRequest;
 import com.radixdlt.api.core.core.openapitools.model.NotEnoughResourcesError;
 import com.radixdlt.api.core.core.openapitools.model.NotValidatorOwnerError;
+import com.radixdlt.api.core.core.openapitools.model.PartialStateIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
+import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.integration.api.actions.NodeTransactionAction;
+import com.radixdlt.integration.api.actors.actions.NodeTransactionAction;
 import com.radixdlt.utils.UInt256;
 
 import java.util.ArrayList;
@@ -108,6 +116,7 @@ import java.util.Set;
 final class NodeApiClient {
 	private final EntityHandler entityHandler;
 	private final NetworkConfigurationHandler networkConfigurationHandler;
+	private final NetworkStatusHandler networkStatusHandler;
 	private final NodeIdentifiersHandler nodeIdentifiersHandler;
 	private final ConstructionBuildHandler constructionBuildHandler;
 	private final NodeSignHandler nodeSignHandler;
@@ -115,11 +124,13 @@ final class NodeApiClient {
 	private final ConstructionSubmitHandler constructionSubmitHandler;
 	private final EngineConfigurationHandler engineConfigurationHandler;
 	private final EngineStatusHandler engineStatusHandler;
+	private final TransactionsHandler transactionsHandler;
 	private final CoreModelMapper coreModelMapper;
 
 	@Inject
 	NodeApiClient(
 		NetworkConfigurationHandler networkConfigurationHandler,
+		NetworkStatusHandler networkStatusHandler,
 		EntityHandler entityHandler,
 		NodeIdentifiersHandler nodeIdentifiersHandler,
 		ConstructionBuildHandler constructionBuildHandler,
@@ -128,9 +139,11 @@ final class NodeApiClient {
 		ConstructionSubmitHandler constructionSubmitHandler,
 		EngineConfigurationHandler engineConfigurationHandler,
 		EngineStatusHandler engineStatusHandler,
+		TransactionsHandler transactionsHandler,
 		CoreModelMapper coreModelMapper
 	) {
 		this.networkConfigurationHandler = networkConfigurationHandler;
+		this.networkStatusHandler = networkStatusHandler;
 		this.entityHandler = entityHandler;
 		this.nodeIdentifiersHandler = nodeIdentifiersHandler;
 		this.constructionDeriveHandler = constructionDeriveHandler;
@@ -139,6 +152,7 @@ final class NodeApiClient {
 		this.constructionSubmitHandler = constructionSubmitHandler;
 		this.engineConfigurationHandler = engineConfigurationHandler;
 		this.engineStatusHandler = engineStatusHandler;
+		this.transactionsHandler = transactionsHandler;
 		this.coreModelMapper = coreModelMapper;
 	}
 
@@ -169,6 +183,10 @@ final class NodeApiClient {
 		return response.getEntityIdentifier();
 	}
 
+	public StateIdentifier getStateIdentifier() throws Exception {
+		var response = networkStatusHandler.handleRequest(new NetworkStatusRequest().networkIdentifier(networkIdentifier()));
+		return response.getCurrentStateIdentifier();
+	}
 
 	public EpochView getEpochView() throws Exception {
 		var statusResponse = engineStatusHandler
@@ -202,13 +220,13 @@ final class NodeApiClient {
 		}
 	}
 
-	public List<ResourceAmount> getBalances(EntityIdentifier entityIdentifier) {
+	public EntityResponse getEntity(EntityIdentifier entityIdentifier) {
 		try {
 			var response = entityHandler.handleRequest(new EntityRequest()
 				.networkIdentifier(new NetworkIdentifier().network("localnet"))
 				.entityIdentifier(entityIdentifier)
 			);
-			return response.getBalances();
+			return response;
 		} catch (CoreApiException e) {
 			throw new IllegalStateException(e);
 		}
@@ -236,6 +254,15 @@ final class NodeApiClient {
 		}
 
 		return unstakes;
+	}
+
+	public List<CommittedTransaction> getTransactions(long stateVersion, long limit) throws Exception {
+		var response = transactionsHandler.handleRequest(new CommittedTransactionsRequest()
+			.networkIdentifier(networkIdentifier())
+			.stateIdentifier(new PartialStateIdentifier().stateVersion(stateVersion))
+			.limit(limit)
+		);
+		return response.getTransactions();
 	}
 
 	public void submit(NodeTransactionAction action) throws Exception {

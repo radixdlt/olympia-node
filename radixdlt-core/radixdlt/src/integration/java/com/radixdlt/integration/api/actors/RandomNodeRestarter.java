@@ -61,66 +61,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.api;
+package com.radixdlt.integration.api.actors;
 
-import com.google.inject.Key;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.integration.api.actions.NodeTransactionAction;
-import com.radixdlt.integration.api.actions.RegisterValidator;
-import com.radixdlt.integration.api.actions.SetAllowDelegationFlag;
-import com.radixdlt.integration.api.actions.SetValidatorFee;
-import com.radixdlt.integration.api.actions.SetValidatorOwner;
-import com.radixdlt.integration.api.actions.StakeTokens;
-import com.radixdlt.integration.api.actions.TransferTokens;
-import com.radixdlt.integration.api.actions.UnstakeStakeUnits;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 
 import java.util.Random;
 
-public final class ApiTxnSubmitter implements DeterministicActor {
-	private final MultiNodeDeterministicRunner multiNodeDeterministicRunner;
-	private final Random random;
-
-	public ApiTxnSubmitter(MultiNodeDeterministicRunner multiNodeDeterministicRunner, Random random) {
-		this.multiNodeDeterministicRunner = multiNodeDeterministicRunner;
-		this.random = random;
-	}
-
-	private Amount nextAmount() {
-		return Amount.ofTokens(random.nextInt(10) * 10 + 1);
-	}
-
+public final class RandomNodeRestarter implements DeterministicActor {
 	@Override
-	public void execute() throws Exception {
-		int size = this.multiNodeDeterministicRunner.getSize();
-		var nodeIndex = this.random.nextInt(size);
-		var nodeInjector = this.multiNodeDeterministicRunner.getNode(nodeIndex);
-		var nodeClient = nodeInjector.getInstance(NodeApiClient.class);
-		var otherNodeIndex = this.random.nextInt(size);
-		var otherKey = this.multiNodeDeterministicRunner.getNode(otherNodeIndex)
-			.getInstance(Key.get(ECPublicKey.class, Self.class));
-		var next = random.nextInt(8);
-
-		// Don't let the last validator unregister
-		if (next == 4 && nodeIndex <= 0) {
-			return;
-		}
-
-		NodeTransactionAction action = switch (next) {
-			case 0 -> new TransferTokens(nextAmount(), nodeClient.nativeToken(), nodeClient.deriveAccount(otherKey));
-			case 1 -> new StakeTokens(nextAmount(), nodeClient.deriveValidator(otherKey).getAddress());
-			case 2 -> new UnstakeStakeUnits(nextAmount(), nodeClient.deriveValidator(otherKey).getAddress());
-			case 3 -> new RegisterValidator(true);
-			case 4 -> new RegisterValidator(false);
-			case 5 -> new SetValidatorFee(random.nextInt(ValidatorUpdateRakeConstraintScrypt.RAKE_MAX + 1));
-			case 6 -> new SetValidatorOwner(nodeClient.deriveAccount(otherKey));
-			case 7 -> new SetAllowDelegationFlag(random.nextBoolean());
-			default -> throw new IllegalStateException("Unexpected value: " + next);
-		};
-
-		nodeClient.submit(action);
+	public void execute(MultiNodeDeterministicRunner runner, Random random) {
+		var nodeIndex = random.nextInt(runner.getSize());
+		runner.restartNode(nodeIndex);
 	}
 }

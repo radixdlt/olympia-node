@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.api.actions;
+package com.radixdlt.integration.api.actors.actions;
 
 import com.radixdlt.api.core.core.openapitools.model.Data;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;

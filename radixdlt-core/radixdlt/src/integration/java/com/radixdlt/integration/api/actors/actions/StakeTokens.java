@@ -61,32 +61,54 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.api.actions;
+package com.radixdlt.integration.api.actors.actions;
 
-import com.radixdlt.api.core.core.openapitools.model.Data;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
-import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorOwner;
+import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
+import com.radixdlt.api.core.core.openapitools.model.SubEntity;
+import com.radixdlt.api.core.core.openapitools.model.SubEntityMetadata;
+import com.radixdlt.application.tokens.Amount;
 
-public final class SetValidatorOwner implements NodeTransactionAction {
-	private final EntityIdentifier owner;
+public final class StakeTokens implements NodeTransactionAction {
+	private final Amount amount;
+	private final String validatorAddress;
 
-	public SetValidatorOwner(EntityIdentifier owner) {
-		this.owner = owner;
+	public StakeTokens(Amount amount, String validatorAddress) {
+		this.amount = amount;
+		this.validatorAddress = validatorAddress;
 	}
 
 	@Override
 	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
-		return new OperationGroup().addOperationsItem(
-			new Operation()
-				.type("Data")
-				.data(new Data().action(Data.ActionEnum.CREATE)
-					.dataObject(new PreparedValidatorOwner().owner(owner).type(PreparedValidatorOwner.class.getSimpleName()))
-				)
-				.entityIdentifier(nodeIdentifiers.getValidatorEntityIdentifier())
-		);
+		var nativeToken = configuration.getNativeToken();
+		return new OperationGroup()
+			.addOperationsItem(
+				new Operation()
+					.type("Resource")
+					.amount(new ResourceAmount()
+						.resourceIdentifier(nativeToken)
+						.value("-" + amount.toSubunits().toString())
+					)
+					.entityIdentifier(nodeIdentifiers.getAccountEntityIdentifier())
+			)
+			.addOperationsItem(
+				new Operation()
+					.type("Resource")
+					.amount(new ResourceAmount()
+						.resourceIdentifier(nativeToken)
+						.value(amount.toSubunits().toString())
+					)
+					.entityIdentifier(new EntityIdentifier()
+						.address(nodeIdentifiers.getAccountEntityIdentifier().getAddress())
+						.subEntity(new SubEntity()
+							.address("prepared_stakes")
+							.metadata(new SubEntityMetadata().validatorAddress(validatorAddress))
+						)
+					)
+			);
 	}
 }

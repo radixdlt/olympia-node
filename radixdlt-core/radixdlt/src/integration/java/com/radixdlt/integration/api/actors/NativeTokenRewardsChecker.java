@@ -61,54 +61,48 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.api.actions;
+package com.radixdlt.integration.api.actors;
 
-import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
-import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
-import com.radixdlt.api.core.core.openapitools.model.Operation;
-import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
-import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
-import com.radixdlt.api.core.core.openapitools.model.SubEntity;
-import com.radixdlt.api.core.core.openapitools.model.SubEntityMetadata;
-import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-public final class StakeTokens implements NodeTransactionAction {
-	private final Amount amount;
-	private final String validatorAddress;
+import java.math.BigInteger;
+import java.util.Random;
 
-	public StakeTokens(Amount amount, String validatorAddress) {
-		this.amount = amount;
-		this.validatorAddress = validatorAddress;
-	}
+import static org.assertj.core.api.Assertions.assertThat;
+
+public final class NativeTokenRewardsChecker implements DeterministicActor {
+	private static final Logger logger = LogManager.getLogger();
+
+	private BigInteger lastNativeTokenCount;
+	private Long lastEpoch;
 
 	@Override
-	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
-		var nativeToken = configuration.getNativeToken();
-		return new OperationGroup()
-			.addOperationsItem(
-				new Operation()
-					.type("Resource")
-					.amount(new ResourceAmount()
-						.resourceIdentifier(nativeToken)
-						.value("-" + amount.toSubunits().toString())
-					)
-					.entityIdentifier(nodeIdentifiers.getAccountEntityIdentifier())
-			)
-			.addOperationsItem(
-				new Operation()
-					.type("Resource")
-					.amount(new ResourceAmount()
-						.resourceIdentifier(nativeToken)
-						.value(amount.toSubunits().toString())
-					)
-					.entityIdentifier(new EntityIdentifier()
-						.address(nodeIdentifiers.getAccountEntityIdentifier().getAddress())
-						.subEntity(new SubEntity()
-							.address("prepared_stake")
-							.metadata(new SubEntityMetadata().validatorAddress(validatorAddress))
-						)
-					)
-			);
+	public void execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
+		var injector = runner.getNode(0);
+		var nodeClient = injector.getInstance(NodeApiClient.class);
+		var radixEngineReader = injector.getInstance(RadixEngineReader.class);
+
+		var epochView = nodeClient.getEpochView();
+		var epoch = epochView.getEpoch();
+		var totalNativeTokenCount = radixEngineReader.getTotalNativeTokens();
+		if (lastEpoch != null) {
+			logger.info("total_xrd: {} last_check: {}", totalNativeTokenCount, lastNativeTokenCount);
+			if (epoch - lastEpoch > 1) {
+				var numEpochs = epoch - lastEpoch;
+				var maxEmissions = BigInteger.valueOf(nodeClient.getRoundsPerEpoch())
+					.multiply(new BigInteger(1, nodeClient.getRewardsPerProposal().toByteArray()))
+					.multiply(BigInteger.valueOf(numEpochs));
+				assertThat(totalNativeTokenCount).isGreaterThan(lastNativeTokenCount);
+				var diff = totalNativeTokenCount.subtract(lastNativeTokenCount);
+				assertThat(diff).isLessThanOrEqualTo(maxEmissions);
+			}
+		} else {
+			logger.info("total_xrd: {}", totalNativeTokenCount);
+		}
+
+		lastEpoch = epoch;
+		lastNativeTokenCount = totalNativeTokenCount;
 	}
 }

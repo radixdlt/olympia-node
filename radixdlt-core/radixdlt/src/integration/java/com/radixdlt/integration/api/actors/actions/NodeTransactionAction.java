@@ -61,33 +61,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.api.actions;
+package com.radixdlt.integration.api.actors.actions;
 
-import com.radixdlt.api.core.core.openapitools.model.Data;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
 import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
-import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
-import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorRegistered;
 
-public final class RegisterValidator implements NodeTransactionAction {
-	private final boolean register;
-
-	public RegisterValidator(boolean register) {
-		this.register = register;
-	}
-
-	@Override
-	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
-		return new OperationGroup().addOperationsItem(
-			new Operation()
-				.type("Data")
-				.data(new Data().action(Data.ActionEnum.CREATE)
-					.dataObject(new PreparedValidatorRegistered().registered(register)
-						.type(PreparedValidatorRegistered.class.getSimpleName())
-					)
-				)
-				.entityIdentifier(nodeIdentifiers.getValidatorEntityIdentifier())
-		);
-	}
+public sealed interface NodeTransactionAction permits RegisterValidator, SetAllowDelegationFlag, SetValidatorFee,
+	SetValidatorOwner, StakeTokens, TransferTokens, UnstakeStakeUnits {
+	OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers);
 }
