@@ -1509,9 +1509,6 @@ components:
         - pre_genesis_state_identifier
         - genesis_state_identifier
         - current_state_identifier
-        - current_state_epoch
-        - current_state_round
-        - current_state_timestamp
         - sync_status
         - peers
       properties:
@@ -1524,16 +1521,6 @@ components:
         current_state_identifier:
           description: The current state identifier at the top of the node's copy of the ledger.
           "$ref": "#/components/schemas/StateIdentifier"
-        current_state_epoch:
-          description: The current ledger epoch at the top of the node's copy of the ledger.
-          "$ref": "#/components/schemas/LongNumber"
-        current_state_round:
-          description: The current ledger state round (in the current epoch) at the top of the node's copy of the ledger.
-          "$ref": "#/components/schemas/LongNumber"
-        current_state_timestamp:
-          description: The current ledger state timestamp at the top of the node's copy of the ledger.
-            This timestamp is not guaranteed to always increase.
-          "$ref": "#/components/schemas/LongNumber"
         sync_status:
           $ref: "#/components/schemas/SyncStatus"
         peers:

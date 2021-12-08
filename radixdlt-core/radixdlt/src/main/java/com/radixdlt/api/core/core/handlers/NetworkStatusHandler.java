@@ -123,12 +123,8 @@ public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatus
 	@Override
 	public NetworkStatusResponse handleRequest(NetworkStatusRequest request) throws CoreApiException {
 		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
-
 		var currentProof = getCurrentProof();
 		var response = new NetworkStatusResponse()
-			.currentStateEpoch(currentProof.getEpoch())
-			.currentStateRound(currentProof.getView().number())
-			.currentStateTimestamp(currentProof.timestamp())
 			.preGenesisStateIdentifier(coreModelMapper.stateIdentifier(preGenesisAccumulatorState))
 			.genesisStateIdentifier(coreModelMapper.stateIdentifier(genesisAccumulatorState))
 			.currentStateIdentifier(coreModelMapper.stateIdentifier(currentProof.getAccumulatorState()))
