@@ -1,6 +1,6 @@
 openapi: 3.0.0
 info:
-  version: 0.9.0
+  version: 1.0.0
   title: Radix Gateway API
   license:
     name: MIT
@@ -553,7 +553,7 @@ components:
         transactions:
           type: array
           items:
-            $ref: "#/components/schemas/AccountTransaction"
+            $ref: "#/components/schemas/TransactionInfo"
     TransferTokens:
       allOf:
         - "$ref": "#/components/schemas/Action"
@@ -991,7 +991,7 @@ components:
         ledger_state:
           $ref: "#/components/schemas/LedgerState"
         transaction:
-          $ref: "#/components/schemas/AccountTransaction"
+          $ref: "#/components/schemas/TransactionInfo"
     ValidatorRequest:
       type: object
       required:
@@ -1233,7 +1233,7 @@ components:
           "$ref": "#/components/schemas/BigInteger"
         owner:
           "$ref": "#/components/schemas/AccountIdentifier"
-    AccountTransaction:
+    TransactionInfo:
       type: object
       required:
         - transaction_status
@@ -1243,7 +1243,7 @@ components:
         - fee_paid
       properties:
         transaction_status:
-          "$ref": "#/components/schemas/AccountTransactionStatus"
+          "$ref": "#/components/schemas/TransactionStatus"
         transaction_identifier:
           "$ref": "#/components/schemas/TransactionIdentifier"
         actions:
@@ -1253,8 +1253,8 @@ components:
         fee_paid:
           $ref: "#/components/schemas/TokenAmount"
         metadata:
-          "$ref": "#/components/schemas/AccountTransactionMetadata"
-    AccountTransactionStatus:
+          "$ref": "#/components/schemas/TransactionMetadata"
+    TransactionStatus:
       type: object
       required:
         - status
@@ -1267,10 +1267,13 @@ components:
             - FAILED
         confirmed_time:
           type: string
+        ledger_state_version:
+          type: integer
+          format: int64
       example:
         status: CONFIRMED
         confirmed_time: 2021-07-27T17:35:10.726Z
-    AccountTransactionMetadata:
+    TransactionMetadata:
       type: object
       required:
         - hex
