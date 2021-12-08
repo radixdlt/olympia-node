@@ -174,7 +174,7 @@ public class PMT {
 						acc.mark(current);
 						var nextHash = current.getValue();
 						var nextNode = read(nextHash);
-						acc = getValue(nextNode, key.getTailNibbles(), acc);
+						acc = getValue(nextNode, commonPath.getRemainder(PMTPath.Subtree.NEW), acc);
 						break;
 					case BOTH:
 					case OLD:
