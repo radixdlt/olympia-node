@@ -65,7 +65,6 @@ package com.radixdlt.api;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.api.gateway.GatewayServerModule;
 import com.radixdlt.api.core.CoreServerModule;
 import com.radixdlt.properties.RuntimeProperties;
 
@@ -73,7 +72,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public final class ApiModule extends AbstractModule {
-	private static final int DEFAULT_GATEWAY_PORT = 8080;
 	private static final int DEFAULT_CORE_PORT = 3333;
 	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
 
@@ -86,15 +84,6 @@ public final class ApiModule extends AbstractModule {
 	@Override
 	public void configure() {
 		var endpointStatus = new HashMap<String, Boolean>();
-
-		var gatewayEnable = properties.get("api.gateway.enable", false);
-		endpointStatus.put("gateway", gatewayEnable);
-		if (gatewayEnable) {
-			var port = properties.get("api.gateway.port", DEFAULT_GATEWAY_PORT);
-			var bindAddress = properties.get("api.gateway.bind.address", DEFAULT_BIND_ADDRESS);
-			install(new GatewayServerModule(port, bindAddress));
-		}
-
 		var transactionsEnable = properties.get("api.transactions.enable", false);
 		endpointStatus.put("transactions", transactionsEnable);
 
