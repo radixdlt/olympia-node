@@ -22,45 +22,75 @@ import java.util.Objects;
 
 
 /**
- * NodeSignResponse
+ * PublicKeyEntry
  */
 @JsonPropertyOrder({
-  NodeSignResponse.JSON_PROPERTY_SIGNED_TRANSACTION
+  PublicKeyEntry.JSON_PROPERTY_PUBLIC_KEY,
+  PublicKeyEntry.JSON_PROPERTY_IDENTIFIERS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-06T21:56:33.306430-06:00[America/Chicago]")
-public class NodeSignResponse {
-  public static final String JSON_PROPERTY_SIGNED_TRANSACTION = "signed_transaction";
-  private String signedTransaction;
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-07T23:19:09.224041-06:00[America/Chicago]")
+public class PublicKeyEntry {
+  public static final String JSON_PROPERTY_PUBLIC_KEY = "public_key";
+  private PublicKey publicKey;
+
+  public static final String JSON_PROPERTY_IDENTIFIERS = "identifiers";
+  private PublicKeyIdentifiers identifiers;
 
 
-  public NodeSignResponse signedTransaction(String signedTransaction) {
-    this.signedTransaction = signedTransaction;
+  public PublicKeyEntry publicKey(PublicKey publicKey) {
+    this.publicKey = publicKey;
     return this;
   }
 
    /**
-   * Get signedTransaction
-   * @return signedTransaction
+   * Get publicKey
+   * @return publicKey
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SIGNED_TRANSACTION)
+  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getSignedTransaction() {
-    return signedTransaction;
+  public PublicKey getPublicKey() {
+    return publicKey;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SIGNED_TRANSACTION)
+  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSignedTransaction(String signedTransaction) {
-    this.signedTransaction = signedTransaction;
+  public void setPublicKey(PublicKey publicKey) {
+    this.publicKey = publicKey;
+  }
+
+
+  public PublicKeyEntry identifiers(PublicKeyIdentifiers identifiers) {
+    this.identifiers = identifiers;
+    return this;
+  }
+
+   /**
+   * Get identifiers
+   * @return identifiers
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_IDENTIFIERS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public PublicKeyIdentifiers getIdentifiers() {
+    return identifiers;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IDENTIFIERS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setIdentifiers(PublicKeyIdentifiers identifiers) {
+    this.identifiers = identifiers;
   }
 
 
   /**
-   * Return true if this NodeSignResponse object is equal to o.
+   * Return true if this PublicKeyEntry object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -70,20 +100,22 @@ public class NodeSignResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    NodeSignResponse nodeSignResponse = (NodeSignResponse) o;
-    return Objects.equals(this.signedTransaction, nodeSignResponse.signedTransaction);
+    PublicKeyEntry publicKeyEntry = (PublicKeyEntry) o;
+    return Objects.equals(this.publicKey, publicKeyEntry.publicKey) &&
+        Objects.equals(this.identifiers, publicKeyEntry.identifiers);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(signedTransaction);
+    return Objects.hash(publicKey, identifiers);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class NodeSignResponse {\n");
-    sb.append("    signedTransaction: ").append(toIndentedString(signedTransaction)).append("\n");
+    sb.append("class PublicKeyEntry {\n");
+    sb.append("    publicKey: ").append(toIndentedString(publicKey)).append("\n");
+    sb.append("    identifiers: ").append(toIndentedString(identifiers)).append("\n");
     sb.append("}");
     return sb.toString();
   }

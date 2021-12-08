@@ -22,105 +22,45 @@ import java.util.Objects;
 
 
 /**
- * NodeSignRequest
+ * NodeSignResponse
  */
 @JsonPropertyOrder({
-  NodeSignRequest.JSON_PROPERTY_NETWORK_IDENTIFIER,
-  NodeSignRequest.JSON_PROPERTY_UNSIGNED_TRANSACTION,
-  NodeSignRequest.JSON_PROPERTY_PUBLIC_KEY
+  KeySignResponse.JSON_PROPERTY_SIGNED_TRANSACTION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-06T21:56:33.306430-06:00[America/Chicago]")
-public class NodeSignRequest {
-  public static final String JSON_PROPERTY_NETWORK_IDENTIFIER = "network_identifier";
-  private NetworkIdentifier networkIdentifier;
-
-  public static final String JSON_PROPERTY_UNSIGNED_TRANSACTION = "unsigned_transaction";
-  private String unsignedTransaction;
-
-  public static final String JSON_PROPERTY_PUBLIC_KEY = "public_key";
-  private PublicKey publicKey;
+public class KeySignResponse {
+  public static final String JSON_PROPERTY_SIGNED_TRANSACTION = "signed_transaction";
+  private String signedTransaction;
 
 
-  public NodeSignRequest networkIdentifier(NetworkIdentifier networkIdentifier) {
-    this.networkIdentifier = networkIdentifier;
+  public KeySignResponse signedTransaction(String signedTransaction) {
+    this.signedTransaction = signedTransaction;
     return this;
   }
 
    /**
-   * Get networkIdentifier
-   * @return networkIdentifier
+   * Get signedTransaction
+   * @return signedTransaction
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_SIGNED_TRANSACTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public NetworkIdentifier getNetworkIdentifier() {
-    return networkIdentifier;
+  public String getSignedTransaction() {
+    return signedTransaction;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_SIGNED_TRANSACTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNetworkIdentifier(NetworkIdentifier networkIdentifier) {
-    this.networkIdentifier = networkIdentifier;
-  }
-
-
-  public NodeSignRequest unsignedTransaction(String unsignedTransaction) {
-    this.unsignedTransaction = unsignedTransaction;
-    return this;
-  }
-
-   /**
-   * Get unsignedTransaction
-   * @return unsignedTransaction
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_UNSIGNED_TRANSACTION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getUnsignedTransaction() {
-    return unsignedTransaction;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_UNSIGNED_TRANSACTION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setUnsignedTransaction(String unsignedTransaction) {
-    this.unsignedTransaction = unsignedTransaction;
-  }
-
-
-  public NodeSignRequest publicKey(PublicKey publicKey) {
-    this.publicKey = publicKey;
-    return this;
-  }
-
-   /**
-   * Get publicKey
-   * @return publicKey
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public PublicKey getPublicKey() {
-    return publicKey;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPublicKey(PublicKey publicKey) {
-    this.publicKey = publicKey;
+  public void setSignedTransaction(String signedTransaction) {
+    this.signedTransaction = signedTransaction;
   }
 
 
   /**
-   * Return true if this NodeSignRequest object is equal to o.
+   * Return true if this NodeSignResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -130,24 +70,20 @@ public class NodeSignRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    NodeSignRequest nodeSignRequest = (NodeSignRequest) o;
-    return Objects.equals(this.networkIdentifier, nodeSignRequest.networkIdentifier) &&
-        Objects.equals(this.unsignedTransaction, nodeSignRequest.unsignedTransaction) &&
-        Objects.equals(this.publicKey, nodeSignRequest.publicKey);
+    KeySignResponse keySignResponse = (KeySignResponse) o;
+    return Objects.equals(this.signedTransaction, keySignResponse.signedTransaction);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(networkIdentifier, unsignedTransaction, publicKey);
+    return Objects.hash(signedTransaction);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class NodeSignRequest {\n");
-    sb.append("    networkIdentifier: ").append(toIndentedString(networkIdentifier)).append("\n");
-    sb.append("    unsignedTransaction: ").append(toIndentedString(unsignedTransaction)).append("\n");
-    sb.append("    publicKey: ").append(toIndentedString(publicKey)).append("\n");
+    sb.append("class NodeSignResponse {\n");
+    sb.append("    signedTransaction: ").append(toIndentedString(signedTransaction)).append("\n");
     sb.append("}");
     return sb.toString();
   }

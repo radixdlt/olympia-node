@@ -16,141 +16,65 @@ package com.radixdlt.api.core.core.openapitools.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.radixdlt.api.core.core.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
-
 /**
- * NodeIdentifiers
+ * ConstructionDeriveRequestMetadataPreparedStakes
  */
 @JsonPropertyOrder({
-  NodeIdentifiers.JSON_PROPERTY_ACCOUNT_ENTITY_IDENTIFIER,
-  NodeIdentifiers.JSON_PROPERTY_VALIDATOR_ENTITY_IDENTIFIER,
-  NodeIdentifiers.JSON_PROPERTY_PUBLIC_KEY,
-  NodeIdentifiers.JSON_PROPERTY_P2P_NODE
+  ConstructionDeriveRequestMetadataPreparedStakes.JSON_PROPERTY_VALIDATOR
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-06T21:56:33.306430-06:00[America/Chicago]")
-public class NodeIdentifiers {
-  public static final String JSON_PROPERTY_ACCOUNT_ENTITY_IDENTIFIER = "account_entity_identifier";
-  private EntityIdentifier accountEntityIdentifier;
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-07T20:43:40.639055-06:00[America/Chicago]")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
+@JsonSubTypes({
+  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataAccount.class, name = "Account"),
+  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataExitingUnstakes.class, name = "ExitingUnstakes"),
+  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataPreparedStakes.class, name = "PreparedStakes"),
+  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataToken.class, name = "Token"),
+  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataValidator.class, name = "Validator"),
+  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataValidatorSystem.class, name = "ValidatorSystem"),
+})
 
-  public static final String JSON_PROPERTY_VALIDATOR_ENTITY_IDENTIFIER = "validator_entity_identifier";
-  private EntityIdentifier validatorEntityIdentifier;
-
-  public static final String JSON_PROPERTY_PUBLIC_KEY = "public_key";
-  private PublicKey publicKey;
-
-  public static final String JSON_PROPERTY_P2P_NODE = "p2p_node";
-  private Peer p2pNode;
+public class ConstructionDeriveRequestMetadataPreparedStakes extends ConstructionDeriveRequestMetadata {
+  public static final String JSON_PROPERTY_VALIDATOR = "validator";
+  private EntityIdentifier validator;
 
 
-  public NodeIdentifiers accountEntityIdentifier(EntityIdentifier accountEntityIdentifier) {
-    this.accountEntityIdentifier = accountEntityIdentifier;
+  public ConstructionDeriveRequestMetadataPreparedStakes validator(EntityIdentifier validator) {
+    this.validator = validator;
     return this;
   }
 
    /**
-   * Get accountEntityIdentifier
-   * @return accountEntityIdentifier
+   * Get validator
+   * @return validator
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ACCOUNT_ENTITY_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_VALIDATOR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityIdentifier getAccountEntityIdentifier() {
-    return accountEntityIdentifier;
+  public EntityIdentifier getValidator() {
+    return validator;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ACCOUNT_ENTITY_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_VALIDATOR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccountEntityIdentifier(EntityIdentifier accountEntityIdentifier) {
-    this.accountEntityIdentifier = accountEntityIdentifier;
-  }
-
-
-  public NodeIdentifiers validatorEntityIdentifier(EntityIdentifier validatorEntityIdentifier) {
-    this.validatorEntityIdentifier = validatorEntityIdentifier;
-    return this;
-  }
-
-   /**
-   * Get validatorEntityIdentifier
-   * @return validatorEntityIdentifier
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_ENTITY_IDENTIFIER)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public EntityIdentifier getValidatorEntityIdentifier() {
-    return validatorEntityIdentifier;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_ENTITY_IDENTIFIER)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidatorEntityIdentifier(EntityIdentifier validatorEntityIdentifier) {
-    this.validatorEntityIdentifier = validatorEntityIdentifier;
-  }
-
-
-  public NodeIdentifiers publicKey(PublicKey publicKey) {
-    this.publicKey = publicKey;
-    return this;
-  }
-
-   /**
-   * Get publicKey
-   * @return publicKey
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public PublicKey getPublicKey() {
-    return publicKey;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPublicKey(PublicKey publicKey) {
-    this.publicKey = publicKey;
-  }
-
-
-  public NodeIdentifiers p2pNode(Peer p2pNode) {
-    this.p2pNode = p2pNode;
-    return this;
-  }
-
-   /**
-   * Get p2pNode
-   * @return p2pNode
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_P2P_NODE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Peer getP2pNode() {
-    return p2pNode;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_P2P_NODE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setP2pNode(Peer p2pNode) {
-    this.p2pNode = p2pNode;
+  public void setValidator(EntityIdentifier validator) {
+    this.validator = validator;
   }
 
 
   /**
-   * Return true if this NodeIdentifiers object is equal to o.
+   * Return true if this ConstructionDeriveRequestMetadataPreparedStakes object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -160,26 +84,22 @@ public class NodeIdentifiers {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    NodeIdentifiers nodeIdentifiers = (NodeIdentifiers) o;
-    return Objects.equals(this.accountEntityIdentifier, nodeIdentifiers.accountEntityIdentifier) &&
-        Objects.equals(this.validatorEntityIdentifier, nodeIdentifiers.validatorEntityIdentifier) &&
-        Objects.equals(this.publicKey, nodeIdentifiers.publicKey) &&
-        Objects.equals(this.p2pNode, nodeIdentifiers.p2pNode);
+    ConstructionDeriveRequestMetadataPreparedStakes constructionDeriveRequestMetadataPreparedStakes = (ConstructionDeriveRequestMetadataPreparedStakes) o;
+    return Objects.equals(this.validator, constructionDeriveRequestMetadataPreparedStakes.validator) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(accountEntityIdentifier, validatorEntityIdentifier, publicKey, p2pNode);
+    return Objects.hash(validator, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class NodeIdentifiers {\n");
-    sb.append("    accountEntityIdentifier: ").append(toIndentedString(accountEntityIdentifier)).append("\n");
-    sb.append("    validatorEntityIdentifier: ").append(toIndentedString(validatorEntityIdentifier)).append("\n");
-    sb.append("    publicKey: ").append(toIndentedString(publicKey)).append("\n");
-    sb.append("    p2pNode: ").append(toIndentedString(p2pNode)).append("\n");
+    sb.append("class ConstructionDeriveRequestMetadataPreparedStakes {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    validator: ").append(toIndentedString(validator)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -195,5 +115,17 @@ public class NodeIdentifiers {
     return o.toString().replace("\n", "\n    ");
   }
 
+static {
+  // Initialize and register the discriminator mappings.
+  Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+  mappings.put("Account", ConstructionDeriveRequestMetadataAccount.class);
+  mappings.put("ExitingUnstakes", ConstructionDeriveRequestMetadataExitingUnstakes.class);
+  mappings.put("PreparedStakes", ConstructionDeriveRequestMetadataPreparedStakes.class);
+  mappings.put("Token", ConstructionDeriveRequestMetadataToken.class);
+  mappings.put("Validator", ConstructionDeriveRequestMetadataValidator.class);
+  mappings.put("ValidatorSystem", ConstructionDeriveRequestMetadataValidatorSystem.class);
+  mappings.put("ConstructionDeriveRequestMetadataPreparedStakes", ConstructionDeriveRequestMetadataPreparedStakes.class);
+  JSON.registerDiscriminator(ConstructionDeriveRequestMetadataPreparedStakes.class, "type", mappings);
+}
 }
 

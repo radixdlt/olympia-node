@@ -61,13 +61,12 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.api.actions;
+package com.radixdlt.integration.api.actors;
 
-import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
-import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
-import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
+import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 
-public sealed interface NodeTransactionAction permits RegisterValidator, SetAllowDelegationFlag, SetValidatorFee,
-	SetValidatorOwner, StakeTokens, TransferTokens, UnstakeStakeUnits {
-	OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers);
+import java.util.Random;
+
+public interface DeterministicActor {
+	void execute(MultiNodeDeterministicRunner runner, Random random) throws Exception;
 }

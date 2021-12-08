@@ -23,25 +23,26 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * ConstructionDeriveRequestMetadataAccount
+ * ConstructionDeriveRequestMetadataPreparedUnstakes
  */
 @JsonPropertyOrder({
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-07T20:43:40.639055-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-07T21:52:45.961651-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataAccount.class, name = "Account"),
   @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataExitingUnstakes.class, name = "ExitingUnstakes"),
   @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataPreparedStakes.class, name = "PreparedStakes"),
+  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataPreparedUnstakes.class, name = "PreparedUnstakes"),
   @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataToken.class, name = "Token"),
   @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataValidator.class, name = "Validator"),
   @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataValidatorSystem.class, name = "ValidatorSystem"),
 })
 
-public class ConstructionDeriveRequestMetadataAccount extends ConstructionDeriveRequestMetadata {
+public class ConstructionDeriveRequestMetadataPreparedUnstakes extends ConstructionDeriveRequestMetadata {
 
   /**
-   * Return true if this ConstructionDeriveRequestMetadataAccount object is equal to o.
+   * Return true if this ConstructionDeriveRequestMetadataPreparedUnstakes object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -62,7 +63,7 @@ public class ConstructionDeriveRequestMetadataAccount extends ConstructionDerive
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ConstructionDeriveRequestMetadataAccount {\n");
+    sb.append("class ConstructionDeriveRequestMetadataPreparedUnstakes {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("}");
     return sb.toString();
@@ -85,11 +86,12 @@ static {
   mappings.put("Account", ConstructionDeriveRequestMetadataAccount.class);
   mappings.put("ExitingUnstakes", ConstructionDeriveRequestMetadataExitingUnstakes.class);
   mappings.put("PreparedStakes", ConstructionDeriveRequestMetadataPreparedStakes.class);
+  mappings.put("PreparedUnstakes", ConstructionDeriveRequestMetadataPreparedUnstakes.class);
   mappings.put("Token", ConstructionDeriveRequestMetadataToken.class);
   mappings.put("Validator", ConstructionDeriveRequestMetadataValidator.class);
   mappings.put("ValidatorSystem", ConstructionDeriveRequestMetadataValidatorSystem.class);
-  mappings.put("ConstructionDeriveRequestMetadataAccount", ConstructionDeriveRequestMetadataAccount.class);
-  JSON.registerDiscriminator(ConstructionDeriveRequestMetadataAccount.class, "type", mappings);
+  mappings.put("ConstructionDeriveRequestMetadataPreparedUnstakes", ConstructionDeriveRequestMetadataPreparedUnstakes.class);
+  JSON.registerDiscriminator(ConstructionDeriveRequestMetadataPreparedUnstakes.class, "type", mappings);
 }
 }
 

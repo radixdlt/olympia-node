@@ -61,49 +61,48 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.api.actions;
+package com.radixdlt.integration.api.actors;
 
-import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
-import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
-import com.radixdlt.api.core.core.openapitools.model.Operation;
-import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
-import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
-import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
-import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
+import java.util.Random;
 
-public final class TransferTokens implements NodeTransactionAction {
-	private final Amount amount;
-	private final TokenResourceIdentifier tokenResourceIdentifier;
-	private final EntityIdentifier to;
+import static org.assertj.core.api.Assertions.assertThat;
 
-	public TransferTokens(Amount amount, TokenResourceIdentifier tokenResourceIdentifier, EntityIdentifier to) {
-		this.amount = amount;
-		this.tokenResourceIdentifier = tokenResourceIdentifier;
-		this.to = to;
-	}
+public final class NativeTokenRewardsChecker implements DeterministicActor {
+	private static final Logger logger = LogManager.getLogger();
+
+	private BigInteger lastNativeTokenCount;
+	private Long lastEpoch;
 
 	@Override
-	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
-		return new OperationGroup()
-			.addOperationsItem(
-				new Operation()
-					.type("Resource")
-					.amount(new ResourceAmount()
-						.resourceIdentifier(tokenResourceIdentifier)
-						.value("-" + amount.toSubunits().toString())
-					)
-					.entityIdentifier(nodeIdentifiers.getAccountEntityIdentifier())
-			)
-			.addOperationsItem(
-				new Operation()
-					.type("Resource")
-					.amount(new ResourceAmount()
-						.resourceIdentifier(tokenResourceIdentifier)
-						.value(amount.toSubunits().toString())
-					)
-					.entityIdentifier(to)
-			);
+	public void execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
+		var injector = runner.getNode(0);
+		var nodeClient = injector.getInstance(NodeApiClient.class);
+		var radixEngineReader = injector.getInstance(RadixEngineReader.class);
+
+		var epochView = nodeClient.getEpochView();
+		var epoch = epochView.getEpoch();
+		var totalNativeTokenCount = radixEngineReader.getTotalNativeTokens();
+		if (lastEpoch != null) {
+			logger.info("total_xrd: {} last_check: {}", totalNativeTokenCount, lastNativeTokenCount);
+			if (epoch - lastEpoch > 1) {
+				var numEpochs = epoch - lastEpoch;
+				var maxEmissions = BigInteger.valueOf(nodeClient.getRoundsPerEpoch())
+					.multiply(new BigInteger(1, nodeClient.getRewardsPerProposal().toByteArray()))
+					.multiply(BigInteger.valueOf(numEpochs));
+				assertThat(totalNativeTokenCount).isGreaterThan(lastNativeTokenCount);
+				var diff = totalNativeTokenCount.subtract(lastNativeTokenCount);
+				assertThat(diff).isLessThanOrEqualTo(maxEmissions);
+			}
+		} else {
+			logger.info("total_xrd: {}", totalNativeTokenCount);
+		}
+
+		lastEpoch = epoch;
+		lastNativeTokenCount = totalNativeTokenCount;
 	}
 }

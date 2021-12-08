@@ -61,33 +61,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.api.actions;
+package com.radixdlt.integration.api.actors;
 
-import com.radixdlt.api.core.core.openapitools.model.Data;
-import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
-import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
-import com.radixdlt.api.core.core.openapitools.model.Operation;
-import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
-import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorRegistered;
+import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 
-public final class RegisterValidator implements NodeTransactionAction {
-	private final boolean register;
+import java.util.Random;
 
-	public RegisterValidator(boolean register) {
-		this.register = register;
-	}
-
+public final class RandomNodeRestarter implements DeterministicActor {
 	@Override
-	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
-		return new OperationGroup().addOperationsItem(
-			new Operation()
-				.type("Data")
-				.data(new Data().action(Data.ActionEnum.CREATE)
-					.dataObject(new PreparedValidatorRegistered().registered(register)
-						.type(PreparedValidatorRegistered.class.getSimpleName())
-					)
-				)
-				.entityIdentifier(nodeIdentifiers.getValidatorEntityIdentifier())
-		);
+	public void execute(MultiNodeDeterministicRunner runner, Random random) {
+		var nodeIndex = random.nextInt(runner.getSize());
+		runner.restartNode(nodeIndex);
 	}
 }

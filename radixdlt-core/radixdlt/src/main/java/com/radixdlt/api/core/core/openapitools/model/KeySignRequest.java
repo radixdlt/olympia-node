@@ -13,35 +13,114 @@
 
 package com.radixdlt.api.core.core.openapitools.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.radixdlt.api.core.core.openapitools.JSON;
+import io.swagger.annotations.ApiModelProperty;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
+
 /**
- * ConstructionDeriveRequestMetadataAccount
+ * NodeSignRequest
  */
 @JsonPropertyOrder({
+  KeySignRequest.JSON_PROPERTY_NETWORK_IDENTIFIER,
+  KeySignRequest.JSON_PROPERTY_UNSIGNED_TRANSACTION,
+  KeySignRequest.JSON_PROPERTY_PUBLIC_KEY
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-07T20:43:40.639055-06:00[America/Chicago]")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
-@JsonSubTypes({
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataAccount.class, name = "Account"),
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataExitingUnstakes.class, name = "ExitingUnstakes"),
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataPreparedStakes.class, name = "PreparedStakes"),
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataToken.class, name = "Token"),
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataValidator.class, name = "Validator"),
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataValidatorSystem.class, name = "ValidatorSystem"),
-})
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-06T21:56:33.306430-06:00[America/Chicago]")
+public class KeySignRequest {
+  public static final String JSON_PROPERTY_NETWORK_IDENTIFIER = "network_identifier";
+  private NetworkIdentifier networkIdentifier;
 
-public class ConstructionDeriveRequestMetadataAccount extends ConstructionDeriveRequestMetadata {
+  public static final String JSON_PROPERTY_UNSIGNED_TRANSACTION = "unsigned_transaction";
+  private String unsignedTransaction;
+
+  public static final String JSON_PROPERTY_PUBLIC_KEY = "public_key";
+  private PublicKey publicKey;
+
+
+  public KeySignRequest networkIdentifier(NetworkIdentifier networkIdentifier) {
+    this.networkIdentifier = networkIdentifier;
+    return this;
+  }
+
+   /**
+   * Get networkIdentifier
+   * @return networkIdentifier
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public NetworkIdentifier getNetworkIdentifier() {
+    return networkIdentifier;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setNetworkIdentifier(NetworkIdentifier networkIdentifier) {
+    this.networkIdentifier = networkIdentifier;
+  }
+
+
+  public KeySignRequest unsignedTransaction(String unsignedTransaction) {
+    this.unsignedTransaction = unsignedTransaction;
+    return this;
+  }
+
+   /**
+   * Get unsignedTransaction
+   * @return unsignedTransaction
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_UNSIGNED_TRANSACTION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getUnsignedTransaction() {
+    return unsignedTransaction;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_UNSIGNED_TRANSACTION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setUnsignedTransaction(String unsignedTransaction) {
+    this.unsignedTransaction = unsignedTransaction;
+  }
+
+
+  public KeySignRequest publicKey(PublicKey publicKey) {
+    this.publicKey = publicKey;
+    return this;
+  }
+
+   /**
+   * Get publicKey
+   * @return publicKey
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public PublicKey getPublicKey() {
+    return publicKey;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setPublicKey(PublicKey publicKey) {
+    this.publicKey = publicKey;
+  }
+
 
   /**
-   * Return true if this ConstructionDeriveRequestMetadataAccount object is equal to o.
+   * Return true if this NodeSignRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -51,19 +130,24 @@ public class ConstructionDeriveRequestMetadataAccount extends ConstructionDerive
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    return super.equals(o);
+    KeySignRequest keySignRequest = (KeySignRequest) o;
+    return Objects.equals(this.networkIdentifier, keySignRequest.networkIdentifier) &&
+        Objects.equals(this.unsignedTransaction, keySignRequest.unsignedTransaction) &&
+        Objects.equals(this.publicKey, keySignRequest.publicKey);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode());
+    return Objects.hash(networkIdentifier, unsignedTransaction, publicKey);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ConstructionDeriveRequestMetadataAccount {\n");
-    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("class NodeSignRequest {\n");
+    sb.append("    networkIdentifier: ").append(toIndentedString(networkIdentifier)).append("\n");
+    sb.append("    unsignedTransaction: ").append(toIndentedString(unsignedTransaction)).append("\n");
+    sb.append("    publicKey: ").append(toIndentedString(publicKey)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -79,17 +163,5 @@ public class ConstructionDeriveRequestMetadataAccount extends ConstructionDerive
     return o.toString().replace("\n", "\n    ");
   }
 
-static {
-  // Initialize and register the discriminator mappings.
-  Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("Account", ConstructionDeriveRequestMetadataAccount.class);
-  mappings.put("ExitingUnstakes", ConstructionDeriveRequestMetadataExitingUnstakes.class);
-  mappings.put("PreparedStakes", ConstructionDeriveRequestMetadataPreparedStakes.class);
-  mappings.put("Token", ConstructionDeriveRequestMetadataToken.class);
-  mappings.put("Validator", ConstructionDeriveRequestMetadataValidator.class);
-  mappings.put("ValidatorSystem", ConstructionDeriveRequestMetadataValidatorSystem.class);
-  mappings.put("ConstructionDeriveRequestMetadataAccount", ConstructionDeriveRequestMetadataAccount.class);
-  JSON.registerDiscriminator(ConstructionDeriveRequestMetadataAccount.class, "type", mappings);
-}
 }
 

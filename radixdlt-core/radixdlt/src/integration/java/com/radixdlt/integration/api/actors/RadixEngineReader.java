@@ -61,78 +61,60 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.handlers;
+package com.radixdlt.integration.api.actors;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.model.CoreJsonRpcHandler;
-import com.radixdlt.api.core.core.model.CoreApiException;
-import com.radixdlt.api.core.core.model.CoreModelMapper;
-import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
-import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponse;
-import com.radixdlt.api.core.core.openapitools.model.SyncStatus;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.tokens.state.ExitingStake;
+import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineReader;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.store.LastProof;
+import com.radixdlt.utils.UInt256;
 
-public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatusRequest, NetworkStatusResponse> {
+import java.math.BigInteger;
+
+public final class RadixEngineReader {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final LedgerProof lastProof;
-	private final AccumulatorState preGenesisAccumulatorState;
-	private final AccumulatorState genesisAccumulatorState;
-	private final CoreModelMapper coreModelMapper;
-	private final PeersView peersView;
-	private final SystemCounters systemCounters;
 
 	@Inject
-	NetworkStatusHandler(
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		@Genesis VerifiedTxnsAndProof txnsAndProof,
-		@LastProof LedgerProof lastProof,
-		LedgerAccumulator ledgerAccumulator,
-		PeersView peersView,
-		CoreModelMapper coreModelMapper,
-		SystemCounters systemCounters
-	) {
-		super(NetworkStatusRequest.class);
-
+	public RadixEngineReader(RadixEngine<LedgerAndBFTProof> radixEngine) {
 		this.radixEngine = radixEngine;
-		this.lastProof = lastProof;
-		this.preGenesisAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
-		this.genesisAccumulatorState = ledgerAccumulator.accumulate(
-			preGenesisAccumulatorState, txnsAndProof.getTxns().get(0).getId().asHashCode()
-		);
-		this.peersView = peersView;
-		this.coreModelMapper = coreModelMapper;
-		this.systemCounters = systemCounters;
 	}
 
-	private LedgerProof getCurrentProof() {
-		var ledgerAndBFTProof = radixEngine.read(RadixEngineReader::getMetadata);
-		return ledgerAndBFTProof == null ? lastProof : ledgerAndBFTProof.getProof();
+	public BigInteger getTotalExittingStake() {
+		var totalStakeExitting = radixEngine.read(reader -> reader.reduce(ExitingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
+		return new BigInteger(1, totalStakeExitting.toByteArray());
 	}
 
-	@Override
-	public NetworkStatusResponse handleRequest(NetworkStatusRequest request) throws CoreApiException {
-		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
-		var currentProof = getCurrentProof();
-		var response = new NetworkStatusResponse()
-			.preGenesisStateIdentifier(coreModelMapper.stateIdentifier(preGenesisAccumulatorState))
-			.genesisStateIdentifier(coreModelMapper.stateIdentifier(genesisAccumulatorState))
-			.currentStateIdentifier(coreModelMapper.stateIdentifier(currentProof.getAccumulatorState()))
-			.syncStatus(new SyncStatus()
-				.currentStateVersion(systemCounters.get(SystemCounters.CounterType.LEDGER_STATE_VERSION))
-				.targetStateVersion(systemCounters.get(SystemCounters.CounterType.SYNC_TARGET_STATE_VERSION))
-			);
-		peersView.peers().map(coreModelMapper::peer).forEach(response::addPeersItem);
-		return response;
+	public BigInteger getTotalNativeTokensInAccounts() {
+		var totalTokens = radixEngine.read(reader -> reader.reduceResources(TokensInAccount.class, TokensInAccount::getResourceAddr)
+			.get(REAddr.ofNativeToken()));
+		return new BigInteger(1, totalTokens.toByteArray());
+	}
+
+	private static BigInteger toBigInteger(UInt256 uInt256) {
+		return new BigInteger(1, uInt256.toByteArray());
+	}
+
+	public BigInteger getTotalNativeTokens() {
+		var tokensInAccounts = getTotalNativeTokensInAccounts();
+		var totalStaked = radixEngine.read(reader -> reader.reduce(
+			ValidatorStakeData.class,
+			BigInteger.ZERO,
+			(u, t) -> u.add(toBigInteger(t.getAmount()))
+		));
+		var totalStakePrepared = radixEngine.read(reader -> reader.reduce(
+			PreparedStake.class,
+			BigInteger.ZERO,
+			(u, t) -> u.add(toBigInteger(t.getAmount()))
+		));
+		var totalStakeExitting = radixEngine.read(reader -> reader.reduce(
+			ExitingStake.class,
+			BigInteger.ZERO,
+			(u, t) -> u.add(toBigInteger(t.getAmount()))
+		));
+		return tokensInAccounts.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting);
 	}
 }

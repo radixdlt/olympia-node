@@ -61,78 +61,38 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.handlers;
+package com.radixdlt.integration.api.actors.actions;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.core.core.model.CoreJsonRpcHandler;
-import com.radixdlt.api.core.core.model.CoreApiException;
-import com.radixdlt.api.core.core.model.CoreModelMapper;
-import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
-import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponse;
-import com.radixdlt.api.core.core.openapitools.model.SyncStatus;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineReader;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.store.LastProof;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadata;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataValidator;
+import com.radixdlt.api.core.core.openapitools.model.Data;
+import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.Operation;
+import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
+import com.radixdlt.api.core.core.openapitools.model.ValidatorAllowDelegation;
 
-public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatusRequest, NetworkStatusResponse> {
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final LedgerProof lastProof;
-	private final AccumulatorState preGenesisAccumulatorState;
-	private final AccumulatorState genesisAccumulatorState;
-	private final CoreModelMapper coreModelMapper;
-	private final PeersView peersView;
-	private final SystemCounters systemCounters;
+import java.util.function.Function;
 
-	@Inject
-	NetworkStatusHandler(
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		@Genesis VerifiedTxnsAndProof txnsAndProof,
-		@LastProof LedgerProof lastProof,
-		LedgerAccumulator ledgerAccumulator,
-		PeersView peersView,
-		CoreModelMapper coreModelMapper,
-		SystemCounters systemCounters
-	) {
-		super(NetworkStatusRequest.class);
+public final class SetAllowDelegationFlag implements NodeTransactionAction {
+	private final boolean allowDelegation;
 
-		this.radixEngine = radixEngine;
-		this.lastProof = lastProof;
-		this.preGenesisAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
-		this.genesisAccumulatorState = ledgerAccumulator.accumulate(
-			preGenesisAccumulatorState, txnsAndProof.getTxns().get(0).getId().asHashCode()
-		);
-		this.peersView = peersView;
-		this.coreModelMapper = coreModelMapper;
-		this.systemCounters = systemCounters;
-	}
-
-	private LedgerProof getCurrentProof() {
-		var ledgerAndBFTProof = radixEngine.read(RadixEngineReader::getMetadata);
-		return ledgerAndBFTProof == null ? lastProof : ledgerAndBFTProof.getProof();
+	public SetAllowDelegationFlag(boolean allowDelegation) {
+		this.allowDelegation = allowDelegation;
 	}
 
 	@Override
-	public NetworkStatusResponse handleRequest(NetworkStatusRequest request) throws CoreApiException {
-		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
-		var currentProof = getCurrentProof();
-		var response = new NetworkStatusResponse()
-			.preGenesisStateIdentifier(coreModelMapper.stateIdentifier(preGenesisAccumulatorState))
-			.genesisStateIdentifier(coreModelMapper.stateIdentifier(genesisAccumulatorState))
-			.currentStateIdentifier(coreModelMapper.stateIdentifier(currentProof.getAccumulatorState()))
-			.syncStatus(new SyncStatus()
-				.currentStateVersion(systemCounters.get(SystemCounters.CounterType.LEDGER_STATE_VERSION))
-				.targetStateVersion(systemCounters.get(SystemCounters.CounterType.SYNC_TARGET_STATE_VERSION))
-			);
-		peersView.peers().map(coreModelMapper::peer).forEach(response::addPeersItem);
-		return response;
+	public OperationGroup toOperationGroup(
+		EngineConfiguration configuration,
+		Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction
+	) {
+		return new OperationGroup().addOperationsItem(
+			new Operation()
+				.type("Data")
+				.data(new Data().action(Data.ActionEnum.CREATE)
+					.dataObject(new ValidatorAllowDelegation().allowDelegation(allowDelegation).type(ValidatorAllowDelegation.class.getSimpleName()))
+				)
+				.entityIdentifier(identifierFunction.apply(new ConstructionDeriveRequestMetadataValidator().type("Validator")))
+		);
 	}
 }

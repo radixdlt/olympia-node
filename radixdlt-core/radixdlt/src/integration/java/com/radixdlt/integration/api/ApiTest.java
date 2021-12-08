@@ -63,14 +63,26 @@
 
 package com.radixdlt.integration.api;
 
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.api.core.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.integration.FailOnEvent;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
+import com.radixdlt.integration.api.actors.ApiBalanceToRadixEngineChecker;
+import com.radixdlt.integration.api.actors.ApiTxnSubmitter;
+import com.radixdlt.integration.api.actors.BalanceReconciler;
+import com.radixdlt.integration.api.actors.DeterministicActor;
+import com.radixdlt.integration.api.actors.NativeTokenRewardsChecker;
+import com.radixdlt.integration.api.actors.RandomNodeRestarter;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.PrivateKeys;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -122,10 +134,18 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @RunWith(Parameterized.class)
-public class ApiBalancesTest {
+public class ApiTest {
+	private static final Logger logger = LogManager.getLogger();
 	private static final int ACTION_ROUNDS = 5000;
 	private static final RERulesConfig config = RERulesConfig.testingDefault().overrideMaxSigsPerRound(2);
 	private static final Amount PER_BYTE_FEE = Amount.ofMicroTokens(2);
+	private static final List<ActorConfiguration> ACTOR_CONFIGURATIONS = List.of(
+		new ActorConfiguration(ApiTxnSubmitter::new, 1, 2),
+		new ActorConfiguration(BalanceReconciler::new, 1, 10),
+		new ActorConfiguration(RandomNodeRestarter::new, 1, 10),
+		new ActorConfiguration(NativeTokenRewardsChecker::new, 1, 100),
+		new ActorConfiguration(ApiBalanceToRadixEngineChecker::new, 1, 200)
+	);
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> forksModule() {
@@ -165,7 +185,7 @@ public class ApiBalancesTest {
 	private final Module byzantineModule;
 	private MultiNodeDeterministicRunner deterministicRunner;
 
-	public ApiBalancesTest(Module forkModule, Module byzantineModule) {
+	public ApiTest(Module forkModule, Module byzantineModule) {
 		this.nodeKeys = PrivateKeys.numeric(1)
 			.limit(20)
 			.collect(ImmutableList.toImmutableList());
@@ -233,6 +253,9 @@ public class ApiBalancesTest {
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
 					bindConstant().annotatedWith(NetworkId.class).to(Network.LOCALNET.getId());
+					bind(BerkeleyRecoverableProcessedTxnStore.class).in(Scopes.SINGLETON);
+					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
+						.addBinding().to(BerkeleyRecoverableProcessedTxnStore.class);
 				}
 
 				@Provides
@@ -245,30 +268,42 @@ public class ApiBalancesTest {
 		);
 	}
 
+	private static class RunningActor {
+		private final DeterministicActor actor;
+		private final int numerator;
+		private final int denominator;
+
+		RunningActor(DeterministicActor actor, int numerator, int denominator) {
+			this.actor = actor;
+			this.numerator = numerator;
+			this.denominator = denominator;
+		}
+
+		void tryExecute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
+			if (random.nextInt(denominator) < numerator) {
+				logger.info("Executing actor: {}", actor.getClass().getSimpleName());
+				actor.execute(runner, random);
+			}
+		}
+	}
+
 	/**
 	 * TODO: Figure out why if run for long enough, # of validators
 	 * trends to minimum.
 	 */
 	@Test
-	public void api_balances_should_be_consistent_with_radix_engine_balances() throws Exception {
+	public void api_test() throws Exception {
 		var random = new Random(12345);
-		var randomTransactionSubmitter = new RandomTransactionSubmitter(deterministicRunner, random);
-		var apiBalanceChecker = new ApiBalanceChecker(deterministicRunner);
+
+		var actors = ACTOR_CONFIGURATIONS.stream()
+			.map(c -> new RunningActor(c.createActor(), c.getNumerator(), c.getDenominator()))
+			.collect(Collectors.toList());
 
 		for (int i = 0; i < ACTION_ROUNDS; i++) {
 			deterministicRunner.processForCount(100);
-
-			if (random.nextInt(100) < 50) {
-				randomTransactionSubmitter.execute();
+			for (var actor : actors) {
+				actor.tryExecute(deterministicRunner, random);
 			}
-			if (random.nextInt(100) < 10) {
-				var nodeIndex = random.nextInt(nodeKeys.size());
-				deterministicRunner.restartNode(nodeIndex);
-			}
-			if (random.nextInt(200) < 1) {
-				apiBalanceChecker.execute();
-			}
-
 			deterministicRunner.dispatchToAll(new Key<EventDispatcher<MempoolRelayTrigger>>() {}, MempoolRelayTrigger.create());
 			deterministicRunner.dispatchToAll(new Key<EventDispatcher<SyncCheckTrigger>>() {}, SyncCheckTrigger.create());
 		}

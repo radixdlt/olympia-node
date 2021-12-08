@@ -26,63 +26,77 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * ConstructionDeriveRequestMetadata
+ * NotValidatorEntityError
  */
 @JsonPropertyOrder({
-  ConstructionDeriveRequestMetadata.JSON_PROPERTY_TYPE
+  NotValidatorEntityError.JSON_PROPERTY_ENTITY
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-07T21:52:45.961651-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-07T21:34:53.770127-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataAccount.class, name = "Account"),
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataAccount.class, name = "ConstructionDeriveRequestMetadataAccount"),
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataExitingUnstakes.class, name = "ConstructionDeriveRequestMetadataExitingUnstakes"),
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataPreparedStakes.class, name = "ConstructionDeriveRequestMetadataPreparedStakes"),
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataPreparedUnstakes.class, name = "ConstructionDeriveRequestMetadataPreparedUnstakes"),
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataToken.class, name = "ConstructionDeriveRequestMetadataToken"),
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataValidator.class, name = "ConstructionDeriveRequestMetadataValidator"),
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataValidatorSystem.class, name = "ConstructionDeriveRequestMetadataValidatorSystem"),
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataExitingUnstakes.class, name = "ExitingUnstakes"),
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataPreparedStakes.class, name = "PreparedStakes"),
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataPreparedUnstakes.class, name = "PreparedUnstakes"),
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataToken.class, name = "Token"),
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataValidator.class, name = "Validator"),
-  @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataValidatorSystem.class, name = "ValidatorSystem"),
+  @JsonSubTypes.Type(value = AboveMaximumValidatorFeeIncreaseError.class, name = "AboveMaximumValidatorFeeIncreaseError"),
+  @JsonSubTypes.Type(value = BelowMinimumStakeError.class, name = "BelowMinimumStakeError"),
+  @JsonSubTypes.Type(value = DataObjectNotSupportedByEntityError.class, name = "DataObjectNotSupportedByEntityError"),
+  @JsonSubTypes.Type(value = FeeConstructionError.class, name = "FeeConstructionError"),
+  @JsonSubTypes.Type(value = InternalServerError.class, name = "InternalServerError"),
+  @JsonSubTypes.Type(value = InvalidAddressError.class, name = "InvalidAddressError"),
+  @JsonSubTypes.Type(value = InvalidDataObjectError.class, name = "InvalidDataObjectError"),
+  @JsonSubTypes.Type(value = InvalidFeePayerEntityError.class, name = "InvalidFeePayerEntityError"),
+  @JsonSubTypes.Type(value = InvalidHexError.class, name = "InvalidHexError"),
+  @JsonSubTypes.Type(value = InvalidJsonError.class, name = "InvalidJsonError"),
+  @JsonSubTypes.Type(value = InvalidPartialStateIdentifierError.class, name = "InvalidPartialStateIdentifierError"),
+  @JsonSubTypes.Type(value = InvalidPublicKeyError.class, name = "InvalidPublicKeyError"),
+  @JsonSubTypes.Type(value = InvalidSignatureError.class, name = "InvalidSignatureError"),
+  @JsonSubTypes.Type(value = InvalidSubEntityError.class, name = "InvalidSubEntityError"),
+  @JsonSubTypes.Type(value = InvalidTransactionError.class, name = "InvalidTransactionError"),
+  @JsonSubTypes.Type(value = InvalidTransactionHashError.class, name = "InvalidTransactionHashError"),
+  @JsonSubTypes.Type(value = MempoolFullError.class, name = "MempoolFullError"),
+  @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
+  @JsonSubTypes.Type(value = NetworkNotSupportedError.class, name = "NetworkNotSupportedError"),
+  @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
+  @JsonSubTypes.Type(value = NotValidatorEntityError.class, name = "NotValidatorEntityError"),
+  @JsonSubTypes.Type(value = NotValidatorOwnerError.class, name = "NotValidatorOwnerError"),
+  @JsonSubTypes.Type(value = PublicKeyNotSupportedError.class, name = "PublicKeyNotSupportedError"),
+  @JsonSubTypes.Type(value = ResourceDepositOperationNotSupportedByEntityError.class, name = "ResourceDepositOperationNotSupportedByEntityError"),
+  @JsonSubTypes.Type(value = ResourceWithdrawOperationNotSupportedByEntityError.class, name = "ResourceWithdrawOperationNotSupportedByEntityError"),
+  @JsonSubTypes.Type(value = StateIdentifierNotFoundError.class, name = "StateIdentifierNotFoundError"),
+  @JsonSubTypes.Type(value = SubstateDependencyNotFoundError.class, name = "SubstateDependencyNotFoundError"),
+  @JsonSubTypes.Type(value = TransactionNotFoundError.class, name = "TransactionNotFoundError"),
 })
 
-public class ConstructionDeriveRequestMetadata {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private String type;
+public class NotValidatorEntityError extends CoreError {
+  public static final String JSON_PROPERTY_ENTITY = "entity";
+  private EntityIdentifier entity;
 
 
-  public ConstructionDeriveRequestMetadata type(String type) {
-    this.type = type;
+  public NotValidatorEntityError entity(EntityIdentifier entity) {
+    this.entity = entity;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get entity
+   * @return entity
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_ENTITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getType() {
-    return type;
+  public EntityIdentifier getEntity() {
+    return entity;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_ENTITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(String type) {
-    this.type = type;
+  public void setEntity(EntityIdentifier entity) {
+    this.entity = entity;
   }
 
 
   /**
-   * Return true if this ConstructionDeriveRequestMetadata object is equal to o.
+   * Return true if this NotValidatorEntityError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -92,20 +106,22 @@ public class ConstructionDeriveRequestMetadata {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ConstructionDeriveRequestMetadata constructionDeriveRequestMetadata = (ConstructionDeriveRequestMetadata) o;
-    return Objects.equals(this.type, constructionDeriveRequestMetadata.type);
+    NotValidatorEntityError notValidatorEntityError = (NotValidatorEntityError) o;
+    return Objects.equals(this.entity, notValidatorEntityError.entity) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(entity, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ConstructionDeriveRequestMetadata {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("class NotValidatorEntityError {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    entity: ").append(toIndentedString(entity)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -124,22 +140,36 @@ public class ConstructionDeriveRequestMetadata {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("Account", ConstructionDeriveRequestMetadataAccount.class);
-  mappings.put("ConstructionDeriveRequestMetadataAccount", ConstructionDeriveRequestMetadataAccount.class);
-  mappings.put("ConstructionDeriveRequestMetadataExitingUnstakes", ConstructionDeriveRequestMetadataExitingUnstakes.class);
-  mappings.put("ConstructionDeriveRequestMetadataPreparedStakes", ConstructionDeriveRequestMetadataPreparedStakes.class);
-  mappings.put("ConstructionDeriveRequestMetadataPreparedUnstakes", ConstructionDeriveRequestMetadataPreparedUnstakes.class);
-  mappings.put("ConstructionDeriveRequestMetadataToken", ConstructionDeriveRequestMetadataToken.class);
-  mappings.put("ConstructionDeriveRequestMetadataValidator", ConstructionDeriveRequestMetadataValidator.class);
-  mappings.put("ConstructionDeriveRequestMetadataValidatorSystem", ConstructionDeriveRequestMetadataValidatorSystem.class);
-  mappings.put("ExitingUnstakes", ConstructionDeriveRequestMetadataExitingUnstakes.class);
-  mappings.put("PreparedStakes", ConstructionDeriveRequestMetadataPreparedStakes.class);
-  mappings.put("PreparedUnstakes", ConstructionDeriveRequestMetadataPreparedUnstakes.class);
-  mappings.put("Token", ConstructionDeriveRequestMetadataToken.class);
-  mappings.put("Validator", ConstructionDeriveRequestMetadataValidator.class);
-  mappings.put("ValidatorSystem", ConstructionDeriveRequestMetadataValidatorSystem.class);
-  mappings.put("ConstructionDeriveRequestMetadata", ConstructionDeriveRequestMetadata.class);
-  JSON.registerDiscriminator(ConstructionDeriveRequestMetadata.class, "type", mappings);
+  mappings.put("AboveMaximumValidatorFeeIncreaseError", AboveMaximumValidatorFeeIncreaseError.class);
+  mappings.put("BelowMinimumStakeError", BelowMinimumStakeError.class);
+  mappings.put("DataObjectNotSupportedByEntityError", DataObjectNotSupportedByEntityError.class);
+  mappings.put("FeeConstructionError", FeeConstructionError.class);
+  mappings.put("InternalServerError", InternalServerError.class);
+  mappings.put("InvalidAddressError", InvalidAddressError.class);
+  mappings.put("InvalidDataObjectError", InvalidDataObjectError.class);
+  mappings.put("InvalidFeePayerEntityError", InvalidFeePayerEntityError.class);
+  mappings.put("InvalidHexError", InvalidHexError.class);
+  mappings.put("InvalidJsonError", InvalidJsonError.class);
+  mappings.put("InvalidPartialStateIdentifierError", InvalidPartialStateIdentifierError.class);
+  mappings.put("InvalidPublicKeyError", InvalidPublicKeyError.class);
+  mappings.put("InvalidSignatureError", InvalidSignatureError.class);
+  mappings.put("InvalidSubEntityError", InvalidSubEntityError.class);
+  mappings.put("InvalidTransactionError", InvalidTransactionError.class);
+  mappings.put("InvalidTransactionHashError", InvalidTransactionHashError.class);
+  mappings.put("MempoolFullError", MempoolFullError.class);
+  mappings.put("MessageTooLongError", MessageTooLongError.class);
+  mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
+  mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
+  mappings.put("NotValidatorEntityError", NotValidatorEntityError.class);
+  mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
+  mappings.put("PublicKeyNotSupportedError", PublicKeyNotSupportedError.class);
+  mappings.put("ResourceDepositOperationNotSupportedByEntityError", ResourceDepositOperationNotSupportedByEntityError.class);
+  mappings.put("ResourceWithdrawOperationNotSupportedByEntityError", ResourceWithdrawOperationNotSupportedByEntityError.class);
+  mappings.put("StateIdentifierNotFoundError", StateIdentifierNotFoundError.class);
+  mappings.put("SubstateDependencyNotFoundError", SubstateDependencyNotFoundError.class);
+  mappings.put("TransactionNotFoundError", TransactionNotFoundError.class);
+  mappings.put("NotValidatorEntityError", NotValidatorEntityError.class);
+  JSON.registerDiscriminator(NotValidatorEntityError.class, "type", mappings);
 }
 }
 

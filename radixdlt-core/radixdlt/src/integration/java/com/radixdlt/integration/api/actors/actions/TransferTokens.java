@@ -61,8 +61,55 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.api;
+package com.radixdlt.integration.api.actors.actions;
 
-public interface DeterministicActor {
-	void execute() throws Exception;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadata;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataAccount;
+import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.Operation;
+import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
+import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
+import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
+import com.radixdlt.application.tokens.Amount;
+
+import java.util.function.Function;
+
+public final class TransferTokens implements NodeTransactionAction {
+	private final Amount amount;
+	private final TokenResourceIdentifier tokenResourceIdentifier;
+	private final EntityIdentifier to;
+
+	public TransferTokens(Amount amount, TokenResourceIdentifier tokenResourceIdentifier, EntityIdentifier to) {
+		this.amount = amount;
+		this.tokenResourceIdentifier = tokenResourceIdentifier;
+		this.to = to;
+	}
+
+	@Override
+	public OperationGroup toOperationGroup(
+		EngineConfiguration configuration,
+		Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction
+	) {
+		var from = identifierFunction.apply(new ConstructionDeriveRequestMetadataAccount().type("Account"));
+		return new OperationGroup()
+			.addOperationsItem(
+				new Operation()
+					.type("Resource")
+					.amount(new ResourceAmount()
+						.resourceIdentifier(tokenResourceIdentifier)
+						.value("-" + amount.toSubunits().toString())
+					)
+					.entityIdentifier(from)
+			)
+			.addOperationsItem(
+				new Operation()
+					.type("Resource")
+					.amount(new ResourceAmount()
+						.resourceIdentifier(tokenResourceIdentifier)
+						.value(amount.toSubunits().toString())
+					)
+					.entityIdentifier(to)
+			);
+	}
 }

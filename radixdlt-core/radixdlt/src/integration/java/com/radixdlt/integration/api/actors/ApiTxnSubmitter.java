@@ -61,31 +61,58 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.api.actions;
+package com.radixdlt.integration.api.actors;
 
-import com.radixdlt.api.core.core.openapitools.model.Data;
-import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
-import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
-import com.radixdlt.api.core.core.openapitools.model.Operation;
-import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
-import com.radixdlt.api.core.core.openapitools.model.ValidatorAllowDelegation;
+import com.google.inject.Key;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.integration.api.actors.actions.NodeTransactionAction;
+import com.radixdlt.integration.api.actors.actions.RegisterValidator;
+import com.radixdlt.integration.api.actors.actions.SetAllowDelegationFlag;
+import com.radixdlt.integration.api.actors.actions.SetValidatorFee;
+import com.radixdlt.integration.api.actors.actions.SetValidatorOwner;
+import com.radixdlt.integration.api.actors.actions.StakeTokens;
+import com.radixdlt.integration.api.actors.actions.TransferTokens;
+import com.radixdlt.integration.api.actors.actions.UnstakeStakeUnits;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
+import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 
-public final class SetAllowDelegationFlag implements NodeTransactionAction {
-	private final boolean allowDelegation;
+import java.util.Random;
 
-	public SetAllowDelegationFlag(boolean allowDelegation) {
-		this.allowDelegation = allowDelegation;
+public final class ApiTxnSubmitter implements DeterministicActor {
+	private Amount nextAmount(Random random) {
+		return Amount.ofTokens(random.nextInt(10) * 10 + 1);
 	}
 
 	@Override
-	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
-		return new OperationGroup().addOperationsItem(
-			new Operation()
-				.type("Data")
-				.data(new Data().action(Data.ActionEnum.CREATE)
-					.dataObject(new ValidatorAllowDelegation().allowDelegation(allowDelegation).type(ValidatorAllowDelegation.class.getSimpleName()))
-				)
-				.entityIdentifier(nodeIdentifiers.getValidatorEntityIdentifier())
-		);
+	public void execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
+		int size = runner.getSize();
+		var nodeIndex = random.nextInt(size);
+		var nodeInjector = runner.getNode(nodeIndex);
+		var nodeClient = nodeInjector.getInstance(NodeApiClient.class);
+		var otherNodeIndex = random.nextInt(size);
+		var otherKey = runner.getNode(otherNodeIndex)
+			.getInstance(Key.get(ECPublicKey.class, Self.class));
+		var next = random.nextInt(8);
+
+		// Don't let the last validator unregister
+		if (next == 4 && nodeIndex <= 0) {
+			return;
+		}
+
+		NodeTransactionAction action = switch (next) {
+			case 0 -> new TransferTokens(nextAmount(random), nodeClient.nativeToken(), nodeClient.deriveAccount(otherKey));
+			case 1 -> new StakeTokens(nextAmount(random), nodeClient.deriveValidator(otherKey));
+			case 2 -> new UnstakeStakeUnits(nextAmount(random), nodeClient.deriveValidator(otherKey).getAddress());
+			case 3 -> new RegisterValidator(true);
+			case 4 -> new RegisterValidator(false);
+			case 5 -> new SetValidatorFee(random.nextInt(ValidatorUpdateRakeConstraintScrypt.RAKE_MAX + 1));
+			case 6 -> new SetValidatorOwner(nodeClient.deriveAccount(otherKey));
+			case 7 -> new SetAllowDelegationFlag(random.nextBoolean());
+			default -> throw new IllegalStateException("Unexpected value: " + next);
+		};
+
+		nodeClient.submit(action);
 	}
 }

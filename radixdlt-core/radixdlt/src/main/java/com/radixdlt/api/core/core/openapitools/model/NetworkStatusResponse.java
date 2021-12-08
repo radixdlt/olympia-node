@@ -30,13 +30,10 @@ import java.util.Objects;
   NetworkStatusResponse.JSON_PROPERTY_PRE_GENESIS_STATE_IDENTIFIER,
   NetworkStatusResponse.JSON_PROPERTY_GENESIS_STATE_IDENTIFIER,
   NetworkStatusResponse.JSON_PROPERTY_CURRENT_STATE_IDENTIFIER,
-  NetworkStatusResponse.JSON_PROPERTY_CURRENT_STATE_EPOCH,
-  NetworkStatusResponse.JSON_PROPERTY_CURRENT_STATE_ROUND,
-  NetworkStatusResponse.JSON_PROPERTY_CURRENT_STATE_TIMESTAMP,
   NetworkStatusResponse.JSON_PROPERTY_SYNC_STATUS,
   NetworkStatusResponse.JSON_PROPERTY_PEERS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-06T21:56:33.306430-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-07T20:08:33.191103-06:00[America/Chicago]")
 public class NetworkStatusResponse {
   public static final String JSON_PROPERTY_PRE_GENESIS_STATE_IDENTIFIER = "pre_genesis_state_identifier";
   private StateIdentifier preGenesisStateIdentifier;
@@ -46,15 +43,6 @@ public class NetworkStatusResponse {
 
   public static final String JSON_PROPERTY_CURRENT_STATE_IDENTIFIER = "current_state_identifier";
   private StateIdentifier currentStateIdentifier;
-
-  public static final String JSON_PROPERTY_CURRENT_STATE_EPOCH = "current_state_epoch";
-  private Long currentStateEpoch;
-
-  public static final String JSON_PROPERTY_CURRENT_STATE_ROUND = "current_state_round";
-  private Long currentStateRound;
-
-  public static final String JSON_PROPERTY_CURRENT_STATE_TIMESTAMP = "current_state_timestamp";
-  private Long currentStateTimestamp;
 
   public static final String JSON_PROPERTY_SYNC_STATUS = "sync_status";
   private SyncStatus syncStatus;
@@ -141,84 +129,6 @@ public class NetworkStatusResponse {
   }
 
 
-  public NetworkStatusResponse currentStateEpoch(Long currentStateEpoch) {
-    this.currentStateEpoch = currentStateEpoch;
-    return this;
-  }
-
-   /**
-   * Get currentStateEpoch
-   * @return currentStateEpoch
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_CURRENT_STATE_EPOCH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getCurrentStateEpoch() {
-    return currentStateEpoch;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_CURRENT_STATE_EPOCH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCurrentStateEpoch(Long currentStateEpoch) {
-    this.currentStateEpoch = currentStateEpoch;
-  }
-
-
-  public NetworkStatusResponse currentStateRound(Long currentStateRound) {
-    this.currentStateRound = currentStateRound;
-    return this;
-  }
-
-   /**
-   * Get currentStateRound
-   * @return currentStateRound
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_CURRENT_STATE_ROUND)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getCurrentStateRound() {
-    return currentStateRound;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_CURRENT_STATE_ROUND)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCurrentStateRound(Long currentStateRound) {
-    this.currentStateRound = currentStateRound;
-  }
-
-
-  public NetworkStatusResponse currentStateTimestamp(Long currentStateTimestamp) {
-    this.currentStateTimestamp = currentStateTimestamp;
-    return this;
-  }
-
-   /**
-   * Get currentStateTimestamp
-   * @return currentStateTimestamp
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_CURRENT_STATE_TIMESTAMP)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getCurrentStateTimestamp() {
-    return currentStateTimestamp;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_CURRENT_STATE_TIMESTAMP)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCurrentStateTimestamp(Long currentStateTimestamp) {
-    this.currentStateTimestamp = currentStateTimestamp;
-  }
-
-
   public NetworkStatusResponse syncStatus(SyncStatus syncStatus) {
     this.syncStatus = syncStatus;
     return this;
@@ -291,16 +201,13 @@ public class NetworkStatusResponse {
     return Objects.equals(this.preGenesisStateIdentifier, networkStatusResponse.preGenesisStateIdentifier) &&
         Objects.equals(this.genesisStateIdentifier, networkStatusResponse.genesisStateIdentifier) &&
         Objects.equals(this.currentStateIdentifier, networkStatusResponse.currentStateIdentifier) &&
-        Objects.equals(this.currentStateEpoch, networkStatusResponse.currentStateEpoch) &&
-        Objects.equals(this.currentStateRound, networkStatusResponse.currentStateRound) &&
-        Objects.equals(this.currentStateTimestamp, networkStatusResponse.currentStateTimestamp) &&
         Objects.equals(this.syncStatus, networkStatusResponse.syncStatus) &&
         Objects.equals(this.peers, networkStatusResponse.peers);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(preGenesisStateIdentifier, genesisStateIdentifier, currentStateIdentifier, currentStateEpoch, currentStateRound, currentStateTimestamp, syncStatus, peers);
+    return Objects.hash(preGenesisStateIdentifier, genesisStateIdentifier, currentStateIdentifier, syncStatus, peers);
   }
 
   @Override
@@ -310,9 +217,6 @@ public class NetworkStatusResponse {
     sb.append("    preGenesisStateIdentifier: ").append(toIndentedString(preGenesisStateIdentifier)).append("\n");
     sb.append("    genesisStateIdentifier: ").append(toIndentedString(genesisStateIdentifier)).append("\n");
     sb.append("    currentStateIdentifier: ").append(toIndentedString(currentStateIdentifier)).append("\n");
-    sb.append("    currentStateEpoch: ").append(toIndentedString(currentStateEpoch)).append("\n");
-    sb.append("    currentStateRound: ").append(toIndentedString(currentStateRound)).append("\n");
-    sb.append("    currentStateTimestamp: ").append(toIndentedString(currentStateTimestamp)).append("\n");
     sb.append("    syncStatus: ").append(toIndentedString(syncStatus)).append("\n");
     sb.append("    peers: ").append(toIndentedString(peers)).append("\n");
     sb.append("}");

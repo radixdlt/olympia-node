@@ -67,10 +67,15 @@ import com.google.inject.Inject;
 import com.radixdlt.api.core.core.model.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.model.CoreApiException;
 import com.radixdlt.api.core.core.model.CoreModelMapper;
+import com.radixdlt.api.core.core.model.entities.ValidatorEntity;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataAccount;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataExitingUnstakes;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataPreparedStakes;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataPreparedUnstakes;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataToken;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataValidator;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataValidatorSystem;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveResponse;
 import com.radixdlt.identifiers.REAddr;
 
@@ -100,6 +105,27 @@ public final class ConstructionDeriveHandler extends CoreJsonRpcHandler<Construc
 		} else if (metadata instanceof ConstructionDeriveRequestMetadataToken token) {
 			var tokenAddress = REAddr.ofHashedKey(publicKey, token.getSymbol());
 			response.entityIdentifier(coreModelMapper.entityIdentifier(tokenAddress, token.getSymbol()));
+		} else if (metadata instanceof ConstructionDeriveRequestMetadataPreparedStakes preparedStakesMetadata) {
+			var address = REAddr.ofPubKeyAccount(publicKey);
+			var entity = coreModelMapper.entity(preparedStakesMetadata.getValidator());
+			if (!(entity instanceof ValidatorEntity validatorEntity)) {
+				throw coreModelMapper.notValidatorEntityException(preparedStakesMetadata.getValidator());
+			}
+			response.entityIdentifier(coreModelMapper.entityIdentifierPreparedStake(address, validatorEntity.getValidatorKey()));
+		} else if (metadata instanceof ConstructionDeriveRequestMetadataPreparedUnstakes) {
+			var address = REAddr.ofPubKeyAccount(publicKey);
+			response.entityIdentifier(coreModelMapper.entityIdentifierPreparedUnstake(address));
+		} else if (metadata instanceof ConstructionDeriveRequestMetadataExitingUnstakes exitingUnstakes) {
+			var address = REAddr.ofPubKeyAccount(publicKey);
+			var entity = coreModelMapper.entity(exitingUnstakes.getValidator());
+			if (!(entity instanceof ValidatorEntity validatorEntity)) {
+				throw coreModelMapper.notValidatorEntityException(exitingUnstakes.getValidator());
+			}
+			response.entityIdentifier(coreModelMapper.entityIdentifierExitingStake(
+				address, validatorEntity.getValidatorKey(), exitingUnstakes.getEpochUnlock()
+			));
+		} else if (metadata instanceof ConstructionDeriveRequestMetadataValidatorSystem) {
+			response.entityIdentifier(coreModelMapper.entityIdentifierValidatorSystem(publicKey));
 		} else {
 			throw new IllegalStateException("Unknown metadata type: " + metadata);
 		}

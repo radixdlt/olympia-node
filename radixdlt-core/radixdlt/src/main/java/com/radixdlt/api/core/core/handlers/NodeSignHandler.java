@@ -69,8 +69,8 @@ import com.radixdlt.api.core.core.model.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.model.CoreApiException;
 import com.radixdlt.api.core.core.model.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.PublicKeyNotSupportedError;
-import com.radixdlt.api.core.core.openapitools.model.NodeSignRequest;
-import com.radixdlt.api.core.core.openapitools.model.NodeSignResponse;
+import com.radixdlt.api.core.core.openapitools.model.KeySignRequest;
+import com.radixdlt.api.core.core.openapitools.model.KeySignResponse;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.HashSigner;
@@ -82,7 +82,7 @@ import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Bytes;
 
-public final class NodeSignHandler extends CoreJsonRpcHandler<NodeSignRequest, NodeSignResponse> {
+public final class NodeSignHandler extends CoreJsonRpcHandler<KeySignRequest, KeySignResponse> {
 	private final ECPublicKey self;
 	private final HashSigner hashSigner;
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
@@ -95,7 +95,7 @@ public final class NodeSignHandler extends CoreJsonRpcHandler<NodeSignRequest, N
 		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
 		CoreModelMapper coreModelMapper
 	) {
-		super(NodeSignRequest.class);
+		super(KeySignRequest.class);
 
 		this.self = self;
 		this.hashSigner = hashSigner;
@@ -104,7 +104,7 @@ public final class NodeSignHandler extends CoreJsonRpcHandler<NodeSignRequest, N
 	}
 
 	@Override
-	public NodeSignResponse handleRequest(NodeSignRequest request) throws CoreApiException {
+	public KeySignResponse handleRequest(KeySignRequest request) throws CoreApiException {
 		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
 		var pubKey = coreModelMapper.ecPublicKey(request.getPublicKey());
@@ -130,7 +130,7 @@ public final class NodeSignHandler extends CoreJsonRpcHandler<NodeSignRequest, N
 		var signature = this.hashSigner.sign(hash);
 		var signedTransaction = builder.sig(signature).blob();
 
-		return new NodeSignResponse()
+		return new KeySignResponse()
 			.signedTransaction(Bytes.toHexString(signedTransaction));
 	}
 }

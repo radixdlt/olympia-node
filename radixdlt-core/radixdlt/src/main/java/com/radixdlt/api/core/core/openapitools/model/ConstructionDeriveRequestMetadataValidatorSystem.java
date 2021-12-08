@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * ConstructionDeriveRequestMetadataAccount
+ * ConstructionDeriveRequestMetadataValidatorSystem
  */
 @JsonPropertyOrder({
 })
@@ -38,10 +38,10 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = ConstructionDeriveRequestMetadataValidatorSystem.class, name = "ValidatorSystem"),
 })
 
-public class ConstructionDeriveRequestMetadataAccount extends ConstructionDeriveRequestMetadata {
+public class ConstructionDeriveRequestMetadataValidatorSystem extends ConstructionDeriveRequestMetadata {
 
   /**
-   * Return true if this ConstructionDeriveRequestMetadataAccount object is equal to o.
+   * Return true if this ConstructionDeriveRequestMetadataValidatorSystem object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -62,7 +62,7 @@ public class ConstructionDeriveRequestMetadataAccount extends ConstructionDerive
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ConstructionDeriveRequestMetadataAccount {\n");
+    sb.append("class ConstructionDeriveRequestMetadataValidatorSystem {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("}");
     return sb.toString();
@@ -88,8 +88,8 @@ static {
   mappings.put("Token", ConstructionDeriveRequestMetadataToken.class);
   mappings.put("Validator", ConstructionDeriveRequestMetadataValidator.class);
   mappings.put("ValidatorSystem", ConstructionDeriveRequestMetadataValidatorSystem.class);
-  mappings.put("ConstructionDeriveRequestMetadataAccount", ConstructionDeriveRequestMetadataAccount.class);
-  JSON.registerDiscriminator(ConstructionDeriveRequestMetadataAccount.class, "type", mappings);
+  mappings.put("ConstructionDeriveRequestMetadataValidatorSystem", ConstructionDeriveRequestMetadataValidatorSystem.class);
+  JSON.registerDiscriminator(ConstructionDeriveRequestMetadataValidatorSystem.class, "type", mappings);
 }
 }
 

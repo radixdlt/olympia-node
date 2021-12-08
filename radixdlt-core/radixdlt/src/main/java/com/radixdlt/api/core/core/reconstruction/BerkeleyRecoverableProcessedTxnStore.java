@@ -141,17 +141,29 @@ public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAddit
 			.setBtreeComparator(lexicographicalComparator())
 		);
 
-		var cursor = accumulatorDatabase.openCursor(null, null);
-		var key = new DatabaseEntry(Longs.toByteArray(Long.MAX_VALUE));
-		var value = new DatabaseEntry();
-		cursor.getSearchKeyRange(key, value, null);
-		var status = cursor.getPrev(key, value, null);
-		if (status == SUCCESS) {
-			var accumulatorHash = HashCode.fromBytes(value.getData());
-			var stateVersion = Longs.fromByteArray(key.getData());
-			this.accumulatorState = new AccumulatorState(stateVersion, accumulatorHash);
-		} else {
-			this.accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+		try (var cursor = accumulatorDatabase.openCursor(null, null)) {
+			var key = new DatabaseEntry(Longs.toByteArray(Long.MAX_VALUE));
+			var value = new DatabaseEntry();
+			cursor.getSearchKeyRange(key, value, null);
+			var status = cursor.getPrev(key, value, null);
+			if (status == SUCCESS) {
+				var accumulatorHash = HashCode.fromBytes(value.getData());
+				var stateVersion = Longs.fromByteArray(key.getData());
+				this.accumulatorState = new AccumulatorState(stateVersion, accumulatorHash);
+			} else {
+				this.accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+			}
+		}
+	}
+
+	@Override
+	public void close() {
+		if (processedTransactionsDatabase != null) {
+			processedTransactionsDatabase.close();
+		}
+
+		if (accumulatorDatabase != null) {
+			accumulatorDatabase.close();
 		}
 	}
 
@@ -197,13 +209,6 @@ public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAddit
 			}
 		};
 		return Streams.stream(iterator).onClose(cursor::close);
-	}
-
-	@Override
-	public void close() {
-		if (processedTransactionsDatabase != null) {
-			processedTransactionsDatabase.close();
-		}
 	}
 
 	@Override

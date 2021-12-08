@@ -61,45 +61,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.handlers;
+package com.radixdlt.integration.api.actors.actions;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.core.core.model.CoreApiException;
-import com.radixdlt.api.core.core.model.CoreJsonRpcHandler;
-import com.radixdlt.api.core.core.model.CoreModelMapper;
-import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
-import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiersRequest;
-import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiersResponse;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadata;
+import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 
-public final class NodeIdentifiersHandler extends CoreJsonRpcHandler<NodeIdentifiersRequest, NodeIdentifiersResponse> {
-	private final REAddr accountAddress;
-	private final ECPublicKey validatorKey;
-	private final CoreModelMapper coreModelMapper;
+import java.util.function.Function;
 
-	@Inject
-	NodeIdentifiersHandler(
-		@Self ECPublicKey validatorKey,
-		CoreModelMapper coreModelMapper
-	) {
-		super(NodeIdentifiersRequest.class);
-
-		this.accountAddress = REAddr.ofPubKeyAccount(validatorKey);
-		this.validatorKey = validatorKey;
-		this.coreModelMapper = coreModelMapper;
-	}
-
-	@Override
-	public NodeIdentifiersResponse handleRequest(NodeIdentifiersRequest request) throws CoreApiException {
-		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
-		return new NodeIdentifiersResponse()
-			.nodeIdentifiers(new NodeIdentifiers()
-				.accountEntityIdentifier(coreModelMapper.entityIdentifier(accountAddress))
-				.validatorEntityIdentifier(coreModelMapper.entityIdentifier(validatorKey))
-				.publicKey(coreModelMapper.publicKey(validatorKey))
-				.p2pNode(coreModelMapper.peer(validatorKey))
-			);
-	}
+public sealed interface NodeTransactionAction permits RegisterValidator, SetAllowDelegationFlag, SetValidatorFee,
+	SetValidatorOwner, StakeTokens, TransferTokens, UnstakeStakeUnits {
+	OperationGroup toOperationGroup(
+		EngineConfiguration configuration,
+		Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction
+	);
 }

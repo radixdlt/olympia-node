@@ -61,54 +61,60 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.api.actions;
+package com.radixdlt.integration.api.actors.actions;
 
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadata;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataAccount;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataPreparedUnstakes;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
-import com.radixdlt.api.core.core.openapitools.model.SubEntity;
-import com.radixdlt.api.core.core.openapitools.model.SubEntityMetadata;
+import com.radixdlt.api.core.core.openapitools.model.StakeUnitResourceIdentifier;
 import com.radixdlt.application.tokens.Amount;
 
-public final class StakeTokens implements NodeTransactionAction {
+import java.util.function.Function;
+
+public final class UnstakeStakeUnits implements NodeTransactionAction {
 	private final Amount amount;
 	private final String validatorAddress;
 
-	public StakeTokens(Amount amount, String validatorAddress) {
+	public UnstakeStakeUnits(Amount amount, String validatorAddress) {
 		this.amount = amount;
 		this.validatorAddress = validatorAddress;
 	}
 
 	@Override
-	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
-		var nativeToken = configuration.getNativeToken();
+	public OperationGroup toOperationGroup(
+		EngineConfiguration configuration,
+		Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction
+	) {
+		var from = identifierFunction.apply(new ConstructionDeriveRequestMetadataAccount()
+			.type("Account")
+		);
+		var to = identifierFunction.apply(new ConstructionDeriveRequestMetadataPreparedUnstakes()
+			.type("PreparedUnstakes")
+		);
+		var resourceIdentifier = new StakeUnitResourceIdentifier().validatorAddress(validatorAddress).type("StakeUnits");
 		return new OperationGroup()
 			.addOperationsItem(
 				new Operation()
 					.type("Resource")
 					.amount(new ResourceAmount()
-						.resourceIdentifier(nativeToken)
+						.resourceIdentifier(resourceIdentifier)
 						.value("-" + amount.toSubunits().toString())
 					)
-					.entityIdentifier(nodeIdentifiers.getAccountEntityIdentifier())
+					.entityIdentifier(from)
 			)
 			.addOperationsItem(
 				new Operation()
 					.type("Resource")
 					.amount(new ResourceAmount()
-						.resourceIdentifier(nativeToken)
+						.resourceIdentifier(resourceIdentifier)
 						.value(amount.toSubunits().toString())
 					)
-					.entityIdentifier(new EntityIdentifier()
-						.address(nodeIdentifiers.getAccountEntityIdentifier().getAddress())
-						.subEntity(new SubEntity()
-							.address("prepared_stake")
-							.metadata(new SubEntityMetadata().validatorAddress(validatorAddress))
-						)
-					)
+					.entityIdentifier(to)
 			);
 	}
 }

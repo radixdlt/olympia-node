@@ -18,49 +18,56 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.annotations.ApiModelProperty;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 
 /**
- * NodeIdentifiersResponse
+ * KeyListResponse
  */
 @JsonPropertyOrder({
-  NodeIdentifiersResponse.JSON_PROPERTY_NODE_IDENTIFIERS
+  KeyListResponse.JSON_PROPERTY_PUBLIC_KEYS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-06T21:56:33.306430-06:00[America/Chicago]")
-public class NodeIdentifiersResponse {
-  public static final String JSON_PROPERTY_NODE_IDENTIFIERS = "node_identifiers";
-  private NodeIdentifiers nodeIdentifiers;
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-07T22:47:50.607252-06:00[America/Chicago]")
+public class KeyListResponse {
+  public static final String JSON_PROPERTY_PUBLIC_KEYS = "public_keys";
+  private List<PublicKeyEntry> publicKeys = new ArrayList<>();
 
 
-  public NodeIdentifiersResponse nodeIdentifiers(NodeIdentifiers nodeIdentifiers) {
-    this.nodeIdentifiers = nodeIdentifiers;
+  public KeyListResponse publicKeys(List<PublicKeyEntry> publicKeys) {
+    this.publicKeys = publicKeys;
+    return this;
+  }
+
+  public KeyListResponse addPublicKeysItem(PublicKeyEntry publicKeysItem) {
+    this.publicKeys.add(publicKeysItem);
     return this;
   }
 
    /**
-   * Get nodeIdentifiers
-   * @return nodeIdentifiers
+   * Get publicKeys
+   * @return publicKeys
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NODE_IDENTIFIERS)
+  @JsonProperty(JSON_PROPERTY_PUBLIC_KEYS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public NodeIdentifiers getNodeIdentifiers() {
-    return nodeIdentifiers;
+  public List<PublicKeyEntry> getPublicKeys() {
+    return publicKeys;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NODE_IDENTIFIERS)
+  @JsonProperty(JSON_PROPERTY_PUBLIC_KEYS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNodeIdentifiers(NodeIdentifiers nodeIdentifiers) {
-    this.nodeIdentifiers = nodeIdentifiers;
+  public void setPublicKeys(List<PublicKeyEntry> publicKeys) {
+    this.publicKeys = publicKeys;
   }
 
 
   /**
-   * Return true if this NodeIdentifiersResponse object is equal to o.
+   * Return true if this KeyListResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -70,20 +77,20 @@ public class NodeIdentifiersResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    NodeIdentifiersResponse nodeIdentifiersResponse = (NodeIdentifiersResponse) o;
-    return Objects.equals(this.nodeIdentifiers, nodeIdentifiersResponse.nodeIdentifiers);
+    KeyListResponse keyListResponse = (KeyListResponse) o;
+    return Objects.equals(this.publicKeys, keyListResponse.publicKeys);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(nodeIdentifiers);
+    return Objects.hash(publicKeys);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class NodeIdentifiersResponse {\n");
-    sb.append("    nodeIdentifiers: ").append(toIndentedString(nodeIdentifiers)).append("\n");
+    sb.append("class KeyListResponse {\n");
+    sb.append("    publicKeys: ").append(toIndentedString(publicKeys)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -22,18 +22,18 @@ import java.util.Objects;
 
 
 /**
- * NodeIdentifiersRequest
+ * KeyListRequest
  */
 @JsonPropertyOrder({
-  NodeIdentifiersRequest.JSON_PROPERTY_NETWORK_IDENTIFIER
+  KeyListRequest.JSON_PROPERTY_NETWORK_IDENTIFIER
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-06T21:56:33.306430-06:00[America/Chicago]")
-public class NodeIdentifiersRequest {
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-07T22:47:50.607252-06:00[America/Chicago]")
+public class KeyListRequest {
   public static final String JSON_PROPERTY_NETWORK_IDENTIFIER = "network_identifier";
   private NetworkIdentifier networkIdentifier;
 
 
-  public NodeIdentifiersRequest networkIdentifier(NetworkIdentifier networkIdentifier) {
+  public KeyListRequest networkIdentifier(NetworkIdentifier networkIdentifier) {
     this.networkIdentifier = networkIdentifier;
     return this;
   }
@@ -60,7 +60,7 @@ public class NodeIdentifiersRequest {
 
 
   /**
-   * Return true if this NodeIdentifiersRequest object is equal to o.
+   * Return true if this KeyListRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -70,8 +70,8 @@ public class NodeIdentifiersRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    NodeIdentifiersRequest nodeIdentifiersRequest = (NodeIdentifiersRequest) o;
-    return Objects.equals(this.networkIdentifier, nodeIdentifiersRequest.networkIdentifier);
+    KeyListRequest keyListRequest = (KeyListRequest) o;
+    return Objects.equals(this.networkIdentifier, keyListRequest.networkIdentifier);
   }
 
   @Override
@@ -82,7 +82,7 @@ public class NodeIdentifiersRequest {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class NodeIdentifiersRequest {\n");
+    sb.append("class KeyListRequest {\n");
     sb.append("    networkIdentifier: ").append(toIndentedString(networkIdentifier)).append("\n");
     sb.append("}");
     return sb.toString();
