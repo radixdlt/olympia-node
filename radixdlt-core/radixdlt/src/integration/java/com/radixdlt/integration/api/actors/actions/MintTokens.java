@@ -64,22 +64,26 @@
 package com.radixdlt.integration.api.actors.actions;
 
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadata;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataValidator;
-import com.radixdlt.api.core.core.openapitools.model.Data;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
-import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorRegistered;
+import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
+import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
+import com.radixdlt.application.tokens.Amount;
 
 import java.util.List;
 import java.util.function.Function;
 
-public final class RegisterValidator implements NodeTransactionAction {
-	private final boolean register;
+public final class MintTokens implements NodeTransactionAction {
+	private final Amount amount;
+	private final TokenResourceIdentifier tokenResourceIdentifier;
+	private final EntityIdentifier to;
 
-	public RegisterValidator(boolean register) {
-		this.register = register;
+	public MintTokens(Amount amount, TokenResourceIdentifier tokenResourceIdentifier, EntityIdentifier to) {
+		this.amount = amount;
+		this.tokenResourceIdentifier = tokenResourceIdentifier;
+		this.to = to;
 	}
 
 	@Override
@@ -87,16 +91,16 @@ public final class RegisterValidator implements NodeTransactionAction {
 		EngineConfiguration configuration,
 		Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction
 	) {
-		var operationGroup = new OperationGroup().addOperationsItem(
-			new Operation()
-				.type("Data")
-				.data(new Data().action(Data.ActionEnum.CREATE)
-					.dataObject(new PreparedValidatorRegistered().registered(register)
-						.type(PreparedValidatorRegistered.class.getSimpleName())
+		var operationGroup = new OperationGroup()
+			.addOperationsItem(
+				new Operation()
+					.type("Resource")
+					.amount(new ResourceAmount()
+						.resourceIdentifier(tokenResourceIdentifier)
+						.value(amount.toSubunits().toString())
 					)
-				)
-				.entityIdentifier(identifierFunction.apply(new ConstructionDeriveRequestMetadataValidator().type("Validator")))
-		);
+					.entityIdentifier(to)
+			);
 
 		return List.of(operationGroup);
 	}

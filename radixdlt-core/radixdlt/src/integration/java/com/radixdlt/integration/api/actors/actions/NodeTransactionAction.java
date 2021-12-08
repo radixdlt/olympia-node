@@ -68,11 +68,12 @@ import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 
+import java.util.List;
 import java.util.function.Function;
 
-public sealed interface NodeTransactionAction permits RegisterValidator, SetAllowDelegationFlag, SetValidatorFee,
-	SetValidatorOwner, StakeTokens, TransferTokens, UnstakeStakeUnits, CreateTokenDefinition {
-	OperationGroup toOperationGroup(
+public sealed interface NodeTransactionAction permits BurnTokens, CreateTokenDefinition, MintTokens, RegisterValidator,
+	SetAllowDelegationFlag, SetValidatorFee, SetValidatorOwner, StakeTokens, TransferTokens, UnstakeStakeUnits {
+	List<OperationGroup> toOperationGroups(
 		EngineConfiguration configuration,
 		Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction
 	);

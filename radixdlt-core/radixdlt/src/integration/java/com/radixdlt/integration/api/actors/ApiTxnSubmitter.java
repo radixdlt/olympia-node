@@ -72,11 +72,14 @@ import com.radixdlt.api.core.core.openapitools.model.MempoolFullError;
 import com.radixdlt.api.core.core.openapitools.model.NotEnoughResourcesError;
 import com.radixdlt.api.core.core.openapitools.model.NotValidatorOwnerError;
 import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
+import com.radixdlt.api.core.core.openapitools.model.TokenData;
 import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.integration.api.DeterministicActor;
+import com.radixdlt.integration.api.actors.actions.BurnTokens;
 import com.radixdlt.integration.api.actors.actions.CreateTokenDefinition;
+import com.radixdlt.integration.api.actors.actions.MintTokens;
 import com.radixdlt.integration.api.actors.actions.NodeTransactionAction;
 import com.radixdlt.integration.api.actors.actions.RegisterValidator;
 import com.radixdlt.integration.api.actors.actions.SetAllowDelegationFlag;
@@ -95,6 +98,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ApiTxnSubmitter implements DeterministicActor {
+	private int tokenId = 0;
+
 	private Amount nextAmount(Random random) {
 		return Amount.ofTokens(random.nextInt(10) * 10 + 1);
 	}
@@ -121,16 +126,66 @@ public final class ApiTxnSubmitter implements DeterministicActor {
 		return new TransferTokens(nextAmount(random), tokenResourceIdentifier, to);
 	}
 
-	private CreateTokenDefinition createTokenDefinition(NodeApiClient nodeClient, EntityIdentifier to, Random random) throws Exception {
+	private TokenResourceIdentifier findTokenClientOwns(NodeApiClient nodeClient, Random random) throws Exception {
 		var publicKey = nodeClient.getPublicKey();
 		var accountIdentifier = nodeClient.deriveAccount(publicKey);
-		if (random.nextBoolean()) {
-			return CreateTokenDefinition.mutableTokenSupply("test" + random.nextInt(1000), accountIdentifier);
+		var response = nodeClient.getEntity(accountIdentifier);
+		var tokenTypes = response.getBalances()
+			.stream()
+			.map(ResourceAmount::getResourceIdentifier)
+			.filter(TokenResourceIdentifier.class::isInstance)
+			.map(TokenResourceIdentifier.class::cast)
+			.filter(t -> {
+				try {
+					var entityResponse = nodeClient.getEntity(new EntityIdentifier().address(t.getRri()));
+					return entityResponse.getDataObjects().stream()
+						.filter(TokenData.class::isInstance)
+						.map(TokenData.class::cast)
+						.filter(d -> d.getOwner() != null)
+						.anyMatch(d -> d.getOwner().equals(accountIdentifier));
+				} catch (Exception e) {
+					throw new IllegalStateException(e);
+				}
+			})
+			.collect(Collectors.toList());
+
+		if (tokenTypes.isEmpty()) {
+			return null;
 		} else {
-			var uint256Bytes = new byte[UInt256.BYTES];
-			random.nextBytes(uint256Bytes);
-			var amount = UInt256.from(uint256Bytes);
-			return CreateTokenDefinition.fixedTokenSupply("test" + random.nextInt(1000), amount, to);
+			var nextIndex = random.nextInt(tokenTypes.size());
+			return tokenTypes.get(nextIndex);
+		}
+	}
+
+	private MintTokens mintTokens(NodeApiClient nodeClient, EntityIdentifier to, Random random) throws Exception {
+		var tokenResourceIdentifier = findTokenClientOwns(nodeClient, random);
+		if (tokenResourceIdentifier == null) {
+			return null;
+		}
+
+		return new MintTokens(nextAmount(random), tokenResourceIdentifier, to);
+	}
+
+	private BurnTokens burnTokens(NodeApiClient nodeClient, Random random) throws Exception {
+		var tokenResourceIdentifier = findTokenClientOwns(nodeClient, random);
+		if (tokenResourceIdentifier == null) {
+			return null;
+		}
+		var publicKey = nodeClient.getPublicKey();
+		var accountIdentifier = nodeClient.deriveAccount(publicKey);
+		return new BurnTokens(nextAmount(random), tokenResourceIdentifier, accountIdentifier);
+	}
+
+	private CreateTokenDefinition createTokenDefinition(NodeApiClient nodeClient, EntityIdentifier to, Random random) throws Exception {
+		var publicKey = nodeClient.getPublicKey();
+		var owner = nodeClient.deriveAccount(publicKey);
+		var uint256Bytes = new byte[UInt256.BYTES];
+		random.nextBytes(uint256Bytes);
+		var amount = UInt256.from(uint256Bytes);
+		if (random.nextBoolean()) {
+			return CreateTokenDefinition.mutableTokenSupply("test" + tokenId++, amount, owner, to);
+		} else {
+			return CreateTokenDefinition.fixedTokenSupply("test" + tokenId++, amount, to);
 		}
 	}
 
@@ -143,7 +198,7 @@ public final class ApiTxnSubmitter implements DeterministicActor {
 		var otherNodeIndex = random.nextInt(size);
 		var otherKey = runner.getNode(otherNodeIndex)
 			.getInstance(Key.get(ECPublicKey.class, Self.class));
-		var next = random.nextInt(9);
+		var next = random.nextInt(11);
 
 		// Don't let the last validator unregister
 		if (next == 4 && nodeIndex <= 0) {
@@ -160,8 +215,14 @@ public final class ApiTxnSubmitter implements DeterministicActor {
 			case 6 -> new SetValidatorOwner(nodeClient.deriveAccount(otherKey));
 			case 7 -> new SetAllowDelegationFlag(random.nextBoolean());
 			case 8 -> createTokenDefinition(nodeClient, nodeClient.deriveAccount(otherKey), random);
+			case 9 -> mintTokens(nodeClient, nodeClient.deriveAccount(otherKey), random);
+			case 10 -> burnTokens(nodeClient, random);
 			default -> throw new IllegalStateException("Unexpected value: " + next);
 		};
+
+		if (action == null) {
+			return "Skipped";
+		}
 
 		try {
 			nodeClient.submit(action);
@@ -176,11 +237,13 @@ public final class ApiTxnSubmitter implements DeterministicActor {
 
 			// Throw error if not expected
 			if (!okayErrors.contains(e.toError().getDetails().getClass())) {
-				throw e;
+				throw new IllegalStateException(String.format("Invalid failure on action %s", action), e);
 			}
 
 			var errorName = e.toError().getDetails().getClass().getSimpleName();
 			return String.format("BuildError{action=%s error=%s}", action.getClass().getSimpleName(), errorName);
+		} catch (Exception e) {
+			throw new IllegalStateException(String.format("Invalid failure on action %s", action), e);
 		}
 
 		return String.format("Submitted{action=%s}", action.getClass().getSimpleName());

@@ -77,6 +77,7 @@ import com.radixdlt.api.core.core.openapitools.model.TokenMetadata;
 import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
 import com.radixdlt.utils.UInt256;
 
+import java.util.List;
 import java.util.function.Function;
 
 public final class CreateTokenDefinition implements NodeTransactionAction {
@@ -96,12 +97,12 @@ public final class CreateTokenDefinition implements NodeTransactionAction {
 		return new CreateTokenDefinition(symbol, amount, null, to);
 	}
 
-	public static CreateTokenDefinition mutableTokenSupply(String symbol, EntityIdentifier owner) {
-		return new CreateTokenDefinition(symbol, null, owner, null);
+	public static CreateTokenDefinition mutableTokenSupply(String symbol, UInt256 amount, EntityIdentifier owner, EntityIdentifier to) {
+		return new CreateTokenDefinition(symbol, amount, owner, to);
 	}
 
 	@Override
-	public OperationGroup toOperationGroup(
+	public List<OperationGroup> toOperationGroups(
 		EngineConfiguration configuration,
 		Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction
 	) {
@@ -110,13 +111,21 @@ public final class CreateTokenDefinition implements NodeTransactionAction {
 			.type("Token")
 		);
 
-		var operationGroup = new OperationGroup();
-		operationGroup.addOperationsItem(
+		var mintOperation = new Operation()
+			.type("Resource")
+			.amount(new ResourceAmount()
+				.value(amount.toString())
+				.resourceIdentifier(new TokenResourceIdentifier().rri(entityIdentifier.getAddress()).type("Token"))
+			)
+			.entityIdentifier(to);
+
+		var createTokenGroup = new OperationGroup();
+		createTokenGroup.addOperationsItem(
 			new Operation()
 				.type("Data")
 				.data(new Data().action(Data.ActionEnum.CREATE)
 					.dataObject(new TokenData()
-						.isMutable(amount == null)
+						.isMutable(owner != null)
 						.granularity("1")
 						.owner(owner)
 						.type(PreparedValidatorRegistered.class.getSimpleName())
@@ -125,19 +134,11 @@ public final class CreateTokenDefinition implements NodeTransactionAction {
 				.entityIdentifier(entityIdentifier)
 		);
 
-		if (amount != null) {
-			operationGroup.addOperationsItem(
-				new Operation()
-					.type("Resource")
-					.amount(new ResourceAmount()
-						.value(amount.toString())
-						.resourceIdentifier(new TokenResourceIdentifier().rri(entityIdentifier.getAddress()).type("Token"))
-					)
-					.entityIdentifier(to)
-			);
+		if (owner == null) {
+			createTokenGroup.addOperationsItem(mintOperation);
 		}
 
-		operationGroup.addOperationsItem(
+		createTokenGroup.addOperationsItem(
 			new Operation()
 				.type("Data")
 				.data(new Data().action(Data.ActionEnum.CREATE)
@@ -152,6 +153,16 @@ public final class CreateTokenDefinition implements NodeTransactionAction {
 				.entityIdentifier(entityIdentifier)
 		);
 
-		return operationGroup;
+		if (owner == null) {
+			return List.of(createTokenGroup);
+		}
+
+		var mintTokenGroup = new OperationGroup().addOperationsItem(mintOperation);
+		return List.of(createTokenGroup, mintTokenGroup);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{symbol=%s amount=%s}", this.getClass().getSimpleName(), this.symbol, this.amount);
 	}
 }

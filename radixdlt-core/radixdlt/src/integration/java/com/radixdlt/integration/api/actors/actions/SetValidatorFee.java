@@ -72,6 +72,7 @@ import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorFee;
 
+import java.util.List;
 import java.util.function.Function;
 
 public final class SetValidatorFee implements NodeTransactionAction {
@@ -82,11 +83,11 @@ public final class SetValidatorFee implements NodeTransactionAction {
 	}
 
 	@Override
-	public OperationGroup toOperationGroup(
+	public List<OperationGroup> toOperationGroups(
 		EngineConfiguration configuration,
 		Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction
 	) {
-		return new OperationGroup().addOperationsItem(
+		var operationGroup = new OperationGroup().addOperationsItem(
 			new Operation()
 				.type("Data")
 				.data(new Data().action(Data.ActionEnum.CREATE)
@@ -94,5 +95,7 @@ public final class SetValidatorFee implements NodeTransactionAction {
 				)
 				.entityIdentifier(identifierFunction.apply(new ConstructionDeriveRequestMetadataValidator().type("Validator")))
 		);
+
+		return List.of(operationGroup);
 	}
 }

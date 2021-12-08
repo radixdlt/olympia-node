@@ -300,12 +300,12 @@ final class NodeApiClient {
 		var configuration = engineConfigurationResponse.getForks().get(0).getEngineConfiguration();
 
 		var accountIdentifier = deriveAccount(nodePublicKey);
-		var operationGroup = action.toOperationGroup(configuration, this::selfDerive);
+		var operationGroups = action.toOperationGroups(configuration, this::selfDerive);
 
 		var buildResponse = constructionBuildHandler.handleRequest(new ConstructionBuildRequest()
 			.networkIdentifier(networkIdentifier)
 			.feePayer(accountIdentifier)
-			.operationGroups(List.of(operationGroup))
+			.operationGroups(operationGroups)
 		);
 		var unsignedTransaction = buildResponse.getUnsignedTransaction();
 

@@ -74,6 +74,7 @@ import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
 import com.radixdlt.api.core.core.openapitools.model.StakeUnitResourceIdentifier;
 import com.radixdlt.application.tokens.Amount;
 
+import java.util.List;
 import java.util.function.Function;
 
 public final class UnstakeStakeUnits implements NodeTransactionAction {
@@ -86,7 +87,7 @@ public final class UnstakeStakeUnits implements NodeTransactionAction {
 	}
 
 	@Override
-	public OperationGroup toOperationGroup(
+	public List<OperationGroup> toOperationGroups(
 		EngineConfiguration configuration,
 		Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction
 	) {
@@ -97,7 +98,7 @@ public final class UnstakeStakeUnits implements NodeTransactionAction {
 			.type("PreparedUnstakes")
 		);
 		var resourceIdentifier = new StakeUnitResourceIdentifier().validatorAddress(validatorAddress).type("StakeUnits");
-		return new OperationGroup()
+		var operationGroup = new OperationGroup()
 			.addOperationsItem(
 				new Operation()
 					.type("Resource")
@@ -116,5 +117,7 @@ public final class UnstakeStakeUnits implements NodeTransactionAction {
 					)
 					.entityIdentifier(to)
 			);
+
+		return List.of(operationGroup);
 	}
 }
