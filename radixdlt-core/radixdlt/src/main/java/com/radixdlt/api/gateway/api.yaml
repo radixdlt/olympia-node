@@ -651,6 +651,7 @@ components:
       discriminator:
         propertyName: type
         mapping:
+          CreateTokenDefinition: "#/components/schemas/CreateTokenDefinition"
           TransferTokens: "#/components/schemas/TransferTokens"
           StakeTokens: "#/components/schemas/StakeTokens"
           UnstakeTokens: "#/components/schemas/UnstakeTokens"
