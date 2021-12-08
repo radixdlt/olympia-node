@@ -11,12 +11,8 @@ network.host_ip=$RADIXDLT_HOST_IP_ADDRESS
 network.p2p.seed_nodes=$RADIXDLT_NETWORK_SEEDS_REMOTE
 network.p2p.use_proxy_protocol=$RADIXDLT_NETWORK_USE_PROXY_PROTOCOL
 
-
 db.location=$RADIXDLT_DB_LOCATION
 
-api.core.port=$RADIXDLT_CORE_API_PORT
-api.core.bind.address=$RADIXDLT_HTTP_CORE_BIND_ADDRESS
+api.port=$RADIXDLT_API_PORT
+api.bind.address=$RADIXDLT_HTTP_BIND_ADDRESS
 api.transactions.enable=$RADIXDLT_TRANSACTIONS_API_ENABLE
-api.gateway.port=$RADIXDLT_GATEWAY_API_PORT
-api.gateway.bind.address=$RADIXDLT_HTTP_GATEWAY_BIND_ADDRESS
-api.gateway.enable=$RADIXDLT_GATEWAY_API_ENABLE
