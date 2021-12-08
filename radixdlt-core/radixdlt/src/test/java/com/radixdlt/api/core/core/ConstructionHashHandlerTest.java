@@ -68,6 +68,8 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.ConstructionHashHandler;
+import com.radixdlt.api.core.core.model.CoreApiException;
+import com.radixdlt.api.core.core.model.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionHashRequest;
 import com.radixdlt.api.core.core.openapitools.model.InvalidHexError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;

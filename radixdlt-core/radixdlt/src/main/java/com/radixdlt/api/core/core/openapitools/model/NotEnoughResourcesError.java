@@ -29,10 +29,11 @@ import java.util.Objects;
  * NotEnoughResourcesError
  */
 @JsonPropertyOrder({
+  NotEnoughResourcesError.JSON_PROPERTY_FEE,
   NotEnoughResourcesError.JSON_PROPERTY_AVAILABLE,
   NotEnoughResourcesError.JSON_PROPERTY_ATTEMPTED_TO_TAKE
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T17:26:14.947922-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-08T01:11:37.598362-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AboveMaximumValidatorFeeIncreaseError.class, name = "AboveMaximumValidatorFeeIncreaseError"),
@@ -51,9 +52,12 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = InvalidSubEntityError.class, name = "InvalidSubEntityError"),
   @JsonSubTypes.Type(value = InvalidTransactionError.class, name = "InvalidTransactionError"),
   @JsonSubTypes.Type(value = InvalidTransactionHashError.class, name = "InvalidTransactionHashError"),
+  @JsonSubTypes.Type(value = MempoolFullError.class, name = "MempoolFullError"),
   @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
   @JsonSubTypes.Type(value = NetworkNotSupportedError.class, name = "NetworkNotSupportedError"),
+  @JsonSubTypes.Type(value = NotEnoughNativeTokensForFeesError.class, name = "NotEnoughNativeTokensForFeesError"),
   @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
+  @JsonSubTypes.Type(value = NotValidatorEntityError.class, name = "NotValidatorEntityError"),
   @JsonSubTypes.Type(value = NotValidatorOwnerError.class, name = "NotValidatorOwnerError"),
   @JsonSubTypes.Type(value = PublicKeyNotSupportedError.class, name = "PublicKeyNotSupportedError"),
   @JsonSubTypes.Type(value = ResourceDepositOperationNotSupportedByEntityError.class, name = "ResourceDepositOperationNotSupportedByEntityError"),
@@ -64,11 +68,40 @@ import java.util.Objects;
 })
 
 public class NotEnoughResourcesError extends CoreError {
+  public static final String JSON_PROPERTY_FEE = "fee";
+  private ResourceAmount fee;
+
   public static final String JSON_PROPERTY_AVAILABLE = "available";
   private ResourceAmount available;
 
   public static final String JSON_PROPERTY_ATTEMPTED_TO_TAKE = "attempted_to_take";
   private ResourceAmount attemptedToTake;
+
+
+  public NotEnoughResourcesError fee(ResourceAmount fee) {
+    this.fee = fee;
+    return this;
+  }
+
+   /**
+   * Get fee
+   * @return fee
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_FEE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public ResourceAmount getFee() {
+    return fee;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_FEE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setFee(ResourceAmount fee) {
+    this.fee = fee;
+  }
 
 
   public NotEnoughResourcesError available(ResourceAmount available) {
@@ -135,14 +168,15 @@ public class NotEnoughResourcesError extends CoreError {
       return false;
     }
     NotEnoughResourcesError notEnoughResourcesError = (NotEnoughResourcesError) o;
-    return Objects.equals(this.available, notEnoughResourcesError.available) &&
+    return Objects.equals(this.fee, notEnoughResourcesError.fee) &&
+        Objects.equals(this.available, notEnoughResourcesError.available) &&
         Objects.equals(this.attemptedToTake, notEnoughResourcesError.attemptedToTake) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(available, attemptedToTake, super.hashCode());
+    return Objects.hash(fee, available, attemptedToTake, super.hashCode());
   }
 
   @Override
@@ -150,6 +184,7 @@ public class NotEnoughResourcesError extends CoreError {
     StringBuilder sb = new StringBuilder();
     sb.append("class NotEnoughResourcesError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    fee: ").append(toIndentedString(fee)).append("\n");
     sb.append("    available: ").append(toIndentedString(available)).append("\n");
     sb.append("    attemptedToTake: ").append(toIndentedString(attemptedToTake)).append("\n");
     sb.append("}");
@@ -186,9 +221,12 @@ static {
   mappings.put("InvalidSubEntityError", InvalidSubEntityError.class);
   mappings.put("InvalidTransactionError", InvalidTransactionError.class);
   mappings.put("InvalidTransactionHashError", InvalidTransactionHashError.class);
+  mappings.put("MempoolFullError", MempoolFullError.class);
   mappings.put("MessageTooLongError", MessageTooLongError.class);
   mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
+  mappings.put("NotEnoughNativeTokensForFeesError", NotEnoughNativeTokensForFeesError.class);
   mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
+  mappings.put("NotValidatorEntityError", NotValidatorEntityError.class);
   mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
   mappings.put("PublicKeyNotSupportedError", PublicKeyNotSupportedError.class);
   mappings.put("ResourceDepositOperationNotSupportedByEntityError", ResourceDepositOperationNotSupportedByEntityError.class);

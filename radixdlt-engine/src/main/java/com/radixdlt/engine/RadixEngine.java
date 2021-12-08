@@ -89,6 +89,7 @@ import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.constraintmachine.VirtualSubstateDeserialization;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -465,7 +466,8 @@ public final class RadixEngine<M> {
 	public TxBuilder constructWithFees(
 		TxBuilderExecutable executable,
 		boolean disableResourceAllocAndDestroy,
-		REAddr feePayer
+		REAddr feePayer,
+		BiFunction<UInt256, UInt256, TxBuilderException> notEnoughFeesExceptionSupplier
 	) throws TxBuilderException {
 		int maxTries = 5;
 		var perByteFee = this.actionConstructors.getPerByteFee().orElse(UInt256.ZERO);
@@ -477,7 +479,9 @@ public final class RadixEngine<M> {
 						txBuilder.toLowLevelBuilder().disableResourceAllocAndDestroy();
 					}
 
-					this.actionConstructors.construct(new FeeReservePut(feePayer, feeGuess.get()), txBuilder);
+					txBuilder.putFeeReserve(feePayer, feeGuess.get(), available -> notEnoughFeesExceptionSupplier.apply(feeGuess.get(), available));
+					txBuilder.end();
+
 					executable.execute(txBuilder);
 					this.actionConstructors.construct(new FeeReserveComplete(feePayer), txBuilder);
 				});
@@ -527,9 +531,21 @@ public final class RadixEngine<M> {
 		}
 	}
 
+	public SubstateSerialization getSubstateSerialization() {
+		synchronized (stateUpdateEngineLock) {
+			return serialization;
+		}
+	}
+
 	public SubstateDeserialization getSubstateDeserialization() {
 		synchronized (stateUpdateEngineLock) {
 			return constraintMachine.getDeserialization();
+		}
+	}
+
+	public VirtualSubstateDeserialization getVirtualSubstateDeserialization() {
+		synchronized (stateUpdateEngineLock) {
+			return constraintMachine.getVirtualDeserialization();
 		}
 	}
 

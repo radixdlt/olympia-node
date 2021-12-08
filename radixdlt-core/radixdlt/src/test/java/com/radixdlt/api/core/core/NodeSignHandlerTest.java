@@ -67,8 +67,11 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.core.core.model.CoreApiException;
+import com.radixdlt.api.core.core.model.CoreModelMapper;
 import com.radixdlt.api.core.core.handlers.NodeSignHandler;
 import com.radixdlt.api.core.core.model.EntityOperation;
+import com.radixdlt.api.core.core.model.NotEnoughNativeTokensForFeesException;
 import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.ResourceOperation;
 import com.radixdlt.api.core.core.model.TokenResource;
@@ -76,7 +79,7 @@ import com.radixdlt.api.core.core.model.entities.AccountVaultEntity;
 import com.radixdlt.api.core.core.openapitools.model.InvalidTransactionError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.PublicKeyNotSupportedError;
-import com.radixdlt.api.core.core.openapitools.model.NodeSignRequest;
+import com.radixdlt.api.core.core.openapitools.model.KeySignRequest;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.crypto.ECKeyPair;
@@ -176,7 +179,7 @@ public class NodeSignHandlerTest {
 			));
 		var operationTxBuilder = new OperationTxBuilder(null, entityOperationGroups, forks);
 		var builder = radixEngine.constructWithFees(
-			operationTxBuilder, false, from
+			operationTxBuilder, false, from, NotEnoughNativeTokensForFeesException::new
 		);
 		return builder.buildForExternalSign().blob();
 	}
@@ -191,7 +194,7 @@ public class NodeSignHandlerTest {
 		var other = PrivateKeys.ofNumeric(2);
 		var to = REAddr.ofPubKeyAccount(other.getPublicKey());
 		var unsignedTxn = buildUnsignedTxn(from, to);
-		var request = new NodeSignRequest()
+		var request = new KeySignRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.publicKey(mapper.publicKey(TEST_KEY.getPublicKey()))
 			.unsignedTransaction(Bytes.toHexString(unsignedTxn));
@@ -212,7 +215,7 @@ public class NodeSignHandlerTest {
 		var other = PrivateKeys.ofNumeric(2);
 		var to = REAddr.ofPubKeyAccount(other.getPublicKey());
 		var unsignedTxn = buildUnsignedTxn(from, to);
-		var request = new NodeSignRequest()
+		var request = new KeySignRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.publicKey(mapper.publicKey(other.getPublicKey()))
 			.unsignedTransaction(Bytes.toHexString(unsignedTxn));
@@ -230,7 +233,7 @@ public class NodeSignHandlerTest {
 
 		// Act
 		// Assert
-		var request = new NodeSignRequest()
+		var request = new KeySignRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.publicKey(mapper.publicKey(TEST_KEY.getPublicKey()))
 			.unsignedTransaction("badbadbadbad");

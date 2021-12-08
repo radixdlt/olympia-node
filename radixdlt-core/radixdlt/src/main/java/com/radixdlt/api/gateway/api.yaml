@@ -1,6 +1,6 @@
 openapi: 3.0.0
 info:
-  version: 0.9.0
+  version: 1.0.0
   title: Radix Gateway API
   license:
     name: MIT
@@ -392,7 +392,9 @@ components:
         network_identifier:
           $ref: "#/components/schemas/NetworkIdentifier"
         account_identifier:
-          "$ref": "#/components/schemas/AccountIdentifier"
+          $ref: "#/components/schemas/AccountIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
       example:
         network_identifier:
           network: mainnet
@@ -430,6 +432,8 @@ components:
           $ref: "#/components/schemas/NetworkIdentifier"
         account_identifier:
           $ref: "#/components/schemas/AccountIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
       example:
         network_identifier:
           network: mainnet
@@ -472,6 +476,8 @@ components:
           $ref: "#/components/schemas/NetworkIdentifier"
         account_identifier:
           $ref: "#/components/schemas/AccountIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
       example:
         network_identifier:
           network: mainnet
@@ -518,6 +524,8 @@ components:
           $ref: "#/components/schemas/NetworkIdentifier"
         account_identifier:
           $ref: "#/components/schemas/AccountIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
         cursor:
           type: string
         limit:
@@ -545,7 +553,7 @@ components:
         transactions:
           type: array
           items:
-            $ref: "#/components/schemas/AccountTransaction"
+            $ref: "#/components/schemas/TransactionInfo"
     TransferTokens:
       allOf:
         - "$ref": "#/components/schemas/Action"
@@ -577,13 +585,13 @@ components:
             amount:
               "$ref": "#/components/schemas/TokenAmount"
     UnstakeTokens:
+      description: An action to unstake tokens. Exactly one of amount or unstake_percentage is required.
       allOf:
         - "$ref": "#/components/schemas/Action"
         - type: object
           required:
             - from_validator
             - to_account
-            - amount
           properties:
             from_validator:
               "$ref": "#/components/schemas/ValidatorIdentifier"
@@ -591,6 +599,10 @@ components:
               "$ref": "#/components/schemas/AccountIdentifier"
             amount:
               "$ref": "#/components/schemas/TokenAmount"
+            unstake_percentage:
+              type: number
+              minimum: 0
+              maximum: 100
     CreateTokenDefinition:
       allOf:
         - "$ref": "#/components/schemas/Action"
@@ -639,6 +651,7 @@ components:
       discriminator:
         propertyName: type
         mapping:
+          CreateTokenDefinition: "#/components/schemas/CreateTokenDefinition"
           TransferTokens: "#/components/schemas/TransferTokens"
           StakeTokens: "#/components/schemas/StakeTokens"
           UnstakeTokens: "#/components/schemas/UnstakeTokens"
@@ -651,6 +664,8 @@ components:
       properties:
         network_identifier:
           $ref: "#/components/schemas/NetworkIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
       example:
         network_identifier:
           network: mainnet
@@ -680,6 +695,8 @@ components:
       properties:
         network_identifier:
           $ref: "#/components/schemas/NetworkIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
         actions:
           type: array
           items:
@@ -729,12 +746,12 @@ components:
     TransactionFinalizeRequest:
       type: object
       required:
-        - network
+        - network_identifier
         - unsigned_transaction
         - signature
       properties:
-        network:
-          type: string
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
         unsigned_transaction:
           type: string
         signature:
@@ -809,7 +826,9 @@ components:
         network_identifier:
           $ref: "#/components/schemas/NetworkIdentifier"
         token_identifier:
-          "$ref": "#/components/schemas/TokenIdentifier"
+          $ref: "#/components/schemas/TokenIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
       example:
         network_identifier:
           network: mainnet
@@ -842,6 +861,24 @@ components:
         version:
           type: integer
           format: int64
+    PartialLedgerStateIdentifier:
+      description: Allows a client to request a response in relation to a certain ledger position.
+        If the version is provided, the latest ledger state <= the given version is returned.
+        If a timestamp is provided, the latest ledger state <= the given timestamp is returned.
+        If an epoch is provided, the ledger state at the given epoch <= the given round (else round 0) is returned.
+      type: object
+      properties:
+        version:
+          type: integer
+          format: int64
+        timestamp:
+          type: string
+        epoch:
+          type: integer
+          format: int64
+        round:
+          type: integer
+          format: int64
     TokenResponse:
       type: object
       required:
@@ -859,6 +896,8 @@ components:
       properties:
         network_identifier:
           $ref: "#/components/schemas/NetworkIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
       example:
         network_identifier:
           network: mainnet
@@ -936,6 +975,8 @@ components:
           $ref: "#/components/schemas/NetworkIdentifier"
         transaction_identifier:
           $ref: "#/components/schemas/TransactionIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
       example:
         network_identifier:
           network: mainnet
@@ -950,7 +991,7 @@ components:
         ledger_state:
           $ref: "#/components/schemas/LedgerState"
         transaction:
-          $ref: "#/components/schemas/AccountTransaction"
+          $ref: "#/components/schemas/TransactionInfo"
     ValidatorRequest:
       type: object
       required:
@@ -961,6 +1002,8 @@ components:
           $ref: "#/components/schemas/NetworkIdentifier"
         validator_identifier:
           $ref: "#/components/schemas/ValidatorIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
       example:
         network_identifier:
           network: mainnet
@@ -983,6 +1026,8 @@ components:
       properties:
         network_identifier:
           $ref: "#/components/schemas/NetworkIdentifier"
+        at_state_identifier:
+          $ref: "#/components/schemas/PartialLedgerStateIdentifier"
       example:
         network_identifier:
           network: mainnet
@@ -1055,6 +1100,8 @@ components:
           type: string
         validator_fee_percentage:
           type: number
+          minimum: 0
+          maximum: 100
         name:
           type: string
         registered:
@@ -1085,6 +1132,8 @@ components:
           "$ref": "#/components/schemas/EpochRange"
         uptime_percentage:
           type: number
+          minimum: 0
+          maximum: 100
         proposals_missed:
           type: integer
           format: int64
@@ -1184,7 +1233,7 @@ components:
           "$ref": "#/components/schemas/BigInteger"
         owner:
           "$ref": "#/components/schemas/AccountIdentifier"
-    AccountTransaction:
+    TransactionInfo:
       type: object
       required:
         - transaction_status
@@ -1194,7 +1243,7 @@ components:
         - fee_paid
       properties:
         transaction_status:
-          "$ref": "#/components/schemas/AccountTransactionStatus"
+          "$ref": "#/components/schemas/TransactionStatus"
         transaction_identifier:
           "$ref": "#/components/schemas/TransactionIdentifier"
         actions:
@@ -1204,8 +1253,8 @@ components:
         fee_paid:
           $ref: "#/components/schemas/TokenAmount"
         metadata:
-          "$ref": "#/components/schemas/AccountTransactionMetadata"
-    AccountTransactionStatus:
+          "$ref": "#/components/schemas/TransactionMetadata"
+    TransactionStatus:
       type: object
       required:
         - status
@@ -1218,10 +1267,13 @@ components:
             - FAILED
         confirmed_time:
           type: string
+        ledger_state_version:
+          type: integer
+          format: int64
       example:
         status: CONFIRMED
         confirmed_time: 2021-07-27T17:35:10.726Z
-    AccountTransactionMetadata:
+    TransactionMetadata:
       type: object
       required:
         - hex

@@ -68,7 +68,10 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.ConstructionFinalizeHandler;
+import com.radixdlt.api.core.core.model.CoreApiException;
+import com.radixdlt.api.core.core.model.CoreModelMapper;
 import com.radixdlt.api.core.core.model.EntityOperation;
+import com.radixdlt.api.core.core.model.NotEnoughNativeTokensForFeesException;
 import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.ResourceOperation;
 import com.radixdlt.api.core.core.model.TokenResource;
@@ -197,7 +200,7 @@ public class ConstructionFinalizeTest {
 			));
 		var operationTxBuilder = new OperationTxBuilder(null, entityOperationGroups, forks);
 		var builder = radixEngine.constructWithFees(
-			operationTxBuilder, false, from
+			operationTxBuilder, false, from, NotEnoughNativeTokensForFeesException::new
 		);
 		return builder.buildForExternalSign();
 	}

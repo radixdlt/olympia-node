@@ -64,7 +64,6 @@
 package com.radixdlt.api.core.core.model;
 
 import com.google.common.base.Suppliers;
-import com.radixdlt.api.core.core.model.entities.NotEnoughResourcesException;
 import com.radixdlt.api.core.core.openapitools.model.Data;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.atom.TxBuilder;
@@ -73,8 +72,10 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.UInt256;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
@@ -107,12 +108,13 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
 			entity.deposit(amount, txBuilder, config);
 		} else {
 			var retrieval = entity.withdraw(amount.getResource());
+			var feeInReserve = Optional.ofNullable(txBuilder.getFeeReserve()).orElse(UInt256.ZERO);
 
 			var change = txBuilder.downFungible(
 				retrieval.getIndex(),
 				retrieval.getPredicate(),
 				amount.getAmount(),
-				available -> new NotEnoughResourcesException(amount.getResource(), amount.getAmount(), available)
+				available -> new NotEnoughResourcesException(amount.getResource(), amount.getAmount(), available, feeInReserve)
 			);
 
 			if (!change.isZero()) {
@@ -147,7 +149,6 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
 		Supplier<RERulesConfig> config
 	) throws TxBuilderException {
 		var entity = operation.getEntity();
-
 		var resourceOperation = operation.getResourceOperation();
 		executeResourceOperation(entity, resourceOperation, txBuilder, config);
 

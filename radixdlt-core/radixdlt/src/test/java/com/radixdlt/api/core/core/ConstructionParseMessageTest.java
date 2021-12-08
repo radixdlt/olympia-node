@@ -69,6 +69,7 @@ import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.ConstructionParseHandler;
 import com.radixdlt.api.core.core.model.EntityOperation;
+import com.radixdlt.api.core.core.model.NotEnoughNativeTokensForFeesException;
 import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.ResourceOperation;
 import com.radixdlt.api.core.core.model.TokenResource;
@@ -179,7 +180,7 @@ public class ConstructionParseMessageTest {
 			));
 		var operationTxBuilder = new OperationTxBuilder(message, entityOperationGroups, forks);
 		var builder = radixEngine.constructWithFees(
-			operationTxBuilder, false, accountAddress
+			operationTxBuilder, false, accountAddress, NotEnoughNativeTokensForFeesException::new
 		);
 		var unsignedTransaction = builder.buildForExternalSign();
 		return unsignedTransaction.blob();

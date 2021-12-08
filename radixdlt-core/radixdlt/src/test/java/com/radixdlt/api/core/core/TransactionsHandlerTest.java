@@ -70,11 +70,13 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.TransactionsHandler;
+import com.radixdlt.api.core.core.model.CoreApiException;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsRequest;
 import com.radixdlt.api.core.core.openapitools.model.InvalidPartialStateIdentifierError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.PartialStateIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.StateIdentifierNotFoundError;
+import com.radixdlt.api.core.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.crypto.ECKeyPair;
@@ -140,9 +142,9 @@ public class TransactionsHandlerTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(BerkeleyProcessedTransactionsStore.class).in(Scopes.SINGLETON);
+					bind(BerkeleyRecoverableProcessedTxnStore.class).in(Scopes.SINGLETON);
 					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-						.addBinding().to(BerkeleyProcessedTransactionsStore.class);
+						.addBinding().to(BerkeleyRecoverableProcessedTxnStore.class);
 					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 					bindConstant().annotatedWith(NetworkId.class).to(99);

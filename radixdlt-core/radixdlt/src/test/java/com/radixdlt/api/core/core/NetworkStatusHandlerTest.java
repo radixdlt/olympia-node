@@ -68,6 +68,8 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.NetworkStatusHandler;
+import com.radixdlt.api.core.core.model.CoreApiException;
+import com.radixdlt.api.core.core.model.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.NetworkNotSupportedError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
@@ -156,8 +158,6 @@ public class NetworkStatusHandlerTest {
 		var response = sut.handleRequest(request);
 
 		// Assert
-		assertThat(response.getCurrentStateEpoch()).isEqualTo(1L);
-		assertThat(response.getCurrentStateRound()).isEqualTo(0L);
 		var genesisStateIdentifier = mapper.stateIdentifier(genesis.getProof().getAccumulatorState());
 		assertThat(response.getCurrentStateIdentifier()).isEqualTo(genesisStateIdentifier);
 		assertThat(response.getGenesisStateIdentifier()).isEqualTo(genesisStateIdentifier);

@@ -64,23 +64,28 @@
 package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.CoreJsonRpcHandler;
-import com.radixdlt.api.core.core.CoreApiException;
-import com.radixdlt.api.core.core.CoreModelMapper;
+import com.radixdlt.api.core.core.model.CoreJsonRpcHandler;
+import com.radixdlt.api.core.core.model.CoreApiException;
+import com.radixdlt.api.core.core.model.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponse;
 import com.radixdlt.api.core.core.openapitools.model.SyncStatus;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineReader;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
+import com.radixdlt.store.LastProof;
 
 public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatusRequest, NetworkStatusResponse> {
-	private final InMemorySystemInfo inMemorySystemInfo;
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final LedgerProof lastProof;
 	private final AccumulatorState preGenesisAccumulatorState;
 	private final AccumulatorState genesisAccumulatorState;
 	private final CoreModelMapper coreModelMapper;
@@ -89,8 +94,9 @@ public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatus
 
 	@Inject
 	NetworkStatusHandler(
-		InMemorySystemInfo inMemorySystemInfo,
+		RadixEngine<LedgerAndBFTProof> radixEngine,
 		@Genesis VerifiedTxnsAndProof txnsAndProof,
+		@LastProof LedgerProof lastProof,
 		LedgerAccumulator ledgerAccumulator,
 		PeersView peersView,
 		CoreModelMapper coreModelMapper,
@@ -98,7 +104,8 @@ public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatus
 	) {
 		super(NetworkStatusRequest.class);
 
-		this.inMemorySystemInfo = inMemorySystemInfo;
+		this.radixEngine = radixEngine;
+		this.lastProof = lastProof;
 		this.preGenesisAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
 		this.genesisAccumulatorState = ledgerAccumulator.accumulate(
 			preGenesisAccumulatorState, txnsAndProof.getTxns().get(0).getId().asHashCode()
@@ -108,15 +115,16 @@ public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatus
 		this.systemCounters = systemCounters;
 	}
 
+	private LedgerProof getCurrentProof() {
+		var ledgerAndBFTProof = radixEngine.read(RadixEngineReader::getMetadata);
+		return ledgerAndBFTProof == null ? lastProof : ledgerAndBFTProof.getProof();
+	}
+
 	@Override
 	public NetworkStatusResponse handleRequest(NetworkStatusRequest request) throws CoreApiException {
 		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
-
-		var currentProof = inMemorySystemInfo.getCurrentProof();
+		var currentProof = getCurrentProof();
 		var response = new NetworkStatusResponse()
-			.currentStateEpoch(currentProof.getEpoch())
-			.currentStateRound(currentProof.getView().number())
-			.currentStateTimestamp(currentProof.timestamp())
 			.preGenesisStateIdentifier(coreModelMapper.stateIdentifier(preGenesisAccumulatorState))
 			.genesisStateIdentifier(coreModelMapper.stateIdentifier(genesisAccumulatorState))
 			.currentStateIdentifier(coreModelMapper.stateIdentifier(currentProof.getAccumulatorState()))

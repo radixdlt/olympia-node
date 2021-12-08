@@ -63,6 +63,10 @@
 
 package com.radixdlt.integration.api;
 
+import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
+
+import java.util.Random;
+
 public interface DeterministicActor {
-	void execute() throws Exception;
+	String execute(MultiNodeDeterministicRunner runner, Random random) throws Exception;
 }

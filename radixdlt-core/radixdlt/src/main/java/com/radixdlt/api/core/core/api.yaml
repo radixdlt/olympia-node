@@ -1408,48 +1408,48 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/UnexpectedError"
-  "/node/identifiers":
+  "/key/list":
     post:
-      summary: Get the node's identifiers
+      summary: Get the node's supported public keys
       tags:
-        - node
+        - key
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/NodeIdentifiersRequest"
+              "$ref": "#/components/schemas/KeyListRequest"
       responses:
         '200':
-          description: An unsigned transaction
+          description: The node's public keys
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/NodeIdentifiersResponse"
+                "$ref": "#/components/schemas/KeyListResponse"
         '500':
           description: Unexpected error
           content:
             application/json:
               schema:
                 "$ref": "#/components/schemas/UnexpectedError"
-  "/node/sign":
+  "/key/sign":
     post:
       summary: Sign a transaction with the node's key
       tags:
-        - node
+        - key
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/NodeSignRequest"
+              "$ref": "#/components/schemas/KeySignRequest"
       responses:
         '200':
           description: An unsigned transaction
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/NodeSignResponse"
+                "$ref": "#/components/schemas/KeySignResponse"
         '500':
           description: Unexpected error
           content:
@@ -1509,9 +1509,6 @@ components:
         - pre_genesis_state_identifier
         - genesis_state_identifier
         - current_state_identifier
-        - current_state_epoch
-        - current_state_round
-        - current_state_timestamp
         - sync_status
         - peers
       properties:
@@ -1524,16 +1521,6 @@ components:
         current_state_identifier:
           description: The current state identifier at the top of the node's copy of the ledger.
           "$ref": "#/components/schemas/StateIdentifier"
-        current_state_epoch:
-          description: The current ledger epoch at the top of the node's copy of the ledger.
-          "$ref": "#/components/schemas/LongNumber"
-        current_state_round:
-          description: The current ledger state round (in the current epoch) at the top of the node's copy of the ledger.
-          "$ref": "#/components/schemas/LongNumber"
-        current_state_timestamp:
-          description: The current ledger state timestamp at the top of the node's copy of the ledger.
-            This timestamp is not guaranteed to always increase.
-          "$ref": "#/components/schemas/LongNumber"
         sync_status:
           $ref: "#/components/schemas/SyncStatus"
         peers:
@@ -1664,7 +1651,7 @@ components:
           description: Public key to be derived from
           "$ref": "#/components/schemas/PublicKey"
         metadata:
-          descriptin: Data which specifies the type of entity to derive
+          description: Data which specifies the type of entity to derive
           "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
       example:
         network_identifier:
@@ -1697,6 +1684,10 @@ components:
           Account: "#/components/schemas/ConstructionDeriveRequestMetadataAccount"
           Validator: "#/components/schemas/ConstructionDeriveRequestMetadataValidator"
           Token: "#/components/schemas/ConstructionDeriveRequestMetadataToken"
+          PreparedStakes: "#/components/schemas/ConstructionDeriveRequestMetadataPreparedStakes"
+          PreparedUnstakes: "#/components/schemas/ConstructionDeriveRequestMetadataPreparedUnstakes"
+          ExitingUnstakes: "#/components/schemas/ConstructionDeriveRequestMetadataExitingUnstakes"
+          ValidatorSystem: "#/components/schemas/ConstructionDeriveRequestMetadataValidatorSystem"
     ConstructionDeriveRequestMetadataAccount:
       allOf:
         - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
@@ -1713,6 +1704,34 @@ components:
             symbol:
               description: The symbol of the token
               type: string
+    ConstructionDeriveRequestMetadataPreparedStakes:
+      allOf:
+        - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+        - type: object
+          required:
+            - validator
+          properties:
+            validator:
+              $ref: "#/components/schemas/EntityIdentifier"
+    ConstructionDeriveRequestMetadataPreparedUnstakes:
+      allOf:
+        - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+    ConstructionDeriveRequestMetadataExitingUnstakes:
+      allOf:
+        - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+        - type: object
+          required:
+            - validator
+            - epoch_unlock
+          properties:
+            validator:
+              $ref: "#/components/schemas/EntityIdentifier"
+            epoch_unlock:
+              type: integer
+              format: int64
+    ConstructionDeriveRequestMetadataValidatorSystem:
+      allOf:
+        - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
     ConstructionBuildRequest:
       type: object
       required:
@@ -2205,23 +2224,23 @@ components:
         timestamp:
           type: integer
           format: int64
-    NodeIdentifiersRequest:
+    KeyListRequest:
       type: object
       required:
         - network_identifier
       properties:
         network_identifier:
           $ref: "#/components/schemas/NetworkIdentifier"
-    NodeIdentifiersResponse:
+    KeyListResponse:
       type: object
       required:
-        - node_identifiers
+        - public_keys
       properties:
-        node_identifiers:
-          description: The entity identifiers associated with this node's private
-            key.
-          $ref: "#/components/schemas/NodeIdentifiers"
-    NodeSignRequest:
+        public_keys:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicKeyEntry"
+    KeySignRequest:
       type: object
       required:
         - network_identifier
@@ -2234,27 +2253,34 @@ components:
           type: string
         public_key:
           $ref: "#/components/schemas/PublicKey"
-    NodeSignResponse:
+    KeySignResponse:
       type: object
       required:
         - signed_transaction
       properties:
         signed_transaction:
           type: string
-    NodeIdentifiers:
+    PublicKeyEntry:
+      type: object
+      required:
+        - public_key
+        - public_key_identifiers
+      properties:
+        public_key:
+          $ref: "#/components/schemas/PublicKey"
+        identifiers:
+          $ref: "#/components/schemas/PublicKeyIdentifiers"
+    PublicKeyIdentifiers:
       type: object
       required:
         - account_entity_identifier
         - validator_entity_identifier
-        - public_key
         - p2p_node
       properties:
         account_entity_identifier:
           $ref: "#/components/schemas/EntityIdentifier"
         validator_entity_identifier:
           $ref: "#/components/schemas/EntityIdentifier"
-        public_key:
-          $ref: "#/components/schemas/PublicKey"
         p2p_node:
           $ref: "#/components/schemas/Peer"
     Fork:
@@ -3055,14 +3081,29 @@ components:
           properties:
             mempool_transaction_count:
               type: integer
-    NotEnoughResourcesError:
+    NotEnoughNativeTokensForFeesError:
       allOf:
         - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - available
+            - fee_estimate
+          properties:
+            available:
+              $ref: "#/components/schemas/ResourceAmount"
+            fee_estimate:
+              $ref: "#/components/schemas/ResourceAmount"
+    NotEnoughResourcesError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - fee
+            - available
             - attempted_to_take
           properties:
+            fee:
+              $ref: "#/components/schemas/ResourceAmount"
             available:
               $ref: "#/components/schemas/ResourceAmount"
             attempted_to_take:
@@ -3138,6 +3179,15 @@ components:
             owner:
               $ref: "#/components/schemas/EntityIdentifier"
             user:
+              $ref: "#/components/schemas/EntityIdentifier"
+    NotValidatorEntityError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - entity
+          properties:
+            entity:
               $ref: "#/components/schemas/EntityIdentifier"
     InvalidDataObjectError:
       allOf:
@@ -3238,11 +3288,13 @@ components:
           InvalidTransactionError: "#/components/schemas/InvalidTransactionError"
           MempoolFullError: "#/components/schemas/MempoolFullError"
           AboveMaximumValidatorFeeIncreaseError: "#/components/schemas/AboveMaximumValidatorFeeIncreaseError"
+          NotEnoughNativeTokensForFeesError: "#/components/schemas/NotEnoughNativeTokensForFeesError"
           NotEnoughResourcesError: "#/components/schemas/NotEnoughResourcesError"
           BelowMinimumStakeError: "#/components/schemas/BelowMinimumStakeError"
           DataObjectNotSupportedByEntityError: "#/components/schemas/DataObjectNotSupportedByEntityError"
           ResourceDepositOperationNotSupportedByEntityError: "#/components/schemas/ResourceDepositOperationNotSupportedByEntityError"
           ResourceWithdrawOperationNotSupportedByEntityError: "#/components/schemas/ResourceWithdrawOperationNotSupportedByEntityError"
+          NotValidatorEntityError: "#/components/schemas/NotValidatorEntityError"
           NotValidatorOwnerError: "#/components/schemas/NotValidatorOwnerError"
           InvalidDataObjectError: "#/components/schemas/InvalidDataObjectError"
           MessageTooLongError: "#/components/schemas/MessageTooLongError"
