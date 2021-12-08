@@ -67,24 +67,25 @@ import com.google.inject.Inject;
 import com.radixdlt.api.core.core.CoreApiException;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.CoreModelMapper;
-import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
-import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiersRequest;
-import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiersResponse;
+import com.radixdlt.api.core.core.openapitools.model.KeyListRequest;
+import com.radixdlt.api.core.core.openapitools.model.KeyListResponse;
+import com.radixdlt.api.core.core.openapitools.model.PublicKeyEntry;
+import com.radixdlt.api.core.core.openapitools.model.PublicKeyIdentifiers;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 
-public final class NodeIdentifiersHandler extends CoreJsonRpcHandler<NodeIdentifiersRequest, NodeIdentifiersResponse> {
+public final class KeyListHandler extends CoreJsonRpcHandler<KeyListRequest, KeyListResponse> {
 	private final REAddr accountAddress;
 	private final ECPublicKey validatorKey;
 	private final CoreModelMapper coreModelMapper;
 
 	@Inject
-	NodeIdentifiersHandler(
+	KeyListHandler(
 		@Self ECPublicKey validatorKey,
 		CoreModelMapper coreModelMapper
 	) {
-		super(NodeIdentifiersRequest.class);
+		super(KeyListRequest.class);
 
 		this.accountAddress = REAddr.ofPubKeyAccount(validatorKey);
 		this.validatorKey = validatorKey;
@@ -92,14 +93,16 @@ public final class NodeIdentifiersHandler extends CoreJsonRpcHandler<NodeIdentif
 	}
 
 	@Override
-	public NodeIdentifiersResponse handleRequest(NodeIdentifiersRequest request) throws CoreApiException {
+	public KeyListResponse handleRequest(KeyListRequest request) throws CoreApiException {
 		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
-		return new NodeIdentifiersResponse()
-			.nodeIdentifiers(new NodeIdentifiers()
-				.accountEntityIdentifier(coreModelMapper.entityIdentifier(accountAddress))
-				.validatorEntityIdentifier(coreModelMapper.entityIdentifier(validatorKey))
+		return new KeyListResponse()
+			.addPublicKeysItem(new PublicKeyEntry()
 				.publicKey(coreModelMapper.publicKey(validatorKey))
-				.p2pNode(coreModelMapper.peer(validatorKey))
+				.identifiers(new PublicKeyIdentifiers()
+					.accountEntityIdentifier(coreModelMapper.entityIdentifier(accountAddress))
+					.validatorEntityIdentifier(coreModelMapper.entityIdentifier(validatorKey))
+					.p2pNode(coreModelMapper.peer(validatorKey))
+				)
 			);
 	}
 }

@@ -74,7 +74,7 @@ import com.radixdlt.api.core.core.handlers.EngineStatusHandler;
 import com.radixdlt.api.core.core.handlers.EntityHandler;
 import com.radixdlt.api.core.core.handlers.NetworkConfigurationHandler;
 import com.radixdlt.api.core.core.handlers.NetworkStatusHandler;
-import com.radixdlt.api.core.core.handlers.NodeIdentifiersHandler;
+import com.radixdlt.api.core.core.handlers.KeyListHandler;
 import com.radixdlt.api.core.core.handlers.NodeSignHandler;
 import com.radixdlt.api.core.core.handlers.TransactionsHandler;
 import com.radixdlt.api.core.core.openapitools.model.AboveMaximumValidatorFeeIncreaseError;
@@ -95,8 +95,8 @@ import com.radixdlt.api.core.core.openapitools.model.EntityResponse;
 import com.radixdlt.api.core.core.openapitools.model.MempoolFullError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
-import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiersRequest;
-import com.radixdlt.api.core.core.openapitools.model.NodeSignRequest;
+import com.radixdlt.api.core.core.openapitools.model.KeyListRequest;
+import com.radixdlt.api.core.core.openapitools.model.KeySignRequest;
 import com.radixdlt.api.core.core.openapitools.model.NotEnoughResourcesError;
 import com.radixdlt.api.core.core.openapitools.model.NotValidatorOwnerError;
 import com.radixdlt.api.core.core.openapitools.model.PartialStateIdentifier;
@@ -119,7 +119,7 @@ final class NodeApiClient {
 	private final EntityHandler entityHandler;
 	private final NetworkConfigurationHandler networkConfigurationHandler;
 	private final NetworkStatusHandler networkStatusHandler;
-	private final NodeIdentifiersHandler nodeIdentifiersHandler;
+	private final KeyListHandler keyListHandler;
 	private final ConstructionBuildHandler constructionBuildHandler;
 	private final NodeSignHandler nodeSignHandler;
 	private final ConstructionDeriveHandler constructionDeriveHandler;
@@ -134,7 +134,7 @@ final class NodeApiClient {
 		NetworkConfigurationHandler networkConfigurationHandler,
 		NetworkStatusHandler networkStatusHandler,
 		EntityHandler entityHandler,
-		NodeIdentifiersHandler nodeIdentifiersHandler,
+		KeyListHandler keyListHandler,
 		ConstructionBuildHandler constructionBuildHandler,
 		ConstructionDeriveHandler constructionDeriveHandler,
 		NodeSignHandler nodeSignHandler,
@@ -147,7 +147,7 @@ final class NodeApiClient {
 		this.networkConfigurationHandler = networkConfigurationHandler;
 		this.networkStatusHandler = networkStatusHandler;
 		this.entityHandler = entityHandler;
-		this.nodeIdentifiersHandler = nodeIdentifiersHandler;
+		this.keyListHandler = keyListHandler;
 		this.constructionDeriveHandler = constructionDeriveHandler;
 		this.constructionBuildHandler = constructionBuildHandler;
 		this.nodeSignHandler = nodeSignHandler;
@@ -168,10 +168,10 @@ final class NodeApiClient {
 	}
 
 	public PublicKey selfPublicKey() throws Exception {
-		var nodeIdentifiersResponse = nodeIdentifiersHandler.handleRequest(new NodeIdentifiersRequest()
+		var keyListResponse = keyListHandler.handleRequest(new KeyListRequest()
 			.networkIdentifier(networkIdentifier())
 		);
-		return nodeIdentifiersResponse.getNodeIdentifiers().getPublicKey();
+		return keyListResponse.getPublicKeys().get(0).getPublicKey();
 	}
 
 	public EntityIdentifier selfDerive(ConstructionDeriveRequestMetadata metadata) {
@@ -296,9 +296,8 @@ final class NodeApiClient {
 		var engineConfigurationResponse = engineConfigurationHandler.handleRequest(
 			new EngineConfigurationRequest().networkIdentifier(networkIdentifier)
 		);
-		var nodeIdentifiersResponse = nodeIdentifiersHandler.handleRequest(new NodeIdentifiersRequest().networkIdentifier(networkIdentifier));
-		var nodeIdentifiers = nodeIdentifiersResponse.getNodeIdentifiers();
-		var nodePublicKey = nodeIdentifiers.getPublicKey();
+		var keyListResponse = keyListHandler.handleRequest(new KeyListRequest().networkIdentifier(networkIdentifier));
+		var nodePublicKey = keyListResponse.getPublicKeys().get(0).getPublicKey();
 		var configuration = engineConfigurationResponse.getForks().get(0).getEngineConfiguration();
 
 		var accountIdentifier = deriveAccount(nodePublicKey);
@@ -312,7 +311,7 @@ final class NodeApiClient {
 			);
 			var unsignedTransaction = buildResponse.getUnsignedTransaction();
 
-			var response = nodeSignHandler.handleRequest(new NodeSignRequest()
+			var response = nodeSignHandler.handleRequest(new KeySignRequest()
 				.networkIdentifier(networkIdentifier)
 				.publicKey(nodePublicKey)
 				.unsignedTransaction(unsignedTransaction)

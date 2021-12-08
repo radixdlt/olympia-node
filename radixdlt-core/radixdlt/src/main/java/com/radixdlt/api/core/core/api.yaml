@@ -1408,48 +1408,48 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/UnexpectedError"
-  "/node/identifiers":
+  "/key/list":
     post:
-      summary: Get the node's identifiers
+      summary: Get the node's supported public keys
       tags:
-        - node
+        - key
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/NodeIdentifiersRequest"
+              "$ref": "#/components/schemas/KeyListRequest"
       responses:
         '200':
-          description: An unsigned transaction
+          description: The node's public keys
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/NodeIdentifiersResponse"
+                "$ref": "#/components/schemas/KeyListResponse"
         '500':
           description: Unexpected error
           content:
             application/json:
               schema:
                 "$ref": "#/components/schemas/UnexpectedError"
-  "/node/sign":
+  "/key/sign":
     post:
       summary: Sign a transaction with the node's key
       tags:
-        - node
+        - key
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/NodeSignRequest"
+              "$ref": "#/components/schemas/KeySignRequest"
       responses:
         '200':
           description: An unsigned transaction
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/NodeSignResponse"
+                "$ref": "#/components/schemas/KeySignResponse"
         '500':
           description: Unexpected error
           content:
@@ -2224,23 +2224,23 @@ components:
         timestamp:
           type: integer
           format: int64
-    NodeIdentifiersRequest:
+    KeyListRequest:
       type: object
       required:
         - network_identifier
       properties:
         network_identifier:
           $ref: "#/components/schemas/NetworkIdentifier"
-    NodeIdentifiersResponse:
+    KeyListResponse:
       type: object
       required:
-        - node_identifiers
+        - public_keys
       properties:
-        node_identifiers:
-          description: The entity identifiers associated with this node's private
-            key.
-          $ref: "#/components/schemas/NodeIdentifiers"
-    NodeSignRequest:
+        public_keys:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicKeyEntry"
+    KeySignRequest:
       type: object
       required:
         - network_identifier
@@ -2253,27 +2253,34 @@ components:
           type: string
         public_key:
           $ref: "#/components/schemas/PublicKey"
-    NodeSignResponse:
+    KeySignResponse:
       type: object
       required:
         - signed_transaction
       properties:
         signed_transaction:
           type: string
-    NodeIdentifiers:
+    PublicKeyEntry:
+      type: object
+      required:
+        - public_key
+        - public_key_identifiers
+      properties:
+        public_key:
+          $ref: "#/components/schemas/PublicKey"
+        entity_identifiers:
+          $ref: "#/components/schemas/PublicKeyIdentifiers"
+    PublicKeyIdentifiers:
       type: object
       required:
         - account_entity_identifier
         - validator_entity_identifier
-        - public_key
         - p2p_node
       properties:
         account_entity_identifier:
           $ref: "#/components/schemas/EntityIdentifier"
         validator_entity_identifier:
           $ref: "#/components/schemas/EntityIdentifier"
-        public_key:
-          $ref: "#/components/schemas/PublicKey"
         p2p_node:
           $ref: "#/components/schemas/Peer"
     Fork:
