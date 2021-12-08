@@ -63,8 +63,6 @@
 
 package com.radixdlt.integration.api;
 
-import com.radixdlt.integration.api.actors.DeterministicActor;
-
 import java.util.function.Supplier;
 
 public class ActorConfiguration {

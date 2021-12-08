@@ -64,6 +64,7 @@
 package com.radixdlt.integration.api.actors;
 
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
+import com.radixdlt.integration.api.DeterministicActor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -79,7 +80,7 @@ public final class NativeTokenRewardsChecker implements DeterministicActor {
 	private Long lastEpoch;
 
 	@Override
-	public void execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
+	public String execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
 		var injector = runner.getNode(0);
 		var nodeClient = injector.getInstance(NodeApiClient.class);
 		var radixEngineReader = injector.getInstance(RadixEngineReader.class);
@@ -87,8 +88,9 @@ public final class NativeTokenRewardsChecker implements DeterministicActor {
 		var epochView = nodeClient.getEpochView();
 		var epoch = epochView.getEpoch();
 		var totalNativeTokenCount = radixEngineReader.getTotalNativeTokens();
+		final String result;
 		if (lastEpoch != null) {
-			logger.info("total_xrd: {} last_check: {}", totalNativeTokenCount, lastNativeTokenCount);
+			result = String.format("Okay{total_xrd=%s last_time=%s}", totalNativeTokenCount, lastNativeTokenCount);
 			if (epoch - lastEpoch > 1) {
 				var numEpochs = epoch - lastEpoch;
 				var maxEmissions = BigInteger.valueOf(nodeClient.getRoundsPerEpoch())
@@ -99,10 +101,13 @@ public final class NativeTokenRewardsChecker implements DeterministicActor {
 				assertThat(diff).isLessThanOrEqualTo(maxEmissions);
 			}
 		} else {
+			result = String.format("Okay{total_xrd=%s}", totalNativeTokenCount);
 			logger.info("total_xrd: {}", totalNativeTokenCount);
 		}
 
 		lastEpoch = epoch;
 		lastNativeTokenCount = totalNativeTokenCount;
+
+		return result;
 	}
 }

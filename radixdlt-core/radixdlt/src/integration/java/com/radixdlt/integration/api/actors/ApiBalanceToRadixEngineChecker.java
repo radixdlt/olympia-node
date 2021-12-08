@@ -68,6 +68,7 @@ import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.integration.api.DeterministicActor;
 import com.radixdlt.utils.PrivateKeys;
 
 import java.math.BigInteger;
@@ -86,7 +87,7 @@ public final class ApiBalanceToRadixEngineChecker implements DeterministicActor 
 	}
 
 	@Override
-	public void execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
+	public String execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
 		var injector = runner.getNode(0);
 		var nodeClient = injector.getInstance(NodeApiClient.class);
 		var coreModelMapper = injector.getInstance(CoreModelMapper.class);
@@ -111,5 +112,7 @@ public final class ApiBalanceToRadixEngineChecker implements DeterministicActor 
 			.map(r -> new BigInteger(r.getValue()))
 			.reduce(BigInteger.ZERO, BigInteger::add);
 		assertThat(totalUnstakingBalance).isEqualTo(radixEngineReader.getTotalExittingStake());
+
+		return String.format("Okay{total_token_balance=%s}", totalTokenBalance);
 	}
 }

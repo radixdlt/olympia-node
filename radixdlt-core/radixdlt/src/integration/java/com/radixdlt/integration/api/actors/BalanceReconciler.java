@@ -70,6 +70,7 @@ import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
 import com.radixdlt.api.core.core.openapitools.model.ResourceIdentifier;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
+import com.radixdlt.integration.api.DeterministicActor;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -102,11 +103,12 @@ public class BalanceReconciler implements DeterministicActor {
 	}
 
 	@Override
-	public void execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
+	public String execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
 		var injector = runner.getNode(0);
 		var nodeApiClient = injector.getInstance(NodeApiClient.class);
 		var transactions = new ArrayList<CommittedTransaction>();
 
+		final long startingStateVersion = currentStateVersion;
 		// Sync fully to ledger
 		List<CommittedTransaction> loadedTransactions;
 		do {
@@ -154,5 +156,7 @@ public class BalanceReconciler implements DeterministicActor {
 				.describedAs("Balance of %s", entityIdentifier)
 				.containsExactlyInAnyOrderEntriesOf(myBalances);
 		}
+
+		return String.format("Okay{last_state_version=%s current_state_version=%s}", startingStateVersion, currentStateVersion);
 	}
 }

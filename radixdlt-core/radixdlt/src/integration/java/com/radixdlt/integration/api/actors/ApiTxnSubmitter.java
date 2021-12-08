@@ -64,11 +64,18 @@
 package com.radixdlt.integration.api.actors;
 
 import com.google.inject.Key;
+import com.radixdlt.api.core.core.model.CoreApiException;
+import com.radixdlt.api.core.core.openapitools.model.AboveMaximumValidatorFeeIncreaseError;
+import com.radixdlt.api.core.core.openapitools.model.BelowMinimumStakeError;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.MempoolFullError;
+import com.radixdlt.api.core.core.openapitools.model.NotEnoughResourcesError;
+import com.radixdlt.api.core.core.openapitools.model.NotValidatorOwnerError;
 import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
 import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.integration.api.DeterministicActor;
 import com.radixdlt.integration.api.actors.actions.CreateTokenDefinition;
 import com.radixdlt.integration.api.actors.actions.NodeTransactionAction;
 import com.radixdlt.integration.api.actors.actions.RegisterValidator;
@@ -84,6 +91,7 @@ import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ApiTxnSubmitter implements DeterministicActor {
@@ -127,7 +135,7 @@ public final class ApiTxnSubmitter implements DeterministicActor {
 	}
 
 	@Override
-	public void execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
+	public String execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
 		int size = runner.getSize();
 		var nodeIndex = random.nextInt(size);
 		var nodeInjector = runner.getNode(nodeIndex);
@@ -139,7 +147,7 @@ public final class ApiTxnSubmitter implements DeterministicActor {
 
 		// Don't let the last validator unregister
 		if (next == 4 && nodeIndex <= 0) {
-			return;
+			return "Skipped";
 		}
 
 		NodeTransactionAction action = switch (next) {
@@ -155,6 +163,26 @@ public final class ApiTxnSubmitter implements DeterministicActor {
 			default -> throw new IllegalStateException("Unexpected value: " + next);
 		};
 
-		nodeClient.submit(action);
+		try {
+			nodeClient.submit(action);
+		} catch (CoreApiException e) {
+			var okayErrors = Set.of(
+				MempoolFullError.class,
+				NotEnoughResourcesError.class,
+				AboveMaximumValidatorFeeIncreaseError.class,
+				BelowMinimumStakeError.class,
+				NotValidatorOwnerError.class
+			);
+
+			// Throw error if not expected
+			if (!okayErrors.contains(e.toError().getDetails().getClass())) {
+				throw e;
+			}
+
+			var errorName = e.toError().getDetails().getClass().getSimpleName();
+			return String.format("BuildError{action=%s error=%s}", action.getClass().getSimpleName(), errorName);
+		}
+
+		return String.format("Submitted{action=%s}", action.getClass().getSimpleName());
 	}
 }

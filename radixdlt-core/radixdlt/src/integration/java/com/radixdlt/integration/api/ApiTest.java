@@ -63,6 +63,7 @@
 
 package com.radixdlt.integration.api;
 
+import com.google.common.collect.EvictingQueue;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.core.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
@@ -73,7 +74,6 @@ import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 import com.radixdlt.integration.api.actors.ApiBalanceToRadixEngineChecker;
 import com.radixdlt.integration.api.actors.ApiTxnSubmitter;
 import com.radixdlt.integration.api.actors.BalanceReconciler;
-import com.radixdlt.integration.api.actors.DeterministicActor;
 import com.radixdlt.integration.api.actors.NativeTokenRewardsChecker;
 import com.radixdlt.integration.api.actors.RandomNodeRestarter;
 import com.radixdlt.networks.Network;
@@ -129,6 +129,7 @@ import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -272,6 +273,8 @@ public class ApiTest {
 		private final DeterministicActor actor;
 		private final int numerator;
 		private final int denominator;
+		private final Queue<String> lastResults = EvictingQueue.create(5);
+		private int numActions;
 
 		RunningActor(DeterministicActor actor, int numerator, int denominator) {
 			this.actor = actor;
@@ -281,9 +284,15 @@ public class ApiTest {
 
 		void tryExecute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
 			if (random.nextInt(denominator) < numerator) {
-				logger.info("Executing actor: {}", actor.getClass().getSimpleName());
-				actor.execute(runner, random);
+				var result = actor.execute(runner, random);
+				lastResults.offer(result);
+				logger.info("Actor {} -> {}", actor.getClass().getSimpleName(), result);
+				numActions++;
 			}
+		}
+
+		void printLastResults() {
+			lastResults.forEach(result -> logger.info("\t{}", result));
 		}
 	}
 
@@ -306,6 +315,12 @@ public class ApiTest {
 			}
 			deterministicRunner.dispatchToAll(new Key<EventDispatcher<MempoolRelayTrigger>>() {}, MempoolRelayTrigger.create());
 			deterministicRunner.dispatchToAll(new Key<EventDispatcher<SyncCheckTrigger>>() {}, SyncCheckTrigger.create());
+		}
+
+		logger.info("===Test Results===");
+		for (var actor : actors) {
+			logger.info("Actor {} count={}", actor.actor.getClass().getSimpleName(), actor.numActions);
+			actor.printLastResults();
 		}
 	}
 }

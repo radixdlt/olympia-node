@@ -64,13 +64,15 @@
 package com.radixdlt.integration.api.actors;
 
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
+import com.radixdlt.integration.api.DeterministicActor;
 
 import java.util.Random;
 
 public final class RandomNodeRestarter implements DeterministicActor {
 	@Override
-	public void execute(MultiNodeDeterministicRunner runner, Random random) {
+	public String execute(MultiNodeDeterministicRunner runner, Random random) {
 		var nodeIndex = random.nextInt(runner.getSize());
 		runner.restartNode(nodeIndex);
+		return String.format("Restarted{node_index=%s}", nodeIndex);
 	}
 }

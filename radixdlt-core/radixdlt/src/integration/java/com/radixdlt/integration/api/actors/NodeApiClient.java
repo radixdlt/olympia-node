@@ -84,8 +84,6 @@ import com.radixdlt.api.core.core.handlers.NetworkStatusHandler;
 import com.radixdlt.api.core.core.handlers.KeyListHandler;
 import com.radixdlt.api.core.core.handlers.NodeSignHandler;
 import com.radixdlt.api.core.core.handlers.TransactionsHandler;
-import com.radixdlt.api.core.core.openapitools.model.AboveMaximumValidatorFeeIncreaseError;
-import com.radixdlt.api.core.core.openapitools.model.BelowMinimumStakeError;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransaction;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
@@ -95,12 +93,9 @@ import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationRequest;
 import com.radixdlt.api.core.core.openapitools.model.EngineStatusRequest;
 import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
 import com.radixdlt.api.core.core.openapitools.model.EntityResponse;
-import com.radixdlt.api.core.core.openapitools.model.MempoolFullError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
 import com.radixdlt.api.core.core.openapitools.model.KeyListRequest;
 import com.radixdlt.api.core.core.openapitools.model.KeySignRequest;
-import com.radixdlt.api.core.core.openapitools.model.NotEnoughResourcesError;
-import com.radixdlt.api.core.core.openapitools.model.NotValidatorOwnerError;
 import com.radixdlt.api.core.core.openapitools.model.PartialStateIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.PublicKey;
 import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
@@ -113,7 +108,6 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 final class NodeApiClient {
 	private final EntityHandler entityHandler;
@@ -308,37 +302,22 @@ final class NodeApiClient {
 		var accountIdentifier = deriveAccount(nodePublicKey);
 		var operationGroup = action.toOperationGroup(configuration, this::selfDerive);
 
-		try {
-			var buildResponse = constructionBuildHandler.handleRequest(new ConstructionBuildRequest()
-				.networkIdentifier(networkIdentifier)
-				.feePayer(accountIdentifier)
-				.operationGroups(List.of(operationGroup))
-			);
-			var unsignedTransaction = buildResponse.getUnsignedTransaction();
+		var buildResponse = constructionBuildHandler.handleRequest(new ConstructionBuildRequest()
+			.networkIdentifier(networkIdentifier)
+			.feePayer(accountIdentifier)
+			.operationGroups(List.of(operationGroup))
+		);
+		var unsignedTransaction = buildResponse.getUnsignedTransaction();
 
-			var response = nodeSignHandler.handleRequest(new KeySignRequest()
-				.networkIdentifier(networkIdentifier)
-				.publicKey(nodePublicKey)
-				.unsignedTransaction(unsignedTransaction)
-			);
+		var response = nodeSignHandler.handleRequest(new KeySignRequest()
+			.networkIdentifier(networkIdentifier)
+			.publicKey(nodePublicKey)
+			.unsignedTransaction(unsignedTransaction)
+		);
 
-			constructionSubmitHandler.handleRequest(new ConstructionSubmitRequest()
-				.networkIdentifier(networkIdentifier)
-				.signedTransaction(response.getSignedTransaction())
-			);
-		} catch (CoreApiException e) {
-			var okayErrors = Set.of(
-				MempoolFullError.class,
-				NotEnoughResourcesError.class,
-				AboveMaximumValidatorFeeIncreaseError.class,
-				BelowMinimumStakeError.class,
-				NotValidatorOwnerError.class
-			);
-
-			// Throw error if not expected
-			if (!okayErrors.contains(e.toError().getDetails().getClass())) {
-				throw e;
-			}
-		}
+		constructionSubmitHandler.handleRequest(new ConstructionSubmitRequest()
+			.networkIdentifier(networkIdentifier)
+			.signedTransaction(response.getSignedTransaction())
+		);
 	}
 }
