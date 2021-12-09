@@ -68,20 +68,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.radixdlt.ModuleRunner;
-import com.stijndewitt.undertow.cors.AllowAll;
-import com.stijndewitt.undertow.cors.Filter;
 
 import java.util.Locale;
 import java.util.Map;
-import java.util.logging.Level;
 
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.StatusCodes;
-
-import static java.util.logging.Logger.getLogger;
 
 public final class HttpServerRunner implements ModuleRunner {
 	private static final Logger log = LogManager.getLogger();
@@ -157,17 +152,6 @@ public final class HttpServerRunner implements ModuleRunner {
 			exceptionHandler.addExceptionHandler(Exception.class, this.exceptionHandler);
 		}
 
-		return wrapWithCorsFilter(exceptionHandler);
-	}
-
-	private Filter wrapWithCorsFilter(final HttpHandler handler) {
-		var filter = new Filter(handler);
-
-		// Disable INFO logging for CORS filter, as it's a bit distracting
-		getLogger(filter.getClass().getName()).setLevel(Level.WARNING);
-		filter.setPolicyClass(AllowAll.class.getName());
-		filter.setUrlPattern("^.*$");
-
-		return filter;
+		return exceptionHandler;
 	}
 }
