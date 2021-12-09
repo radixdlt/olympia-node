@@ -86,7 +86,6 @@ import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
@@ -132,7 +131,7 @@ public abstract class ApiTest {
 					.overrideFeeTable(FeeTable.create(Amount.ofSubunits(UInt256.ONE), Map.of()))
 			),
 			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 1),
 			new MockedGenesisModule(
 				Set.of(TEST_KEY.getPublicKey()),
 				totalTokenAmount,
@@ -144,7 +143,6 @@ public abstract class ApiTest {
 					bind(BerkeleyRecoverableProcessedTxnStore.class).in(Scopes.SINGLETON);
 					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
 						.addBinding().to(BerkeleyRecoverableProcessedTxnStore.class);
-					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 					bindConstant().annotatedWith(NetworkId.class).to(99);
 					bind(P2PConfig.class).toInstance(mock(P2PConfig.class));

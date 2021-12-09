@@ -100,7 +100,6 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.qualifier.LocalSigner;
-import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
@@ -159,7 +158,7 @@ public class UnstakingLockedTokensTest {
 			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
 			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
 			new MockedGenesisModule(
 				Set.of(TEST_KEY.getPublicKey()),
 				Amount.ofTokens(110),
@@ -168,7 +167,6 @@ public class UnstakingLockedTokensTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 			}

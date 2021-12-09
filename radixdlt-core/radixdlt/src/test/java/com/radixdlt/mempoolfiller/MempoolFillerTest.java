@@ -88,7 +88,6 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
@@ -120,7 +119,7 @@ public class MempoolFillerTest {
 			MempoolConfig.asModule(10, 10),
 			new MainnetForkConfigsModule(),
 			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
 			new MockedGenesisModule(
 				Set.of(TEST_KEY.getPublicKey()),
 				Amount.ofTokens(10000000000L),
@@ -130,7 +129,6 @@ public class MempoolFillerTest {
 				@Override
 				protected void configure() {
 				    install(new MempoolFillerModule());
-					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 			}

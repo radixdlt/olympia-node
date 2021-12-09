@@ -94,7 +94,6 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
@@ -138,7 +137,7 @@ public class MutableTokenAndResourceFeeTest {
 				)
 			)),
 			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),
+			new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY, 0),
 			new MockedGenesisModule(
 				Set.of(VALIDATOR_KEY.getPublicKey()),
 				Amount.ofTokens(101),
@@ -147,7 +146,6 @@ public class MutableTokenAndResourceFeeTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 			}

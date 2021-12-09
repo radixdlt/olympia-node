@@ -76,7 +76,6 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.qualifier.NumPeers;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -87,9 +86,11 @@ import java.util.stream.Stream;
  */
 public final class SingleNodeAndPeersDeterministicNetworkModule extends AbstractModule {
     private final ECKeyPair self;
+    private final int numPeers;
 
-    public SingleNodeAndPeersDeterministicNetworkModule(ECKeyPair self) {
+    public SingleNodeAndPeersDeterministicNetworkModule(ECKeyPair self, int numPeers) {
         this.self = self;
+        this.numPeers = numPeers;
     }
 
     @Override
@@ -100,7 +101,7 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
 
     @Provides
     @Singleton
-    public PeersView peers(@NumPeers int numPeers) {
+    public PeersView peers() {
         final var peers = Stream.generate(BFTNode::random)
             .limit(numPeers)
             .map(PeersView.PeerInfo::fromBftNode)

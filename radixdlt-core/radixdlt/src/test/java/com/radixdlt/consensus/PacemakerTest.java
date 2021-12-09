@@ -88,7 +88,6 @@ import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
@@ -124,11 +123,10 @@ public class PacemakerTest {
 				Amount.ofTokens(1000),
 				Amount.ofTokens(100)
 			),
-			new SingleNodeAndPeersDeterministicNetworkModule(PrivateKeys.ofNumeric(1)),
+			new SingleNodeAndPeersDeterministicNetworkModule(PrivateKeys.ofNumeric(1), 0),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 			}
