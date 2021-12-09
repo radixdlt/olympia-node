@@ -88,8 +88,8 @@ public class SystemApiModule extends AbstractModule {
 		bind(HealthInfoService.class).in(Scopes.SINGLETON);
 
 		var binder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class);
-		binder.addBinding(HandlerRoute.get("/system/configuration")).to(SystemConfigurationHandler.class);
-		binder.addBinding(HandlerRoute.get("/system/metrics")).to(SystemMetricsHandler.class);
+		binder.addBinding(HandlerRoute.get("/system/configuration")).to(ConfigurationHandler.class);
+		binder.addBinding(HandlerRoute.get("/system/metrics")).to(MetricsHandler.class);
 		binder.addBinding(HandlerRoute.get("/system/health")).to(HealthHandler.class);
 		binder.addBinding(HandlerRoute.get("/system/version")).to(VersionHandler.class);
 		binder.addBinding(HandlerRoute.get("/system/peers")).to(PeersHandler.class);

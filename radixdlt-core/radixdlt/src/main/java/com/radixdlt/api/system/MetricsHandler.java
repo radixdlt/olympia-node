@@ -67,12 +67,12 @@ import com.google.inject.Inject;
 import com.radixdlt.api.system.openapitools.model.SystemMetricsResponse;
 import com.radixdlt.counters.SystemCounters;
 
-public final class SystemMetricsHandler extends SystemGetJsonHandler<SystemMetricsResponse> {
+public final class MetricsHandler extends SystemGetJsonHandler<SystemMetricsResponse> {
 	private final SystemCounters systemCounters;
 	private final SystemModelMapper systemModelMapper;
 
 	@Inject
-	SystemMetricsHandler(
+	MetricsHandler(
 		SystemModelMapper systemModelMapper,
 		SystemCounters systemCounters
 	) {

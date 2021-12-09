@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -61,76 +60,57 @@
  * Work. You assume all risks associated with Your use of the Work and the exercise of
  * permissions under this License.
  */
-package com.radixdlt.api.service;
 
-import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.api.system.health.ScheduledStatsCollecting;
+package com.radixdlt.api.system;
+
+import com.google.inject.Inject;
+import com.radixdlt.api.ApiTest;
+import com.radixdlt.api.system.openapitools.model.Address;
+import com.radixdlt.api.system.openapitools.model.AddressBookEntry;
+import com.radixdlt.network.p2p.RadixNodeUri;
+import com.radixdlt.network.p2p.addressbook.AddressBook;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.utils.PrivateKeys;
 import org.junit.Test;
 
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.environment.ScheduledEventDispatcher;
+import java.util.Set;
 
-import java.util.stream.IntStream;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-
-import static com.radixdlt.api.system.health.NodeStatus.BOOTING;
-import static com.radixdlt.api.system.health.NodeStatus.STALLED;
-import static com.radixdlt.api.system.health.NodeStatus.SYNCING;
-import static com.radixdlt.api.system.health.NodeStatus.UP;
-import static com.radixdlt.api.system.health.HealthInfoService.LEDGER_KEY;
-import static com.radixdlt.api.system.health.HealthInfoService.TARGET_KEY;
-import static com.radixdlt.counters.SystemCounters.CounterType;
-
-public class HealthInfoServiceTest {
-	@SuppressWarnings("unchecked")
-	private final ScheduledEventDispatcher<ScheduledStatsCollecting> dispatcher = mock(ScheduledEventDispatcher.class);
-	private final SystemCounters systemCounters = new SystemCountersImpl();
-	private final HealthInfoService healthInfoService = new HealthInfoService(systemCounters, dispatcher);
+public class AddressBookHandlerTest extends ApiTest {
+	@Inject
+	@NetworkId
+	private int networkId;
+	@Inject
+	private AddressBookHandler sut;
+	@Inject
+	private AddressBook addressBook;
+	@Inject
+	private Addressing addressing;
 
 	@Test
-	public void testNodeStatus() {
-		assertEquals(BOOTING, healthInfoService.nodeStatus());
+	public void can_retrieve_address_book() throws Exception {
+		// Arrange
+		var peerKey = PrivateKeys.ofNumeric(2).getPublicKey();
+		var peerUri = RadixNodeUri.fromPubKeyAndAddress(networkId, peerKey, "localhost", 12345);
+		addressBook.addUncheckedPeers(Set.of(peerUri));
+		start();
 
-		updateStatsSync(10, TARGET_KEY, 5, LEDGER_KEY);
+		// Act
+		var response = sut.handleRequest();
 
-		assertEquals(SYNCING, healthInfoService.nodeStatus());
-
-		updateStatsSync(10, TARGET_KEY, 15, LEDGER_KEY);
-
-		assertEquals(UP, healthInfoService.nodeStatus());
-
-		updateStatsSync(10, TARGET_KEY, 0, LEDGER_KEY);
-
-		assertEquals(STALLED, healthInfoService.nodeStatus());
-	}
-
-	private void updateStatsSync(int count1, CounterType key1, int count2, CounterType key2) {
-		var count = Math.min(count1, count2);
-
-		IntStream.range(0, count).forEach(__ -> {
-			systemCounters.increment(key1);
-			systemCounters.increment(key2);
-			healthInfoService.updateStats().process(ScheduledStatsCollecting.create());
-		});
-
-		var remaining = Math.max(count1, count2) - count;
-		var key = count1 > count2 ? key1 : key2;
-
-		IntStream.range(0, remaining).forEach(__ -> {
-			systemCounters.increment(key);
-			healthInfoService.updateStats().process(ScheduledStatsCollecting.create());
-		});
-	}
-
-	private void updateStats(int times, CounterType counterType, boolean increment) {
-		IntStream.range(0, times).forEach(__ -> {
-			if (increment) {
-				systemCounters.increment(counterType);
-			}
-			healthInfoService.updateStats().process(ScheduledStatsCollecting.create());
-		});
+		// Assert
+		var entries = response.getEntries();
+		assertThat(entries).containsExactly(new AddressBookEntry()
+			.peerId(addressing.forNodes().of(peerKey))
+			.banned(false)
+			.bannedUntil(null)
+			.addKnownAddressesItem(new Address()
+				.uri(peerUri.toString())
+				.blacklisted(false)
+				.lastConnectionStatus(Address.LastConnectionStatusEnum.UNKNOWN)
+			)
+		);
 	}
 }

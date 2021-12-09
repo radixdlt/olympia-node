@@ -61,105 +61,66 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.system;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.core.handlers.TransactionsHandler;
-import com.radixdlt.api.core.model.CoreApiException;
-import com.radixdlt.api.core.openapitools.model.CommittedTransactionsRequest;
-import com.radixdlt.api.core.openapitools.model.InvalidPartialStateIdentifierError;
-import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
-import com.radixdlt.api.core.openapitools.model.PartialStateIdentifier;
-import com.radixdlt.api.core.openapitools.model.StateIdentifierNotFoundError;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.utils.Bytes;
-import org.junit.Test;
+import com.radixdlt.api.system.openapitools.model.BFTConfiguration;
+import com.radixdlt.api.system.openapitools.model.MempoolConfiguration;
+import com.radixdlt.api.system.openapitools.model.SystemConfigurationResponse;
+import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.sync.SyncConfig;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class TransactionsHandlerTest extends ApiTest {
+public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfigurationResponse> {
+
+	private final long pacemakerTimeout;
+	private final int bftSyncPatienceMillis;
+	private final int mempoolMaxSize;
+	private final long mempoolThrottleMs;
+	private final SyncConfig syncConfig;
+	private final P2PConfig p2PConfig;
+	private final @Self ECPublicKey self;
+	private final SystemModelMapper systemModelMapper;
+
 	@Inject
-	private TransactionsHandler sut;
-	@Inject
-	@Genesis
-	private VerifiedTxnsAndProof genesis;
-
-	@Test
-	public void retrieve_genesis_in_transaction_stream() throws Exception {
-		// Arrange
-		start();
-
-		// Act
-		var request = new CommittedTransactionsRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.limit(1L)
-			.stateIdentifier(new PartialStateIdentifier().stateVersion(0L));
-		var response = sut.handleRequest(request);
-
-		// Assert
-		assertThat(response.getTransactions()).hasSize(1);
-		var hex = response.getTransactions().get(0).getMetadata().getHex();
-		assertThat(hex).isEqualTo(Bytes.toHexString(genesis.getTxns().get(0).getPayload()));
+	ConfigurationHandler(
+		@Self ECPublicKey self,
+		@PacemakerTimeout long pacemakerTimeout,
+		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
+		@MempoolMaxSize int mempoolMaxSize,
+		@MempoolThrottleMs long mempoolThrottleMs,
+		SyncConfig syncConfig,
+		P2PConfig p2PConfig,
+		SystemModelMapper systemModelMapper
+	) {
+		this.self = self;
+		this.pacemakerTimeout = pacemakerTimeout;
+		this.bftSyncPatienceMillis = bftSyncPatienceMillis;
+		this.mempoolMaxSize = mempoolMaxSize;
+		this.mempoolThrottleMs = mempoolThrottleMs;
+		this.syncConfig = syncConfig;
+		this.p2PConfig = p2PConfig;
+		this.systemModelMapper = systemModelMapper;
 	}
 
-
-	@Test
-	public void retrieve_last_state_version() throws Exception {
-		// Arrange
-		start();
-
-		// Act
-		var request = new CommittedTransactionsRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.limit(1L)
-			.stateIdentifier(new PartialStateIdentifier().stateVersion(1L));
-		var response = sut.handleRequest(request);
-
-		// Assert
-		assertThat(response.getTransactions()).isEmpty();
-		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
-		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
-		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
-	}
-
-	@Test
-	public void retrieving_past_last_state_version_should_throw_exception() {
-		// Arrange
-		start();
-
-		// Act
-		// Assert
-		var request = new CommittedTransactionsRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.limit(1L)
-			.stateIdentifier(new PartialStateIdentifier().stateVersion(2L));
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOfSatisfying(CoreApiException.class, e -> {
-				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(StateIdentifierNotFoundError.class);
-				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.NOT_FOUND.getErrorCode());
-			});
-	}
-
-	@Test
-	public void retrieving_illegal_state_version_should_throw_exception() {
-		// Arrange
-		start();
-
-		// Act
-		// Assert
-		var request = new CommittedTransactionsRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.limit(1L)
-			.stateIdentifier(new PartialStateIdentifier().stateVersion(-1L));
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOfSatisfying(CoreApiException.class, e -> {
-				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(InvalidPartialStateIdentifierError.class);
-				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
-			});
+	@Override
+	public SystemConfigurationResponse handleRequest() {
+		return new SystemConfigurationResponse()
+			.bft(new BFTConfiguration()
+				.bftSyncPatience(bftSyncPatienceMillis)
+				.pacemakerTimeout(pacemakerTimeout)
+			)
+			.mempool(new MempoolConfiguration()
+				.maxSize(mempoolMaxSize)
+				.throttle(mempoolThrottleMs)
+			)
+			.sync(systemModelMapper.syncConfiguration(syncConfig))
+			.networking(systemModelMapper.networkingConfiguration(self, p2PConfig));
 	}
 }

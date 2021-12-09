@@ -61,66 +61,95 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
+package com.radixdlt.api;
 
+import com.google.common.collect.ImmutableList;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.radixdlt.api.system.openapitools.model.BFTConfiguration;
-import com.radixdlt.api.system.openapitools.model.MempoolConfiguration;
-import com.radixdlt.api.system.openapitools.model.SystemConfigurationResponse;
-import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
+import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.network.p2p.P2PConfig;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
+import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.network.p2p.RadixNodeUri;
+import com.radixdlt.network.p2p.addressbook.AddressBook;
+import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.qualifier.NumPeers;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt256;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 
+import java.util.Map;
+import java.util.Set;
 
-public final class SystemConfigurationHandler extends SystemGetJsonHandler<SystemConfigurationResponse> {
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-	private final long pacemakerTimeout;
-	private final int bftSyncPatienceMillis;
-	private final int mempoolMaxSize;
-	private final long mempoolThrottleMs;
-	private final SyncConfig syncConfig;
-	private final P2PConfig p2PConfig;
-	private final @Self ECPublicKey self;
-	private final SystemModelMapper systemModelMapper;
+public abstract class ApiTest {
+	@Rule
+	public TemporaryFolder folder = new TemporaryFolder();
+	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+
+	private final Amount totalTokenAmount = Amount.ofTokens(110);
+	private final Amount stakeAmount = Amount.ofTokens(10);
 
 	@Inject
-	SystemConfigurationHandler(
-		@Self ECPublicKey self,
-		@PacemakerTimeout long pacemakerTimeout,
-		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
-		@MempoolMaxSize int mempoolMaxSize,
-		@MempoolThrottleMs long mempoolThrottleMs,
-		SyncConfig syncConfig,
-		P2PConfig p2PConfig,
-		SystemModelMapper systemModelMapper
-	) {
-		this.self = self;
-		this.pacemakerTimeout = pacemakerTimeout;
-		this.bftSyncPatienceMillis = bftSyncPatienceMillis;
-		this.mempoolMaxSize = mempoolMaxSize;
-		this.mempoolThrottleMs = mempoolThrottleMs;
-		this.syncConfig = syncConfig;
-		this.p2PConfig = p2PConfig;
-		this.systemModelMapper = systemModelMapper;
+	private SingleNodeDeterministicRunner runner;
+
+	@Before
+	public void setup() {
+		var injector = Guice.createInjector(
+			MempoolConfig.asModule(1000, 10),
+			new MainnetForkConfigsModule(),
+			new RadixEngineForksLatestOnlyModule(
+				RERulesConfig.testingDefault()
+					.overrideFeeTable(FeeTable.create(Amount.ofSubunits(UInt256.ONE), Map.of()))
+			),
+			new ForksModule(),
+			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+			new MockedGenesisModule(
+				Set.of(TEST_KEY.getPublicKey()),
+				totalTokenAmount,
+				stakeAmount
+			),
+			new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(BerkeleyRecoverableProcessedTxnStore.class).in(Scopes.SINGLETON);
+					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
+						.addBinding().to(BerkeleyRecoverableProcessedTxnStore.class);
+					bindConstant().annotatedWith(NumPeers.class).to(0);
+					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
+					bindConstant().annotatedWith(NetworkId.class).to(99);
+					bind(AddressBook.class).in(Scopes.SINGLETON);
+					var selfUri = RadixNodeUri.fromPubKeyAndAddress(99, TEST_KEY.getPublicKey(), "localhost", 23456);
+					bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
+					var addressBookPersistence = mock(AddressBookPersistence.class);
+					when(addressBookPersistence.getAllEntries()).thenReturn(ImmutableList.of());
+					bind(AddressBookPersistence.class).toInstance(addressBookPersistence);
+				}
+			}
+		);
+		injector.injectMembers(this);
 	}
 
-	@Override
-	public SystemConfigurationResponse handleRequest() {
-		return new SystemConfigurationResponse()
-			.bft(new BFTConfiguration()
-				.bftSyncPatience(bftSyncPatienceMillis)
-				.pacemakerTimeout(pacemakerTimeout)
-			)
-			.mempool(new MempoolConfiguration()
-				.maxSize(mempoolMaxSize)
-				.throttle(mempoolThrottleMs)
-			)
-			.sync(systemModelMapper.syncConfiguration(syncConfig))
-			.networking(systemModelMapper.networkingConfiguration(self, p2PConfig));
+	protected final void start() {
+		runner.start();
 	}
 }

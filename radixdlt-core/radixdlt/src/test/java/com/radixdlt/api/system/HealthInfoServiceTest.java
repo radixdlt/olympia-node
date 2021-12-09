@@ -60,106 +60,76 @@
  * Work. You assume all risks associated with Your use of the Work and the exercise of
  * permissions under this License.
  */
+package com.radixdlt.api.system;
 
-package com.radixdlt.api.core;
-
-import com.google.inject.Inject;
-import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.core.handlers.TransactionsHandler;
-import com.radixdlt.api.core.model.CoreApiException;
-import com.radixdlt.api.core.openapitools.model.CommittedTransactionsRequest;
-import com.radixdlt.api.core.openapitools.model.InvalidPartialStateIdentifierError;
-import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
-import com.radixdlt.api.core.openapitools.model.PartialStateIdentifier;
-import com.radixdlt.api.core.openapitools.model.StateIdentifierNotFoundError;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.utils.Bytes;
+import com.radixdlt.api.system.health.HealthInfoService;
+import com.radixdlt.api.system.health.ScheduledStatsCollecting;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 
-public class TransactionsHandlerTest extends ApiTest {
-	@Inject
-	private TransactionsHandler sut;
-	@Inject
-	@Genesis
-	private VerifiedTxnsAndProof genesis;
+import java.util.stream.IntStream;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+
+import static com.radixdlt.api.system.health.NodeStatus.BOOTING;
+import static com.radixdlt.api.system.health.NodeStatus.STALLED;
+import static com.radixdlt.api.system.health.NodeStatus.SYNCING;
+import static com.radixdlt.api.system.health.NodeStatus.UP;
+import static com.radixdlt.api.system.health.HealthInfoService.LEDGER_KEY;
+import static com.radixdlt.api.system.health.HealthInfoService.TARGET_KEY;
+import static com.radixdlt.counters.SystemCounters.CounterType;
+
+public class HealthInfoServiceTest {
+	@SuppressWarnings("unchecked")
+	private final ScheduledEventDispatcher<ScheduledStatsCollecting> dispatcher = mock(ScheduledEventDispatcher.class);
+	private final SystemCounters systemCounters = new SystemCountersImpl();
+	private final HealthInfoService healthInfoService = new HealthInfoService(systemCounters, dispatcher);
 
 	@Test
-	public void retrieve_genesis_in_transaction_stream() throws Exception {
-		// Arrange
-		start();
+	public void testNodeStatus() {
+		assertEquals(BOOTING, healthInfoService.nodeStatus());
 
-		// Act
-		var request = new CommittedTransactionsRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.limit(1L)
-			.stateIdentifier(new PartialStateIdentifier().stateVersion(0L));
-		var response = sut.handleRequest(request);
+		updateStatsSync(10, TARGET_KEY, 5, LEDGER_KEY);
 
-		// Assert
-		assertThat(response.getTransactions()).hasSize(1);
-		var hex = response.getTransactions().get(0).getMetadata().getHex();
-		assertThat(hex).isEqualTo(Bytes.toHexString(genesis.getTxns().get(0).getPayload()));
+		assertEquals(SYNCING, healthInfoService.nodeStatus());
+
+		updateStatsSync(10, TARGET_KEY, 15, LEDGER_KEY);
+
+		assertEquals(UP, healthInfoService.nodeStatus());
+
+		updateStatsSync(10, TARGET_KEY, 0, LEDGER_KEY);
+
+		assertEquals(STALLED, healthInfoService.nodeStatus());
 	}
 
+	private void updateStatsSync(int count1, CounterType key1, int count2, CounterType key2) {
+		var count = Math.min(count1, count2);
 
-	@Test
-	public void retrieve_last_state_version() throws Exception {
-		// Arrange
-		start();
+		IntStream.range(0, count).forEach(__ -> {
+			systemCounters.increment(key1);
+			systemCounters.increment(key2);
+			healthInfoService.updateStats().process(ScheduledStatsCollecting.create());
+		});
 
-		// Act
-		var request = new CommittedTransactionsRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.limit(1L)
-			.stateIdentifier(new PartialStateIdentifier().stateVersion(1L));
-		var response = sut.handleRequest(request);
+		var remaining = Math.max(count1, count2) - count;
+		var key = count1 > count2 ? key1 : key2;
 
-		// Assert
-		assertThat(response.getTransactions()).isEmpty();
-		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
-		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
-		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+		IntStream.range(0, remaining).forEach(__ -> {
+			systemCounters.increment(key);
+			healthInfoService.updateStats().process(ScheduledStatsCollecting.create());
+		});
 	}
 
-	@Test
-	public void retrieving_past_last_state_version_should_throw_exception() {
-		// Arrange
-		start();
-
-		// Act
-		// Assert
-		var request = new CommittedTransactionsRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.limit(1L)
-			.stateIdentifier(new PartialStateIdentifier().stateVersion(2L));
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOfSatisfying(CoreApiException.class, e -> {
-				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(StateIdentifierNotFoundError.class);
-				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.NOT_FOUND.getErrorCode());
-			});
-	}
-
-	@Test
-	public void retrieving_illegal_state_version_should_throw_exception() {
-		// Arrange
-		start();
-
-		// Act
-		// Assert
-		var request = new CommittedTransactionsRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.limit(1L)
-			.stateIdentifier(new PartialStateIdentifier().stateVersion(-1L));
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOfSatisfying(CoreApiException.class, e -> {
-				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(InvalidPartialStateIdentifierError.class);
-				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
-			});
+	private void updateStats(int times, CounterType counterType, boolean increment) {
+		IntStream.range(0, times).forEach(__ -> {
+			if (increment) {
+				systemCounters.increment(counterType);
+			}
+			healthInfoService.updateStats().process(ScheduledStatsCollecting.create());
+		});
 	}
 }
