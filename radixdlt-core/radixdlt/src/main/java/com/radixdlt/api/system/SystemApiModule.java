@@ -100,7 +100,7 @@ public class SystemApiModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> healthInfoService(HealthInfoService healthInfoService) {
 		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
+			Runners.SYSTEM_INFO,
 			ScheduledStatsCollecting.class,
 			healthInfoService.updateStats()
 		);

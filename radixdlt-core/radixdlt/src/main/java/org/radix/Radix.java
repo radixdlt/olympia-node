@@ -207,14 +207,6 @@ public final class Radix {
 		final var mempoolReceiverRunner = moduleRunners.get(Runners.MEMPOOL);
 		mempoolReceiverRunner.start();
 
-		final var applicationRunner = moduleRunners.get(Runners.APPLICATION);
-		applicationRunner.start();
-
-		final var chaosRunner = moduleRunners.get(Runners.CHAOS);
-		if (chaosRunner != null) {
-			chaosRunner.start();
-		}
-
 		final var peerServer = injector.getInstance(PeerServerBootstrap.class);
 		try {
 			peerServer.start();
@@ -226,11 +218,6 @@ public final class Radix {
 		final var nodeServer = moduleRunners.get(Runners.NODE_API);
 		if (nodeServer != null) {
 			nodeServer.start();
-		}
-
-		final var gatewayServer = moduleRunners.get(Runners.GATEWAY_API);
-		if (gatewayServer != null) {
-			gatewayServer.start();
 		}
 
 		final var consensusRunner = moduleRunners.get(Runners.CONSENSUS);

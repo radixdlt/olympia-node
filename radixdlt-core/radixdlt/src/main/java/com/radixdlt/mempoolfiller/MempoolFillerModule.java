@@ -73,7 +73,6 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.identifiers.REAddr;
 
@@ -98,11 +97,11 @@ public final class MempoolFillerModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> mempoolFillerUpdateProcessor(MempoolFiller mempoolFiller) {
-		return new EventProcessorOnRunner<>(Runners.CHAOS, MempoolFillerUpdate.class, mempoolFiller.mempoolFillerUpdateEventProcessor());
+		return new EventProcessorOnRunner<>("Mempool", MempoolFillerUpdate.class, mempoolFiller.mempoolFillerUpdateEventProcessor());
 	}
 
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> scheduledMessageFloodEventProcessor(MempoolFiller mempoolFiller) {
-		return new EventProcessorOnRunner<>(Runners.CHAOS, ScheduledMempoolFill.class, mempoolFiller.scheduledMempoolFillEventProcessor());
+		return new EventProcessorOnRunner<>("Mempool", ScheduledMempoolFill.class, mempoolFiller.scheduledMempoolFillEventProcessor());
 	}
 }
