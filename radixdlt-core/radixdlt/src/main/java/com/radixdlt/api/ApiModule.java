@@ -65,27 +65,30 @@ package com.radixdlt.api;
 
 import com.google.common.base.Throwables;
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.core.CoreApiModule;
 import com.radixdlt.api.core.openapitools.JSON;
 import com.radixdlt.api.core.openapitools.model.InternalServerError;
 import com.radixdlt.api.core.openapitools.model.UnexpectedError;
 import com.radixdlt.api.system.SystemApiModule;
 import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.environment.Runners;
+import io.undertow.Handlers;
+import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ExceptionHandler;
+import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.util.Headers;
+import io.undertow.util.StatusCodes;
 
 import java.util.Map;
 
 public final class ApiModule extends AbstractModule {
+	private static final int MAXIMUM_CONCURRENT_REQUESTS = Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
+	private static final int QUEUE_SIZE = 2000;
+
 	private final int port;
 	private final String bindAddress;
 	private final boolean enableTransactions;
@@ -123,17 +126,43 @@ public final class ApiModule extends AbstractModule {
 		}
 	}
 
-
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner coreHttpServer(Map<HandlerRoute, HttpHandler> handlers) {
-		return new HttpServerRunner(
-			handlers,
-			new IntervalServerErrorExceptionHandler(),
-			port,
-			bindAddress,
-			"core"
+	private static void fallbackHandler(HttpServerExchange exchange) {
+		exchange.setStatusCode(StatusCodes.NOT_FOUND);
+		exchange.getResponseSender().send(
+			"No matching path found for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
 		);
+	}
+
+	private static void invalidMethodHandler(HttpServerExchange exchange) {
+		exchange.setStatusCode(StatusCodes.NOT_ACCEPTABLE);
+		exchange.getResponseSender().send(
+			"Invalid method, path exists for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
+		);
+	}
+
+	private HttpHandler configureRoutes(Map<HandlerRoute, HttpHandler> handlers) {
+		var handler = Handlers.routing(true); // add path params to query params with this flag
+		handlers.forEach((r, h) -> handler.add(r.getMethod(), r.getPath(), h));
+		handler.setFallbackHandler(ApiModule::fallbackHandler);
+		handler.setInvalidMethodHandler(ApiModule::invalidMethodHandler);
+		var exceptionHandler = Handlers.exceptionHandler(handler);
+		exceptionHandler.addExceptionHandler(Exception.class, new IntervalServerErrorExceptionHandler());
+
+		return exceptionHandler;
+	}
+
+	@Provides
+	@Singleton
+	public Undertow undertow(Map<HandlerRoute, HttpHandler> handlers) {
+		var handler = new RequestLimitingHandler(
+			MAXIMUM_CONCURRENT_REQUESTS,
+			QUEUE_SIZE,
+			configureRoutes(handlers)
+		);
+
+		return Undertow.builder()
+			.addHttpListener(port, bindAddress)
+			.setHandler(handler)
+			.build();
 	}
 }

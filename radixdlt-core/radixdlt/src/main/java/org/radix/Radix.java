@@ -64,6 +64,7 @@
 
 package org.radix;
 
+import io.undertow.Undertow;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -191,7 +192,7 @@ public final class Radix {
 
 	public static void start(RuntimeProperties properties) {
 		long start = System.currentTimeMillis();
-		Injector injector = Guice.createInjector(new RadixNodeModule(properties));
+		var injector = Guice.createInjector(new RadixNodeModule(properties));
 
 		final Map<String, ModuleRunner> moduleRunners = injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }));
 
@@ -214,11 +215,8 @@ public final class Radix {
 			log.error("Cannot start p2p server", e);
 		}
 
-		// start API services
-		final var nodeServer = moduleRunners.get(Runners.NODE_API);
-		if (nodeServer != null) {
-			nodeServer.start();
-		}
+		final var undertow = injector.getInstance(Undertow.class);
+		undertow.start();
 
 		final var consensusRunner = moduleRunners.get(Runners.CONSENSUS);
 		consensusRunner.start();
