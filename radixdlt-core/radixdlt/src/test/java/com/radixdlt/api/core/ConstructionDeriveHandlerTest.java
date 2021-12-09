@@ -78,6 +78,7 @@ import com.radixdlt.api.core.openapitools.model.ConstructionDeriveRequestMetadat
 import com.radixdlt.api.core.openapitools.model.ConstructionDeriveRequestMetadataValidatorSystem;
 import com.radixdlt.api.core.openapitools.model.InvalidPublicKeyError;
 import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
+import com.radixdlt.api.core.openapitools.model.NotValidatorEntityError;
 import com.radixdlt.api.core.openapitools.model.PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.PrivateKeys;
@@ -169,6 +170,28 @@ public class ConstructionDeriveHandlerTest extends ApiTest {
 		// Assert
 		assertThat(response.getEntityIdentifier())
 			.isEqualTo(coreModelMapper.entityIdentifierPreparedStake(REAddr.ofPubKeyAccount(publicKey), validatorKey));
+	}
+
+	@Test
+	public void derive_prepared_stakes_with_invalid_validator_should_return_error() {
+		// Arrange
+		var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
+		var validatorKey = PrivateKeys.ofNumeric(3).getPublicKey();
+		start();
+
+		// Act
+		// Assert
+		var request = new ConstructionDeriveRequest()
+			.networkIdentifier(networkIdentifier())
+			.publicKey(coreModelMapper.publicKey(publicKey))
+			.metadata(new ConstructionDeriveRequestMetadataPreparedStakes()
+				.validator(coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(validatorKey)))
+				.type("PreparedStakes")
+			);
+		assertThatThrownBy(() -> sut.handleRequest(request))
+			.isInstanceOfSatisfying(CoreApiException.class, e -> {
+				assertThat(e.toError().getDetails()).isInstanceOf(NotValidatorEntityError.class);
+			});
 	}
 
 	@Test

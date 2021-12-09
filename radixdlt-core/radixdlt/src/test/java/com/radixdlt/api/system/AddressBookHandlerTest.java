@@ -67,6 +67,7 @@ import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.system.openapitools.model.Address;
 import com.radixdlt.api.system.openapitools.model.AddressBookEntry;
+import com.radixdlt.api.system.openapitools.model.SystemAddressBookResponse;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.networks.Addressing;
@@ -98,7 +99,7 @@ public class AddressBookHandlerTest extends ApiTest {
 		start();
 
 		// Act
-		var response = sut.handleRequest();
+		var response = handleRequestWithResponse(sut, SystemAddressBookResponse.class);
 
 		// Assert
 		var entries = response.getEntries();

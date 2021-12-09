@@ -65,6 +65,7 @@ package com.radixdlt.api.system;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
+import com.radixdlt.api.system.openapitools.model.SystemMetricsResponse;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,12 +76,12 @@ public class MetricsHandlerTest extends ApiTest {
 
 
 	@Test
-	public void can_retrieve_metrics() {
+	public void can_retrieve_metrics() throws Exception {
 		// Arrange
 		start();
 
 		// Act
-		var response = sut.handleRequest();
+		var response = handleRequestWithResponse(sut, SystemMetricsResponse.class);
 
 		// Assert
 		assertThat(response).isNotNull();

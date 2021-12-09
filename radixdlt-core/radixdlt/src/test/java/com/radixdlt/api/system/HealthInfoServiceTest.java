@@ -123,13 +123,4 @@ public class HealthInfoServiceTest {
 			healthInfoService.updateStats().process(ScheduledStatsCollecting.create());
 		});
 	}
-
-	private void updateStats(int times, CounterType counterType, boolean increment) {
-		IntStream.range(0, times).forEach(__ -> {
-			if (increment) {
-				systemCounters.increment(counterType);
-			}
-			healthInfoService.updateStats().process(ScheduledStatsCollecting.create());
-		});
-	}
 }

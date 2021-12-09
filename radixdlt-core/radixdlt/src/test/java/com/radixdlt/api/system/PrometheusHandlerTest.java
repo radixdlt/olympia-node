@@ -65,24 +65,24 @@ package com.radixdlt.api.system;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.system.openapitools.model.SystemConfigurationResponse;
+import com.radixdlt.api.system.prometheus.PrometheusHandler;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ConfigurationHandlerTest extends ApiTest {
+public class PrometheusHandlerTest extends ApiTest {
 	@Inject
-	private ConfigurationHandler sut;
+	private PrometheusHandler sut;
 
 	@Test
-	public void can_retrieve_configuration() throws Exception {
+	public void can_retrieve_metrics() throws Exception {
 		// Arrange
 		start();
 
 		// Act
-		var response = handleRequestWithResponse(sut, SystemConfigurationResponse.class);
+		var response = handleRequest(sut);
 
 		// Assert
-		assertThat(response).isNotNull();
+		assertThat(response).isNotEmpty();
 	}
 }

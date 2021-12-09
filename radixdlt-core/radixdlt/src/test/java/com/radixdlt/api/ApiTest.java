@@ -72,6 +72,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
+import com.radixdlt.api.system.openapitools.JSON;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.Self;
@@ -84,6 +85,7 @@ import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.networks.NetworkId;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
@@ -94,15 +96,20 @@ import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
+import io.undertow.io.Sender;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HeaderMap;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 public abstract class ApiTest {
 	@Rule
@@ -147,6 +154,9 @@ public abstract class ApiTest {
 					var addressBookPersistence = mock(AddressBookPersistence.class);
 					when(addressBookPersistence.getAllEntries()).thenReturn(ImmutableList.of());
 					bind(AddressBookPersistence.class).toInstance(addressBookPersistence);
+					var runtimeProperties = mock(RuntimeProperties.class);
+					when(runtimeProperties.get(eq("api.transactions.enable"), anyBoolean())).thenReturn(true);
+					bind(RuntimeProperties.class).toInstance(runtimeProperties);
 				}
 			}
 		);
@@ -163,5 +173,35 @@ public abstract class ApiTest {
 
 	protected final void start() {
 		runner.start();
+	}
+
+	private HttpServerExchange exchange(Sender sender) {
+		var httpServerExchange = mock(HttpServerExchange.class);
+		when(httpServerExchange.isInIoThread()).thenReturn(false);
+		when(httpServerExchange.getResponseHeaders()).thenReturn(new HeaderMap());
+		when(httpServerExchange.getResponseSender()).thenReturn(sender);
+		return httpServerExchange;
+	}
+
+	protected String handleRequest(HttpHandler handler) throws Exception {
+		var sender = mock(Sender.class);
+		var response = new AtomicReference<String>();
+		doAnswer(invocation -> {
+			response.set(invocation.getArgument(0));
+			return null;
+		}).when(sender).send(anyString());
+		handler.handleRequest(exchange(sender));
+		return response.get();
+	}
+
+	protected <T> T handleRequestWithResponse(HttpHandler handler, Class<T> responseClass) throws Exception {
+		var sender = mock(Sender.class);
+		var response = new AtomicReference<String>();
+		doAnswer(invocation -> {
+			response.set(invocation.getArgument(0));
+			return null;
+		}).when(sender).send(anyString());
+		handler.handleRequest(exchange(sender));
+		return JSON.getDefault().getMapper().readValue(response.get(), responseClass);
 	}
 }
