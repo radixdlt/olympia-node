@@ -61,76 +61,34 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.handlers;
+package com.radixdlt.api.core;
 
 import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.radixdlt.api.core.model.CoreJsonRpcHandler;
-import com.radixdlt.api.core.model.CoreApiException;
+import com.radixdlt.api.ApiTest;
+import com.radixdlt.api.core.handlers.KeyListHandler;
 import com.radixdlt.api.core.model.CoreModelMapper;
-import com.radixdlt.api.core.openapitools.model.PublicKeyNotSupportedError;
-import com.radixdlt.api.core.openapitools.model.KeySignRequest;
-import com.radixdlt.api.core.openapitools.model.KeySignResponse;
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.parser.exceptions.TxnParseException;
-import com.radixdlt.qualifier.LocalSigner;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.utils.Bytes;
+import com.radixdlt.api.core.openapitools.model.KeyListRequest;
+import org.junit.Test;
 
-public final class NodeSignHandler extends CoreJsonRpcHandler<KeySignRequest, KeySignResponse> {
-	private final ECPublicKey self;
-	private final HashSigner hashSigner;
-	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
-	private final CoreModelMapper coreModelMapper;
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class KeyListHandlerTest extends ApiTest {
+	@Inject
+	private KeyListHandler sut;
 
 	@Inject
-	NodeSignHandler(
-		@Self ECPublicKey self,
-		@LocalSigner HashSigner hashSigner,
-		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
-		CoreModelMapper coreModelMapper
-	) {
-		super(KeySignRequest.class);
+	private CoreModelMapper mapper;
 
-		this.self = self;
-		this.hashSigner = hashSigner;
-		this.radixEngineProvider = radixEngineProvider;
-		this.coreModelMapper = coreModelMapper;
-	}
+	@Test
+	public void can_retrieve_nodes_public_key() throws Exception {
+		// Arrange
+		start();
 
-	@Override
-	public KeySignResponse handleRequest(KeySignRequest request) throws CoreApiException {
-		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
+		// Act
+		var response = sut.handleRequest(new KeyListRequest().networkIdentifier(networkIdentifier()));
 
-		var pubKey = coreModelMapper.ecPublicKey(request.getPublicKey());
-		if (!self.equals(pubKey)) {
-			throw CoreApiException.notSupported(
-				new PublicKeyNotSupportedError()
-					.unsupportedPublicKey(request.getPublicKey())
-					.type(PublicKeyNotSupportedError.class.getSimpleName())
-			);
-		}
-
-		// Verify this is a valid transaction and not anything more malicious
-		var bytes = coreModelMapper.bytes(request.getUnsignedTransaction());
-		var txn = Txn.create(bytes);
-		try {
-			radixEngineProvider.get().getParser().parse(txn);
-		} catch (TxnParseException e) {
-			throw coreModelMapper.parseException(e);
-		}
-
-		var builder = TxLowLevelBuilder.newBuilder(bytes);
-		var hash = builder.hashToSign();
-		var signature = this.hashSigner.sign(hash);
-		var signedTransaction = builder.sig(signature).blob();
-
-		return new KeySignResponse()
-			.signedTransaction(Bytes.toHexString(signedTransaction));
+		// Assert
+		assertThat(response.getPublicKeys().get(0).getPublicKey())
+			.isEqualTo(mapper.publicKey(selfKey()));
 	}
 }

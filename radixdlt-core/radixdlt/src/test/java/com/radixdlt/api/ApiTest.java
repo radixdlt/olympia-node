@@ -79,6 +79,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
@@ -139,6 +140,7 @@ public abstract class ApiTest {
 					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 					bindConstant().annotatedWith(NetworkId.class).to(99);
+					bind(P2PConfig.class).toInstance(mock(P2PConfig.class));
 					bind(AddressBook.class).in(Scopes.SINGLETON);
 					var selfUri = RadixNodeUri.fromPubKeyAndAddress(99, TEST_KEY.getPublicKey(), "localhost", 23456);
 					bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
@@ -155,7 +157,7 @@ public abstract class ApiTest {
 		return new NetworkIdentifier().network("localnet");
 	}
 
-	protected ECPublicKey self() {
+	protected ECPublicKey selfKey() {
 		return TEST_KEY.getPublicKey();
 	}
 

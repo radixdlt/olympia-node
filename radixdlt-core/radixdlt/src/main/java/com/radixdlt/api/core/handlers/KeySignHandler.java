@@ -61,66 +61,76 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.handlers;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.core.handlers.ConstructionBuildHandler;
-import com.radixdlt.api.core.handlers.ConstructionDeriveHandler;
-import com.radixdlt.api.core.handlers.ConstructionFinalizeHandler;
-import com.radixdlt.api.core.handlers.ConstructionHashHandler;
-import com.radixdlt.api.core.handlers.ConstructionSubmitHandler;
-import com.radixdlt.api.core.handlers.EngineConfigurationHandler;
-import com.radixdlt.api.core.handlers.EngineStatusHandler;
-import com.radixdlt.api.core.handlers.EntityHandler;
-import com.radixdlt.api.core.handlers.MempoolHandler;
-import com.radixdlt.api.core.handlers.MempoolTransactionHandler;
-import com.radixdlt.api.core.handlers.NetworkConfigurationHandler;
-import com.radixdlt.api.core.handlers.NetworkStatusHandler;
-import com.radixdlt.api.core.handlers.ConstructionParseHandler;
-import com.radixdlt.api.core.handlers.KeyListHandler;
-import com.radixdlt.api.core.handlers.KeySignHandler;
-import com.radixdlt.api.core.handlers.TransactionsHandler;
-import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
-import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.radixdlt.api.core.model.CoreJsonRpcHandler;
+import com.radixdlt.api.core.model.CoreApiException;
+import com.radixdlt.api.core.model.CoreModelMapper;
+import com.radixdlt.api.core.openapitools.model.PublicKeyNotSupportedError;
+import com.radixdlt.api.core.openapitools.model.KeySignRequest;
+import com.radixdlt.api.core.openapitools.model.KeySignResponse;
+import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.parser.exceptions.TxnParseException;
+import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.utils.Bytes;
 
-public class CoreApiModule extends AbstractModule {
-	private final boolean transactionsEnable;
+public final class KeySignHandler extends CoreJsonRpcHandler<KeySignRequest, KeySignResponse> {
+	private final ECPublicKey self;
+	private final HashSigner hashSigner;
+	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
+	private final CoreModelMapper coreModelMapper;
 
-	public CoreApiModule(boolean transactionsEnable) {
-		this.transactionsEnable = transactionsEnable;
+	@Inject
+	KeySignHandler(
+		@Self ECPublicKey self,
+		@LocalSigner HashSigner hashSigner,
+		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
+		CoreModelMapper coreModelMapper
+	) {
+		super(KeySignRequest.class);
+
+		this.self = self;
+		this.hashSigner = hashSigner;
+		this.radixEngineProvider = radixEngineProvider;
+		this.coreModelMapper = coreModelMapper;
 	}
 
 	@Override
-	public void configure() {
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), HandlerRoute.class, HttpHandler.class
-		);
+	public KeySignResponse handleRequest(KeySignRequest request) throws CoreApiException {
+		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		routeBinder.addBinding(HandlerRoute.post("/entity")).to(EntityHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/mempool")).to(MempoolHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/mempool/transaction")).to(MempoolTransactionHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/network/configuration")).to(NetworkConfigurationHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/network/status")).to(NetworkStatusHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/engine/configuration")).to(EngineConfigurationHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/engine/status")).to(EngineStatusHandler.class);
-		if (transactionsEnable) {
-			bind(BerkeleyRecoverableProcessedTxnStore.class).in(Scopes.SINGLETON);
-			Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-				.addBinding().to(BerkeleyRecoverableProcessedTxnStore.class);
-			routeBinder.addBinding(HandlerRoute.post("/transactions")).to(TransactionsHandler.class);
+		var pubKey = coreModelMapper.ecPublicKey(request.getPublicKey());
+		if (!self.equals(pubKey)) {
+			throw CoreApiException.notSupported(
+				new PublicKeyNotSupportedError()
+					.unsupportedPublicKey(request.getPublicKey())
+					.type(PublicKeyNotSupportedError.class.getSimpleName())
+			);
 		}
-		routeBinder.addBinding(HandlerRoute.post("/construction/derive")).to(ConstructionDeriveHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/construction/build")).to(ConstructionBuildHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/construction/parse")).to(ConstructionParseHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/construction/finalize")).to(ConstructionFinalizeHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/construction/hash")).to(ConstructionHashHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/construction/submit")).to(ConstructionSubmitHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/key/list")).to(KeyListHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/key/sign")).to(KeySignHandler.class);
+
+		// Verify this is a valid transaction and not anything more malicious
+		var bytes = coreModelMapper.bytes(request.getUnsignedTransaction());
+		var txn = Txn.create(bytes);
+		try {
+			radixEngineProvider.get().getParser().parse(txn);
+		} catch (TxnParseException e) {
+			throw coreModelMapper.parseException(e);
+		}
+
+		var builder = TxLowLevelBuilder.newBuilder(bytes);
+		var hash = builder.hashToSign();
+		var signature = this.hashSigner.sign(hash);
+		var signedTransaction = builder.sig(signature).blob();
+
+		return new KeySignResponse()
+			.signedTransaction(Bytes.toHexString(signedTransaction));
 	}
 }

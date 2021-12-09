@@ -63,13 +63,11 @@
 
 package com.radixdlt.api.core;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.CoreModelMapper;
-import com.radixdlt.api.core.handlers.NodeSignHandler;
+import com.radixdlt.api.core.handlers.KeySignHandler;
 import com.radixdlt.api.core.model.EntityOperation;
 import com.radixdlt.api.core.model.NotEnoughNativeTokensForFeesException;
 import com.radixdlt.api.core.model.OperationTxBuilder;
@@ -80,84 +78,29 @@ import com.radixdlt.api.core.openapitools.model.InvalidTransactionError;
 import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.openapitools.model.PublicKeyNotSupportedError;
 import com.radixdlt.api.core.openapitools.model.KeySignRequest;
-import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class NodeSignHandlerTest {
-	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
-	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-
-	private final Amount totalTokenAmount = Amount.ofTokens(110);
-	private final Amount stakeAmount = Amount.ofTokens(10);
-
+public class KeySignHandlerTest extends ApiTest {
 	@Inject
-	private NodeSignHandler sut;
-	@Inject
-	private SingleNodeDeterministicRunner runner;
+	private KeySignHandler sut;
 	@Inject
 	private Forks forks;
 	@Inject
 	private CoreModelMapper mapper;
 	@Inject
 	private RadixEngine<LedgerAndBFTProof> radixEngine;
-
-	@Before
-	public void setup() {
-		var injector = Guice.createInjector(
-			MempoolConfig.asModule(1000, 10),
-			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(
-				RERulesConfig.testingDefault()
-					.overrideFeeTable(FeeTable.create(Amount.ofSubunits(UInt256.ONE), Map.of()))
-			),
-			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
-			new MockedGenesisModule(
-				Set.of(TEST_KEY.getPublicKey()),
-				totalTokenAmount,
-				stakeAmount
-			),
-			new AbstractModule() {
-				@Override
-				protected void configure() {
-					bindConstant().annotatedWith(NumPeers.class).to(0);
-					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bindConstant().annotatedWith(NetworkId.class).to(99);
-				}
-			}
-		);
-		injector.injectMembers(this);
-	}
 
 	private byte[] buildUnsignedTxn(REAddr from, REAddr to) throws Exception {
 		var entityOperationGroups =
@@ -187,16 +130,16 @@ public class NodeSignHandlerTest {
 	@Test
 	public void sign_should_work_on_correct_transaction() throws Exception {
 		// Arrange
-		runner.start();
+		start();
 
 		// Act
-		var from = REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey());
+		var from = REAddr.ofPubKeyAccount(selfKey());
 		var other = PrivateKeys.ofNumeric(2);
 		var to = REAddr.ofPubKeyAccount(other.getPublicKey());
 		var unsignedTxn = buildUnsignedTxn(from, to);
 		var request = new KeySignRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.publicKey(mapper.publicKey(TEST_KEY.getPublicKey()))
+			.publicKey(mapper.publicKey(selfKey()))
 			.unsignedTransaction(Bytes.toHexString(unsignedTxn));
 		var response = sut.handleRequest(request);
 
@@ -207,11 +150,11 @@ public class NodeSignHandlerTest {
 	@Test
 	public void sign_given_an_unsupported_public_key_should_fail() throws Exception {
 		// Arrange
-		runner.start();
+		start();
 
 		// Act
 		// Assert
-		var from = REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey());
+		var from = REAddr.ofPubKeyAccount(selfKey());
 		var other = PrivateKeys.ofNumeric(2);
 		var to = REAddr.ofPubKeyAccount(other.getPublicKey());
 		var unsignedTxn = buildUnsignedTxn(from, to);
@@ -229,13 +172,13 @@ public class NodeSignHandlerTest {
 	@Test
 	public void sign_should_fail_given_an_invalid_transaction() {
 		// Arrange
-		runner.start();
+		start();
 
 		// Act
 		// Assert
 		var request = new KeySignRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.publicKey(mapper.publicKey(TEST_KEY.getPublicKey()))
+			.publicKey(mapper.publicKey(selfKey()))
 			.unsignedTransaction("badbadbadbad");
 
 		assertThatThrownBy(() -> sut.handleRequest(request))

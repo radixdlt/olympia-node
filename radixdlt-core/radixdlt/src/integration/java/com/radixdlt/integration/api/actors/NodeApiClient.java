@@ -82,7 +82,7 @@ import com.radixdlt.api.core.handlers.EntityHandler;
 import com.radixdlt.api.core.handlers.NetworkConfigurationHandler;
 import com.radixdlt.api.core.handlers.NetworkStatusHandler;
 import com.radixdlt.api.core.handlers.KeyListHandler;
-import com.radixdlt.api.core.handlers.NodeSignHandler;
+import com.radixdlt.api.core.handlers.KeySignHandler;
 import com.radixdlt.api.core.handlers.TransactionsHandler;
 import com.radixdlt.api.core.openapitools.model.CommittedTransaction;
 import com.radixdlt.api.core.openapitools.model.CommittedTransactionsRequest;
@@ -118,7 +118,7 @@ final class NodeApiClient {
 	private final NetworkStatusHandler networkStatusHandler;
 	private final KeyListHandler keyListHandler;
 	private final ConstructionBuildHandler constructionBuildHandler;
-	private final NodeSignHandler nodeSignHandler;
+	private final KeySignHandler keySignHandler;
 	private final ConstructionDeriveHandler constructionDeriveHandler;
 	private final ConstructionSubmitHandler constructionSubmitHandler;
 	private final EngineConfigurationHandler engineConfigurationHandler;
@@ -134,7 +134,7 @@ final class NodeApiClient {
 		KeyListHandler keyListHandler,
 		ConstructionBuildHandler constructionBuildHandler,
 		ConstructionDeriveHandler constructionDeriveHandler,
-		NodeSignHandler nodeSignHandler,
+		KeySignHandler keySignHandler,
 		ConstructionSubmitHandler constructionSubmitHandler,
 		EngineConfigurationHandler engineConfigurationHandler,
 		EngineStatusHandler engineStatusHandler,
@@ -147,7 +147,7 @@ final class NodeApiClient {
 		this.keyListHandler = keyListHandler;
 		this.constructionDeriveHandler = constructionDeriveHandler;
 		this.constructionBuildHandler = constructionBuildHandler;
-		this.nodeSignHandler = nodeSignHandler;
+		this.keySignHandler = keySignHandler;
 		this.constructionSubmitHandler = constructionSubmitHandler;
 		this.engineConfigurationHandler = engineConfigurationHandler;
 		this.engineStatusHandler = engineStatusHandler;
@@ -312,7 +312,7 @@ final class NodeApiClient {
 		);
 		var unsignedTransaction = buildResponse.getUnsignedTransaction();
 
-		var response = nodeSignHandler.handleRequest(new KeySignRequest()
+		var response = keySignHandler.handleRequest(new KeySignRequest()
 			.networkIdentifier(networkIdentifier)
 			.publicKey(nodePublicKey)
 			.unsignedTransaction(unsignedTransaction)
