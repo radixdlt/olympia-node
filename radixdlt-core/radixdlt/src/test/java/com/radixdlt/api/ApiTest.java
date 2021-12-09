@@ -70,11 +70,13 @@ import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.network.p2p.RadixNodeUri;
@@ -147,6 +149,14 @@ public abstract class ApiTest {
 			}
 		);
 		injector.injectMembers(this);
+	}
+
+	protected NetworkIdentifier networkIdentifier() {
+		return new NetworkIdentifier().network("localnet");
+	}
+
+	protected ECPublicKey self() {
+		return TEST_KEY.getPublicKey();
 	}
 
 	protected final void start() {

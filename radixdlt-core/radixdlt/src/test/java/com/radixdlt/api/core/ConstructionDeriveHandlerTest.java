@@ -63,154 +63,180 @@
 
 package com.radixdlt.api.core;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.ConstructionDeriveHandler;
 import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.openapitools.model.ConstructionDeriveRequest;
 import com.radixdlt.api.core.openapitools.model.ConstructionDeriveRequestMetadataAccount;
+import com.radixdlt.api.core.openapitools.model.ConstructionDeriveRequestMetadataExitingUnstakes;
+import com.radixdlt.api.core.openapitools.model.ConstructionDeriveRequestMetadataPreparedStakes;
+import com.radixdlt.api.core.openapitools.model.ConstructionDeriveRequestMetadataPreparedUnstakes;
 import com.radixdlt.api.core.openapitools.model.ConstructionDeriveRequestMetadataToken;
 import com.radixdlt.api.core.openapitools.model.ConstructionDeriveRequestMetadataValidator;
+import com.radixdlt.api.core.openapitools.model.ConstructionDeriveRequestMetadataValidatorSystem;
 import com.radixdlt.api.core.openapitools.model.InvalidPublicKeyError;
 import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.openapitools.model.PublicKey;
-import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.qualifier.NumPeers;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.PrivateKeys;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class ConstructionDeriveHandlerTest {
-
-	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
-	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-
-	private final Amount totalTokenAmount = Amount.ofTokens(110);
-	private final Amount stakeAmount = Amount.ofTokens(10);
-	private final Amount liquidAmount = Amount.ofSubunits(
-		totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits())
-	);
+public class ConstructionDeriveHandlerTest extends ApiTest {
 
 	@Inject
 	private ConstructionDeriveHandler sut;
 	@Inject
 	private CoreModelMapper coreModelMapper;
-	@Inject
-	@Self
-	private ECPublicKey self;
-	@Inject
-	private SingleNodeDeterministicRunner runner;
-
-	@Before
-	public void setup() {
-		var injector = Guice.createInjector(
-			MempoolConfig.asModule(1000, 10),
-			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(
-				RERulesConfig.testingDefault().overrideFeeTable(FeeTable.noFees()).overrideMaxRounds(1000)
-			),
-			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
-			new MockedGenesisModule(
-				Set.of(TEST_KEY.getPublicKey()),
-				totalTokenAmount,
-				stakeAmount
-			),
-			new AbstractModule() {
-				@Override
-				protected void configure() {
-					bindConstant().annotatedWith(NumPeers.class).to(0);
-					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bindConstant().annotatedWith(NetworkId.class).to(99);
-				}
-			}
-		);
-		injector.injectMembers(this);
-	}
 
 	@Test
 	public void derive_account_request_should_return_account_entity_identifier() throws CoreApiException {
 		// Arrange
-		runner.start();
+		var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
+		start();
 
 		// Act
 		var request = new ConstructionDeriveRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.publicKey(coreModelMapper.publicKey(TEST_KEY.getPublicKey()))
+			.publicKey(coreModelMapper.publicKey(publicKey))
 			.metadata(new ConstructionDeriveRequestMetadataAccount().type("Account"));
 		var response = sut.handleRequest(request);
 
 		// Assert
 		assertThat(response.getEntityIdentifier())
-			.isEqualTo(coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey())));
+			.isEqualTo(coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(publicKey)));
 	}
 
 	@Test
 	public void derive_validator_request_should_return_validator_entity_identifier() throws CoreApiException {
 		// Arrange
-		runner.start();
+		var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
+		start();
 
 		// Act
 		var request = new ConstructionDeriveRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.publicKey(coreModelMapper.publicKey(TEST_KEY.getPublicKey()))
+			.networkIdentifier(networkIdentifier())
+			.publicKey(coreModelMapper.publicKey(publicKey))
 			.metadata(new ConstructionDeriveRequestMetadataValidator().type("Validator"));
 		var response = sut.handleRequest(request);
 
 		// Assert
 		assertThat(response.getEntityIdentifier())
-			.isEqualTo(coreModelMapper.entityIdentifier(TEST_KEY.getPublicKey()));
+			.isEqualTo(coreModelMapper.entityIdentifier(publicKey));
 	}
 
 	@Test
 	public void derive_token_request_should_return_token_entity_identifier() throws CoreApiException {
 		// Arrange
-		runner.start();
+		var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
+		start();
 
 		// Act
 		var request = new ConstructionDeriveRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.publicKey(coreModelMapper.publicKey(TEST_KEY.getPublicKey()))
+			.networkIdentifier(networkIdentifier())
+			.publicKey(coreModelMapper.publicKey(publicKey))
 			.metadata(new ConstructionDeriveRequestMetadataToken().symbol("test").type("Token"));
 		var response = sut.handleRequest(request);
 
 		// Assert
 		assertThat(response.getEntityIdentifier())
 			.isEqualTo(coreModelMapper.entityIdentifier(
-				REAddr.ofHashedKey(TEST_KEY.getPublicKey(), "test"), "test"
+				REAddr.ofHashedKey(publicKey, "test"), "test"
 			));
 	}
 
+	@Test
+	public void derive_prepared_stakes_should_return_entity_identifier() throws CoreApiException {
+		// Arrange
+		var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
+		var validatorKey = PrivateKeys.ofNumeric(3).getPublicKey();
+		start();
+
+		// Act
+		var request = new ConstructionDeriveRequest()
+			.networkIdentifier(networkIdentifier())
+			.publicKey(coreModelMapper.publicKey(publicKey))
+			.metadata(new ConstructionDeriveRequestMetadataPreparedStakes()
+				.validator(coreModelMapper.entityIdentifier(validatorKey))
+				.type("PreparedStakes")
+			);
+		var response = sut.handleRequest(request);
+
+		// Assert
+		assertThat(response.getEntityIdentifier())
+			.isEqualTo(coreModelMapper.entityIdentifierPreparedStake(REAddr.ofPubKeyAccount(publicKey), validatorKey));
+	}
 
 	@Test
-	public void invalid_public_key_should_throw_exception() throws CoreApiException {
+	public void derive_validator_system_should_return_entity_identifier() throws CoreApiException {
 		// Arrange
-		runner.start();
+		var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
+		start();
+
+		// Act
+		var request = new ConstructionDeriveRequest()
+			.networkIdentifier(networkIdentifier())
+			.publicKey(coreModelMapper.publicKey(publicKey))
+			.metadata(new ConstructionDeriveRequestMetadataValidatorSystem().type("ValidatorSystem"));
+		var response = sut.handleRequest(request);
+
+		// Assert
+		assertThat(response.getEntityIdentifier())
+			.isEqualTo(coreModelMapper.entityIdentifierValidatorSystem(publicKey));
+	}
+
+	@Test
+	public void derive_prepared_unstakes_should_return_entity_identifier() throws CoreApiException {
+		// Arrange
+		var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
+		start();
+
+		// Act
+		var request = new ConstructionDeriveRequest()
+			.networkIdentifier(networkIdentifier())
+			.publicKey(coreModelMapper.publicKey(publicKey))
+			.metadata(new ConstructionDeriveRequestMetadataPreparedUnstakes()
+				.type("PreparedUnstakes")
+			);
+		var response = sut.handleRequest(request);
+
+		// Assert
+		assertThat(response.getEntityIdentifier())
+			.isEqualTo(coreModelMapper.entityIdentifierPreparedUnstake(REAddr.ofPubKeyAccount(publicKey)));
+	}
+
+	@Test
+	public void derive_exiting_unstakes_should_return_entity_identifier() throws CoreApiException {
+		// Arrange
+		var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
+		var validatorKey = PrivateKeys.ofNumeric(3).getPublicKey();
+		long epochUnlock = 236L;
+		start();
+
+		// Act
+		var request = new ConstructionDeriveRequest()
+			.networkIdentifier(networkIdentifier())
+			.publicKey(coreModelMapper.publicKey(publicKey))
+			.metadata(new ConstructionDeriveRequestMetadataExitingUnstakes()
+				.validator(coreModelMapper.entityIdentifier(validatorKey))
+				.epochUnlock(epochUnlock)
+				.type("ExitingUnstakes")
+			);
+		var response = sut.handleRequest(request);
+
+		// Assert
+		assertThat(response.getEntityIdentifier())
+			.isEqualTo(coreModelMapper.entityIdentifierExitingStake(REAddr.ofPubKeyAccount(publicKey), validatorKey, epochUnlock));
+	}
+
+	@Test
+	public void invalid_public_key_should_throw_exception() {
+		// Arrange
+		start();
 
 		// Act
 		// Assert
