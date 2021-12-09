@@ -92,11 +92,12 @@ import com.sleepycat.je.Transaction;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
@@ -180,35 +181,39 @@ public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAddit
 		return Optional.of(HashCode.fromBytes(value.getData()));
 	}
 
-	public Stream<RecoverableProcessedTxn> get(long index) {
-		var cursor = processedTransactionsDatabase.openCursor(null, null);
-		var iterator = new Iterator<RecoverableProcessedTxn>() {
-			final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(index));
-			final DatabaseEntry value = new DatabaseEntry();
-			OperationStatus status = cursor.get(key, value, Get.SEARCH, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
+	public List<RecoverableProcessedTxn> get(long index, long limit) {
+		try (var cursor = processedTransactionsDatabase.openCursor(null, null)) {
+			var iterator = new Iterator<RecoverableProcessedTxn>() {
+				final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(index));
+				final DatabaseEntry value = new DatabaseEntry();
+				OperationStatus status = cursor.get(key, value, Get.SEARCH, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
 
-			@Override
-			public boolean hasNext() {
-				return status == SUCCESS;
-			}
-
-			@Override
-			public RecoverableProcessedTxn next() {
-				if (status != SUCCESS) {
-					throw new NoSuchElementException();
-				}
-				RecoverableProcessedTxn next;
-				try {
-					next = serialization.fromDson(Compress.uncompress(value.getData()), RecoverableProcessedTxn.class);
-				} catch (IOException e) {
-					throw new IllegalStateException("Failed to deserialize committed transaction.", e);
+				@Override
+				public boolean hasNext() {
+					return status == SUCCESS;
 				}
 
-				status = cursor.getNext(key, value, null);
-				return next;
-			}
-		};
-		return Streams.stream(iterator).onClose(cursor::close);
+				@Override
+				public RecoverableProcessedTxn next() {
+					if (status != SUCCESS) {
+						throw new NoSuchElementException();
+					}
+					RecoverableProcessedTxn next;
+					try {
+						next = serialization.fromDson(Compress.uncompress(value.getData()), RecoverableProcessedTxn.class);
+					} catch (IOException e) {
+						throw new IllegalStateException("Failed to deserialize committed transaction.", e);
+					}
+
+					status = cursor.getNext(key, value, null);
+					return next;
+				}
+			};
+			return Streams.stream(iterator)
+				.limit(limit)
+				.onClose(cursor::close)
+				.collect(Collectors.toList());
+		}
 	}
 
 	@Override

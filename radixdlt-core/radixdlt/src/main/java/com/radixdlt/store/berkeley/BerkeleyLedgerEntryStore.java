@@ -136,6 +136,7 @@ import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
@@ -993,37 +994,41 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
-	public Stream<Txn> getCommittedTxns(long stateVersion) {
-		var txnCursor = txnDatabase.openCursor(null, null);
-		var iterator = new Iterator<Txn>() {
-			final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(stateVersion + 1));
-			final DatabaseEntry value = new DatabaseEntry();
-			OperationStatus status = txnCursor.get(key, value, Get.SEARCH, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
+	public List<Txn> getCommittedTxns(long stateVersion, long limit) {
+		try (var txnCursor = txnDatabase.openCursor(null, null)) {
+			var iterator = new Iterator<Txn>() {
+				final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(stateVersion + 1));
+				final DatabaseEntry value = new DatabaseEntry();
+				OperationStatus status = txnCursor.get(key, value, Get.SEARCH, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
 
-			@Override
-			public boolean hasNext() {
-				return status == SUCCESS;
-			}
-
-			@Override
-			public Txn next() {
-				if (status != SUCCESS) {
-					throw new NoSuchElementException();
+				@Override
+				public boolean hasNext() {
+					return status == SUCCESS;
 				}
-				var offset = fromByteArray(value.getData());
-				byte[] txnBytes;
-				try {
-					txnBytes = txnLog.read(offset);
-				} catch (IOException e) {
-					throw new IllegalStateException("Unable to read transaction", e);
-				}
-				Txn next = Txn.create(txnBytes);
 
-				status = txnCursor.getNext(key, value, null);
-				return next;
-			}
-		};
-		return Streams.stream(iterator).onClose(txnCursor::close);
+				@Override
+				public Txn next() {
+					if (status != SUCCESS) {
+						throw new NoSuchElementException();
+					}
+					var offset = fromByteArray(value.getData());
+					byte[] txnBytes;
+					try {
+						txnBytes = txnLog.read(offset);
+					} catch (IOException e) {
+						throw new IllegalStateException("Unable to read transaction", e);
+					}
+					Txn next = Txn.create(txnBytes);
+
+					status = txnCursor.getNext(key, value, null);
+					return next;
+				}
+			};
+			return Streams.stream(iterator)
+				.limit(limit)
+				.onClose(txnCursor::close)
+				.collect(Collectors.toList());
+		}
 	}
 
 	@Override

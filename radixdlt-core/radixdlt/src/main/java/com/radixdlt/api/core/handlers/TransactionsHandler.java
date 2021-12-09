@@ -63,7 +63,6 @@
 
 package com.radixdlt.api.core.handlers;
 
-import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.api.core.model.CoreJsonRpcHandler;
@@ -95,11 +94,9 @@ import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.Bytes;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
-public class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransactionsRequest, CommittedTransactionsResponse> {
+public final class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransactionsRequest, CommittedTransactionsResponse> {
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 	private final BerkeleyRecoverableProcessedTxnStore txnStore;
 	private final BerkeleyLedgerEntryStore ledgerEntryStore;
@@ -205,21 +202,17 @@ public class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransaction
 			}
 		}
 
-		final List<RecoverableProcessedTxn> processedTransactionList;
-		try (var stream = txnStore.get(stateVersion)) {
-			processedTransactionList = stream.limit(limit).collect(Collectors.toList());
-		}
-
+		var recoverable = txnStore.get(stateVersion, limit);
 		var accumulatorState = new AtomicReference<>(new AccumulatorState(stateVersion, currentAccumulator));
 		var response = new CommittedTransactionsResponse();
-		try (var stream = ledgerEntryStore.getCommittedTxns(stateVersion)) {
-			Streams.mapWithIndex(stream.limit(processedTransactionList.size()), (txn, index) -> {
-				var stored = processedTransactionList.get((int) index);
-				var curAccumulatorState = accumulatorState.get();
-				var nextAccumulatorState = ledgerAccumulator.accumulate(curAccumulatorState, txn.getId().asHashCode());
-				accumulatorState.set(nextAccumulatorState);
-				return construct(txn, stored, nextAccumulatorState);
-			}).forEach(response::addTransactionsItem);
+		var txns = ledgerEntryStore.getCommittedTxns(stateVersion, recoverable.size());
+		for (int i = 0; i < txns.size(); i++) {
+			var txn = txns.get(i);
+			var recoveryInfo = recoverable.get(i);
+			var curAccumulatorState = accumulatorState.get();
+			var nextAccumulatorState = ledgerAccumulator.accumulate(curAccumulatorState, txn.getId().asHashCode());
+			accumulatorState.set(nextAccumulatorState);
+			response.addTransactionsItem(construct(txn, recoveryInfo, nextAccumulatorState));
 		}
 
 		return response
