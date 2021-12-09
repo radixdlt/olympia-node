@@ -315,7 +315,7 @@ public class PMT {
 						);
 						newExt = insertExtension(commonPath, newBranch);
 						acc.setNewTip(newExt == null ? newBranch : newExt);
-						acc.add(newShorter, newBranch, newExt, newLeaf);
+						acc.add(newBranch, newExt, newLeaf);
 						// INFO: the value of current Ext is rewritten to newShorter, so that node is intact
 						acc.mark(current);
 						break;
