@@ -3,6 +3,7 @@ package com.radixdlt.store.tree;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.radixdlt.store.tree.hash.Keccak256;
 import com.radixdlt.store.tree.serialization.rlp.RLP;
+import com.radixdlt.store.tree.serialization.rlp.RLPSerializer;
 import com.radixdlt.store.tree.storage.EthTransaction;
 import com.radixdlt.store.tree.storage.InMemoryPMTStorage;
 import org.bouncycastle.util.encoders.Hex;
@@ -20,11 +21,12 @@ import java.util.Map;
 public class EthereumTxTreeTest {
 
     private static final Keccak256 KECCAK_256 = new Keccak256();
+    private static final RLPSerializer RLP_SERIALIZER = new RLPSerializer();
 
     @Test
     public void when_tx_tree_of_eth_block_10593417_created_using_cache__then_tx_root_is_correct() {
         var storage = new InMemoryPMTStorage();
-        var tree = new PMT(storage, KECCAK_256, Duration.of(10, ChronoUnit.MINUTES));
+        var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER, Duration.of(10, ChronoUnit.MINUTES));
 
         createEthereumTxTreeBlock10593417Test(tree);
     }
@@ -32,7 +34,7 @@ public class EthereumTxTreeTest {
     @Test
     public void when_tx_tree_of_eth_block_10593417_created_not_using_cache__then_tx_root_is_correct() {
         var storage = new InMemoryPMTStorage();
-        var tree = new PMT(storage, KECCAK_256, Duration.ZERO);
+        var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER, Duration.ZERO);
 
         createEthereumTxTreeBlock10593417Test(tree);
     }
@@ -77,7 +79,7 @@ public class EthereumTxTreeTest {
     @Test
     public void when_tx_tree_of_eth_block_10467135_created_using_cache__then_tx_root_is_correct() throws IOException {
         var storage = new InMemoryPMTStorage();
-        var tree = new PMT(storage, KECCAK_256, Duration.of(10, ChronoUnit.MINUTES));
+        var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER, Duration.of(10, ChronoUnit.MINUTES));
 
         createEthereumTxTreeBlock10467135Test(tree);
     }
@@ -85,7 +87,7 @@ public class EthereumTxTreeTest {
     @Test
     public void when_tx_tree_of_eth_block_10467135_created_not_using_cache__then_tx_root_is_correct() throws IOException {
         var storage = new InMemoryPMTStorage();
-        var tree = new PMT(storage, KECCAK_256, Duration.of(0, ChronoUnit.MINUTES));
+        var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER, Duration.of(0, ChronoUnit.MINUTES));
 
         createEthereumTxTreeBlock10467135Test(tree);
     }
