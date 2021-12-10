@@ -75,6 +75,7 @@ import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore
 import com.radixdlt.api.core.openapitools.JSON;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -129,8 +130,10 @@ public abstract class ApiTest {
 			MempoolConfig.asModule(1000, 10),
 			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(
-				RERulesConfig.testingDefault()
-					.overrideFeeTable(FeeTable.create(Amount.ofSubunits(UInt256.ONE), Map.of()))
+				RERulesConfig.testingDefault().overrideFeeTable(FeeTable.create(
+					Amount.ofSubunits(UInt256.ONE),
+					Map.of(TokensInAccount.class, Amount.ofSubunits(UInt256.ONE))
+				))
 			),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 1),
