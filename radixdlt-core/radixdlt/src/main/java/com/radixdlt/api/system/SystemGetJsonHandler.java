@@ -64,7 +64,7 @@
 package com.radixdlt.api.system;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.radixdlt.api.system.openapitools.JSON;
+import com.radixdlt.api.core.openapitools.JSON;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
