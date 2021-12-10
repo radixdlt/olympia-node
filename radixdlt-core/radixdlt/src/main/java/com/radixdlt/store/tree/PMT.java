@@ -31,12 +31,6 @@ public class PMT {
 	//get_proof
 	//verify_proof
 
-	// NEXT:
-	// TODO: * kick out branch Nibble from Ext and Leaf objects? (they are only for transfer to branch update)
-	//       * simplify getFirstNibble
-	//       * simplify getKey.getKey (from PMTNode -> PMTKey -> int[])
-	// serialization
-
 	public PMT(PMTStorage db) {
 		this(db, new SHA256(), Duration.of(10, ChronoUnit.MINUTES));
 	}
