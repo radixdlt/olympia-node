@@ -68,6 +68,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.handlers.ConstructionBuildHandler;
+import com.radixdlt.api.core.model.CoreApiErrorCode;
 import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.openapitools.model.ConstructionBuildRequest;
@@ -206,7 +207,7 @@ public class ConstructionBuildFeeTest {
 				assertThat(error.getDetails()).isInstanceOfSatisfying(NotEnoughNativeTokensForFeesError.class, err -> {
 					assertThat(err.getAvailable()).isEqualTo(coreModelMapper.nativeTokenAmount(UInt256.ZERO));
 				});
-				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}
 
@@ -236,7 +237,7 @@ public class ConstructionBuildFeeTest {
 					assertThat(new BigInteger(err.getAttemptedToTake().getValue()))
 						.isEqualTo(new BigInteger(1, liquidAmount.toSubunits().toByteArray()));
 				});
-				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}
 }

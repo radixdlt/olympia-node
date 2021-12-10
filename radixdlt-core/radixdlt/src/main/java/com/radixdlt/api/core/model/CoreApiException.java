@@ -103,31 +103,4 @@ public final class CoreApiException extends Exception {
 		return new CoreApiException(CoreApiErrorCode.UNAVAILABLE, errorDetails);
 	}
 
-	public enum CoreApiErrorCode {
-		BAD_REQUEST(400, "Bad request"),
-		NOT_FOUND(404, "Not found"),
-		CONFLICT(409, "State Conflict"),
-		NOT_SUPPORTED(501, "Not supported"),
-		UNAVAILABLE(503, "Unavailable");
-
-		private final int errorCode;
-		private final String message;
-
-		CoreApiErrorCode(int errorCode, String message) {
-			this.errorCode = errorCode;
-			this.message = message;
-		}
-
-		public int getErrorCode() {
-			return errorCode;
-		}
-
-		public String getMessage() {
-			return message;
-		}
-
-		public String toString() {
-			return errorCode + " " + message;
-		}
-	}
 }

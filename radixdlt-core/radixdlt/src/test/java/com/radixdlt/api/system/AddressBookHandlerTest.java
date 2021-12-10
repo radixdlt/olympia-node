@@ -99,7 +99,7 @@ public class AddressBookHandlerTest extends ApiTest {
 		start();
 
 		// Act
-		var response = handleRequestWithResponse(sut, SystemAddressBookResponse.class);
+		var response = handleRequestWithExpectedResponse(sut, SystemAddressBookResponse.class);
 
 		// Assert
 		var entries = response.getEntries();

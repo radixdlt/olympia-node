@@ -72,7 +72,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
-import com.radixdlt.api.system.openapitools.JSON;
+import com.radixdlt.api.core.openapitools.JSON;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.Self;
@@ -103,6 +103,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -173,12 +175,17 @@ public abstract class ApiTest {
 		runner.start();
 	}
 
-	private HttpServerExchange exchange(Sender sender) {
+	private HttpServerExchange exchange(byte[] request, Sender sender) {
 		var httpServerExchange = mock(HttpServerExchange.class);
+		when(httpServerExchange.getInputStream()).thenReturn(new ByteArrayInputStream(request));
 		when(httpServerExchange.isInIoThread()).thenReturn(false);
 		when(httpServerExchange.getResponseHeaders()).thenReturn(new HeaderMap());
 		when(httpServerExchange.getResponseSender()).thenReturn(sender);
 		return httpServerExchange;
+	}
+
+	private HttpServerExchange exchange(Sender sender) {
+		return exchange(new byte[0], sender);
 	}
 
 	protected String handleRequest(HttpHandler handler) throws Exception {
@@ -192,7 +199,25 @@ public abstract class ApiTest {
 		return response.get();
 	}
 
-	protected <T> T handleRequestWithResponse(HttpHandler handler, Class<T> responseClass) throws Exception {
+	protected <T> T handleRequestWithExpectedResponse(HttpHandler handler, byte[] requestBytes, Class<T> responseClass) throws Exception {
+		var objectMapper = JSON.getDefault().getMapper();
+		var sender = mock(Sender.class);
+		var response = new AtomicReference<String>();
+		doAnswer(invocation -> {
+			response.set(invocation.getArgument(0));
+			return null;
+		}).when(sender).send(anyString());
+		handler.handleRequest(exchange(requestBytes, sender));
+		return objectMapper.readValue(response.get(), responseClass);
+	}
+
+	protected <T> T handleRequestWithExpectedResponse(HttpHandler handler, Object request, Class<T> responseClass) throws Exception {
+		var objectMapper = JSON.getDefault().getMapper();
+		var requestBytes = objectMapper.writeValueAsBytes(request);
+		return handleRequestWithExpectedResponse(handler, requestBytes, responseClass);
+	}
+
+	protected <T> T handleRequestWithExpectedResponse(HttpHandler handler, Class<T> responseClass) throws Exception {
 		var sender = mock(Sender.class);
 		var response = new AtomicReference<String>();
 		doAnswer(invocation -> {

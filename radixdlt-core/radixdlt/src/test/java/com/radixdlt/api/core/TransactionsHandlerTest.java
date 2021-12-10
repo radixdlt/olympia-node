@@ -66,6 +66,7 @@ package com.radixdlt.api.core;
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.TransactionsHandler;
+import com.radixdlt.api.core.model.CoreApiErrorCode;
 import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.openapitools.model.CommittedTransactionsRequest;
 import com.radixdlt.api.core.openapitools.model.InvalidPartialStateIdentifierError;
@@ -140,7 +141,7 @@ public class TransactionsHandlerTest extends ApiTest {
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
 				assertThat(error.getDetails()).isInstanceOf(StateIdentifierNotFoundError.class);
-				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.NOT_FOUND.getErrorCode());
+				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.NOT_FOUND.getErrorCode());
 			});
 	}
 
@@ -159,7 +160,7 @@ public class TransactionsHandlerTest extends ApiTest {
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
 				assertThat(error.getDetails()).isInstanceOf(InvalidPartialStateIdentifierError.class);
-				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}
 }

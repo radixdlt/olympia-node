@@ -68,6 +68,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.handlers.ConstructionHashHandler;
+import com.radixdlt.api.core.model.CoreApiErrorCode;
 import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.openapitools.model.ConstructionHashRequest;
@@ -173,7 +174,7 @@ public class ConstructionHashHandlerTest {
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
 				assertThat(error.getDetails()).isInstanceOf(InvalidHexError.class);
-				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}
 }

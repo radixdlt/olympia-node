@@ -70,6 +70,7 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.handlers.EntityHandler;
+import com.radixdlt.api.core.model.CoreApiErrorCode;
 import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.model.SubstateTypeMapping;
@@ -379,7 +380,7 @@ public class EntityHandlerTest {
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
 				assertThat(error.getDetails()).isInstanceOf(InvalidAddressError.class);
-				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}
 
@@ -401,7 +402,7 @@ public class EntityHandlerTest {
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
 				assertThat(error.getDetails()).isInstanceOf(InvalidSubEntityError.class);
-				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}
 

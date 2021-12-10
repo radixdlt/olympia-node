@@ -68,6 +68,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.handlers.ConstructionFinalizeHandler;
+import com.radixdlt.api.core.model.CoreApiErrorCode;
 import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.model.EntityOperation;
@@ -259,7 +260,7 @@ public class ConstructionFinalizeTest {
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
 				assertThat(error.getDetails()).isInstanceOf(InvalidSignatureError.class);
-				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}
 }

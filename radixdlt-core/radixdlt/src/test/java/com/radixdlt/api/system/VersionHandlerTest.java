@@ -80,7 +80,7 @@ public class VersionHandlerTest extends ApiTest {
 		start();
 
 		// Act
-		var response = handleRequestWithResponse(sut, VersionResponse.class);
+		var response = handleRequestWithExpectedResponse(sut, VersionResponse.class);
 
 		// Assert
 		assertThat(response.getVersion()).isNotNull();

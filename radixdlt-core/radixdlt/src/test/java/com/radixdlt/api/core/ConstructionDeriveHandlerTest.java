@@ -66,6 +66,7 @@ package com.radixdlt.api.core;
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.ConstructionDeriveHandler;
+import com.radixdlt.api.core.model.CoreApiErrorCode;
 import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.openapitools.model.ConstructionDeriveRequest;
@@ -271,7 +272,7 @@ public class ConstructionDeriveHandlerTest extends ApiTest {
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
 				assertThat(error.getDetails()).isInstanceOf(InvalidPublicKeyError.class);
-				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}
 }

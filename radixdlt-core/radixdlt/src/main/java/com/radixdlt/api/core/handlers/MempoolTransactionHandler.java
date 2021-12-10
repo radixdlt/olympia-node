@@ -65,7 +65,7 @@ package com.radixdlt.api.core.handlers;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.radixdlt.api.core.model.CoreJsonRpcHandler;
+import com.radixdlt.api.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.openapitools.model.MempoolTransactionRequest;

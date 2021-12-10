@@ -63,29 +63,30 @@
 
 package com.radixdlt.api.core.model;
 
-import com.radixdlt.api.core.openapitools.JSON;
-import com.radixdlt.api.core.openapitools.model.InvalidJsonError;
-import com.radixdlt.api.core.openapitools.model.UnexpectedError;
-import com.radixdlt.api.util.JsonRpcHandler;
+public enum CoreApiErrorCode {
+	BAD_REQUEST(400, "Bad request"),
+	NOT_FOUND(404, "Not found"),
+	CONFLICT(409, "State Conflict"),
+	NOT_SUPPORTED(501, "Not supported"),
+	UNAVAILABLE(503, "Unavailable");
 
-public abstract class CoreJsonRpcHandler<T, U> extends JsonRpcHandler<T, U, CoreApiException, UnexpectedError> {
-	public CoreJsonRpcHandler(Class<T> requestClass) {
-		super(requestClass, CoreApiException.class, JSON.getDefault().getMapper());
+	private final int errorCode;
+	private final String message;
+
+	CoreApiErrorCode(int errorCode, String message) {
+		this.errorCode = errorCode;
+		this.message = message;
 	}
 
-	@Override
-	public UnexpectedError handleParseException(Exception e) {
-		return new UnexpectedError()
-			.code(1)
-			.message("Invalid Json")
-			.details(new InvalidJsonError()
-				.cause(e.getMessage())
-				.type("InvalidJsonDetails")
-			);
+	public int getErrorCode() {
+		return errorCode;
 	}
 
-	@Override
-	public UnexpectedError handleException(CoreApiException e) {
-		return e.toError();
+	public String getMessage() {
+		return message;
+	}
+
+	public String toString() {
+		return errorCode + " " + message;
 	}
 }

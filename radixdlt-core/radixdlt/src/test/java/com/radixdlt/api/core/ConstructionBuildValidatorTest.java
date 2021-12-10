@@ -68,6 +68,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.handlers.ConstructionBuildHandler;
+import com.radixdlt.api.core.model.CoreApiErrorCode;
 import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.openapitools.model.AboveMaximumValidatorFeeIncreaseError;
@@ -222,7 +223,7 @@ public class ConstructionBuildValidatorTest {
 				assertThat(error.getDetails()).isInstanceOfSatisfying(AboveMaximumValidatorFeeIncreaseError.class, d -> {
 					assertThat(d.getAttemptedValidatorFeeIncrease()).isEqualTo(1000);
 				});
-				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}
 

@@ -61,28 +61,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
+package com.radixdlt.api.core;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.system.openapitools.model.SystemConfigurationResponse;
-import org.junit.Test;
+import com.radixdlt.api.core.model.CoreApiErrorCode;
+import com.radixdlt.api.core.model.CoreApiException;
+import com.radixdlt.api.core.openapitools.JSON;
+import com.radixdlt.api.core.openapitools.model.InvalidJsonError;
+import com.radixdlt.api.core.openapitools.model.UnexpectedError;
+import com.radixdlt.api.util.JsonRpcHandler;
 
-import static org.assertj.core.api.Assertions.assertThat;
+public abstract class CoreJsonRpcHandler<T, U> extends JsonRpcHandler<T, U, CoreApiException, UnexpectedError> {
+	public CoreJsonRpcHandler(Class<T> requestClass) {
+		super(requestClass, CoreApiException.class, JSON.getDefault().getMapper());
+	}
 
-public class ConfigurationHandlerTest extends ApiTest {
-	@Inject
-	private ConfigurationHandler sut;
+	@Override
+	public UnexpectedError handleParseException(Exception e) {
+		return new UnexpectedError()
+			.code(CoreApiErrorCode.BAD_REQUEST.getErrorCode())
+			.message(CoreApiErrorCode.BAD_REQUEST.getMessage())
+			.details(new InvalidJsonError()
+				.cause(e.getMessage())
+				.type("InvalidJsonError")
+			);
+	}
 
-	@Test
-	public void can_retrieve_configuration() throws Exception {
-		// Arrange
-		start();
-
-		// Act
-		var response = handleRequestWithExpectedResponse(sut, SystemConfigurationResponse.class);
-
-		// Assert
-		assertThat(response).isNotNull();
+	@Override
+	public UnexpectedError handleException(CoreApiException e) {
+		return e.toError();
 	}
 }

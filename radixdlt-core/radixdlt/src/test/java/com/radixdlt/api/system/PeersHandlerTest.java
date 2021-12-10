@@ -80,7 +80,7 @@ public class PeersHandlerTest extends ApiTest {
 		start();
 
 		// Act
-		var response = handleRequestWithResponse(sut, SystemPeersResponse.class);
+		var response = handleRequestWithExpectedResponse(sut, SystemPeersResponse.class);
 
 		// Assert
 		assertThat(response.getPeers()).isNotNull();
