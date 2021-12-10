@@ -194,9 +194,8 @@ public class PMT {
 								val,
 								new PMTBranch.PMTBranchChild(remainder.getFirstNibble(), represent(newLeaf))
 						);
-						var newExt = insertExtension(commonPath, newBranch);
-						acc.setTip(newExt == null ? newBranch : newExt);
-						acc.add(newLeaf, newBranch, newExt);
+						acc = computeAndSetTip(commonPath, newBranch, acc);
+						acc.add(newLeaf, newBranch);
 						acc.mark(current);
 						break;
 					case NEW:
@@ -206,9 +205,8 @@ public class PMT {
 								current.getValue(),
 								new PMTBranch.PMTBranchChild(remainder.getFirstNibble(), represent(newLeaf))
 						);
-						newExt = insertExtension(commonPath, newBranch);
-						acc.setTip(newExt == null ? newBranch : newExt);
-						acc.add(newLeaf, newBranch, newExt);
+						acc = computeAndSetTip(commonPath, newBranch, acc);
+						acc.add(newLeaf, newBranch);
 						acc.mark(current);
 						break;
 					case BOTH:
@@ -221,9 +219,8 @@ public class PMT {
 								new PMTBranch.PMTBranchChild(remainderNew.getFirstNibble(), represent(newLeafNew)),
 								new PMTBranch.PMTBranchChild(remainderOld.getFirstNibble(), represent(newLeafOld))
 						);
-						newExt = insertExtension(commonPath, newBranch);
-						acc.setTip(newExt == null ? newBranch : newExt);
-						acc.add(newLeafNew, newLeafOld, newBranch, newExt);
+						acc = computeAndSetTip(commonPath, newBranch, acc);
+						acc.add(newLeafNew, newLeafOld, newBranch);
 						acc.mark(current);
 						break;
 					case NONE:
@@ -286,9 +283,8 @@ public class PMT {
 							val,
 							new PMTBranch.PMTBranchChild(remainder.getFirstNibble(), sliceVal)
 						);
-						var newExt = insertExtension(commonPath, newBranch);
-						acc.setTip(newExt == null ? newBranch : newExt);
-						acc.add(newBranch, newExt);
+						acc = computeAndSetTip(commonPath, newBranch, acc);
+						acc.add(newBranch);
 						acc.mark(current);
 						break;
 					case NEW:
@@ -299,7 +295,7 @@ public class PMT {
 						acc = insertNode(nextNode, commonPath.getRemainder(PMTPath.Subtree.NEW), val, acc);
 						var subTip = acc.getTip();
 						// INFO: for NEW or NONE, the commonPrefix can't be null as it existed here
-						newExt = new PMTExt(commonPath.getCommonPrefix(), represent(subTip));
+						var newExt = new PMTExt(commonPath.getCommonPrefix(), represent(subTip));
 						acc.setTip(newExt);
 						acc.add(newExt);
 						acc.mark(current);
@@ -321,9 +317,8 @@ public class PMT {
 							new PMTBranch.PMTBranchChild(remainderNew.getFirstNibble(), represent(newLeaf)),
 							new PMTBranch.PMTBranchChild(remainderOld.getFirstNibble(), sliceVal)
 						);
-						newExt = insertExtension(commonPath, newBranch);
-						acc.setTip(newExt == null ? newBranch : newExt);
-						acc.add(newBranch, newExt, newLeaf);
+						acc = computeAndSetTip(commonPath, newBranch, acc);
+						acc.add(newBranch, newLeaf);
 						acc.mark(current);
 						break;
 				}
@@ -332,11 +327,15 @@ public class PMT {
 		return acc;
 	}
 
-	PMTExt insertExtension(PMTPath pmtPath, PMTBranch branch) {
+	PMTAcc computeAndSetTip(PMTPath pmtPath, PMTBranch branch, PMTAcc acc) {
 		if (pmtPath.getCommonPrefix().isEmpty()) {
-			return null;
+			acc.setTip(branch);
+			return acc;
 		} else {
-			return new PMTExt(pmtPath.getCommonPrefix(), represent(branch));
+			var newExt = new PMTExt(pmtPath.getCommonPrefix(), represent(branch));
+			acc.setTip(newExt);
+			acc.add(newExt);
+			return acc;
 		}
 	}
 
