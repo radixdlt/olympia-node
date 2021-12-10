@@ -61,75 +61,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.util;
+package com.radixdlt.api;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
+import com.google.inject.Inject;
+import com.radixdlt.api.core.openapitools.model.InternalServerError;
+import com.radixdlt.api.core.openapitools.model.UnexpectedError;
+import org.junit.Test;
 
-public abstract class JsonRpcHandler<T, U, X extends Exception, E> implements HttpHandler {
-	private static final String CONTENT_TYPE_JSON = "application/json";
-	private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
+import static org.assertj.core.api.Assertions.assertThat;
 
-	private final Class<T> requestClass;
-	private final Class<X> exceptionClass;
-	private final ObjectMapper objectMapper;
+public class UnhandledExceptionHandlerTest extends ApiTest {
+	@Inject
+	private UnhandledExceptionHandler sut;
 
-	public abstract U handleRequest(T request) throws X;
+	@Test
+	public void unhandled_exception_should_return_error() throws Exception {
+		// Arrange
+		start();
 
-	public abstract E handleParseException(Exception e);
+		// Act
+		var response = handleExceptionWithExpectedResponse(sut, new NullPointerException(), UnexpectedError.class);
 
-	public abstract E handleException(X e);
-
-	public JsonRpcHandler(Class<T> requestClass, Class<X> exceptionClass, ObjectMapper objectMapper) {
-		this.requestClass = requestClass;
-		this.exceptionClass = exceptionClass;
-		this.objectMapper = objectMapper;
-	}
-
-	@Override
-	public final void handleRequest(HttpServerExchange exchange) throws Exception {
-		if (exchange.isInIoThread()) {
-			exchange.dispatch(this);
-			return;
-		}
-
-		exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
-		exchange.startBlocking();
-		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
-
-		T request;
-		try {
-			request = objectMapper.readValue(exchange.getInputStream(), requestClass);
-		} catch (JsonMappingException | JsonParseException e) {
-			var errorResponse = handleParseException(e);
-			exchange.setStatusCode(500);
-			exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
-			return;
-		}
-
-		U response;
-		try {
-			response = handleRequest(request);
-		} catch (Exception e) {
-			if (exceptionClass.isInstance(e)) {
-				var errorResponse = handleException(exceptionClass.cast(e));
-				if (errorResponse != null) {
-					exchange.setStatusCode(500);
-					exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
-					return;
-				}
-			}
-
-			throw e;
-		}
-
-		exchange.setStatusCode(200);
-		objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-		exchange.getResponseSender().send(objectMapper.writeValueAsString(response));
+		assertThat(response.getDetails()).isInstanceOf(InternalServerError.class);
 	}
 }

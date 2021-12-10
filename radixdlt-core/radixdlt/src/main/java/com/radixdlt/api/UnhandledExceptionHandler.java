@@ -61,54 +61,34 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.util;
+package com.radixdlt.api;
 
-import io.undertow.util.HttpString;
-import io.undertow.util.Methods;
+import com.google.common.base.Throwables;
+import com.radixdlt.api.core.model.CoreApiErrorCode;
+import com.radixdlt.api.core.openapitools.JSON;
+import com.radixdlt.api.core.openapitools.model.InternalServerError;
+import com.radixdlt.api.core.openapitools.model.UnexpectedError;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.ExceptionHandler;
+import io.undertow.util.Headers;
 
-import java.util.Objects;
-
-public final class HandlerRoute {
-	private final HttpString method;
-	private final String path;
-
-	private HandlerRoute(HttpString method, String path) {
-		this.method = method;
-		this.path = path;
-	}
-
-	public HttpString getMethod() {
-		return method;
-	}
-
-	public String getPath() {
-		return path;
-	}
-
-	public static HandlerRoute post(String path) {
-		Objects.requireNonNull(path);
-		return new HandlerRoute(Methods.POST, path);
-	}
-
-	public static HandlerRoute get(String path) {
-		Objects.requireNonNull(path);
-		return new HandlerRoute(Methods.GET, path);
-	}
-
+public class UnhandledExceptionHandler implements HttpHandler {
 	@Override
-	public int hashCode() {
-		return Objects.hash(method, path);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		HandlerRoute that = (HandlerRoute) o;
-		return Objects.equals(method, that.method) && Objects.equals(path, that.path);
+	public void handleRequest(HttpServerExchange exchange) throws Exception {
+		// TODO: Find a place to log this
+		var ex = exchange.getAttachment(ExceptionHandler.THROWABLE);
+		var rootCause = Throwables.getRootCause(ex);
+		var unexpectedError = new UnexpectedError()
+			.code(CoreApiErrorCode.INTERNAL_SERVER_ERROR.getErrorCode())
+			.message(CoreApiErrorCode.INTERNAL_SERVER_ERROR.getMessage())
+			.details(new InternalServerError()
+				.cause(rootCause.getMessage())
+				.exception(rootCause.getClass().getSimpleName())
+				.type("InternalServerError")
+			);
+		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "application/json");
+		exchange.setStatusCode(500);
+		exchange.getResponseSender().send(JSON.getDefault().getMapper().writeValueAsString(unexpectedError));
 	}
 }

@@ -61,73 +61,54 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.core.handlers.NetworkStatusHandler;
-import com.radixdlt.api.core.model.CoreModelMapper;
-import com.radixdlt.api.core.openapitools.model.InvalidJsonError;
-import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
-import com.radixdlt.api.core.openapitools.model.NetworkNotSupportedError;
-import com.radixdlt.api.core.openapitools.model.NetworkStatusRequest;
-import com.radixdlt.api.core.openapitools.model.NetworkStatusResponse;
-import com.radixdlt.api.core.openapitools.model.UnexpectedError;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.utils.Bytes;
-import org.junit.Test;
+import io.undertow.util.HttpString;
+import io.undertow.util.Methods;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.Objects;
 
-public class NetworkStatusHandlerTest extends ApiTest {
-	@Inject
-	private NetworkStatusHandler sut;
-	@Inject
-	private CoreModelMapper mapper;
-	@Inject
-	@Genesis
-	private VerifiedTxnsAndProof genesis;
+public final class HandlerRoute {
+	private final HttpString method;
+	private final String path;
 
-	@Test
-	public void network_status_should_return_correct_data() throws Exception {
-		// Arrange
-		start();
-
-		// Act
-		var request = new NetworkStatusRequest().networkIdentifier(networkIdentifier());
-		var response = handleRequestWithExpectedResponse(sut, request, NetworkStatusResponse.class);
-
-		// Assert
-		var genesisStateIdentifier = mapper.stateIdentifier(genesis.getProof().getAccumulatorState());
-		assertThat(response.getCurrentStateIdentifier()).isEqualTo(genesisStateIdentifier);
-		assertThat(response.getGenesisStateIdentifier()).isEqualTo(genesisStateIdentifier);
+	private HandlerRoute(HttpString method, String path) {
+		this.method = method;
+		this.path = path;
 	}
 
-	@Test
-	public void invalid_json_should_return_json_error() throws Exception {
-		// Arrange
-		start();
-
-		// Act
-		var requestBytes = Bytes.fromHexString("deadbeef");
-		var response = handleRequestWithExpectedResponse(sut, requestBytes, UnexpectedError.class);
-
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(InvalidJsonError.class);
+	public HttpString getMethod() {
+		return method;
 	}
 
-	@Test
-	public void unknown_network_should_return_error() throws Exception {
-		// Arrange
-		start();
+	public String getPath() {
+		return path;
+	}
 
-		// Act
-		var request = new NetworkStatusRequest()
-			.networkIdentifier(new NetworkIdentifier().network("unknown_network"));
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+	public static HandlerRoute post(String path) {
+		Objects.requireNonNull(path);
+		return new HandlerRoute(Methods.POST, path);
+	}
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(NetworkNotSupportedError.class);
+	public static HandlerRoute get(String path) {
+		Objects.requireNonNull(path);
+		return new HandlerRoute(Methods.GET, path);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(method, path);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		HandlerRoute that = (HandlerRoute) o;
+		return Objects.equals(method, that.method) && Objects.equals(path, that.path);
 	}
 }

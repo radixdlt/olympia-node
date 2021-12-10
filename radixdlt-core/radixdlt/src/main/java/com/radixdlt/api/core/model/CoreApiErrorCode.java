@@ -67,6 +67,7 @@ public enum CoreApiErrorCode {
 	BAD_REQUEST(400, "Bad request"),
 	NOT_FOUND(404, "Not found"),
 	CONFLICT(409, "State Conflict"),
+	INTERNAL_SERVER_ERROR(500, "Internal Server Error"),
 	NOT_SUPPORTED(501, "Not supported"),
 	UNAVAILABLE(503, "Unavailable");
 

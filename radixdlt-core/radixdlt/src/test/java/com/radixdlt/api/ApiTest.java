@@ -98,12 +98,12 @@ import com.radixdlt.utils.UInt256;
 import io.undertow.io.Sender;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.ExceptionHandler;
 import io.undertow.util.HeaderMap;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.util.Map;
 import java.util.Set;
@@ -175,6 +175,15 @@ public abstract class ApiTest {
 		runner.start();
 	}
 
+	private HttpServerExchange exchange(Exception e, Sender sender) {
+		var httpServerExchange = mock(HttpServerExchange.class);
+		when(httpServerExchange.getAttachment(eq(ExceptionHandler.THROWABLE))).thenReturn(e);
+		when(httpServerExchange.isInIoThread()).thenReturn(false);
+		when(httpServerExchange.getResponseHeaders()).thenReturn(new HeaderMap());
+		when(httpServerExchange.getResponseSender()).thenReturn(sender);
+		return httpServerExchange;
+	}
+
 	private HttpServerExchange exchange(byte[] request, Sender sender) {
 		var httpServerExchange = mock(HttpServerExchange.class);
 		when(httpServerExchange.getInputStream()).thenReturn(new ByteArrayInputStream(request));
@@ -197,6 +206,18 @@ public abstract class ApiTest {
 		}).when(sender).send(anyString());
 		handler.handleRequest(exchange(sender));
 		return response.get();
+	}
+
+	protected <T> T handleExceptionWithExpectedResponse(HttpHandler handler, Exception e, Class<T> responseClass) throws Exception {
+		var objectMapper = JSON.getDefault().getMapper();
+		var sender = mock(Sender.class);
+		var response = new AtomicReference<String>();
+		doAnswer(invocation -> {
+			response.set(invocation.getArgument(0));
+			return null;
+		}).when(sender).send(anyString());
+		handler.handleRequest(exchange(e, sender));
+		return objectMapper.readValue(response.get(), responseClass);
 	}
 
 	protected <T> T handleRequestWithExpectedResponse(HttpHandler handler, byte[] requestBytes, Class<T> responseClass) throws Exception {

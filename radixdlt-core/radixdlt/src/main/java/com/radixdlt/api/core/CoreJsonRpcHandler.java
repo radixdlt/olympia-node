@@ -63,19 +63,69 @@
 
 package com.radixdlt.api.core;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.radixdlt.api.core.model.CoreApiErrorCode;
 import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.openapitools.JSON;
 import com.radixdlt.api.core.openapitools.model.InvalidJsonError;
 import com.radixdlt.api.core.openapitools.model.UnexpectedError;
-import com.radixdlt.api.util.JsonRpcHandler;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 
-public abstract class CoreJsonRpcHandler<T, U> extends JsonRpcHandler<T, U, CoreApiException, UnexpectedError> {
+public abstract class CoreJsonRpcHandler<T, U> implements HttpHandler {
+	private static final String CONTENT_TYPE_JSON = "application/json";
+	private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
+
+	private final Class<T> requestClass;
+	private final ObjectMapper objectMapper;
+
 	public CoreJsonRpcHandler(Class<T> requestClass) {
-		super(requestClass, CoreApiException.class, JSON.getDefault().getMapper());
+		this.requestClass = requestClass;
+		this.objectMapper = JSON.getDefault().getMapper();
 	}
 
+	public abstract U handleRequest(T request) throws CoreApiException;
+
 	@Override
+	public final void handleRequest(HttpServerExchange exchange) throws Exception {
+		if (exchange.isInIoThread()) {
+			exchange.dispatch(this);
+			return;
+		}
+
+		exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
+		exchange.startBlocking();
+		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
+
+		T request;
+		try {
+			request = objectMapper.readValue(exchange.getInputStream(), requestClass);
+		} catch (JsonMappingException | JsonParseException e) {
+			var errorResponse = handleParseException(e);
+			exchange.setStatusCode(500);
+			exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
+			return;
+		}
+
+		U response;
+		try {
+			response = handleRequest(request);
+		} catch (CoreApiException e) {
+			var errorResponse = e.toError();
+			exchange.setStatusCode(500);
+			exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
+			return;
+		}
+
+		exchange.setStatusCode(200);
+		objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+		exchange.getResponseSender().send(objectMapper.writeValueAsString(response));
+	}
+
 	public UnexpectedError handleParseException(Exception e) {
 		return new UnexpectedError()
 			.code(CoreApiErrorCode.BAD_REQUEST.getErrorCode())
@@ -84,10 +134,5 @@ public abstract class CoreJsonRpcHandler<T, U> extends JsonRpcHandler<T, U, Core
 				.cause(e.getMessage())
 				.type("InvalidJsonError")
 			);
-	}
-
-	@Override
-	public UnexpectedError handleException(CoreApiException e) {
-		return e.toError();
 	}
 }

@@ -72,7 +72,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.api.system.health.ScheduledStatsCollecting;
 import com.radixdlt.api.system.prometheus.PrometheusApiModule;
-import com.radixdlt.api.util.HandlerRoute;
+import com.radixdlt.api.HandlerRoute;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;

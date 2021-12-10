@@ -63,24 +63,17 @@
 
 package com.radixdlt.api;
 
-import com.google.common.base.Throwables;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.api.core.CoreApiModule;
-import com.radixdlt.api.core.openapitools.JSON;
-import com.radixdlt.api.core.openapitools.model.InternalServerError;
-import com.radixdlt.api.core.openapitools.model.UnexpectedError;
 import com.radixdlt.api.system.SystemApiModule;
-import com.radixdlt.api.util.HandlerRoute;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.ExceptionHandler;
 import io.undertow.server.handlers.RequestLimitingHandler;
-import io.undertow.util.Headers;
 import io.undertow.util.StatusCodes;
 
 import java.util.Map;
@@ -106,26 +99,6 @@ public final class ApiModule extends AbstractModule {
 		install(new CoreApiModule(enableTransactions));
 	}
 
-	private static class IntervalServerErrorExceptionHandler implements HttpHandler {
-		@Override
-		public void handleRequest(HttpServerExchange exchange) throws Exception {
-			// TODO: Find a place to log this
-			var ex = exchange.getAttachment(ExceptionHandler.THROWABLE);
-			var rootCause = Throwables.getRootCause(ex);
-			var unexpectedError = new UnexpectedError()
-				.code(500)
-				.message("Internal Server Error")
-				.details(new InternalServerError()
-					.cause(rootCause.getMessage())
-					.exception(rootCause.getClass().getSimpleName())
-					.type("InternalServerErrorDetails")
-				);
-			exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "application/json");
-			exchange.setStatusCode(500);
-			exchange.getResponseSender().send(JSON.getDefault().getMapper().writeValueAsString(unexpectedError));
-		}
-	}
-
 	private static void fallbackHandler(HttpServerExchange exchange) {
 		exchange.setStatusCode(StatusCodes.NOT_FOUND);
 		exchange.getResponseSender().send(
@@ -146,8 +119,7 @@ public final class ApiModule extends AbstractModule {
 		handler.setFallbackHandler(ApiModule::fallbackHandler);
 		handler.setInvalidMethodHandler(ApiModule::invalidMethodHandler);
 		var exceptionHandler = Handlers.exceptionHandler(handler);
-		exceptionHandler.addExceptionHandler(Exception.class, new IntervalServerErrorExceptionHandler());
-
+		exceptionHandler.addExceptionHandler(Exception.class, new UnhandledExceptionHandler());
 		return exceptionHandler;
 	}
 

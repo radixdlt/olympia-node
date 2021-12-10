@@ -84,7 +84,7 @@ import com.radixdlt.api.core.handlers.KeyListHandler;
 import com.radixdlt.api.core.handlers.KeySignHandler;
 import com.radixdlt.api.core.handlers.TransactionsHandler;
 import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
-import com.radixdlt.api.util.HandlerRoute;
+import com.radixdlt.api.HandlerRoute;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import io.undertow.server.HttpHandler;
 
