@@ -2,6 +2,8 @@ package com.radixdlt.store.tree;
 
 import com.radixdlt.store.tree.hash.HashFunction;
 import com.radixdlt.store.tree.hash.SHA256;
+import com.radixdlt.store.tree.serialization.PMTNodeSerializer;
+import com.radixdlt.store.tree.serialization.rlp.RLPSerializer;
 import com.radixdlt.store.tree.storage.PMTCache;
 import com.radixdlt.store.tree.storage.PMTStorage;
 import org.apache.logging.log4j.LogManager;
@@ -19,6 +21,7 @@ public class PMT {
 	private final PMTStorage db;
 	private final PMTCache cache;
 	private final HashFunction hashFunction;
+	private final PMTNodeSerializer pmtNodeSerializer;
 	private PMTNode root;
 
 	// API:
@@ -32,10 +35,10 @@ public class PMT {
 	//verify_proof
 
 	public PMT(PMTStorage db) {
-		this(db, new SHA256(), Duration.of(10, ChronoUnit.MINUTES));
+		this(db, new SHA256(), new RLPSerializer(), Duration.of(10, ChronoUnit.MINUTES));
 	}
 
-	public PMT(PMTStorage db, HashFunction hashFunction, Duration cacheExpiryAfter) {
+	public PMT(PMTStorage db, HashFunction hashFunction, PMTNodeSerializer pmtNodeSerializer, Duration cacheExpiryAfter) {
 		this.db = db;
 		this.cache = new PMTCache(
 			CACHE_MAXIMUM_SIZE,
@@ -43,14 +46,15 @@ public class PMT {
 			this::nodeLoader
 		);
 		this.hashFunction = hashFunction;
+		this.pmtNodeSerializer = pmtNodeSerializer;
 	}
 
 	public byte[] represent(PMTNode node) {
-		return represent(node, this.hashFunction);
+		return represent(node, this.hashFunction, this.pmtNodeSerializer);
 	}
 
-	public static byte[] represent(PMTNode node, HashFunction hashFunction) {
-		var ser = node.serialize();
+	public static byte[] represent(PMTNode node, HashFunction hashFunction, PMTNodeSerializer pmtNodeSerializer) {
+		var ser = pmtNodeSerializer.serialize(node);
 		if (hasDbRepresentation(ser)) {
 			return hashFunction.hash(ser);
 		} else {
@@ -97,7 +101,7 @@ public class PMT {
 					.filter(Objects::nonNull)
 					.forEach(sanitizedAcc -> {
 						this.cache.put(represent(sanitizedAcc), sanitizedAcc);
-						byte[] serialisedNode = sanitizedAcc.serialize();
+						byte[] serialisedNode = this.pmtNodeSerializer.serialize(sanitizedAcc);
 						if (sanitizedAcc == this.root || hasDbRepresentation(serialisedNode)) {
 							this.db.save(hash(serialisedNode), serialisedNode);
 						}
@@ -105,7 +109,7 @@ public class PMT {
 			} else {
 				PMTNode nodeRoot = new PMTLeaf(pmtKey, val);
 				this.root = nodeRoot;
-				byte[] serialisedNode = nodeRoot.serialize();
+				byte[] serialisedNode = this.pmtNodeSerializer.serialize(nodeRoot);
 				this.cache.put(represent(nodeRoot), nodeRoot);
 				this.db.save(hash(nodeRoot), serialisedNode);
 			}
@@ -348,7 +352,7 @@ public class PMT {
 		} else {
 			node = key;
 		}
-		return PMTNode.deserialize(node);
+		return pmtNodeSerializer.deserialize(node);
 	}
 
 	private byte[] hash(byte[] serialized) {
@@ -356,7 +360,7 @@ public class PMT {
 	}
 
 	private byte[] hash(PMTNode node) {
-		return hash(node.serialize());
+		return hash(this.pmtNodeSerializer.serialize(node));
 	}
 
 }
