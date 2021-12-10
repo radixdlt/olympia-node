@@ -66,20 +66,19 @@ package com.radixdlt.api.core;
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.TransactionsHandler;
-import com.radixdlt.api.core.model.CoreApiErrorCode;
-import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.openapitools.model.CommittedTransactionsRequest;
+import com.radixdlt.api.core.openapitools.model.CommittedTransactionsResponse;
 import com.radixdlt.api.core.openapitools.model.InvalidPartialStateIdentifierError;
 import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.openapitools.model.PartialStateIdentifier;
 import com.radixdlt.api.core.openapitools.model.StateIdentifierNotFoundError;
+import com.radixdlt.api.core.openapitools.model.UnexpectedError;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.utils.Bytes;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TransactionsHandlerTest extends ApiTest {
 	@Inject
@@ -98,7 +97,7 @@ public class TransactionsHandlerTest extends ApiTest {
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.limit(1L)
 			.stateIdentifier(new PartialStateIdentifier().stateVersion(0L));
-		var response = sut.handleRequest(request);
+		var response = handleRequestWithExpectedResponse(sut, request, CommittedTransactionsResponse.class);
 
 		// Assert
 		assertThat(response.getTransactions()).hasSize(1);
@@ -117,7 +116,7 @@ public class TransactionsHandlerTest extends ApiTest {
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.limit(1L)
 			.stateIdentifier(new PartialStateIdentifier().stateVersion(1L));
-		var response = sut.handleRequest(request);
+		var response = handleRequestWithExpectedResponse(sut, request, CommittedTransactionsResponse.class);
 
 		// Assert
 		assertThat(response.getTransactions()).isEmpty();
@@ -127,40 +126,34 @@ public class TransactionsHandlerTest extends ApiTest {
 	}
 
 	@Test
-	public void retrieving_past_last_state_version_should_throw_exception() {
+	public void retrieving_past_last_state_version_should_throw_exception() throws Exception {
 		// Arrange
 		start();
 
 		// Act
-		// Assert
 		var request = new CommittedTransactionsRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.limit(1L)
 			.stateIdentifier(new PartialStateIdentifier().stateVersion(2L));
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOfSatisfying(CoreApiException.class, e -> {
-				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(StateIdentifierNotFoundError.class);
-				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.NOT_FOUND.getErrorCode());
-			});
+		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+
+		// Assert
+		assertThat(response.getDetails()).isInstanceOf(StateIdentifierNotFoundError.class);
 	}
 
 	@Test
-	public void retrieving_illegal_state_version_should_throw_exception() {
+	public void retrieving_illegal_state_version_should_throw_exception() throws Exception {
 		// Arrange
 		start();
 
 		// Act
-		// Assert
 		var request = new CommittedTransactionsRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.limit(1L)
 			.stateIdentifier(new PartialStateIdentifier().stateVersion(-1L));
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOfSatisfying(CoreApiException.class, e -> {
-				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(InvalidPartialStateIdentifierError.class);
-				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
-			});
+		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+
+		// Assert
+		assertThat(response.getDetails()).isInstanceOf(InvalidPartialStateIdentifierError.class);
 	}
 }

@@ -65,7 +65,6 @@ package com.radixdlt.api.core;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.handlers.KeySignHandler;
 import com.radixdlt.api.core.model.EntityOperation;
@@ -78,6 +77,7 @@ import com.radixdlt.api.core.openapitools.model.InvalidTransactionError;
 import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.openapitools.model.PublicKeyNotSupportedError;
 import com.radixdlt.api.core.openapitools.model.KeySignRequest;
+import com.radixdlt.api.core.openapitools.model.UnexpectedError;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -90,7 +90,6 @@ import org.junit.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class KeySignHandlerTest extends ApiTest {
 	@Inject
@@ -153,7 +152,6 @@ public class KeySignHandlerTest extends ApiTest {
 		start();
 
 		// Act
-		// Assert
 		var from = REAddr.ofPubKeyAccount(selfKey());
 		var other = PrivateKeys.ofNumeric(2);
 		var to = REAddr.ofPubKeyAccount(other.getPublicKey());
@@ -162,28 +160,25 @@ public class KeySignHandlerTest extends ApiTest {
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.publicKey(mapper.publicKey(other.getPublicKey()))
 			.unsignedTransaction(Bytes.toHexString(unsignedTxn));
+		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreApiException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(PublicKeyNotSupportedError.class);
+		// Assert
+		assertThat(response.getDetails()).isInstanceOf(PublicKeyNotSupportedError.class);
 	}
 
 	@Test
-	public void sign_should_fail_given_an_invalid_transaction() {
+	public void sign_should_fail_given_an_invalid_transaction() throws Exception {
 		// Arrange
 		start();
 
 		// Act
-		// Assert
 		var request = new KeySignRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.publicKey(mapper.publicKey(selfKey()))
 			.unsignedTransaction("badbadbadbad");
+		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreApiException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(InvalidTransactionError.class);
+		// Assert
+		assertThat(response.getDetails()).isInstanceOf(InvalidTransactionError.class);
 	}
 }
