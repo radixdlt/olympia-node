@@ -52,12 +52,7 @@ public class PMT {
 	}
 
 	public byte[] represent(PMTNode node) {
-		if (node.getNodeType() == PMTNode.NodeType.EXTENSION
-			&& node.keyNibbles.isEmpty()) {
-					return node.getValue();
-			} else {
-			return represent(node, this.hashFunction);
-		}
+		return represent(node, this.hashFunction);
 	}
 
 	public static byte[] represent(PMTNode node, HashFunction hashFunction) {
@@ -200,7 +195,7 @@ public class PMT {
 								new PMTBranch.PMTBranchChild(remainder.getFirstNibble(), represent(newLeaf))
 						);
 						var newExt = insertExtension(commonPath, newBranch);
-						acc.setNewTip(newExt == null ? newBranch : newExt);
+						acc.setTip(newExt == null ? newBranch : newExt);
 						acc.add(newLeaf, newBranch, newExt);
 						acc.mark(current);
 						break;
@@ -212,7 +207,7 @@ public class PMT {
 								new PMTBranch.PMTBranchChild(remainder.getFirstNibble(), represent(newLeaf))
 						);
 						newExt = insertExtension(commonPath, newBranch);
-						acc.setNewTip(newExt == null ? newBranch : newExt);
+						acc.setTip(newExt == null ? newBranch : newExt);
 						acc.add(newLeaf, newBranch, newExt);
 						acc.mark(current);
 						break;
@@ -227,7 +222,7 @@ public class PMT {
 								new PMTBranch.PMTBranchChild(remainderOld.getFirstNibble(), represent(newLeafOld))
 						);
 						newExt = insertExtension(commonPath, newBranch);
-						acc.setNewTip(newExt == null ? newBranch : newExt);
+						acc.setTip(newExt == null ? newBranch : newExt);
 						acc.add(newLeafNew, newLeafOld, newBranch, newExt);
 						acc.mark(current);
 						break;
@@ -237,7 +232,7 @@ public class PMT {
 						} else {
 							// INFO: we preserve whole key-end as there are no branches
 							newLeaf = new PMTLeaf(key, val);
-							acc.setNewTip(newLeaf);
+							acc.setTip(newLeaf);
 							acc.add(newLeaf);
 							acc.mark(current);
 						}
@@ -251,7 +246,7 @@ public class PMT {
 					case NONE:
 						var modifiedBranch = cloneBranch(currentBranch);
 						modifiedBranch.setValue(val);
-						acc.setNewTip(modifiedBranch);
+						acc.setTip(modifiedBranch);
 						acc.add(modifiedBranch);
 						acc.mark(current);
 						break;
@@ -269,7 +264,7 @@ public class PMT {
 						}
 						var branchWithNext = cloneBranch(currentBranch);
 						branchWithNext.setNibble(new PMTBranch.PMTBranchChild(key.getFirstNibble(), represent(subTip)));
-						acc.setNewTip(branchWithNext);
+						acc.setTip(branchWithNext);
 						acc.add(branchWithNext);
 						acc.mark(current);
 						break;
@@ -279,13 +274,20 @@ public class PMT {
 				switch (commonPath.whichRemainderIsLeft()) {
 					case OLD:
 						var remainder = commonPath.getRemainder(PMTPath.Subtree.OLD);
-						var newShorter = splitExtension(remainder, current, acc);
+						byte[] sliceVal;
+						if (remainder.isNibble()) {
+							sliceVal = current.getValue();
+						} else {
+							var newShorter = new PMTExt(remainder.getTailNibbles(), current.getValue());
+							acc.add(newShorter);
+							sliceVal = represent(newShorter);
+						}
 						var newBranch = new PMTBranch(
 							val,
-							new PMTBranch.PMTBranchChild(remainder.getFirstNibble(), represent(newShorter))
+							new PMTBranch.PMTBranchChild(remainder.getFirstNibble(), sliceVal)
 						);
 						var newExt = insertExtension(commonPath, newBranch);
-						acc.setNewTip(newExt == null ? newBranch : newExt);
+						acc.setTip(newExt == null ? newBranch : newExt);
 						acc.add(newBranch, newExt);
 						acc.mark(current);
 						break;
@@ -298,7 +300,7 @@ public class PMT {
 						var subTip = acc.getTip();
 						// INFO: for NEW or NONE, the commonPrefix can't be null as it existed here
 						newExt = new PMTExt(commonPath.getCommonPrefix(), represent(subTip));
-						acc.setNewTip(newExt);
+						acc.setTip(newExt);
 						acc.add(newExt);
 						acc.mark(current);
 						break;
@@ -307,16 +309,21 @@ public class PMT {
 						var remainderOld = commonPath.getRemainder(PMTPath.Subtree.OLD);
 						// INFO: as implemented here, the key-end can be empty
 						var newLeaf = new PMTLeaf(remainderNew.getTailNibbles(), val);
-						newShorter = splitExtension(remainderOld, current, acc);
+						if (remainderOld.isNibble()) {
+							sliceVal = current.getValue();
+						} else {
+							var newShorter = new PMTExt(remainderOld.getTailNibbles(), current.getValue());
+							acc.add(newShorter);
+							sliceVal = represent(newShorter);
+						}
 						newBranch = new PMTBranch(
-								null,
-								new PMTBranch.PMTBranchChild(remainderNew.getFirstNibble(), represent(newLeaf)),
-								new PMTBranch.PMTBranchChild(remainderOld.getFirstNibble(), represent(newShorter))
+							null,
+							new PMTBranch.PMTBranchChild(remainderNew.getFirstNibble(), represent(newLeaf)),
+							new PMTBranch.PMTBranchChild(remainderOld.getFirstNibble(), sliceVal)
 						);
 						newExt = insertExtension(commonPath, newBranch);
-						acc.setNewTip(newExt == null ? newBranch : newExt);
+						acc.setTip(newExt == null ? newBranch : newExt);
 						acc.add(newBranch, newExt, newLeaf);
-						// INFO: the value of current Ext is rewritten to newShorter, so that node is intact
 						acc.mark(current);
 						break;
 				}
@@ -335,17 +342,6 @@ public class PMT {
 
 	PMTBranch cloneBranch(PMTBranch currentBranch) {
 		return currentBranch.copyForEdit();
-	}
-
-	PMTExt splitExtension(PMTKey remainder, PMTNode current, PMTAcc acc) {
-		if (remainder.isNibble()) {
-			// INFO: transient object helper to construct a branch
-			return new PMTExt(remainder.getTailNibbles(), current.getValue());
-		} else {
-			var newShorter = new PMTExt(remainder.getTailNibbles(), current.getValue());
-			acc.add(newShorter);
-			return newShorter;
-		}
 	}
 
 	private PMTNode read(byte[] key) {
