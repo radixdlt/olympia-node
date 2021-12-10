@@ -16,7 +16,7 @@ public final class PMTLeaf extends PMTNode {
 	public byte[] serialize() {
 		// INFO: leaf can have empty key. It's because value may not fit branches' hash pointer field
 
-		var nibblesWithPrefix = TreeUtils.applyPrefix(this.getKey().getKey(), ODD_PREFIX, EVEN_PREFIX);
+		var nibblesWithPrefix = TreeUtils.applyPrefix(this.getKey().getRaw(), ODD_PREFIX, EVEN_PREFIX);
 		byte[] bytesWithPrefix = TreeUtils.fromNibblesToBytes(nibblesWithPrefix);
 		return RLP.encodeList(
 				RLP.encodeElement(bytesWithPrefix),
