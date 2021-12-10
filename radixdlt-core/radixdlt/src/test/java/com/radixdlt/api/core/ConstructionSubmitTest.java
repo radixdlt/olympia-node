@@ -76,6 +76,7 @@ import com.radixdlt.api.core.openapitools.model.ConstructionSubmitRequest;
 import com.radixdlt.api.core.openapitools.model.ConstructionSubmitResponse;
 import com.radixdlt.api.core.openapitools.model.InvalidTransactionError;
 import com.radixdlt.api.core.openapitools.model.MempoolFullError;
+import com.radixdlt.api.core.openapitools.model.SubstateDependencyNotFoundError;
 import com.radixdlt.api.core.openapitools.model.UnexpectedError;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.HashSigner;
@@ -161,6 +162,27 @@ public class ConstructionSubmitTest extends ApiTest {
 		// Assert
 		assertThat(response.getTransactionIdentifier().getHash()).isEqualTo(signedTxn.getId().toString());
 		assertThat(mempool.getData(m -> m.containsKey(signedTxn.getId())).booleanValue()).isTrue();
+	}
+
+	@Test
+	public void transaction_already_committed_should_return_error() throws Exception {
+		// Arrange
+		start();
+		var accountAddress = REAddr.ofPubKeyAccount(self);
+		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+		var txn = buildSignedTxn(accountAddress, otherAddress);
+		mempool.add(txn);
+		runUntilCommitted(txn.getId());
+
+		// Act
+		var request = new ConstructionSubmitRequest()
+			.networkIdentifier(networkIdentifier())
+			.signedTransaction(Bytes.toHexString(txn.getPayload()));
+		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+
+		// Assert
+		assertThat(response.getDetails()).isInstanceOf(SubstateDependencyNotFoundError.class);
+		assertThat(mempool.getData(m -> m.containsKey(txn.getId())).booleanValue()).isFalse();
 	}
 
 	@Test

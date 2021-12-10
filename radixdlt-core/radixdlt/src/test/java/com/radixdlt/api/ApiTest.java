@@ -80,6 +80,8 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.RadixNodeUri;
@@ -87,6 +89,7 @@ import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
@@ -191,6 +194,16 @@ public abstract class ApiTest {
 
 	protected final void start() {
 		runner.start();
+	}
+
+	protected final void runUntilCommitted(AID txnId) {
+		runner.runNextEventsThrough(
+			LedgerUpdate.class,
+			u -> {
+				var output = u.getStateComputerOutput().getInstance(REOutput.class);
+				return output.getProcessedTxns().stream().anyMatch(txn -> txn.getTxn().getId().equals(txnId));
+			}
+		);
 	}
 
 	private HttpServerExchange exchange(Exception e, Sender sender) {
