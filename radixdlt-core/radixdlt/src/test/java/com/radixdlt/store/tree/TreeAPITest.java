@@ -1,6 +1,7 @@
 package com.radixdlt.store.tree;
 
 import com.radixdlt.store.tree.hash.Keccak256;
+import com.radixdlt.store.tree.serialization.rlp.RLPSerializer;
 import com.radixdlt.store.tree.storage.InMemoryPMTStorage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,13 +30,12 @@ public class TreeAPITest {
 
 		var val1back = tree.get(sub1);
 		assertEquals(val1, val1back);
-
 	}
 
 	@Test
 	public void when_tree_contains_extension_nodes__then_values_can_be_added_and_retrieved() {
 		var storage = new InMemoryPMTStorage();
-		var tree = new PMT(storage, new Keccak256(), Duration.of(10, ChronoUnit.MINUTES));
+		var tree = new PMT(storage, new Keccak256(), new RLPSerializer(), Duration.of(10, ChronoUnit.MINUTES));
 
 		String verbKey = "646f";
 		String verbValue = "verb";

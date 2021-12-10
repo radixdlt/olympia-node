@@ -1,7 +1,6 @@
 package com.radixdlt.store.tree;
 
 import com.google.common.base.Objects;
-import com.radixdlt.store.tree.serialization.rlp.RLP;
 
 import java.util.Arrays;
 
@@ -44,7 +43,7 @@ public final class PMTBranch extends PMTNode {
 		}
 	}
 
-	 PMTBranch(byte[][] slices, byte[] value) {
+	 public PMTBranch(byte[][] slices, byte[] value) {
 		this.nodeType = NodeType.BRANCH;
 		this.slices = slices;
 		this.value = value;
@@ -58,6 +57,10 @@ public final class PMTBranch extends PMTNode {
 		if (value != null) {
 			this.value = value;
 		}
+	}
+
+	public byte[][] getSlices() {
+		return slices;
 	}
 
 	public byte[] getNextHash(PMTKey key) {
@@ -81,15 +84,5 @@ public final class PMTBranch extends PMTNode {
 			e.printStackTrace();
 			throw new IllegalStateException("Can't clone branch for edits");
 		}
-	}
-
-	public byte[] serialize() {
-		// TODO: serilize, RLP? Array RLP serialization. How to serialize nulls?
-		var list = new byte[NUMBER_OF_NIBBLES + 1][];
-		for (int i = 0; i < slices.length; i++) {
-			list[i] = RLP.encodeElement(slices[i]);
-		}
-		list[slices.length] = RLP.encodeElement(value == null ? new byte[0] : value);
-		return RLP.encodeList(list);
 	}
 }
