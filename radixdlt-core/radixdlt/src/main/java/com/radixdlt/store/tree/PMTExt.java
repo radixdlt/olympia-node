@@ -18,7 +18,7 @@ public final class PMTExt extends PMTNode {
 	}
 
 	public byte[] serialize() {
-		var nibblesWithPrefix = TreeUtils.applyPrefix(this.getKey().getKey(), ODD_PREFIX, EVEN_PREFIX);
+		var nibblesWithPrefix = TreeUtils.applyPrefix(this.getKey().getRaw(), ODD_PREFIX, EVEN_PREFIX);
 		byte[] bytesWithPrefix = TreeUtils.fromNibblesToBytes(nibblesWithPrefix);
 		return RLP.encodeList(
 				RLP.encodeElement(bytesWithPrefix),

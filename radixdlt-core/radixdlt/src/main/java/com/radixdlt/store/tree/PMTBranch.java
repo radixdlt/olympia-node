@@ -61,7 +61,7 @@ public final class PMTBranch extends PMTNode {
 	}
 
 	public byte[] getNextHash(PMTKey key) {
-		var nib = key.getKey()[0];
+		var nib = key.getRaw()[0];
 		return slices[nib];
 	}
 
