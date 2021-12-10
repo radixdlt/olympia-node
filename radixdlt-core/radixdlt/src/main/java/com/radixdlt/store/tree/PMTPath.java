@@ -67,8 +67,8 @@ public class PMTPath {
 		if (current == null || current.isEmpty() || incoming.isEmpty()) {
 			return new PMTPath(current, incoming, new PMTKey(new byte[0]));
 		} else {
-			byte[] currentNibs = current.getKey();
-			byte[] incomingNibs = incoming.getKey();
+			byte[] currentNibs = current.getRaw();
+			byte[] incomingNibs = incoming.getRaw();
 
 			var shorter = Math.min(currentNibs.length, incomingNibs.length);
 
