@@ -100,7 +100,7 @@ public class NetworkConfigurationHandler extends CoreJsonRpcHandler<Void, Networ
 			)
 			.version(
 				new NetworkConfigurationResponseVersion()
-					.apiVersion("0.9.0")
+					.apiVersion("1.0.0")
 					.coreVersion(Radix.systemVersionInfo()
 						.get(SYSTEM_VERSION_KEY)
 						.get(VERSION_STRING_KEY)

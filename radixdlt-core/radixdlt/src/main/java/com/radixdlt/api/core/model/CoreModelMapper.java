@@ -271,7 +271,7 @@ public final class CoreModelMapper {
 			return new NotEnoughNativeTokensForFeesError()
 				.available(nativeTokenAmount(notEnoughNativeTokensForFeesException.getAvailable()))
 				.feeEstimate(nativeTokenAmount(notEnoughNativeTokensForFeesException.getFee()))
-				.type(NotEnoughNativeTokensForFeesException.class.getSimpleName());
+				.type(NotEnoughNativeTokensForFeesError.class.getSimpleName());
 		}
 
 		throw new IllegalStateException(e);

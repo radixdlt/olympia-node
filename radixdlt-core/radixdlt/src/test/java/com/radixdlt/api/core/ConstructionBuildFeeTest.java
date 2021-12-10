@@ -63,13 +63,9 @@
 
 package com.radixdlt.api.core;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.ConstructionBuildHandler;
-import com.radixdlt.api.core.model.CoreApiErrorCode;
-import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.openapitools.model.EntityIdentifier;
@@ -80,48 +76,19 @@ import com.radixdlt.api.core.openapitools.model.Operation;
 import com.radixdlt.api.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.openapitools.model.ResourceAmount;
 import com.radixdlt.api.core.openapitools.model.ResourceIdentifier;
-import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.api.core.openapitools.model.UnexpectedError;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import java.math.BigInteger;
-import java.util.Map;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class ConstructionBuildFeeTest {
-
-	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
-	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-
-	private final Amount totalTokenAmount = Amount.ofTokens(110);
-	private final Amount stakeAmount = Amount.ofTokens(10);
-	private final Amount liquidAmount = Amount.ofSubunits(
-		totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits())
-	);
-
+public class ConstructionBuildFeeTest extends ApiTest {
 	@Inject
 	private ConstructionBuildHandler sut;
 	@Inject
@@ -129,36 +96,6 @@ public class ConstructionBuildFeeTest {
 	@Inject
 	@Self
 	private ECPublicKey self;
-	@Inject
-	private SingleNodeDeterministicRunner runner;
-	@Inject
-	private Forks forks;
-
-	@Before
-	public void setup() {
-		var injector = Guice.createInjector(
-			MempoolConfig.asModule(1000, 10),
-			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()
-				.overrideFeeTable(FeeTable.create(Amount.ofSubunits(UInt256.ONE), Map.of()))
-			),
-			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
-			new MockedGenesisModule(
-				Set.of(TEST_KEY.getPublicKey()),
-				totalTokenAmount,
-				stakeAmount
-			),
-			new AbstractModule() {
-				@Override
-				protected void configure() {
-					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bindConstant().annotatedWith(NetworkId.class).to(99);
-				}
-			}
-		);
-		injector.injectMembers(this);
-	}
 
 	private ConstructionBuildRequest buildTransfer(
 		ResourceIdentifier resourceIdentifier,
@@ -188,12 +125,11 @@ public class ConstructionBuildFeeTest {
 	}
 
 	@Test
-	public void no_balance_should_cause_a_not_enough_for_fees_error() {
+	public void no_balance_should_cause_a_not_enough_for_fees_error() throws Exception {
 		// Arrange
-		runner.start();
+		start();
 
 		// Act
-		// Assert
 		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
 		var request = buildTransfer(
 			coreModelMapper.nativeToken(),
@@ -201,43 +137,38 @@ public class ConstructionBuildFeeTest {
 			coreModelMapper.entityIdentifier(otherAddress),
 			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self))
 		);
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOfSatisfying(CoreApiException.class, e -> {
-				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOfSatisfying(NotEnoughNativeTokensForFeesError.class, err -> {
-					assertThat(err.getAvailable()).isEqualTo(coreModelMapper.nativeTokenAmount(UInt256.ZERO));
-				});
-				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
-			});
+		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+
+		// Assert
+		assertThat(response.getDetails()).isInstanceOfSatisfying(NotEnoughNativeTokensForFeesError.class, e -> {
+			assertThat(e.getAvailable()).isEqualTo(coreModelMapper.nativeTokenAmount(UInt256.ZERO));
+		});
 	}
 
 	@Test
-	public void trying_to_send_whole_balance_should_fail() {
+	public void trying_to_send_whole_balance_should_fail() throws Exception {
 		// Arrange
-		runner.start();
+		start();
 
 		// Act
-		// Assert
 		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
 		var request = buildTransfer(
 			coreModelMapper.nativeToken(),
-			liquidAmount.toSubunits(),
+			getLiquidAmount().toSubunits(),
 			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
 			coreModelMapper.entityIdentifier(otherAddress)
 		);
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOfSatisfying(CoreApiException.class, e -> {
-				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOfSatisfying(NotEnoughResourcesError.class, err -> {
-					assertThat(err.getFee().getResourceIdentifier()).isEqualTo(coreModelMapper.nativeToken());
-					assertThat(new BigInteger(err.getFee().getValue())).isGreaterThan(BigInteger.ZERO);
-					assertThat(err.getAvailable().getResourceIdentifier()).isEqualTo(coreModelMapper.nativeToken());
-					assertThat(new BigInteger(err.getAvailable().getValue())).isGreaterThan(BigInteger.ZERO);
-					assertThat(err.getAttemptedToTake().getResourceIdentifier()).isEqualTo(coreModelMapper.nativeToken());
-					assertThat(new BigInteger(err.getAttemptedToTake().getValue()))
-						.isEqualTo(new BigInteger(1, liquidAmount.toSubunits().toByteArray()));
-				});
-				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
-			});
+		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+
+		// Assert
+		assertThat(response.getDetails()).isInstanceOfSatisfying(NotEnoughResourcesError.class, err -> {
+			assertThat(err.getFee().getResourceIdentifier()).isEqualTo(coreModelMapper.nativeToken());
+			assertThat(new BigInteger(err.getFee().getValue())).isGreaterThan(BigInteger.ZERO);
+			assertThat(err.getAvailable().getResourceIdentifier()).isEqualTo(coreModelMapper.nativeToken());
+			assertThat(new BigInteger(err.getAvailable().getValue())).isGreaterThan(BigInteger.ZERO);
+			assertThat(err.getAttemptedToTake().getResourceIdentifier()).isEqualTo(coreModelMapper.nativeToken());
+			assertThat(new BigInteger(err.getAttemptedToTake().getValue()))
+				.isEqualTo(new BigInteger(1, getLiquidAmount().toSubunits().toByteArray()));
+		});
 	}
 }

@@ -180,6 +180,10 @@ public abstract class ApiTest {
 		injector.injectMembers(this);
 	}
 
+	protected Amount getStakeAmount() {
+		return stakeAmount;
+	}
+
 	protected Amount getLiquidAmount() {
 		return liquidAmount;
 	}

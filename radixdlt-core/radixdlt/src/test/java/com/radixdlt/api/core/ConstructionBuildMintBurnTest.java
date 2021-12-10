@@ -63,58 +63,29 @@
 
 package com.radixdlt.api.core;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.ConstructionBuildHandler;
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.openapitools.model.ConstructionBuildRequest;
+import com.radixdlt.api.core.openapitools.model.ConstructionBuildResponse;
 import com.radixdlt.api.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.openapitools.model.Operation;
 import com.radixdlt.api.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.openapitools.model.ResourceAmount;
 import com.radixdlt.api.core.openapitools.model.ResourceIdentifier;
-import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public final class ConstructionBuildMintBurnTest {
-
-	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
-	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-
-	private final Amount totalTokenAmount = Amount.ofTokens(110);
-	private final Amount stakeAmount = Amount.ofTokens(10);
-	private final Amount liquidAmount = Amount.ofSubunits(
-		totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits())
-	);
-
+public final class ConstructionBuildMintBurnTest extends ApiTest {
 	@Inject
 	private ConstructionBuildHandler sut;
 	@Inject
@@ -122,34 +93,6 @@ public final class ConstructionBuildMintBurnTest {
 	@Inject
 	@Self
 	private ECPublicKey self;
-	@Inject
-	private SingleNodeDeterministicRunner runner;
-
-	@Before
-	public void setup() {
-		var injector = Guice.createInjector(
-			MempoolConfig.asModule(1000, 10),
-			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(
-				RERulesConfig.testingDefault().overrideFeeTable(FeeTable.noFees()).overrideMaxRounds(1000)
-			),
-			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
-			new MockedGenesisModule(
-				Set.of(TEST_KEY.getPublicKey()),
-				totalTokenAmount,
-				stakeAmount
-			),
-			new AbstractModule() {
-				@Override
-				protected void configure() {
-					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bindConstant().annotatedWith(NetworkId.class).to(99);
-				}
-			}
-		);
-		injector.injectMembers(this);
-	}
 
 	private ConstructionBuildRequest buildMintOrBurn(
 		ResourceIdentifier resourceIdentifier,
@@ -175,17 +118,17 @@ public final class ConstructionBuildMintBurnTest {
 	@Test
 	public void building_token_mints_should_work() throws Exception {
 		// Arrange
-		runner.start();
+		start();
+
+		// Act
 		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
 		var request = buildMintOrBurn(
 			coreModelMapper.nativeToken(),
-			liquidAmount.toSubunits(),
+			UInt256.ONE,
 			true,
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self))
+			coreModelMapper.entityIdentifier(otherAddress)
 		);
-
-		// Act
-		var response = sut.handleRequest(request);
+		var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
 
 		// Assert
 		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
@@ -195,17 +138,16 @@ public final class ConstructionBuildMintBurnTest {
 	@Test
 	public void building_token_burns_should_work() throws Exception {
 		// Arrange
-		runner.start();
-		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+		start();
+
+		// Act
 		var request = buildMintOrBurn(
 			coreModelMapper.nativeToken(),
-			liquidAmount.toSubunits(),
+			UInt256.ONE,
 			false,
 			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self))
 		);
-
-		// Act
-		var response = sut.handleRequest(request);
+		var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
 
 		// Assert
 		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();

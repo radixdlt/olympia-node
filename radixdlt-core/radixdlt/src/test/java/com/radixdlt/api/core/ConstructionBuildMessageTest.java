@@ -63,58 +63,29 @@
 
 package com.radixdlt.api.core;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.ConstructionBuildHandler;
-import com.radixdlt.api.core.model.CoreApiErrorCode;
-import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.openapitools.model.ConstructionBuildRequest;
+import com.radixdlt.api.core.openapitools.model.ConstructionBuildResponse;
 import com.radixdlt.api.core.openapitools.model.MessageTooLongError;
 import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.openapitools.model.Operation;
 import com.radixdlt.api.core.openapitools.model.OperationGroup;
-import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.api.core.openapitools.model.UnexpectedError;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
-import org.junit.Before;
-import org.junit.Rule;
+import com.radixdlt.utils.UInt256;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class ConstructionBuildMessageTest {
-
-	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
-	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-
-	private final Amount totalTokenAmount = Amount.ofTokens(110);
-	private final Amount stakeAmount = Amount.ofTokens(10);
-	private final Amount liquidAmount = Amount.ofSubunits(
-		totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits())
-	);
-
+public class ConstructionBuildMessageTest extends ApiTest {
 	@Inject
 	private ConstructionBuildHandler sut;
 	@Inject
@@ -122,36 +93,9 @@ public class ConstructionBuildMessageTest {
 	@Inject
 	@Self
 	private ECPublicKey self;
-	@Inject
-	private SingleNodeDeterministicRunner runner;
-
-	@Before
-	public void setup() {
-		var injector = Guice.createInjector(
-			MempoolConfig.asModule(1000, 10),
-			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(
-				RERulesConfig.testingDefault().overrideFeeTable(FeeTable.noFees()).overrideMaxRounds(1000)
-			),
-			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
-			new MockedGenesisModule(
-				Set.of(TEST_KEY.getPublicKey()),
-				totalTokenAmount,
-				stakeAmount
-			),
-			new AbstractModule() {
-				@Override
-				protected void configure() {
-					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bindConstant().annotatedWith(NetworkId.class).to(99);
-				}
-			}
-		);
-		injector.injectMembers(this);
-	}
 
 	private ConstructionBuildRequest buildRequestWithMessage(String message) {
+		var transferAmount = UInt256.ONE;
 		var accountAddress = REAddr.ofPubKeyAccount(self);
 		var otherKey = PrivateKeys.ofNumeric(2).getPublicKey();
 		var otherAddress = REAddr.ofPubKeyAccount(otherKey);
@@ -162,11 +106,11 @@ public class ConstructionBuildMessageTest {
 			.addOperationGroupsItem(new OperationGroup()
 				.addOperationsItem(new Operation()
 					.entityIdentifier(coreModelMapper.entityIdentifier(accountAddress))
-					.amount(coreModelMapper.nativeTokenAmount(false, liquidAmount.toSubunits()))
+					.amount(coreModelMapper.nativeTokenAmount(false, transferAmount))
 				)
 				.addOperationsItem(new Operation()
 					.entityIdentifier(coreModelMapper.entityIdentifier(otherAddress))
-					.amount(coreModelMapper.nativeTokenAmount(true, liquidAmount.toSubunits()))
+					.amount(coreModelMapper.nativeTokenAmount(true, transferAmount))
 				)
 			);
 	}
@@ -174,13 +118,14 @@ public class ConstructionBuildMessageTest {
 	@Test
 	public void building_with_message_should_be_in_transaction() throws Exception {
 		// Arrange
-		runner.start();
+		start();
+
+
+		// Act
 		var hex = "deadbeefdeadbeef";
 		var messageBytes = Bytes.fromHexString(hex);
 		var request = buildRequestWithMessage(hex);
-
-		// Act
-		var response = sut.handleRequest(request);
+		var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
 
 		// Assert
 		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
@@ -192,19 +137,17 @@ public class ConstructionBuildMessageTest {
 
 
 	@Test
-	public void building_with_message_too_large_should_fail() {
+	public void building_with_message_too_large_should_fail() throws Exception {
 		// Arrange
-		runner.start();
-		var hex = "aa".repeat(256);
-		var request = buildRequestWithMessage(hex);
+		start();
+
 
 		// Act
+		var hex = "aa".repeat(256);
+		var request = buildRequestWithMessage(hex);
+		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+
 		// Assert
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOfSatisfying(CoreApiException.class, e -> {
-				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(MessageTooLongError.class);
-				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
-			});
+		assertThat(response.getDetails()).isInstanceOf(MessageTooLongError.class);
 	}
 }

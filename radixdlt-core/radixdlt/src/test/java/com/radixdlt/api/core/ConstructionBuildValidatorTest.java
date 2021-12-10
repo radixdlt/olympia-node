@@ -63,16 +63,13 @@
 
 package com.radixdlt.api.core;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.ConstructionBuildHandler;
-import com.radixdlt.api.core.model.CoreApiErrorCode;
-import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.openapitools.model.AboveMaximumValidatorFeeIncreaseError;
 import com.radixdlt.api.core.openapitools.model.ConstructionBuildRequest;
+import com.radixdlt.api.core.openapitools.model.ConstructionBuildResponse;
 import com.radixdlt.api.core.openapitools.model.Data;
 import com.radixdlt.api.core.openapitools.model.DataObject;
 import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
@@ -81,85 +78,26 @@ import com.radixdlt.api.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.openapitools.model.PreparedValidatorFee;
 import com.radixdlt.api.core.openapitools.model.PreparedValidatorOwner;
 import com.radixdlt.api.core.openapitools.model.PreparedValidatorRegistered;
+import com.radixdlt.api.core.openapitools.model.UnexpectedError;
 import com.radixdlt.api.core.openapitools.model.ValidatorAllowDelegation;
 import com.radixdlt.api.core.openapitools.model.ValidatorMetadata;
-import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class ConstructionBuildValidatorTest {
-
-	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
-	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-
-	private final Amount totalTokenAmount = Amount.ofTokens(110);
-	private final Amount stakeAmount = Amount.ofTokens(10);
-
+public class ConstructionBuildValidatorTest extends ApiTest {
 	@Inject
 	private ConstructionBuildHandler sut;
-	@Inject
-	private Addressing addressing;
 	@Inject
 	private CoreModelMapper coreModelMapper;
 	@Inject
 	@Self
 	private ECPublicKey self;
-	@Inject
-	private SingleNodeDeterministicRunner runner;
-	@Inject
-	private Forks forks;
-
-	@Before
-	public void setup() {
-		var injector = Guice.createInjector(
-			MempoolConfig.asModule(1000, 10),
-			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(
-				RERulesConfig.testingDefault().overrideFeeTable(FeeTable.noFees()).overrideMaxRounds(1000)
-			),
-			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
-			new MockedGenesisModule(
-				Set.of(TEST_KEY.getPublicKey()),
-				totalTokenAmount,
-				stakeAmount
-			),
-			new AbstractModule() {
-				@Override
-				protected void configure() {
-					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bindConstant().annotatedWith(NetworkId.class).to(99);
-				}
-			}
-		);
-		injector.injectMembers(this);
-	}
 
 	private ConstructionBuildRequest buildValidatorUpdate(DataObject dataObject) {
 		var accountAddress = REAddr.ofPubKeyAccount(self);
@@ -180,13 +118,15 @@ public class ConstructionBuildValidatorTest {
 	@Test
 	public void create_validator_register_transaction() throws Exception {
 		// Arrange
-		runner.start();
-		var request = buildValidatorUpdate(
-			new PreparedValidatorRegistered().registered(true)
-		);
+		start();
 
 		// Act
-		var response = sut.handleRequest(request);
+		var request = buildValidatorUpdate(
+			new PreparedValidatorRegistered()
+				.registered(true)
+				.type("PreparedValidatorRegistered")
+		);
+		var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
 
 		// Assert
 		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
@@ -196,13 +136,16 @@ public class ConstructionBuildValidatorTest {
 	@Test
 	public void create_validator_fee_update_transaction() throws Exception {
 		// Arrange
-		runner.start();
-		var request = buildValidatorUpdate(
-			new PreparedValidatorFee().fee(10)
-		);
+		start();
+
 
 		// Act
-		var response = sut.handleRequest(request);
+		var request = buildValidatorUpdate(
+			new PreparedValidatorFee()
+				.fee(10)
+				.type("PreparedValidatorFee")
+		);
+		var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
 
 		// Assert
 		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
@@ -210,34 +153,37 @@ public class ConstructionBuildValidatorTest {
 	}
 
 	@Test
-	public void create_validator_too_large_fee_update_should_throw() {
+	public void create_validator_too_large_fee_update_should_throw() throws Exception {
 		// Arrange
-		runner.start();
+		start();
 
 		// Act
+		var request = buildValidatorUpdate(
+			new PreparedValidatorFee()
+				.fee(1000)
+				.type("PreparedValidatorFee")
+		);
+		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+
 		// Assert
-		var request = buildValidatorUpdate(new PreparedValidatorFee().fee(1000));
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOfSatisfying(CoreApiException.class, e -> {
-				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOfSatisfying(AboveMaximumValidatorFeeIncreaseError.class, d -> {
-					assertThat(d.getAttemptedValidatorFeeIncrease()).isEqualTo(1000);
-				});
-				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
-			});
+		assertThat(response.getDetails()).isInstanceOfSatisfying(AboveMaximumValidatorFeeIncreaseError.class, e -> {
+			assertThat(e.getAttemptedValidatorFeeIncrease()).isEqualTo(1000);
+		});
 	}
 
 	@Test
 	public void create_validator_owner_update_transaction() throws Exception {
 		// Arrange
-		runner.start();
-		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
-		var request = buildValidatorUpdate(
-			new PreparedValidatorOwner().owner(coreModelMapper.entityIdentifier(otherAddress))
-		);
+		start();
 
 		// Act
-		var response = sut.handleRequest(request);
+		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+		var request = buildValidatorUpdate(
+			new PreparedValidatorOwner()
+				.owner(coreModelMapper.entityIdentifier(otherAddress))
+				.type("PreparedValidatorOwner")
+		);
+		var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
 
 		// Assert
 		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
@@ -247,13 +193,15 @@ public class ConstructionBuildValidatorTest {
 	@Test
 	public void create_validator_allow_delegation_transaction() throws Exception {
 		// Arrange
-		runner.start();
-		var request = buildValidatorUpdate(
-			new ValidatorAllowDelegation().allowDelegation(true)
-		);
+		start();
 
 		// Act
-		var response = sut.handleRequest(request);
+		var request = buildValidatorUpdate(
+			new ValidatorAllowDelegation()
+				.allowDelegation(true)
+				.type("ValidatorAllowDelegation")
+		);
+		var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
 
 		// Assert
 		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
@@ -263,13 +211,15 @@ public class ConstructionBuildValidatorTest {
 	@Test
 	public void create_validator_metadata_update_transaction() throws Exception {
 		// Arrange
-		runner.start();
-		var request = buildValidatorUpdate(
-			new ValidatorMetadata().name("hello")
-		);
+		start();
 
 		// Act
-		var response = sut.handleRequest(request);
+		var request = buildValidatorUpdate(
+			new ValidatorMetadata()
+				.name("hello")
+				.type("ValidatorMetadata")
+		);
+		var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
 
 		// Assert
 		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
