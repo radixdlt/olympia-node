@@ -8,13 +8,17 @@ public final class PMTExt extends PMTNode {
 	public static final int ODD_PREFIX = 1;
 
 	public PMTExt(PMTKey keyNibbles, byte[] newHashPointer) {
-		nodeType = NodeType.EXTENSION;
-		this.keyNibbles = keyNibbles;
-		this.value = newHashPointer;
+		if (keyNibbles.isEmpty()) {
+			throw new IllegalArgumentException("Extensions must have non empty key-part");
+		} else {
+			nodeType = NodeType.EXTENSION;
+			this.keyNibbles = keyNibbles;
+			this.value = newHashPointer;
+		}
 	}
 
 	public byte[] serialize() {
-		var nibblesWithPrefix = TreeUtils.applyPrefix(this.getKey().getKey(), ODD_PREFIX, EVEN_PREFIX);
+		var nibblesWithPrefix = TreeUtils.applyPrefix(this.getKey().getRaw(), ODD_PREFIX, EVEN_PREFIX);
 		byte[] bytesWithPrefix = TreeUtils.fromNibblesToBytes(nibblesWithPrefix);
 		return RLP.encodeList(
 				RLP.encodeElement(bytesWithPrefix),

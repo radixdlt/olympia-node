@@ -49,7 +49,7 @@ public class PMTKey {
 		return this.key.length == 1;
 	}
 
-	public byte[] getKey() {
+	public byte[] getRaw() {
 		return this.key;
 	}
 
