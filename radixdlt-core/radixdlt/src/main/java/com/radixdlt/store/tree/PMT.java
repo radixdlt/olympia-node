@@ -348,8 +348,8 @@ public class PMT {
 		}
 	}
 
-	private PMTNode read(byte[] hash) {
-		return this.cache.get(hash);
+	private PMTNode read(byte[] key) {
+		return this.cache.get(key);
 	}
 
 	private PMTNode nodeLoader(byte[] key) {
