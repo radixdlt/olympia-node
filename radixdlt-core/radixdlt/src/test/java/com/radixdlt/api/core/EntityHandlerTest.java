@@ -63,19 +63,14 @@
 
 package com.radixdlt.api.core;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.EntityHandler;
-import com.radixdlt.api.core.model.CoreApiErrorCode;
-import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.model.SubstateTypeMapping;
 import com.radixdlt.api.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.openapitools.model.EntityRequest;
+import com.radixdlt.api.core.openapitools.model.EntityResponse;
 import com.radixdlt.api.core.openapitools.model.InvalidAddressError;
 import com.radixdlt.api.core.openapitools.model.InvalidSubEntityError;
 import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
@@ -86,105 +81,41 @@ import com.radixdlt.api.core.openapitools.model.SubEntity;
 import com.radixdlt.api.core.openapitools.model.TokenData;
 import com.radixdlt.api.core.openapitools.model.TokenMetadata;
 import com.radixdlt.api.core.openapitools.model.UnclaimedRadixEngineAddress;
+import com.radixdlt.api.core.openapitools.model.UnexpectedError;
 import com.radixdlt.api.core.openapitools.model.ValidatorAllowDelegation;
 import com.radixdlt.api.core.openapitools.model.ValidatorBFTData;
 import com.radixdlt.api.core.openapitools.model.ValidatorData;
 import com.radixdlt.api.core.openapitools.model.ValidatorMetadata;
 import com.radixdlt.api.core.openapitools.model.ValidatorSystemMetadata;
-import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
-import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import java.util.Map;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 // TODO: Refactor so that every entity is just a parameter in a parametrized test
-public class EntityHandlerTest {
-	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
-	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-
-	private final Amount totalTokenAmount = Amount.ofTokens(110);
-	private final Amount stakeAmount = Amount.ofTokens(10);
-	private final Amount liquidAmount = Amount.ofSubunits(
-		totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits())
-	);
-
+public class EntityHandlerTest extends ApiTest {
 	@Inject
 	private EntityHandler sut;
 	@Inject
 	private CoreModelMapper coreModelMapper;
 	@Inject
-	private SingleNodeDeterministicRunner runner;
-	@Inject
 	@Genesis
 	private VerifiedTxnsAndProof genesis;
-
-	@Before
-	public void setup() {
-		var injector = Guice.createInjector(
-			MempoolConfig.asModule(1000, 10),
-			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(
-				RERulesConfig.testingDefault()
-					.overrideFeeTable(FeeTable.create(Amount.ofSubunits(UInt256.ONE), Map.of()))
-			),
-			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
-			new MockedGenesisModule(
-				Set.of(TEST_KEY.getPublicKey()),
-				totalTokenAmount,
-				stakeAmount
-			),
-			new AbstractModule() {
-				@Override
-				protected void configure() {
-					bind(BerkeleyRecoverableProcessedTxnStore.class).in(Scopes.SINGLETON);
-					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-						.addBinding().to(BerkeleyRecoverableProcessedTxnStore.class);
-					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bindConstant().annotatedWith(NetworkId.class).to(99);
-				}
-			}
-		);
-		injector.injectMembers(this);
-	}
 
 	@Test
 	public void retrieve_system_entity_on_genesis() throws Exception {
 		// Arrange
-		runner.start();
+		start();
 
 		// Act
 		var request = new EntityRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.entityIdentifier(new EntityIdentifier().address("system"));
-		var response = sut.handleRequest(request);
+		var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
 
 		// Assert
 		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
@@ -197,13 +128,13 @@ public class EntityHandlerTest {
 	@Test
 	public void retrieve_native_token_on_genesis() throws Exception {
 		// Arrange
-		runner.start();
+		start();
 
 		// Act
 		var request = new EntityRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.entityIdentifier(coreModelMapper.entityIdentifier(REAddr.ofNativeToken(), "xrd"));
-		var response = sut.handleRequest(request);
+		var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
 
 		// Assert
 		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
@@ -217,14 +148,14 @@ public class EntityHandlerTest {
 	@Test
 	public void retrieve_non_existent_token_on_genesis() throws Exception {
 		// Arrange
-		runner.start();
+		start();
 
 		// Act
-		var tokenAddress = REAddr.ofHashedKey(TEST_KEY.getPublicKey(), "test");
+		var tokenAddress = REAddr.ofHashedKey(selfKey(), "test");
 		var request = new EntityRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.entityIdentifier(coreModelMapper.entityIdentifier(tokenAddress, "test"));
-		var response = sut.handleRequest(request);
+		var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
 
 		// Assert
 		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
@@ -240,13 +171,13 @@ public class EntityHandlerTest {
 	@Test
 	public void retrieve_account_entity_on_genesis() throws Exception {
 		// Arrange
-		runner.start();
+		start();
 
 		// Act
 		var request = new EntityRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.entityIdentifier(coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey())));
-		var response = sut.handleRequest(request);
+			.networkIdentifier(networkIdentifier())
+			.entityIdentifier(coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(selfKey())));
+		var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
 
 		// Assert
 		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
@@ -254,21 +185,21 @@ public class EntityHandlerTest {
 		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
 		assertThat(response.getBalances())
 			.containsExactlyInAnyOrder(
-				coreModelMapper.nativeTokenAmount(liquidAmount.toSubunits()),
-				coreModelMapper.stakeUnitAmount(TEST_KEY.getPublicKey(), stakeAmount.toSubunits())
+				coreModelMapper.nativeTokenAmount(getLiquidAmount().toSubunits()),
+				coreModelMapper.stakeUnitAmount(selfKey(), getStakeAmount().toSubunits())
 			);
 	}
 
 	@Test
 	public void retrieve_validator_entity_on_genesis() throws Exception {
 		// Arrange
-		runner.start();
+		start();
 
 		// Act
 		var request = new EntityRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.entityIdentifier(coreModelMapper.entityIdentifier(TEST_KEY.getPublicKey()));
-		var response = sut.handleRequest(request);
+			.entityIdentifier(coreModelMapper.entityIdentifier(selfKey()));
+		var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
 
 		// Assert
 		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
@@ -288,13 +219,13 @@ public class EntityHandlerTest {
 	@Test
 	public void retrieve_validator_system_entity_on_genesis() throws Exception {
 		// Arrange
-		runner.start();
+		start();
 
 		// Act
 		var request = new EntityRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.entityIdentifier(coreModelMapper.entityIdentifierValidatorSystem(TEST_KEY.getPublicKey()));
-		var response = sut.handleRequest(request);
+			.entityIdentifier(coreModelMapper.entityIdentifierValidatorSystem(selfKey()));
+		var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
 
 		// Assert
 		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
@@ -303,20 +234,20 @@ public class EntityHandlerTest {
 		assertThat(response.getDataObjects())
 			.hasOnlyElementsOfTypes(ValidatorBFTData.class, ValidatorData.class);
 		assertThat(response.getBalances())
-			.containsExactly(coreModelMapper.nativeTokenAmount(stakeAmount.toSubunits()));
+			.containsExactly(coreModelMapper.nativeTokenAmount(getStakeAmount().toSubunits()));
 	}
 
 	@Test
 	public void retrieve_prepared_stake_entity_on_genesis() throws Exception {
 		// Arrange
-		runner.start();
+		start();
 
 		// Act
-		var address = REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey());
+		var address = REAddr.ofPubKeyAccount(selfKey());
 		var request = new EntityRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.entityIdentifier(coreModelMapper.entityIdentifierPreparedStake(address, TEST_KEY.getPublicKey()));
-		var response = sut.handleRequest(request);
+			.entityIdentifier(coreModelMapper.entityIdentifierPreparedStake(address, selfKey()));
+		var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
 
 		// Assert
 		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
@@ -329,14 +260,14 @@ public class EntityHandlerTest {
 	@Test
 	public void retrieve_prepared_unstake_entity_on_genesis() throws Exception {
 		// Arrange
-		runner.start();
+		start();
 
 		// Act
-		var address = REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey());
+		var address = REAddr.ofPubKeyAccount(selfKey());
 		var request = new EntityRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.entityIdentifier(coreModelMapper.entityIdentifierPreparedUnstake(address));
-		var response = sut.handleRequest(request);
+		var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
 
 		// Assert
 		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
@@ -349,14 +280,14 @@ public class EntityHandlerTest {
 	@Test
 	public void retrieve_exiting_stake_entity_on_genesis() throws Exception {
 		// Arrange
-		runner.start();
+		start();
 
 		// Act
-		var address = REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey());
+		var address = REAddr.ofPubKeyAccount(selfKey());
 		var request = new EntityRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.entityIdentifier(coreModelMapper.entityIdentifierExitingStake(address, TEST_KEY.getPublicKey(), 1));
-		var response = sut.handleRequest(request);
+			.entityIdentifier(coreModelMapper.entityIdentifierExitingStake(address, selfKey(), 1));
+		var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
 
 		// Assert
 		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
@@ -367,43 +298,36 @@ public class EntityHandlerTest {
 	}
 
 	@Test
-	public void retrieve_invalid_entity_should_throw() {
+	public void retrieve_invalid_entity_should_throw() throws Exception {
 		// Arrange
-		runner.start();
+		start();
 
 		// Act
 		// Assert
 		var request = new EntityRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.entityIdentifier(new EntityIdentifier().address("some_garbage_address"));
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOfSatisfying(CoreApiException.class, e -> {
-				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(InvalidAddressError.class);
-				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
-			});
+		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+
+		assertThat(response.getDetails()).isInstanceOf(InvalidAddressError.class);
 	}
 
 	@Test
-	public void retrieve_invalid_sub_entity_should_throw() {
+	public void retrieve_invalid_sub_entity_should_throw() throws Exception {
 		// Arrange
-		runner.start();
+		start();
 
 		// Act
-		// Assert
-		var address = REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey());
+		var address = REAddr.ofPubKeyAccount(selfKey());
 		var invalidSubEntity = coreModelMapper
 			.entityIdentifier(address)
 			.subEntity(new SubEntity().address("prepared_stakes"));
 		var request = new EntityRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.entityIdentifier(invalidSubEntity);
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOfSatisfying(CoreApiException.class, e -> {
-				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(InvalidSubEntityError.class);
-				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
-			});
-	}
+		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
+		// Assert
+		assertThat(response.getDetails()).isInstanceOf(InvalidSubEntityError.class);
+	}
 }

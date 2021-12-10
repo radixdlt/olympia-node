@@ -101,10 +101,14 @@ import java.util.function.Function;
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
+/**
+ * Stores recovery information per transaction. This allows the Transaction API to return
+ * transaction info with full state updates.
+ */
 public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAdditionalStore {
 	private static final String RECOVERABLE_TRANSACTIONS_DB_NAME = "radix.recoverable_txns";
 	private static final String ACCUMULATOR_HASH_DB_NAME = "radix.accumulator_hash";
-	private Database processedTransactionsDatabase; // Txns by index; Append-only
+	private Database recoverableTransactionsDatabase; // Txns by index; Append-only
 	private Database accumulatorDatabase; // Txns by index; Append-only
 
 	private final AtomicReference<Instant> timestamp = new AtomicReference<>();
@@ -127,7 +131,7 @@ public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAddit
 
 	@Override
 	public void open(DatabaseEnvironment dbEnv) {
-		processedTransactionsDatabase = dbEnv.getEnvironment().openDatabase(null, RECOVERABLE_TRANSACTIONS_DB_NAME, new DatabaseConfig()
+		recoverableTransactionsDatabase = dbEnv.getEnvironment().openDatabase(null, RECOVERABLE_TRANSACTIONS_DB_NAME, new DatabaseConfig()
 			.setAllowCreate(true)
 			.setTransactional(true)
 			.setKeyPrefixing(true)
@@ -158,8 +162,8 @@ public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAddit
 
 	@Override
 	public void close() {
-		if (processedTransactionsDatabase != null) {
-			processedTransactionsDatabase.close();
+		if (recoverableTransactionsDatabase != null) {
+			recoverableTransactionsDatabase.close();
 		}
 
 		if (accumulatorDatabase != null) {
@@ -181,7 +185,7 @@ public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAddit
 	}
 
 	public List<RecoverableProcessedTxn> get(long index, long limit) {
-		try (var cursor = processedTransactionsDatabase.openCursor(null, null)) {
+		try (var cursor = recoverableTransactionsDatabase.openCursor(null, null)) {
 			var iterator = new Iterator<RecoverableProcessedTxn>() {
 				final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(index));
 				final DatabaseEntry value = new DatabaseEntry();
@@ -242,7 +246,7 @@ public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAddit
 
 		var key = new DatabaseEntry(Longs.toByteArray(stateVersion - 1));
 		var value = new DatabaseEntry(data);
-		var result = processedTransactionsDatabase.putNoOverwrite(dbTxn, key, value);
+		var result = recoverableTransactionsDatabase.putNoOverwrite(dbTxn, key, value);
 		if (result != SUCCESS) {
 			throw new IllegalStateException("Unexpected operation status " + result);
 		}

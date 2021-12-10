@@ -67,6 +67,7 @@ import com.google.inject.Key;
 import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.openapitools.model.AboveMaximumValidatorFeeIncreaseError;
 import com.radixdlt.api.core.openapitools.model.BelowMinimumStakeError;
+import com.radixdlt.api.core.openapitools.model.CoreError;
 import com.radixdlt.api.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.openapitools.model.MempoolFullError;
 import com.radixdlt.api.core.openapitools.model.NotEnoughResourcesError;
@@ -101,6 +102,13 @@ import java.util.stream.Collectors;
  * Submits a random transaction through a random node in a deterministic test.
  */
 public final class ApiTxnSubmitter implements DeterministicActor {
+	private final static Set<Class<? extends CoreError>> OKAY_ERRORS = Set.of(
+		MempoolFullError.class,
+		NotEnoughResourcesError.class,
+		AboveMaximumValidatorFeeIncreaseError.class,
+		BelowMinimumStakeError.class,
+		NotValidatorOwnerError.class
+	);
 	private int tokenId = 0;
 
 	private Amount nextAmount(Random random) {
@@ -192,6 +200,24 @@ public final class ApiTxnSubmitter implements DeterministicActor {
 		}
 	}
 
+	private String submitAction(NodeApiClient nodeClient, NodeTransactionAction action) {
+		try {
+			nodeClient.submit(action);
+		} catch (CoreApiException e) {
+			// Throw error if not expected
+			if (!OKAY_ERRORS.contains(e.toError().getDetails().getClass())) {
+				throw new IllegalStateException(String.format("Invalid failure on action %s", action), e);
+			}
+
+			var errorName = e.toError().getDetails().getClass().getSimpleName();
+			return String.format("BuildError{action=%s error=%s}", action.getClass().getSimpleName(), errorName);
+		} catch (Exception e) {
+			throw new IllegalStateException(String.format("Invalid failure on action %s", action), e);
+		}
+
+		return String.format("Submitted{action=%s}", action.getClass().getSimpleName());
+	}
+
 	@Override
 	public String execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
 		int size = runner.getSize();
@@ -227,28 +253,6 @@ public final class ApiTxnSubmitter implements DeterministicActor {
 			return "Skipped";
 		}
 
-		try {
-			nodeClient.submit(action);
-		} catch (CoreApiException e) {
-			var okayErrors = Set.of(
-				MempoolFullError.class,
-				NotEnoughResourcesError.class,
-				AboveMaximumValidatorFeeIncreaseError.class,
-				BelowMinimumStakeError.class,
-				NotValidatorOwnerError.class
-			);
-
-			// Throw error if not expected
-			if (!okayErrors.contains(e.toError().getDetails().getClass())) {
-				throw new IllegalStateException(String.format("Invalid failure on action %s", action), e);
-			}
-
-			var errorName = e.toError().getDetails().getClass().getSimpleName();
-			return String.format("BuildError{action=%s error=%s}", action.getClass().getSimpleName(), errorName);
-		} catch (Exception e) {
-			throw new IllegalStateException(String.format("Invalid failure on action %s", action), e);
-		}
-
-		return String.format("Submitted{action=%s}", action.getClass().getSimpleName());
+		return submitAction(nodeClient, action);
 	}
 }

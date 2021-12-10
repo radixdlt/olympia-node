@@ -73,7 +73,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 import java.nio.ByteBuffer;
 
-public class RecoverableSubstateShutdown implements RecoverableSubstate {
+public final class RecoverableSubstateShutdown implements RecoverableSubstate {
 	private final ByteBuffer substateBuffer;
 	private final SubstateId substateId;
 	private final boolean isBootUp;

@@ -289,7 +289,10 @@ public final class CoreModelMapper {
 	}
 
 	private static CoreApiException invalidAddress(String address) {
-		return CoreApiException.badRequest(new InvalidAddressError().invalidAddress(address));
+		return CoreApiException.badRequest(new InvalidAddressError()
+			.invalidAddress(address)
+			.type(InvalidAddressError.class.getSimpleName())
+		);
 	}
 
 	private static CoreApiException invalidSubEntity(SubEntity subEntity) {
