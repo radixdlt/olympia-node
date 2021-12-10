@@ -63,13 +63,9 @@
 
 package com.radixdlt.api.core;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.ConstructionFinalizeHandler;
-import com.radixdlt.api.core.model.CoreApiErrorCode;
-import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.model.EntityOperation;
 import com.radixdlt.api.core.model.NotEnoughNativeTokensForFeesException;
@@ -78,30 +74,21 @@ import com.radixdlt.api.core.model.ResourceOperation;
 import com.radixdlt.api.core.model.TokenResource;
 import com.radixdlt.api.core.model.entities.AccountVaultEntity;
 import com.radixdlt.api.core.openapitools.model.ConstructionFinalizeRequest;
+import com.radixdlt.api.core.openapitools.model.ConstructionFinalizeResponse;
 import com.radixdlt.api.core.openapitools.model.InvalidSignatureError;
 import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.openapitools.model.Signature;
-import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.api.core.openapitools.model.UnexpectedError;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.UnsignedTxnData;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
@@ -109,30 +96,14 @@ import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1OutputStream;
 import org.bouncycastle.asn1.DLSequence;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class ConstructionFinalizeTest {
-	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
-	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-
-	private final Amount totalTokenAmount = Amount.ofTokens(110);
-	private final Amount stakeAmount = Amount.ofTokens(10);
-	private final Amount liquidAmount = Amount.ofSubunits(
-		totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits())
-	);
-	private final UInt256 toTransfer = liquidAmount.toSubunits().subtract(Amount.ofTokens(1).toSubunits());
+public class ConstructionFinalizeTest extends ApiTest {
 
 	@Inject
 	private ConstructionFinalizeHandler sut;
@@ -145,41 +116,12 @@ public class ConstructionFinalizeTest {
 	@Self
 	private ECPublicKey self;
 	@Inject
-	private SingleNodeDeterministicRunner runner;
-	@Inject
 	private RadixEngine<LedgerAndBFTProof> radixEngine;
 	@Inject
 	private Forks forks;
 
-	@Before
-	public void setup() {
-		var injector = Guice.createInjector(
-			MempoolConfig.asModule(1000, 10),
-			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(
-				RERulesConfig.testingDefault()
-					.overrideFeeTable(FeeTable.create(Amount.ofSubunits(UInt256.ONE), Map.of()))
-			),
-			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
-			new MockedGenesisModule(
-				Set.of(TEST_KEY.getPublicKey()),
-				totalTokenAmount,
-				stakeAmount
-			),
-			new AbstractModule() {
-				@Override
-				protected void configure() {
-					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bindConstant().annotatedWith(NetworkId.class).to(99);
-				}
-			}
-		);
-		injector.injectMembers(this);
-	}
-
 	private UnsignedTxnData buildUnsignedTransferTxn(REAddr from, REAddr to) throws Exception {
-
+		final UInt256 toTransfer = getLiquidAmount().toSubunits().subtract(Amount.ofTokens(1).toSubunits());
 		var entityOperationGroups =
 			List.of(List.of(
 				EntityOperation.from(
@@ -207,7 +149,9 @@ public class ConstructionFinalizeTest {
 	@Test
 	public void finalizing_a_transaction_with_signature_should_return_back_signed_tranaction() throws Exception {
 		// Arrange
-		runner.start();
+		start();
+
+		// Act
 		var accountAddress = REAddr.ofPubKeyAccount(self);
 		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
 		var unsignedTxn = buildUnsignedTransferTxn(accountAddress, otherAddress);
@@ -226,9 +170,7 @@ public class ConstructionFinalizeTest {
 				.bytes(Bytes.toHexString(derSignature))
 				.publicKey(coreModelMapper.publicKey(self))
 			);
-
-		// Act
-		var response = sut.handleRequest(request);
+		var response = handleRequestWithExpectedResponse(sut, request, ConstructionFinalizeResponse.class);
 
 		// Assert
 		var bytes = Bytes.fromHexString(response.getSignedTransaction());
@@ -239,16 +181,14 @@ public class ConstructionFinalizeTest {
 	@Test
 	public void finalizing_a_transaction_with_invalid_signature_should_throw() throws Exception {
 		// Arrange
-		runner.start();
+		start();
+
+		// Act
 		var accountAddress = REAddr.ofPubKeyAccount(self);
 		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
 		var unsignedTxn = buildUnsignedTransferTxn(accountAddress, otherAddress);
 		var sig = hashSigner.sign(unsignedTxn.hashToSign());
 		var invalidSignature = sig.toHexString(); // This is an invalid signature since it must be DER encoded
-
-
-		// Act
-		// Assert
 		var request = new ConstructionFinalizeRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.unsignedTransaction(Bytes.toHexString(unsignedTxn.blob()))
@@ -256,11 +196,9 @@ public class ConstructionFinalizeTest {
 				.bytes(invalidSignature)
 				.publicKey(coreModelMapper.publicKey(self))
 			);
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOfSatisfying(CoreApiException.class, e -> {
-				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(InvalidSignatureError.class);
-				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
-			});
+		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+
+		// Assert
+		assertThat(response.getDetails()).isInstanceOf(InvalidSignatureError.class);
 	}
 }

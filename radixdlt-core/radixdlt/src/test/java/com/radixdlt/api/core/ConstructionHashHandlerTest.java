@@ -63,97 +63,38 @@
 
 package com.radixdlt.api.core;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.ConstructionHashHandler;
-import com.radixdlt.api.core.model.CoreApiErrorCode;
-import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.openapitools.model.ConstructionHashRequest;
+import com.radixdlt.api.core.openapitools.model.ConstructionHashResponse;
 import com.radixdlt.api.core.openapitools.model.InvalidHexError;
 import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
-import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.api.core.openapitools.model.UnexpectedError;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import java.util.Map;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class ConstructionHashHandlerTest {
-	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
-	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-
-	private final Amount totalTokenAmount = Amount.ofTokens(110);
-	private final Amount stakeAmount = Amount.ofTokens(10);
-
+public class ConstructionHashHandlerTest extends ApiTest {
 	@Inject
 	private ConstructionHashHandler sut;
 	@Inject
 	private CoreModelMapper coreModelMapper;
-	@Inject
-	private SingleNodeDeterministicRunner runner;
-
-	@Before
-	public void setup() {
-		var injector = Guice.createInjector(
-			MempoolConfig.asModule(1000, 10),
-			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(
-				RERulesConfig.testingDefault()
-					.overrideFeeTable(FeeTable.create(Amount.ofSubunits(UInt256.ONE), Map.of()))
-			),
-			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
-			new MockedGenesisModule(
-				Set.of(TEST_KEY.getPublicKey()),
-				totalTokenAmount,
-				stakeAmount
-			),
-			new AbstractModule() {
-				@Override
-				protected void configure() {
-					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bindConstant().annotatedWith(NetworkId.class).to(99);
-				}
-			}
-		);
-		injector.injectMembers(this);
-	}
 
 	@Test
 	public void handling_construction_hash_should_return_hash() throws Exception {
 		// Arrange
-		runner.start();
+		start();
 
 		// Act
 		var txn = Txn.create(Bytes.fromHexString("deadbeef"));
 		var request = new ConstructionHashRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.signedTransaction("deadbeef");
-		var response = sut.handleRequest(request);
+		var response = handleRequestWithExpectedResponse(sut, request, ConstructionHashResponse.class);
 
 		// Assert
 		assertThat(response.getTransactionIdentifier())
@@ -163,18 +104,15 @@ public class ConstructionHashHandlerTest {
 	@Test
 	public void invalid_hex_should_throw() throws Exception {
 		// Arrange
-		runner.start();
+		start();
 
 		// Act
-		// Assert
 		var request = new ConstructionHashRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.signedTransaction("this_is_not_hex");
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOfSatisfying(CoreApiException.class, e -> {
-				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(InvalidHexError.class);
-				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
-			});
+		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+
+		// Assert
+		assertThat(response.getDetails()).isInstanceOf(InvalidHexError.class);
 	}
 }
