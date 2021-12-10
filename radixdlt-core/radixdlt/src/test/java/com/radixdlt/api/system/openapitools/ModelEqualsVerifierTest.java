@@ -61,36 +61,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.system.openapitools;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.core.handlers.KeyListHandler;
-import com.radixdlt.api.core.model.CoreModelMapper;
-import com.radixdlt.api.core.openapitools.model.KeyListRequest;
-import com.radixdlt.api.core.openapitools.model.KeyListResponse;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
+import org.reflections.Reflections;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.Set;
 
-public class KeyListHandlerTest extends ApiTest {
-	@Inject
-	private KeyListHandler sut;
-
-	@Inject
-	private CoreModelMapper mapper;
-
+public class ModelEqualsVerifierTest {
 	@Test
-	public void can_retrieve_nodes_public_key() throws Exception {
-		// Arrange
-		start();
+	public void verify_all_subtypes_correctly_override_equals_and_hash_code() {
+		final Set<Class<?>> subTypes = getGeneratedClasses();
+		subTypes.forEach(clazz -> {
+			EqualsVerifier.forClass(clazz)
+				.usingGetClass()
+				.withRedefinedSuperclass()
+				.suppress(Warning.NONFINAL_FIELDS)
+				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+				.verify();
+		});
+	}
 
-		// Act
-		var request = new KeyListRequest().networkIdentifier(networkIdentifier());
-		var response = handleRequestWithExpectedResponse(sut, request, KeyListResponse.class);
-
-		// Assert
-		assertThat(response.getPublicKeys().get(0).getPublicKey())
-			.isEqualTo(mapper.publicKey(selfKey()));
+	private Set<Class<?>> getGeneratedClasses() {
+		return new Reflections("com.radixdlt.api.system").getTypesAnnotatedWith(JsonPropertyOrder.class);
 	}
 }
