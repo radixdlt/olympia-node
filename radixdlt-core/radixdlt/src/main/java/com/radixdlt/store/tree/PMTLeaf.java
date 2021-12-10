@@ -8,8 +8,6 @@ public final class PMTLeaf extends PMTNode {
 	public static final int ODD_PREFIX = 3;
 
 	public PMTLeaf(PMTKey keyNibbles, byte[] newValue) {
-		// TODO XXX: how to deal with hash collisions for empty keyNibbles?
-		//           The hash would be differenciated by value (TxId, UP/DOWN, amount)
 		this.nodeType = NodeType.LEAF;
 		this.keyNibbles = keyNibbles;
 		this.value = newValue;
