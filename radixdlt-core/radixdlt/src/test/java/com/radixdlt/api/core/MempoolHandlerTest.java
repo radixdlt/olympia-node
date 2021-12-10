@@ -63,10 +63,8 @@
 
 package com.radixdlt.api.core;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.MempoolHandler;
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.model.EntityOperation;
@@ -76,54 +74,27 @@ import com.radixdlt.api.core.model.ResourceOperation;
 import com.radixdlt.api.core.model.TokenResource;
 import com.radixdlt.api.core.model.entities.AccountVaultEntity;
 import com.radixdlt.api.core.openapitools.model.MempoolRequest;
-import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
-import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.api.core.openapitools.model.MempoolResponse;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineMempool;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public final class MempoolHandlerTest {
-	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
-	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-
-	private final Amount totalTokenAmount = Amount.ofTokens(110);
-	private final Amount stakeAmount = Amount.ofTokens(10);
-	private final Amount liquidAmount = Amount.ofSubunits(
-		totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits())
-	);
-	private final UInt256 toTransfer = liquidAmount.toSubunits().subtract(Amount.ofTokens(1).toSubunits());
-
+public final class MempoolHandlerTest extends ApiTest {
 	@Inject
 	private MempoolHandler sut;
 	@Inject
@@ -135,42 +106,15 @@ public final class MempoolHandlerTest {
 	@Self
 	private ECPublicKey self;
 	@Inject
-	private SingleNodeDeterministicRunner runner;
-	@Inject
 	private RadixEngine<LedgerAndBFTProof> radixEngine;
 	@Inject
 	private Forks forks;
 	@Inject
 	private RadixEngineMempool mempool;
 
-	@Before
-	public void setup() {
-		var injector = Guice.createInjector(
-			MempoolConfig.asModule(1000, 10),
-			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(
-				RERulesConfig.testingDefault()
-					.overrideFeeTable(FeeTable.create(Amount.ofSubunits(UInt256.ONE), Map.of()))
-			),
-			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
-			new MockedGenesisModule(
-				Set.of(TEST_KEY.getPublicKey()),
-				totalTokenAmount,
-				stakeAmount
-			),
-			new AbstractModule() {
-				@Override
-				protected void configure() {
-					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bindConstant().annotatedWith(NetworkId.class).to(99);
-				}
-			}
-		);
-		injector.injectMembers(this);
-	}
-
 	private Txn buildSignedTxn(REAddr from, REAddr to) throws Exception {
+		final UInt256 toTransfer = getLiquidAmount().toSubunits().subtract(Amount.ofTokens(1).toSubunits());
+
 		var entityOperationGroups =
 			List.of(List.of(
 				EntityOperation.from(
@@ -198,15 +142,16 @@ public final class MempoolHandlerTest {
 	@Test
 	public void transaction_in_mempool_should_be_seen() throws Exception {
 		// Arrange
-		runner.start();
+		start();
 		var accountAddress = REAddr.ofPubKeyAccount(self);
 		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
 		var signedTxn = buildSignedTxn(accountAddress, otherAddress);
 		mempool.add(signedTxn);
 
 		// Act
-		var response = sut.handleRequest(new MempoolRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
+		var request = new MempoolRequest().networkIdentifier(networkIdentifier());
+		var response = handleRequestWithExpectedResponse(
+			sut, request, MempoolResponse.class
 		);
 
 		// Assert

@@ -84,6 +84,6 @@ public class MetricsHandlerTest extends ApiTest {
 		var response = handleRequestWithExpectedResponse(sut, SystemMetricsResponse.class);
 
 		// Assert
-		assertThat(response).isNotNull();
+		assertThat(response.getBft()).isNotNull();
 	}
 }

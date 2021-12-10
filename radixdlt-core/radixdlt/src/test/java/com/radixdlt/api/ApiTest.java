@@ -75,7 +75,7 @@ import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore
 import com.radixdlt.api.core.openapitools.JSON;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -114,25 +114,36 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 public abstract class ApiTest {
-	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
 	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 
-	private final Amount totalTokenAmount = Amount.ofTokens(110);
-	private final Amount stakeAmount = Amount.ofTokens(10);
-
+	@Rule
+	public TemporaryFolder folder = new TemporaryFolder();
 	@Inject
 	private SingleNodeDeterministicRunner runner;
+	private final Amount totalTokenAmount = Amount.ofTokens(110);
+	private final Amount stakeAmount = Amount.ofTokens(10);
+	private final Amount liquidAmount = Amount.ofSubunits(
+		totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits())
+	);
+	private final int mempoolMaxSize;
+
+	protected ApiTest(int mempoolMaxSize) {
+		this.mempoolMaxSize = mempoolMaxSize;
+	}
+
+	protected ApiTest() {
+		this.mempoolMaxSize = 10;
+	}
 
 	@Before
 	public void setup() {
 		var injector = Guice.createInjector(
-			MempoolConfig.asModule(1000, 10),
+			MempoolConfig.asModule(mempoolMaxSize, 10),
 			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(
 				RERulesConfig.testingDefault().overrideFeeTable(FeeTable.create(
 					Amount.ofSubunits(UInt256.ONE),
-					Map.of(TokensInAccount.class, Amount.ofSubunits(UInt256.ONE))
+					Map.of(ValidatorRegisteredCopy.class, Amount.ofSubunits(UInt256.ONE))
 				))
 			),
 			new ForksModule(),
@@ -164,6 +175,10 @@ public abstract class ApiTest {
 			}
 		);
 		injector.injectMembers(this);
+	}
+
+	protected Amount getLiquidAmount() {
+		return liquidAmount;
 	}
 
 	protected NetworkIdentifier networkIdentifier() {
@@ -232,7 +247,11 @@ public abstract class ApiTest {
 			return null;
 		}).when(sender).send(anyString());
 		handler.handleRequest(exchange(requestBytes, sender));
-		return objectMapper.readValue(response.get(), responseClass);
+		var deserializedResponse = objectMapper.readValue(response.get(), responseClass);
+		if (deserializedResponse == null) {
+			throw new IllegalStateException("Unexpected response: " + response.get());
+		}
+		return deserializedResponse;
 	}
 
 	protected <T> T handleRequestWithExpectedResponse(HttpHandler handler, Object request, Class<T> responseClass) throws Exception {

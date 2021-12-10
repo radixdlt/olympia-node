@@ -83,6 +83,6 @@ public class ConfigurationHandlerTest extends ApiTest {
 		var response = handleRequestWithExpectedResponse(sut, SystemConfigurationResponse.class);
 
 		// Assert
-		assertThat(response).isNotNull();
+		assertThat(response.getBft()).isNotNull();
 	}
 }

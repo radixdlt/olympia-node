@@ -63,12 +63,9 @@
 
 package com.radixdlt.api.core;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.ConstructionSubmitHandler;
-import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.EntityOperation;
 import com.radixdlt.api.core.model.NotEnoughNativeTokensForFeesException;
 import com.radixdlt.api.core.model.OperationTxBuilder;
@@ -76,58 +73,31 @@ import com.radixdlt.api.core.model.ResourceOperation;
 import com.radixdlt.api.core.model.TokenResource;
 import com.radixdlt.api.core.model.entities.AccountVaultEntity;
 import com.radixdlt.api.core.openapitools.model.ConstructionSubmitRequest;
+import com.radixdlt.api.core.openapitools.model.ConstructionSubmitResponse;
 import com.radixdlt.api.core.openapitools.model.InvalidTransactionError;
-import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
-import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.api.core.openapitools.model.MempoolFullError;
+import com.radixdlt.api.core.openapitools.model.UnexpectedError;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineMempool;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class ConstructionSubmitTest {
-	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
-	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-
-	private final Amount totalTokenAmount = Amount.ofTokens(110);
-	private final Amount stakeAmount = Amount.ofTokens(10);
-	private final Amount liquidAmount = Amount.ofSubunits(
-		totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits())
-	);
-	private final UInt256 toTransfer = liquidAmount.toSubunits().subtract(Amount.ofTokens(1).toSubunits());
-
+public class ConstructionSubmitTest extends ApiTest {
 	@Inject
 	private ConstructionSubmitHandler sut;
 	@Inject
@@ -137,42 +107,19 @@ public class ConstructionSubmitTest {
 	@Self
 	private ECPublicKey self;
 	@Inject
-	private SingleNodeDeterministicRunner runner;
-	@Inject
 	private RadixEngine<LedgerAndBFTProof> radixEngine;
 	@Inject
 	private Forks forks;
 	@Inject
 	private RadixEngineMempool mempool;
 
-	@Before
-	public void setup() {
-		var injector = Guice.createInjector(
-			MempoolConfig.asModule(1000, 10),
-			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(
-				RERulesConfig.testingDefault()
-					.overrideFeeTable(FeeTable.create(Amount.ofSubunits(UInt256.ONE), Map.of()))
-			),
-			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
-			new MockedGenesisModule(
-				Set.of(TEST_KEY.getPublicKey()),
-				totalTokenAmount,
-				stakeAmount
-			),
-			new AbstractModule() {
-				@Override
-				protected void configure() {
-					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bindConstant().annotatedWith(NetworkId.class).to(99);
-				}
-			}
-		);
-		injector.injectMembers(this);
+	public ConstructionSubmitTest() {
+		super(1);
 	}
 
 	private Txn buildSignedTxn(REAddr from, REAddr to) throws Exception {
+		var toTransfer = UInt256.ONE;
+
 		var entityOperationGroups =
 			List.of(List.of(
 				EntityOperation.from(
@@ -200,16 +147,16 @@ public class ConstructionSubmitTest {
 	@Test
 	public void submit_correct_txn_should_make_it_into_the_mempool() throws Exception {
 		// Arrange
-		runner.start();
+		start();
+
+		// Act
 		var accountAddress = REAddr.ofPubKeyAccount(self);
 		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
 		var signedTxn = buildSignedTxn(accountAddress, otherAddress);
 		var request = new ConstructionSubmitRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
+			.networkIdentifier(networkIdentifier())
 			.signedTransaction(Bytes.toHexString(signedTxn.getPayload()));
-
-		// Act
-		var response = sut.handleRequest(request);
+		var response = handleRequestWithExpectedResponse(sut, request, ConstructionSubmitResponse.class);
 
 		// Assert
 		assertThat(response.getTransactionIdentifier().getHash()).isEqualTo(signedTxn.getId().toString());
@@ -217,24 +164,44 @@ public class ConstructionSubmitTest {
 	}
 
 	@Test
+	public void mempool_full_should_return_error() throws Exception {
+		// Arrange
+		start();
+		var accountAddress = REAddr.ofPubKeyAccount(self);
+		var firstOtherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+		var firstTxn = buildSignedTxn(accountAddress, firstOtherAddress);
+		mempool.add(firstTxn);
+
+		// Act
+		var secondOtherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(3).getPublicKey());
+		var signedTxn = buildSignedTxn(accountAddress, secondOtherAddress);
+		var request = new ConstructionSubmitRequest()
+			.networkIdentifier(networkIdentifier())
+			.signedTransaction(Bytes.toHexString(signedTxn.getPayload()));
+		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+
+		// Assert
+		assertThat(response.getDetails()).isInstanceOf(MempoolFullError.class);
+		assertThat(mempool.getData(m -> m.containsKey(firstTxn.getId())).booleanValue()).isTrue();
+	}
+
+	@Test
 	public void submit_incorrect_txn_should_not_make_it_into_the_mempool() throws Exception {
 		// Arrange
-		runner.start();
+		start();
+
+		// Act
 		var accountAddress = REAddr.ofPubKeyAccount(self);
 		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
 		var signedTxn = buildSignedTxn(accountAddress, otherAddress);
 		var malformedTxn = Txn.create(Arrays.copyOfRange(signedTxn.getPayload(), 1, signedTxn.getPayload().length));
 		var request = new ConstructionSubmitRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
+			.networkIdentifier(networkIdentifier())
 			.signedTransaction(Bytes.toHexString(malformedTxn.getPayload()));
-
-		// Act
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreApiException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(InvalidTransactionError.class);
+		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
 		// Assert
+		assertThat(response.getDetails()).isInstanceOf(InvalidTransactionError.class);
 		assertThat(mempool.getData(m -> m.containsKey(malformedTxn.getId())).booleanValue()).isFalse();
 	}
 }
