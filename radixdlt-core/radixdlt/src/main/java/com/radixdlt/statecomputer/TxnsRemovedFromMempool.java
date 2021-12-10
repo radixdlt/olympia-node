@@ -73,34 +73,9 @@ import java.util.Objects;
  * Event describing atoms which have been removed from the mempool
  * after a commit.
  */
-public final class TxnsRemovedFromMempool {
-    private final List<Txn> removed;
-
-    private TxnsRemovedFromMempool(List<Txn> removed) {
-        this.removed = removed;
-    }
-
+public record TxnsRemovedFromMempool(List<Txn> removed) {
     public static TxnsRemovedFromMempool create(List<Txn> removed) {
         Objects.requireNonNull(removed);
         return new TxnsRemovedFromMempool(removed);
-    }
-
-    public List<Txn> getRemoved() {
-        return removed;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(removed);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof TxnsRemovedFromMempool)) {
-            return false;
-        }
-
-        TxnsRemovedFromMempool other = (TxnsRemovedFromMempool) o;
-        return Objects.equals(this.removed, other.removed);
     }
 }

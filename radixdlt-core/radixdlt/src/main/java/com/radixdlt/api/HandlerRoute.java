@@ -68,23 +68,7 @@ import io.undertow.util.Methods;
 
 import java.util.Objects;
 
-public final class HandlerRoute {
-	private final HttpString method;
-	private final String path;
-
-	private HandlerRoute(HttpString method, String path) {
-		this.method = method;
-		this.path = path;
-	}
-
-	public HttpString getMethod() {
-		return method;
-	}
-
-	public String getPath() {
-		return path;
-	}
-
+public record HandlerRoute(HttpString method, String path) {
 	public static HandlerRoute post(String path) {
 		Objects.requireNonNull(path);
 		return new HandlerRoute(Methods.POST, path);
@@ -93,22 +77,5 @@ public final class HandlerRoute {
 	public static HandlerRoute get(String path) {
 		Objects.requireNonNull(path);
 		return new HandlerRoute(Methods.GET, path);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(method, path);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		HandlerRoute that = (HandlerRoute) o;
-		return Objects.equals(method, that.method) && Objects.equals(path, that.path);
 	}
 }

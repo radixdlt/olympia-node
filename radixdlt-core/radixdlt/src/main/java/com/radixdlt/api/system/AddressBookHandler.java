@@ -78,7 +78,7 @@ public final class AddressBookHandler extends SystemGetJsonHandler<SystemAddress
 	}
 
 	@Override
-	public SystemAddressBookResponse handleRequest() throws Exception {
+	public SystemAddressBookResponse handleRequest() {
 		var response = new SystemAddressBookResponse();
 		addressBook.knownPeers()
 			.forEach((n, entry) -> response.addEntriesItem(systemModelMapper.addressBookEntry(entry)));

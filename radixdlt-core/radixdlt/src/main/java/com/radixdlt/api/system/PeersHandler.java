@@ -81,7 +81,7 @@ public final class PeersHandler extends SystemGetJsonHandler<SystemPeersResponse
 		this.peersView = peersView;
 	}
 	@Override
-	public SystemPeersResponse handleRequest() throws Exception {
+	public SystemPeersResponse handleRequest() {
 		var response = new SystemPeersResponse();
 		peersView.peers().map(systemModelMapper::peer).forEach(response::addPeersItem);
 		return response;

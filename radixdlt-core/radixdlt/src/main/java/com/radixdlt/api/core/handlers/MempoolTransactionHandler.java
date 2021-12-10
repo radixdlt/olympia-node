@@ -121,10 +121,8 @@ public class MempoolTransactionHandler extends CoreJsonRpcHandler<MempoolTransac
 		}
 
 		var processed = transaction.getFirst();
-		var metadata = transaction.getSecond();
 		var transactionModel = modelMapper.transaction(processed, this::symbol);
 		return new MempoolTransactionResponse()
 			.transaction(transactionModel);
-		// .put("added_timestamp", metadata.getInserted())
 	}
 }

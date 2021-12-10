@@ -87,6 +87,7 @@ public enum CoreApiErrorCode {
 		return message;
 	}
 
+	@Override
 	public String toString() {
 		return errorCode + " " + message;
 	}

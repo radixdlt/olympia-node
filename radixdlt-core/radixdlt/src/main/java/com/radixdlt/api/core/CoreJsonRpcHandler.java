@@ -83,7 +83,7 @@ public abstract class CoreJsonRpcHandler<T, U> implements HttpHandler {
 	private final Class<T> requestClass;
 	private final ObjectMapper objectMapper;
 
-	public CoreJsonRpcHandler(Class<T> requestClass) {
+	protected CoreJsonRpcHandler(Class<T> requestClass) {
 		this.requestClass = requestClass;
 		this.objectMapper = JSON.getDefault().getMapper();
 	}

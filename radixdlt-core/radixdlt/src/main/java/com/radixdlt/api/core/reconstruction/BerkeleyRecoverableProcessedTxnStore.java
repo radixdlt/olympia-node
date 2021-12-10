@@ -97,7 +97,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
@@ -212,7 +211,7 @@ public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAddit
 			return Streams.stream(iterator)
 				.limit(limit)
 				.onClose(cursor::close)
-				.collect(Collectors.toList());
+				.toList();
 		}
 	}
 
@@ -235,10 +234,6 @@ public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAddit
 		byte[] data;
 		try {
 			data = Compress.compress(serialization.toDson(stored, DsonOutput.Output.ALL));
-			//data = Compress.compress(JSON.getDefault().getMapper().writeValueAsBytes(stored));
-			//var groups = JSON.getDefault().getMapper().writeValueAsBytes(stored.getOperationGroups());
-			//var identifier = JSON.getDefault().getMapper().writeValueAsBytes(stored.getStateIdentifier());
-			//System.out.println(data.length);
 		} catch (IOException e) {
 			throw new IllegalStateException(e);
 		}

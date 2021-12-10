@@ -79,7 +79,6 @@ import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
@@ -88,12 +87,10 @@ import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.Bytes;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransactionsRequest, CommittedTransactionsResponse> {
@@ -117,15 +114,6 @@ public final class TransactionsHandler extends CoreJsonRpcHandler<CommittedTrans
 		this.ledgerEntryStore = ledgerEntryStore;
 		this.ledgerAccumulator = ledgerAccumulator;
 		this.radixEngineProvider = radixEngineProvider;
-	}
-
-	private Particle deserialize(ByteBuffer buf) {
-		var deserialization = radixEngineProvider.get().getSubstateDeserialization();
-		try {
-			return deserialization.deserialize(buf);
-		} catch (DeserializeException e) {
-			throw new IllegalStateException("Failed to deserialize substate.", e);
-		}
 	}
 
 	private String symbol(REAddr tokenAddress) {

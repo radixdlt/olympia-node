@@ -162,7 +162,6 @@ public class PrometheusService {
 
 	private void exportSystemInfo(StringBuilder builder) {
 		var currentEpochView = inMemorySystemInfo.getCurrentView();
-		var timeout = inMemorySystemInfo.getLastTimeout();
 
 		appendCounter(builder, "info_epochmanager_currentview_view", currentEpochView.getView().number());
 		appendCounter(builder, "info_epochmanager_currentview_epoch", currentEpochView.getEpoch());

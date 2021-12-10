@@ -73,7 +73,7 @@ abstract class SystemGetJsonHandler<T> implements HttpHandler {
 	private static final String CONTENT_TYPE_JSON = "application/json";
 	private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
 
-	public abstract T handleRequest() throws Exception;
+	public abstract T handleRequest();
 
 	@Override
 	public final void handleRequest(HttpServerExchange exchange) throws Exception {

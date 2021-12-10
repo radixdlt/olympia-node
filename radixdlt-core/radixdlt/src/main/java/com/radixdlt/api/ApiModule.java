@@ -115,7 +115,7 @@ public final class ApiModule extends AbstractModule {
 
 	private HttpHandler configureRoutes(Map<HandlerRoute, HttpHandler> handlers) {
 		var handler = Handlers.routing(true); // add path params to query params with this flag
-		handlers.forEach((r, h) -> handler.add(r.getMethod(), r.getPath(), h));
+		handlers.forEach((r, h) -> handler.add(r.method(), r.path(), h));
 		handler.setFallbackHandler(ApiModule::fallbackHandler);
 		handler.setInvalidMethodHandler(ApiModule::invalidMethodHandler);
 		var exceptionHandler = Handlers.exceptionHandler(handler);
