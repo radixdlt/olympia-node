@@ -1,6 +1,7 @@
 package com.radixdlt.store.tree;
 
 import com.radixdlt.store.tree.hash.Keccak256;
+import com.radixdlt.store.tree.serialization.rlp.RLPSerializer;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -15,15 +16,16 @@ public class PMTNodeTest {
     private static final PMTKey BRANCH_NIBBLE = new PMTKey(new byte[]{0});
     private static final PMTKey KEY_NIBBLES = new PMTKey(new byte[]{1, 0, 2});
     private static final Keccak256 KECCAK_256 = new Keccak256();
+    private static final RLPSerializer RLP_SERIALIZER = new RLPSerializer();
 
     @Test
     public void when_leaf_node_with_non_empty_value_is_deserialized__then_it_is_created_correctly() {
         // given
         PMTLeaf pmtLeaf = new PMTLeaf(ALL_NIBBLES, NON_EMPTY_VALUE);
-        byte[] serializedLeaf = pmtLeaf.serialize();
+        byte[] serializedLeaf = RLP_SERIALIZER.serialize(pmtLeaf);
 
         // when
-        PMTNode deserialize = PMTNode.deserialize(serializedLeaf);
+        PMTNode deserialize = RLP_SERIALIZER.deserialize(serializedLeaf);
 
         // then
         assertEquals(pmtLeaf, deserialize);
@@ -33,10 +35,10 @@ public class PMTNodeTest {
     public void when_leaf_node_with_empty_value_is_deserialized__then_it_is_created_correctly() {
         // given
         PMTLeaf pmtLeaf = new PMTLeaf(ALL_NIBBLES, EMPTY_VALUE);
-        byte[] serializedLeaf = pmtLeaf.serialize();
+        byte[] serializedLeaf = RLP_SERIALIZER.serialize(pmtLeaf);
 
         // when
-        PMTNode deserialize = PMTNode.deserialize(serializedLeaf);
+        PMTNode deserialize = RLP_SERIALIZER.deserialize(serializedLeaf);
 
         // then
         assertEquals(pmtLeaf, deserialize);
@@ -46,10 +48,10 @@ public class PMTNodeTest {
     public void when_extension_node_with_non_empty_value_is_deserialized__then_it_is_created_correctly() {
         // given
         PMTExt pmtExt = new PMTExt(ALL_NIBBLES, NON_EMPTY_VALUE);
-        byte[] serializedLeaf = pmtExt.serialize();
+        byte[] serializedLeaf = RLP_SERIALIZER.serialize(pmtExt);
 
         // when
-        PMTNode deserialize = PMTNode.deserialize(serializedLeaf);
+        PMTNode deserialize = RLP_SERIALIZER.deserialize(serializedLeaf);
 
 
         // then
@@ -60,10 +62,10 @@ public class PMTNodeTest {
     public void when_extension_node_with_empty_value_is_deserialized__then_it_is_created_correctly() {
         // given
         PMTExt pmtExt = new PMTExt(ALL_NIBBLES, EMPTY_VALUE);
-        byte[] serializedLeaf = pmtExt.serialize();
+        byte[] serializedLeaf = RLP_SERIALIZER.serialize(pmtExt);
 
         // when
-        PMTNode deserialize = PMTNode.deserialize(serializedLeaf);
+        PMTNode deserialize = RLP_SERIALIZER.deserialize(serializedLeaf);
 
         // then
         assertEquals(pmtExt, deserialize);
@@ -78,17 +80,17 @@ public class PMTNodeTest {
         );
         PMTBranch pmtBranch = new PMTBranch(
                 NON_EMPTY_VALUE,
-                new PMTBranch.PMTBranchChild(BRANCH_NIBBLE, PMT.represent(pmtLeaf, KECCAK_256))
+                new PMTBranch.PMTBranchChild(BRANCH_NIBBLE, PMT.represent(pmtLeaf, KECCAK_256, RLP_SERIALIZER))
         );
-        byte[] serializedLeaf = pmtBranch.serialize();
+        byte[] serializedLeaf = RLP_SERIALIZER.serialize(pmtBranch);
 
         // when
-        PMTNode deserialize = PMTNode.deserialize(serializedLeaf);
+        PMTNode deserialize = RLP_SERIALIZER.deserialize(serializedLeaf);
 
         // then
         PMTBranch expected = new PMTBranch(
                 NON_EMPTY_VALUE,
-                new PMTBranch.PMTBranchChild(BRANCH_NIBBLE, PMT.represent(pmtLeaf, KECCAK_256))
+                new PMTBranch.PMTBranchChild(BRANCH_NIBBLE, PMT.represent(pmtLeaf, KECCAK_256, RLP_SERIALIZER))
         );
         assertEquals(expected, deserialize);
     }
@@ -102,17 +104,17 @@ public class PMTNodeTest {
         );
         PMTBranch pmtBranch = new PMTBranch(
                 EMPTY_VALUE,
-                new PMTBranch.PMTBranchChild(BRANCH_NIBBLE, PMT.represent(pmtLeaf, KECCAK_256))
+                new PMTBranch.PMTBranchChild(BRANCH_NIBBLE, PMT.represent(pmtLeaf, KECCAK_256, RLP_SERIALIZER))
         );
 
         // when
-        byte[] serializedLeaf = pmtBranch.serialize();
-        PMTNode deserialize = PMTNode.deserialize(serializedLeaf);
+        byte[] serializedLeaf = RLP_SERIALIZER.serialize(pmtBranch);
+        PMTNode deserialize = RLP_SERIALIZER.deserialize(serializedLeaf);
 
         // then
         PMTBranch expected = new PMTBranch(
                 EMPTY_VALUE,
-                new PMTBranch.PMTBranchChild(BRANCH_NIBBLE, PMT.represent(pmtLeaf, KECCAK_256))
+                new PMTBranch.PMTBranchChild(BRANCH_NIBBLE, PMT.represent(pmtLeaf, KECCAK_256, RLP_SERIALIZER))
         );
         assertEquals(expected, deserialize);
     }

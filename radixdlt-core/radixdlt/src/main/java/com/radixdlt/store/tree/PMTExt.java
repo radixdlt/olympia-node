@@ -1,7 +1,5 @@
 package com.radixdlt.store.tree;
 
-import com.radixdlt.store.tree.serialization.rlp.RLP;
-
 public final class PMTExt extends PMTNode {
 
 	public static final int EVEN_PREFIX = 0;
@@ -15,14 +13,5 @@ public final class PMTExt extends PMTNode {
 			this.keyNibbles = keyNibbles;
 			this.value = newHashPointer;
 		}
-	}
-
-	public byte[] serialize() {
-		var nibblesWithPrefix = TreeUtils.applyPrefix(this.getKey().getRaw(), ODD_PREFIX, EVEN_PREFIX);
-		byte[] bytesWithPrefix = TreeUtils.fromNibblesToBytes(nibblesWithPrefix);
-		return RLP.encodeList(
-				RLP.encodeElement(bytesWithPrefix),
-				RLP.encodeElement(value)
-		);
 	}
 }
