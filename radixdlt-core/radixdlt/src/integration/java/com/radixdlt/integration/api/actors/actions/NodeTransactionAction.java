@@ -71,8 +71,7 @@ import com.radixdlt.api.core.openapitools.model.OperationGroup;
 import java.util.List;
 import java.util.function.Function;
 
-public sealed interface NodeTransactionAction permits BurnTokens, CreateTokenDefinition, MintTokens, RegisterValidator,
-	SetAllowDelegationFlag, SetValidatorFee, SetValidatorOwner, StakeTokens, TransferTokens, UnstakeStakeUnits {
+public interface NodeTransactionAction {
 	List<OperationGroup> toOperationGroups(
 		EngineConfiguration configuration,
 		Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction
