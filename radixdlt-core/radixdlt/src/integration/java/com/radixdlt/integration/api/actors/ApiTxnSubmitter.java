@@ -102,7 +102,7 @@ import java.util.stream.Collectors;
  * Submits a random transaction through a random node in a deterministic test.
  */
 public final class ApiTxnSubmitter implements DeterministicActor {
-	private final static Set<Class<? extends CoreError>> OKAY_ERRORS = Set.of(
+	private static final Set<Class<? extends CoreError>> OKAY_ERRORS = Set.of(
 		MempoolFullError.class,
 		NotEnoughResourcesError.class,
 		AboveMaximumValidatorFeeIncreaseError.class,

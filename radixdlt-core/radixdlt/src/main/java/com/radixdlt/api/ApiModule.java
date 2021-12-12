@@ -85,18 +85,25 @@ public final class ApiModule extends AbstractModule {
 	private final int port;
 	private final String bindAddress;
 	private final boolean enableTransactions;
+	private final boolean enableSign;
 
-	public ApiModule(String bindAddress, int port, boolean enableTransactions) {
+	public ApiModule(
+		String bindAddress,
+		int port,
+		boolean enableTransactions,
+		boolean enableSign
+	) {
 		this.bindAddress = bindAddress;
 		this.port = port;
 		this.enableTransactions = enableTransactions;
+		this.enableSign = enableSign;
 	}
 
 	@Override
 	public void configure() {
 		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class);
 		install(new SystemApiModule());
-		install(new CoreApiModule(enableTransactions));
+		install(new CoreApiModule(enableTransactions, enableSign));
 	}
 
 	private static void fallbackHandler(HttpServerExchange exchange) {

@@ -146,6 +146,9 @@ import java.util.Optional;
 import java.util.function.Function;
 
 public final class CoreModelMapper {
+	private static final String PREPARED_STAKES_ADDRESS = "prepared_stakes";
+	private static final String PREPARED_UNSTAKES_ADDRESS = "prepared_unstakes";
+	private static final String EXITING_UNSTAKES_ADDRESS = "exiting_unstakes";
 	private static final ECPublicKey MOCK_PUBLIC_KEY = PrivateKeys.ofNumeric(1).getPublicKey();
 	private final Addressing addressing;
 	private final Network network;
@@ -214,9 +217,9 @@ public final class CoreModelMapper {
 	public CoreError builderErrorDetails(TxBuilderException e) {
 		if (e instanceof MinimumStakeException minimumStakeException) {
 			return new BelowMinimumStakeError()
-					.minimumStake(nativeTokenAmount(minimumStakeException.getMinimumStake()))
-					.attemptedToStake(nativeTokenAmount(minimumStakeException.getAttempt()))
-					.type(BelowMinimumStakeError.class.getSimpleName());
+				.minimumStake(nativeTokenAmount(minimumStakeException.getMinimumStake()))
+				.attemptedToStake(nativeTokenAmount(minimumStakeException.getAttempt()))
+				.type(BelowMinimumStakeError.class.getSimpleName());
 		} else if (e instanceof DelegateStakePermissionException delegateException) {
 			return new NotValidatorOwnerError()
 				.owner(entityIdentifier(delegateException.getOwner()))
@@ -343,7 +346,7 @@ public final class CoreModelMapper {
 				}
 
 				switch (subEntity.getAddress()) {
-					case "prepared_stakes" -> {
+					case PREPARED_STAKES_ADDRESS -> {
 						var metadata = subEntity.getMetadata();
 						if (metadata == null || metadata.getEpochUnlock() != null || metadata.getValidatorAddress() == null) {
 							throw invalidSubEntity(subEntity);
@@ -354,14 +357,14 @@ public final class CoreModelMapper {
 							validator
 						);
 					}
-					case "prepared_unstakes" -> {
+					case PREPARED_UNSTAKES_ADDRESS -> {
 						var metadata = subEntity.getMetadata();
 						if (metadata != null) {
 							throw invalidSubEntity(subEntity);
 						}
 						return PreparedUnstakeVaultEntity.from(accountAddress);
 					}
-					case "exiting_unstakes" -> {
+					case EXITING_UNSTAKES_ADDRESS -> {
 						var metadata = subEntity.getMetadata();
 						if (metadata == null || metadata.getEpochUnlock() == null || metadata.getValidatorAddress() == null) {
 							throw invalidSubEntity(subEntity);
@@ -555,14 +558,14 @@ public final class CoreModelMapper {
 		} else if (entity instanceof PreparedStakeVaultEntity stake) {
 			return entityIdentifier(stake.getAccountAddress())
 				.subEntity(new SubEntity()
-					.address("prepared_stakes")
+					.address(PREPARED_STAKES_ADDRESS)
 					.metadata(new SubEntityMetadata()
 						.validatorAddress(addressing.forValidators().of(stake.getValidatorKey()))
 					)
 				);
 		} else if (entity instanceof PreparedUnstakeVaultEntity unstake) {
 			return entityIdentifier(unstake.getAccountAddress())
-				.subEntity(new SubEntity().address("prepared_unstakes"));
+				.subEntity(new SubEntity().address(PREPARED_UNSTAKES_ADDRESS));
 		} else if (entity instanceof ValidatorEntity validator) {
 			return entityIdentifier(validator.getValidatorKey());
 		} else if (entity instanceof ValidatorSystemEntity validatorSystem) {
@@ -574,14 +577,14 @@ public final class CoreModelMapper {
 		} else if (entity instanceof SystemEntity) {
 			return new EntityIdentifier().address("system");
 		} else {
-			throw new IllegalStateException("Unkown entity: " + entity);
+			throw new IllegalStateException("Unknown entity: " + entity);
 		}
 	}
 
 	public EntityIdentifier entityIdentifier(REAddr accountAddress, ECPublicKey validatorKey, long epochUnlock) {
 		return new EntityIdentifier().address(addressing.forAccounts().of(accountAddress))
 			.subEntity(new SubEntity()
-				.address("exiting_unstakes")
+				.address(EXITING_UNSTAKES_ADDRESS)
 				.metadata(new SubEntityMetadata()
 					.validatorAddress(addressing.forValidators().of(validatorKey))
 					.epochUnlock(epochUnlock)
@@ -597,7 +600,7 @@ public final class CoreModelMapper {
 		return new EntityIdentifier()
 			.address(addressing.forAccounts().of(accountAddress))
 			.subEntity(new SubEntity()
-				.address("exiting_unstakes")
+				.address(EXITING_UNSTAKES_ADDRESS)
 				.metadata(new SubEntityMetadata()
 					.validatorAddress(addressing.forValidators().of(validatorKey))
 					.epochUnlock(epochUnlock)
@@ -609,14 +612,14 @@ public final class CoreModelMapper {
 	public EntityIdentifier entityIdentifierPreparedUnstake(REAddr accountAddress) {
 		return new EntityIdentifier()
 			.address(addressing.forAccounts().of(accountAddress))
-			.subEntity(new SubEntity().address("prepared_unstakes"));
+			.subEntity(new SubEntity().address(PREPARED_UNSTAKES_ADDRESS));
 	}
 
 	public EntityIdentifier entityIdentifierPreparedStake(REAddr accountAddress, ECPublicKey validatorKey) {
 		return new EntityIdentifier()
 			.address(addressing.forAccounts().of(accountAddress))
 			.subEntity(new SubEntity()
-				.address("prepared_stakes")
+				.address(PREPARED_STAKES_ADDRESS)
 				.metadata(new SubEntityMetadata()
 					.validatorAddress(addressing.forValidators().of(validatorKey))
 				)
@@ -684,18 +687,6 @@ public final class CoreModelMapper {
 		return new ResourceAmount()
 			.resourceIdentifier(stakeUnit(validatorKey))
 			.value(value.toString());
-	}
-
-	public ResourceAmount stakeUnitAmount(boolean positive, ECPublicKey validatorKey, UInt256 value) {
-		return new ResourceAmount()
-			.resourceIdentifier(stakeUnit(validatorKey))
-			.value(positive ? value.toString() : "-" + value);
-	}
-
-	public ResourceAmount stakeUnitAmount(boolean positive, String validatorAddress, UInt256 value) {
-		return new ResourceAmount()
-			.resourceIdentifier(new StakeUnitResourceIdentifier().validatorAddress(validatorAddress).type("StakeUnit"))
-			.value(positive ? value.toString() : "-" + value);
 	}
 
 	public ResourceAmount nativeTokenAmount(UInt256 value) {
@@ -979,7 +970,7 @@ public final class CoreModelMapper {
 			if (bucket.getValidatorKey() != null) {
 				if (bucket.resourceAddr() != null && bucket.getEpochUnlock() == null) {
 					entityIdentifier.subEntity(new SubEntity()
-						.address("prepared_stakes")
+						.address(PREPARED_STAKES_ADDRESS)
 						.metadata(new SubEntityMetadata()
 							.validatorAddress(addressing.forValidators().of(bucket.getValidatorKey()))
 						)
@@ -987,11 +978,11 @@ public final class CoreModelMapper {
 				} else if (bucket.resourceAddr() == null && Objects.equals(bucket.getEpochUnlock(), 0L)) {
 					// Don't add validator as validator is already part of resource
 					entityIdentifier.subEntity(new SubEntity()
-						.address("prepared_unstakes")
+						.address(PREPARED_UNSTAKES_ADDRESS)
 					);
 				} else if (bucket.resourceAddr() != null && bucket.getEpochUnlock() != null) {
 					entityIdentifier.subEntity(new SubEntity()
-						.address("exiting_unstakes")
+						.address(EXITING_UNSTAKES_ADDRESS)
 						.metadata(new SubEntityMetadata()
 							.validatorAddress(addressing.forValidators().of(bucket.getValidatorKey()))
 							.epochUnlock(bucket.getEpochUnlock())

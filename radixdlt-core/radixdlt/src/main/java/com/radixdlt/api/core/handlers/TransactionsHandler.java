@@ -91,8 +91,6 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.Bytes;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 public final class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransactionsRequest, CommittedTransactionsResponse> {
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 	private final BerkeleyRecoverableProcessedTxnStore txnStore;
@@ -191,15 +189,14 @@ public final class TransactionsHandler extends CoreJsonRpcHandler<CommittedTrans
 		}
 
 		var recoverable = txnStore.get(stateVersion, limit);
-		var accumulatorState = new AtomicReference<>(new AccumulatorState(stateVersion, currentAccumulator));
+		var accumulatorState = new AccumulatorState(stateVersion, currentAccumulator);
 		var response = new CommittedTransactionsResponse();
 		var txns = ledgerEntryStore.getCommittedTxns(stateVersion, recoverable.size());
 		for (int i = 0; i < txns.size(); i++) {
 			var txn = txns.get(i);
 			var recoveryInfo = recoverable.get(i);
-			var curAccumulatorState = accumulatorState.get();
-			var nextAccumulatorState = ledgerAccumulator.accumulate(curAccumulatorState, txn.getId().asHashCode());
-			accumulatorState.set(nextAccumulatorState);
+			var nextAccumulatorState = ledgerAccumulator.accumulate(accumulatorState, txn.getId().asHashCode());
+			accumulatorState = nextAccumulatorState;
 			response.addTransactionsItem(construct(txn, recoveryInfo, nextAccumulatorState));
 		}
 

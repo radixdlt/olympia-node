@@ -90,9 +90,11 @@ import io.undertow.server.HttpHandler;
 
 public class CoreApiModule extends AbstractModule {
 	private final boolean transactionsEnable;
+	private final boolean signEnable;
 
-	public CoreApiModule(boolean transactionsEnable) {
+	public CoreApiModule(boolean transactionsEnable, boolean signEnable) {
 		this.transactionsEnable = transactionsEnable;
+		this.signEnable = signEnable;
 	}
 
 	@Override
@@ -121,6 +123,8 @@ public class CoreApiModule extends AbstractModule {
 		routeBinder.addBinding(HandlerRoute.post("/construction/hash")).to(ConstructionHashHandler.class);
 		routeBinder.addBinding(HandlerRoute.post("/construction/submit")).to(ConstructionSubmitHandler.class);
 		routeBinder.addBinding(HandlerRoute.post("/key/list")).to(KeyListHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/key/sign")).to(KeySignHandler.class);
+		if (signEnable) {
+			routeBinder.addBinding(HandlerRoute.post("/key/sign")).to(KeySignHandler.class);
+		}
 	}
 }

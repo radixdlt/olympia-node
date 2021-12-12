@@ -212,10 +212,7 @@ public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAddit
 					return next;
 				}
 			};
-			return Streams.stream(iterator)
-				.limit(limit)
-				.onClose(cursor::close)
-				.toList();
+			return Streams.stream(iterator).limit(limit).toList();
 		}
 	}
 
