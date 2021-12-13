@@ -85,27 +85,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.Supplier;
 
-public final class TokenEntity implements Entity {
-	private final String symbol;
-	private final REAddr tokenAddr;
-
-	private TokenEntity(String symbol, REAddr tokenAddr) {
-		this.symbol = symbol;
-		this.tokenAddr = tokenAddr;
-	}
-
-	public String getSymbol() {
-		return symbol;
-	}
-
-	public REAddr getTokenAddr() {
-		return tokenAddr;
-	}
-
-	public static TokenEntity from(String symbol, REAddr tokenAddr) {
-		return new TokenEntity(symbol, tokenAddr);
-	}
-
+public record TokenEntity(String symbol, REAddr tokenAddr) implements Entity {
 	@Override
 	public void overwriteDataObject(
 		ParsedDataObject parsedDataObject,

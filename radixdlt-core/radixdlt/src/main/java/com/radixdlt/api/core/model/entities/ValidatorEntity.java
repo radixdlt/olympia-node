@@ -95,21 +95,7 @@ import java.util.function.Supplier;
 
 import static com.radixdlt.atom.SubstateTypeId.*;
 
-public final class ValidatorEntity implements Entity {
-	private final ECPublicKey validatorKey;
-
-	private ValidatorEntity(ECPublicKey validatorKey) {
-		this.validatorKey = validatorKey;
-	}
-
-	public static ValidatorEntity from(ECPublicKey validatorKey) {
-		return new ValidatorEntity(validatorKey);
-	}
-
-	public ECPublicKey getValidatorKey() {
-		return validatorKey;
-	}
-
+public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
 	@Override
 	public void overwriteDataObject(
 		ParsedDataObject parsedDataObject,

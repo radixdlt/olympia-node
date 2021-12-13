@@ -106,7 +106,7 @@ public final class ConstructionBuildHandler extends CoreJsonRpcHandler<Construct
 			builder = radixEngine.constructWithFees(
 				operationTxBuilder,
 				disable,
-				feePayer.getAccountAddress(),
+				feePayer.accountAddress(),
 				NotEnoughNativeTokensForFeesException::new
 			);
 		} catch (TxBuilderException e) {

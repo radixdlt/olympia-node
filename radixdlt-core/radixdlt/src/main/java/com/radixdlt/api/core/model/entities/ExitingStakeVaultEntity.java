@@ -77,29 +77,7 @@ import java.util.List;
 
 import static com.radixdlt.atom.SubstateTypeId.EXITING_STAKE;
 
-public final class ExitingStakeVaultEntity implements Entity {
-	private final REAddr accountAddress;
-	private final ECPublicKey validatorKey;
-	private final long epochUnlock;
-
-	ExitingStakeVaultEntity(REAddr accountAddress, ECPublicKey validatorKey, long epochUnlock) {
-		this.accountAddress = accountAddress;
-		this.validatorKey = validatorKey;
-		this.epochUnlock = epochUnlock;
-	}
-
-	public long getEpochUnlock() {
-		return epochUnlock;
-	}
-
-	public REAddr getAccountAddress() {
-		return accountAddress;
-	}
-
-	public ECPublicKey getValidatorKey() {
-		return validatorKey;
-	}
-
+public record ExitingStakeVaultEntity(REAddr accountAddress, ECPublicKey validatorKey, long epochUnlock) implements Entity {
 	@Override
 	public List<ResourceQuery> getResourceQueries() {
 		var buf = ByteBuffer.allocate(2 + Long.BYTES + ECPublicKey.COMPRESSED_BYTES + REAddr.PUB_KEY_BYTES);
@@ -115,10 +93,5 @@ public final class ExitingStakeVaultEntity implements Entity {
 	@Override
 	public List<KeyQuery> getKeyQueries() {
 		return List.of();
-	}
-
-
-	public static ExitingStakeVaultEntity from(REAddr accountAddress, ECPublicKey validatorKey, long epochUnlock) {
-		return new ExitingStakeVaultEntity(accountAddress, validatorKey, epochUnlock);
 	}
 }

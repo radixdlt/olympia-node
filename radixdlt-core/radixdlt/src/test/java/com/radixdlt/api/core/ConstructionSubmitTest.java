@@ -124,14 +124,14 @@ public class ConstructionSubmitTest extends ApiTest {
 		var entityOperationGroups =
 			List.of(List.of(
 				EntityOperation.from(
-					AccountVaultEntity.from(from),
+					new AccountVaultEntity(from),
 					ResourceOperation.withdraw(
 						new TokenResource("xrd", REAddr.ofNativeToken()),
 						toTransfer
 					)
 				),
 				EntityOperation.from(
-					AccountVaultEntity.from(to),
+					new AccountVaultEntity(to),
 					ResourceOperation.deposit(
 						new TokenResource("xrd", REAddr.ofNativeToken()),
 						toTransfer

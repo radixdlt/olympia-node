@@ -90,17 +90,7 @@ import java.util.function.Supplier;
 import static com.radixdlt.atom.SubstateTypeId.STAKE_OWNERSHIP;
 import static com.radixdlt.atom.SubstateTypeId.TOKENS;
 
-public final class AccountVaultEntity implements Entity {
-	private final REAddr accountAddress;
-
-	private AccountVaultEntity(REAddr accountAddress) {
-		this.accountAddress = accountAddress;
-	}
-
-	public REAddr getAccountAddress() {
-		return accountAddress;
-	}
-
+public record AccountVaultEntity(REAddr accountAddress) implements Entity {
 	@Override
 	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) {
 		final Particle substate;
@@ -166,9 +156,5 @@ public final class AccountVaultEntity implements Entity {
 	@Override
 	public List<KeyQuery> getKeyQueries() {
 		return List.of();
-	}
-
-	public static AccountVaultEntity from(REAddr address) {
-		return new AccountVaultEntity(address);
 	}
 }

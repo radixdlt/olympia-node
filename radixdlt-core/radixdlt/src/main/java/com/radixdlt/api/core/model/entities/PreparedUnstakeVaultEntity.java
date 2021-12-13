@@ -81,17 +81,7 @@ import java.util.function.Supplier;
 
 import static com.radixdlt.atom.SubstateTypeId.PREPARED_UNSTAKE;
 
-public final class PreparedUnstakeVaultEntity implements Entity {
-	private final REAddr accountAddress;
-
-	PreparedUnstakeVaultEntity(REAddr accountAddress) {
-		this.accountAddress = accountAddress;
-	}
-
-	public REAddr getAccountAddress() {
-		return accountAddress;
-	}
-
+public record PreparedUnstakeVaultEntity(REAddr accountAddress) implements Entity {
 	@Override
 	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
 		throws TxBuilderException {
@@ -120,9 +110,5 @@ public final class PreparedUnstakeVaultEntity implements Entity {
 	@Override
 	public List<KeyQuery> getKeyQueries() {
 		return List.of();
-	}
-
-	public static PreparedUnstakeVaultEntity from(REAddr accountAddress) {
-		return new PreparedUnstakeVaultEntity(accountAddress);
 	}
 }

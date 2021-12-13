@@ -111,7 +111,7 @@ public final class ConstructionDeriveHandler extends CoreJsonRpcHandler<Construc
 				throw coreModelMapper.notValidatorEntityException(preparedStakesMetadata.getValidator());
 			}
 			var address = REAddr.ofPubKeyAccount(publicKey);
-			response.entityIdentifier(coreModelMapper.entityIdentifierPreparedStake(address, validatorEntity.getValidatorKey()));
+			response.entityIdentifier(coreModelMapper.entityIdentifierPreparedStake(address, validatorEntity.validatorKey()));
 		} else if (metadata instanceof ConstructionDeriveRequestMetadataPreparedUnstakes) {
 			var address = REAddr.ofPubKeyAccount(publicKey);
 			response.entityIdentifier(coreModelMapper.entityIdentifierPreparedUnstake(address));
@@ -122,7 +122,7 @@ public final class ConstructionDeriveHandler extends CoreJsonRpcHandler<Construc
 			}
 			var address = REAddr.ofPubKeyAccount(publicKey);
 			response.entityIdentifier(coreModelMapper.entityIdentifierExitingStake(
-				address, validatorEntity.getValidatorKey(), exitingUnstakes.getEpochUnlock()
+				address, validatorEntity.validatorKey(), exitingUnstakes.getEpochUnlock()
 			));
 		} else if (metadata instanceof ConstructionDeriveRequestMetadataValidatorSystem) {
 			response.entityIdentifier(coreModelMapper.entityIdentifierValidatorSystem(publicKey));

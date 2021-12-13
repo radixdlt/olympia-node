@@ -88,23 +88,7 @@ import java.util.function.Supplier;
 
 import static com.radixdlt.atom.SubstateTypeId.PREPARED_STAKE;
 
-public final class PreparedStakeVaultEntity implements Entity {
-	private final REAddr accountAddress;
-	private final ECPublicKey validatorKey;
-
-	PreparedStakeVaultEntity(REAddr accountAddress, ECPublicKey validatorKey) {
-		this.accountAddress = accountAddress;
-		this.validatorKey = validatorKey;
-	}
-
-	public REAddr getAccountAddress() {
-		return accountAddress;
-	}
-
-	public ECPublicKey getValidatorKey() {
-		return validatorKey;
-	}
-
+public record PreparedStakeVaultEntity(REAddr accountAddress, ECPublicKey validatorKey) implements Entity {
 	private boolean amountIsNative(ResourceUnsignedAmount amount) {
 		if (!(amount.resource() instanceof TokenResource tokenResource)) {
 			return false;
@@ -151,10 +135,5 @@ public final class PreparedStakeVaultEntity implements Entity {
 	@Override
 	public List<KeyQuery> getKeyQueries() {
 		return List.of();
-	}
-
-
-	public static PreparedStakeVaultEntity from(REAddr accountAddress, ECPublicKey validatorKey) {
-		return new PreparedStakeVaultEntity(accountAddress, validatorKey);
 	}
 }

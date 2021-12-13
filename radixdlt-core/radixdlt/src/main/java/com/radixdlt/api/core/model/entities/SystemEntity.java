@@ -71,7 +71,7 @@ import java.util.List;
 
 import static com.radixdlt.atom.SubstateTypeId.*;
 
-public final class SystemEntity implements Entity {
+public record SystemEntity() implements Entity {
 	@Override
 	public List<ResourceQuery> getResourceQueries() {
 		return List.of();

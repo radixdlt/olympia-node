@@ -74,17 +74,7 @@ import java.util.List;
 
 import static com.radixdlt.atom.SubstateTypeId.*;
 
-public final class ValidatorSystemEntity implements Entity {
-	private final ECPublicKey validatorKey;
-
-	ValidatorSystemEntity(ECPublicKey validatorKey) {
-		this.validatorKey = validatorKey;
-	}
-
-	public ECPublicKey getValidatorKey() {
-		return validatorKey;
-	}
-
+public record ValidatorSystemEntity(ECPublicKey validatorKey) implements Entity {
 	@Override
 	public List<ResourceQuery> getResourceQueries() {
 		var systemMapKey = SystemMapKey.ofSystem(VALIDATOR_STAKE_DATA.id(), validatorKey.getCompressedBytes());
@@ -97,10 +87,5 @@ public final class ValidatorSystemEntity implements Entity {
 			KeyQuery.fromValidator(validatorKey, VALIDATOR_STAKE_DATA, ValidatorStakeData::createVirtual),
 			KeyQuery.fromValidator(validatorKey, VALIDATOR_BFT_DATA)
 		);
-	}
-
-
-	public static ValidatorSystemEntity from(ECPublicKey validatorKey) {
-		return new ValidatorSystemEntity(validatorKey);
 	}
 }

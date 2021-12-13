@@ -107,12 +107,10 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
 		if (operation.isDeposit()) {
 			entity.deposit(amount, txBuilder, config);
 		} else {
-			var retrieval = entity.withdraw(amount.resource());
+			var withdrawal = entity.withdraw(amount.resource());
 			var feeInReserve = Optional.ofNullable(txBuilder.getFeeReserve()).orElse(UInt256.ZERO);
-
-			var change = txBuilder.downFungible(
-				retrieval.getIndex(),
-				retrieval.getPredicate(),
+			var change = withdrawal.execute(
+				txBuilder,
 				amount.amount(),
 				available -> new NotEnoughResourcesException(amount.resource(), amount.amount(), available, feeInReserve)
 			);
