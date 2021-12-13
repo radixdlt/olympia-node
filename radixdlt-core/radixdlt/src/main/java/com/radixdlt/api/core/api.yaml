@@ -738,7 +738,7 @@ tags:
 
       ## Update Balance Store
 
-      We can now start updating some balance store given that we have balance changes.
+      Now that we can compute balance chaneg we can now start updating some balance store.
 
       In this example we simply use a hash map from entity to balance. In your system you may
       store these changes in a persistent database.
@@ -746,8 +746,15 @@ tags:
       ```java
       TransactionsApi api = new TransactionsApi();
       NetworkIdentifier networkIdentifier = new NetworkIdentifier().network("mainnet");
+
+      /**
+       * Our balance store
+       */
       Map<EntityIdentifier, BigInteger> balances = new HashMap<>();
 
+      /**
+       * Returns true if the operation contains an XRD balance change, otherwise returns false
+       */
       boolean isXrd(Operation operation) {
         if (operation.getAmount() == null) {
           return false;
@@ -760,6 +767,10 @@ tags:
         return tokenResourceIdentifier.getRri().equals("xrd_rr1qy5wfsfh");
       }
 
+      /**
+       * Returns the XRD balance change which occured on every entity from a set
+       * of operation groups.
+       */
       Map<EntityIdentifier, BigInteger> operationGroupsToBalanceChanges(Stream<OperationGroup> operationGroups) {
         return operationGroups
           .flatMap(group -> group.getOperations().stream())
@@ -773,7 +784,14 @@ tags:
           ));
       }
 
-      void update() throws ApiException {
+      /**
+       * Updates the balance store.
+       */
+      void updateStore(Map<EntityIdentifier, BigInteger> balanceChanges) {
+        balanceChanges.forEach((identifier, value) -> balances.merge(identifier, value, BigInteger::add));
+      }
+
+      void main() throws ApiException {
         PartialStateIdentifier stateIdentifier = new PartialStateIdentifier().stateVersion(0L);
 
         CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
@@ -788,9 +806,7 @@ tags:
           .flatMap(txn -> txn.getOperationGroups().stream());
 
         Map<EntityIdentifier, BigInteger> balanceChanges = operationGroupsToBalanceChanges(operationGroups);
-
-        // Update balances in memory
-        balanceChanges.forEach((identifier, value) -> balances.merge(identifier, value, BigInteger::add));
+        updateStore(balanceChanges);
       }
       ```
 
@@ -800,7 +816,9 @@ tags:
       continually sync as the ledger progresses.
 
       To do this, we will keep our own current stateVersion and update it with the latest stateVersion
-      we've seen.
+      we've seen. On a persistent database, it will be important to update the stateVersion and ledger updates
+      atomically so that the sync process can handle process crashes gracefully and restart in a consistent
+      manner.
 
       We can now add continually check for updates on ledger and keep our own state up to date. This can
       easily look something like a cronjob process which periodically updates a local database.
@@ -809,8 +827,15 @@ tags:
       TransactionsApi api = new TransactionsApi();
       NetworkIdentifier networkIdentifier = new NetworkIdentifier().network("mainnet");
       long currentStateVersion = 0;
+
+      /**
+       * Our balance store
+       */
       Map<EntityIdentifier, BigInteger> balances = new HashMap<>();
 
+      /**
+       * Returns true if the operation contains an XRD balance change, otherwise returns false
+       */
       boolean isXrd(Operation operation) {
         if (operation.getAmount() == null) {
           return false;
@@ -823,6 +848,10 @@ tags:
         return tokenResourceIdentifier.getRri().equals("xrd_rr1qy5wfsfh");
       }
 
+      /**
+       * Returns the XRD balance change which occured on every entity from a set
+       * of operation groups.
+       */
       Map<EntityIdentifier, BigInteger> operationGroupsToBalanceChanges(Stream<OperationGroup> operationGroups) {
         return operationGroups
           .flatMap(group -> group.getOperations().stream())
@@ -836,8 +865,30 @@ tags:
           ));
       }
 
+      /**
+       * Retrieves the current state version
+       */
+      long loadStateVersion() {
+        return this.currentStateVersion;
+      }
+
+      /**
+       * Updates the balance store.
+       */
+      void updateStore(long currentStateVersion, long nextStateVersion, Map<EntityIdentifier, BigInteger> balanceChanges) {
+        // Sanity check, in case we have multiple updater to our store
+        assert(this.currentStateVersion == currentStateVersion);
+
+        this.currentStateVersion = nextStateVersion;
+        balanceChanges.forEach((identifier, value) -> balances.merge(identifier, value, BigInteger::add));
+      }
+
+      /**
+       * Requests for new transactions from a node and then updates the balance store
+       */
       void update() throws ApiException {
-        PartialStateIdentifier stateIdentifier = new PartialStateIdentifier().stateVersion(currentStateVersion);
+        long stateVersion = loadStateVersion();
+        PartialStateIdentifier stateIdentifier = new PartialStateIdentifier().stateVersion(stateVersion);
 
         CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
           .networkIdentifier(networkIdentifier)
@@ -849,14 +900,11 @@ tags:
         // Extract out operation groups
         Stream<OperationGroup> operationGroups = response.getTransactions().stream()
           .flatMap(txn -> txn.getOperationGroups().stream());
-
         Map<EntityIdentifier, BigInteger> balanceChanges = operationGroupsToBalanceChanges(operationGroups);
+        long nextStateVersion = stateVersion + txns.size();
 
         // Update stateVersion and balances, on a database these must be updated atomically together
-        if (!txns.isEmpty()) {
-          currentStateVersion = txns.get(txns.size() - 1).getCommittedStateIdentifier().getStateVersion();
-        }
-        balanceChanges.forEach((identifier, value) -> balances.merge(identifier, value, BigInteger::add));
+        updateStore(stateVersion, nextStateVersion, balanceChanges);
       }
 
       void main() throws Exception {
