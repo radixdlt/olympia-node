@@ -45,7 +45,7 @@ public class PMTKey {
 		return this.key.length == 0;
 	}
 
-	public Boolean isNibble() {
+	public boolean isNibble() {
 		return this.key.length == 1;
 	}
 
