@@ -96,6 +96,7 @@ import java.util.function.Supplier;
 import static com.radixdlt.atom.SubstateTypeId.*;
 
 public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
+
 	@Override
 	public void overwriteDataObject(
 		ParsedDataObject parsedDataObject,
@@ -104,54 +105,82 @@ public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
 	) throws TxBuilderException {
 		var dataObject = parsedDataObject.getDataObject();
 		if (dataObject instanceof PreparedValidatorRegistered preparedValidatorRegistered) {
-			builder.down(ValidatorRegisteredCopy.class, validatorKey);
-			var curEpoch = builder.readSystem(EpochData.class);
-			builder.up(new ValidatorRegisteredCopy(
-				OptionalLong.of(curEpoch.getEpoch() + 1),
-				validatorKey,
-				preparedValidatorRegistered.getRegistered()
-			));
+			updateRegistered(builder, preparedValidatorRegistered);
 		} else if (dataObject instanceof PreparedValidatorOwner) {
-			builder.down(ValidatorOwnerCopy.class, validatorKey);
-			var curEpoch = builder.readSystem(EpochData.class);
 			var owner = parsedDataObject.getParsed(REAddr.class);
-			builder.up(new ValidatorOwnerCopy(OptionalLong.of(curEpoch.getEpoch() + 1), validatorKey, owner));
+			updateOwner(builder, owner);
 		} else if (dataObject instanceof PreparedValidatorFee preparedValidatorFee) {
-			builder.down(ValidatorFeeCopy.class, validatorKey);
-			var curRakePercentage = builder.read(ValidatorStakeData.class, validatorKey)
-				.getRakePercentage();
-			int validatorFee = preparedValidatorFee.getFee();
-			var isIncrease = validatorFee > curRakePercentage;
-			var rakeIncrease = validatorFee - curRakePercentage;
-			var maxRakeIncrease = ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE;
-			if (isIncrease && rakeIncrease >= maxRakeIncrease) {
-				throw new InvalidRakeIncreaseException(maxRakeIncrease, rakeIncrease);
-			}
-
-			var rakeIncreaseDebounceEpochLength = config.get().getRakeIncreaseDebouncerEpochLength();
-			var epochDiff = isIncrease ? (1 + rakeIncreaseDebounceEpochLength) : 1;
-			var curEpoch = builder.readSystem(EpochData.class);
-			var epoch = curEpoch.getEpoch() + epochDiff;
-			builder.up(new ValidatorFeeCopy(OptionalLong.of(epoch), validatorKey, validatorFee));
+			updateValidatorFee(builder, preparedValidatorFee, config);
 		} else if (dataObject instanceof ValidatorMetadata metadata) {
-			var substateDown = builder.down(ValidatorMetaData.class, validatorKey);
-			builder.up(new ValidatorMetaData(
-				validatorKey,
-				metadata.getName() == null ? substateDown.getName() : metadata.getName(),
-				metadata.getUrl() == null ? substateDown.getUrl() : metadata.getUrl()
-			));
+			updateMetadata(builder, metadata);
 		} else if (dataObject instanceof ValidatorAllowDelegation allowDelegation) {
-			builder.down(AllowDelegationFlag.class, validatorKey);
-			builder.up(new AllowDelegationFlag(validatorKey, allowDelegation.getAllowDelegation()));
+			updateAllowDelegation(builder, allowDelegation);
 		} else if (dataObject instanceof com.radixdlt.api.core.openapitools.model.ValidatorSystemMetadata metadata) {
-			builder.down(com.radixdlt.application.validators.state.ValidatorSystemMetadata.class, validatorKey);
-			builder.up(new com.radixdlt.application.validators.state.ValidatorSystemMetadata(
-				validatorKey,
-				Bytes.fromHexString(metadata.getData())
-			));
+			updateValidatorSystemMetadata(builder, metadata);
 		} else {
 			throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
 		}
+	}
+
+	private void updateValidatorSystemMetadata(TxBuilder builder, com.radixdlt.api.core.openapitools.model.ValidatorSystemMetadata metadata) {
+		builder.down(com.radixdlt.application.validators.state.ValidatorSystemMetadata.class, validatorKey);
+		builder.up(new com.radixdlt.application.validators.state.ValidatorSystemMetadata(
+			validatorKey,
+			Bytes.fromHexString(metadata.getData())
+		));
+	}
+
+	private void updateAllowDelegation(TxBuilder builder, ValidatorAllowDelegation allowDelegation) {
+		builder.down(AllowDelegationFlag.class, validatorKey);
+		builder.up(new AllowDelegationFlag(validatorKey, allowDelegation.getAllowDelegation()));
+	}
+
+	private void updateMetadata(TxBuilder builder, ValidatorMetadata metadata) {
+		var substateDown = builder.down(ValidatorMetaData.class, validatorKey);
+		builder.up(new ValidatorMetaData(
+			validatorKey,
+			metadata.getName() == null ? substateDown.getName() : metadata.getName(),
+			metadata.getUrl() == null ? substateDown.getUrl() : metadata.getUrl()
+		));
+	}
+
+	private void updateRegistered(TxBuilder builder, PreparedValidatorRegistered preparedValidatorRegistered) {
+		builder.down(ValidatorRegisteredCopy.class, validatorKey);
+		var curEpoch = builder.readSystem(EpochData.class);
+		builder.up(new ValidatorRegisteredCopy(
+			OptionalLong.of(curEpoch.getEpoch() + 1),
+			validatorKey,
+			preparedValidatorRegistered.getRegistered()
+		));
+	}
+
+	private void updateOwner(TxBuilder builder, REAddr owner) {
+		builder.down(ValidatorOwnerCopy.class, validatorKey);
+		var curEpoch = builder.readSystem(EpochData.class);
+		builder.up(new ValidatorOwnerCopy(OptionalLong.of(curEpoch.getEpoch() + 1), validatorKey, owner));
+	}
+
+	private void updateValidatorFee(
+		TxBuilder builder,
+		PreparedValidatorFee preparedValidatorFee,
+		Supplier<RERulesConfig> config
+	) throws InvalidRakeIncreaseException {
+		builder.down(ValidatorFeeCopy.class, validatorKey);
+		var curRakePercentage = builder.read(ValidatorStakeData.class, validatorKey)
+			.getRakePercentage();
+		int validatorFee = preparedValidatorFee.getFee();
+		var isIncrease = validatorFee > curRakePercentage;
+		var rakeIncrease = validatorFee - curRakePercentage;
+		var maxRakeIncrease = ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE;
+		if (isIncrease && rakeIncrease >= maxRakeIncrease) {
+			throw new InvalidRakeIncreaseException(maxRakeIncrease, rakeIncrease);
+		}
+
+		var rakeIncreaseDebounceEpochLength = config.get().getRakeIncreaseDebouncerEpochLength();
+		var epochDiff = isIncrease ? (1 + rakeIncreaseDebounceEpochLength) : 1;
+		var curEpoch = builder.readSystem(EpochData.class);
+		var epoch = curEpoch.getEpoch() + epochDiff;
+		builder.up(new ValidatorFeeCopy(OptionalLong.of(epoch), validatorKey, validatorFee));
 	}
 
 	@Override

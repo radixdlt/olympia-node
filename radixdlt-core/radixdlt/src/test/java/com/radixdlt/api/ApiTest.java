@@ -212,7 +212,7 @@ public abstract class ApiTest {
 
 	private HttpServerExchange exchange(Exception e, Sender sender) {
 		var httpServerExchange = mock(HttpServerExchange.class);
-		when(httpServerExchange.getAttachment(eq(ExceptionHandler.THROWABLE))).thenReturn(e);
+		when(httpServerExchange.getAttachment(ExceptionHandler.THROWABLE)).thenReturn(e);
 		when(httpServerExchange.isInIoThread()).thenReturn(false);
 		when(httpServerExchange.getResponseHeaders()).thenReturn(new HeaderMap());
 		when(httpServerExchange.getResponseSender()).thenReturn(sender);

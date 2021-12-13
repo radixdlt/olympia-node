@@ -140,12 +140,12 @@ public class RecoverableProcessedTxn {
 	}
 
 	private RecoverableSubstate recoverDown(REInstruction instruction, int index) {
-		SubstateId substateId = instruction.getData();
 		var dataList = shutdownSubstates.get(index);
 		if (dataList.size() != 1) {
-			throw new IllegalStateException();
+			throw new IllegalStateException("Multiple substates found for down instruction");
 		}
 		var substate = ByteBuffer.wrap(dataList.get(0));
+		SubstateId substateId = instruction.getData();
 		return new RecoverableSubstateShutdown(substate, substateId, false);
 	}
 
@@ -157,11 +157,11 @@ public class RecoverableProcessedTxn {
 	}
 
 	private RecoverableSubstate recoverVirtualDown(REInstruction instruction, int index) {
-		SubstateId substateId = instruction.getData();
 		var dataList = shutdownSubstates.get(index);
 		if (dataList.size() != 1) {
-			throw new IllegalStateException();
+			throw new IllegalStateException("Multiple substates found for virtual down instruction");
 		}
+		SubstateId substateId = instruction.getData();
 		return new RecoverableSubstateVirtualShutdown(dataList.get(0)[0], substateId);
 	}
 
@@ -205,6 +205,9 @@ public class RecoverableProcessedTxn {
 				case LDOWN -> substateUpdates.add(recoverLocalDown(instruction, upSubstates::get));
 				case VDOWN, LVDOWN -> substateUpdates.add(recoverVirtualDown(instruction, i));
 				case DOWNINDEX -> recoverDownIndex(i).forEach(substateUpdates::add);
+				default -> {
+					// ignored
+				}
 			}
 		}
 
