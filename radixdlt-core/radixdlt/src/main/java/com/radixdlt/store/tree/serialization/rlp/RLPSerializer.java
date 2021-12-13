@@ -32,7 +32,7 @@ public class RLPSerializer implements PMTNodeSerializer {
 
     private byte[] serializeBranchNode(PMTNode node) {
         var list = new byte[PMTBranch.NUMBER_OF_NIBBLES + 1][];
-        byte[][] slices = ((PMTBranch) node).getSlices();
+        byte[][] slices = ((PMTBranch) node).getChildren();
         for (int i = 0; i < slices.length; i++) {
             list[i] = RLP.encodeElement(slices[i]);
         }

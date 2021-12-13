@@ -1,27 +1,31 @@
 package com.radixdlt.store.tree;
 
-import java.util.HashMap;
+import java.util.EnumMap;
+import java.util.Map;
+
+import static com.radixdlt.store.tree.PMTPath.RemainingSubtree.EXISTING;
+import static com.radixdlt.store.tree.PMTPath.RemainingSubtree.NEW;
 
 public class PMTPath {
 
-	enum Subtree {
-		OLD,
+	enum RemainingSubtree {
+		EXISTING,
 		NEW,
-		BOTH,
+		EXISTING_AND_NEW,
 		NONE
 	}
 
-	private PMTKey commonPrefix;
-	private HashMap<Subtree, PMTKey> rem = new HashMap<>();
-	private Subtree suffix;
+	private final PMTKey commonPrefix;
+	private final Map<RemainingSubtree, PMTKey> rem = new EnumMap<>(RemainingSubtree.class);
+	private RemainingSubtree suffix;
 
-	public PMTKey getRemainder(Subtree subtree) {
-		switch (subtree) {
-			case NEW:
-			case OLD:
-				return rem.get(subtree);
-			default:
-				throw new IllegalArgumentException("There can be only NEW or OLD remainder");
+	public PMTKey getRemainder(RemainingSubtree remainingSubtree) {
+		if (remainingSubtree == NEW || remainingSubtree == EXISTING) {
+			return rem.get(remainingSubtree);
+		} else {
+			throw new IllegalArgumentException(
+					String.format("Unexpected subtree: %s. There can be only NEW or EXISTING remainder", remainingSubtree)
+			);
 		}
 	}
 
@@ -32,8 +36,8 @@ public class PMTPath {
 	// INFO: Branch has empty key and remainder
 	public PMTPath(PMTKey current, PMTKey incoming, PMTKey common) {
 
-		this.rem.put(Subtree.OLD, current);
-		this.rem.put(Subtree.NEW, incoming);
+		this.rem.put(EXISTING, current);
+		this.rem.put(NEW, incoming);
 		this.commonPrefix = common;
 		recogniseRemainder(current, incoming);
 	}
@@ -42,21 +46,21 @@ public class PMTPath {
 		// TODO remove null possibility
 		if (current == null || current.isEmpty()) {
 			if (incoming.isEmpty()) {
-				this.suffix = Subtree.NONE;
+				this.suffix = RemainingSubtree.NONE;
 			} else {
-				this.suffix = Subtree.NEW;
+				this.suffix = NEW;
 			}
 		} else {
 			if (incoming.isEmpty()) {
-				this.suffix = Subtree.OLD;
+				this.suffix = EXISTING;
 			} else {
-				this.suffix = Subtree.BOTH;
+				this.suffix = RemainingSubtree.EXISTING_AND_NEW;
 			}
 		}
 		return this;
 	}
 
-	public Subtree whichRemainderIsLeft() {
+	public RemainingSubtree whichRemainderIsLeft() {
 		return this.suffix;
 	}
 
