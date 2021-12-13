@@ -624,8 +624,9 @@ tags:
     x-displayName: Track XRD Balances
     description: |
 
-      This example walks through how to track XRD balances across accounts.
-      To simplify things, we've included client code generated in java using openapigenerator.
+      This example walks through how to track XRD balances across all accounts. To do this we need the following:
+      * OpenAPI generated client code, in our example we will use the java version: [https://openapi-generator.tech/docs/generators/java]
+      * A database, in our example we will just use a transient Hashmap
 
       ## Get Transactions
 
@@ -653,7 +654,7 @@ tags:
       TransactionsApi api = new TransactionsApi();
       NetworkIdentifier networkIdentifier = new NetworkIdentifier().network("mainnet");
 
-      void request() {
+      void main() {
         PartialStateIdentifier stateIdentifier = new PartialStateIdentifier().stateVersion(0L);
 
         CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
@@ -669,20 +670,25 @@ tags:
 
       Let's now expand our code to extract all XRD balance changes.
 
-      To extract account token balances from a transaction, we can flatmap to all operations across all operation
-      groups, and filter to operations which concern the XRD token, that is, they have an `amount`, and has an
-      `amount.resource_identifier.type` of `Token`, and further the `rri` of the token is `xrd_rr1qy5wfsfh`
+      To extract account token balance changes in a transaction:
+      1. Flatmap to operations from all operation groups
+      2. Filter for operations which concern the XRD token, that is:
+          1. `amount` exists
+          2. `amount.resource_identifier.type` is `Token`
+          3. `rri` of the token is `xrd_rr1qy5wfsfh`
+      3. Group by `entity_identifier` and sum each `balance_change`
 
-      Then, we group by `entity_identifier` and sum each `balance_change` against that `entity_identifier` from all the
-      operations in that transaction. This gives us the change in XRD balance in that entity due to the transaction,
-      in units of 10^(-18).
+      This gives us the change in XRD balance in that entity due to the transaction, in units of 10^(-18).
 
-      This can form the basis of tracking the account balance over time.
+      This forms the basis of tracking account balances over time.
 
       ```java
       TransactionsApi api = new TransactionsApi();
       NetworkIdentifier networkIdentifier = new NetworkIdentifier().network("mainnet");
 
+      /**
+       * Returns true if the operation contains an XRD balance change, otherwise returns false
+       */
       boolean isXrd(Operation operation) {
         if (operation.getAmount() == null) {
           return false;
@@ -695,6 +701,10 @@ tags:
         return tokenResourceIdentifier.getRri().equals("xrd_rr1qy5wfsfh");
       }
 
+      /**
+       * Returns the XRD balance change which occured on every entity from a set
+       * of operation groups.
+       */
       Map<EntityIdentifier, BigInteger> operationGroupsToBalanceChanges(Stream<OperationGroup> operationGroups) {
         return operationGroups
           .flatMap(group -> group.getOperations().stream())
@@ -708,7 +718,7 @@ tags:
           ));
       }
 
-      void request() {
+      void main() {
         PartialStateIdentifier stateIdentifier = new PartialStateIdentifier().stateVersion(0L);
 
         CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
