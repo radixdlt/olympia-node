@@ -99,9 +99,9 @@ public final class ProxyCertificateData {
 
 	@JsonCreator
 	private static ProxyCertificateData deserialize(
-		@JsonProperty("grantee") NodeId grantee,
-		@JsonProperty("expiresAt") long expiresAt,
-		@JsonProperty("networkId") int networkId
+		@JsonProperty(value = "grantee", required = true) NodeId grantee,
+		@JsonProperty(value = "expiresAt", required = true) long expiresAt,
+		@JsonProperty(value = "networkId", required = true) int networkId
 	) {
 		return new ProxyCertificateData(grantee, expiresAt, networkId);
 	}

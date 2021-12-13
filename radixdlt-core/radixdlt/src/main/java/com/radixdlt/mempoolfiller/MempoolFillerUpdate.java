@@ -64,10 +64,14 @@
 
 package com.radixdlt.mempoolfiller;
 
+import com.radixdlt.utils.functional.Unit;
+
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.concurrent.CompletableFuture;
+
+import static com.radixdlt.utils.functional.Unit.unit;
 
 /**
  * An update event to the mempool filler
@@ -75,12 +79,12 @@ import java.util.concurrent.CompletableFuture;
 public final class MempoolFillerUpdate {
     private final int parallelTransactions;
     private final boolean sendToSelf;
-    private final CompletableFuture<Void> completableFuture;
+    private final CompletableFuture<Unit> completableFuture;
 
     private MempoolFillerUpdate(
         int parallelTransactions,
         boolean sendToSelf,
-		CompletableFuture<Void> completableFuture
+		CompletableFuture<Unit> completableFuture
     ) {
         this.parallelTransactions = parallelTransactions;
         this.sendToSelf = sendToSelf;
@@ -97,7 +101,7 @@ public final class MempoolFillerUpdate {
     public static MempoolFillerUpdate enable(
         int parallelTransactions,
         boolean sendToSelf,
-        CompletableFuture<Void> completableFuture
+        CompletableFuture<Unit> completableFuture
     ) {
     	if (parallelTransactions < 0) {
     	    throw new IllegalArgumentException("parallelTransactions must be > 0.");
@@ -110,14 +114,14 @@ public final class MempoolFillerUpdate {
     	return new MempoolFillerUpdate(-1, false, null);
 	}
 
-    public static MempoolFillerUpdate disable(CompletableFuture<Void> completableFuture) {
+    public static MempoolFillerUpdate disable(CompletableFuture<Unit> completableFuture) {
         Objects.requireNonNull(completableFuture);
         return new MempoolFillerUpdate(-1, false, completableFuture);
     }
 
     public void onSuccess() {
         if (completableFuture != null) {
-            completableFuture.complete(null);
+            completableFuture.complete(unit());
         }
     }
 

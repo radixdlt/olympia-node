@@ -82,7 +82,7 @@ public final class ProxyCertificatesAnnouncementMessage extends Message {
 
 	@JsonCreator
 	public ProxyCertificatesAnnouncementMessage(
-		@JsonProperty("proxyCertificates") ImmutableSet<ProxyCertificate> proxyCertificates
+		@JsonProperty(value = "proxyCertificates", required = true) ImmutableSet<ProxyCertificate> proxyCertificates
 	) {
 		this.proxyCertificates = Objects.requireNonNull(proxyCertificates);
 		this.proxyCertificates.forEach(Objects::requireNonNull);

@@ -78,10 +78,12 @@ import com.radixdlt.network.p2p.PeerManager;
 
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
+import com.radixdlt.utils.functional.Unit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
+import static com.radixdlt.utils.functional.Unit.unit;
 
 final class MessageDispatcher {
 	private static final Logger log = LogManager.getLogger();
@@ -109,7 +111,7 @@ final class MessageDispatcher {
 		this.peerManager = Objects.requireNonNull(peerManager);
 	}
 
-	CompletableFuture<Result<Void>> send(final OutboundMessageEvent outboundMessage) {
+	CompletableFuture<Result<Unit>> send(final OutboundMessageEvent outboundMessage) {
 		final var message = outboundMessage.message();
 		final var receiver = outboundMessage.receiver();
 
@@ -142,29 +144,29 @@ final class MessageDispatcher {
 			.whenComplete((unused1, unused2) -> this.counters.increment(CounterType.MESSAGES_OUTBOUND_PROCESSED));
 	}
 
-	private CompletableFuture<Void> sendDirectly(NodeId receiver, Message message) {
+	private CompletableFuture<Unit> sendDirectly(NodeId receiver, Message message) {
 		return peerManager.findOrCreateDirectChannel(receiver)
 			.thenCompose(channel -> serializeAndSend(channel, message));
 	}
 
-	private CompletableFuture<Void> sendViaCertifiedProxy(NodeId receiver, Message message) {
+	private CompletableFuture<Unit> sendViaCertifiedProxy(NodeId receiver, Message message) {
 		return peerManager.findOrCreateProxyChannel(receiver)
 			.thenCompose(channel -> wrapWithEnvelopeAndSend(channel, receiver, message));
 	}
 
-	private CompletableFuture<Void> sendViaConfiguredProxy(NodeId receiver, Message message) {
+	private CompletableFuture<Unit> sendViaConfiguredProxy(NodeId receiver, Message message) {
 		return peerManager.findOrCreateConfiguredProxyChannel(receiver)
 			.thenComposeAsync(channel -> wrapWithEnvelopeAndSend(channel, receiver, message));
 	}
 
-	private CompletableFuture<Void> wrapWithEnvelopeAndSend(PeerChannel channel, NodeId receiver, Message message) {
+	private CompletableFuture<Unit> wrapWithEnvelopeAndSend(PeerChannel channel, NodeId receiver, Message message) {
 		final var messageToSend = message instanceof MessageEnvelope
 			? message
 			: MessageEnvelope.create(self, receiver, message);
 		return serializeAndSend(channel, messageToSend);
 	}
 
-	private CompletableFuture<Void> serializeAndSend(PeerChannel channel, Message message) {
+	private CompletableFuture<Unit> serializeAndSend(PeerChannel channel, Message message) {
 		return toFuture(messageSerialization.serialize(message))
 			.thenCompose(serializedMessage -> {
 				this.counters.add(CounterType.NETWORKING_SENT_BYTES, serializedMessage.length);
@@ -172,10 +174,10 @@ final class MessageDispatcher {
 			});
 	}
 
-	private Result<Void> logSendError(Throwable ex, NodeId receiver, Message message) {
+	private Result<Unit> logSendError(Throwable ex, NodeId receiver, Message message) {
 		final var msg = String.format("Send %s to %s failed", message.getClass().getSimpleName(), receiver);
 		log.warn("{}: {}", msg, ex.getMessage());
-		return Result.ok(null /* Void type - unused */);
+		return Result.ok(unit());
 	}
 
 	private <T> CompletableFuture<T> toFuture(Result<T> res) {

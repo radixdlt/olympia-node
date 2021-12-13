@@ -91,8 +91,8 @@ public final class VerifiedProxyCertificate {
 
 	@JsonCreator
 	private static VerifiedProxyCertificate deserialize(
-		@JsonProperty("data") ProxyCertificateData data,
-		@JsonProperty("signer") NodeId signer
+		@JsonProperty(value = "data", required = true) ProxyCertificateData data,
+		@JsonProperty(value = "signer", required = true) NodeId signer
 	) {
 		return new VerifiedProxyCertificate(data, signer);
 	}

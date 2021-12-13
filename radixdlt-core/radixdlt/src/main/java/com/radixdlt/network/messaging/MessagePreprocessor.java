@@ -68,6 +68,7 @@ import com.google.inject.Provider;
 import com.radixdlt.network.messaging.serialization.MessageSerialization;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
+import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -112,10 +113,7 @@ final class MessagePreprocessor {
 		this.counters.add(CounterType.NETWORKING_BYTES_RECEIVED, messageBytes.length);
 
 		final var result = messageSerialization.deserialize(messageBytes)
-			.onFailure(e -> {
-				log.error("Failed to deserialize a message from peer {}: {}", inboundMessage.source(), e);
-				peerControl.get().banPeer(inboundMessage.source(), Duration.ofMinutes(5), "Failed to deserialize inbound message");
-			})
+			.onFailure(e -> handleDeserializationFailure(inboundMessage, e))
 			.flatMap(message -> processMessage(inboundMessage.source(), message));
 
 		this.counters.increment(CounterType.MESSAGES_INBOUND_RECEIVED);
@@ -126,6 +124,11 @@ final class MessagePreprocessor {
 		);
 
 		return result;
+	}
+
+	private void handleDeserializationFailure(InboundMessage inboundMessage, Failure e) {
+		log.error("Failed to deserialize a message from peer {}: {}", inboundMessage.source(), e);
+		peerControl.get().banPeer(inboundMessage.source(), Duration.ofMinutes(5), "Failed to deserialize inbound message");
 	}
 
 	Result<MessageFromPeer<Message>> processMessage(NodeId source, Message message) {

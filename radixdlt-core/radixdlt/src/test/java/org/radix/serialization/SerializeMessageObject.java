@@ -72,7 +72,7 @@ import java.util.function.Supplier;
  * Raft of tests for serialization of objects.
  * <p>
  * This class extends {@link SerializeObject} to set up databases
- * required by most classes that extend {@link Message}.
+ * required by most classes that extend {@link com.radixdlt.network.messaging.Message}.
  *
  * @param <T> The type under test.
  */

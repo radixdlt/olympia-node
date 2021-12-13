@@ -62,52 +62,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p.proxy.messages;
+package com.radixdlt.utils.functional;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.network.messaging.Message;
-import com.radixdlt.network.p2p.proxy.ProxyCertificate;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerId2;
+public final class Unit {
+	private Unit() { }
 
-import java.util.Objects;
+	private static final Unit UNIT = new Unit();
 
-@SerializerId2("p2p.proxy.granted_proxy_certificate")
-public final class GrantedProxyCertificateMessage extends Message {
-	@JsonProperty("proxyCertificate")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final ProxyCertificate proxyCertificate;
-
-	@JsonCreator
-	public GrantedProxyCertificateMessage(
-		@JsonProperty(value = "proxyCertificate", required = true) ProxyCertificate proxyCertificate
-	) {
-		this.proxyCertificate = Objects.requireNonNull(proxyCertificate);
+	public static Unit unit() {
+		return UNIT;
 	}
 
-	public ProxyCertificate getProxyCertificate() {
-		return proxyCertificate;
+	public static <T> Unit unit(final T ignored) {
+		return UNIT;
 	}
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName();
+		return "()";
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-
-		return (o instanceof GrantedProxyCertificateMessage that)
-			&& Objects.equals(proxyCertificate, that.getProxyCertificate())
-			&& Objects.equals(getTimestamp(), that.getTimestamp());
+		return o instanceof Unit;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(proxyCertificate, getTimestamp());
+		return 1;
 	}
 }

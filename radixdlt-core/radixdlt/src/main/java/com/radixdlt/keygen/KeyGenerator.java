@@ -64,6 +64,7 @@
 
 package com.radixdlt.keygen;
 
+import com.radixdlt.utils.functional.Unit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -87,6 +88,7 @@ import static com.radixdlt.utils.functional.Failure.failure;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 
+import static com.radixdlt.utils.functional.Unit.unit;
 import static java.util.Optional.ofNullable;
 
 /**
@@ -116,7 +118,7 @@ public class KeyGenerator {
 		System.exit(rc);
 	}
 
-	private Result<Void> run(String[] args) {
+	private Result<Unit> run(String[] args) {
 		return parseParameters(args)
 			.filter(commandLine -> !commandLine.hasOption("h"), irrelevant())
 			.filter(commandLine -> commandLine.getOptions().length != 0, irrelevant())
@@ -137,7 +139,7 @@ public class KeyGenerator {
 		new HelpFormatter().printHelp(KeyGenerator.class.getSimpleName(), options, true);
 	}
 
-	private Result<Void> generateKeypair(String keystore, String password, String keypairName, Boolean shouldShowPk) {
+	private Result<Unit> generateKeypair(String keystore, String password, String keypairName, Boolean shouldShowPk) {
 		var keystoreFile = new File(keystore);
 		var newFile = !keystoreFile.canWrite();
 		var isNew = newFile ? "new" : "existing";
@@ -162,7 +164,7 @@ public class KeyGenerator {
 		return Result.ok(commandLine.hasOption("pk"));
 	}
 
-	private Result<Void> printPublicKey(File keystoreFile, String password, String keypairName, boolean newFile) {
+	private Result<Unit> printPublicKey(File keystoreFile, String password, String keypairName, boolean newFile) {
 		if (!keystoreFile.exists() || !keystoreFile.canRead()) {
 			return Result.fail(MISSING_KEYSTORE_FILE.with(keystoreFile));
 		}
@@ -171,7 +173,7 @@ public class KeyGenerator {
 			ECKeyPair keyPair = RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), newFile)
 				.readKeyPair(keypairName, false);
 			System.out.printf("Public key of keypair '%s': %s%n", keypairName, keyPair.getPublicKey().toHex());
-			return null;
+			return unit();
 		});
 	}
 

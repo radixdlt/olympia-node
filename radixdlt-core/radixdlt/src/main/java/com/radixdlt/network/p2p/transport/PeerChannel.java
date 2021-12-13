@@ -86,6 +86,7 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.RateCalculator;
 import com.radixdlt.utils.functional.Result;
+import com.radixdlt.utils.functional.Unit;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -109,6 +110,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
+import static com.radixdlt.utils.functional.Unit.unit;
 
 /**
  * Class that manages TCP connection channel.
@@ -298,7 +300,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 		this.nettyChannel.writeAndFlush(data);
 	}
 
-	public Result<Void> send(byte[] data) {
+	public Result<Unit> send(byte[] data) {
 		synchronized (this.lock) {
 			if (this.state != ChannelState.ACTIVE) {
 				return IO_ERROR.result();
@@ -311,7 +313,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 					}
 					this.write(buf);
 					this.outMessagesStats.tick();
-					return Result.ok(null /* using null for Void type */);
+					return Result.ok(unit());
 				} catch (IOException e) {
 					return IO_ERROR.result();
 				}

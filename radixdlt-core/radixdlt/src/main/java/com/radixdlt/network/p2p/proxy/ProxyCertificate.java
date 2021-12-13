@@ -94,8 +94,8 @@ public final class ProxyCertificate {
 
 	@JsonCreator
 	private static ProxyCertificate deserialize(
-		@JsonProperty("data") ProxyCertificateData data,
-		@JsonProperty("signature") ECDSASignature signature
+		@JsonProperty(value = "data", required = true) ProxyCertificateData data,
+		@JsonProperty(value = "signature", required = true) ECDSASignature signature
 	) {
 		return new ProxyCertificate(data, signature);
 	}
@@ -106,7 +106,7 @@ public final class ProxyCertificate {
 
 	private ProxyCertificate(ProxyCertificateData data, ECDSASignature signature) {
 		this.data = Objects.requireNonNull(data);
-		this.signature = signature;
+		this.signature = Objects.requireNonNull(signature);
 	}
 
 	public ProxyCertificateData getData() {

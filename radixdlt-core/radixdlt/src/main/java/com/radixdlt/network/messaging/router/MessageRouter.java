@@ -97,8 +97,8 @@ public final class MessageRouter {
 
 	/* for backwards compatibility we support both envelope and non-envelope messages */
 	private <T extends Message> MessageEnvelope getOrCreateEnvelope(MessageFromPeer<T> messageFromPeer) {
-		if (messageFromPeer.getMessage() instanceof MessageEnvelope) {
-			return (MessageEnvelope) messageFromPeer.getMessage();
+		if (messageFromPeer.getMessage() instanceof MessageEnvelope messageEnvelope) {
+			return messageEnvelope;
 		} else {
 			return MessageEnvelope.create(messageFromPeer.getSource(), self, messageFromPeer.getMessage());
 		}
