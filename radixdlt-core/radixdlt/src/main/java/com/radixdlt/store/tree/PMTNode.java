@@ -2,29 +2,18 @@ package com.radixdlt.store.tree;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.Function;
 
 public abstract sealed class PMTNode implements Cloneable permits PMTBranch, PMTExt, PMTLeaf {
-
-	public enum NodeType {
-		LEAF,
-		EXTENSION,
-		BRANCH,
-		EMPTY
-	}
 
 	public static final int DB_SIZE_COND = 32;
 
 	protected byte[] hash;
-	protected NodeType nodeType;
 	protected PMTKey keyNibbles;
 	protected byte[] value;
 
 	public PMTKey getKey() {
 		return this.keyNibbles;
-	}
-
-	public NodeType getNodeType() {
-		return nodeType;
 	}
 
 	public byte[] getValue() {
@@ -40,6 +29,22 @@ public abstract sealed class PMTNode implements Cloneable permits PMTBranch, PMT
 		return this;
 	}
 
+	public abstract PMTAcc insertNode(PMTKey key, byte[] val, PMTAcc acc, Function<PMTNode, byte[]> represent, Function<byte[], PMTNode> read);
+
+	public abstract PMTAcc getValue(PMTKey key, PMTAcc acc, Function<byte[], PMTNode> read);
+
+	public PMTAcc computeAndSetTip(PMTPath pmtPath, PMTBranch branch, PMTAcc acc, Function<PMTNode, byte[]> represent) {
+		if (pmtPath.getCommonPrefix().isEmpty()) {
+			acc.setTip(branch);
+			return acc;
+		} else {
+			var newExt = new PMTExt(pmtPath.getCommonPrefix(), represent.apply(branch));
+			acc.setTip(newExt);
+			acc.add(newExt);
+			return acc;
+		}
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -50,13 +55,12 @@ public abstract sealed class PMTNode implements Cloneable permits PMTBranch, PMT
 		}
 		PMTNode pmtNode = (PMTNode) o;
 		return Arrays.equals(hash, pmtNode.hash)
-				&& nodeType == pmtNode.nodeType
 				&& Objects.equals(keyNibbles, pmtNode.keyNibbles)
 				&& Arrays.equals(value, pmtNode.value);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(Arrays.hashCode(hash), nodeType, keyNibbles, Arrays.hashCode(value));
+		return Objects.hash(Arrays.hashCode(hash), keyNibbles, Arrays.hashCode(value));
 	}
 }
