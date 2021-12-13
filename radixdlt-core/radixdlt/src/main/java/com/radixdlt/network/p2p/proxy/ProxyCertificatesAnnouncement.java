@@ -80,7 +80,8 @@ public final class ProxyCertificatesAnnouncement {
 	}
 
 	private ProxyCertificatesAnnouncement(ImmutableSet<ProxyCertificate> proxyCertificates) {
-		this.proxyCertificates = proxyCertificates;
+		this.proxyCertificates = Objects.requireNonNull(proxyCertificates);
+		this.proxyCertificates.forEach(Objects::requireNonNull);
 	}
 
 	public ImmutableSet<ProxyCertificate> proxyCertificates() {

@@ -64,40 +64,78 @@
 
 package com.radixdlt.network.p2p.proxy;
 
-import java.util.Objects;
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.ECKeyOps;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.network.p2p.PeerControl;
+import com.radixdlt.network.p2p.PeerEvent;
+import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.network.p2p.addressbook.AddressBook;
+import com.radixdlt.network.p2p.transport.PeerChannel;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
+import org.junit.Before;
+import org.junit.Test;
 
-/**
- * A remote event indicating that this node has been granted a proxy certificate (from the sender).
- */
-public final class GrantedProxyCertificate {
+import static com.radixdlt.utils.TypedMocks.rmock;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-	private final ProxyCertificate proxyCertificate;
+public final class ProxyCertificateManagerTest {
+	private ECKeyPair selfKey;
+	private P2PConfig config;
+	private PeersView peersView;
+	private PeerControl peerControl;
+	private AddressBook addressBook;
+	private RemoteEventDispatcher<GrantedProxyCertificate> grantedProxyCertDispatcher;
+	private RemoteEventDispatcher<ProxyCertificatesAnnouncement> proxyCertAnnouncementDispatcher;
+	private ProxyCertificateManager sut;
 
-	public static GrantedProxyCertificate create(ProxyCertificate proxyCertificate) {
-		return new GrantedProxyCertificate(proxyCertificate);
+	@Before
+	public void setup() {
+		this.selfKey = ECKeyPair.generateNew();
+		this.config = mock(P2PConfig.class);
+		this.peersView = mock(PeersView.class);
+		this.peerControl = mock(PeerControl.class);
+		this.addressBook = mock(AddressBook.class);
+		this.grantedProxyCertDispatcher = rmock(RemoteEventDispatcher.class);
+		this.proxyCertAnnouncementDispatcher = rmock(RemoteEventDispatcher.class);
+		this.sut = new ProxyCertificateManager(
+			NodeId.fromPublicKey(selfKey.getPublicKey()),
+			config,
+			Network.LOCALNET.getId(),
+			Addressing.ofNetwork(Network.LOCALNET),
+			ECKeyOps.fromKeyPair(selfKey),
+			peersView,
+			peerControl,
+			addressBook,
+			grantedProxyCertDispatcher,
+			proxyCertAnnouncementDispatcher
+		);
 	}
 
-	private GrantedProxyCertificate(ProxyCertificate proxyCertificate) {
-		this.proxyCertificate = Objects.requireNonNull(proxyCertificate);
-	}
+	@Test
+	public void when_authorized_peer_connected__then_issue_a_certificate() {
+		final var peerNodeId = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
+		final var peerChannel = mock(PeerChannel.class);
+		when(peerChannel.getRemoteNodeId()).thenReturn(peerNodeId);
+		when(peerChannel.proxyCertificates()).thenReturn(ImmutableSet.of());
 
-	public ProxyCertificate proxyCertificate() {
-		return proxyCertificate;
-	}
+		when(config.authorizedProxies()).thenReturn(ImmutableSet.of(peerNodeId));
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		} else if (o instanceof GrantedProxyCertificate that) {
-			return Objects.equals(proxyCertificate, that.proxyCertificate);
-		} else {
-			return false;
-		}
-	}
+		sut.handlePeerConnected(PeerEvent.PeerConnected.create(peerChannel));
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(proxyCertificate);
+		verify(grantedProxyCertDispatcher, times(1)).dispatch(
+			eq(BFTNode.create(peerNodeId.getPublicKey())),
+			argThat(arg -> arg.proxyCertificate().verify().isPresent())
+		);
 	}
 }

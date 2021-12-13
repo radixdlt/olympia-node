@@ -153,6 +153,18 @@ public final class PeerProxyTest extends DeterministicP2PNetworkTest {
 		// proxy node has processed and forwarded a single message
 		assertEquals(1L, testNetworkRunner.counter(PROXY_NODE, CounterType.MESSAGES_INBOUND_PROCESSED));
 		assertEquals(1L, testNetworkRunner.counter(PROXY_NODE, CounterType.NETWORKING_ROUTING_FORWARDED_MESSAGES));
+
+		// verify that the message can be routed from the validator node, through proxy, to the external node
+		testNetworkRunner.messageCentral(VALIDATOR_NODE).send(nodeIdOf(EXTERNAL_NODE), new PeerPingMessage());
+
+		// await until a message is received by the external node
+		await()
+			.atMost(Duration.ofSeconds(2))
+			.until(() -> testNetworkRunner.counter(EXTERNAL_NODE, CounterType.MESSAGES_INBOUND_PROCESSED) == 1L);
+
+		// proxy node has processed and forwarded one more message
+		assertEquals(2L, testNetworkRunner.counter(PROXY_NODE, CounterType.MESSAGES_INBOUND_PROCESSED));
+		assertEquals(2L, testNetworkRunner.counter(PROXY_NODE, CounterType.NETWORKING_ROUTING_FORWARDED_MESSAGES));
 	}
 
 	@Test

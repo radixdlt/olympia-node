@@ -64,40 +64,25 @@
 
 package com.radixdlt.network.p2p.proxy;
 
-import java.util.Objects;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.network.p2p.NodeId;
+import org.radix.serialization.SerializeMessageObject;
 
-/**
- * A remote event indicating that this node has been granted a proxy certificate (from the sender).
- */
-public final class GrantedProxyCertificate {
-
-	private final ProxyCertificate proxyCertificate;
-
-	public static GrantedProxyCertificate create(ProxyCertificate proxyCertificate) {
-		return new GrantedProxyCertificate(proxyCertificate);
+public final class ProxyCertificateSerializeTest extends SerializeMessageObject<ProxyCertificate> {
+	public ProxyCertificateSerializeTest() {
+		super(ProxyCertificate.class, ProxyCertificateSerializeTest::get);
 	}
 
-	private GrantedProxyCertificate(ProxyCertificate proxyCertificate) {
-		this.proxyCertificate = Objects.requireNonNull(proxyCertificate);
-	}
-
-	public ProxyCertificate proxyCertificate() {
-		return proxyCertificate;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		} else if (o instanceof GrantedProxyCertificate that) {
-			return Objects.equals(proxyCertificate, that.proxyCertificate);
-		} else {
-			return false;
-		}
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(proxyCertificate);
+	private static ProxyCertificate get() {
+		final var proxyCertData =
+			ProxyCertificateData.create(
+				NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey()),
+				System.currentTimeMillis(),
+				1
+			);
+		return ProxyCertificate.create(
+			proxyCertData,
+			ECKeyPair.generateNew().sign(proxyCertData.hashToSign())
+		);
 	}
 }

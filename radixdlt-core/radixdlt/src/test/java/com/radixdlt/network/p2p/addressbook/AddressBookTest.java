@@ -69,6 +69,8 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.RadixNodeUri;
+import com.radixdlt.network.p2p.proxy.ProxyCertificate;
+import com.radixdlt.network.p2p.proxy.ProxyCertificateData;
 import org.junit.Test;
 
 import java.util.Set;
@@ -157,5 +159,28 @@ public final class AddressBookTest {
 			prevPrevBestAddr = prevBestAddr;
 			prevBestAddr = currBestAddr;
 		}
+	}
+
+	@Test
+	public void address_book_should_return_best_candidate_proxy() {
+		final var self = RadixNodeUri.fromPubKeyAndAddress(1, ECKeyPair.generateNew().getPublicKey(), "127.0.0.10", 30303);
+		final var targetNodeKey = ECKeyPair.generateNew();
+		final var targetNode = NodeId.fromPublicKey(targetNodeKey.getPublicKey());
+		final var proxy1 =
+			RadixNodeUri.fromPubKeyAndAddress(1, ECKeyPair.generateNew().getPublicKey(), "127.0.0.1", 30303);
+
+		final var sut = new AddressBook(self, rmock(EventDispatcher.class), new InMemoryAddressBookPersistence());
+
+		final var proxy1CertData =
+			ProxyCertificateData.create(proxy1.getNodeId(), System.currentTimeMillis() + 10000, 1);
+		final var proxy1Cert =
+			ProxyCertificate.create(proxy1CertData, targetNodeKey.sign(proxy1CertData.hashToSign()));
+
+		sut.addUncheckedPeers(ImmutableSet.of(proxy1));
+		sut.updateProxyCertificates(proxy1.getNodeId(), ImmutableSet.of(proxy1Cert.verify().orElseThrow()));
+
+		final var result = sut.findBestCandidateProxyFor(targetNode);
+
+		assertEquals(result.orElseThrow(), proxy1);
 	}
 }

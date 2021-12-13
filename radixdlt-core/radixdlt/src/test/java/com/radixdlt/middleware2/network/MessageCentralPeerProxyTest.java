@@ -62,42 +62,58 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p.proxy;
+package com.radixdlt.middleware2.network;
 
-import java.util.Objects;
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.network.messaging.MessageCentral;
+import com.radixdlt.network.messaging.MessageCentralMockProvider;
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.proxy.GrantedProxyCertificate;
+import com.radixdlt.network.p2p.proxy.ProxyCertificate;
+import com.radixdlt.network.p2p.proxy.ProxyCertificatesAnnouncement;
+import com.radixdlt.network.p2p.proxy.messages.GrantedProxyCertificateMessage;
+import com.radixdlt.network.p2p.proxy.messages.ProxyCertificatesAnnouncementMessage;
+import org.junit.Before;
+import org.junit.Test;
 
-/**
- * A remote event indicating that this node has been granted a proxy certificate (from the sender).
- */
-public final class GrantedProxyCertificate {
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-	private final ProxyCertificate proxyCertificate;
+public final class MessageCentralPeerProxyTest {
+	private MessageCentral messageCentral;
+	private MessageCentralPeerProxy messageCentralPeerProxy;
 
-	public static GrantedProxyCertificate create(ProxyCertificate proxyCertificate) {
-		return new GrantedProxyCertificate(proxyCertificate);
+	@Before
+	public void setUp() {
+		this.messageCentral = MessageCentralMockProvider.get();
+		this.messageCentralPeerProxy = new MessageCentralPeerProxy(messageCentral);
 	}
 
-	private GrantedProxyCertificate(ProxyCertificate proxyCertificate) {
-		this.proxyCertificate = Objects.requireNonNull(proxyCertificate);
+	@Test
+	public void when_send_granted_proxy_cert__then_message_central_should_sent_message() {
+		final var grantedProxyCert = mock(GrantedProxyCertificate.class);
+		when(grantedProxyCert.proxyCertificate()).thenReturn(mock(ProxyCertificate.class));
+		final var receiverKey = ECKeyPair.generateNew().getPublicKey();
+		final var receiver = BFTNode.create(receiverKey);
+
+		messageCentralPeerProxy.grantedProxyCertificateDispatcher().dispatch(receiver, grantedProxyCert);
+		verify(messageCentral, times(1)).send(eq(NodeId.fromPublicKey(receiverKey)), any(GrantedProxyCertificateMessage.class));
 	}
 
-	public ProxyCertificate proxyCertificate() {
-		return proxyCertificate;
-	}
+	@Test
+	public void when_send_proxy_cert_announcement__then_message_central_should_sent_message() {
+		final var proxyCertsAnnouncement = mock(ProxyCertificatesAnnouncement.class);
+		when(proxyCertsAnnouncement.proxyCertificates()).thenReturn(ImmutableSet.of(mock(ProxyCertificate.class)));
+		final var receiverKey = ECKeyPair.generateNew().getPublicKey();
+		final var receiver = BFTNode.create(receiverKey);
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		} else if (o instanceof GrantedProxyCertificate that) {
-			return Objects.equals(proxyCertificate, that.proxyCertificate);
-		} else {
-			return false;
-		}
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(proxyCertificate);
+		messageCentralPeerProxy.proxyCertificatesAnnouncementDispatcher().dispatch(receiver, proxyCertsAnnouncement);
+		verify(messageCentral, times(1)).send(eq(NodeId.fromPublicKey(receiverKey)), any(ProxyCertificatesAnnouncementMessage.class));
 	}
 }
