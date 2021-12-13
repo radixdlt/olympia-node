@@ -85,7 +85,7 @@ public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfi
 	private final long mempoolThrottleMs;
 	private final SyncConfig syncConfig;
 	private final P2PConfig p2PConfig;
-	private final @Self ECPublicKey self;
+	private final ECPublicKey self;
 	private final SystemModelMapper systemModelMapper;
 
 	@Inject

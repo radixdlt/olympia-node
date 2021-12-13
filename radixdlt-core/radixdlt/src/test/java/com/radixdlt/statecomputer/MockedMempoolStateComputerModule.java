@@ -125,7 +125,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 		return new StateComputerLedger.StateComputer() {
 			@Override
 			public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
-				mempoolAdd.getTxns().forEach(txn -> {
+				mempoolAdd.txns().forEach(txn -> {
 					try {
 						mempool.add(txn);
 						counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());

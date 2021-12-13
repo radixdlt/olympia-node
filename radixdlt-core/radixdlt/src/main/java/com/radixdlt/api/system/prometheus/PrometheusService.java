@@ -79,7 +79,6 @@ import org.apache.logging.log4j.Logger;
 import com.google.inject.Inject;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.utils.UInt384;
 import org.radix.Radix;
 
 import java.io.IOException;
@@ -246,10 +245,6 @@ public class PrometheusService {
 		appendCounterExtended(builder, name, name, name, value.doubleValue());
 	}
 
-	private static void appendCounter(StringBuilder builder, String name, UInt384 value) {
-		appendCounterExtended(builder, name, name, name, value.toString() + ".0");
-	}
-
 	private static void appendCounterExtended(StringBuilder builder, String name, String type, String help, Object value) {
 		builder
 			.append("# HELP ").append(help).append('\n')
@@ -290,9 +285,7 @@ public class PrometheusService {
 						.replace(' ', '_');
 
 					// this might break if more beans are parsed
-					if (attribute.getValue() instanceof CompositeDataSupport) {
-						var cds = (CompositeDataSupport) attribute.getValue();
-
+					if (attribute.getValue() instanceof CompositeDataSupport cds) {
 						appendCounter(builder, outName + "_init", (Number) cds.get("init"));
 						appendCounter(builder, outName + "_max", (Number) cds.get("max"));
 						appendCounter(builder, outName + "_committed", (Number) cds.get("committed"));

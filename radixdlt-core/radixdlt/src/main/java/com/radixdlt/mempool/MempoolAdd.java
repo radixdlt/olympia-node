@@ -72,17 +72,7 @@ import java.util.Objects;
 /**
  * Message to attempt to add commands to the mempool
  */
-public final class MempoolAdd {
-	private final List<Txn> txns;
-
-	private MempoolAdd(List<Txn> txns) {
-		this.txns = txns;
-	}
-
-	public List<Txn> getTxns() {
-		return txns;
-	}
-
+public record MempoolAdd(List<Txn> txns) {
 	public static MempoolAdd create(Txn txn) {
 		Objects.requireNonNull(txn);
 		return new MempoolAdd(List.of(txn));
@@ -91,24 +81,5 @@ public final class MempoolAdd {
 	public static MempoolAdd create(List<Txn> txns) {
 		Objects.requireNonNull(txns);
 		return new MempoolAdd(txns);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hashCode(txns);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof MempoolAdd other)) {
-			return false;
-		}
-
-		return Objects.equals(this.txns, other.txns);
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s{txns=%s}", this.getClass().getSimpleName(), this.txns);
 	}
 }

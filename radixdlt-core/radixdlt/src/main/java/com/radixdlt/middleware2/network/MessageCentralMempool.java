@@ -90,7 +90,7 @@ public final class MessageCentralMempool {
 
 	public RemoteEventDispatcher<MempoolAdd> mempoolAddRemoteEventDispatcher() {
 		return (receiver, msg) -> {
-			MempoolAddMessage message = MempoolAddMessage.from(msg.getTxns());
+			MempoolAddMessage message = MempoolAddMessage.from(msg.txns());
 			this.send(message, receiver);
 		};
 	}

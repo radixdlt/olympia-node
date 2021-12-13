@@ -245,7 +245,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Override
 	public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
-		mempoolAdd.getTxns().forEach(txn -> {
+		mempoolAdd.txns().forEach(txn -> {
 			try {
 				addToMempool(txn);
 			} catch (MempoolRejectedException ignored) {
