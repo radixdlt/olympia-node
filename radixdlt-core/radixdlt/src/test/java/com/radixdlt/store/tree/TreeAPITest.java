@@ -101,4 +101,50 @@ public class TreeAPITest {
 				stallionValue.getBytes(StandardCharsets.UTF_8)
 		);
 	}
+
+	@Test
+	public void when_same_key_and_value_are_added_twice__then_root_hash_does_not_change() {
+		var storage = new InMemoryPMTStorage();
+		var tree = new PMT(storage, new Keccak256(), new RLPSerializer(), Duration.of(10, ChronoUnit.MINUTES));
+
+		String verbKey = "646f";
+		String verbValue = "verb";
+
+		var rootBefore = tree.add(
+				Hex.decode(verbKey),
+				verbValue.getBytes(StandardCharsets.UTF_8)
+		);
+
+		var rootAfter = tree.add(
+				Hex.decode(verbKey),
+				verbValue.getBytes(StandardCharsets.UTF_8)
+		);
+
+		Assert.assertArrayEquals(rootBefore, rootAfter);
+
+		Assert.assertArrayEquals(
+				tree.get(Hex.decode(verbKey)),
+				verbValue.getBytes(StandardCharsets.UTF_8)
+		);
+
+		String puppyKey = "646f67";
+		String puppyValue = "puppy";
+
+		rootBefore = tree.add(
+				Hex.decode(puppyKey),
+				puppyValue.getBytes(StandardCharsets.UTF_8)
+		);
+
+		rootAfter = tree.add(
+				Hex.decode(puppyKey),
+				puppyValue.getBytes(StandardCharsets.UTF_8)
+		);
+
+		Assert.assertArrayEquals(rootBefore, rootAfter);
+
+		Assert.assertArrayEquals(
+				tree.get(Hex.decode(puppyKey)),
+				puppyValue.getBytes(StandardCharsets.UTF_8)
+		);
+	}
 }
