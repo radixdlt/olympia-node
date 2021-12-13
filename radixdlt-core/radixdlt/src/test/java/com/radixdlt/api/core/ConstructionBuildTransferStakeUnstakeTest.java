@@ -83,9 +83,12 @@ import com.radixdlt.api.core.openapitools.model.ResourceWithdrawOperationNotSupp
 import com.radixdlt.api.core.openapitools.model.SubEntity;
 import com.radixdlt.api.core.openapitools.model.UnexpectedError;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
@@ -105,6 +108,8 @@ public final class ConstructionBuildTransferStakeUnstakeTest extends ApiTest {
 	@Inject
 	@Self
 	private ECPublicKey self;
+	@Inject
+	private RadixEngine<LedgerAndBFTProof> radixEngine;
 
 	private ConstructionBuildRequest buildTransfer(
 		ResourceIdentifier resourceIdentifier,
@@ -152,6 +157,30 @@ public final class ConstructionBuildTransferStakeUnstakeTest extends ApiTest {
 		// Assert
 		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
 		assertThat(Bytes.fromHexString(response.getUnsignedTransaction())).isNotNull();
+	}
+
+	@Test
+	public void setting_disable_mint_and_burn_should_set_correct_header() throws Exception {
+		// Arrange
+		start();
+
+		// Act
+		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+		var request = buildTransfer(
+			coreModelMapper.nativeToken(),
+			UInt256.ONE,
+			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
+			coreModelMapper.entityIdentifier(otherAddress)
+		);
+		request.setDisableResourceAllocateAndDestroy(true);
+		var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
+
+		// Assert
+		var bytes = Bytes.fromHexString(response.getUnsignedTransaction());
+		assertThat(bytes).isNotNull();
+		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
+		var parsed = radixEngine.getParser().parse(Txn.create(bytes));
+		assertThat(parsed.disableResourceAllocAndDestroy()).isTrue();
 	}
 
 

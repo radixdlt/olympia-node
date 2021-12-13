@@ -100,7 +100,7 @@ public final class ConstructionBuildHandler extends CoreJsonRpcHandler<Construct
 		);
 		var feePayer = modelMapper.feePayerEntity(request.getFeePayer());
 		var disableAllocAndDestroy = request.getDisableResourceAllocateAndDestroy();
-		var disable = disableAllocAndDestroy != null && !disableAllocAndDestroy;
+		var disable = disableAllocAndDestroy != null && disableAllocAndDestroy;
 		TxBuilder builder;
 		try {
 			builder = radixEngine.constructWithFees(

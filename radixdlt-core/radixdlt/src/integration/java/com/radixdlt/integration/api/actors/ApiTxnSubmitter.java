@@ -200,9 +200,9 @@ public final class ApiTxnSubmitter implements DeterministicActor {
 		}
 	}
 
-	private String submitAction(NodeApiClient nodeClient, NodeTransactionAction action) {
+	private String submitAction(NodeApiClient nodeClient, NodeTransactionAction action, Random random) {
 		try {
-			nodeClient.submit(action);
+			nodeClient.submit(action, random.nextBoolean());
 		} catch (CoreApiException e) {
 			// Throw error if not expected
 			if (!OKAY_ERRORS.contains(e.toError().getDetails().getClass())) {
@@ -253,6 +253,6 @@ public final class ApiTxnSubmitter implements DeterministicActor {
 			return "Skipped";
 		}
 
-		return submitAction(nodeClient, action);
+		return submitAction(nodeClient, action, random);
 	}
 }
