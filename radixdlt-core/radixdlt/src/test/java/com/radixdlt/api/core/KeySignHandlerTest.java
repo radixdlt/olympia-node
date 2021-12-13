@@ -107,14 +107,14 @@ public class KeySignHandlerTest extends ApiTest {
 				EntityOperation.from(
 					AccountVaultEntity.from(from),
 					ResourceOperation.withdraw(
-						TokenResource.from("xrd", REAddr.ofNativeToken()),
+						new TokenResource("xrd", REAddr.ofNativeToken()),
 						UInt256.ONE
 					)
 				),
 				EntityOperation.from(
 					AccountVaultEntity.from(to),
 					ResourceOperation.deposit(
-						TokenResource.from("xrd", REAddr.ofNativeToken()),
+						new TokenResource("xrd", REAddr.ofNativeToken()),
 						UInt256.ONE
 					)
 				)

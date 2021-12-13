@@ -83,7 +83,9 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.IntFunction;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @SerializerId2("xtx")
 public class RecoverableProcessedTxn {
@@ -131,6 +133,53 @@ public class RecoverableProcessedTxn {
 		return new RecoverableProcessedTxn(stateUpdateGroups);
 	}
 
+	private RecoverableSubstate recoverUp(UpSubstate upSubstate) {
+		ByteBuffer substate = upSubstate.getSubstateBuffer();
+		SubstateId substateId = upSubstate.getSubstateId();
+		return new RecoverableSubstateShutdown(substate, substateId, true);
+	}
+
+	private RecoverableSubstate recoverDown(REInstruction instruction, int index) {
+		SubstateId substateId = instruction.getData();
+		var dataList = shutdownSubstates.get(index);
+		if (dataList.size() != 1) {
+			throw new IllegalStateException();
+		}
+		var substate = ByteBuffer.wrap(dataList.get(0));
+		return new RecoverableSubstateShutdown(substate, substateId, false);
+	}
+
+	private RecoverableSubstate recoverLocalDown(REInstruction instruction, IntFunction<UpSubstate> localUpSubstates) {
+		SubstateId substateId = instruction.getData();
+		var index = substateId.getIndex().orElseThrow(() -> new IllegalStateException("Could not find index"));
+		var substate = localUpSubstates.apply(index).getSubstateBuffer();
+		return new RecoverableSubstateShutdown(substate, substateId, false);
+	}
+
+	private RecoverableSubstate recoverVirtualDown(REInstruction instruction, int index) {
+		SubstateId substateId = instruction.getData();
+		var dataList = shutdownSubstates.get(index);
+		if (dataList.size() != 1) {
+			throw new IllegalStateException();
+		}
+		return new RecoverableSubstateVirtualShutdown(dataList.get(0)[0], substateId);
+	}
+
+	private Stream<RecoverableSubstate> recoverDownIndex(int index) {
+		var substates = shutdownSubstates.get(index);
+		if (substates == null) {
+			return Stream.of();
+		}
+		return substates.stream()
+			.map(data -> {
+				var buf = ByteBuffer.wrap(data);
+				var substateId = SubstateId.fromBuffer(buf);
+				var substate = ByteBuffer.wrap(data, SubstateId.BYTES, data.length - SubstateId.BYTES);
+				return new RecoverableSubstateShutdown(substate, substateId, false);
+			});
+	}
+
+
 	public List<List<RecoverableSubstate>> recoverStateUpdates(ParsedTxn parsedTxn) {
 		var substateGroups = new ArrayList<List<RecoverableSubstate>>();
 		var substateUpdates = new ArrayList<RecoverableSubstate>();
@@ -149,47 +198,13 @@ public class RecoverableProcessedTxn {
 			switch (instruction.getMicroOp()) {
 				case UP -> {
 					UpSubstate upSubstate = instruction.getData();
-					ByteBuffer substate = upSubstate.getSubstateBuffer();
-					SubstateId substateId = upSubstate.getSubstateId();
-					substateUpdates.add(new RecoverableSubstateShutdown(substate, substateId, true));
+					substateUpdates.add(recoverUp(upSubstate));
 					upSubstates.add(upSubstate);
 				}
-				case DOWN -> {
-					SubstateId substateId = instruction.getData();
-					var dataList = shutdownSubstates.get(i);
-					if (dataList.size() != 1) {
-						throw new IllegalStateException();
-					}
-					var substate = ByteBuffer.wrap(dataList.get(0));
-					substateUpdates.add(new RecoverableSubstateShutdown(substate, substateId, false));
-				}
-				case LDOWN -> {
-					SubstateId substateId = instruction.getData();
-					var index = substateId.getIndex().orElseThrow(() -> new IllegalStateException("Could not find index"));
-					var substate = upSubstates.get(index).getSubstateBuffer();
-					substateUpdates.add(new RecoverableSubstateShutdown(substate, substateId, false));
-				}
-				case VDOWN, LVDOWN -> {
-					SubstateId substateId = instruction.getData();
-					var dataList = shutdownSubstates.get(i);
-					if (dataList.size() != 1) {
-						throw new IllegalStateException();
-					}
-					substateUpdates.add(new RecoverableSubstateVirtualShutdown(dataList.get(0)[0], substateId));
-				}
-				case DOWNINDEX -> {
-					var substates = shutdownSubstates.get(i);
-					if (substates == null) {
-						continue;
-					}
-					for (var data : substates) {
-						var buf = ByteBuffer.wrap(data);
-						var substateId = SubstateId.fromBuffer(buf);
-						var substate = ByteBuffer.wrap(data, SubstateId.BYTES, data.length - SubstateId.BYTES);
-						var recoverable = new RecoverableSubstateShutdown(substate, substateId, false);
-						substateUpdates.add(recoverable);
-					}
-				}
+				case DOWN -> substateUpdates.add(recoverDown(instruction, i));
+				case LDOWN -> substateUpdates.add(recoverLocalDown(instruction, upSubstates::get));
+				case VDOWN, LVDOWN -> substateUpdates.add(recoverVirtualDown(instruction, i));
+				case DOWNINDEX -> recoverDownIndex(i).forEach(substateUpdates::add);
 			}
 		}
 

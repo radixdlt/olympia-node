@@ -125,14 +125,14 @@ public class MempoolTransactionHandlerTest extends ApiTest {
 				EntityOperation.from(
 					AccountVaultEntity.from(from),
 					ResourceOperation.withdraw(
-						TokenResource.from("xrd", REAddr.ofNativeToken()),
+						new TokenResource("xrd", REAddr.ofNativeToken()),
 						toTransfer
 					)
 				),
 				EntityOperation.from(
 					AccountVaultEntity.from(to),
 					ResourceOperation.deposit(
-						TokenResource.from("xrd", REAddr.ofNativeToken()),
+						new TokenResource("xrd", REAddr.ofNativeToken()),
 						toTransfer
 					)
 				)

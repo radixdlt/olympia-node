@@ -73,7 +73,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class KeyQuery {
+public final class KeyQuery {
 	private final SystemMapKey key;
 	private final Supplier<Optional<Particle>> virtualSubstate;
 	private final SubstateTypeId typeId;

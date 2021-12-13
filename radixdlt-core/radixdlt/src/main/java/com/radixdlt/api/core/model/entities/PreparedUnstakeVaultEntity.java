@@ -98,11 +98,11 @@ public final class PreparedUnstakeVaultEntity implements Entity {
 	@Override
 	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
 		throws TxBuilderException {
-		if (!(amount.getResource() instanceof StakeUnitResource stakeUnitResource)) {
-			throw new EntityDoesNotSupportResourceDepositException(this, amount.getResource());
+		if (!(amount.resource() instanceof StakeUnitResource stakeUnitResource)) {
+			throw new EntityDoesNotSupportResourceDepositException(this, amount.resource());
 		}
-		var stakeOwnershipKey = stakeUnitResource.getValidatorKey();
-		var substate = new PreparedUnstakeOwnership(stakeOwnershipKey, accountAddress, amount.getAmount());
+		var stakeOwnershipKey = stakeUnitResource.validatorKey();
+		var substate = new PreparedUnstakeOwnership(stakeOwnershipKey, accountAddress, amount.amount());
 		txBuilder.up(substate);
 	}
 

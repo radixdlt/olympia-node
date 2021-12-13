@@ -123,7 +123,6 @@ public final class TransactionsHandler extends CoreJsonRpcHandler<CommittedTrans
 	}
 
 	private CommittedTransaction construct(Txn txn, RecoverableProcessedTxn recoveryInfo, AccumulatorState accumulatorState) {
-		var transactionIdentifier = coreModelMapper.transactionIdentifier(txn.getId());
 		var parser = radixEngineProvider.get().getParser();
 		ParsedTxn parsedTxn;
 		try {
@@ -158,6 +157,7 @@ public final class TransactionsHandler extends CoreJsonRpcHandler<CommittedTrans
 				return ECPublicKey.recoverFrom(hash, sig)
 					.orElseThrow(() -> new IllegalStateException("Invalid signature on already committed transaction"));
 			});
+		var transactionIdentifier = coreModelMapper.transactionIdentifier(txn.getId());
 
 		return committedTransaction
 			.committedStateIdentifier(coreModelMapper.stateIdentifier(accumulatorState))
@@ -175,7 +175,6 @@ public final class TransactionsHandler extends CoreJsonRpcHandler<CommittedTrans
 	public CommittedTransactionsResponse handleRequest(CommittedTransactionsRequest request) throws CoreApiException {
 		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var limit = coreModelMapper.limit(request.getLimit());
 		var stateIdentifier = coreModelMapper.partialStateIdentifier(request.getStateIdentifier());
 		long stateVersion = stateIdentifier.getFirst();
 		var accumulator = stateIdentifier.getSecond();
@@ -188,6 +187,7 @@ public final class TransactionsHandler extends CoreJsonRpcHandler<CommittedTrans
 			}
 		}
 
+		var limit = coreModelMapper.limit(request.getLimit());
 		var recoverable = txnStore.get(stateVersion, limit);
 		var accumulatorState = new AccumulatorState(stateVersion, currentAccumulator);
 		var response = new CommittedTransactionsResponse();

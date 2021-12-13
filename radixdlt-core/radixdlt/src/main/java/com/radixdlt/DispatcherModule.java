@@ -361,7 +361,6 @@ public class DispatcherModule extends AbstractModule {
 	) {
 		var dispatcher = environment.getDispatcher(BFTRebuildUpdate.class);
 		return update -> {
-			long stateVersion = update.getVertexStoreState().getRootHeader().getStateVersion();
 			systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, update.getVertexStoreState().getVertices().size());
 			systemCounters.increment(CounterType.BFT_VERTEX_STORE_REBUILDS);
 			dispatcher.dispatch(update);

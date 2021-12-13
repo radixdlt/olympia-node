@@ -78,23 +78,13 @@ final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
 	@Override
 	public HealthResponse handleRequest() {
 		var nodeStatus = healthInfoService.nodeStatus();
-		switch (nodeStatus) {
-			case UP -> {
-				return new HealthResponse().status(HealthResponse.StatusEnum.UP);
-			}
-			case BOOTING -> {
-				return new HealthResponse().status(HealthResponse.StatusEnum.BOOTING);
-			}
-			case SYNCING -> {
-				return new HealthResponse().status(HealthResponse.StatusEnum.SYNCING);
-			}
-			case STALLED -> {
-				return new HealthResponse().status(HealthResponse.StatusEnum.STALLED);
-			}
-			case OUT_OF_SYNC -> {
-				return new HealthResponse().status(HealthResponse.StatusEnum.OUT_OF_SYNC);
-			}
-			default -> throw new IllegalStateException("Unknown node status: " + nodeStatus);
-		}
+		var status = switch (nodeStatus) {
+			case UP -> HealthResponse.StatusEnum.UP;
+			case BOOTING -> HealthResponse.StatusEnum.BOOTING;
+			case SYNCING -> HealthResponse.StatusEnum.SYNCING;
+			case STALLED -> HealthResponse.StatusEnum.STALLED;
+			case OUT_OF_SYNC -> HealthResponse.StatusEnum.OUT_OF_SYNC;
+		};
+		return new HealthResponse().status(status);
 	}
 }

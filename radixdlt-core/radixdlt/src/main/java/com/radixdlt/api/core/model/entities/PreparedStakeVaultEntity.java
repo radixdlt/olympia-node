@@ -109,21 +109,21 @@ public final class PreparedStakeVaultEntity implements Entity {
 	}
 
 	private boolean amountIsNative(ResourceUnsignedAmount amount) {
-		if (!(amount.getResource() instanceof TokenResource tokenResource)) {
+		if (!(amount.resource() instanceof TokenResource tokenResource)) {
 			return false;
 		}
-		return tokenResource.getTokenAddress().isNativeToken();
+		return tokenResource.tokenAddress().isNativeToken();
 	}
 
 	@Override
 	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
 		throws TxBuilderException {
 		if (!amountIsNative(amount)) {
-			throw new EntityDoesNotSupportResourceDepositException(this, amount.getResource());
+			throw new EntityDoesNotSupportResourceDepositException(this, amount.resource());
 		}
 
 		var minStake = config.get().getMinimumStake().toSubunits();
-		var attempt = UInt256.from(amount.getAmount().toByteArray());
+		var attempt = UInt256.from(amount.amount().toByteArray());
 		if (attempt.compareTo(minStake) < 0) {
 			throw new MinimumStakeException(minStake, attempt);
 		}

@@ -63,33 +63,7 @@
 
 package com.radixdlt.api.core.model;
 
-public final class EntityOperation {
-	private final Entity entity;
-	private final ResourceOperation resourceOperation;
-	private final DataOperation dataOperation;
-
-	private EntityOperation(
-		Entity entity,
-		ResourceOperation resourceOperation,
-		DataOperation dataOperation
-	) {
-		this.entity = entity;
-		this.resourceOperation = resourceOperation;
-		this.dataOperation = dataOperation;
-	}
-
-	public Entity getEntity() {
-		return entity;
-	}
-
-	public ResourceOperation getResourceOperation() {
-		return resourceOperation;
-	}
-
-	public DataOperation getDataOperation() {
-		return dataOperation;
-	}
-
+public record EntityOperation(Entity entity, ResourceOperation resourceOperation, DataOperation dataOperation) {
 	public static EntityOperation from(Entity entity, ResourceOperation resourceOperation, DataOperation dataOperation) {
 		return new EntityOperation(entity, resourceOperation, dataOperation);
 	}

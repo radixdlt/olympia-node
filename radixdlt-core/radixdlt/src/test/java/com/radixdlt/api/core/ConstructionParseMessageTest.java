@@ -109,14 +109,14 @@ public class ConstructionParseMessageTest extends ApiTest {
 				EntityOperation.from(
 					AccountVaultEntity.from(accountAddress),
 					ResourceOperation.withdraw(
-						TokenResource.from("xrd", REAddr.ofNativeToken()),
+						new TokenResource("xrd", REAddr.ofNativeToken()),
 						UInt256.ONE
 					)
 				),
 				EntityOperation.from(
 					AccountVaultEntity.from(otherAddress),
 					ResourceOperation.deposit(
-						TokenResource.from("xrd", REAddr.ofNativeToken()),
+						new TokenResource("xrd", REAddr.ofNativeToken()),
 						UInt256.ONE
 					)
 				)

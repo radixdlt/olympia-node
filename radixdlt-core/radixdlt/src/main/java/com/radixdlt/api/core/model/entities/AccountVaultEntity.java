@@ -106,13 +106,13 @@ public final class AccountVaultEntity implements Entity {
 	@Override
 	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) {
 		final Particle substate;
-		if (amount.getResource() instanceof TokenResource tokenResource) {
-			var tokenAddress = tokenResource.getTokenAddress();
-			substate = new TokensInAccount(accountAddress, tokenAddress, amount.getAmount());
-		} else if (amount.getResource() instanceof StakeUnitResource stakeUnitResource) {
-			substate = new StakeOwnership(stakeUnitResource.getValidatorKey(), accountAddress, amount.getAmount());
+		if (amount.resource() instanceof TokenResource tokenResource) {
+			var tokenAddress = tokenResource.tokenAddress();
+			substate = new TokensInAccount(accountAddress, tokenAddress, amount.amount());
+		} else if (amount.resource() instanceof StakeUnitResource stakeUnitResource) {
+			substate = new StakeOwnership(stakeUnitResource.validatorKey(), accountAddress, amount.amount());
 		} else {
-			throw new IllegalStateException("Unknown resource type " + amount.getResource());
+			throw new IllegalStateException("Unknown resource type " + amount.resource());
 		}
 		txBuilder.up(substate);
 	}
@@ -127,11 +127,11 @@ public final class AccountVaultEntity implements Entity {
 			SubstateIndex<ResourceInBucket> index = SubstateIndex.create(buf.array(), TokensInAccount.class);
 			return new SubstateWithdrawal(
 				index,
-				p -> p.bucket().resourceAddr().equals(tokenResource.getTokenAddress())
+				p -> p.bucket().resourceAddr().equals(tokenResource.tokenAddress())
 				&& p.bucket().getOwner().equals(accountAddress)
 			);
 		} else if (resource instanceof StakeUnitResource stakeUnitResource) {
-			var validatorKey = stakeUnitResource.getValidatorKey();
+			var validatorKey = stakeUnitResource.validatorKey();
 			var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES));
 			buf.put(SubstateTypeId.STAKE_OWNERSHIP.id());
 			buf.put((byte) 0);

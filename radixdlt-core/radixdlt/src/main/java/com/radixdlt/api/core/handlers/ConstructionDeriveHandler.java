@@ -106,21 +106,21 @@ public final class ConstructionDeriveHandler extends CoreJsonRpcHandler<Construc
 			var tokenAddress = REAddr.ofHashedKey(publicKey, token.getSymbol());
 			response.entityIdentifier(coreModelMapper.entityIdentifier(tokenAddress, token.getSymbol()));
 		} else if (metadata instanceof ConstructionDeriveRequestMetadataPreparedStakes preparedStakesMetadata) {
-			var address = REAddr.ofPubKeyAccount(publicKey);
 			var entity = coreModelMapper.entity(preparedStakesMetadata.getValidator());
 			if (!(entity instanceof ValidatorEntity validatorEntity)) {
 				throw coreModelMapper.notValidatorEntityException(preparedStakesMetadata.getValidator());
 			}
+			var address = REAddr.ofPubKeyAccount(publicKey);
 			response.entityIdentifier(coreModelMapper.entityIdentifierPreparedStake(address, validatorEntity.getValidatorKey()));
 		} else if (metadata instanceof ConstructionDeriveRequestMetadataPreparedUnstakes) {
 			var address = REAddr.ofPubKeyAccount(publicKey);
 			response.entityIdentifier(coreModelMapper.entityIdentifierPreparedUnstake(address));
 		} else if (metadata instanceof ConstructionDeriveRequestMetadataExitingUnstakes exitingUnstakes) {
-			var address = REAddr.ofPubKeyAccount(publicKey);
 			var entity = coreModelMapper.entity(exitingUnstakes.getValidator());
 			if (!(entity instanceof ValidatorEntity validatorEntity)) {
 				throw coreModelMapper.notValidatorEntityException(exitingUnstakes.getValidator());
 			}
+			var address = REAddr.ofPubKeyAccount(publicKey);
 			response.entityIdentifier(coreModelMapper.entityIdentifierExitingStake(
 				address, validatorEntity.getValidatorKey(), exitingUnstakes.getEpochUnlock()
 			));

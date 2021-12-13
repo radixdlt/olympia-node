@@ -116,7 +116,7 @@ public final class ValidatorEntity implements Entity {
 	@Override
 	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
 		throws TxBuilderException {
-		throw new EntityDoesNotSupportResourceDepositException(this, amount.getResource());
+		throw new EntityDoesNotSupportResourceDepositException(this, amount.resource());
 	}
 
 	@Override
