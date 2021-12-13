@@ -395,6 +395,7 @@ public final class CoreModelMapper {
 			return systemAddressEntity(entityIdentifier);
 		}
 
+		// TODO: Combine addressing schemes to remove switch/case statement
 		var addressType = addressing.getAddressType(address).orElseThrow(() -> invalidAddress(address));
 		return switch (addressType) {
 			case VALIDATOR -> validatorAddressEntity(entityIdentifier);
