@@ -65,12 +65,9 @@ package com.radixdlt.api.core.model.entities;
 
 import com.radixdlt.api.core.model.Entity;
 import com.radixdlt.api.core.model.KeyQuery;
-import com.radixdlt.api.core.model.ParsedDataObject;
-import com.radixdlt.api.core.model.Resource;
 import com.radixdlt.api.core.model.ResourceQuery;
 import com.radixdlt.api.core.model.ResourceUnsignedAmount;
 import com.radixdlt.api.core.model.StakeUnitResource;
-import com.radixdlt.api.core.model.SubstateWithdrawal;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atom.TxBuilder;
@@ -104,20 +101,6 @@ public final class PreparedUnstakeVaultEntity implements Entity {
 		var stakeOwnershipKey = stakeUnitResource.validatorKey();
 		var substate = new PreparedUnstakeOwnership(stakeOwnershipKey, accountAddress, amount.amount());
 		txBuilder.up(substate);
-	}
-
-	@Override
-	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
-		throw new EntityDoesNotSupportResourceWithdrawException(this, resource);
-	}
-
-	@Override
-	public void overwriteDataObject(
-		ParsedDataObject dataObject,
-		TxBuilder txBuilder,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		throw new EntityDoesNotSupportDataObjectException(this, dataObject);
 	}
 
 	@Override

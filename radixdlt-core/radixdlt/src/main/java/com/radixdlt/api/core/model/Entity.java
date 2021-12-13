@@ -63,6 +63,9 @@
 
 package com.radixdlt.api.core.model;
 
+import com.radixdlt.api.core.model.entities.EntityDoesNotSupportDataObjectException;
+import com.radixdlt.api.core.model.entities.EntityDoesNotSupportResourceDepositException;
+import com.radixdlt.api.core.model.entities.EntityDoesNotSupportResourceWithdrawException;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -76,14 +79,20 @@ public interface Entity {
 	List<KeyQuery> getKeyQueries();
 
 	// Write
-	void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
-		throws TxBuilderException;
+	default void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
+		throws TxBuilderException {
+		throw new EntityDoesNotSupportResourceDepositException(this, amount.resource());
+	}
 
-	SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException;
+	default SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
+		throw new EntityDoesNotSupportResourceWithdrawException(this, resource);
+	}
 
-	void overwriteDataObject(
+	default void overwriteDataObject(
 		ParsedDataObject parsedDataObject,
 		TxBuilder txBuilder,
 		Supplier<RERulesConfig> config
-	) throws TxBuilderException;
+	) throws TxBuilderException {
+		throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
+	}
 }

@@ -65,42 +65,13 @@ package com.radixdlt.api.core.model.entities;
 
 import com.radixdlt.api.core.model.Entity;
 import com.radixdlt.api.core.model.KeyQuery;
-import com.radixdlt.api.core.model.ParsedDataObject;
-import com.radixdlt.api.core.model.Resource;
 import com.radixdlt.api.core.model.ResourceQuery;
-import com.radixdlt.api.core.model.ResourceUnsignedAmount;
-import com.radixdlt.api.core.model.SubstateWithdrawal;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
 
 import java.util.List;
-import java.util.function.Supplier;
 
 import static com.radixdlt.atom.SubstateTypeId.*;
 
 public final class SystemEntity implements Entity {
-	@Override
-	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
-		throws TxBuilderException {
-		throw new EntityDoesNotSupportResourceDepositException(this, amount.resource());
-	}
-
-	@Override
-	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
-		throw new EntityDoesNotSupportResourceWithdrawException(this, resource);
-	}
-
-	@Override
-	public void overwriteDataObject(
-		ParsedDataObject parsedDataObject,
-		TxBuilder txBuilder,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
-	}
-
-
 	@Override
 	public List<ResourceQuery> getResourceQueries() {
 		return List.of();

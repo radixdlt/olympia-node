@@ -66,10 +66,7 @@ package com.radixdlt.api.core.model.entities;
 import com.radixdlt.api.core.model.Entity;
 import com.radixdlt.api.core.model.KeyQuery;
 import com.radixdlt.api.core.model.ParsedDataObject;
-import com.radixdlt.api.core.model.Resource;
 import com.radixdlt.api.core.model.ResourceQuery;
-import com.radixdlt.api.core.model.ResourceUnsignedAmount;
-import com.radixdlt.api.core.model.SubstateWithdrawal;
 import com.radixdlt.api.core.openapitools.model.TokenData;
 import com.radixdlt.api.core.openapitools.model.TokenMetadata;
 import com.radixdlt.application.system.scrypt.Syscall;
@@ -107,17 +104,6 @@ public final class TokenEntity implements Entity {
 
 	public static TokenEntity from(String symbol, REAddr tokenAddr) {
 		return new TokenEntity(symbol, tokenAddr);
-	}
-
-	@Override
-	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
-		throws TxBuilderException {
-		throw new EntityDoesNotSupportResourceDepositException(this, amount.resource());
-	}
-
-	@Override
-	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
-		throw new EntityDoesNotSupportResourceWithdrawException(this, resource);
 	}
 
 	@Override

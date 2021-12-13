@@ -66,10 +66,7 @@ package com.radixdlt.api.core.model.entities;
 import com.radixdlt.api.core.model.Entity;
 import com.radixdlt.api.core.model.KeyQuery;
 import com.radixdlt.api.core.model.ParsedDataObject;
-import com.radixdlt.api.core.model.Resource;
 import com.radixdlt.api.core.model.ResourceQuery;
-import com.radixdlt.api.core.model.ResourceUnsignedAmount;
-import com.radixdlt.api.core.model.SubstateWithdrawal;
 import com.radixdlt.api.core.openapitools.model.PreparedValidatorFee;
 import com.radixdlt.api.core.openapitools.model.PreparedValidatorOwner;
 import com.radixdlt.api.core.openapitools.model.PreparedValidatorRegistered;
@@ -111,17 +108,6 @@ public final class ValidatorEntity implements Entity {
 
 	public ECPublicKey getValidatorKey() {
 		return validatorKey;
-	}
-
-	@Override
-	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
-		throws TxBuilderException {
-		throw new EntityDoesNotSupportResourceDepositException(this, amount.resource());
-	}
-
-	@Override
-	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
-		throw new EntityDoesNotSupportResourceWithdrawException(this, resource);
 	}
 
 	@Override
