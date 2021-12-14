@@ -65,12 +65,9 @@ package com.radixdlt.api.core.model.entities;
 
 import com.radixdlt.api.core.model.Entity;
 import com.radixdlt.api.core.model.KeyQuery;
-import com.radixdlt.api.core.model.ParsedDataObject;
-import com.radixdlt.api.core.model.Resource;
 import com.radixdlt.api.core.model.ResourceQuery;
 import com.radixdlt.api.core.model.ResourceUnsignedAmount;
 import com.radixdlt.api.core.model.StakeUnitResource;
-import com.radixdlt.api.core.model.SubstateWithdrawal;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atom.TxBuilder;
@@ -84,40 +81,16 @@ import java.util.function.Supplier;
 
 import static com.radixdlt.atom.SubstateTypeId.PREPARED_UNSTAKE;
 
-public final class PreparedUnstakeVaultEntity implements Entity {
-	private final REAddr accountAddress;
-
-	PreparedUnstakeVaultEntity(REAddr accountAddress) {
-		this.accountAddress = accountAddress;
-	}
-
-	public REAddr getAccountAddress() {
-		return accountAddress;
-	}
-
+public record PreparedUnstakeVaultEntity(REAddr accountAddress) implements Entity {
 	@Override
 	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
 		throws TxBuilderException {
-		if (!(amount.getResource() instanceof StakeUnitResource stakeUnitResource)) {
-			throw new EntityDoesNotSupportResourceDepositException(this, amount.getResource());
+		if (!(amount.resource() instanceof StakeUnitResource stakeUnitResource)) {
+			throw new EntityDoesNotSupportResourceDepositException(this, amount.resource());
 		}
-		var stakeOwnershipKey = stakeUnitResource.getValidatorKey();
-		var substate = new PreparedUnstakeOwnership(stakeOwnershipKey, accountAddress, amount.getAmount());
+		var stakeOwnershipKey = stakeUnitResource.validatorKey();
+		var substate = new PreparedUnstakeOwnership(stakeOwnershipKey, accountAddress, amount.amount());
 		txBuilder.up(substate);
-	}
-
-	@Override
-	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
-		throw new EntityDoesNotSupportResourceWithdrawException(this, resource);
-	}
-
-	@Override
-	public void overwriteDataObject(
-		ParsedDataObject dataObject,
-		TxBuilder txBuilder,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		throw new EntityDoesNotSupportDataObjectException(this, dataObject);
 	}
 
 	@Override
@@ -137,9 +110,5 @@ public final class PreparedUnstakeVaultEntity implements Entity {
 	@Override
 	public List<KeyQuery> getKeyQueries() {
 		return List.of();
-	}
-
-	public static PreparedUnstakeVaultEntity from(REAddr accountAddress) {
-		return new PreparedUnstakeVaultEntity(accountAddress);
 	}
 }

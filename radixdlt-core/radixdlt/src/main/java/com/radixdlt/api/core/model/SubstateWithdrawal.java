@@ -64,8 +64,11 @@
 package com.radixdlt.api.core.model;
 
 import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.utils.UInt256;
 
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 public final class SubstateWithdrawal {
@@ -80,11 +83,12 @@ public final class SubstateWithdrawal {
 		this.predicate = predicate;
 	}
 
-	public SubstateIndex<ResourceInBucket> getIndex() {
-		return index;
-	}
-
-	public Predicate<ResourceInBucket> getPredicate() {
-		return predicate;
+	public <X extends Exception> UInt256 execute(TxBuilder builder, UInt256 amount, Function<UInt256, X> exceptionSupplier) throws X {
+		return builder.downFungible(
+			index,
+			predicate,
+			amount,
+			exceptionSupplier
+		);
 	}
 }

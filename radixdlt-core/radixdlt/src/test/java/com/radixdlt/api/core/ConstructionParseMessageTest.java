@@ -107,16 +107,16 @@ public class ConstructionParseMessageTest extends ApiTest {
 		var entityOperationGroups =
 			List.of(List.of(
 				EntityOperation.from(
-					AccountVaultEntity.from(accountAddress),
+					new AccountVaultEntity(accountAddress),
 					ResourceOperation.withdraw(
-						TokenResource.from("xrd", REAddr.ofNativeToken()),
+						new TokenResource("xrd", REAddr.ofNativeToken()),
 						UInt256.ONE
 					)
 				),
 				EntityOperation.from(
-					AccountVaultEntity.from(otherAddress),
+					new AccountVaultEntity(otherAddress),
 					ResourceOperation.deposit(
-						TokenResource.from("xrd", REAddr.ofNativeToken()),
+						new TokenResource("xrd", REAddr.ofNativeToken()),
 						UInt256.ONE
 					)
 				)

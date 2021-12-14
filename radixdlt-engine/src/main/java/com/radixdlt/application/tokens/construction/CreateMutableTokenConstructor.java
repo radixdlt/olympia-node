@@ -83,11 +83,11 @@ public final class CreateMutableTokenConstructor implements ActionConstructor<Cr
 
 	@Override
 	public void construct(CreateMutableToken action, TxBuilder txBuilder) throws TxBuilderException {
-		final var reAddress = action.getResourceAddress();
 		if (action.getSymbol().length() > maxSymbolLength) {
 			throw new SymbolLengthException(maxSymbolLength, action.getSymbol().length());
 		}
 
+		final var reAddress = action.getResourceAddress();
 		txBuilder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, action.getSymbol().getBytes(StandardCharsets.UTF_8));
 		txBuilder.downREAddr(reAddress);
 		txBuilder.up(TokenResource.createMutableSupplyResource(reAddress, action.getOwner()));

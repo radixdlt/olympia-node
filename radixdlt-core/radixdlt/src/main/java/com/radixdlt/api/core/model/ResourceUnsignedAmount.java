@@ -65,20 +65,5 @@ package com.radixdlt.api.core.model;
 
 import com.radixdlt.utils.UInt256;
 
-public final class ResourceUnsignedAmount {
-	private final Resource resource;
-	private final UInt256 amount;
-
-	public ResourceUnsignedAmount(Resource resource, UInt256 amount) {
-		this.resource = resource;
-		this.amount = amount;
-	}
-
-	public Resource getResource() {
-		return resource;
-	}
-
-	public UInt256 getAmount() {
-		return amount;
-	}
+public record ResourceUnsignedAmount(Resource resource, UInt256 amount) {
 }

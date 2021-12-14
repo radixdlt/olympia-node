@@ -212,10 +212,7 @@ public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAddit
 					return next;
 				}
 			};
-			return Streams.stream(iterator)
-				.limit(limit)
-				.onClose(cursor::close)
-				.toList();
+			return Streams.stream(iterator).limit(limit).toList();
 		}
 	}
 
@@ -225,7 +222,6 @@ public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAddit
 			throw new IllegalStateException("Accumulator out of sync.");
 		}
 
-		var nextAccumulatorState = ledgerAccumulator.accumulate(accumulatorState, txn.getTxnId().asHashCode());
 		txn.stateUpdates()
 			.filter(u -> u.getParsed() instanceof RoundData)
 			.map(u -> (RoundData) u.getParsed())
@@ -242,6 +238,7 @@ public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAddit
 			throw new IllegalStateException(e);
 		}
 
+		var nextAccumulatorState = ledgerAccumulator.accumulate(accumulatorState, txn.getTxnId().asHashCode());
 		this.accumulatorState = nextAccumulatorState;
 
 		var key = new DatabaseEntry(Longs.toByteArray(stateVersion - 1));

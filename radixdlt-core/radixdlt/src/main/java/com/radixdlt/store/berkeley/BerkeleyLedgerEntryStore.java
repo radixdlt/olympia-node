@@ -136,7 +136,6 @@ import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
@@ -1027,7 +1026,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			return Streams.stream(iterator)
 				.limit(limit)
 				.onClose(txnCursor::close)
-				.collect(Collectors.toList());
+				.toList();
 		}
 	}
 

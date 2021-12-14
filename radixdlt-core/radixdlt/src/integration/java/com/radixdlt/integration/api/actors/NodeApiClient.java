@@ -250,11 +250,10 @@ final class NodeApiClient {
 
 	public EntityResponse getEntity(EntityIdentifier entityIdentifier) {
 		try {
-			var response = entityHandler.handleRequest(new EntityRequest()
+			return entityHandler.handleRequest(new EntityRequest()
 				.networkIdentifier(new NetworkIdentifier().network("localnet"))
 				.entityIdentifier(entityIdentifier)
 			);
-			return response;
 		} catch (CoreApiException e) {
 			throw new IllegalStateException(e);
 		}
@@ -293,7 +292,7 @@ final class NodeApiClient {
 		return response.getTransactions();
 	}
 
-	public void submit(NodeTransactionAction action) throws Exception {
+	public void submit(NodeTransactionAction action, boolean disableResourceAllocateAndDestroy) throws Exception {
 		var networkIdentifier = networkIdentifier();
 		var engineConfigurationResponse = engineConfigurationHandler.handleRequest(
 			new EngineConfigurationRequest().networkIdentifier(networkIdentifier)
@@ -305,11 +304,12 @@ final class NodeApiClient {
 		var accountIdentifier = deriveAccount(nodePublicKey);
 		var operationGroups = action.toOperationGroups(configuration, this::selfDerive);
 
-		var buildResponse = constructionBuildHandler.handleRequest(new ConstructionBuildRequest()
+		var buildRequest = new ConstructionBuildRequest()
 			.networkIdentifier(networkIdentifier)
 			.feePayer(accountIdentifier)
 			.operationGroups(operationGroups)
-		);
+			.disableResourceAllocateAndDestroy(disableResourceAllocateAndDestroy);
+		var buildResponse = constructionBuildHandler.handleRequest(buildRequest);
 		var unsignedTransaction = buildResponse.getUnsignedTransaction();
 
 		var response = keySignHandler.handleRequest(new KeySignRequest()

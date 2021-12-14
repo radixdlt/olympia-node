@@ -65,7 +65,6 @@ package com.radixdlt.api.core.model.entities;
 
 import com.radixdlt.api.core.model.Entity;
 import com.radixdlt.api.core.model.KeyQuery;
-import com.radixdlt.api.core.model.ParsedDataObject;
 import com.radixdlt.api.core.model.Resource;
 import com.radixdlt.api.core.model.ResourceQuery;
 import com.radixdlt.api.core.model.ResourceUnsignedAmount;
@@ -77,7 +76,6 @@ import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
@@ -92,27 +90,17 @@ import java.util.function.Supplier;
 import static com.radixdlt.atom.SubstateTypeId.STAKE_OWNERSHIP;
 import static com.radixdlt.atom.SubstateTypeId.TOKENS;
 
-public final class AccountVaultEntity implements Entity {
-	private final REAddr accountAddress;
-
-	private AccountVaultEntity(REAddr accountAddress) {
-		this.accountAddress = accountAddress;
-	}
-
-	public REAddr getAccountAddress() {
-		return accountAddress;
-	}
-
+public record AccountVaultEntity(REAddr accountAddress) implements Entity {
 	@Override
 	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) {
 		final Particle substate;
-		if (amount.getResource() instanceof TokenResource tokenResource) {
-			var tokenAddress = tokenResource.getTokenAddress();
-			substate = new TokensInAccount(accountAddress, tokenAddress, amount.getAmount());
-		} else if (amount.getResource() instanceof StakeUnitResource stakeUnitResource) {
-			substate = new StakeOwnership(stakeUnitResource.getValidatorKey(), accountAddress, amount.getAmount());
+		if (amount.resource() instanceof TokenResource tokenResource) {
+			var tokenAddress = tokenResource.tokenAddress();
+			substate = new TokensInAccount(accountAddress, tokenAddress, amount.amount());
+		} else if (amount.resource() instanceof StakeUnitResource stakeUnitResource) {
+			substate = new StakeOwnership(stakeUnitResource.validatorKey(), accountAddress, amount.amount());
 		} else {
-			throw new IllegalStateException("Unknown resource type " + amount.getResource());
+			throw new IllegalStateException("Unknown resource type " + amount.resource());
 		}
 		txBuilder.up(substate);
 	}
@@ -127,11 +115,11 @@ public final class AccountVaultEntity implements Entity {
 			SubstateIndex<ResourceInBucket> index = SubstateIndex.create(buf.array(), TokensInAccount.class);
 			return new SubstateWithdrawal(
 				index,
-				p -> p.bucket().resourceAddr().equals(tokenResource.getTokenAddress())
+				p -> p.bucket().resourceAddr().equals(tokenResource.tokenAddress())
 				&& p.bucket().getOwner().equals(accountAddress)
 			);
 		} else if (resource instanceof StakeUnitResource stakeUnitResource) {
-			var validatorKey = stakeUnitResource.getValidatorKey();
+			var validatorKey = stakeUnitResource.validatorKey();
 			var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES));
 			buf.put(SubstateTypeId.STAKE_OWNERSHIP.id());
 			buf.put((byte) 0);
@@ -152,15 +140,6 @@ public final class AccountVaultEntity implements Entity {
 	}
 
 	@Override
-	public void overwriteDataObject(
-		ParsedDataObject parsedDataObject,
-		TxBuilder txBuilder,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
-	}
-
-	@Override
 	public List<ResourceQuery> getResourceQueries() {
 		var tokenIndex = SubstateIndex.<ResourceInBucket>create(
 			Arrays.concatenate(new byte[]{TOKENS.id(), 0}, accountAddress.getBytes()),
@@ -177,9 +156,5 @@ public final class AccountVaultEntity implements Entity {
 	@Override
 	public List<KeyQuery> getKeyQueries() {
 		return List.of();
-	}
-
-	public static AccountVaultEntity from(REAddr address) {
-		return new AccountVaultEntity(address);
 	}
 }

@@ -74,7 +74,6 @@ import org.radix.utils.IOUtils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.ModuleRunner;

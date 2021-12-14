@@ -132,7 +132,7 @@ public class ConstructionBuildMessageTest extends ApiTest {
 		var unsignedTransactionBytes = Bytes.fromHexString(response.getUnsignedTransaction());
 		assertThat(unsignedTransactionBytes).isNotNull();
 		var indexOfMessageBytes = com.google.common.primitives.Bytes.indexOf(unsignedTransactionBytes, messageBytes);
-		assertThat(indexOfMessageBytes).isGreaterThanOrEqualTo(0);
+		assertThat(indexOfMessageBytes).isNotNegative();
 	}
 
 

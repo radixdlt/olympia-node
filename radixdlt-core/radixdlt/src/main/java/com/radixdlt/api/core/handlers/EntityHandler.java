@@ -127,7 +127,7 @@ public class EntityHandler extends CoreJsonRpcHandler<EntityRequest, EntityRespo
 			}
 
 			for (var keyQuery : keyQueries) {
-				var substate = reader.get(keyQuery.getKey()).or(keyQuery.getVirtualSubstate());
+				var substate = keyQuery.get(reader);
 				substate.flatMap(modelMapper::dataObject).ifPresent(response::addDataObjectsItem);
 			}
 

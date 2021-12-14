@@ -91,8 +91,6 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.Bytes;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 public final class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransactionsRequest, CommittedTransactionsResponse> {
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 	private final BerkeleyRecoverableProcessedTxnStore txnStore;
@@ -125,7 +123,6 @@ public final class TransactionsHandler extends CoreJsonRpcHandler<CommittedTrans
 	}
 
 	private CommittedTransaction construct(Txn txn, RecoverableProcessedTxn recoveryInfo, AccumulatorState accumulatorState) {
-		var transactionIdentifier = coreModelMapper.transactionIdentifier(txn.getId());
 		var parser = radixEngineProvider.get().getParser();
 		ParsedTxn parsedTxn;
 		try {
@@ -160,6 +157,7 @@ public final class TransactionsHandler extends CoreJsonRpcHandler<CommittedTrans
 				return ECPublicKey.recoverFrom(hash, sig)
 					.orElseThrow(() -> new IllegalStateException("Invalid signature on already committed transaction"));
 			});
+		var transactionIdentifier = coreModelMapper.transactionIdentifier(txn.getId());
 
 		return committedTransaction
 			.committedStateIdentifier(coreModelMapper.stateIdentifier(accumulatorState))
@@ -177,7 +175,6 @@ public final class TransactionsHandler extends CoreJsonRpcHandler<CommittedTrans
 	public CommittedTransactionsResponse handleRequest(CommittedTransactionsRequest request) throws CoreApiException {
 		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var limit = coreModelMapper.limit(request.getLimit());
 		var stateIdentifier = coreModelMapper.partialStateIdentifier(request.getStateIdentifier());
 		long stateVersion = stateIdentifier.getFirst();
 		var accumulator = stateIdentifier.getSecond();
@@ -190,16 +187,16 @@ public final class TransactionsHandler extends CoreJsonRpcHandler<CommittedTrans
 			}
 		}
 
+		var limit = coreModelMapper.limit(request.getLimit());
 		var recoverable = txnStore.get(stateVersion, limit);
-		var accumulatorState = new AtomicReference<>(new AccumulatorState(stateVersion, currentAccumulator));
+		var accumulatorState = new AccumulatorState(stateVersion, currentAccumulator);
 		var response = new CommittedTransactionsResponse();
 		var txns = ledgerEntryStore.getCommittedTxns(stateVersion, recoverable.size());
 		for (int i = 0; i < txns.size(); i++) {
 			var txn = txns.get(i);
 			var recoveryInfo = recoverable.get(i);
-			var curAccumulatorState = accumulatorState.get();
-			var nextAccumulatorState = ledgerAccumulator.accumulate(curAccumulatorState, txn.getId().asHashCode());
-			accumulatorState.set(nextAccumulatorState);
+			var nextAccumulatorState = ledgerAccumulator.accumulate(accumulatorState, txn.getId().asHashCode());
+			accumulatorState = nextAccumulatorState;
 			response.addTransactionsItem(construct(txn, recoveryInfo, nextAccumulatorState));
 		}
 

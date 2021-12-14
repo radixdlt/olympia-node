@@ -284,6 +284,7 @@ public final class RadixNodeModule extends AbstractModule {
 		String bindAddress = properties.get("api.bind.address", DEFAULT_BIND_ADDRESS);
 		int port = properties.get("api.port", DEFAULT_CORE_PORT);
 		boolean enableTransactions = properties.get("api.transactions.enable", false);
-		install(new ApiModule(bindAddress, port, enableTransactions));
+		boolean enableSign = properties.get("api.sign.enable", false);
+		install(new ApiModule(bindAddress, port, enableTransactions, enableSign));
 	}
 }

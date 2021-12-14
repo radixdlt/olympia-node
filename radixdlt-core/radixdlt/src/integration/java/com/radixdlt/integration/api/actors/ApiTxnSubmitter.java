@@ -102,7 +102,7 @@ import java.util.stream.Collectors;
  * Submits a random transaction through a random node in a deterministic test.
  */
 public final class ApiTxnSubmitter implements DeterministicActor {
-	private final static Set<Class<? extends CoreError>> OKAY_ERRORS = Set.of(
+	private static final Set<Class<? extends CoreError>> OKAY_ERRORS = Set.of(
 		MempoolFullError.class,
 		NotEnoughResourcesError.class,
 		AboveMaximumValidatorFeeIncreaseError.class,
@@ -202,7 +202,7 @@ public final class ApiTxnSubmitter implements DeterministicActor {
 
 	private String submitAction(NodeApiClient nodeClient, NodeTransactionAction action) {
 		try {
-			nodeClient.submit(action);
+			nodeClient.submit(action, false);
 		} catch (CoreApiException e) {
 			// Throw error if not expected
 			if (!OKAY_ERRORS.contains(e.toError().getDetails().getClass())) {

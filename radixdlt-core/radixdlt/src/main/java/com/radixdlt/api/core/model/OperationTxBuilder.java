@@ -107,18 +107,16 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
 		if (operation.isDeposit()) {
 			entity.deposit(amount, txBuilder, config);
 		} else {
-			var retrieval = entity.withdraw(amount.getResource());
+			var withdrawal = entity.withdraw(amount.resource());
 			var feeInReserve = Optional.ofNullable(txBuilder.getFeeReserve()).orElse(UInt256.ZERO);
-
-			var change = txBuilder.downFungible(
-				retrieval.getIndex(),
-				retrieval.getPredicate(),
-				amount.getAmount(),
-				available -> new NotEnoughResourcesException(amount.getResource(), amount.getAmount(), available, feeInReserve)
+			var change = withdrawal.execute(
+				txBuilder,
+				amount.amount(),
+				available -> new NotEnoughResourcesException(amount.resource(), amount.amount(), available, feeInReserve)
 			);
 
 			if (!change.isZero()) {
-				var changeAmount = new ResourceUnsignedAmount(amount.getResource(), change);
+				var changeAmount = new ResourceUnsignedAmount(amount.resource(), change);
 				entity.deposit(changeAmount, txBuilder, config);
 			}
 		}
@@ -148,11 +146,11 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
 		TxBuilder txBuilder,
 		Supplier<RERulesConfig> config
 	) throws TxBuilderException {
-		var entity = operation.getEntity();
-		var resourceOperation = operation.getResourceOperation();
+		var entity = operation.entity();
+		var resourceOperation = operation.resourceOperation();
 		executeResourceOperation(entity, resourceOperation, txBuilder, config);
 
-		var dataOperation = operation.getDataOperation();
+		var dataOperation = operation.dataOperation();
 		executeDataOperation(entity, dataOperation, txBuilder, config);
 	}
 

@@ -281,7 +281,7 @@ public class MempoolTest {
 		processor.handleMessage(getFirstPeer(), mempoolAdd, null);
 
 		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isEqualTo(0);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
 	}
 
 	@Test
@@ -302,7 +302,7 @@ public class MempoolTest {
 		processor.handleMessage(getFirstPeer(), mempoolAdd, null);
 
 		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isEqualTo(0);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
 	}
 
 	@Test
@@ -324,7 +324,7 @@ public class MempoolTest {
 		stateComputer.commit(commandsAndProof, null);
 
 		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isEqualTo(0);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
 	}
 
 	@Test
@@ -348,7 +348,7 @@ public class MempoolTest {
 		stateComputer.commit(commandsAndProof, null);
 
 		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isEqualTo(0);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
 	}
 
 	@Test

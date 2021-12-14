@@ -105,16 +105,16 @@ public class KeySignHandlerTest extends ApiTest {
 		var entityOperationGroups =
 			List.of(List.of(
 				EntityOperation.from(
-					AccountVaultEntity.from(from),
+					new AccountVaultEntity(from),
 					ResourceOperation.withdraw(
-						TokenResource.from("xrd", REAddr.ofNativeToken()),
+						new TokenResource("xrd", REAddr.ofNativeToken()),
 						UInt256.ONE
 					)
 				),
 				EntityOperation.from(
-					AccountVaultEntity.from(to),
+					new AccountVaultEntity(to),
 					ResourceOperation.deposit(
-						TokenResource.from("xrd", REAddr.ofNativeToken()),
+						new TokenResource("xrd", REAddr.ofNativeToken()),
 						UInt256.ONE
 					)
 				)

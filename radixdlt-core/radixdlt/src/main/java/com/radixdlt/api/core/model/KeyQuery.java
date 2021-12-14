@@ -67,57 +67,48 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngineReader;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class KeyQuery {
+public final class KeyQuery {
 	private final SystemMapKey key;
 	private final Supplier<Optional<Particle>> virtualSubstate;
-	private final SubstateTypeId typeId;
 
-	private KeyQuery(SystemMapKey key, Supplier<Optional<Particle>> virtualSubstate, SubstateTypeId typeId) {
+	private KeyQuery(SystemMapKey key, Supplier<Optional<Particle>> virtualSubstate) {
 		this.key = key;
 		this.virtualSubstate = virtualSubstate;
-		this.typeId = typeId;
 	}
 
-	public SystemMapKey getKey() {
-		return key;
-	}
-
-	public Supplier<Optional<Particle>> getVirtualSubstate() {
-		return virtualSubstate;
-	}
-
-	public SubstateTypeId getTypeId() {
-		return typeId;
+	public Optional<Particle> get(RadixEngineReader<?> reader) {
+		return reader.get(key).or(virtualSubstate);
 	}
 
 	public static KeyQuery fromToken(REAddr tokenAddress, SubstateTypeId typeId, Function<REAddr, Particle> virtualSubstate) {
 		var key = SystemMapKey.ofResourceData(tokenAddress, typeId.id());
-		return new KeyQuery(key, () -> Optional.of(virtualSubstate.apply(tokenAddress)), typeId);
+		return new KeyQuery(key, () -> Optional.of(virtualSubstate.apply(tokenAddress)));
 	}
 
 	public static KeyQuery fromToken(REAddr tokenAddress, SubstateTypeId typeId) {
 		var key = SystemMapKey.ofResourceData(tokenAddress, typeId.id());
-		return new KeyQuery(key, Optional::empty, typeId);
+		return new KeyQuery(key, Optional::empty);
 	}
 
 	public static KeyQuery fromSystem(SubstateTypeId typeId) {
 		var key = SystemMapKey.ofSystem(typeId.id());
-		return new KeyQuery(key, Optional::empty, typeId);
+		return new KeyQuery(key, Optional::empty);
 	}
 
 	public static KeyQuery fromValidator(ECPublicKey validatorKey, SubstateTypeId typeId, Function<ECPublicKey, Particle> virtualSubstate) {
 		var key = SystemMapKey.ofSystem(typeId.id(), validatorKey.getCompressedBytes());
-		return new KeyQuery(key, () -> Optional.of(virtualSubstate.apply(validatorKey)), typeId);
+		return new KeyQuery(key, () -> Optional.of(virtualSubstate.apply(validatorKey)));
 	}
 
 	public static KeyQuery fromValidator(ECPublicKey validatorKey, SubstateTypeId typeId) {
 		var key = SystemMapKey.ofSystem(typeId.id(), validatorKey.getCompressedBytes());
-		return new KeyQuery(key, Optional::empty, typeId);
+		return new KeyQuery(key, Optional::empty);
 	}
 }

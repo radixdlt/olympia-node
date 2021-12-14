@@ -65,11 +65,8 @@ package com.radixdlt.api.core.model.entities;
 
 import com.radixdlt.api.core.model.Entity;
 import com.radixdlt.api.core.model.KeyQuery;
-import com.radixdlt.api.core.model.ParsedDataObject;
-import com.radixdlt.api.core.model.Resource;
 import com.radixdlt.api.core.model.ResourceQuery;
 import com.radixdlt.api.core.model.ResourceUnsignedAmount;
-import com.radixdlt.api.core.model.SubstateWithdrawal;
 import com.radixdlt.api.core.model.TokenResource;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
@@ -91,39 +88,23 @@ import java.util.function.Supplier;
 
 import static com.radixdlt.atom.SubstateTypeId.PREPARED_STAKE;
 
-public final class PreparedStakeVaultEntity implements Entity {
-	private final REAddr accountAddress;
-	private final ECPublicKey validatorKey;
-
-	PreparedStakeVaultEntity(REAddr accountAddress, ECPublicKey validatorKey) {
-		this.accountAddress = accountAddress;
-		this.validatorKey = validatorKey;
-	}
-
-	public REAddr getAccountAddress() {
-		return accountAddress;
-	}
-
-	public ECPublicKey getValidatorKey() {
-		return validatorKey;
-	}
-
+public record PreparedStakeVaultEntity(REAddr accountAddress, ECPublicKey validatorKey) implements Entity {
 	private boolean amountIsNative(ResourceUnsignedAmount amount) {
-		if (!(amount.getResource() instanceof TokenResource tokenResource)) {
+		if (!(amount.resource() instanceof TokenResource tokenResource)) {
 			return false;
 		}
-		return tokenResource.getTokenAddress().isNativeToken();
+		return tokenResource.tokenAddress().isNativeToken();
 	}
 
 	@Override
 	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
 		throws TxBuilderException {
 		if (!amountIsNative(amount)) {
-			throw new EntityDoesNotSupportResourceDepositException(this, amount.getResource());
+			throw new EntityDoesNotSupportResourceDepositException(this, amount.resource());
 		}
 
 		var minStake = config.get().getMinimumStake().toSubunits();
-		var attempt = UInt256.from(amount.getAmount().toByteArray());
+		var attempt = UInt256.from(amount.amount().toByteArray());
 		if (attempt.compareTo(minStake) < 0) {
 			throw new MinimumStakeException(minStake, attempt);
 		}
@@ -141,20 +122,6 @@ public final class PreparedStakeVaultEntity implements Entity {
 	}
 
 	@Override
-	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
-		throw new EntityDoesNotSupportResourceWithdrawException(this, resource);
-	}
-
-	@Override
-	public void overwriteDataObject(
-		ParsedDataObject parsedDataObject,
-		TxBuilder txBuilder,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
-	}
-
-	@Override
 	public List<ResourceQuery> getResourceQueries() {
 		var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + REAddr.PUB_KEY_BYTES);
 		buf.put(PREPARED_STAKE.id());
@@ -168,10 +135,5 @@ public final class PreparedStakeVaultEntity implements Entity {
 	@Override
 	public List<KeyQuery> getKeyQueries() {
 		return List.of();
-	}
-
-
-	public static PreparedStakeVaultEntity from(REAddr accountAddress, ECPublicKey validatorKey) {
-		return new PreparedStakeVaultEntity(accountAddress, validatorKey);
 	}
 }

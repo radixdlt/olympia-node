@@ -65,69 +65,19 @@ package com.radixdlt.api.core.model.entities;
 
 import com.radixdlt.api.core.model.Entity;
 import com.radixdlt.api.core.model.KeyQuery;
-import com.radixdlt.api.core.model.ParsedDataObject;
-import com.radixdlt.api.core.model.Resource;
 import com.radixdlt.api.core.model.ResourceQuery;
-import com.radixdlt.api.core.model.ResourceUnsignedAmount;
-import com.radixdlt.api.core.model.SubstateWithdrawal;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.ExitingStake;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
 
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.function.Supplier;
 
 import static com.radixdlt.atom.SubstateTypeId.EXITING_STAKE;
 
-public final class ExitingStakeVaultEntity implements Entity {
-	private final REAddr accountAddress;
-	private final ECPublicKey validatorKey;
-	private final long epochUnlock;
-
-	ExitingStakeVaultEntity(REAddr accountAddress, ECPublicKey validatorKey, long epochUnlock) {
-		this.accountAddress = accountAddress;
-		this.validatorKey = validatorKey;
-		this.epochUnlock = epochUnlock;
-	}
-
-	public long getEpochUnlock() {
-		return epochUnlock;
-	}
-
-	public REAddr getAccountAddress() {
-		return accountAddress;
-	}
-
-	public ECPublicKey getValidatorKey() {
-		return validatorKey;
-	}
-
-	@Override
-	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
-		throws TxBuilderException {
-		throw new EntityDoesNotSupportResourceDepositException(this, amount.getResource());
-	}
-
-	@Override
-	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
-		throw new EntityDoesNotSupportResourceWithdrawException(this, resource);
-	}
-
-	@Override
-	public void overwriteDataObject(
-		ParsedDataObject parsedDataObject,
-		TxBuilder txBuilder,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
-	}
-
+public record ExitingStakeVaultEntity(REAddr accountAddress, ECPublicKey validatorKey, long epochUnlock) implements Entity {
 	@Override
 	public List<ResourceQuery> getResourceQueries() {
 		var buf = ByteBuffer.allocate(2 + Long.BYTES + ECPublicKey.COMPRESSED_BYTES + REAddr.PUB_KEY_BYTES);
@@ -143,10 +93,5 @@ public final class ExitingStakeVaultEntity implements Entity {
 	@Override
 	public List<KeyQuery> getKeyQueries() {
 		return List.of();
-	}
-
-
-	public static ExitingStakeVaultEntity from(REAddr accountAddress, ECPublicKey validatorKey, long epochUnlock) {
-		return new ExitingStakeVaultEntity(accountAddress, validatorKey, epochUnlock);
 	}
 }

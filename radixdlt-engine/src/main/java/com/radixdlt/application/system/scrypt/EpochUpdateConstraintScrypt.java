@@ -427,7 +427,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.onDone = onDone;
 		}
 
-		ReducerState stake(StakeOwnership stakeOwnership) throws MismatchException, ProcedureException {
+		ReducerState stake(StakeOwnership stakeOwnership) throws MismatchException {
 			var accountAddr = stakes.firstKey();
 			var stakeAmt = stakes.remove(accountAddr);
 			var expectedOwnership = validatorScratchPad.stake(accountAddr, stakeAmt);
