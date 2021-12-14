@@ -253,34 +253,45 @@ public final class ProxyCertificateManager {
 					return; // peer is not an authorized proxied node; ignore
 				}
 
-				final var maybeVerifiedCert = verifyProxyCertificate(self, ev.proxyCertificate());
-				if (maybeVerifiedCert.isPresent()) {
-					final var existingCertExpiration = Optional.ofNullable(this.receivedProxyCertificates.get(NodeId.fromPublicKey(peer.getKey())))
-						.map(cert -> cert.getData().expiresAt())
-						.orElse(0L);
-
-					if (maybeVerifiedCert.get().expiresAt() <= existingCertExpiration) {
-						return; // certificate expires earlier that the one we currently have; ignore
-					}
-					this.receivedProxyCertificates.put(NodeId.fromPublicKey(peer.getKey()), ev.proxyCertificate());
-					log.trace("Received a granted proxy certificate");
-
-					// announce the certificate to connected peers
-					this.proxyCertificatesAnnouncementDispatcher.dispatch(
-						peersView.peers().map(p -> BFTNode.create(p.getNodeId().getPublicKey())).toList(),
-						new ProxyCertificatesAnnouncement(ImmutableSet.copyOf(receivedProxyCertificates.values()))
-					);
-				} else {
-					final var banDuration = Duration.ofSeconds(30);
-					log.warn(
-						"Received invalid granted proxy certificate from {}, banning for {}",
-						addressing.forNodes().of(peer.getKey()),
-						banDuration
-					);
-					peerControl.banPeer(NodeId.fromPublicKey(peer.getKey()), banDuration, "Received invalid granted proxy certificate");
-				}
+				verifyProxyCertificate(self, ev.proxyCertificate()).ifPresentOrElse(
+					verifiedCert -> handleVerifiedGrantedProxyCertificate(ev.proxyCertificate(), verifiedCert),
+					() -> handleInvalidGrantedProxyCertificate(NodeId.fromPublicKey(peer.getKey()))
+				);
 			}
 		};
+	}
+
+	private void handleVerifiedGrantedProxyCertificate(
+		ProxyCertificate unverifiedCert,
+		VerifiedProxyCertificate verifiedCert
+	) {
+		log.trace("Received a granted proxy certificate");
+
+		final var existingCertExpiration = Optional.ofNullable(this.receivedProxyCertificates.get(verifiedCert.signer()))
+			.map(cert -> cert.getData().expiresAt())
+			.orElse(0L);
+
+		if (verifiedCert.expiresAt() <= existingCertExpiration) {
+			return; // certificate expires earlier that the one we currently have; ignore
+		}
+
+		this.receivedProxyCertificates.put(verifiedCert.signer(), unverifiedCert);
+
+		// announce the certificate to connected peers
+		this.proxyCertificatesAnnouncementDispatcher.dispatch(
+			peersView.peers().map(p -> BFTNode.create(p.getNodeId().getPublicKey())).toList(),
+			new ProxyCertificatesAnnouncement(ImmutableSet.copyOf(receivedProxyCertificates.values()))
+		);
+	}
+
+	private void handleInvalidGrantedProxyCertificate(NodeId peer) {
+		final var banDuration = Duration.ofSeconds(30);
+		log.warn(
+			"Received invalid granted proxy certificate from {}, banning for {}",
+			addressing.forNodes().of(peer.getPublicKey()),
+			banDuration
+		);
+		peerControl.banPeer(peer, banDuration, "Received invalid granted proxy certificate");
 	}
 
 	public RemoteEventProcessor<ProxyCertificatesAnnouncement> proxyCertificatesAnnouncementEventProcessor() {
