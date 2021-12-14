@@ -6,7 +6,7 @@ For general documentation, please visit https://docs.radixdlt.com/.
 
 ## Contents
 
-- [Development Environment Setup](./development)
+- [Development Environment Setup and Run Configurations](./development)
 - [API Specifications](./api-specs)
 - [Transaction Specifications](./transaction-specs)
 - [Logging Configuration](./logging)

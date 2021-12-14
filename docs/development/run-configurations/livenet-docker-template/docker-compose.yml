@@ -1,0 +1,25 @@
+version: '2.2'
+services:
+  core:
+    image: radixdlt/radixdlt-core:develop
+    init: true
+    restart: unless-stopped
+    ports:
+      - "${RADIXDLT_API_PORT}:3333"
+    mem_limit: 12000m
+    cap_add:
+      - NET_ADMIN
+    environment:
+      RADIXDLT_NETWORK_SEEDS_REMOTE: "${RADIXDLT_NETWORK_NODE}"
+      RADIXDLT_LOG_LEVEL: "${RADIXDLT_LOG_LEVEL}"
+      RADIX_NODE_KEYSTORE_PASSWORD: "${RADIXDLT_NODE_KEY_PASSWORD}"
+      RADIXDLT_NETWORK_ID: "${RADIXDLT_NETWORK_ID}"
+      JAVA_OPTS: -server -Xms8g -Xmx8g -XX:+HeapDumpOnOutOfMemoryError -XX:+UseCompressedOops -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=jks -Djava.security.egd=file:/dev/urandom -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector
+      RADIXDLT_VALIDATOR_KEY_LOCATION: "/home/radixdlt/node-keystore.ks"
+      RADIXDLT_API_PORT: 3333
+      RADIXDLT_TRANSACTIONS_API_ENABLE: "true"
+
+    volumes:
+      -  "./node/ledger:/home/radixdlt/RADIXDB"
+      -  "./node/keystore.ks:/home/radixdlt/node-keystore.ks"
+      -  "./node/logs:/home/radixdlt/logs"

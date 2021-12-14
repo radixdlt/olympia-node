@@ -73,10 +73,6 @@ public class MempoolRejectedException extends Exception {
 		super(message);
 	}
 
-	public MempoolRejectedException(String message, Throwable cause) {
-		super(message, cause);
-	}
-
 	public MempoolRejectedException(Throwable cause) {
 		super(cause);
 	}

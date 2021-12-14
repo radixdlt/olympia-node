@@ -81,8 +81,9 @@ public class Mempools {
 	public static <T> Mempool<T> empty() {
 		return new Mempool<>() {
 			@Override
-			public void add(Txn txn) throws MempoolFullException, MempoolDuplicateException {
+			public T add(Txn txn) throws MempoolFullException, MempoolDuplicateException {
 				// No-op
+				return null;
 			}
 
 			@Override

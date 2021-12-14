@@ -97,8 +97,8 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
 
 		for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
 			final SystemCounters counters = test.getSystemCounters(nodeIndex);
-			final long numberOfIndirectParents = counters.get(CounterType.BFT_INDIRECT_PARENT);
-			final long totalNumberOfTimeouts = counters.get(CounterType.BFT_TIMEOUT);
+			final long numberOfIndirectParents = counters.get(CounterType.BFT_VERTEX_STORE_INDIRECT_PARENTS);
+			final long totalNumberOfTimeouts = counters.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT);
 			final long totalNumberOfTimeoutQuorums = counters.get(CounterType.BFT_TIMEOUT_QUORUMS);
 			final long totalNumberOfVoteQuorums = counters.get(CounterType.BFT_VOTE_QUORUMS);
 			assertThat(totalNumberOfTimeoutQuorums).isEqualTo(0); // no TCs

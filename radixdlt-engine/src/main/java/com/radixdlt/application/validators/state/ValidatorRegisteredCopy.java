@@ -69,7 +69,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import java.util.Objects;
 import java.util.OptionalLong;
 
-public final class ValidatorRegisteredCopy implements ValidatorData {
+public final class ValidatorRegisteredCopy implements ValidatorUpdatingData {
 	private final ECPublicKey validatorKey;
 	private final boolean isRegistered;
 	private final OptionalLong epochUpdate;
@@ -97,6 +97,7 @@ public final class ValidatorRegisteredCopy implements ValidatorData {
 		return new ValidatorRegisteredCopy(validatorKey, false);
 	}
 
+	@Override
 	public OptionalLong getEpochUpdate() {
 		return epochUpdate;
 	}

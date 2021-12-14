@@ -64,132 +64,84 @@
 package com.radixdlt.api;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.api.archive.ArchiveServerModule;
-import com.radixdlt.api.archive.ArchiveEndpointModule;
-import com.radixdlt.api.archive.construction.ConstructEndpointModule;
-import com.radixdlt.api.node.NodeApiModule;
-import com.radixdlt.api.node.account.AccountEndpointModule;
-import com.radixdlt.api.node.chaos.ChaosEndpointModule;
-import com.radixdlt.api.node.developer.DeveloperEndpointModule;
-import com.radixdlt.api.node.faucet.FaucetEndpointModule;
-import com.radixdlt.api.node.health.HealthEndpointModule;
-import com.radixdlt.api.node.metrics.MetricsEndpointModule;
-import com.radixdlt.api.node.system.SystemEndpointModule;
-import com.radixdlt.api.node.universe.UniverseEndpointModule;
-import com.radixdlt.api.node.validation.ValidationEndpointModule;
-import com.radixdlt.api.node.version.VersionEndpointModule;
-import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
-import com.radixdlt.api.service.network.NetworkInfoServiceModule;
-import com.radixdlt.networks.Network;
-import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.api.node.transactions.TransactionIndexApiModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.google.inject.multibindings.MapBinder;
+import com.radixdlt.api.core.CoreApiModule;
+import com.radixdlt.api.system.SystemApiModule;
+import io.undertow.Handlers;
+import io.undertow.Undertow;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.RequestLimitingHandler;
+import io.undertow.util.StatusCodes;
 
-import java.util.HashMap;
 import java.util.Map;
 
-public class ApiModule extends AbstractModule {
-	private final RuntimeProperties properties;
-	private final int networkId;
-	public ApiModule(int networkId, RuntimeProperties properties) {
-		this.properties = properties;
-		this.networkId = networkId;
+public final class ApiModule extends AbstractModule {
+	private static final int MAXIMUM_CONCURRENT_REQUESTS = Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
+	private static final int QUEUE_SIZE = 2000;
+
+	private final int port;
+	private final String bindAddress;
+	private final boolean enableTransactions;
+	private final boolean enableSign;
+
+	public ApiModule(
+		String bindAddress,
+		int port,
+		boolean enableTransactions,
+		boolean enableSign
+	) {
+		this.bindAddress = bindAddress;
+		this.port = port;
+		this.enableTransactions = enableTransactions;
+		this.enableSign = enableSign;
 	}
 
 	@Override
 	public void configure() {
+		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class);
+		install(new SystemApiModule());
+		install(new CoreApiModule(enableTransactions, enableSign));
+	}
 
-		install(new NetworkInfoServiceModule());
+	private static void fallbackHandler(HttpServerExchange exchange) {
+		exchange.setStatusCode(StatusCodes.NOT_FOUND);
+		exchange.getResponseSender().send(
+			"No matching path found for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
+		);
+	}
 
-		var endpointStatus = new HashMap<String, Boolean>();
+	private static void invalidMethodHandler(HttpServerExchange exchange) {
+		exchange.setStatusCode(StatusCodes.NOT_ACCEPTABLE);
+		exchange.getResponseSender().send(
+			"Invalid method, path exists for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
+		);
+	}
 
-		var archiveEnable = properties.get("api.archive.enable", false);
-		if (archiveEnable) {
-			install(new ArchiveEndpointModule());
-		}
-		endpointStatus.put("archive", archiveEnable);
+	private HttpHandler configureRoutes(Map<HandlerRoute, HttpHandler> handlers) {
+		var handler = Handlers.routing(true); // add path params to query params with this flag
+		handlers.forEach((r, h) -> handler.add(r.method(), r.path(), h));
+		handler.setFallbackHandler(ApiModule::fallbackHandler);
+		handler.setInvalidMethodHandler(ApiModule::invalidMethodHandler);
+		var exceptionHandler = Handlers.exceptionHandler(handler);
+		exceptionHandler.addExceptionHandler(Exception.class, new UnhandledExceptionHandler());
+		return exceptionHandler;
+	}
 
-		var transactionsEnable = properties.get("api.transactions.enable", false);
-		if (transactionsEnable) {
-			install(new TransactionIndexApiModule());
-		}
-		endpointStatus.put("transactions", transactionsEnable);
+	@Provides
+	@Singleton
+	public Undertow undertow(Map<HandlerRoute, HttpHandler> handlers) {
+		var handler = new RequestLimitingHandler(
+			MAXIMUM_CONCURRENT_REQUESTS,
+			QUEUE_SIZE,
+			configureRoutes(handlers)
+		);
 
-		if (archiveEnable || transactionsEnable) {
-			install(new TransactionsByIdStoreModule());
-		}
-
-		var constructionEnable = properties.get("api.construction.enable", false);
-		if (constructionEnable) {
-			install(new ConstructEndpointModule());
-		}
-		endpointStatus.put("construction", constructionEnable);
-		if (archiveEnable || constructionEnable) {
-			install(new ArchiveServerModule());
-		}
-
-		var metricsEnable = properties.get("api.metrics.enable", false);
-		if (metricsEnable) {
-			install(new MetricsEndpointModule());
-		}
-		endpointStatus.put("metrics", metricsEnable);
-
-		var systemEnable = properties.get("api.system.enable", false);
-		if (systemEnable) {
-			install(new SystemEndpointModule());
-		}
-		endpointStatus.put("system", systemEnable);
-
-		var accountEnable = properties.get("api.account.enable", false);
-		if (accountEnable) {
-			install(new AccountEndpointModule());
-		}
-		endpointStatus.put("account", accountEnable);
-
-		var validationEnable = properties.get("api.validation.enable", false);
-		if (validationEnable) {
-			install(new ValidationEndpointModule());
-		}
-		endpointStatus.put("validation", validationEnable);
-
-		// TODO: Remove
-		var universeEnable = properties.get("api.universe.enable", false);
-		if (universeEnable) {
-			install(new UniverseEndpointModule());
-		}
-		endpointStatus.put("universe", universeEnable);
-
-		var faucetEnable = properties.get("api.faucet.enable", false) && networkId != Network.MAINNET.getId();
-		if (faucetEnable) {
-			install(new FaucetEndpointModule());
-		}
-		endpointStatus.put("faucet", faucetEnable);
-
-		var chaosEnable = properties.get("api.chaos.enable", false) && networkId != Network.MAINNET.getId();
-		if (chaosEnable) {
-			install(new ChaosEndpointModule());
-		}
-		endpointStatus.put("chaos", chaosEnable);
-
-		var healthEnable = properties.get("api.health.enable", true);
-		if (healthEnable) {
-			install(new HealthEndpointModule());
-		}
-		endpointStatus.put("health", healthEnable);
-
-		var versionEnable = properties.get("api.version.enable", true);
-		if (versionEnable) {
-			install(new VersionEndpointModule());
-		}
-		endpointStatus.put("version", versionEnable);
-
-		var developerEnable = properties.get("api.developer.enable", true);
-		if (developerEnable) {
-			install(new DeveloperEndpointModule());
-		}
-		endpointStatus.put("developer", developerEnable);
-
-		install(new NodeApiModule());
-		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
+		return Undertow.builder()
+			.addHttpListener(port, bindAddress)
+			.setHandler(handler)
+			.build();
 	}
 }

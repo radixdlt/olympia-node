@@ -98,7 +98,7 @@ public final class StakeOwnership implements ResourceInBucket {
 	}
 
 	public Bucket bucket() {
-		return new StakeOwnershipBucket(delegateKey, owner);
+		return StakeOwnershipBucket.from(delegateKey, owner);
 	}
 
 	public ECPublicKey getDelegateKey() {

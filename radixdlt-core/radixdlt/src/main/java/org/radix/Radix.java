@@ -64,6 +64,7 @@
 
 package org.radix;
 
+import io.undertow.Undertow;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -73,7 +74,6 @@ import org.radix.utils.IOUtils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.ModuleRunner;
@@ -191,7 +191,7 @@ public final class Radix {
 
 	public static void start(RuntimeProperties properties) {
 		long start = System.currentTimeMillis();
-		Injector injector = Guice.createInjector(new RadixNodeModule(properties));
+		var injector = Guice.createInjector(new RadixNodeModule(properties));
 
 		final Map<String, ModuleRunner> moduleRunners = injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }));
 
@@ -207,14 +207,6 @@ public final class Radix {
 		final var mempoolReceiverRunner = moduleRunners.get(Runners.MEMPOOL);
 		mempoolReceiverRunner.start();
 
-		final var applicationRunner = moduleRunners.get(Runners.APPLICATION);
-		applicationRunner.start();
-
-		final var chaosRunner = moduleRunners.get(Runners.CHAOS);
-		if (chaosRunner != null) {
-			chaosRunner.start();
-		}
-
 		final var peerServer = injector.getInstance(PeerServerBootstrap.class);
 		try {
 			peerServer.start();
@@ -222,16 +214,8 @@ public final class Radix {
 			log.error("Cannot start p2p server", e);
 		}
 
-		// start API services
-		final var nodeServer = moduleRunners.get(Runners.NODE_API);
-		if (nodeServer != null) {
-			nodeServer.start();
-		}
-
-		final var archiveServer = moduleRunners.get(Runners.ARCHIVE_API);
-		if (archiveServer != null) {
-			archiveServer.start();
-		}
+		final var undertow = injector.getInstance(Undertow.class);
+		undertow.start();
 
 		final var consensusRunner = moduleRunners.get(Runners.CONSENSUS);
 		consensusRunner.start();

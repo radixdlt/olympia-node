@@ -80,7 +80,7 @@ public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
 	public void construct(NextRound action, TxBuilder txBuilder) throws TxBuilderException {
 		var prevRound = txBuilder.downSystem(RoundData.class);
 		if (action.view() <= prevRound.getView()) {
-			throw new TxBuilderException("Next view: " + action + " isn't higher than current view: " + prevRound);
+			throw new InvalidRoundException(prevRound.getView(), action.view());
 		}
 
 		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorBFTData>(KeyComparator.instance());

@@ -170,20 +170,6 @@ public final class RxEnvironmentModule extends AbstractModule {
 	}
 
 	@ProvidesIntoMap
-	@StringMapKey(Runners.CHAOS)
-	@Singleton
-	public ModuleRunner chaosRunner(
-		@Self String name,
-		Set<EventProcessorOnRunner<?>> processors,
-		RxEnvironment rxEnvironment
-	) {
-		final var runnerName = Runners.CHAOS;
-		final var builder = ModuleRunnerImpl.builder();
-		addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
-		return builder.build("ChaosRunner " + name);
-	}
-
-	@ProvidesIntoMap
 	@StringMapKey(Runners.MEMPOOL)
 	@Singleton
 	public ModuleRunner mempoolRunner(
@@ -200,20 +186,6 @@ public final class RxEnvironmentModule extends AbstractModule {
 		addRemoteProcessorsOnRunner(remoteProcessors, rxRemoteEnvironment, runnerName, builder);
 		addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
 		return builder.build("MempoolRunner " + name);
-	}
-
-	@ProvidesIntoMap
-	@StringMapKey(Runners.APPLICATION)
-	@Singleton
-	public ModuleRunner applicationRunner(
-		@Self String name,
-		Set<EventProcessorOnRunner<?>> processors,
-		RxEnvironment rxEnvironment
-	) {
-		final var runnerName = Runners.APPLICATION;
-		final var builder = ModuleRunnerImpl.builder();
-		addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
-		return builder.build("ApplicationRunner " + name);
 	}
 
 	@ProvidesIntoMap
@@ -382,5 +354,4 @@ public final class RxEnvironmentModule extends AbstractModule {
 			runnerProcessors.forEach(p -> addToBuilder(typeLiteral, rxEnvironment, p, builder))
 		);
 	}
-
 }

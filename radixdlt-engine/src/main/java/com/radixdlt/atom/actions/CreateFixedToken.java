@@ -90,14 +90,20 @@ public class CreateFixedToken implements TxAction {
 		String tokenUrl,
 		UInt256 supply
 	) {
-		this.resourceAddr = Objects.requireNonNull(resourceAddr);
+		if (resourceAddr.getType() != REAddr.REAddrType.HASHED_KEY) {
+			throw new IllegalArgumentException("Invalid resource address.");
+		}
+		this.resourceAddr = resourceAddr;
 		this.accountAddr = Objects.requireNonNull(accountAddr);
 		this.symbol = Objects.requireNonNull(symbol);
 		this.name = Objects.requireNonNull(name);
 		this.description = Objects.requireNonNull(description);
 		this.iconUrl = Objects.requireNonNull(iconUrl);
 		this.tokenUrl = Objects.requireNonNull(tokenUrl);
-		this.supply = Objects.requireNonNull(supply);
+		if (supply.isZero()) {
+			throw new IllegalArgumentException("Supply must be > 0.");
+		}
+		this.supply = supply;
 	}
 
 	public REAddr getResourceAddr() {

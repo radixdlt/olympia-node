@@ -72,15 +72,20 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.identifiers.REAddr;
 
 import java.nio.charset.StandardCharsets;
 
 public final class CreateFixedTokenConstructor implements ActionConstructor<CreateFixedToken> {
+	private final int maxSymbolLength;
+
+	public CreateFixedTokenConstructor(int maxSymbolLength) {
+		this.maxSymbolLength = maxSymbolLength;
+	}
+
 	@Override
 	public void construct(CreateFixedToken action, TxBuilder txBuilder) throws TxBuilderException {
-		if (action.getResourceAddr().getType() != REAddr.REAddrType.HASHED_KEY) {
-			throw new TxBuilderException("Invalid resource address.");
+		if (action.getSymbol().length() > maxSymbolLength) {
+			throw new SymbolLengthException(maxSymbolLength, action.getSymbol().length());
 		}
 		txBuilder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, action.getSymbol().getBytes(StandardCharsets.UTF_8));
 		txBuilder.downREAddr(action.getResourceAddr());

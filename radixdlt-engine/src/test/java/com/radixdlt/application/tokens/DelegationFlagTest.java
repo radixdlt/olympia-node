@@ -188,7 +188,7 @@ public class DelegationFlagTest {
 			serialization,
 			REConstructor.newBuilder()
 				.put(StakeTokens.class, stakeTokensConstructor)
-				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
+				.put(CreateMutableToken.class, new CreateMutableTokenConstructor(SystemConstraintScrypt.MAX_SYMBOL_LENGTH))
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
 				.put(UpdateValidatorOwner.class, new UpdateValidatorOwnerConstructor())
@@ -208,7 +208,7 @@ public class DelegationFlagTest {
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var txn = this.engine.construct(
 			TxnConstructionRequest.create()
-				.action(new CreateMutableToken(null, "xrd", "Name", "", "", ""))
+				.action(new CreateMutableToken(REAddr.ofNativeToken(), "xrd", "Name", "", "", "", null))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, startAmt))
 		).buildWithoutSignature();
 		var validatorKey = ECKeyPair.generateNew();
@@ -226,7 +226,7 @@ public class DelegationFlagTest {
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var txn = this.engine.construct(
 			TxnConstructionRequest.create()
-				.action(new CreateMutableToken(null, "xrd", "Name", "", "", ""))
+				.action(new CreateMutableToken(REAddr.ofNativeToken(), "xrd", "Name", "", "", "", null))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, startAmt))
 		).buildWithoutSignature();
 		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
@@ -245,7 +245,7 @@ public class DelegationFlagTest {
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var txn = this.engine.construct(
 			TxnConstructionRequest.create()
-				.action(new CreateMutableToken(null, "xrd", "Name", "", "", ""))
+				.action(new CreateMutableToken(REAddr.ofNativeToken(), "xrd", "Name", "", "", "", null))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, startAmt))
 		).buildWithoutSignature();
 		var validatorKey = ECKeyPair.generateNew();

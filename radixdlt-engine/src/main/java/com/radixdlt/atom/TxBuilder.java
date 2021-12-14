@@ -97,7 +97,6 @@ import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -201,8 +200,7 @@ public final class TxBuilder {
 	// For mempool filler
 	public <T extends Particle> T downSubstate(
 		Class<T> particleClass,
-		Predicate<T> particlePredicate,
-		String errorMessage
+		Predicate<T> particlePredicate
 	) throws TxBuilderException {
 		var localSubstate = lowLevelBuilder.localUpSubstate().stream()
 			.filter(s -> particleClass.isInstance(s.getParticle()))
@@ -221,7 +219,7 @@ public final class TxBuilder {
 				.findFirst();
 
 			if (substateRead.isEmpty()) {
-				throw new TxBuilderException(errorMessage);
+				throw new NoSubstateFoundException();
 			}
 
 			down(substateRead.get().getId());
@@ -229,6 +227,23 @@ public final class TxBuilder {
 			return (T) substateRead.get().getParticle();
 		}
 	}
+
+	public <T extends Particle> T findSystem(Class<T> substateClass) {
+		var typeByte = deserialization.classToByte(substateClass);
+		var mapKey = SystemMapKey.ofSystem(typeByte);
+		var localMaybe = lowLevelBuilder.get(mapKey);
+		if (localMaybe.isPresent()) {
+			return (T) localMaybe.get().getParticle();
+		}
+		return remoteSubstate.get(mapKey).map(rawSubstate -> {
+			try {
+				return (T) deserialization.deserialize(rawSubstate.getData());
+			} catch (DeserializeException e) {
+				throw new IllegalStateException();
+			}
+		}).orElseThrow();
+	}
+
 
 	public <T extends Particle> T find(Class<T> substateClass, Object key) throws TxBuilderException {
 		var keyBytes = serialization.serializeKey(substateClass, key);
@@ -334,7 +349,7 @@ public final class TxBuilder {
 		}
 	}
 
-	public <T extends Particle> T readSystem(Class<T> substateClass) throws TxBuilderException {
+	public <T extends Particle> T readSystem(Class<T> substateClass) {
 		var typeByte = deserialization.classToByte(substateClass);
 		var mapKey = SystemMapKey.ofSystem(typeByte);
 		var localMaybe = lowLevelBuilder.get(mapKey);
@@ -457,12 +472,12 @@ public final class TxBuilder {
 		}
 	}
 
-	public <T extends ResourceInBucket> UInt256 downFungible(
+	public <T extends ResourceInBucket, X extends Exception> UInt256 downFungible(
 		SubstateIndex<T> index,
 		Predicate<T> particlePredicate,
 		UInt256 amount,
-		Supplier<TxBuilderException> exceptionSupplier
-	) throws TxBuilderException {
+		Function<UInt256, X> exceptionSupplier
+	) throws X {
 		var spent = UInt256.ZERO;
 		for (var l : lowLevelBuilder.localUpSubstate()) {
 			var p = l.getParticle();
@@ -499,18 +514,18 @@ public final class TxBuilder {
 			}
 		}
 
-		throw exceptionSupplier.get();
+		throw exceptionSupplier.apply(spent);
 	}
 
 	public UInt256 getFeeReserve() {
 		return feeReservePut;
 	}
 
-	public <T extends ResourceInBucket> void putFeeReserve(
+	public <T extends ResourceInBucket, X extends Exception> void putFeeReserve(
 		REAddr feePayer,
 		UInt256 amount,
-		Supplier<TxBuilderException> exceptionSupplier
-	) throws TxBuilderException {
+		Function<UInt256, X> exceptionSupplier
+	) throws X {
 		var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
 		buf.put(SubstateTypeId.TOKENS.id());
 		buf.put((byte) 0);
@@ -541,7 +556,7 @@ public final class TxBuilder {
 		this.feeReserveTake = this.feeReserveTake.add(amount);
 	}
 
-	public TxBuilder mutex(ECPublicKey key, String id) throws TxBuilderException {
+	public TxBuilder mutex(ECPublicKey key, String id) {
 		final var addr = REAddr.ofHashedKey(key, id);
 
 		lowLevelBuilder.syscall(Syscall.READDR_CLAIM, id.getBytes(StandardCharsets.UTF_8));
@@ -551,7 +566,7 @@ public final class TxBuilder {
 		return this;
 	}
 
-	public TxBuilder message(byte[] message) {
+	public TxBuilder message(byte[] message) throws MessageTooLongException {
 		lowLevelBuilder.message(message);
 		return this;
 	}

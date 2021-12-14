@@ -69,14 +69,10 @@ import org.bitcoinj.core.Bech32;
 
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bits;
-import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
-
-import static com.radixdlt.errors.ApiErrors.INVALID_VALIDATOR_ADDRESS;
+import java.util.function.Function;
 
 /**
  * Bech-32 encoding/decoding of validators. Validators are represented as 33-byte
@@ -89,6 +85,10 @@ public final class ValidatorAddressing {
 	private final String hrp;
 	private ValidatorAddressing(String hrp) {
 		this.hrp = hrp;
+	}
+
+	public String getHrp() {
+		return hrp;
 	}
 
 	public static ValidatorAddressing bech32(String hrp) {
@@ -110,42 +110,23 @@ public final class ValidatorAddressing {
 		return Bech32.encode(hrp, convert);
 	}
 
-	public ECPublicKey parse(String v) throws DeserializeException {
+	public <X extends Exception> ECPublicKey parseOrThrow(String v, Function<String, X> exceptionSupplier) throws X {
 		Bech32.Bech32Data bech32Data;
 		try {
 			bech32Data = Bech32.decode(v);
 		} catch (AddressFormatException e) {
-			throw new DeserializeException("Could not decode string: " + v, e);
+			throw exceptionSupplier.apply("Could not decode");
 		}
 
 		if (!bech32Data.hrp.equals(hrp)) {
-			throw new DeserializeException("hrp must be vb but was " + bech32Data.hrp);
+			throw exceptionSupplier.apply("hrp must be " + this.hrp + " but was " + bech32Data.hrp);
 		}
+
 		var keyBytes = fromBech32Data(bech32Data.data);
 		try {
 			return ECPublicKey.fromBytes(keyBytes);
 		} catch (PublicKeyException e) {
-			throw new DeserializeException("Invalid bytes in validator address: " + v);
+			throw exceptionSupplier.apply("Validator address does not contain a valid public key");
 		}
-	}
-
-	public static Pair<String, ECPublicKey> parseUnknownHrp(String v) throws DeserializeException {
-		Bech32.Bech32Data bech32Data;
-		try {
-			bech32Data = Bech32.decode(v);
-		} catch (AddressFormatException e) {
-			throw new DeserializeException("Could not decode string: " + v, e);
-		}
-
-		try {
-			var pubKeyBytes = fromBech32Data(bech32Data.data);
-			return Pair.of(bech32Data.hrp, ECPublicKey.fromBytes(pubKeyBytes));
-		} catch (IllegalArgumentException | PublicKeyException e) {
-			throw new DeserializeException("Invalid address", e);
-		}
-	}
-
-	public Result<ECPublicKey> fromString(String input) {
-		return Result.wrap(() -> INVALID_VALIDATOR_ADDRESS.with(input), () -> parse(input));
 	}
 }

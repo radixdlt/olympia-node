@@ -85,11 +85,6 @@ public class ValidatorAddressDeserializer extends StdDeserializer<ValidatorAddre
 	@Override
 	public ValidatorAddress deserialize(JsonParser parser, DeserializationContext ctxt) throws IOException {
 		var value = parser.getText();
-
-		try {
-			return ValidatorAddress.of(addressing.parse(value));
-		} catch (IllegalArgumentException e) {
-			throw new DeserializeException("Error while parsing address " + value, e);
-		}
+		return ValidatorAddress.of(addressing.parseOrThrow(value, DeserializeException::new));
 	}
 }

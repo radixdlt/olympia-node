@@ -64,8 +64,6 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import org.json.JSONObject;
-
 /**
  * Configuration used for hard forks
  */
@@ -109,13 +107,5 @@ public final class ForkConfig {
 
 	public ForkConfig overrideConfig(RERulesConfig config) {
 		return new ForkConfig(this.epoch, this.name, this.version, config);
-	}
-
-	public JSONObject asJson() {
-		return new JSONObject()
-			.put("epoch", epoch)
-			.put("name", name)
-			.put("version", version.name().toLowerCase())
-			.put("config", config.asJson());
 	}
 }

@@ -80,4 +80,6 @@ public interface EngineStore<M> extends SubstateStore {
 		R start(EngineStoreInTransaction<M> store) throws RadixEngineException;
 	}
 	<R> R transaction(TransactionEngineStoreConsumer<M, R> consumer) throws RadixEngineException;
+
+	M getMetadata();
 }

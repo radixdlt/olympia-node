@@ -134,7 +134,7 @@ public final class ResourceFeeTest {
 			REConstructor.newBuilder()
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(TransferToken.class, new TransferTokensConstructorV2())
-				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
+				.put(CreateMutableToken.class, new CreateMutableTokenConstructor(SystemConstraintScrypt.MAX_SYMBOL_LENGTH))
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(FeeReservePut.class, new FeeReservePutConstructor())
 				.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(feeTable))
@@ -145,7 +145,7 @@ public final class ResourceFeeTest {
 		var txn = this.engine.construct(
 			TxnConstructionRequest.create()
 				.action(new CreateSystem(0))
-				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
+				.action(new CreateMutableToken(REAddr.ofNativeToken(), "xrd", "xrd", "", "", "", null))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, Amount.ofTokens(4).toSubunits()))
 		).buildWithoutSignature();
 		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);

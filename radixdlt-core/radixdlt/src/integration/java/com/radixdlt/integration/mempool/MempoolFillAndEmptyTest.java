@@ -79,9 +79,9 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.api.node.chaos.mempoolfiller.MempoolFillerModule;
-import com.radixdlt.api.node.chaos.mempoolfiller.MempoolFillerUpdate;
-import com.radixdlt.api.node.chaos.mempoolfiller.ScheduledMempoolFill;
+import com.radixdlt.mempoolfiller.MempoolFillerModule;
+import com.radixdlt.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.EventDispatcher;
@@ -89,7 +89,6 @@ import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
@@ -119,7 +118,7 @@ public final class MempoolFillAndEmptyTest {
 			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
 			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
 			new MockedGenesisModule(
 				Set.of(TEST_KEY.getPublicKey()),
 				Amount.ofTokens(10000000000L),
@@ -129,7 +128,6 @@ public final class MempoolFillAndEmptyTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 			}
@@ -137,7 +135,7 @@ public final class MempoolFillAndEmptyTest {
 	}
 
     private void fillAndEmptyMempool() {
-        while (systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT) < 1000) {
+        while (systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE) < 1000) {
             ControlledMessage msg = network.nextMessage().value();
             processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
             if (msg.message() instanceof EpochViewUpdate) {
@@ -148,12 +146,12 @@ public final class MempoolFillAndEmptyTest {
         for (int i = 0; i < 10000; i++) {
             ControlledMessage msg = network.nextMessage().value();
             processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-            if (systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT) == 0) {
+            if (systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE) == 0) {
                 break;
             }
         }
 
-        assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isZero();
+        assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
     }
 
     @Test

@@ -142,7 +142,7 @@ public class NextEpochV2Test {
 						Amount.ofTokens(10).toSubunits(), 9800, 1, 10
 					))
 					.put(CreateSystem.class, new CreateSystemConstructorV2())
-					.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
+					.put(CreateMutableToken.class, new CreateMutableTokenConstructor(SystemConstraintScrypt.MAX_SYMBOL_LENGTH))
 					.put(MintToken.class, new MintTokenConstructor())
 					.put(StakeTokens.class, new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()))
 					.put(RegisterValidator.class, new RegisterValidatorConstructor())
@@ -190,7 +190,7 @@ public class NextEpochV2Test {
 		var start = sut.construct(
 			TxnConstructionRequest.create()
 				.action(new CreateSystem(0))
-				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
+				.action(new CreateMutableToken(REAddr.ofNativeToken(), "xrd", "xrd", "", "", "", null))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, Amount.ofTokens(10).toSubunits()))
 				.action(new StakeTokens(accountAddr, key, Amount.ofTokens(10).toSubunits()))
 		).buildWithoutSignature();
@@ -205,7 +205,8 @@ public class NextEpochV2Test {
 		this.sut.execute(List.of(txn), null, PermissionLevel.SUPER_USER);
 
 		// Assert
-		assertThat(sut.reduceResources(PreparedStake.class, PreparedStake::getDelegateKey)).isEmpty();
+		var map = sut.read(reader -> reader.reduceResources(PreparedStake.class, PreparedStake::getDelegateKey));
+		assertThat(map).isEmpty();
 	}
 
 	@Test
@@ -215,7 +216,7 @@ public class NextEpochV2Test {
 		var start = sut.construct(
 			TxnConstructionRequest.create()
 				.action(new CreateSystem(0))
-				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
+				.action(new CreateMutableToken(REAddr.ofNativeToken(), "xrd", "xrd", "", "", "", null))
 				.action(new RegisterValidator(key))
 		).buildWithoutSignature();
 		sut.execute(List.of(start), null, PermissionLevel.SYSTEM);

@@ -11,27 +11,8 @@ network.host_ip=$RADIXDLT_HOST_IP_ADDRESS
 network.p2p.seed_nodes=$RADIXDLT_NETWORK_SEEDS_REMOTE
 network.p2p.use_proxy_protocol=$RADIXDLT_NETWORK_USE_PROXY_PROTOCOL
 
-chaos.enable=$RADIXDLT_CHAOS_ENABLE
-faucet.enable=$RADIXDLT_ENABLE_FAUCET
-
 db.location=$RADIXDLT_DB_LOCATION
 
-api.node.port=$RADIXDLT_NODE_API_PORT
-api.archive.port=$RADIXDLT_ARCHIVE_API_PORT
-
-api.archive.enable=$RADIXDLT_ARCHIVE_API_ENABLE
-api.account.enable=$RADIXDLT_ACCOUNT_API_ENABLE
-api.chaos.enable=$RADIXDLT_CHAOS_API_ENABLE
-api.construction.enable=$RADIXDLT_CONSTRUCT_API_ENABLE
-api.faucet.enable=$RADIXDLT_FAUCET_API_ENABLE
-api.health.enable=$RADIXDLT_HEALTH_API_ENABLE
-api.metrics.enable=$RADIXDLT_METRICS_API_ENABLE
-api.system.enable=$RADIXDLT_SYSTEM_API_ENABLE
-api.validation.enable=$RADIXDLT_VALIDATION_API_ENABLE
-api.version.enable=$RADIXDLT_VERSION_API_ENABLE
-api.universe.enable=$RADIXDLT_UNIVERSE_API_ENABLE
-
+api.port=$RADIXDLT_API_PORT
+api.bind.address=$RADIXDLT_HTTP_BIND_ADDRESS
 api.transactions.enable=$RADIXDLT_TRANSACTIONS_API_ENABLE
-
-api.node.bind.address=$RADIXDLT_HTTP_NODE_BIND_ADDRESS
-api.archive.bind.address=$RADIXDLT_HTTP_ARCHIVE_BIND_ADDRESS

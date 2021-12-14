@@ -64,7 +64,9 @@
 
 package com.radixdlt.application.tokens.construction;
 
+import com.radixdlt.application.tokens.state.AccountBucket;
 import com.radixdlt.atom.ActionConstructor;
+import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
@@ -79,10 +81,6 @@ public final class BurnTokenConstructor implements ActionConstructor<BurnToken> 
 
 	@Override
 	public void construct(BurnToken action, TxBuilder txBuilder) throws TxBuilderException {
-		if (action.amount().isZero()) {
-			throw new TxBuilderException("Must transfer > 0.");
-		}
-
 		var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
 		buf.put(SubstateTypeId.TOKENS.id());
 		buf.put((byte) 0);
@@ -94,7 +92,10 @@ public final class BurnTokenConstructor implements ActionConstructor<BurnToken> 
 			p -> p.getResourceAddr().equals(action.resourceAddr())
 				&& p.getHoldingAddr().equals(action.from()),
 			action.amount(),
-			() -> new TxBuilderException("Not enough balance for transfer.")
+			available -> {
+				var from = AccountBucket.from(action.resourceAddr(), action.from());
+				return new NotEnoughResourcesException(from, action.amount(), available);
+			}
 		);
 		if (!change.isZero()) {
 			txBuilder.up(new TokensInAccount(action.from(), action.resourceAddr(), change));

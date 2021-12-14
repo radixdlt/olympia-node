@@ -179,6 +179,7 @@ dependencies {
     implementation project(':radixdlt-java-common')
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 
+    implementation 'io.swagger:swagger-annotations:1.5.0'
     implementation "com.github.akarnokd:rxjava3-extensions"
     implementation 'io.reactivex.rxjava3:rxjava'
     implementation 'com.sleepycat:je'

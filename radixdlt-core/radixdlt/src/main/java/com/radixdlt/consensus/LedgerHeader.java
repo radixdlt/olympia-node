@@ -68,20 +68,16 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.serialization.*;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.UInt256;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 
 import javax.annotation.concurrent.Immutable;
 import java.util.Objects;
@@ -147,57 +143,6 @@ public final class LedgerHeader {
 		this.accumulatorState = requireNonNull(accumulatorState);
 		this.nextValidators = nextValidators;
 		this.timestamp = timestamp;
-	}
-
-	//TODO: remove unused deserialization from JSONObject https://radixdlt.atlassian.net/browse/NT-4
-	public static LedgerHeader fromJSONObject(Addressing addressing, JSONObject json) throws DeserializeException {
-		var epoch = json.getLong("epoch");
-		var view = json.getLong("view");
-		var version = json.getLong("version");
-		var accumulatorHash = Bytes.fromHexString(json.getString("accumulator"));
-		var accumulatorState = new AccumulatorState(version, HashCode.fromBytes(accumulatorHash));
-		var timestamp = json.getLong("timestamp");
-
-		final ImmutableSet<BFTValidator> nextValidators;
-		if (json.has("nextValidators")) {
-			var builder = ImmutableSet.<BFTValidator>builder();
-			var nextValidatorsJson = json.getJSONArray("nextValidators");
-			for (int i = 0; i < nextValidatorsJson.length(); i++) {
-				var validatorJson = nextValidatorsJson.getJSONObject(i);
-				var key = addressing.forValidators().parse(validatorJson.getString("address"));
-				var stake = UInt256.from(validatorJson.getString("stake"));
-				builder.add(BFTValidator.from(BFTNode.create(key), stake));
-			}
-			nextValidators = builder.build();
-		} else {
-			nextValidators = null;
-		}
-
-
-		return new LedgerHeader(epoch, view, accumulatorState, timestamp, nextValidators);
-	}
-
-	public JSONObject asJSONObject(Addressing addressing) {
-		var json = new JSONObject()
-			.put("epoch", epoch)
-			.put("view", view.number())
-			.put("version", accumulatorState.getStateVersion())
-			.put("accumulator", Bytes.toHexString(accumulatorState.getAccumulatorHash().asBytes()))
-			.put("timestamp", timestamp);
-
-		if (nextValidators != null) {
-			var validators = new JSONArray();
-			for (var v : nextValidators) {
-				var validatorAddress = addressing.forValidators().of(v.getNode().getKey());
-				validators.put(new JSONObject()
-					.put("address", validatorAddress)
-					.put("stake", v.getPower())
-				);
-			}
-			json.put("nextValidators", validators);
-		}
-
-		return json;
 	}
 
 	//TODO: used only for tests, move elsewhere https://radixdlt.atlassian.net/browse/NT-2

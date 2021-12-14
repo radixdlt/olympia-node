@@ -89,15 +89,17 @@ import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.constraintmachine.VirtualSubstateDeserialization;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.parser.ParsedTxn;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.TransientEngineStore;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import org.apache.logging.log4j.LogManager;
@@ -138,7 +140,14 @@ public final class RadixEngine<M> {
 		ConstraintMachine constraintMachine,
 		EngineStore<M> engineStore
 	) {
-		this(parser, serialization, actionConstructors, constraintMachine, engineStore, BatchVerifier.empty());
+		this(
+			parser,
+			serialization,
+			actionConstructors,
+			constraintMachine,
+			engineStore,
+			BatchVerifier.empty()
+		);
 	}
 
 	public RadixEngine(
@@ -177,7 +186,6 @@ public final class RadixEngine<M> {
 			this.serialization = serialization;
 		}
 	}
-
 
 	/**
 	 * A cheap radix engine branch which is purely transient
@@ -220,6 +228,11 @@ public final class RadixEngine<M> {
 			return engine.execute(txns);
 		}
 
+		public RadixEngineResult execute(List<Txn> txns, boolean skipAuthorization) throws RadixEngineException {
+			assertNotDeleted();
+			return engine.execute(txns, null, PermissionLevel.USER, skipAuthorization);
+		}
+
 		public RadixEngineResult execute(List<Txn> txns, PermissionLevel permissionLevel) throws RadixEngineException {
 			assertNotDeleted();
 			return engine.execute(txns, null, permissionLevel);
@@ -259,11 +272,33 @@ public final class RadixEngine<M> {
 		}
 	}
 
+	private Optional<ECPublicKey> getSignedByKey(ParsedTxn parsedTxn, ExecutionContext context) throws AuthorizationException {
+		if (!context.skipAuthorization() && context.permissionLevel() != PermissionLevel.SYSTEM) {
+			var payloadHashAndSigMaybe = parsedTxn.getPayloadHashAndSig();
+			if (payloadHashAndSigMaybe.isPresent()) {
+				var payloadHashAndSig = payloadHashAndSigMaybe.get();
+				var hash = payloadHashAndSig.getFirst();
+				var sig = payloadHashAndSig.getSecond();
+				var pubKey = ECPublicKey.recoverFrom(hash, sig).orElseThrow(() -> new AuthorizationException("Invalid signature"));
+				// TODO: do we still need this verify?
+				if (!pubKey.verify(hash, sig)) {
+					throw new AuthorizationException("Invalid signature");
+				}
+
+				return Optional.of(pubKey);
+			}
+		}
+
+		return Optional.empty();
+	}
+
 	private REProcessedTxn verify(EngineStore.EngineStoreInTransaction<M> engineStoreInTransaction, Txn txn, ExecutionContext context)
 		throws AuthorizationException, TxnParseException, ConstraintMachineException {
 
 		var parsedTxn = parser.parse(txn);
-		parsedTxn.getSignedBy().ifPresent(context::setKey);
+		var signedByKey = getSignedByKey(parsedTxn, context);
+		signedByKey.ifPresent(context::setKey);
+
 		context.setDisableResourceAllocAndDestroy(parsedTxn.disableResourceAllocAndDestroy());
 
 		var stateUpdates = constraintMachine.verify(
@@ -272,17 +307,15 @@ public final class RadixEngine<M> {
 			parsedTxn.instructions()
 		);
 
-		return new REProcessedTxn(parsedTxn, stateUpdates, context.getEvents());
+		return new REProcessedTxn(parsedTxn, signedByKey.orElse(null), stateUpdates, context.getEvents());
 	}
 
-	/**
-	 * Atomically stores the given atom into the store with default permission level USER.
-	 * If the atom has any conflicts or dependency issues the atom will not be stored.
-	 *
-	 * @throws RadixEngineException on state conflict, dependency issues or bad atom
-	 */
 	public RadixEngineResult execute(List<Txn> txns) throws RadixEngineException {
 		return execute(txns, null, PermissionLevel.USER);
+	}
+
+	public RadixEngineResult execute(List<Txn> txns, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
+		return execute(txns, meta, permissionLevel, false);
 	}
 
 	/**
@@ -293,7 +326,7 @@ public final class RadixEngine<M> {
 	 * @param permissionLevel permission level to execute on
 	 * @throws RadixEngineException on state conflict or dependency issues
 	 */
-	public RadixEngineResult execute(List<Txn> txns, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
+	public RadixEngineResult execute(List<Txn> txns, M meta, PermissionLevel permissionLevel, boolean skipAuthorization) throws RadixEngineException {
 		synchronized (stateUpdateEngineLock) {
 			if (!branches.isEmpty()) {
 				throw new IllegalStateException(
@@ -303,7 +336,7 @@ public final class RadixEngine<M> {
 					)
 				);
 			}
-			return engineStore.transaction(store -> executeInternal(store, txns, meta, permissionLevel));
+			return engineStore.transaction(store -> executeInternal(store, txns, meta, permissionLevel, skipAuthorization));
 		}
 	}
 
@@ -311,7 +344,8 @@ public final class RadixEngine<M> {
 		EngineStore.EngineStoreInTransaction<M> engineStoreInTransaction,
 		List<Txn> txns,
 		M meta,
-		PermissionLevel permissionLevel
+		PermissionLevel permissionLevel,
+		boolean skipAuthorization
 	) throws RadixEngineException {
 		var processedTxns = new ArrayList<REProcessedTxn>();
 
@@ -325,7 +359,7 @@ public final class RadixEngine<M> {
 			var txn = txns.get(i);
 
 			verificationStopwatch.start();
-			var context = new ExecutionContext(txn, permissionLevel, sigsLeft);
+			var context = new ExecutionContext(txn, permissionLevel, skipAuthorization, sigsLeft);
 			final REProcessedTxn processedTxn;
 			try {
 				processedTxn = this.verify(engineStoreInTransaction, txn, context);
@@ -419,11 +453,44 @@ public final class RadixEngine<M> {
 					for (var action : request.getActions()) {
 						this.actionConstructors.construct(action, txBuilder);
 					}
-					request.getMsg().ifPresent(txBuilder::message);
+					var msg = request.getMsg();
+					if (msg.isPresent()) {
+						txBuilder.message(msg.get());
+					}
 				},
 				request.getSubstatesToAvoid()
 			);
 		}
+	}
+
+	public TxBuilder constructWithFees(
+		TxBuilderExecutable executable,
+		boolean disableResourceAllocAndDestroy,
+		REAddr feePayer,
+		BiFunction<UInt256, UInt256, TxBuilderException> notEnoughFeesExceptionSupplier
+	) throws TxBuilderException {
+		int maxTries = 5;
+		var perByteFee = this.actionConstructors.getPerByteFee().orElse(UInt256.ZERO);
+		var feeGuess = new AtomicReference<>(perByteFee.multiply(UInt256.from(100))); // Close to minimum size
+		for (int i = 0; i < maxTries; i++) {
+			try {
+				return construct(txBuilder -> {
+					if (disableResourceAllocAndDestroy) {
+						txBuilder.toLowLevelBuilder().disableResourceAllocAndDestroy();
+					}
+
+					txBuilder.putFeeReserve(feePayer, feeGuess.get(), available -> notEnoughFeesExceptionSupplier.apply(feeGuess.get(), available));
+					txBuilder.end();
+
+					executable.execute(txBuilder);
+					this.actionConstructors.construct(new FeeReserveComplete(feePayer), txBuilder);
+				});
+			} catch (FeeReserveCompleteException e) {
+				feeGuess.set(e.getExpectedFee());
+			}
+		}
+
+		throw new FeeConstructionException(maxTries);
 	}
 
 	private TxBuilder constructWithFees(TxnConstructionRequest request, REAddr feePayer) throws TxBuilderException {
@@ -442,7 +509,10 @@ public final class RadixEngine<M> {
 						for (var action : request.getActions()) {
 							this.actionConstructors.construct(action, txBuilder);
 						}
-						request.getMsg().ifPresent(txBuilder::message);
+						var msg = request.getMsg();
+						if (msg.isPresent()) {
+							txBuilder.message(msg.get());
+						}
 						this.actionConstructors.construct(new FeeReserveComplete(feePayer), txBuilder);
 					},
 					request.getSubstatesToAvoid()
@@ -452,7 +522,7 @@ public final class RadixEngine<M> {
 			}
 		}
 
-		throw new TxBuilderException("Not enough fees: unable to construct with fees after " + maxTries + " tries.");
+		throw new FeeConstructionException(maxTries);
 	}
 
 	public REParser getParser() {
@@ -461,136 +531,92 @@ public final class RadixEngine<M> {
 		}
 	}
 
+	public SubstateSerialization getSubstateSerialization() {
+		synchronized (stateUpdateEngineLock) {
+			return serialization;
+		}
+	}
+
 	public SubstateDeserialization getSubstateDeserialization() {
 		synchronized (stateUpdateEngineLock) {
-			var deserialization = constraintMachine.getDeserialization();
-			return deserialization;
+			return constraintMachine.getDeserialization();
 		}
 	}
 
-	public Optional<Particle> get(SystemMapKey mapKey) {
+	public VirtualSubstateDeserialization getVirtualSubstateDeserialization() {
 		synchronized (stateUpdateEngineLock) {
-			var deserialization = constraintMachine.getDeserialization();
-			return engineStore.get(mapKey).map(raw -> {
-				try {
-					return deserialization.deserialize(raw.getData());
-				} catch (DeserializeException e) {
-					throw new IllegalStateException(e);
-				}
-			});
+			return constraintMachine.getVirtualDeserialization();
 		}
 	}
 
-	public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
-		Class<T> c,
-		Function<T, K> keyMapper
-	) {
+	public <V> V read(Function<RadixEngineReader<M>, V> readEngineStore) {
 		synchronized (stateUpdateEngineLock) {
-			var deserialization = constraintMachine.getDeserialization();
-			return reduce(deserialization.index(c), new HashMap<>(),
-				(m, t) -> {
-					m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
-					return m;
+			return readEngineStore.apply(new RadixEngineReader<M>() {
+				@Override
+				public M getMetadata() {
+					return engineStore.getMetadata();
 				}
-			);
-		}
-	}
 
-	public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
-		SubstateIndex<T> index,
-		Function<T, K> keyMapper,
-		Map<K, UInt384> initial
-	) {
-		return reduce(index, initial,
-			(m, t) -> {
-				m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
-				return m;
-			}
-		);
-	}
-
-	public <T extends ResourceInBucket> UInt384 reduceResources(SubstateIndex<T> index) {
-		synchronized (stateUpdateEngineLock) {
-			return reduce(index, UInt384.ZERO, (m, t) -> m.add(t.getAmount()));
-		}
-	}
-
-	public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
-		SubstateIndex<T> index,
-		Function<T, K> keyMapper
-	) {
-		return reduceResources(index, keyMapper, new HashMap<>());
-	}
-
-	public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
-		SubstateIndex<T> index,
-		Function<T, K> keyMapper,
-		Predicate<T> predicate
-	) {
-		return reduce(index, new HashMap<>(),
-			(m, t) -> {
-				if (predicate.test(t)) {
-					m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
+				@Override
+				public Optional<Particle> get(SystemMapKey mapKey) {
+					var deserialization = constraintMachine.getDeserialization();
+					return engineStore.get(mapKey).map(raw -> {
+						try {
+							return deserialization.deserialize(raw.getData());
+						} catch (DeserializeException e) {
+							throw new IllegalStateException(e);
+						}
+					});
 				}
-				return m;
-			}
-		);
-	}
 
-	public <K, T extends ResourceInBucket> Map<K, Pair<UInt384, Long>> reduceResourcesWithSubstateCount(
-		SubstateIndex<T> index,
-		Function<T, K> keyMapper,
-		Predicate<T> predicate
-	) {
-		return reduce(index, new HashMap<>(),
-			(m, t) -> {
-				if (predicate.test(t)) {
-					m.merge(
-						keyMapper.apply(t),
-						Pair.of(UInt384.from(t.getAmount()), 1L),
-						(p0, p1) -> Pair.of(p0.getFirst().add(p1.getFirst()), p0.getSecond() + p1.getSecond())
+				@Override
+				public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(Class<T> c, Function<T, K> keyMapper) {
+					var deserialization = constraintMachine.getDeserialization();
+					return reduce(deserialization.index(c), new HashMap<>(),
+						(m, t) -> {
+							m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
+							return m;
+						}
 					);
 				}
-				return m;
-			}
-		);
-	}
 
-	public <U, T extends Particle> U reduce(SubstateIndex<T> i, U identity, BiFunction<U, T, U> accumulator) {
-		return reduce(i, identity, accumulator, Long.MAX_VALUE);
-	}
-
-	public <U, T extends Particle> U reduce(SubstateIndex<T> i, U identity, BiFunction<U, T, U> accumulator, long limit) {
-		synchronized (stateUpdateEngineLock) {
-			var deserialization = constraintMachine.getDeserialization();
-			var u = identity;
-			long count = 0;
-			try (var cursor = engineStore.openIndexedCursor(i)) {
-				while (cursor.hasNext() && count < limit) {
-					try {
-						var t = (T) deserialization.deserialize(cursor.next().getData());
-						u = accumulator.apply(u, t);
-						count++;
-					} catch (DeserializeException e) {
-						throw new IllegalStateException(e);
-					}
+				@Override
+				public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
+					SubstateIndex<T> index, Function<T, K> keyMapper, Predicate<T> predicate
+				) {
+					return reduce(index, new HashMap<>(),
+						(m, t) -> {
+							if (predicate.test(t)) {
+								m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
+							}
+							return m;
+						}
+					);
 				}
-			}
-			return u;
-		}
-	}
 
-	public <U, T extends Particle> U reduce(Class<T> c, U identity, BiFunction<U, T, U> accumulator) {
-		synchronized (stateUpdateEngineLock) {
-			var deserialization = constraintMachine.getDeserialization();
-			return reduce(deserialization.index(c), identity, accumulator);
-		}
-	}
+				private <U, T extends Particle> U reduce(SubstateIndex<T> i, U identity, BiFunction<U, T, U> accumulator) {
+					var deserialization = constraintMachine.getDeserialization();
+					var u = identity;
+					try (var cursor = engineStore.openIndexedCursor(i)) {
+						while (cursor.hasNext()) {
+							try {
+								var t = (T) deserialization.deserialize(cursor.next().getData());
+								u = accumulator.apply(u, t);
+							} catch (DeserializeException e) {
+								throw new IllegalStateException(e);
+							}
+						}
+					}
+					return u;
+				}
 
-	public <U, T extends Particle> U reduce(Class<T> c, U identity, BiFunction<U, T, U> accumulator, long limit) {
-		synchronized (stateUpdateEngineLock) {
-			var deserialization = constraintMachine.getDeserialization();
-			return reduce(deserialization.index(c), identity, accumulator, limit);
+				@Override
+				public <U, T extends Particle> U reduce(Class<T> c, U identity, BiFunction<U, T, U> accumulator) {
+					var deserialization = constraintMachine.getDeserialization();
+					var index = deserialization.index(c);
+					return reduce(index, identity, accumulator);
+				}
+			});
 		}
 	}
 }

@@ -64,16 +64,13 @@
 
 package com.radixdlt.identifiers;
 
+import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
 import com.radixdlt.utils.Bits;
 import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.functional.Result;
-import com.radixdlt.utils.functional.Result.Mapper2;
-import com.radixdlt.utils.functional.Tuple.Tuple2;
 
-import static com.radixdlt.errors.ApiErrors.INVALID_RESOURCE_ADDRESS;
-import static com.radixdlt.utils.functional.Tuple.tuple;
+import java.util.function.Function;
 
 /**
  * A Radix resource identifier which encodes addresses with a resource behind them in
@@ -97,6 +94,10 @@ public final class ResourceAddressing {
 		return new ResourceAddressing(hrpSuffix);
 	}
 
+	public String getHrpSuffix() {
+		return hrpSuffix;
+	}
+
 	private static byte[] toBech32Data(byte[] bytes) {
 		return Bits.convertBits(bytes, 0, bytes.length, 8, 5, true);
 	}
@@ -105,28 +106,26 @@ public final class ResourceAddressing {
 		return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
 	}
 
-	public static Pair<String, REAddr> parseUnknownHrp(String rri) {
-		var data = Bech32.decode(rri);
-		var addrBytes = fromBech32Data(data.data);
-		return Pair.of(data.hrp, REAddr.of(addrBytes));
-	}
-
-	public Tuple2<String, REAddr> parse(String rri) {
-		var data = Bech32.decode(rri);
-		if (!data.hrp.endsWith(hrpSuffix)) {
-			throw new IllegalArgumentException("Address hrp suffix must be " + hrpSuffix + "(" + rri + ")");
+	public <X extends Exception> Pair<String, REAddr> parseOrThrow(String rri, Function<String, X> exceptionSupplier) throws X {
+		Bech32.Bech32Data bech32Data;
+		try {
+			bech32Data = Bech32.decode(rri);
+		} catch (AddressFormatException e) {
+			throw exceptionSupplier.apply("Could not decode");
 		}
-		var symbol = data.hrp.substring(0, data.hrp.length() - hrpSuffix.length());
-		var addrBytes = fromBech32Data(data.data);
-		return tuple(symbol, REAddr.of(addrBytes));
-	}
 
-	public Mapper2<String, REAddr> parseFunctional(String rri) {
-		return () -> Result.wrap(() -> INVALID_RESOURCE_ADDRESS.with(rri), () -> parse(rri));
-	}
+		if (!bech32Data.hrp.endsWith(hrpSuffix)) {
+			throw exceptionSupplier.apply("Address hrp suffix must be " + hrpSuffix + "(" + rri + ")");
+		}
 
-	public Result<REAddr> parseToAddr(String rri) {
-		return Result.wrap(() -> INVALID_RESOURCE_ADDRESS.with(rri), () -> parse(rri).last());
+		var symbol = bech32Data.hrp.substring(0, bech32Data.hrp.length() - hrpSuffix.length());
+		var addrBytes = fromBech32Data(bech32Data.data);
+		try {
+			var readdr = REAddr.of(addrBytes);
+			return Pair.of(symbol, readdr);
+		} catch (IllegalArgumentException e) {
+			throw exceptionSupplier.apply(e.getMessage());
+		}
 	}
 
 	public String of(String symbol, REAddr addr) {

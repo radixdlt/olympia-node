@@ -520,11 +520,8 @@ public final class LocalSyncService {
 	}
 
 	private <T extends SyncState> T updateSyncTargetDiffCounter(T syncState) {
-		if (syncState instanceof SyncingState) {
-			final var syncingState = (SyncingState) syncState;
-			final var stateVersionDiff =
-				syncingState.getTargetHeader().getStateVersion() - syncingState.getCurrentHeader().getStateVersion();
-			this.systemCounters.set(CounterType.SYNC_TARGET_CURRENT_DIFF, Math.max(0, stateVersionDiff));
+		if (syncState instanceof final SyncingState syncingState) {
+			this.systemCounters.set(CounterType.SYNC_CURRENT_STATE_VERSION, syncingState.getCurrentHeader().getStateVersion());
 			this.systemCounters.set(
 				CounterType.SYNC_TARGET_STATE_VERSION,
 				Math.max(
@@ -533,7 +530,7 @@ public final class LocalSyncService {
 				)
 			);
 		} else {
-			this.systemCounters.set(CounterType.SYNC_TARGET_CURRENT_DIFF, 0);
+			this.systemCounters.set(CounterType.SYNC_CURRENT_STATE_VERSION, syncState.getCurrentHeader().getStateVersion());
 			this.systemCounters.set(CounterType.SYNC_TARGET_STATE_VERSION, syncState.getCurrentHeader().getStateVersion());
 		}
 

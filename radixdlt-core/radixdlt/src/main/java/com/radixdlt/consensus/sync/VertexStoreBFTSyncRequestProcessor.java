@@ -67,6 +67,7 @@ package com.radixdlt.consensus.sync;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import java.util.Objects;
@@ -81,21 +82,25 @@ public final class VertexStoreBFTSyncRequestProcessor implements RemoteEventProc
 	private final VertexStore vertexStore;
 	private final RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher;
 	private final RemoteEventDispatcher<GetVerticesResponse> responseDispatcher;
+	private final SystemCounters systemCounters;
 
 	@Inject
 	public VertexStoreBFTSyncRequestProcessor(
 		VertexStore vertexStore,
 		RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher,
-		RemoteEventDispatcher<GetVerticesResponse> responseDispatcher
+		RemoteEventDispatcher<GetVerticesResponse> responseDispatcher,
+		SystemCounters systemCounters
 	) {
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.errorResponseDispatcher = Objects.requireNonNull(errorResponseDispatcher);
 		this.responseDispatcher = Objects.requireNonNull(responseDispatcher);
+		this.systemCounters = systemCounters;
 	}
 
 	@Override
 	public void process(BFTNode sender, GetVerticesRequest request) {
 		// TODO: Handle nodes trying to DDOS this endpoint
+		systemCounters.increment(SystemCounters.CounterType.BFT_SYNC_REQUESTS_RECEIVED);
 
 		log.debug("SYNC_VERTICES: Received GetVerticesRequest {}", request);
 		var verticesMaybe = vertexStore.getVertices(request.getVertexId(), request.getCount());

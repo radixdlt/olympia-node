@@ -173,7 +173,7 @@ public final class Pacemaker {
 			return;
 		}
 		this.latestViewUpdate = viewUpdate;
-		this.systemCounters.set(CounterType.PACEMAKER_VIEW, viewUpdate.getCurrentView().number());
+		this.systemCounters.set(CounterType.BFT_PACEMAKER_ROUND, viewUpdate.getCurrentView().number());
 
 		this.startView();
 	}
@@ -205,7 +205,7 @@ public final class Pacemaker {
 			proposalMaybe.ifPresent(proposal -> {
 				log.trace("Broadcasting proposal: {}", proposal);
 				this.proposalDispatcher.dispatch(this.validatorSet.nodes(), proposal);
-				this.counters.increment(CounterType.BFT_PROPOSALS_MADE);
+				this.counters.increment(CounterType.BFT_PACEMAKER_PROPOSALS_SENT);
 			});
 		}
 	}
@@ -223,6 +223,7 @@ public final class Pacemaker {
 		} else {
 			final List<PreparedVertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
 			nextTxns = nextTxnsGenerator.generateNextTxns(view, preparedVertices);
+			systemCounters.add(SystemCounters.CounterType.BFT_PACEMAKER_PROPOSED_TRANSACTIONS, nextTxns.size());
 		}
 
 		final UnverifiedVertex proposedVertex = UnverifiedVertex.create(highestQC, view, nextTxns, self);
@@ -318,9 +319,9 @@ public final class Pacemaker {
 
 	private void updateTimeoutCounters(ScheduledLocalTimeout scheduledTimeout) {
 		if (scheduledTimeout.count() == 0) {
-			counters.increment(CounterType.BFT_TIMED_OUT_VIEWS);
+			counters.increment(CounterType.BFT_PACEMAKER_TIMED_OUT_ROUNDS);
 		}
-		counters.increment(CounterType.BFT_TIMEOUT);
+		counters.increment(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT);
 	}
 
 	private void rescheduleTimeout(ScheduledLocalTimeout scheduledTimeout) {

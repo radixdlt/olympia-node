@@ -83,7 +83,6 @@ public class CreateSystemConstructorV2 implements ActionConstructor<CreateSystem
 		builder.up(new VirtualParent(new byte[] {SubstateTypeId.UNCLAIMED_READDR.id()}));
 		builder.end();
 
-
 		builder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, "sys".getBytes(StandardCharsets.UTF_8));
 		builder.downREAddr(REAddr.ofSystem());
 		builder.up(new EpochData(0));

@@ -93,6 +93,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -120,12 +121,14 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 		this.radixEngine = radixEngine;
 	}
 
+	public <T> T getData(Function<Map<AID, Pair<REProcessedTxn, MempoolMetadata>>, T> mapper) {
+		return mapper.apply(data);
+	}
+
 	@Override
-	public void add(Txn txn) throws MempoolRejectedException {
+	public REProcessedTxn add(Txn txn) throws MempoolRejectedException {
 		if (this.data.size() >= maxSize) {
-			throw new MempoolFullException(
-				String.format("Mempool full: %s of %s items", this.data.size(), maxSize)
-			);
+			throw new MempoolFullException(this.data.size(), maxSize);
 		}
 
 		if (this.data.containsKey(txn.getId())) {
@@ -148,6 +151,8 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 		this.data.put(txn.getId(), data);
 		result.getProcessedTxn().substateDependencies()
 			.forEach(substateId -> substateIndex.merge(substateId, Set.of(txn.getId()), Sets::union));
+
+		return result.getProcessedTxn();
 	}
 
 	@Override

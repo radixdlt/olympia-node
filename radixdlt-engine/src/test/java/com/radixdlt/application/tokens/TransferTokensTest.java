@@ -153,7 +153,7 @@ public class TransferTokensTest {
 			REConstructor.newBuilder()
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(TransferToken.class, transferTokensConstructor)
-				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
+				.put(CreateMutableToken.class, new CreateMutableTokenConstructor(SystemConstraintScrypt.MAX_SYMBOL_LENGTH))
 				.put(MintToken.class, new MintTokenConstructor())
 				.build(),
 			cm,
@@ -171,7 +171,7 @@ public class TransferTokensTest {
 		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
 			TxnConstructionRequest.create()
-				.action(new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", ""))
+				.action(new CreateMutableToken(tokenAddr, "test", "Name", "", "", "", key.getPublicKey()))
 				.action(new MintToken(tokenAddr, accountAddr, startAmt))
 		).signAndBuild(key::sign);
 		this.engine.execute(List.of(txn));
@@ -193,7 +193,7 @@ public class TransferTokensTest {
 		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
 			TxnConstructionRequest.create()
-				.action(new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", ""))
+				.action(new CreateMutableToken(tokenAddr, "test", "Name", "", "", "", key.getPublicKey()))
 				.action(new MintToken(tokenAddr, accountAddr, startAmt))
 		).signAndBuild(key::sign);
 		this.engine.execute(List.of(txn));
@@ -211,11 +211,11 @@ public class TransferTokensTest {
 		assertThat(accounting.bucketAccounting())
 			.hasSize(2)
 			.containsEntry(
-				new AccountBucket(tokenAddr, accountAddr),
+				AccountBucket.from(tokenAddr, accountAddr),
 				new BigInteger(-1, transferAmt.toByteArray(), 0, UInt256.BYTES)
 			)
 			.containsEntry(
-				new AccountBucket(tokenAddr, to),
+				AccountBucket.from(tokenAddr, to),
 				new BigInteger(1, transferAmt.toByteArray(), 0, UInt256.BYTES)
 			);
 		assertThat(accounting.resourceAccounting()).isEmpty();

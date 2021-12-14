@@ -331,7 +331,7 @@ public final class EpochManager {
 	}
 
 	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
-		this.counters.increment(CounterType.BFT_CONSENSUS_EVENTS);
+		this.counters.increment(CounterType.BFT_EVENTS_RECEIVED);
 
 		//TODO: replace with switch
 		if (consensusEvent instanceof Proposal) {

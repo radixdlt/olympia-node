@@ -139,7 +139,7 @@ public class AsyncRadixApiValidatorTest {
 	@Test
 	public void testLookup() throws IOException {
 		var address = ValidatorAddress.of(Addressing.ofNetworkId(99).forValidators()
-											  .parse("dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9"));
+		  .parseOrThrow("dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9", IllegalStateException::new));
 
 		prepareClient(LOOKUP)
 			.map(RadixApi::withTrace)

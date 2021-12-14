@@ -64,7 +64,9 @@
 
 package com.radixdlt.application.tokens.construction;
 
+import com.radixdlt.application.system.state.StakeOwnershipBucket;
 import com.radixdlt.atom.ActionConstructor;
+import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
@@ -79,10 +81,6 @@ import java.nio.ByteBuffer;
 public class UnstakeOwnershipConstructor implements ActionConstructor<UnstakeOwnership> {
 	@Override
 	public void construct(UnstakeOwnership action, TxBuilder txBuilder) throws TxBuilderException {
-		if (action.amount().isZero()) {
-			throw new TxBuilderException("Must transfer > 0.");
-		}
-
 		var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES));
 		buf.put(SubstateTypeId.STAKE_OWNERSHIP.id());
 		buf.put((byte) 0);
@@ -98,7 +96,10 @@ public class UnstakeOwnershipConstructor implements ActionConstructor<UnstakeOwn
 			index,
 			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
 			action.amount(),
-			() -> new TxBuilderException("Not enough balance for transfer.")
+			available -> {
+				var from = StakeOwnershipBucket.from(action.from(), action.accountAddr());
+				return new NotEnoughResourcesException(from, action.amount(), available);
+			}
 		);
 		if (!change.isZero()) {
 			txBuilder.up(new StakeOwnership(action.from(), action.accountAddr(), change));

@@ -80,7 +80,6 @@ import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import org.json.JSONArray;
-import org.json.JSONObject;
 
 import javax.annotation.concurrent.Immutable;
 import java.nio.ByteBuffer;
@@ -146,19 +145,6 @@ public final class TimestampedECDSASignatures {
 			}
 		}
 		return new TimestampedECDSASignatures(builder.build());
-	}
-
-	public JSONArray asJSON() {
-		var json = new JSONArray();
-		nodeToTimestampedSignature.forEach((node, sig) -> {
-			var obj = new JSONObject()
-				.put("key", node.getKey().toHex()) // TODO: retrieve key from signature
-				.put("signature", Bytes.toHexString(REFieldSerialization.serializeSignature(sig.signature())))
-				.put("timestamp", sig.timestamp());
-			json.put(obj);
-		});
-
-		return json;
 	}
 
 	/**

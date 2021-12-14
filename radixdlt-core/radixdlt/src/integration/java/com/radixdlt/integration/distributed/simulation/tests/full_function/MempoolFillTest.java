@@ -67,9 +67,8 @@ package com.radixdlt.integration.distributed.simulation.tests.full_function;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.api.node.chaos.mempoolfiller.MempoolFillerModule;
+import com.radixdlt.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
@@ -117,7 +116,6 @@ public class MempoolFillTest {
 			protected void configure() {
 				install(MempoolConfig.asModule(1000, 200));
 				install(new MempoolFillerModule());
-				install(new NodeApplicationModule());
 			}
 
 			@ProvidesIntoSet

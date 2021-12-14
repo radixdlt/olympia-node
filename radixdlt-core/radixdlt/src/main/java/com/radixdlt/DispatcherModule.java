@@ -64,8 +64,7 @@
 
 package com.radixdlt;
 
-import com.radixdlt.application.NodeApplicationRequest;
-import com.radixdlt.api.service.network.ScheduledStatsCollecting;
+import com.radixdlt.api.system.health.ScheduledStatsCollecting;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -89,10 +88,8 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.node.chaos.mempoolfiller.MempoolFillerUpdate;
-import com.radixdlt.api.node.chaos.mempoolfiller.ScheduledMempoolFill;
-import com.radixdlt.api.node.chaos.messageflooder.MessageFlooderUpdate;
-import com.radixdlt.api.node.chaos.messageflooder.ScheduledMessageFlood;
+import com.radixdlt.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
@@ -124,10 +121,9 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
-import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
+import com.radixdlt.statecomputer.TxnsRemovedFromMempool;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
@@ -150,38 +146,25 @@ public class DispatcherModule extends AbstractModule {
 
 	@Override
 	public void configure() {
-		bind(new TypeLiteral<EventDispatcher<NodeApplicationRequest>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(NodeApplicationRequest.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MempoolAdd.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(
-				MempoolAddSuccess.class,
-				m -> CounterType.MEMPOOL_ADD_SUCCESS
-			)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(
-				MempoolAddFailure.class,
-				m -> CounterType.MEMPOOL_ERRORS_OTHER
-			))
-			.in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.dispatcherProvider(MempoolAddSuccess.class)).in(Scopes.SINGLETON);
 
 		// TODO: Remove, this hack required for initial genesis event emit
 		bind(new TypeLiteral<EventDispatcher<REOutput>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(REOutput.class)).in(Scopes.SINGLETON);
 
-		bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(AtomsRemovedFromMempool.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<TxnsRemovedFromMempool>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(TxnsRemovedFromMempool.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MempoolRelayTrigger.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<EventDispatcher<MessageFlooderUpdate>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(MessageFlooderUpdate.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolFillerUpdate>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MempoolFillerUpdate.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<ScheduledMempoolFill>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<NoVote>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(NoVote.class, v -> CounterType.BFT_REJECTED))
+			.toProvider(Dispatchers.dispatcherProvider(NoVote.class, v -> CounterType.BFT_NO_VOTES_SENT))
 			.in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(
@@ -191,8 +174,6 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(new TypeLiteral<Epoched<ScheduledLocalTimeout>>() { }))
 			.in(Scopes.SINGLETON);
-		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMessageFlood>>() { })
-			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMessageFlood.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(VertexRequestTimeout.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<SyncRequestTimeout>>() { })
@@ -365,7 +346,7 @@ public class DispatcherModule extends AbstractModule {
 				systemCounters.increment(CounterType.BFT_VERTEX_STORE_FORKS);
 			}
 			if (!update.getInserted().getVertex().hasDirectParent()) {
-				systemCounters.increment(CounterType.BFT_INDIRECT_PARENT);
+				systemCounters.increment(CounterType.BFT_VERTEX_STORE_INDIRECT_PARENTS);
 			}
 			systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, update.getVertexStoreSize());
 			dispatcher.dispatch(update);
@@ -380,8 +361,6 @@ public class DispatcherModule extends AbstractModule {
 	) {
 		var dispatcher = environment.getDispatcher(BFTRebuildUpdate.class);
 		return update -> {
-			long stateVersion = update.getVertexStoreState().getRootHeader().getStateVersion();
-			systemCounters.set(CounterType.BFT_STATE_VERSION, stateVersion);
 			systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, update.getVertexStoreState().getVertices().size());
 			systemCounters.increment(CounterType.BFT_VERTEX_STORE_REBUILDS);
 			dispatcher.dispatch(update);
@@ -406,7 +385,7 @@ public class DispatcherModule extends AbstractModule {
 		SystemCounters systemCounters
 	) {
 		return commit -> {
-			systemCounters.add(CounterType.SYNC_PROCESSED, commit.getTxns().size());
+			systemCounters.add(CounterType.SYNC_VALID_RESPONSES_RECEIVED, commit.getTxns().size());
 			processors.forEach(e -> e.process(commit));
 		};
 	}
@@ -420,18 +399,14 @@ public class DispatcherModule extends AbstractModule {
 	) {
 		if (asyncProcessors.isEmpty()) {
 			return commit -> {
-				long stateVersion = commit.getVertexStoreState().getRootHeader().getStateVersion();
-				systemCounters.set(CounterType.BFT_STATE_VERSION, stateVersion);
-				systemCounters.add(CounterType.BFT_PROCESSED, commit.getCommitted().size());
+				systemCounters.add(CounterType.BFT_COMMITTED_VERTICES, commit.getCommitted().size());
 				systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, commit.getVertexStoreSize());
 				processors.forEach(e -> e.process(commit));
 			};
 		} else {
 			var dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
 			return commit -> {
-				long stateVersion = commit.getVertexStoreState().getRootHeader().getStateVersion();
-				systemCounters.set(CounterType.BFT_STATE_VERSION, stateVersion);
-				systemCounters.add(CounterType.BFT_PROCESSED, commit.getCommitted().size());
+				systemCounters.add(CounterType.BFT_COMMITTED_VERTICES, commit.getCommitted().size());
 				systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, commit.getVertexStoreSize());
 				processors.forEach(e -> e.process(commit));
 				dispatcher.dispatch(commit);

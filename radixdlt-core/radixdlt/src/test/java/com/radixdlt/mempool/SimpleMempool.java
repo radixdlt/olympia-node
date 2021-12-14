@@ -101,17 +101,17 @@ public final class SimpleMempool implements Mempool<Txn> {
 	}
 
 	@Override
-	public void add(Txn txn) throws MempoolFullException, MempoolDuplicateException {
+	public Txn add(Txn txn) throws MempoolFullException, MempoolDuplicateException {
 		if (this.data.size() >= maxSize) {
-			throw new MempoolFullException(
-				String.format("Mempool full: %s of %s items", this.data.size(), maxSize)
-			);
+			throw new MempoolFullException(this.data.size(), maxSize);
 		}
 		if (!this.data.add(txn)) {
 			throw new MempoolDuplicateException(String.format("Mempool already has command %s", txn));
 		}
 
 		updateCounts();
+
+		return txn;
 	}
 
 	@Override
@@ -153,8 +153,7 @@ public final class SimpleMempool implements Mempool<Txn> {
 	}
 
 	private void updateCounts() {
-		this.counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, this.data.size());
-		this.counters.set(SystemCounters.CounterType.MEMPOOL_MAXCOUNT, maxSize);
+		this.counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, this.data.size());
 	}
 
 	@Override

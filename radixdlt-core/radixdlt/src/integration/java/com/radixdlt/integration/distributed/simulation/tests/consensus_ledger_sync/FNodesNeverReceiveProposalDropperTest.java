@@ -127,7 +127,7 @@ public class FNodesNeverReceiveProposalDropperTest {
 		assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
 
 		LongSummaryStatistics statistics = runningTest.getNetwork().getSystemCounters().values().stream()
-			.map(s -> s.get(CounterType.SYNC_PROCESSED))
+			.map(s -> s.get(CounterType.SYNC_VALID_RESPONSES_RECEIVED))
 			.mapToLong(l -> l)
 			.summaryStatistics();
 

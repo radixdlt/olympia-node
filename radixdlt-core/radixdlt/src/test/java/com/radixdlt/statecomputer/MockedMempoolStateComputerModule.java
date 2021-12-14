@@ -125,10 +125,10 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 		return new StateComputerLedger.StateComputer() {
 			@Override
 			public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
-				mempoolAdd.getTxns().forEach(txn -> {
+				mempoolAdd.txns().forEach(txn -> {
 					try {
 						mempool.add(txn);
-						counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
+						counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
 					} catch (MempoolRejectedException e) {
 						log.error(e);
 					}
@@ -155,7 +155,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 			@Override
 			public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
 				mempool.committed(txnsAndProof.getTxns());
-				counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
+				counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
 
 				var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
 				ledgerUpdateDispatcher.dispatch(ledgerUpdate);

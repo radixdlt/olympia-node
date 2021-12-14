@@ -71,12 +71,15 @@ import com.radixdlt.utils.UInt256;
 
 public class UnstakeTokens implements TxAction {
 	private final REAddr accountAddr;
-	private final ECPublicKey delegateAddress;
+	private final ECPublicKey validatorKey;
 	private final UInt256 amount;
 
-	public UnstakeTokens(REAddr accountAddr, ECPublicKey delegateAddress, UInt256 amount) {
+	public UnstakeTokens(ECPublicKey validatorKey, REAddr accountAddr, UInt256 amount) {
+		if (amount.isZero()) {
+			throw new IllegalArgumentException("Amount must be > 0.");
+		}
 		this.accountAddr = accountAddr;
-		this.delegateAddress = delegateAddress;
+		this.validatorKey = validatorKey;
 		this.amount = amount;
 	}
 
@@ -85,7 +88,7 @@ public class UnstakeTokens implements TxAction {
 	}
 
 	public ECPublicKey from() {
-		return delegateAddress;
+		return validatorKey;
 	}
 
 	public UInt256 amount() {

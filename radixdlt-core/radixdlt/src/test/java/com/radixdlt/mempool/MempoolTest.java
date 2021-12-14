@@ -99,7 +99,6 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
@@ -138,7 +137,7 @@ public class MempoolTest {
 			MempoolConfig.asModule(10, 10, 200, 500, 10),
 			new MainnetForkConfigsModule(),
 			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),
+			new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY, NUM_PEERS),
 			new MockedGenesisModule(
 				Set.of(VALIDATOR_KEY.getPublicKey()),
 				Amount.ofTokens(1000),
@@ -147,7 +146,6 @@ public class MempoolTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bindConstant().annotatedWith(NumPeers.class).to(NUM_PEERS);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 			}
@@ -187,7 +185,7 @@ public class MempoolTest {
 		processor.handleMessage(self, MempoolAdd.create(txn), null);
 
 		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(1);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isEqualTo(1);
 		// FIXME: Added hack which requires genesis to be sent as message so ignore this check for now
 		//assertThat(network.allMessages())
 			//.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolAddSuccess.class));
@@ -204,7 +202,7 @@ public class MempoolTest {
 		processor.handleMessage(getFirstPeer(), MempoolAdd.create(txn), null);
 
 		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(1);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isEqualTo(1);
 		// FIXME: Added hack which requires genesis to be sent as message so ignore this check for now
 		//assertThat(network.allMessages())
 			//.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolAddSuccess.class));
@@ -218,10 +216,10 @@ public class MempoolTest {
 		var txn = createTxn(keyPair);
 
 		// Act
-		processor.handleMessage(self, MempoolAddSuccess.create(txn), null);
+		processor.handleMessage(self, MempoolAddSuccess.create(txn, null, null), null);
 
 		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(NUM_PEERS);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYS_SENT)).isEqualTo(NUM_PEERS);
 	}
 
 	@Test
@@ -232,10 +230,10 @@ public class MempoolTest {
 		var txn = createTxn(keyPair);
 
 		// Act
-		processor.handleMessage(self, MempoolAddSuccess.create(txn, getFirstPeer()), null);
+		processor.handleMessage(self, MempoolAddSuccess.create(txn, null, getFirstPeer()), null);
 
 		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(NUM_PEERS - 1);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYS_SENT)).isEqualTo(NUM_PEERS - 1);
 	}
 
 	@Test
@@ -251,7 +249,7 @@ public class MempoolTest {
 		processor.handleMessage(getFirstPeer(), mempoolAdd, null);
 
 		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(1);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isEqualTo(1);
 	}
 
 	@Test
@@ -269,7 +267,7 @@ public class MempoolTest {
 		processor.handleMessage(getFirstPeer(), mempoolAddSuccess2, null);
 
 		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(2);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isEqualTo(2);
 	}
 
 	@Test
@@ -283,7 +281,7 @@ public class MempoolTest {
 		processor.handleMessage(getFirstPeer(), mempoolAdd, null);
 
 		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(0);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
 	}
 
 	@Test
@@ -304,7 +302,7 @@ public class MempoolTest {
 		processor.handleMessage(getFirstPeer(), mempoolAdd, null);
 
 		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(0);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
 	}
 
 	@Test
@@ -326,7 +324,7 @@ public class MempoolTest {
 		stateComputer.commit(commandsAndProof, null);
 
 		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(0);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
 	}
 
 	@Test
@@ -350,7 +348,7 @@ public class MempoolTest {
 		stateComputer.commit(commandsAndProof, null);
 
 		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(0);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
 	}
 
 	@Test
@@ -362,7 +360,7 @@ public class MempoolTest {
 		final var txn = createTxn(keyPair);
 		final var mempoolAdd = MempoolAdd.create(txn);
 		processor.handleMessage(self, mempoolAdd, null);
-		assertThat(systemCounters.get(CounterType.MEMPOOL_COUNT)).isEqualTo(1);
+		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isEqualTo(1);
 
 		assertThat(network.allMessages())
 			.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolAddSuccess.class));

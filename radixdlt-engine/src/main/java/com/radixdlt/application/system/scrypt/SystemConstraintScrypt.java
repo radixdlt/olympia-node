@@ -93,6 +93,8 @@ import java.util.EnumSet;
 import java.util.LinkedList;
 
 public final class SystemConstraintScrypt implements ConstraintScrypt {
+	public static final int MAX_SYMBOL_LENGTH = 32;
+
 	private static class AllocatingSystem implements ReducerState {
 	}
 
@@ -143,7 +145,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 		}
 
 		public ReducerState claim(UnclaimedREAddr unclaimedREAddr, ExecutionContext ctx) throws ProcedureException, InvalidHashedKeyException {
-			if (ctx.permissionLevel() != PermissionLevel.SYSTEM) {
+			if (ctx.permissionLevel() != PermissionLevel.SYSTEM && !ctx.skipAuthorization()) {
 				var key = ctx.key().orElseThrow(() -> new ProcedureException("Missing key"));
 				unclaimedREAddr.verifyHashedKey(key, arg);
 			}
@@ -251,7 +253,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 						return ReducerResult.incomplete(new TokenHoldingBucket(tokens));
 					} else if (syscall == Syscall.READDR_CLAIM) {
 						var bytes = d.getRemainingBytes(1);
-						if (bytes.length > 32) {
+						if (bytes.length > MAX_SYMBOL_LENGTH) {
 							throw new ProcedureException("Address claim too large.");
 						}
 						return ReducerResult.incomplete(new REAddrClaimStart(bytes));
@@ -270,10 +272,13 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				UnclaimedREAddr.class,
 				SubstateTypeId.UNCLAIMED_READDR.id(),
 				buf -> {
-					throw new UnsupportedOperationException();
+					REFieldSerialization.deserializeReservedByte(buf);
+					var addr = REFieldSerialization.deserializeREAddr(buf, claimableAddrTypes);
+					return new UnclaimedREAddr(addr);
 				},
 				(s, buf) -> {
-					throw new UnsupportedOperationException();
+					REFieldSerialization.serializeReservedByte(buf);
+					REFieldSerialization.serializeREAddr(buf, s.getAddr());
 				},
 				buf -> REFieldSerialization.deserializeREAddr(buf, claimableAddrTypes),
 				(a, buf) -> REFieldSerialization.serializeREAddr(buf, (REAddr) a),

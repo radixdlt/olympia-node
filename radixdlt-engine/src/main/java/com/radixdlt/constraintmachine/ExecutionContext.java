@@ -90,6 +90,7 @@ import java.util.function.Function;
 public final class ExecutionContext {
 	private final Txn txn;
 	private final PermissionLevel level;
+	private final boolean skipAuthorization;
 	private final TokenHoldingBucket reserve;
 	private ECPublicKey key;
 	private boolean disableResourceAllocAndDestroy;
@@ -102,12 +103,18 @@ public final class ExecutionContext {
 	public ExecutionContext(
 		Txn txn,
 		PermissionLevel level,
+		boolean skipAuthorization,
 		int sigsLeft
 	) {
 		this.txn = txn;
 		this.level = level;
+		this.skipAuthorization = skipAuthorization;
 		this.sigsLeft = sigsLeft;
 		this.reserve = new TokenHoldingBucket(Tokens.create(REAddr.ofNativeToken(), UInt256.ZERO));
+	}
+
+	public boolean skipAuthorization() {
+		return skipAuthorization;
 	}
 
 	public void addSystemLoan(UInt256 loan) {

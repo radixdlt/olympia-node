@@ -138,6 +138,11 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
+	public M getMetadata() {
+		return null;
+	}
+
+	@Override
 	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
 		return transientStore.openIndexedCursor(index)
 			.concat(() -> base.openIndexedCursor(index)

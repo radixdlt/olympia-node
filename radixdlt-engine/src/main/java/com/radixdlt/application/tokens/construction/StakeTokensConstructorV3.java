@@ -64,7 +64,9 @@
 
 package com.radixdlt.application.tokens.construction;
 
+import com.radixdlt.application.tokens.state.AccountBucket;
 import com.radixdlt.atom.ActionConstructor;
+import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
@@ -90,7 +92,7 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 	@Override
 	public void construct(StakeTokens action, TxBuilder builder) throws TxBuilderException {
 		if (action.amount().compareTo(minimumStake) < 0) {
-			throw new TxBuilderException("Minimum to stake is " + minimumStake + " but trying to stake " + action.amount());
+			throw new MinimumStakeException(minimumStake, action.amount());
 		}
 
 		// TODO: construct this based on substate definition
@@ -105,19 +107,21 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 			p -> p.getResourceAddr().isNativeToken()
 				&& p.getHoldingAddr().equals(action.from()),
 			action.amount(),
-			() -> new TxBuilderException("Not enough balance for transfer.")
+			available -> {
+				var from = AccountBucket.from(REAddr.ofNativeToken(), action.from());
+				return new NotEnoughResourcesException(from, action.amount(), available);
+			}
 		);
 		if (!change.isZero()) {
 			builder.up(new TokensInAccount(action.from(), REAddr.ofNativeToken(), change));
 		}
 
 		var flag = builder.read(AllowDelegationFlag.class, action.to());
-
 		if (!flag.allowsDelegation()) {
 			var validator = builder.read(ValidatorOwnerCopy.class, action.to());
 			var owner = validator.getOwner();
 			if (!action.from().equals(owner)) {
-				throw new TxBuilderException("Delegation flag is false and you are not the owner.");
+				throw new DelegateStakePermissionException(owner, action.from());
 			}
 		}
 		builder.up(new PreparedStake(action.amount(), action.from(), action.to()));

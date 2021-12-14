@@ -79,8 +79,7 @@ public final class SplitTokenConstructor implements ActionConstructor<SplitToken
 			TokensInAccount.class,
 			p -> p.getResourceAddr().equals(action.rri())
 				&& p.getHoldingAddr().equals(userAccount)
-				&& p.getAmount().compareTo(action.minSize()) > 0,
-			"Could not find large particle greater than " + action.minSize()
+				&& p.getAmount().compareTo(action.minSize()) > 0
 		);
 
 		var amt1 = tokens.getAmount().divide(UInt256.TWO);

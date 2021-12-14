@@ -124,8 +124,8 @@ public class RandomVoteAndViewTimeoutDropperTest {
 
 		List<CounterType> counterTypes = List.of(
 			CounterType.BFT_VERTEX_STORE_FORKS,
-			CounterType.BFT_PROCESSED,
-			CounterType.BFT_TIMEOUT,
+			CounterType.BFT_COMMITTED_VERTICES,
+			CounterType.BFT_PACEMAKER_TIMEOUTS_SENT,
 			CounterType.LEDGER_STATE_VERSION
 		);
 

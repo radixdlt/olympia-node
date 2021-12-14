@@ -74,6 +74,8 @@ import com.radixdlt.mempool.Mempool;
 public class RadixEngineStateComputerModule extends AbstractModule {
 	@Override
 	protected void configure() {
+		bind(RadixEngineStateComputer.class).in(Scopes.SINGLETON);
+		bind(RadixEngineMempool.class).in(Scopes.SINGLETON);
 		bind(StateComputerLedger.StateComputer.class).to(RadixEngineStateComputer.class).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<Mempool<?>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<Mempool<REProcessedTxn>>() { }).to(RadixEngineMempool.class).in(Scopes.SINGLETON);

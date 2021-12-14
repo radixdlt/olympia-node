@@ -103,8 +103,8 @@ public class OneProposalTimeoutResponsiveTest {
 
 		for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
 			SystemCounters counters = test.getSystemCounters(nodeIndex);
-			long numberOfIndirectParents = counters.get(CounterType.BFT_INDIRECT_PARENT);
-			long totalNumberOfTimeouts = counters.get(CounterType.BFT_TIMEOUT);
+			long numberOfIndirectParents = counters.get(CounterType.BFT_VERTEX_STORE_INDIRECT_PARENTS);
+			long totalNumberOfTimeouts = counters.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT);
 			long totalNumberOfTimeoutQuorums = counters.get(CounterType.BFT_TIMEOUT_QUORUMS);
 			assertThat(numberOfIndirectParents).isEqualTo(requiredIndirectParents);
 			assertThat(totalNumberOfTimeouts).isEqualTo(requiredTimeouts);

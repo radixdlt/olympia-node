@@ -144,7 +144,7 @@ public class ByzantineSyncTest {
 		assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
 
 		LongSummaryStatistics statistics = runningTest.getNetwork().getSystemCounters().values().stream()
-			.map(s -> s.get(CounterType.SYNC_PROCESSED))
+			.map(s -> s.get(CounterType.SYNC_VALID_RESPONSES_RECEIVED))
 			.mapToLong(l -> l)
 			.summaryStatistics();
 
@@ -161,7 +161,7 @@ public class ByzantineSyncTest {
 		final var checkResults = runningTest.awaitCompletion();
 
 		LongSummaryStatistics statistics = runningTest.getNetwork().getSystemCounters().values().stream()
-			.map(s -> s.get(CounterType.SYNC_PROCESSED))
+			.map(s -> s.get(CounterType.SYNC_VALID_RESPONSES_RECEIVED))
 			.mapToLong(l -> l)
 			.summaryStatistics();
 

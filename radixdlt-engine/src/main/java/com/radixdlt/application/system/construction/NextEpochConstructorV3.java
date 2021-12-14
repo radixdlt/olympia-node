@@ -77,7 +77,7 @@ import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.state.ExittingStake;
+import com.radixdlt.application.tokens.state.ExitingStake;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.application.validators.state.ValidatorData;
@@ -85,7 +85,6 @@ import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.KeyComparator;
@@ -169,13 +168,13 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		var closingEpoch = txBuilder.downSystem(EpochData.class);
 
 		var unlockedStateIndexBuf = ByteBuffer.allocate(2 + Long.BYTES);
-		unlockedStateIndexBuf.put(SubstateTypeId.EXITTING_STAKE.id());
+		unlockedStateIndexBuf.put(SubstateTypeId.EXITING_STAKE.id());
 		unlockedStateIndexBuf.put((byte) 0);
 		unlockedStateIndexBuf.putLong(closingEpoch.getEpoch() + 1);
-		var unlockedStakeIndex = SubstateIndex.create(unlockedStateIndexBuf.array(), ExittingStake.class);
-		var exitting = txBuilder.shutdownAll(unlockedStakeIndex, (Iterator<ExittingStake> i) -> {
-			final TreeSet<ExittingStake> exit = new TreeSet<>(
-				Comparator.comparing(ExittingStake::dataKey, UnsignedBytes.lexicographicalComparator())
+		var unlockedStakeIndex = SubstateIndex.create(unlockedStateIndexBuf.array(), ExitingStake.class);
+		var exitting = txBuilder.shutdownAll(unlockedStakeIndex, (Iterator<ExitingStake> i) -> {
+			final TreeSet<ExitingStake> exit = new TreeSet<>(
+				Comparator.comparing(ExitingStake::dataKey, UnsignedBytes.lexicographicalComparator())
 			);
 			i.forEachRemaining(exit::add);
 			return exit;
@@ -274,13 +273,8 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 			for (var entry : stakes.entrySet()) {
 				var addr = entry.getKey();
 				var amt = entry.getValue();
-
-				try {
-					var stakeOwnership = curValidator.stake(addr, amt);
-					txBuilder.up(stakeOwnership);
-				} catch (ProcedureException ex) {
-					throw new TxBuilderException(ex);
-				}
+				var stakeOwnership = curValidator.stake(addr, amt);
+				txBuilder.up(stakeOwnership);
 			}
 			validatorsToUpdate.put(k, curValidator);
 		}

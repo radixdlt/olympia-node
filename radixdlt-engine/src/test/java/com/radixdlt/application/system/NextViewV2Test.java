@@ -165,7 +165,7 @@ public class NextViewV2Test {
 			REConstructor.newBuilder()
 				.put(NextEpoch.class, new NextEpochConstructorV3(Amount.ofTokens(10).toSubunits(), 9800, 1, 10))
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
-				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
+				.put(CreateMutableToken.class, new CreateMutableTokenConstructor(SystemConstraintScrypt.MAX_SYMBOL_LENGTH))
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(StakeTokens.class, new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()))
 				.put(NextRound.class, nextViewConstructor)
@@ -179,7 +179,7 @@ public class NextViewV2Test {
 		var txn = this.sut.construct(
 			TxnConstructionRequest.create()
 				.action(new CreateSystem(0))
-				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
+				.action(new CreateMutableToken(REAddr.ofNativeToken(), "xrd", "xrd", "", "", "", null))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, Amount.ofTokens(10).toSubunits()))
 				.action(new StakeTokens(accountAddr, key.getPublicKey(), Amount.ofTokens(10).toSubunits()))
 				.action(new RegisterValidator(key.getPublicKey()))

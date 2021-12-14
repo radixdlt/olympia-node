@@ -66,8 +66,7 @@ package com.radixdlt.application.system.scrypt;
 
 import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.state.ExittingStake;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.application.tokens.state.ExitingStake;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -129,7 +128,7 @@ public final class ValidatorScratchPad {
 		return verifyNoOverflow(i).getLow();
 	}
 
-	public StakeOwnership stake(REAddr owner, UInt256 stake) throws ProcedureException {
+	public StakeOwnership stake(REAddr owner, UInt256 stake) {
 		if (totalStake.isZero()) {
 			this.totalStake = UInt384.from(stake);
 			this.totalOwnership = this.totalStake;
@@ -144,7 +143,7 @@ public final class ValidatorScratchPad {
 		return new StakeOwnership(validatorKey, owner, ownershipAmt);
 	}
 
-	public ExittingStake unstakeOwnership(REAddr owner, UInt256 unstakeOwnership, long epochUnlocked) {
+	public ExitingStake unstakeOwnership(REAddr owner, UInt256 unstakeOwnership, long epochUnlocked) {
 		if (totalOwnership.getLow().compareTo(unstakeOwnership) < 0) {
 			throw new IllegalStateException("Not enough ownership");
 		}
@@ -153,7 +152,7 @@ public final class ValidatorScratchPad {
 		var unstaked = toSafeLow(unstaked384);
 		this.totalStake = this.totalStake.subtract(unstaked);
 		this.totalOwnership = this.totalOwnership.subtract(unstakeOwnership);
-		return new ExittingStake(epochUnlocked, validatorKey, owner, unstaked);
+		return new ExitingStake(epochUnlocked, validatorKey, owner, unstaked);
 	}
 
 	public ValidatorStakeData toSubstate() {

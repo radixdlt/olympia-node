@@ -97,7 +97,7 @@ public class RandomChannelOrderResponsiveTest {
 
 		List<Long> proposalsMade = IntStream.range(0, numNodes)
 			.mapToObj(test::getSystemCounters)
-			.map(counters -> counters.get(CounterType.BFT_PROPOSALS_MADE))
+			.map(counters -> counters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT))
 			.collect(ImmutableList.toImmutableList());
 
 		final long numViews = viewsToRun / numNodes;

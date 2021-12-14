@@ -81,6 +81,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.store.ResourceStore;
 import com.radixdlt.utils.UInt256;
+import com.sleepycat.je.Get;
 import com.sleepycat.je.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -284,6 +285,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
+	@Override
+	public LedgerAndBFTProof getMetadata() {
+		return getLastProof().map(LedgerAndBFTProof::create).orElse(null);
+	}
+
 	public Stream<RawSubstateBytes> scanner() {
 		var cursor = substatesDatabase.openCursor(null, null);
 		var iterator = new Iterator<RawSubstateBytes>() {
@@ -453,12 +459,17 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 							} else if (substateTypeId == SubstateTypeId.STAKE_OWNERSHIP.id()) {
 								// Indexing not necessary for verification at the moment but useful for construction
 
+								// This should have had validator keys and account addresses switched so that
+								// prefix indexing could be done against account addresses rather than validators
+								// so that actions like "Unstake Everything" could be implemented and queries against
+								// accounts. A later to do...
+
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2-36: Validator Key
 								// 37-69: Account Address
 								prefixIndexSize = 2 + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES);
-							} else if (substateTypeId == SubstateTypeId.EXITTING_STAKE.id()) {
+							} else if (substateTypeId == SubstateTypeId.EXITING_STAKE.id()) {
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2-5: Epoch
@@ -979,6 +990,43 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			throw new BerkeleyStoreException("Unable to read from atom store.", e);
 		} finally {
 			addTime(startTime, CounterType.ELAPSED_BDB_LEDGER_ENTRIES, CounterType.COUNT_BDB_LEDGER_ENTRIES);
+		}
+	}
+
+	public List<Txn> getCommittedTxns(long stateVersion, long limit) {
+		try (var txnCursor = txnDatabase.openCursor(null, null)) {
+			var iterator = new Iterator<Txn>() {
+				final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(stateVersion + 1));
+				final DatabaseEntry value = new DatabaseEntry();
+				OperationStatus status = txnCursor.get(key, value, Get.SEARCH, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
+
+				@Override
+				public boolean hasNext() {
+					return status == SUCCESS;
+				}
+
+				@Override
+				public Txn next() {
+					if (status != SUCCESS) {
+						throw new NoSuchElementException();
+					}
+					var offset = fromByteArray(value.getData());
+					byte[] txnBytes;
+					try {
+						txnBytes = txnLog.read(offset);
+					} catch (IOException e) {
+						throw new IllegalStateException("Unable to read transaction", e);
+					}
+					Txn next = Txn.create(txnBytes);
+
+					status = txnCursor.getNext(key, value, null);
+					return next;
+				}
+			};
+			return Streams.stream(iterator)
+				.limit(limit)
+				.onClose(txnCursor::close)
+				.toList();
 		}
 	}
 

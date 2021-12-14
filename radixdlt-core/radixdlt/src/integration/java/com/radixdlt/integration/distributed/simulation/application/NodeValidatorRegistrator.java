@@ -64,11 +64,19 @@
 
 package com.radixdlt.integration.distributed.simulation.application;
 
-import com.radixdlt.application.NodeApplicationRequest;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.RegisterValidator;
+import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
+import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
@@ -82,7 +90,7 @@ import java.util.concurrent.TimeUnit;
  */
 public final class NodeValidatorRegistrator implements SimulationTest.SimulationNetworkActor {
     private Disposable disposable;
-    private Subject<BFTNode> validationRegistrations = BehaviorSubject.create();
+    private final Subject<BFTNode> validationRegistrations = BehaviorSubject.create();
 
     @Override
     public void start(SimulationNodes.RunningNetwork network) {
@@ -91,8 +99,20 @@ public final class NodeValidatorRegistrator implements SimulationTest.Simulation
             .concatMap(i -> Observable.timer(3, TimeUnit.SECONDS).map(l -> i))
             .doOnNext(validationRegistrations::onNext)
             .subscribe(node -> {
-                var d = network.getDispatcher(NodeApplicationRequest.class, node);
-                d.dispatch(NodeApplicationRequest.create(new RegisterValidator(node.getKey())));
+                var radixEngine = network.getNodeInjector(node)
+                    .getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() { }));
+                var radixEngineStateComputer = network.getNodeInjector(node)
+                    .getInstance(RadixEngineStateComputer.class);
+                var hashSigner = network.getNodeInjector(node).getInstance(HashSigner.class);
+                var request = TxnConstructionRequest.create()
+                    .action(new RegisterValidator(node.getKey()))
+                    .feePayer(REAddr.ofPubKeyAccount(node.getKey()));
+                var txBuilder = radixEngine.construct(request);
+                var txn = txBuilder.signAndBuild(hashSigner::sign);
+                try {
+                    radixEngineStateComputer.addToMempool(txn);
+                } catch (MempoolRejectedException ignored) {
+                }
             });
     }
 

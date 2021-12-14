@@ -120,9 +120,11 @@ public class ResourceAddressingTest {
 	}
 
 	@Test
-	public void test_rri_deserialization() {
-		reAddressToRri.forEach((expected, rri) -> {
-			var pair = resourceAddressing.parse(rri);
+	public void test_rri_deserialization() throws Exception {
+		for (var e : reAddressToRri.entrySet()) {
+			var expected = e.getKey();
+			var rri = e.getValue();
+			var pair = resourceAddressing.parseOrThrow(rri, IllegalStateException::new);
 			var expectedAddr = REAddr.of(Bytes.fromHexString(expected.getSecond()));
 
 			pair.map((symbol, address) -> {
@@ -130,13 +132,14 @@ public class ResourceAddressingTest {
 				assertThat(expectedAddr).isEqualTo(address);
 				return null;
 			});
-		});
+		}
 	}
 
 	@Test
 	public void test_invalid_rris() {
 		for (var e : invalidRris.entrySet()) {
-			assertThatThrownBy(() -> resourceAddressing.parse(e.getKey()), e.getValue()).isInstanceOf(IllegalArgumentException.class);
+			assertThatThrownBy(() -> resourceAddressing.parseOrThrow(e.getKey(), IllegalStateException::new), e.getValue())
+				.isInstanceOf(IllegalStateException.class);
 		}
 	}
 

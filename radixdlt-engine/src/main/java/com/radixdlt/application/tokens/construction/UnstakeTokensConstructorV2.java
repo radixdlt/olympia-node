@@ -64,7 +64,9 @@
 
 package com.radixdlt.application.tokens.construction;
 
+import com.radixdlt.application.system.state.StakeOwnershipBucket;
 import com.radixdlt.atom.ActionConstructor;
+import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
@@ -81,10 +83,6 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
 	@Override
 	public void construct(UnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
 		var validatorStake = txBuilder.find(ValidatorStakeData.class, action.from());
-		if (action.amount().isZero()) {
-			throw new TxBuilderException("Unstake amount can't be zero.");
-		}
-
 		var ownershipAmt = action.amount()
 			.multiply(validatorStake.getTotalOwnership())
 			.divide(validatorStake.getAmount());
@@ -105,7 +103,10 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
 			index,
 			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
 			ownershipAmt,
-			() -> new TxBuilderException("Not enough balance for transfer.")
+			available -> {
+				var from = StakeOwnershipBucket.from(action.from(), action.accountAddr());
+				return new NotEnoughResourcesException(from, action.amount(), available);
+			}
 		);
 		if (!change.isZero()) {
 			txBuilder.up(new StakeOwnership(action.from(), action.accountAddr(), change));

@@ -66,6 +66,7 @@ package com.radixdlt.application.validators.state;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -80,6 +81,10 @@ public final class ValidatorSystemMetadata implements ValidatorData {
 		}
 		this.validatorKey = validatorKey;
 		this.data = data;
+	}
+
+	public static ValidatorSystemMetadata createVirtual(ECPublicKey validatorKey) {
+		return new ValidatorSystemMetadata(validatorKey, HashUtils.zero256().asBytes());
 	}
 
 	public byte[] getData() {

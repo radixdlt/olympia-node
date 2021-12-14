@@ -77,9 +77,13 @@ public final class AccountBucket implements Bucket {
 	private final REAddr resourceAddress;
 	private final REAddr holdingAddress;
 
-	public AccountBucket(REAddr resourceAddress, REAddr holdingAddress) {
+	private AccountBucket(REAddr resourceAddress, REAddr holdingAddress) {
 		this.resourceAddress = resourceAddress;
 		this.holdingAddress = holdingAddress;
+	}
+
+	public static AccountBucket from(REAddr resourceAddress, REAddr holdingAddress) {
+		return new AccountBucket(resourceAddress, holdingAddress);
 	}
 
 	@Override

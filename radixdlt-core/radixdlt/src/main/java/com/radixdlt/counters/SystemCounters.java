@@ -74,28 +74,32 @@ public interface SystemCounters {
 	enum CounterType {
 		// Please keep these sorted
 
-		BFT_CONSENSUS_EVENTS("bft.consensus_events"),
-		BFT_INDIRECT_PARENT("bft.indirect_parent"),
-		BFT_PROCESSED("bft.processed"),
-		BFT_PROPOSALS_MADE("bft.proposals_made"),
+		BFT_EVENTS_RECEIVED("bft.events_received"),
+		BFT_COMMITTED_VERTICES("bft.committed_vertices"),
 		/** Number of proposals rejected. */
-		BFT_REJECTED("bft.rejected"),
-		/** Number of times a view-timeout message was broadcast. */
-		BFT_TIMEOUT("bft.timeout"),
-		/** Number of views that timed out. Rescheduled timeouts of the same view are not counted */
-		BFT_TIMED_OUT_VIEWS("bft.timed_out_views"),
-		/** Number of view-timeout quorums formed. */
-		BFT_TIMEOUT_QUORUMS("bft.timeout_quorums"),
-		BFT_STATE_VERSION("bft.state_version"),
-		BFT_VERTEX_STORE_SIZE("bft.vertex_store_size"),
-		BFT_VERTEX_STORE_FORKS("bft.vertex_store_forks"),
-		BFT_VERTEX_STORE_REBUILDS("bft.vertex_store_rebuilds"),
+		BFT_NO_VOTES_SENT("bft.no_votes_sent"),
 		/** Number of vote quorums formed. */
 		BFT_VOTE_QUORUMS("bft.vote_quorums"),
+		/** Number of view-timeout quorums formed. */
+		BFT_TIMEOUT_QUORUMS("bft.timeout_quorums"),
+
+		/** Number of times a view-timeout message was broadcast. */
+		BFT_PACEMAKER_TIMEOUTS_SENT("bft.pacemaker.timeouts_sent"),
+		BFT_PACEMAKER_ROUND("bft.pacemaker.round"),
+		BFT_PACEMAKER_PROPOSED_TRANSACTIONS("bft.pacemaker.proposed_transactions"),
+		BFT_PACEMAKER_PROPOSALS_SENT("bft.pacemaker.proposals_sent"),
+		BFT_PACEMAKER_TIMED_OUT_ROUNDS("bft.pacemaker.timed_out_rounds"),
+
 		BFT_SYNC_REQUESTS_SENT("bft.sync.requests_sent"),
+		BFT_SYNC_REQUESTS_RECEIVED("bft.sync.requests_received"),
 		BFT_SYNC_REQUEST_TIMEOUTS("bft.sync.request_timeouts"),
 
-		PACEMAKER_VIEW("pacemaker.view"),
+		/** Number of views that timed out. Rescheduled timeouts of the same view are not counted */
+		BFT_VERTEX_STORE_SIZE("bft.vertex_store.size"),
+		BFT_VERTEX_STORE_FORKS("bft.vertex_store.forks"),
+		BFT_VERTEX_STORE_REBUILDS("bft.vertex_store.rebuilds"),
+		BFT_VERTEX_STORE_INDIRECT_PARENTS("bft.vertex_store.indirect_parents"),
+
 
 		// Count of database accesses
 		COUNT_BDB_LEDGER_COMMIT("count.bdb.ledger.commit"),
@@ -129,28 +133,6 @@ public interface SystemCounters {
 		COUNT_BDB_SAFETY_STATE_BYTES_WRITE("count.bdb.safety_state.bytes.write"),
 
 		COUNT_BDB_HEADER_BYTES_WRITE("count.bdb.header.bytes.write"),
-
-		// API DB metrics
-		COUNT_APIDB_QUEUE_SIZE("count.apidb.queue.size"),
-		COUNT_APIDB_FLUSH_COUNT("count.apidb.flush.count"),
-
-		COUNT_APIDB_BALANCE_TOTAL("count.apidb.balance.total"),
-		COUNT_APIDB_BALANCE_READ("count.apidb.balance.read"),
-		COUNT_APIDB_BALANCE_WRITE("count.apidb.balance.write"),
-		COUNT_APIDB_BALANCE_BYTES_READ("count.apidb.balance.bytes.read"),
-		COUNT_APIDB_BALANCE_BYTES_WRITE("count.apidb.balance.bytes.write"),
-
-		COUNT_APIDB_TOKEN_TOTAL("count.apidb.token.total"),
-		COUNT_APIDB_TOKEN_READ("count.apidb.token.read"),
-		COUNT_APIDB_TOKEN_WRITE("count.apidb.token.write"),
-		COUNT_APIDB_TOKEN_BYTES_READ("count.apidb.token.bytes.read"),
-		COUNT_APIDB_TOKEN_BYTES_WRITE("count.apidb.token.bytes.write"),
-
-		COUNT_APIDB_TRANSACTION_TOTAL("count.apidb.transaction.total"),
-		COUNT_APIDB_TRANSACTION_READ("count.apidb.transaction.read"),
-		COUNT_APIDB_TRANSACTION_WRITE("count.apidb.transaction.write"),
-		COUNT_APIDB_TRANSACTION_BYTES_READ("count.apidb.transaction.bytes.read"),
-		COUNT_APIDB_TRANSACTION_BYTES_WRITE("count.apidb.transaction.bytes.write"),
 
 		// Total elapsed time for database access, in microseconds
 		ELAPSED_APIDB_BALANCE_READ("elapsed.apidb.balance.read"),
@@ -198,21 +180,16 @@ public interface SystemCounters {
 		LEDGER_SYNC_COMMANDS_PROCESSED("ledger.sync_commands_processed"),
 		LEDGER_BFT_COMMANDS_PROCESSED("ledger.bft_commands_processed"),
 
-		SYNC_LAST_READ_MILLIS("sync.last_read_millis"),
-		SYNC_INVALID_COMMANDS_RECEIVED("sync.invalid_commands_received"),
-		SYNC_PROCESSED("sync.processed"),
+		SYNC_INVALID_RESPONSES_RECEIVED("sync.invalid_responses_received"),
+		SYNC_VALID_RESPONSES_RECEIVED("sync.valid_responses_received"),
+		SYNC_REMOTE_REQUESTS_RECEIVED("sync.remote_requests_received"),
+		SYNC_CURRENT_STATE_VERSION("sync.current_state_version"),
 		SYNC_TARGET_STATE_VERSION("sync.target_state_version"),
-		SYNC_TARGET_CURRENT_DIFF("sync.target_current_diff"),
-		SYNC_REMOTE_REQUESTS_PROCESSED("sync.remote_requests_processed"),
 
-		MEMPOOL_COUNT("mempool.count"),
-		MEMPOOL_MAXCOUNT("mempool.maxcount"),
-		MEMPOOL_RELAYER_SENT_COUNT("mempool.relayer_sent_count"),
+		MEMPOOL_CURRENT_SIZE("mempool.current_size"),
+		MEMPOOL_RELAYS_SENT("mempool.relays_sent"),
 		MEMPOOL_ADD_SUCCESS("mempool.add_success"),
-		MEMPOOL_PROPOSED_TRANSACTION("mempool.proposed_transaction"),
-		MEMPOOL_ERRORS_HOOK("mempool.errors.hook"),
-		MEMPOOL_ERRORS_CONFLICT("mempool.errors.conflict"),
-		MEMPOOL_ERRORS_OTHER("mempool.errors.other"),
+		MEMPOOL_ADD_FAILURE("mempool.add_failure"),
 
 		RADIX_ENGINE_INVALID_PROPOSED_COMMANDS("radix_engine.invalid_proposed_commands"),
 		RADIX_ENGINE_USER_TRANSACTIONS("radix_engine.user_transactions"),
@@ -230,13 +207,9 @@ public interface SystemCounters {
 		MESSAGES_OUTBOUND_PROCESSED("messages.outbound.processed"),
 		MESSAGES_OUTBOUND_SENT("messages.outbound.sent"),
 
-		NETWORKING_UDP_DROPPED_MESSAGES("networking.udp.dropped_messages"),
 		NETWORKING_TCP_DROPPED_MESSAGES("networking.tcp.dropped_messages"),
-		NETWORKING_TCP_IN_OPENED("networking.tcp.in_opened"),
-		NETWORKING_TCP_OUT_OPENED("networking.tcp.out_opened"),
-		NETWORKING_TCP_CLOSED("networking.tcp.closed"),
-		NETWORKING_SENT_BYTES("networking.sent_bytes"),
-		NETWORKING_RECEIVED_BYTES("networking.received_bytes"),
+		NETWORKING_BYTES_SENT("networking.bytes_sent"),
+		NETWORKING_BYTES_RECEIVED("networking.bytes_received"),
 		NETWORKING_P2P_ACTIVE_INBOUND_CHANNELS("networking.p2p.active_inbound_channels"),
 		NETWORKING_P2P_ACTIVE_OUTBOUND_CHANNELS("networking.p2p.active_outbound_channels"),
 		NETWORKING_P2P_ACTIVE_CHANNELS("networking.p2p.active_channels"),
@@ -244,19 +217,7 @@ public interface SystemCounters {
 
 		SIGNATURES_SIGNED("signatures.signed"),
 		SIGNATURES_VERIFIED("signatures.verified"),
-		TIME_DURATION("time.duration"),
-
-		SERVER_ARCHIVE_TOTAL_RESPONSES("server.archive.total_responses"),
-		SERVER_ARCHIVE_OK_RESPONSES("server.archive.ok_responses"),
-		SERVER_ARCHIVE_NON_OK_RESPONSES("server.archive.non_ok_responses"),
-		SERVER_ARCHIVE_AVG_PROCESSING_TIME("server.archive.avg_processing_time"),
-		SERVER_ARCHIVE_TOTAL_PROCESSING_TIME("server.archive.total_processing_time"),
-		SERVER_NODE_TOTAL_RESPONSES("server.node.total_responses"),
-		SERVER_NODE_OK_RESPONSES("server.node.ok_responses"),
-		SERVER_NODE_NON_OK_RESPONSES("server.node.non_ok_responses"),
-		SERVER_NODE_AVG_PROCESSING_TIME("server.node.avg_processing_time"),
-		SERVER_NODE_TOTAL_PROCESSING_TIME("server.node.total_processing_time");
-
+		TIME_DURATION("time.duration");
 
 		private final String jsonPath;
 
