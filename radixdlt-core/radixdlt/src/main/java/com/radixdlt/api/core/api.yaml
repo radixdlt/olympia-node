@@ -264,7 +264,7 @@ tags:
   - name: xrd_transfer_example
     x-displayName: Send XRD
     description: |
-      Given the described model let us go through an example of how an XRD transfer transaction may look like.
+      Let's now go through an example of how to transfer XRD using the API.
 
       For the purpose of our example, let's say we want to:
       > TRANSFER
@@ -282,15 +282,17 @@ tags:
 
       Sender Entity Identifier:
       ```
-      {
-        "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
+      EntityIdentifier sender() {
+        return new EntityIdentifier()
+          .address("rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88");
       }
       ```
 
       Receiver Entity Identifier:
       ```
-      {
-        "address": "rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33"
+      EntityIdentifier receiver() {
+        return new EntityIdentifier()
+          .address("rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33");
       }
       ```
 
@@ -303,9 +305,10 @@ tags:
 
       On mainnet, its RRI is xrd_rr1qy5wfsfh and it's resource identifier is:
       ```
-      {
-        "type": "Token",
-        "rri": "xrd_rr1qy5wfsfh"
+      TokenResourceIdentifier token() {
+        return new TokenResourceIdentifier()
+          .rri("xrd_rr1qy5wfsfh")
+          .type("Token");
       }
       ```
 
@@ -318,23 +321,19 @@ tags:
 
       Sender Amount:
       ```
-      {
-        "resource_identifier": {
-          "type": "Token",
-          "rri": "xrd_rr1qy5wfsfh"
-        },
-        "value": "-1500000000000000000"
+      Amount senderAmount() {
+        return new Amount()
+          .resourceIdentifier(token())
+          .value("-1500000000000000000");
       }
       ```
 
       Receiver Amount:
       ```
-      {
-        "resource_identifier": {
-          "type": "Token",
-          "rri": "xrd_rr1qy5wfsfh"
-        },
-        "value": "1500000000000000000"
+      Amount receiverAmount() {
+        return new Amount()
+          .resourceIdentifier(token())
+          .value("1500000000000000000");
       }
       ```
 
@@ -345,35 +344,21 @@ tags:
 
       Sender Operation:
       ```
-      {
-        "type": "Resource",
-        "entity_identifier": {
-          "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
-        },
-        "amount": {
-          "resource_identifier": {
-            "type": "Token",
-            "rri": "xrd_rr1qy5wfsfh"
-          },
-          "value": "-1500000000000000000"
-        }
+      Operation senderOperation() {
+        return new Operation()
+          .entityIdentifier(sender())
+          .amount(senderAmount())
+          .type("Resource");
       }
       ```
 
       Receiver Operation:
       ```
-      {
-        "type": "Resource",
-        "entity_identifier": {
-          "address": "rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33"
-        },
-        "amount": {
-          "resource_identifier": {
-            "type": "Token",
-            "rri": "xrd_rr1qy5wfsfh"
-          },
-          "value": "1500000000000000000"
-        }
+      Operation receiverOperation() {
+        return new Operation()
+          .entityIdentifier(receiver())
+          .amount(receiverAmount())
+          .type("Resource");
       }
       ```
 
@@ -382,35 +367,10 @@ tags:
       We then combine operations into a group. Note that the sender operation must be first.
 
       ```
-      {
-        "operations": [
-          {
-            "type": "Resource",
-            "entity_identifier": {
-              "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
-            },
-            "amount": {
-              "resource_identifier": {
-                "type": "Token",
-                "rri": "xrd_rr1qy5wfsfh"
-              },
-              "value": "-1500000000000000000"
-            }
-          },
-          {
-            "type": "Resource",
-            "entity_identifier": {
-              "address": "rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33"
-            },
-            "amount": {
-              "resource_identifier": {
-                "type": "Token",
-                "rri": "xrd_rr1qy5wfsfh"
-              },
-              "value": "1500000000000000000"
-            }
-          }
-        ]
+      OperationGroup operationGroup() {
+        return new OperationGroup()
+          .addOperationsItem(senderOperation())
+          .addOperationsItem(receiverOperation());
       }
       ```
 
@@ -424,60 +384,44 @@ tags:
       of the node.
 
       ```
-        {
-          "network_identifier": {
-            "network": "mainnet"
-          },
-          "fee_payer": {
-            "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
-          },
-          "operation_groups": [
-            {
-              "operations": [
-                {
-                  "type": "Resource",
-                  "entity_identifier": {
-                    "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
-                  },
-                  "amount": {
-                    "resource_identifier": {
-                      "type": "Token",
-                      "rri": "xrd_rr1qy5wfsfh"
-                    },
-                    "value": "-1500000000000000000"
-                  }
-                },
-                {
-                  "type": "Resource",
-                  "entity_identifier": {
-                    "address": "rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33"
-                  },
-                  "amount": {
-                    "resource_identifier": {
-                      "type": "Token",
-                      "rri": "xrd_rr1qy5wfsfh"
-                    },
-                    "value": "1500000000000000000"
-                  }
-                }
-              ]
-            }
-          ]
-        }
+      ConstructionBuildRequest constructionBuildRequest() {
+        return new ConstructionBuildRequest()
+          .addOperationsGroupItem(operationGroup())
+          .feePayer(sender())
+          .networkIdentifier(new NetworkIdentifier().network("mainnet"));
+      }
+
+      void main() {
+        ConstructionApi api = new ConstructionApi();
+        ConstructionBuildRequest request = constructionBuildRequest();
+        ConstructionBuildResponse response = api.constructionBuildPost(request);
+      }
       ```
 
       ## Unsigned Transaction
 
-      After submitting to `/construction/build`, the output will look something like:
+      After submitting to `/construction/build`, we can take the `unsigned_transaction` and parse it
+      through `/construction/parse`.
 
       ```
-      {
-        "unsigned_transaction": "074db58b950fcf446140dd945c6adfd06daa0b520f7eddf0467583d96babff579d000000020100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab010000000000000000000000000000000000000000004f68ca6c8d0d7e082c00000008000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab010000000000000000000000000000000000000000004f68ca57bbfb708d16000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b60100000000000000000000000000000000000000000000000014d1120d7b16000000",
-        "payload_to_sign": "e2d702dde0c7731229e96be53faef0b74c34e2e68ebaefa5e4ae6a63d400c449"
+      ConstructionApi api = new ConstructionApi();
+
+      ConstructionParseResponse sendParseRequest(String unsignedTransactionHex) {
+        ConstructionParseRequest request = new ConstructionParseRequest()
+          .unsignedTransaction(unsignedTransactionHex);
+        return api.constructionParsePost(request);
+      }
+
+      void main() {
+        ConstructionBuildRequest request = constructionBuildRequest();
+        ConstructionBuildResponse response = api.constructionBuildPost(request);
+        String unsignedTransactionHex = response.getUnsignedTransaction();
+        ConstructionParseResponse response = sendParseRequest(unsigendTransactionHex);
+        System.out.println(response);
       }
       ```
 
-      We can pass in `unsigned_transaction` to `/construction/parse` in order to see what the transaction looks like:
+      The response in json would look like:
       ```
       {
         "metadata": {
@@ -619,6 +563,31 @@ tags:
       Once `payload_to_sign` has been signed, the original payload along with signature can be sent to
       `/construction/finalize` in order to get a `signed_transaction`. This can then be submitted to
       `construction/submit`. You have successfully submitted a XRD transfer transaction!
+
+      ```
+      ConstructionApi api = new ConstructionApi();
+
+      void main() {
+        ConstructionBuildRequest request = constructionBuildRequest();
+        ConstructionBuildResponse response = api.constructionBuildPost(request);
+        String unsignedTransactionHex = response.getUnsignedTransaction();
+        String payloadToSignHex = response.getPayloadToSign();
+
+        Signature signature = sign(payloadToSignHex);
+
+        ConstructionFinalizeRequest finalizeRequest = new ConstructionFinalizeRequest()
+          .unsignedTransaction(unsignedTransactionHex)
+          .signature(signature)
+          .networkIdentifier(new NetworkIdentifier().network("mainnet"));
+        ConstructionFinalizeResponse finalizeResponse = api.constructionFinalizePost(finalizeRequest);
+
+        String signedTransactionHex = finalizeResponse.getSignedTransaction();
+        ConstructionSubmitRequest submitRequest = new ConstructionSubmitRequest()
+          .networkIdentifier(new NetworkIdentifier().network("mainnet"))
+          .signedTransaction(signedTransactionHex);
+        ConstructionSubmitResponse submitResponse = api.constructionSubmitPost(submitRequest);
+      }
+      ```
 
   - name: track_xrd_example
     x-displayName: Track XRD Balances
@@ -826,11 +795,11 @@ tags:
       ```java
       TransactionsApi api = new TransactionsApi();
       NetworkIdentifier networkIdentifier = new NetworkIdentifier().network("mainnet");
-      long currentStateVersion = 0;
 
       /**
        * Our balance store
        */
+      long currentStateVersion = 0;
       Map<EntityIdentifier, BigInteger> balances = new HashMap<>();
 
       /**
@@ -924,9 +893,17 @@ tags:
       ```java
       TransactionsApi api = new TransactionsApi();
       NetworkIdentifier networkIdentifier = new NetworkIdentifier().network("mainnet");
+
+      /**
+       * Our balance store
+       */
       long currentStateVersion = 0;
       Map<EntityIdentifier, Map<ResourceIdentifier, BigInteger>> balances = new HashMap<>();
 
+      /**
+       * Returns the token balance change which occured on every entity from a set
+       * of operation groups.
+       */
       Map<EntityIdentifier, Map<ResourceIdentifier, BigInteger>> operationGroupsToBalanceChanges(Stream<OperationGroup> operationGroups) {
         return operationGroups
           .flatMap(group -> group.getOperations().stream())
@@ -944,8 +921,42 @@ tags:
         );
       }
 
+      /**
+       * Retrieves the current state version
+       */
+      long loadStateVersion() {
+        return this.currentStateVersion;
+      }
+
+      /**
+       * Updates the balance store.
+       */
+      void updateStore(long currentStateVersion, long nextStateVersion, Map<EntityIdentifier, Map<ResourceIdentifier, BigInteger>> balanceChanges) {
+        // Sanity check, in case we have multiple updater to our store
+        assert(this.currentStateVersion == currentStateVersion);
+
+        this.currentStateVersion = nextStateVersion;
+        balanceChanges.forEach((identifier, balanceMap) -> {
+          balanceMap.forEach((resource, value) ->
+            balances.merge(identifier, Map.of(resource, value), (b0, b1) ->
+              Stream.concat(b0.entrySet().stream(), b1.entrySet().stream()).collect(
+                Collectors.groupingBy(
+                  Map.Entry::getKey,
+                  Collectors.mapping(Map.Entry::getValue, Collectors.reducing(BigInteger.ZERO, BigInteger::add))
+                )
+              )
+            )
+          );
+        });
+      }
+
+
+      /**
+       * Requests for new transactions from a node and then updates the balance store
+       */
       void update() throws ApiException {
-        PartialStateIdentifier stateIdentifier = new PartialStateIdentifier().stateVersion(currentStateVersion);
+        long stateVersion = loadStateVersion();
+        PartialStateIdentifier stateIdentifier = new PartialStateIdentifier().stateVersion(stateVersion);
 
         CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
           .networkIdentifier(networkIdentifier)
@@ -959,23 +970,8 @@ tags:
           .flatMap(txn -> txn.getOperationGroups().stream());
 
         Map<EntityIdentifier, Map<ResourceIdentifier, BigInteger>> balanceChanges = operationGroupsToBalanceChanges(operationGroups);
-
         // Update stateVersion and balances, on a database these must be updated atomically together
-        if (!txns.isEmpty()) {
-          currentStateVersion = txns.get(txns.size() - 1).getCommittedStateIdentifier().getStateVersion();
-        }
-        balanceChanges.forEach((identifier, balanceMap) -> {
-          balanceMap.forEach((resource, value) ->
-            balances.merge(identifier, Map.of(resource, value), (b0, b1) ->
-              Stream.concat(b0.entrySet().stream(), b1.entrySet().stream()).collect(
-                Collectors.groupingBy(
-                  Map.Entry::getKey,
-                  Collectors.mapping(Map.Entry::getValue, Collectors.reducing(BigInteger.ZERO, BigInteger::add))
-                )
-              )
-            )
-          );
-        });
+        updateStore(stateVersion, nextStateVersion, balanceChanges);
       }
 
       void main() throws Exception {
@@ -998,14 +994,6 @@ tags:
       core account, used by the system for staking.
 
       For more information, and to support non-mainnet addresses, see the Structure and Addressing sections.
-
-      ### Tracking multiple tokens
-
-      If you relax the filter on `amount.resource_identifier.rri` to no longer just match to XRD, you can track these
-      changes in parallel.
-
-      Letting `token_rri = operation.amount.resource_identifier.rri`, you can group by `(account_address, token_rri)`
-      during the sum, and get balance changes for each account/token combination.
 
       ### Supporting networks other than mainnet
 
@@ -1042,11 +1030,6 @@ tags:
       this transaction was committed to ledger. This timestamp is derived as an average of the timestamp of all
       the validators performing consensus. As a consequence of this, it is _not_ guaranteed to be increasing, and it
       may be affected by Byzantine nodes.
-
-      Not every transaction will have such a `RoundData` operation, for example, due to multiple transactions being
-      committed in the same consensus round, so the current timestamp should be kept track of as you iterate forward
-      through the transactions on the ledger, until you see another new created `RoundData` operation,
-      which replaces the timestamp.
 
   - name: network
     x-displayName: Network
