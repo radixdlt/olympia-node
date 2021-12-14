@@ -3,7 +3,7 @@ info:
   version: 1.0.0
   title: Radix Core API
   description: |
-    This API provides endpoints for integration with the Radix ledger.
+    This API provides endpoints from a node for integration with the Radix ledger.
 
     # Overview
 
@@ -12,11 +12,12 @@ info:
     > The Core API is __NOT__ intended to be available on the public web. It is
     > designed to be accessed in a private network.
 
-    The Core API is separated into two:
+    The Core API is separated into three:
     * The **Data API** is a read-only api which allows you to view and
     sync to the state of the ledger.
     * The **Construction API** allows you to construct and submit a transaction
     to the network.
+    * The **Key API** allows you to use the keys managed by the node to sign transactions.
 
     The Core API is a low level API primarily designed for network integrations
     such as exchanges, ledger analytics providers, or hosted ledger data dashboards
@@ -24,6 +25,8 @@ info:
     run their node to provide the Core API for their own consumption.
 
     For a higher level API, see the Gateway API.
+
+    For node monitoring, see the System API.
 
     ## Rosetta
 
@@ -1046,6 +1049,9 @@ tags:
   - name: construction
     x-displayName: Construction
     description: Construct a transaction for submission.
+  - name: key
+    x-displayName: Key
+    description: Sign a transaction
 x-tagGroups:
   - name: Model
     tags:
@@ -1068,6 +1074,9 @@ x-tagGroups:
   - name: Construction API
     tags:
       - construction
+  - name: Key API
+    tags:
+      - key
 paths:
   "/network/configuration":
     post:
