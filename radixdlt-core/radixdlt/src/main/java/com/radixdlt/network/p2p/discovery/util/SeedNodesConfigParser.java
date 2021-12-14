@@ -71,7 +71,6 @@ import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import com.google.inject.Inject;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.P2PConfig;
@@ -120,7 +119,7 @@ public final class SeedNodesConfigParser {
 		this.resolvedSeedNodes.addAll(
 			newlyResolvedHosts.stream()
 				.map(p -> p.getSecond().get())
-				.collect(Collectors.toList())
+				.toList()
 		);
 	}
 

@@ -95,7 +95,7 @@ public final class MessageCentralPeerProxy {
 			.toFlowable(BackpressureStrategy.BUFFER)
 			.map(m -> {
 				final var node = BFTNode.create(m.getSource().getPublicKey());
-				return RemoteEvent.create(node, GrantedProxyCertificate.create(m.getMessage().getProxyCertificate()));
+				return RemoteEvent.create(node, new GrantedProxyCertificate(m.getMessage().getProxyCertificate()));
 			});
 	}
 
@@ -111,7 +111,7 @@ public final class MessageCentralPeerProxy {
 			.toFlowable(BackpressureStrategy.BUFFER)
 			.map(m -> {
 				final var node = BFTNode.create(m.getSource().getPublicKey());
-				return RemoteEvent.create(node, ProxyCertificatesAnnouncement.create(m.getMessage().getProxyCertificates()));
+				return RemoteEvent.create(node, new ProxyCertificatesAnnouncement(m.getMessage().getProxyCertificates()));
 			});
 	}
 

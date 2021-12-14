@@ -64,40 +64,7 @@
 
 package com.radixdlt.network.p2p.proxy;
 
-import java.util.Objects;
-
 /**
  * A remote event indicating that this node has been granted a proxy certificate (from the sender).
  */
-public final class GrantedProxyCertificate {
-
-	private final ProxyCertificate proxyCertificate;
-
-	public static GrantedProxyCertificate create(ProxyCertificate proxyCertificate) {
-		return new GrantedProxyCertificate(proxyCertificate);
-	}
-
-	private GrantedProxyCertificate(ProxyCertificate proxyCertificate) {
-		this.proxyCertificate = Objects.requireNonNull(proxyCertificate);
-	}
-
-	public ProxyCertificate proxyCertificate() {
-		return proxyCertificate;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		} else if (o instanceof GrantedProxyCertificate that) {
-			return Objects.equals(proxyCertificate, that.proxyCertificate);
-		} else {
-			return false;
-		}
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(proxyCertificate);
-	}
-}
+public final record GrantedProxyCertificate(ProxyCertificate proxyCertificate) { }

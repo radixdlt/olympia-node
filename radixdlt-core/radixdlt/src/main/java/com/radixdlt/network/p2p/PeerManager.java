@@ -190,8 +190,7 @@ public final class PeerManager {
 		}
 	}
 
-	public CompletableFuture<PeerChannel> findOrCreateConfiguredProxyChannel(NodeId nodeId) {
-		// nodeId is unused, a configured proxy node should work for any peer
+	public CompletableFuture<PeerChannel> findOrCreateConfiguredProxyChannel() {
 		synchronized (lock) {
 			final var maybeActiveChannel = config.authorizedProxies().stream()
 				.map(this::channelFor)

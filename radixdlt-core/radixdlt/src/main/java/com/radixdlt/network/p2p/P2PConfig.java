@@ -284,7 +284,7 @@ public interface P2PConfig {
 				try {
 					return NodeId.fromPublicKey(addressing.forNodes().parse(s));
 				} catch (DeserializeException e) {
-					throw new RuntimeException("Can't parse node ID from " + s, e);
+					throw new IllegalArgumentException("Can't parse node ID from " + s, e);
 				}
 			}
 		};

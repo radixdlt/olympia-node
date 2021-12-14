@@ -231,7 +231,7 @@ public final class ProxyCertificateManager {
 		this.issuedProxyCertificates.put(nodeId, cert);
 		grantedProxyCertificateDispatcher.dispatch(
 			BFTNode.create(nodeId.getPublicKey()),
-			GrantedProxyCertificate.create(cert)
+			new GrantedProxyCertificate(cert)
 		);
 	}
 
@@ -268,7 +268,7 @@ public final class ProxyCertificateManager {
 					// announce the certificate to connected peers
 					this.proxyCertificatesAnnouncementDispatcher.dispatch(
 						peersView.peers().map(p -> BFTNode.create(p.getNodeId().getPublicKey())).toList(),
-						ProxyCertificatesAnnouncement.create(ImmutableSet.copyOf(receivedProxyCertificates.values()))
+						new ProxyCertificatesAnnouncement(ImmutableSet.copyOf(receivedProxyCertificates.values()))
 					);
 				} else {
 					final var banDuration = Duration.ofSeconds(30);

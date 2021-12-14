@@ -136,8 +136,8 @@ final class MessageDispatcher {
 			/* log an error when message send fails */
 			.exceptionally(ex -> logSendError(ex, outboundMessage.receiver(), outboundMessage.message()))
 			/* recover any Result.failure from the wrapper exception or create a new Failure obj */
-			.exceptionallyCompose(ex -> ex instanceof FailureException
-				? CompletableFuture.completedFuture(((FailureException) ex).failure.result())
+			.exceptionallyCompose(ex -> ex instanceof FailureException failureException
+				? CompletableFuture.completedFuture(failureException.failure.result())
 				: CompletableFuture.completedFuture(Result.fail(Failure.failure(1, ex.getMessage())))
 			)
 			/* in either success or failure case, update the "processed" counter */
@@ -155,7 +155,7 @@ final class MessageDispatcher {
 	}
 
 	private CompletableFuture<Unit> sendViaConfiguredProxy(NodeId receiver, Message message) {
-		return peerManager.findOrCreateConfiguredProxyChannel(receiver)
+		return peerManager.findOrCreateConfiguredProxyChannel()
 			.thenComposeAsync(channel -> wrapWithEnvelopeAndSend(channel, receiver, message));
 	}
 

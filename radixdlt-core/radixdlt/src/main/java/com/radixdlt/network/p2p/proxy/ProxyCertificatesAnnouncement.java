@@ -66,41 +66,7 @@ package com.radixdlt.network.p2p.proxy;
 
 import com.google.common.collect.ImmutableSet;
 
-import java.util.Objects;
-
 /**
  * Remote event containing new proxy certificates that were granted to the sender.
  */
-public final class ProxyCertificatesAnnouncement {
-
-	private final ImmutableSet<ProxyCertificate> proxyCertificates;
-
-	public static ProxyCertificatesAnnouncement create(ImmutableSet<ProxyCertificate> proxyCertificates) {
-		return new ProxyCertificatesAnnouncement(proxyCertificates);
-	}
-
-	private ProxyCertificatesAnnouncement(ImmutableSet<ProxyCertificate> proxyCertificates) {
-		this.proxyCertificates = Objects.requireNonNull(proxyCertificates);
-		this.proxyCertificates.forEach(Objects::requireNonNull);
-	}
-
-	public ImmutableSet<ProxyCertificate> proxyCertificates() {
-		return proxyCertificates;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		} else if (o instanceof ProxyCertificatesAnnouncement that) {
-			return Objects.equals(proxyCertificates, that.proxyCertificates);
-		} else {
-			return false;
-		}
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(proxyCertificates);
-	}
-}
+public final record ProxyCertificatesAnnouncement(ImmutableSet<ProxyCertificate> proxyCertificates) { }
