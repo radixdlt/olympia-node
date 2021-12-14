@@ -49,6 +49,16 @@ info:
 
     Future versions of the api will aim towards a fully-compliant Rosetta API.
 
+    ## Enabling Endpoints
+
+    All endpoints are enabled when running a node with the exception of two endpoints, each of
+    which need to be manually configured to access:
+    * `/transactions` endpoint must be enabled with configuration `api.transaction.enable=true`.
+    This is because the transactions endpoint requires additional database storage which may not
+    be needed for users who aren't using this endpoint
+    * `/key/sign` endpoint must be enable with configuration `api.sign.enable=true`. This is a
+    potentially dangerous endpoint if accessible publicly so it must be enabled manually.
+
     ## Client Code Generation
 
     We have found success with generating clients against the
