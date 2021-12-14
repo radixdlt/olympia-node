@@ -149,19 +149,15 @@ public final class ProxyCertificateManager {
 	}
 
 	public ImmutableSet<ProxyCertificate> getReceivedProxyCertificates() {
-		synchronized (lock) {
-			return ImmutableSet.copyOf(receivedProxyCertificates.values());
-		}
+		return ImmutableSet.copyOf(receivedProxyCertificates.values());
 	}
 
 	public ImmutableSet<NodeId> getVerifiedProxiesForNode(NodeId nodeId) {
-		synchronized (lock) {
-			return verifiedProxies.getOrDefault(nodeId, Set.of())
-				.stream()
-				.filter(cert -> cert.expiresAt() > Time.currentTimestamp())
-				.map(VerifiedProxyCertificate::grantee)
-				.collect(ImmutableSet.toImmutableSet());
-		}
+		return verifiedProxies.getOrDefault(nodeId, Set.of())
+			.stream()
+			.filter(cert -> cert.expiresAt() > Time.currentTimestamp())
+			.map(VerifiedProxyCertificate::grantee)
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	public void handlePeerConnected(PeerEvent.PeerConnected peerConnected) {
