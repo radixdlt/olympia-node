@@ -171,7 +171,7 @@ public final class ProxyCertificateManager {
 			verifyAndUpdateProxyCertificates(peerNodeId, peerConnected.getChannel().proxyCertificates());
 
 			if (config.authorizedProxies().contains(peerNodeId)) {
-				issueProxyCertificate(peerNodeId);
+				handleProxyCertificateIssuance(peerNodeId);
 			}
 		}
 	}
@@ -212,7 +212,7 @@ public final class ProxyCertificateManager {
 				.map(Map.Entry::getKey)
 				.collect(ImmutableSet.toImmutableSet());
 
-			certsToRenew.forEach(this::issueProxyCertificate);
+			certsToRenew.forEach(this::handleProxyCertificateIssuance);
 		};
 	}
 
@@ -225,7 +225,7 @@ public final class ProxyCertificateManager {
 			.filter(cert -> cert.networkId() == networkId);
 	}
 
-	private void issueProxyCertificate(NodeId nodeId) {
+	private void handleProxyCertificateIssuance(NodeId nodeId) {
 		log.debug("Issuing a proxy certificate for {}", addressing.forNodes().of(nodeId.getPublicKey()));
 		final var cert = issueProxyCertificate(nodeId, config.issuedProxyCertificateValidityDuration());
 		this.issuedProxyCertificates.put(nodeId, cert);

@@ -276,7 +276,7 @@ public interface P2PConfig {
 			@Override
 			public Duration issuedProxyCertificateValidityDuration() {
 				final var valueMs =
-					properties.get("network.p2p.proxy.issued_certificate_validity_duration", 3600000);
+					properties.get("network.p2p.proxy.issued_certificate_validity_duration_ms", 3600000);
 				return Duration.ofMillis(valueMs);
 			}
 

@@ -158,36 +158,39 @@ public final class PeerManager {
 
 	public CompletableFuture<PeerChannel> findOrCreateProxyChannel(NodeId nodeId) {
 		synchronized (lock) {
-			final var maybeActiveChannel = this.proxyCertificateManager.get().getVerifiedProxiesForNode(nodeId)
-				.stream()
-				.filter(activeChannels::containsKey)
-				.map(activeChannels::get)
-				.flatMap(Set::stream)
-				.findAny();
-
-			if (maybeActiveChannel.isPresent()) {
-				return CompletableFuture.completedFuture(maybeActiveChannel.get());
-			} else {
-				final var maybeAddress = this.addressBook.get()
-					.findBestCandidateProxyFor(nodeId);
-				if (maybeAddress.isPresent()) {
-					final var channelFuture = connect(maybeAddress.get());
-					return channelFuture.thenCompose(channel -> {
-						final var isValidProxy = proxyCertificateManager.get()
-							.getVerifiedProxiesForNode(nodeId)
-							.contains(channel.getRemoteNodeId());
-						if (isValidProxy) {
-							return CompletableFuture.completedFuture(channel);
-						} else {
-							channel.disconnect();
-							return CompletableFuture.failedFuture(new RuntimeException("No available proxy node"));
-						}
-					});
-				} else {
-					return CompletableFuture.failedFuture(new RuntimeException("No available proxy node"));
-				}
-			}
+			return findActiveProxyChannel(nodeId)
+				.map(CompletableFuture::completedFuture)
+				.orElseGet(() ->
+					this.addressBook.get().findBestCandidateProxyFor(nodeId)
+						.map(this::createAndVerifyProxyChannel)
+						.orElseGet(() -> CompletableFuture.failedFuture(new RuntimeException("No available proxy node")))
+				);
 		}
+	}
+
+	private Optional<PeerChannel> findActiveProxyChannel(NodeId nodeId) {
+		return this.proxyCertificateManager.get()
+			.getVerifiedProxiesForNode(nodeId)
+			.stream()
+			.filter(activeChannels::containsKey)
+			.map(activeChannels::get)
+			.flatMap(Set::stream)
+			.findAny();
+	}
+
+	private CompletableFuture<PeerChannel> createAndVerifyProxyChannel(RadixNodeUri uri) {
+		final var channelFuture = connect(uri);
+		return channelFuture.thenCompose(channel -> {
+			final var isValidProxy = proxyCertificateManager.get()
+				.getVerifiedProxiesForNode(uri.getNodeId())
+				.contains(channel.getRemoteNodeId());
+			if (isValidProxy) {
+				return CompletableFuture.completedFuture(channel);
+			} else {
+				channel.disconnect();
+				return CompletableFuture.failedFuture(new RuntimeException("No available proxy node"));
+			}
+		});
 	}
 
 	public CompletableFuture<PeerChannel> findOrCreateConfiguredProxyChannel() {
