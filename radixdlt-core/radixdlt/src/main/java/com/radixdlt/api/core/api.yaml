@@ -1438,7 +1438,7 @@ paths:
                 "$ref": "#/components/schemas/UnexpectedError"
   "/key/list":
     post:
-      summary: Get the node's supported public keys
+      summary: Get public keys
       tags:
         - key
       requestBody:
@@ -1462,7 +1462,7 @@ paths:
                 "$ref": "#/components/schemas/UnexpectedError"
   "/key/sign":
     post:
-      summary: Sign a transaction with the node's key
+      summary: Sign transaction
       tags:
         - key
       requestBody:
@@ -1509,10 +1509,10 @@ components:
               type: string
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
-          description: The name of the network
+          description: The name of the network.
         bech32_human_readable_parts:
-          description: The unique bech32 hrps used for addressing.
           "$ref": "#/components/schemas/Bech32HRPs"
+          description: The unique bech32 hrps used for addressing.
       example:
         network_identifier:
           network: mainnet
@@ -1528,7 +1528,7 @@ components:
       properties:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
-          description: The name of the network
+          description: The name of the network.
       example:
         network_identifier:
           network: mainnet
@@ -1542,20 +1542,22 @@ components:
         - peers
       properties:
         pre_genesis_state_identifier:
+          "$ref": "#/components/schemas/StateIdentifier"
           description: The ledger state identifier before the genesis transaction.
-          "$ref": "#/components/schemas/StateIdentifier"
         genesis_state_identifier:
+          "$ref": "#/components/schemas/StateIdentifier"
           description: The ledger state identifier after the genesis transaction.
-          "$ref": "#/components/schemas/StateIdentifier"
         current_state_identifier:
-          description: The current state identifier at the top of the node's copy of the ledger.
           "$ref": "#/components/schemas/StateIdentifier"
+          description: The current state identifier at the top of the node's copy of the ledger.
         sync_status:
           $ref: "#/components/schemas/SyncStatus"
+          description: Information on how synced the node is to the rest of the network.
         peers:
           type: array
           items:
             $ref: "#/components/schemas/Peer"
+          description: List of peers of the node.
       example:
         pre_genesis_state_identifier:
           state_version: 0
@@ -1583,7 +1585,7 @@ components:
       properties:
         network_identifier:
           $ref: "#/components/schemas/NetworkIdentifier"
-          description: The name of the network
+          description: The name of the network.
         entity_identifier:
           description: The Entity for which current balance and data information will be retrieved.
           "$ref": "#/components/schemas/EntityIdentifier"
@@ -1633,7 +1635,7 @@ components:
       properties:
         network_identifier:
           $ref: "#/components/schemas/NetworkIdentifier"
-          description: The name of the network
+          description: The name of the network.
       example:
         network_identifier:
           network: mainnet
@@ -1646,6 +1648,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TransactionIdentifier"
+          description: List of transaction identifiers currently in the mempool.
     MempoolTransactionRequest:
       type: object
       required:
@@ -1654,9 +1657,10 @@ components:
       properties:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
-          description: The name of the network
+          description: The name of the network.
         transaction_identifier:
           $ref: "#/components/schemas/TransactionIdentifier"
+          description: Transaction Identifier to retrieve.
       example:
         network_identifier:
           network: mainnet
@@ -1669,6 +1673,7 @@ components:
       properties:
         transaction:
           $ref: "#/components/schemas/Transaction"
+          description: The transaction found in the mempool.
     ConstructionDeriveRequest:
       type: object
       required:
@@ -1678,13 +1683,13 @@ components:
       properties:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
-          description: The name of the network
+          description: The name of the network.
         public_key:
-          description: Public key to be derived from
           "$ref": "#/components/schemas/PublicKey"
+          description: Public key to be derived from.
         metadata:
-          description: Data which specifies the type of entity to derive
           "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+          description: Data which specifies the type of entity to derive.
       example:
         network_identifier:
           network: mainnet
@@ -1700,6 +1705,7 @@ components:
       properties:
         entity_identifier:
           "$ref": "#/components/schemas/EntityIdentifier"
+          description: The derived identifier
       example:
         entity_identifier:
           address: test_rr1q0xjsd8e3ud8dexqntmse9n0mcjhepfr7y404dd3tfqqngerma
@@ -1838,14 +1844,14 @@ components:
       properties:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
-          description: The name of the network
+          description: The name of the network.
         transaction:
-          description: Hex encoded transaction to parse.
           type: string
+          description: Hex encoded transaction to parse.
         signed:
+          type: boolean
           description: Whether the transaction is signed or not. If not signed, parsing
             will skip authorization checks.
-          type: boolean
       example:
         network_identifier:
           network: mainnet
@@ -1857,12 +1863,13 @@ components:
         - operation_groups
       properties:
         operation_groups:
-          description: The parsed operation groups.
           type: array
           items:
             "$ref": "#/components/schemas/OperationGroup"
+          description: The parsed operation groups.
         metadata:
           $ref: "#/components/schemas/ParsedTransactionMetadata"
+          description: Metadata related to the transaction.
       example:
         metadata:
           resource_identifier:
@@ -2274,7 +2281,7 @@ components:
       properties:
         network_identifier:
           $ref: "#/components/schemas/NetworkIdentifier"
-          description: The name of the network
+          description: The name of the network.
     KeyListResponse:
       type: object
       required:
@@ -2284,6 +2291,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PublicKeyEntry"
+          description: List of keys the node supports.
     KeySignRequest:
       type: object
       required:
@@ -2293,11 +2301,13 @@ components:
       properties:
         network_identifier:
           $ref: "#/components/schemas/NetworkIdentifier"
-          description: The name of the network
+          description: The name of the network.
         unsigned_transaction:
           type: string
+          description: Byte array of the unsigned transaction encoded in hex.
         public_key:
           $ref: "#/components/schemas/PublicKey"
+          description: The public key to use to sign the transaction.
     KeySignResponse:
       type: object
       required:
@@ -2305,6 +2315,9 @@ components:
       properties:
         signed_transaction:
           type: string
+          description: Byte array of the signed transaction encoded in hex.
+      example:
+        signed_transaction: 07030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c0100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c00000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000000b015584aed8375f30b22a2203b77dbe15e5dc0a3618fb45ea30ee54a6ebe0054b673a471ad2214b7bd06c4228083643b57e095787c9fb01443e1c3d6890d28f60cf
     PublicKeyEntry:
       type: object
       required:
