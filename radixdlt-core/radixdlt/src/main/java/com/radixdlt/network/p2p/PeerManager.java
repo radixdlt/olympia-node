@@ -150,7 +150,7 @@ public final class PeerManager {
 		synchronized (lock) {
 			final var checkResult = this.canConnectTo(nodeId);
 			return checkResult.fold(
-				error -> CompletableFuture.failedFuture(new RuntimeException(error.message())),
+				error -> CompletableFuture.failedFuture(new PeerConnectionException(error.message())),
 				unused -> this.findOrCreateChannelInternal(nodeId)
 			);
 		}
@@ -163,7 +163,7 @@ public final class PeerManager {
 				.orElseGet(() ->
 					this.addressBook.get().findBestCandidateProxyFor(nodeId)
 						.map(this::createAndVerifyProxyChannel)
-						.orElseGet(() -> CompletableFuture.failedFuture(new RuntimeException("No available proxy node")))
+						.orElseGet(() -> CompletableFuture.failedFuture(new PeerConnectionException("No available proxy node")))
 				);
 		}
 	}
@@ -188,7 +188,7 @@ public final class PeerManager {
 				return CompletableFuture.completedFuture(channel);
 			} else {
 				channel.disconnect();
-				return CompletableFuture.failedFuture(new RuntimeException("No available proxy node"));
+				return CompletableFuture.failedFuture(new PeerConnectionException("No available proxy node"));
 			}
 		});
 	}
@@ -207,7 +207,7 @@ public final class PeerManager {
 				if (maybeAddress.isPresent()) {
 					return connect(maybeAddress.get());
 				} else {
-					return CompletableFuture.failedFuture(new RuntimeException("No available configured proxy node"));
+					return CompletableFuture.failedFuture(new PeerConnectionException("No available configured proxy node"));
 				}
 			}
 		}
@@ -222,7 +222,7 @@ public final class PeerManager {
 			if (maybeAddress.isPresent()) {
 				return connect(maybeAddress.get());
 			} else {
-				return CompletableFuture.failedFuture(new RuntimeException("Unknown peer "
+				return CompletableFuture.failedFuture(new PeerConnectionException("Unknown peer "
 					+ addressing.forNodes().of(nodeId.getPublicKey())));
 			}
 		}

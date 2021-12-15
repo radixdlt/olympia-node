@@ -71,6 +71,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.network.messaging.router.MessageEnvelope;
 import com.radixdlt.network.messaging.serialization.MessageSerialization;
+import com.radixdlt.network.p2p.PeerConnectionException;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.transport.PeerChannel;
@@ -125,9 +126,20 @@ final class MessageDispatcher {
 		/* first, we try to send the message directly to the receiver */
 		return sendDirectly(outboundMessage.receiver(), outboundMessage.message())
 			/* if no direct channel is available, we try using a configured proxy node */
-			.exceptionallyCompose(ex -> sendViaConfiguredProxy(outboundMessage.receiver(), outboundMessage.message()))
+			.exceptionallyCompose(ex ->
+				// we want to try a non-direct channels only if the connection attempt failed
+				// for a known reason (PeerChannelException), not to miss unexpected errors
+				// the exception might be wrapped in future's wrapper exception (hence we also check ex.getCause())
+				(ex instanceof PeerConnectionException || ex.getCause() instanceof PeerConnectionException)
+					? sendViaConfiguredProxy(outboundMessage.receiver(), outboundMessage.message())
+					: CompletableFuture.failedFuture(ex)
+			)
 			/* if no configured proxy is available, we try through a certified proxy node */
-			.exceptionallyCompose(ex -> sendViaCertifiedProxy(outboundMessage.receiver(), outboundMessage.message()))
+			.exceptionallyCompose(ex ->
+				(ex instanceof PeerConnectionException || ex.getCause() instanceof PeerConnectionException)
+					? sendViaCertifiedProxy(outboundMessage.receiver(), outboundMessage.message())
+					: CompletableFuture.failedFuture(ex)
+			)
 			/* update the counter if any of above send attempts succeeded and map to Result */
 			.thenApply(res -> {
 				this.counters.increment(CounterType.MESSAGES_OUTBOUND_SENT);
