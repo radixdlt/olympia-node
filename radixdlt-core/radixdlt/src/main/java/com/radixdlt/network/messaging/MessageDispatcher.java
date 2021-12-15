@@ -169,7 +169,7 @@ final class MessageDispatcher {
 	private CompletableFuture<Unit> serializeAndSend(PeerChannel channel, Message message) {
 		return toFuture(messageSerialization.serialize(message))
 			.thenCompose(serializedMessage -> {
-				this.counters.add(CounterType.NETWORKING_SENT_BYTES, serializedMessage.length);
+				this.counters.add(CounterType.NETWORKING_BYTES_SENT, serializedMessage.length);
 				return toFuture(channel.send(serializedMessage));
 			});
 	}
