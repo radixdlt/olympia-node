@@ -71,17 +71,17 @@ import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
 public class StatusResponseMessageTest {
-    @Test
-    public void equalsContract() {
-        EqualsVerifier.forClass(StatusResponseMessage.class)
-                .withIgnoredFields("instance")
-                .suppress(Warning.NONFINAL_FIELDS)
-                .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-                .verify();
-    }
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(StatusResponseMessage.class)
+        .withIgnoredFields("instance")
+        .suppress(Warning.NONFINAL_FIELDS)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 
-    @Test(expected = NullPointerException.class)
-    public void deserializationWithNullThrowsException() {
-        new StatusResponseMessage(null);
-    }
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException() {
+    new StatusResponseMessage(null);
+  }
 }

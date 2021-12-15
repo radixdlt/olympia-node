@@ -64,6 +64,9 @@
 
 package com.radixdlt.network.p2p.discovery;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Key;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -72,50 +75,58 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
-import org.junit.Test;
-
 import java.util.Set;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
 
 public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
 
-	@Test
-	public void when_discover_peers_then_should_connect_to_some_peers() throws Exception {
-		setupTestRunner(5, defaultProperties());
+  @Test
+  public void when_discover_peers_then_should_connect_to_some_peers() throws Exception {
+    setupTestRunner(5, defaultProperties());
 
-		// add 4 peers to the addr book
-		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(
-			testNetworkRunner.getUri(1),
-			testNetworkRunner.getUri(2),
-			testNetworkRunner.getUri(3),
-			testNetworkRunner.getUri(4)
-		));
+    // add 4 peers to the addr book
+    testNetworkRunner
+        .addressBook(0)
+        .addUncheckedPeers(
+            Set.of(
+                testNetworkRunner.getUri(1),
+                testNetworkRunner.getUri(2),
+                testNetworkRunner.getUri(3),
+                testNetworkRunner.getUri(4)));
 
-		testNetworkRunner.getInstance(0, new Key<EventDispatcher<DiscoverPeers>>() { })
-			.dispatch(DiscoverPeers.create());
+    testNetworkRunner
+        .getInstance(0, new Key<EventDispatcher<DiscoverPeers>>() {})
+        .dispatch(DiscoverPeers.create());
 
-		processForCount(10);
+    processForCount(10);
 
-		// with 10 slots (default), max num of peers to connect is 3 (10/2 - 2)
-		assertEquals(3L, testNetworkRunner.peerManager(0).activeChannels().size());
-	}
+    // with 10 slots (default), max num of peers to connect is 3 (10/2 - 2)
+    assertEquals(3L, testNetworkRunner.peerManager(0).activeChannels().size());
+  }
 
-	@Test
-	public void when_unexpected_response_then_ban_peer() throws Exception {
-		setupTestRunner(1, defaultProperties());
+  @Test
+  public void when_unexpected_response_then_ban_peer() throws Exception {
+    setupTestRunner(1, defaultProperties());
 
-		final var unexpectedSender = BFTNode.random();
-		final var peersResponse = PeersResponse.create(
-			ImmutableSet.of(RadixNodeUri.fromPubKeyAndAddress(0, ECKeyPair.generateNew().getPublicKey(), "127.0.0.1", 1234))
-		);
+    final var unexpectedSender = BFTNode.random();
+    final var peersResponse =
+        PeersResponse.create(
+            ImmutableSet.of(
+                RadixNodeUri.fromPubKeyAndAddress(
+                    0, ECKeyPair.generateNew().getPublicKey(), "127.0.0.1", 1234)));
 
-		testNetworkRunner.getInstance(0, PeerDiscovery.class).peersResponseRemoteEventProcessor()
-			.process(unexpectedSender, peersResponse);
+    testNetworkRunner
+        .getInstance(0, PeerDiscovery.class)
+        .peersResponseRemoteEventProcessor()
+        .process(unexpectedSender, peersResponse);
 
-		processAll();
+    processAll();
 
-		assertTrue(testNetworkRunner.addressBook(0).findById(NodeId.fromPublicKey(unexpectedSender.getKey())).get().isBanned());
-	}
+    assertTrue(
+        testNetworkRunner
+            .addressBook(0)
+            .findById(NodeId.fromPublicKey(unexpectedSender.getKey()))
+            .get()
+            .isBanned());
+  }
 }

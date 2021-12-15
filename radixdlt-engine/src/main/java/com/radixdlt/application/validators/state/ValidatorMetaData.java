@@ -66,65 +66,57 @@ package com.radixdlt.application.validators.state;
 
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.crypto.ECPublicKey;
-
 import java.util.Objects;
 
 public final class ValidatorMetaData implements ValidatorData {
-	private final ECPublicKey validatorKey;
-	private final String name;
-	private final String url;
+  private final ECPublicKey validatorKey;
+  private final String name;
+  private final String url;
 
-	public ValidatorMetaData(
-		ECPublicKey validatorKey,
-		String name,
-		String url
-	) {
-		this.validatorKey = Objects.requireNonNull(validatorKey);
-		this.name = Objects.requireNonNull(name);
-		this.url = REFieldSerialization.requireValidUrl(url);
-	}
+  public ValidatorMetaData(ECPublicKey validatorKey, String name, String url) {
+    this.validatorKey = Objects.requireNonNull(validatorKey);
+    this.name = Objects.requireNonNull(name);
+    this.url = REFieldSerialization.requireValidUrl(url);
+  }
 
-	public static ValidatorMetaData createVirtual(ECPublicKey validatorKey) {
-		return new ValidatorMetaData(validatorKey, "", "");
-	}
+  public static ValidatorMetaData createVirtual(ECPublicKey validatorKey) {
+    return new ValidatorMetaData(validatorKey, "", "");
+  }
 
-	@Override
-	public ECPublicKey getValidatorKey() {
-		return validatorKey;
-	}
+  @Override
+  public ECPublicKey getValidatorKey() {
+    return validatorKey;
+  }
 
-	public String getName() {
-		return name;
-	}
+  public String getName() {
+    return name;
+  }
 
-	public String getUrl() {
-		return url;
-	}
+  public String getUrl() {
+    return url;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.validatorKey, this.name, this.url);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.validatorKey, this.name, this.url);
+  }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (!(obj instanceof ValidatorMetaData)) {
-			return false;
-		}
-		final var that = (ValidatorMetaData) obj;
-		return Objects.equals(this.validatorKey, that.validatorKey)
-			&& Objects.equals(this.name, that.name)
-			&& Objects.equals(this.url, that.url);
-	}
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (!(obj instanceof ValidatorMetaData)) {
+      return false;
+    }
+    final var that = (ValidatorMetaData) obj;
+    return Objects.equals(this.validatorKey, that.validatorKey)
+        && Objects.equals(this.name, that.name)
+        && Objects.equals(this.url, that.url);
+  }
 
-	@Override
-	public String toString() {
-		return String.format(
-			"%s[%s, %s]",
-			getClass().getSimpleName(), getValidatorKey(), getUrl()
-		);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s[%s, %s]", getClass().getSimpleName(), getValidatorKey(), getUrl());
+  }
 }

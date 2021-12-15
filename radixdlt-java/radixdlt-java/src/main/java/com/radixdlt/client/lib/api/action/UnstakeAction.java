@@ -72,14 +72,14 @@ import com.radixdlt.utils.UInt256;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class UnstakeAction implements Action {
-	private final ActionType type = ActionType.UNSTAKE;
-	private final AccountAddress to;
-	private final ValidatorAddress validator;
-	private final UInt256 amount;
+  private final ActionType type = ActionType.UNSTAKE;
+  private final AccountAddress to;
+  private final ValidatorAddress validator;
+  private final UInt256 amount;
 
-	public UnstakeAction(AccountAddress to, ValidatorAddress validator, UInt256 amount) {
-		this.to = to;
-		this.validator = validator;
-		this.amount = amount;
-	}
+  public UnstakeAction(AccountAddress to, ValidatorAddress validator, UInt256 amount) {
+    this.to = to;
+    this.validator = validator;
+    this.amount = amount;
+  }
 }

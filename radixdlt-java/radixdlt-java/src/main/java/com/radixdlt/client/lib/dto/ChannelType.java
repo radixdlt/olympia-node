@@ -65,19 +65,21 @@
 package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-
 import java.util.Locale;
 
 public enum ChannelType {
-	IN,
-	OUT;
+  IN,
+  OUT;
 
-	@JsonCreator
-	public static ChannelType create(String source) {
-		switch (source.toUpperCase(Locale.US)) {
-			case "IN": return IN;
-			case "OUT": return OUT;
-			default: throw new IllegalArgumentException("Unknown channel type " + source);
-		}
-	}
+  @JsonCreator
+  public static ChannelType create(String source) {
+    switch (source.toUpperCase(Locale.US)) {
+      case "IN":
+        return IN;
+      case "OUT":
+        return OUT;
+      default:
+        throw new IllegalArgumentException("Unknown channel type " + source);
+    }
+  }
 }

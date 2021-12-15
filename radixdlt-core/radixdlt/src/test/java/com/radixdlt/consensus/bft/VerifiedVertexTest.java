@@ -64,23 +64,18 @@
 
 package com.radixdlt.consensus.bft;
 
-import org.junit.Test;
-
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
-
 import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/**
- * Basic tests for {@link VerifiedVertex}
- */
+/** Basic tests for {@link VerifiedVertex} */
 public class VerifiedVertexTest {
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(VerifiedVertex.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
-
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(VerifiedVertex.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 }

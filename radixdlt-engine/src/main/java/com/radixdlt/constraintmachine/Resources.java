@@ -69,5 +69,5 @@ import com.radixdlt.constraintmachine.exceptions.NotAResourceException;
 import com.radixdlt.identifiers.REAddr;
 
 public interface Resources {
-	TokenResource loadResource(REAddr addr) throws NotAResourceException;
+  TokenResource loadResource(REAddr addr) throws NotAResourceException;
 }

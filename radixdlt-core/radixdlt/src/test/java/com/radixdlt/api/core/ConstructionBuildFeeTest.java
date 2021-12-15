@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.api.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.ConstructionBuildHandler;
@@ -82,93 +85,96 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
+import java.math.BigInteger;
 import org.junit.Test;
 
-import java.math.BigInteger;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class ConstructionBuildFeeTest extends ApiTest {
-	@Inject
-	private ConstructionBuildHandler sut;
-	@Inject
-	private CoreModelMapper coreModelMapper;
-	@Inject
-	@Self
-	private ECPublicKey self;
+  @Inject private ConstructionBuildHandler sut;
+  @Inject private CoreModelMapper coreModelMapper;
+  @Inject @Self private ECPublicKey self;
 
-	private ConstructionBuildRequest buildTransfer(
-		ResourceIdentifier resourceIdentifier,
-		UInt256 amount,
-		EntityIdentifier from,
-		EntityIdentifier to
-	) {
-		return new ConstructionBuildRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.feePayer(from)
-			.addOperationGroupsItem(new OperationGroup()
-				.addOperationsItem(new Operation()
-					.entityIdentifier(from)
-					.amount(new ResourceAmount()
-						.resourceIdentifier(resourceIdentifier)
-						.value("-" + amount.toString())
-					)
-				)
-				.addOperationsItem(new Operation()
-					.entityIdentifier(to)
-					.amount(new ResourceAmount()
-						.resourceIdentifier(resourceIdentifier)
-						.value(amount.toString())
-					)
-				)
-			);
-	}
+  private ConstructionBuildRequest buildTransfer(
+      ResourceIdentifier resourceIdentifier,
+      UInt256 amount,
+      EntityIdentifier from,
+      EntityIdentifier to) {
+    return new ConstructionBuildRequest()
+        .networkIdentifier(new NetworkIdentifier().network("localnet"))
+        .feePayer(from)
+        .addOperationGroupsItem(
+            new OperationGroup()
+                .addOperationsItem(
+                    new Operation()
+                        .entityIdentifier(from)
+                        .amount(
+                            new ResourceAmount()
+                                .resourceIdentifier(resourceIdentifier)
+                                .value("-" + amount.toString())))
+                .addOperationsItem(
+                    new Operation()
+                        .entityIdentifier(to)
+                        .amount(
+                            new ResourceAmount()
+                                .resourceIdentifier(resourceIdentifier)
+                                .value(amount.toString()))));
+  }
 
-	@Test
-	public void no_balance_should_cause_a_not_enough_for_fees_error() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void no_balance_should_cause_a_not_enough_for_fees_error() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
-		var request = buildTransfer(
-			coreModelMapper.nativeToken(),
-			UInt256.ONE,
-			coreModelMapper.entityIdentifier(otherAddress),
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self))
-		);
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+    // Act
+    var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+    var request =
+        buildTransfer(
+            coreModelMapper.nativeToken(),
+            UInt256.ONE,
+            coreModelMapper.entityIdentifier(otherAddress),
+            coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)));
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOfSatisfying(NotEnoughNativeTokensForFeesError.class, e -> {
-			assertThat(e.getAvailable()).isEqualTo(coreModelMapper.nativeTokenAmount(UInt256.ZERO));
-		});
-	}
+    // Assert
+    assertThat(response.getDetails())
+        .isInstanceOfSatisfying(
+            NotEnoughNativeTokensForFeesError.class,
+            e -> {
+              assertThat(e.getAvailable())
+                  .isEqualTo(coreModelMapper.nativeTokenAmount(UInt256.ZERO));
+            });
+  }
 
-	@Test
-	public void trying_to_send_whole_balance_should_fail() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void trying_to_send_whole_balance_should_fail() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
-		var request = buildTransfer(
-			coreModelMapper.nativeToken(),
-			getLiquidAmount().toSubunits(),
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
-			coreModelMapper.entityIdentifier(otherAddress)
-		);
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+    // Act
+    var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+    var request =
+        buildTransfer(
+            coreModelMapper.nativeToken(),
+            getLiquidAmount().toSubunits(),
+            coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
+            coreModelMapper.entityIdentifier(otherAddress));
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOfSatisfying(NotEnoughResourcesError.class, err -> {
-			assertThat(err.getFee().getResourceIdentifier()).isEqualTo(coreModelMapper.nativeToken());
-			assertThat(new BigInteger(err.getFee().getValue())).isGreaterThan(BigInteger.ZERO);
-			assertThat(err.getAvailable().getResourceIdentifier()).isEqualTo(coreModelMapper.nativeToken());
-			assertThat(new BigInteger(err.getAvailable().getValue())).isGreaterThan(BigInteger.ZERO);
-			assertThat(err.getAttemptedToTake().getResourceIdentifier()).isEqualTo(coreModelMapper.nativeToken());
-			assertThat(new BigInteger(err.getAttemptedToTake().getValue()))
-				.isEqualTo(new BigInteger(1, getLiquidAmount().toSubunits().toByteArray()));
-		});
-	}
+    // Assert
+    assertThat(response.getDetails())
+        .isInstanceOfSatisfying(
+            NotEnoughResourcesError.class,
+            err -> {
+              assertThat(err.getFee().getResourceIdentifier())
+                  .isEqualTo(coreModelMapper.nativeToken());
+              assertThat(new BigInteger(err.getFee().getValue())).isGreaterThan(BigInteger.ZERO);
+              assertThat(err.getAvailable().getResourceIdentifier())
+                  .isEqualTo(coreModelMapper.nativeToken());
+              assertThat(new BigInteger(err.getAvailable().getValue()))
+                  .isGreaterThan(BigInteger.ZERO);
+              assertThat(err.getAttemptedToTake().getResourceIdentifier())
+                  .isEqualTo(coreModelMapper.nativeToken());
+              assertThat(new BigInteger(err.getAttemptedToTake().getValue()))
+                  .isEqualTo(new BigInteger(1, getLiquidAmount().toSubunits().toByteArray()));
+            });
+  }
 }

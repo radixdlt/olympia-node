@@ -69,178 +69,198 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Objects;
 
 public final class ValidatorDTO {
-	private final ValidatorAddress address;
-	private final AccountAddress ownerAddress;
-	private final double uptimePercentage;
-	private final double validatorFee;
-	private final UInt256 totalDelegatedStake;
-	private final UInt256 ownerDelegation;
-	private final String infoURL;
-	private final String name;
-	private final long proposalsCompleted;
-	private final long proposalsMissed;
-	private final boolean registered;
-	private final boolean isExternalStakeAccepted;
+  private final ValidatorAddress address;
+  private final AccountAddress ownerAddress;
+  private final double uptimePercentage;
+  private final double validatorFee;
+  private final UInt256 totalDelegatedStake;
+  private final UInt256 ownerDelegation;
+  private final String infoURL;
+  private final String name;
+  private final long proposalsCompleted;
+  private final long proposalsMissed;
+  private final boolean registered;
+  private final boolean isExternalStakeAccepted;
 
-	private ValidatorDTO(
-		ValidatorAddress address,
-		AccountAddress ownerAddress,
-		double uptimePercentage,
-		double validatorFee,
-		UInt256 totalDelegatedStake,
-		UInt256 ownerDelegation,
-		String infoURL,
-		String name,
-		long proposalsCompleted,
-		long proposalsMissed,
-		boolean registered,
-		boolean isExternalStakeAccepted
-	) {
-		this.address = address;
-		this.ownerAddress = ownerAddress;
-		this.uptimePercentage = uptimePercentage;
-		this.validatorFee = validatorFee;
-		this.totalDelegatedStake = totalDelegatedStake;
-		this.ownerDelegation = ownerDelegation;
-		this.infoURL = infoURL;
-		this.name = name;
-		this.proposalsCompleted = proposalsCompleted;
-		this.proposalsMissed = proposalsMissed;
-		this.registered = registered;
-		this.isExternalStakeAccepted = isExternalStakeAccepted;
-	}
+  private ValidatorDTO(
+      ValidatorAddress address,
+      AccountAddress ownerAddress,
+      double uptimePercentage,
+      double validatorFee,
+      UInt256 totalDelegatedStake,
+      UInt256 ownerDelegation,
+      String infoURL,
+      String name,
+      long proposalsCompleted,
+      long proposalsMissed,
+      boolean registered,
+      boolean isExternalStakeAccepted) {
+    this.address = address;
+    this.ownerAddress = ownerAddress;
+    this.uptimePercentage = uptimePercentage;
+    this.validatorFee = validatorFee;
+    this.totalDelegatedStake = totalDelegatedStake;
+    this.ownerDelegation = ownerDelegation;
+    this.infoURL = infoURL;
+    this.name = name;
+    this.proposalsCompleted = proposalsCompleted;
+    this.proposalsMissed = proposalsMissed;
+    this.registered = registered;
+    this.isExternalStakeAccepted = isExternalStakeAccepted;
+  }
 
-	@JsonCreator
-	public static ValidatorDTO create(
-		@JsonProperty(value = "address", required = true) ValidatorAddress address,
-		@JsonProperty(value = "ownerAddress", required = true) AccountAddress ownerAddress,
-		@JsonProperty(value = "uptimePercentage", required = true) double uptimePercentage,
-		@JsonProperty(value = "validatorFee", required = true) double validatorFee,
-		@JsonProperty(value = "totalDelegatedStake", required = true) UInt256 totalDelegatedStake,
-		@JsonProperty(value = "ownerDelegation", required = true) UInt256 ownerDelegation,
-		@JsonProperty(value = "infoURL", required = true) String infoURL,
-		@JsonProperty(value = "name", required = true) String name,
-		@JsonProperty(value = "proposalsCompleted", required = true) long proposalsCompleted,
-		@JsonProperty(value = "proposalsMissed", required = true) long proposalsMissed,
-		@JsonProperty(value = "registered", required = true) boolean registered,
-		@JsonProperty(value = "isExternalStakeAccepted", required = true) boolean isExternalStakeAccepted
-	) {
-		return new ValidatorDTO(
-			address, ownerAddress, uptimePercentage, validatorFee, totalDelegatedStake,
-			ownerDelegation, infoURL, name, proposalsCompleted, proposalsMissed, registered, isExternalStakeAccepted
-		);
-	}
+  @JsonCreator
+  public static ValidatorDTO create(
+      @JsonProperty(value = "address", required = true) ValidatorAddress address,
+      @JsonProperty(value = "ownerAddress", required = true) AccountAddress ownerAddress,
+      @JsonProperty(value = "uptimePercentage", required = true) double uptimePercentage,
+      @JsonProperty(value = "validatorFee", required = true) double validatorFee,
+      @JsonProperty(value = "totalDelegatedStake", required = true) UInt256 totalDelegatedStake,
+      @JsonProperty(value = "ownerDelegation", required = true) UInt256 ownerDelegation,
+      @JsonProperty(value = "infoURL", required = true) String infoURL,
+      @JsonProperty(value = "name", required = true) String name,
+      @JsonProperty(value = "proposalsCompleted", required = true) long proposalsCompleted,
+      @JsonProperty(value = "proposalsMissed", required = true) long proposalsMissed,
+      @JsonProperty(value = "registered", required = true) boolean registered,
+      @JsonProperty(value = "isExternalStakeAccepted", required = true)
+          boolean isExternalStakeAccepted) {
+    return new ValidatorDTO(
+        address,
+        ownerAddress,
+        uptimePercentage,
+        validatorFee,
+        totalDelegatedStake,
+        ownerDelegation,
+        infoURL,
+        name,
+        proposalsCompleted,
+        proposalsMissed,
+        registered,
+        isExternalStakeAccepted);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof ValidatorDTO)) {
-			return false;
-		}
+    if (!(o instanceof ValidatorDTO)) {
+      return false;
+    }
 
-		var that = (ValidatorDTO) o;
-		return Double.compare(that.uptimePercentage, uptimePercentage) == 0
-			&& Double.compare(that.validatorFee, validatorFee) == 0
-			&& proposalsCompleted == that.proposalsCompleted
-			&& proposalsMissed == that.proposalsMissed
-			&& registered == that.registered
-			&& isExternalStakeAccepted == that.isExternalStakeAccepted
-			&& address.equals(that.address)
-			&& ownerAddress.equals(that.ownerAddress)
-			&& totalDelegatedStake.equals(that.totalDelegatedStake)
-			&& ownerDelegation.equals(that.ownerDelegation)
-			&& infoURL.equals(that.infoURL)
-			&& name.equals(that.name);
-	}
+    var that = (ValidatorDTO) o;
+    return Double.compare(that.uptimePercentage, uptimePercentage) == 0
+        && Double.compare(that.validatorFee, validatorFee) == 0
+        && proposalsCompleted == that.proposalsCompleted
+        && proposalsMissed == that.proposalsMissed
+        && registered == that.registered
+        && isExternalStakeAccepted == that.isExternalStakeAccepted
+        && address.equals(that.address)
+        && ownerAddress.equals(that.ownerAddress)
+        && totalDelegatedStake.equals(that.totalDelegatedStake)
+        && ownerDelegation.equals(that.ownerDelegation)
+        && infoURL.equals(that.infoURL)
+        && name.equals(that.name);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(
-			address,
-			ownerAddress,
-			uptimePercentage,
-			validatorFee,
-			totalDelegatedStake,
-			ownerDelegation,
-			infoURL,
-			name,
-			proposalsCompleted,
-			proposalsMissed,
-			registered,
-			isExternalStakeAccepted
-		);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        address,
+        ownerAddress,
+        uptimePercentage,
+        validatorFee,
+        totalDelegatedStake,
+        ownerDelegation,
+        infoURL,
+        name,
+        proposalsCompleted,
+        proposalsMissed,
+        registered,
+        isExternalStakeAccepted);
+  }
 
-	@Override
-	public String toString() {
-		return "{"
-			+ "address=" + address
-			+ ", ownerAddress=" + ownerAddress
-			+ ", uptimePercentage=" + uptimePercentage
-			+ ", validatorFee=" + validatorFee
-			+ ", totalDelegatedStake=" + totalDelegatedStake
-			+ ", ownerDelegation=" + ownerDelegation
-			+ ", infoURL='" + infoURL + '\''
-			+ ", name='" + name + '\''
-			+ ", proposalsCompleted=" + proposalsCompleted
-			+ ", proposalsMissed=" + proposalsMissed
-			+ ", registered=" + registered
-			+ ", isExternalStakeAccepted=" + isExternalStakeAccepted
-			+ '}';
-	}
+  @Override
+  public String toString() {
+    return "{"
+        + "address="
+        + address
+        + ", ownerAddress="
+        + ownerAddress
+        + ", uptimePercentage="
+        + uptimePercentage
+        + ", validatorFee="
+        + validatorFee
+        + ", totalDelegatedStake="
+        + totalDelegatedStake
+        + ", ownerDelegation="
+        + ownerDelegation
+        + ", infoURL='"
+        + infoURL
+        + '\''
+        + ", name='"
+        + name
+        + '\''
+        + ", proposalsCompleted="
+        + proposalsCompleted
+        + ", proposalsMissed="
+        + proposalsMissed
+        + ", registered="
+        + registered
+        + ", isExternalStakeAccepted="
+        + isExternalStakeAccepted
+        + '}';
+  }
 
-	public ValidatorAddress getAddress() {
-		return address;
-	}
+  public ValidatorAddress getAddress() {
+    return address;
+  }
 
-	public AccountAddress getOwnerAddress() {
-		return ownerAddress;
-	}
+  public AccountAddress getOwnerAddress() {
+    return ownerAddress;
+  }
 
-	public double getUptimePercentage() {
-		return uptimePercentage;
-	}
+  public double getUptimePercentage() {
+    return uptimePercentage;
+  }
 
-	public double getValidatorFee() {
-		return validatorFee;
-	}
+  public double getValidatorFee() {
+    return validatorFee;
+  }
 
-	public UInt256 getTotalDelegatedStake() {
-		return totalDelegatedStake;
-	}
+  public UInt256 getTotalDelegatedStake() {
+    return totalDelegatedStake;
+  }
 
-	public UInt256 getOwnerDelegation() {
-		return ownerDelegation;
-	}
+  public UInt256 getOwnerDelegation() {
+    return ownerDelegation;
+  }
 
-	public String getInfoURL() {
-		return infoURL;
-	}
+  public String getInfoURL() {
+    return infoURL;
+  }
 
-	public String getName() {
-		return name;
-	}
+  public String getName() {
+    return name;
+  }
 
-	public long getProposalsCompleted() {
-		return proposalsCompleted;
-	}
+  public long getProposalsCompleted() {
+    return proposalsCompleted;
+  }
 
-	public long getProposalsMissed() {
-		return proposalsMissed;
-	}
+  public long getProposalsMissed() {
+    return proposalsMissed;
+  }
 
-	public boolean isRegistered() {
-		return registered;
-	}
+  public boolean isRegistered() {
+    return registered;
+  }
 
-	public boolean isExternalStakeAccepted() {
-		return isExternalStakeAccepted;
-	}
+  public boolean isExternalStakeAccepted() {
+    return isExternalStakeAccepted;
+  }
 }

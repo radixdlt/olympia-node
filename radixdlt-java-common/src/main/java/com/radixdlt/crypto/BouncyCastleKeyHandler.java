@@ -64,6 +64,12 @@
 
 package com.radixdlt.crypto;
 
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
+import java.math.BigInteger;
+import java.security.KeyFactory;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.params.ECDomainParameters;
@@ -75,75 +81,76 @@ import org.bouncycastle.crypto.signers.RandomDSAKCalculator;
 import org.bouncycastle.jce.interfaces.ECPublicKey;
 import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.bouncycastle.jce.spec.ECPublicKeySpec;
-
-import com.radixdlt.SecurityCritical;
-import com.radixdlt.SecurityCritical.SecurityKind;
-import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import org.bouncycastle.math.ec.ECPoint;
-
-import java.math.BigInteger;
-import java.security.KeyFactory;
 
 @SecurityCritical({SecurityKind.KEY_GENERATION, SecurityKind.SIG_SIGN, SecurityKind.SIG_VERIFY})
 final class BouncyCastleKeyHandler implements KeyHandler {
-	private final BigInteger curveOrder;
-	private final BigInteger halfCurveOrder;
-	private final ECDomainParameters domain;
-	private final ECParameterSpec spec;
+  private final BigInteger curveOrder;
+  private final BigInteger halfCurveOrder;
+  private final ECDomainParameters domain;
+  private final ECParameterSpec spec;
 
-	BouncyCastleKeyHandler(X9ECParameters curve) {
-		this.curveOrder = curve.getN();
-		this.halfCurveOrder = curve.getN().shiftRight(1);
-		this.domain = new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
-		this.spec = new ECParameterSpec(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
-	}
+  BouncyCastleKeyHandler(X9ECParameters curve) {
+    this.curveOrder = curve.getN();
+    this.halfCurveOrder = curve.getN().shiftRight(1);
+    this.domain =
+        new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
+    this.spec = new ECParameterSpec(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
+  }
 
-	@Override
-	public ECDSASignature sign(byte[] hash, byte[] privateKey, byte[] publicKey, boolean enforceLowS, boolean useDeterministicSignatures) {
-		var signer = new ECDSASigner(useDeterministicSignatures
-									 ? new HMacDSAKCalculator(new SHA256Digest())
-									 : new RandomDSAKCalculator());
+  @Override
+  public ECDSASignature sign(
+      byte[] hash,
+      byte[] privateKey,
+      byte[] publicKey,
+      boolean enforceLowS,
+      boolean useDeterministicSignatures) {
+    var signer =
+        new ECDSASigner(
+            useDeterministicSignatures
+                ? new HMacDSAKCalculator(new SHA256Digest())
+                : new RandomDSAKCalculator());
 
-		signer.init(true, new ECPrivateKeyParameters(new BigInteger(1, privateKey), domain));
+    signer.init(true, new ECPrivateKeyParameters(new BigInteger(1, privateKey), domain));
 
-		var components = signer.generateSignature(hash);
-		var r = components[0];
-		var s = components[1];
+    var components = signer.generateSignature(hash);
+    var r = components[0];
+    var s = components[1];
 
-		if (enforceLowS) {
-			s = s.compareTo(this.halfCurveOrder) <= 0 ? s : curveOrder.subtract(s);
-		}
+    if (enforceLowS) {
+      s = s.compareTo(this.halfCurveOrder) <= 0 ? s : curveOrder.subtract(s);
+    }
 
-		return ECDSASignature.create(r, s, ECKeyUtils.calculateV(r, s, publicKey, hash));
-	}
+    return ECDSASignature.create(r, s, ECKeyUtils.calculateV(r, s, publicKey, hash));
+  }
 
-	@Override
-	public boolean verify(byte[] hash, ECDSASignature signature, ECPoint publicKeyPoint) {
-		var verifier = new ECDSASigner();
+  @Override
+  public boolean verify(byte[] hash, ECDSASignature signature, ECPoint publicKeyPoint) {
+    var verifier = new ECDSASigner();
 
-		verifier.init(false, new ECPublicKeyParameters(publicKeyPoint, domain));
+    verifier.init(false, new ECPublicKeyParameters(publicKeyPoint, domain));
 
-		return verifier.verifySignature(hash, signature.getR(), signature.getS());
-	}
+    return verifier.verifySignature(hash, signature.getR(), signature.getS());
+  }
 
-	@Override
-	public byte[] computePublicKey(byte[] privateKey) throws PrivateKeyException, PublicKeyException {
-		ECKeyUtils.validatePrivate(privateKey);
+  @Override
+  public byte[] computePublicKey(byte[] privateKey) throws PrivateKeyException, PublicKeyException {
+    ECKeyUtils.validatePrivate(privateKey);
 
-		var d = new BigInteger(1, privateKey);
+    var d = new BigInteger(1, privateKey);
 
-		try {
-			var publicKeySpec = new ECPublicKeySpec(spec.getG().multiply(d), spec);
+    try {
+      var publicKeySpec = new ECPublicKeySpec(spec.getG().multiply(d), spec);
 
-			// Note that the provider here *must* be "BC" for this to work
-			// correctly because we are using the bouncy castle ECPublicKeySpec,
-			// and are casting to a bouncy castle ECPublicKey.
-			return ((ECPublicKey) KeyFactory.getInstance("EC", "BC").generatePublic(publicKeySpec))
-				.getQ().getEncoded(true);
+      // Note that the provider here *must* be "BC" for this to work
+      // correctly because we are using the bouncy castle ECPublicKeySpec,
+      // and are casting to a bouncy castle ECPublicKey.
+      return ((ECPublicKey) KeyFactory.getInstance("EC", "BC").generatePublic(publicKeySpec))
+          .getQ()
+          .getEncoded(true);
 
-		} catch (Exception e) {
-			throw new PublicKeyException(e);
-		}
-	}
+    } catch (Exception e) {
+      throw new PublicKeyException(e);
+    }
+  }
 }

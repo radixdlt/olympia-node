@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -66,42 +67,44 @@ package com.radixdlt.api.core.model;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SystemMapKey;
-
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 public final class ResourceQuery {
-	private final SubstateIndex<ResourceInBucket> index;
-	private final Predicate<ResourceInBucket> predicate;
-	private final SystemMapKey systemMapKey;
+  private final SubstateIndex<ResourceInBucket> index;
+  private final Predicate<ResourceInBucket> predicate;
+  private final SystemMapKey systemMapKey;
 
-	private ResourceQuery(SubstateIndex<ResourceInBucket> index, Predicate<ResourceInBucket> predicate, SystemMapKey systemMapKey) {
-		this.index = index;
-		this.predicate = predicate;
-		this.systemMapKey = systemMapKey;
-	}
+  private ResourceQuery(
+      SubstateIndex<ResourceInBucket> index,
+      Predicate<ResourceInBucket> predicate,
+      SystemMapKey systemMapKey) {
+    this.index = index;
+    this.predicate = predicate;
+    this.systemMapKey = systemMapKey;
+  }
 
-	public <T> T fold(
-		BiFunction<SubstateIndex<ResourceInBucket>, Predicate<ResourceInBucket>, T> indexFunction,
-		Function<SystemMapKey, T> keyFunction
-	) {
-		if (index != null) {
-			return indexFunction.apply(index, predicate);
-		} else {
-			return keyFunction.apply(systemMapKey);
-		}
-	}
+  public <T> T fold(
+      BiFunction<SubstateIndex<ResourceInBucket>, Predicate<ResourceInBucket>, T> indexFunction,
+      Function<SystemMapKey, T> keyFunction) {
+    if (index != null) {
+      return indexFunction.apply(index, predicate);
+    } else {
+      return keyFunction.apply(systemMapKey);
+    }
+  }
 
-	public static ResourceQuery from(SystemMapKey systemMapKey) {
-		return new ResourceQuery(null, null, systemMapKey);
-	}
+  public static ResourceQuery from(SystemMapKey systemMapKey) {
+    return new ResourceQuery(null, null, systemMapKey);
+  }
 
-	public static ResourceQuery from(SubstateIndex<ResourceInBucket> index) {
-		return new ResourceQuery(index, b -> true, null);
-	}
+  public static ResourceQuery from(SubstateIndex<ResourceInBucket> index) {
+    return new ResourceQuery(index, b -> true, null);
+  }
 
-	public static ResourceQuery from(SubstateIndex<ResourceInBucket> index, Predicate<ResourceInBucket> predicate) {
-		return new ResourceQuery(index, predicate, null);
-	}
+  public static ResourceQuery from(
+      SubstateIndex<ResourceInBucket> index, Predicate<ResourceInBucket> predicate) {
+    return new ResourceQuery(index, predicate, null);
+  }
 }

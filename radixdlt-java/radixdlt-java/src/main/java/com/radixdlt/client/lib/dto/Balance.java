@@ -64,62 +64,60 @@
 
 package com.radixdlt.client.lib.dto;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Objects;
 
-import static java.util.Objects.requireNonNull;
-
 public final class Balance {
-	private final String rri;
-	private final UInt256 amount;
+  private final String rri;
+  private final UInt256 amount;
 
-	private Balance(String rri, UInt256 amount) {
-		this.rri = rri;
-		this.amount = amount;
-	}
+  private Balance(String rri, UInt256 amount) {
+    this.rri = rri;
+    this.amount = amount;
+  }
 
-	@JsonCreator
-	public static Balance create(
-		@JsonProperty(value = "rri", required = true) String rri,
-		@JsonProperty(value = "amount", required = true) UInt256 amount
-	) {
-		requireNonNull(rri);
-		requireNonNull(amount);
+  @JsonCreator
+  public static Balance create(
+      @JsonProperty(value = "rri", required = true) String rri,
+      @JsonProperty(value = "amount", required = true) UInt256 amount) {
+    requireNonNull(rri);
+    requireNonNull(amount);
 
-		return new Balance(rri, amount);
-	}
+    return new Balance(rri, amount);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof Balance)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof Balance)) {
+      return false;
+    }
 
-		var that = (Balance) o;
-		return rri.equals(that.rri) && amount.equals(that.amount);
-	}
+    var that = (Balance) o;
+    return rri.equals(that.rri) && amount.equals(that.amount);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(rri, amount);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(rri, amount);
+  }
 
-	@Override
-	public String toString() {
-		return "Balance(" + "rri=" + rri + ", amount=" + amount + ')';
-	}
+  @Override
+  public String toString() {
+    return "Balance(" + "rri=" + rri + ", amount=" + amount + ')';
+  }
 
-	public String getRri() {
-		return rri;
-	}
+  public String getRri() {
+    return rri;
+  }
 
-	public UInt256 getAmount() {
-		return amount;
-	}
+  public UInt256 getAmount() {
+    return amount;
+  }
 }

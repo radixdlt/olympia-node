@@ -64,6 +64,14 @@
 
 package org.radix.network.discovery;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.Inject;
+import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.network.p2p.RadixNodeUri;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.Pair;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -72,73 +80,62 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import com.google.inject.Inject;
-import com.radixdlt.identifiers.NodeAddressing;
-import com.radixdlt.network.p2p.RadixNodeUri;
-import com.radixdlt.network.p2p.P2PConfig;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.utils.Pair;
-import com.google.common.collect.ImmutableSet;
 
 // TODO: move to PeerDiscovery
 public final class SeedNodesConfigParser {
-	private final int defaultPort;
-	private final Set<String> unresolvedUris = new HashSet<>();
-	private final Set<RadixNodeUri> resolvedSeedNodes = new HashSet<>();
-	private final Addressing addressing;
-	private final int networkId;
+  private final int defaultPort;
+  private final Set<String> unresolvedUris = new HashSet<>();
+  private final Set<RadixNodeUri> resolvedSeedNodes = new HashSet<>();
+  private final Addressing addressing;
+  private final int networkId;
 
-	@Inject
-	public SeedNodesConfigParser(P2PConfig config, @NetworkId int networkId, Addressing addressing) {
-		this.networkId = networkId;
-		this.addressing = addressing;
-		this.defaultPort = config.defaultPort();
-		this.unresolvedUris.addAll(config.seedNodes());
-		this.resolveHostNames();
-	}
+  @Inject
+  public SeedNodesConfigParser(P2PConfig config, @NetworkId int networkId, Addressing addressing) {
+    this.networkId = networkId;
+    this.addressing = addressing;
+    this.defaultPort = config.defaultPort();
+    this.unresolvedUris.addAll(config.seedNodes());
+    this.resolveHostNames();
+  }
 
-	public Set<RadixNodeUri> getResolvedSeedNodes() {
-		this.resolveHostNames();
-		return this.resolvedSeedNodes;
-	}
+  public Set<RadixNodeUri> getResolvedSeedNodes() {
+    this.resolveHostNames();
+    return this.resolvedSeedNodes;
+  }
 
-	private void resolveHostNames() {
-		if (this.unresolvedUris.isEmpty()) {
-			return;
-		}
+  private void resolveHostNames() {
+    if (this.unresolvedUris.isEmpty()) {
+      return;
+    }
 
-		final var newlyResolvedHosts = this.unresolvedUris.stream()
-			.map(host -> Pair.of(host, resolveRadixNodeUri(host)))
-			.filter(p -> p.getSecond().isPresent())
-			.collect(ImmutableSet.toImmutableSet());
+    final var newlyResolvedHosts =
+        this.unresolvedUris.stream()
+            .map(host -> Pair.of(host, resolveRadixNodeUri(host)))
+            .filter(p -> p.getSecond().isPresent())
+            .collect(ImmutableSet.toImmutableSet());
 
-		final var newlyResolvedHostsNames = newlyResolvedHosts.stream().map(Pair::getFirst)
-			.collect(ImmutableSet.toImmutableSet());
+    final var newlyResolvedHostsNames =
+        newlyResolvedHosts.stream().map(Pair::getFirst).collect(ImmutableSet.toImmutableSet());
 
-		this.unresolvedUris.removeAll(newlyResolvedHostsNames);
+    this.unresolvedUris.removeAll(newlyResolvedHostsNames);
 
-		this.resolvedSeedNodes.addAll(
-			newlyResolvedHosts.stream()
-				.map(p -> p.getSecond().get())
-				.collect(Collectors.toList())
-		);
-	}
+    this.resolvedSeedNodes.addAll(
+        newlyResolvedHosts.stream().map(p -> p.getSecond().get()).collect(Collectors.toList()));
+  }
 
-	private Optional<RadixNodeUri> resolveRadixNodeUri(String rawUri) {
-		try {
-			final var parsedUri = new URI(rawUri);
-			final var resolved = InetAddress.getByName(parsedUri.getHost());
-			// FIXME: This is a bit messy, should have clearer logic on the checks
-			return Optional.of(RadixNodeUri.fromPubKeyAndAddress(
-				networkId,
-				addressing.forNodes().parse(parsedUri.getUserInfo()),
-				resolved.getHostAddress(),
-				parsedUri.getPort() > 0 ? parsedUri.getPort() : defaultPort
-			));
-		} catch (UnknownHostException | URISyntaxException | DeserializeException e) {
-			return Optional.empty();
-		}
-	}
+  private Optional<RadixNodeUri> resolveRadixNodeUri(String rawUri) {
+    try {
+      final var parsedUri = new URI(rawUri);
+      final var resolved = InetAddress.getByName(parsedUri.getHost());
+      // FIXME: This is a bit messy, should have clearer logic on the checks
+      return Optional.of(
+          RadixNodeUri.fromPubKeyAndAddress(
+              networkId,
+              addressing.forNodes().parse(parsedUri.getUserInfo()),
+              resolved.getHostAddress(),
+              parsedUri.getPort() > 0 ? parsedUri.getPort() : defaultPort));
+    } catch (UnknownHostException | URISyntaxException | DeserializeException e) {
+      return Optional.empty();
+    }
+  }
 }

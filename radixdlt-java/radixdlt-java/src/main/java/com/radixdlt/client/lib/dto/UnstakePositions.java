@@ -64,101 +64,106 @@
 
 package com.radixdlt.client.lib.dto;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Objects;
 import java.util.Optional;
 
-import static java.util.Objects.requireNonNull;
-
 public final class UnstakePositions {
-	private final UInt256 amount;
-	private final UInt256 validatorTotalOwnership;
-	private final UInt256 validatorTotalStake;
-	private final ValidatorAddress validator;
-	private final int epochsUntil;
+  private final UInt256 amount;
+  private final UInt256 validatorTotalOwnership;
+  private final UInt256 validatorTotalStake;
+  private final ValidatorAddress validator;
+  private final int epochsUntil;
 
-	private UnstakePositions(
-		UInt256 amount,
-		UInt256 validatorTotalOwnership,
-		UInt256 validatorTotalStake,
-		ValidatorAddress validator,
-		int epochsUntil
-	) {
-		this.amount = amount;
-		this.validatorTotalOwnership = validatorTotalOwnership;
-		this.validatorTotalStake = validatorTotalStake;
-		this.validator = validator;
-		this.epochsUntil = epochsUntil;
-	}
+  private UnstakePositions(
+      UInt256 amount,
+      UInt256 validatorTotalOwnership,
+      UInt256 validatorTotalStake,
+      ValidatorAddress validator,
+      int epochsUntil) {
+    this.amount = amount;
+    this.validatorTotalOwnership = validatorTotalOwnership;
+    this.validatorTotalStake = validatorTotalStake;
+    this.validator = validator;
+    this.epochsUntil = epochsUntil;
+  }
 
-	@JsonCreator
-	public static UnstakePositions create(
-		@JsonProperty(value = "amount", required = true) UInt256 amount,
-		@JsonProperty(value = "validator", required = true) ValidatorAddress validator,
-		@JsonProperty(value = "validatorTotalOwnership") UInt256 validatorTotalOwnership,
-		@JsonProperty(value = "validatorTotalStake") UInt256 validatorTotalStake,
-		@JsonProperty(value = "epochsUntil", required = true) int epochsUntil
-	) {
-		requireNonNull(amount);
-		requireNonNull(validator);
+  @JsonCreator
+  public static UnstakePositions create(
+      @JsonProperty(value = "amount", required = true) UInt256 amount,
+      @JsonProperty(value = "validator", required = true) ValidatorAddress validator,
+      @JsonProperty(value = "validatorTotalOwnership") UInt256 validatorTotalOwnership,
+      @JsonProperty(value = "validatorTotalStake") UInt256 validatorTotalStake,
+      @JsonProperty(value = "epochsUntil", required = true) int epochsUntil) {
+    requireNonNull(amount);
+    requireNonNull(validator);
 
-		return new UnstakePositions(amount, validatorTotalOwnership, validatorTotalStake, validator, epochsUntil);
-	}
+    return new UnstakePositions(
+        amount, validatorTotalOwnership, validatorTotalStake, validator, epochsUntil);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof UnstakePositions)) {
-			return false;
-		}
+    if (!(o instanceof UnstakePositions)) {
+      return false;
+    }
 
-		var that = (UnstakePositions) o;
-		return epochsUntil == that.epochsUntil
-			&& amount.equals(that.amount)
-			&& validatorTotalOwnership.equals(that.validatorTotalOwnership)
-			&& validatorTotalStake.equals(that.validatorTotalStake)
-			&& validator.equals(that.validator);
-	}
+    var that = (UnstakePositions) o;
+    return epochsUntil == that.epochsUntil
+        && amount.equals(that.amount)
+        && validatorTotalOwnership.equals(that.validatorTotalOwnership)
+        && validatorTotalStake.equals(that.validatorTotalStake)
+        && validator.equals(that.validator);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(amount, validatorTotalOwnership, validatorTotalStake, validator, epochsUntil);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        amount, validatorTotalOwnership, validatorTotalStake, validator, epochsUntil);
+  }
 
-	@Override
-	public String toString() {
-		return "UnstakePositions("
-			+ "amount=" + amount
-			+ ", validatorTotalOwnership=" + validatorTotalOwnership
-			+ ", validatorTotalStake=" + validatorTotalStake
-			+ ", validator=" + validator
-			+ ", epochsUntil=" + epochsUntil + ')';
-	}
+  @Override
+  public String toString() {
+    return "UnstakePositions("
+        + "amount="
+        + amount
+        + ", validatorTotalOwnership="
+        + validatorTotalOwnership
+        + ", validatorTotalStake="
+        + validatorTotalStake
+        + ", validator="
+        + validator
+        + ", epochsUntil="
+        + epochsUntil
+        + ')';
+  }
 
-	public UInt256 getAmount() {
-		return amount;
-	}
+  public UInt256 getAmount() {
+    return amount;
+  }
 
-	public ValidatorAddress getValidator() {
-		return validator;
-	}
+  public ValidatorAddress getValidator() {
+    return validator;
+  }
 
-	public int getEpochsUntil() {
-		return epochsUntil;
-	}
+  public int getEpochsUntil() {
+    return epochsUntil;
+  }
 
-	public Optional<UInt256> getValidatorTotalOwnership() {
-		return Optional.ofNullable(validatorTotalOwnership);
-	}
+  public Optional<UInt256> getValidatorTotalOwnership() {
+    return Optional.ofNullable(validatorTotalOwnership);
+  }
 
-	public Optional<UInt256> getValidatorTotalStake() {
-		return Optional.ofNullable(validatorTotalStake);
-	}
+  public Optional<UInt256> getValidatorTotalStake() {
+    return Optional.ofNullable(validatorTotalStake);
+  }
 }

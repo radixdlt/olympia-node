@@ -75,12 +75,13 @@ import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.CommittedReader;
 
 public class RadixEngineStoreModule extends AbstractModule {
-	@Override
-	protected void configure() {
-		bind(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { })
-			.to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
-		bind(CommittedReader.class).to(BerkeleyLedgerEntryStore.class);
-		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
-	}
+  @Override
+  protected void configure() {
+    bind(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
+    bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {})
+        .to(BerkeleyLedgerEntryStore.class)
+        .in(Scopes.SINGLETON);
+    bind(CommittedReader.class).to(BerkeleyLedgerEntryStore.class);
+    Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
+  }
 }

@@ -68,13 +68,13 @@ import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.constraintmachine.ReducerState;
 
 public final class EndPrevRound implements ReducerState {
-	private final RoundData closed;
+  private final RoundData closed;
 
-	EndPrevRound(RoundData closed) {
-		this.closed = closed;
-	}
+  EndPrevRound(RoundData closed) {
+    this.closed = closed;
+  }
 
-	public RoundData getClosedRound() {
-		return closed;
-	}
+  public RoundData getClosedRound() {
+    return closed;
+  }
 }

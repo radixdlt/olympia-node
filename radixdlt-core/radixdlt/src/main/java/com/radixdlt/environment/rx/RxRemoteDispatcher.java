@@ -69,29 +69,29 @@ import java.util.Objects;
 
 /**
  * Remote event dispatcher for rx environment
+ *
  * @param <T> the event class
  */
 public final class RxRemoteDispatcher<T> {
-	private final Class<T> eventClass;
-	private final RemoteEventDispatcher<T> dispatcher;
+  private final Class<T> eventClass;
+  private final RemoteEventDispatcher<T> dispatcher;
 
-	private RxRemoteDispatcher(Class<T> eventClass, RemoteEventDispatcher<T> dispatcher) {
-		this.eventClass = eventClass;
-		this.dispatcher = dispatcher;
-	}
+  private RxRemoteDispatcher(Class<T> eventClass, RemoteEventDispatcher<T> dispatcher) {
+    this.eventClass = eventClass;
+    this.dispatcher = dispatcher;
+  }
 
-	public Class<T> eventClass() {
-		return eventClass;
-	}
+  public Class<T> eventClass() {
+    return eventClass;
+  }
 
-	public RemoteEventDispatcher<T> dispatcher() {
-		return dispatcher;
-	}
+  public RemoteEventDispatcher<T> dispatcher() {
+    return dispatcher;
+  }
 
-	public static <T> RxRemoteDispatcher<T> create(Class<T> eventClass, RemoteEventDispatcher<T> dispatcher) {
-		return new RxRemoteDispatcher<>(
-			Objects.requireNonNull(eventClass),
-			Objects.requireNonNull(dispatcher)
-		);
-	}
+  public static <T> RxRemoteDispatcher<T> create(
+      Class<T> eventClass, RemoteEventDispatcher<T> dispatcher) {
+    return new RxRemoteDispatcher<>(
+        Objects.requireNonNull(eventClass), Objects.requireNonNull(dispatcher));
+  }
 }

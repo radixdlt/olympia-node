@@ -72,22 +72,21 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 
 public final class LastEventsModule extends AbstractModule {
-	private final Class<?>[] messageClasses;
+  private final Class<?>[] messageClasses;
 
-	public LastEventsModule(Class<?>... messageClasses) {
-		this.messageClasses = messageClasses;
-	}
+  public LastEventsModule(Class<?>... messageClasses) {
+    this.messageClasses = messageClasses;
+  }
 
-	@Override
-	protected void configure() {
-		var map = MutableClassToInstanceMap.create();
-		bind(new TypeLiteral<ClassToInstanceMap<Object>>() { })
-			.toInstance(map);
+  @Override
+  protected void configure() {
+    var map = MutableClassToInstanceMap.create();
+    bind(new TypeLiteral<ClassToInstanceMap<Object>>() {}).toInstance(map);
 
-		for (var c : messageClasses) {
-			Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { })
-				.addBinding()
-				.toInstance(new EventProcessorOnDispatch<>(c, e -> map.put(c, e)));
-		}
-	}
+    for (var c : messageClasses) {
+      Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() {})
+          .addBinding()
+          .toInstance(new EventProcessorOnDispatch<>(c, e -> map.put(c, e)));
+    }
+  }
 }

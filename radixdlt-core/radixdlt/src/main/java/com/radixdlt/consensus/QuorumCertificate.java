@@ -76,113 +76,112 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Pair;
-
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 @SerializerId2("consensus.qc")
 public final class QuorumCertificate {
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-	SerializerDummy serializer = SerializerDummy.DUMMY;
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+  SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("signatures")
-	@DsonOutput(Output.ALL)
-	private final TimestampedECDSASignatures signatures;
+  @JsonProperty("signatures")
+  @DsonOutput(Output.ALL)
+  private final TimestampedECDSASignatures signatures;
 
-	@JsonProperty("vote_data")
-	@DsonOutput(Output.ALL)
-	private final VoteData voteData;
+  @JsonProperty("vote_data")
+  @DsonOutput(Output.ALL)
+  private final VoteData voteData;
 
-	@JsonCreator
-	public QuorumCertificate(
-		@JsonProperty(value = "vote_data", required = true) VoteData voteData,
-		@JsonProperty(value = "signatures", required = true) TimestampedECDSASignatures signatures
-	) {
-		this.voteData = Objects.requireNonNull(voteData);
-		this.signatures = Objects.requireNonNull(signatures);
-	}
+  @JsonCreator
+  public QuorumCertificate(
+      @JsonProperty(value = "vote_data", required = true) VoteData voteData,
+      @JsonProperty(value = "signatures", required = true) TimestampedECDSASignatures signatures) {
+    this.voteData = Objects.requireNonNull(voteData);
+    this.signatures = Objects.requireNonNull(signatures);
+  }
 
-	/**
-	 * Create a mocked QC for genesis vertex
-	 * @param genesisVertex the vertex to create a qc for
-	 * @return a mocked QC
-	 */
-	public static QuorumCertificate ofGenesis(VerifiedVertex genesisVertex, LedgerHeader ledgerHeader) {
-		if (!genesisVertex.getView().isGenesis()) {
-			throw new IllegalArgumentException(String.format("Vertex is not genesis: %s", genesisVertex));
-		}
+  /**
+   * Create a mocked QC for genesis vertex
+   *
+   * @param genesisVertex the vertex to create a qc for
+   * @return a mocked QC
+   */
+  public static QuorumCertificate ofGenesis(
+      VerifiedVertex genesisVertex, LedgerHeader ledgerHeader) {
+    if (!genesisVertex.getView().isGenesis()) {
+      throw new IllegalArgumentException(String.format("Vertex is not genesis: %s", genesisVertex));
+    }
 
-		BFTHeader header = new BFTHeader(genesisVertex.getView(), genesisVertex.getId(), ledgerHeader);
-		final VoteData voteData = new VoteData(header, header, header);
-		return new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-	}
+    BFTHeader header = new BFTHeader(genesisVertex.getView(), genesisVertex.getId(), ledgerHeader);
+    final VoteData voteData = new VoteData(header, header, header);
+    return new QuorumCertificate(voteData, new TimestampedECDSASignatures());
+  }
 
-	public View getView() {
-		return voteData.getProposed().getView();
-	}
+  public View getView() {
+    return voteData.getProposed().getView();
+  }
 
-	public long getEpoch() {
-		return this.voteData.getProposed().getLedgerHeader().getEpoch();
-	}
+  public long getEpoch() {
+    return this.voteData.getProposed().getLedgerHeader().getEpoch();
+  }
 
-	public BFTHeader getProposed() {
-		return voteData.getProposed();
-	}
+  public BFTHeader getProposed() {
+    return voteData.getProposed();
+  }
 
-	public BFTHeader getParent() {
-		return voteData.getParent();
-	}
+  public BFTHeader getParent() {
+    return voteData.getParent();
+  }
 
-	public Optional<BFTHeader> getCommitted() {
-		return voteData.getCommitted();
-	}
+  public Optional<BFTHeader> getCommitted() {
+    return voteData.getCommitted();
+  }
 
-	public Optional<Pair<BFTHeader, LedgerProof>> getCommittedAndLedgerStateProof(Hasher hasher) {
-		return voteData.getCommitted().map(committed -> {
-			var opaque = hasher.hash(voteData);
-			var ledgerStateProof = new LedgerProof(
-				opaque,
-				committed.getLedgerHeader(),
-				signatures
-			);
-			return Pair.of(committed, ledgerStateProof);
-		});
-	}
+  public Optional<Pair<BFTHeader, LedgerProof>> getCommittedAndLedgerStateProof(Hasher hasher) {
+    return voteData
+        .getCommitted()
+        .map(
+            committed -> {
+              var opaque = hasher.hash(voteData);
+              var ledgerStateProof =
+                  new LedgerProof(opaque, committed.getLedgerHeader(), signatures);
+              return Pair.of(committed, ledgerStateProof);
+            });
+  }
 
-	public VoteData getVoteData() {
-		return voteData;
-	}
+  public VoteData getVoteData() {
+    return voteData;
+  }
 
-	public TimestampedECDSASignatures getTimestampedSignatures() {
-		return signatures;
-	}
+  public TimestampedECDSASignatures getTimestampedSignatures() {
+    return signatures;
+  }
 
-	public Stream<BFTNode> getSigners() {
-		return signatures.getSignatures().keySet().stream();
-	}
+  public Stream<BFTNode> getSigners() {
+    return signatures.getSignatures().keySet().stream();
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		QuorumCertificate that = (QuorumCertificate) o;
-		return Objects.equals(signatures, that.signatures)
-			&& Objects.equals(voteData, that.voteData);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    QuorumCertificate that = (QuorumCertificate) o;
+    return Objects.equals(signatures, that.signatures) && Objects.equals(voteData, that.voteData);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(signatures, voteData);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(signatures, voteData);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("QC{%s:%s}", this.getEpoch(), this.getView());
-	}
+  @Override
+  public String toString() {
+    return String.format("QC{%s:%s}", this.getEpoch(), this.getView());
+  }
 }

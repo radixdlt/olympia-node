@@ -75,70 +75,68 @@ import com.radixdlt.network.messaging.MessageFromPeer;
 import com.radixdlt.network.p2p.NodeId;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
+import java.util.Objects;
 import org.radix.network.messaging.Message;
 
-import java.util.Objects;
-
-/**
- * BFT Network sending and receiving layer used on top of the MessageCentral
- * layer.
- */
+/** BFT Network sending and receiving layer used on top of the MessageCentral layer. */
 public final class MessageCentralBFTNetwork {
-	private final MessageCentral messageCentral;
+  private final MessageCentral messageCentral;
 
-	@Inject
-	public MessageCentralBFTNetwork(MessageCentral messageCentral) {
-		this.messageCentral = Objects.requireNonNull(messageCentral);
-	}
+  @Inject
+  public MessageCentralBFTNetwork(MessageCentral messageCentral) {
+    this.messageCentral = Objects.requireNonNull(messageCentral);
+  }
 
-	//TODO: cleanup unnecessary code duplication and "fat" lambdas
-	public Flowable<RemoteEvent<Vote>> remoteVotes() {
-		return remoteBftEvents()
-			.filter(m -> m.getMessage().getConsensusMessage() instanceof Vote)
-			.map(m -> {
-				final var node = BFTNode.create(m.getSource().getPublicKey());
-				final var msg = m.getMessage();
-				var vote = (Vote) msg.getConsensusMessage();
-				return RemoteEvent.create(node, vote);
-			});
-	}
+  // TODO: cleanup unnecessary code duplication and "fat" lambdas
+  public Flowable<RemoteEvent<Vote>> remoteVotes() {
+    return remoteBftEvents()
+        .filter(m -> m.getMessage().getConsensusMessage() instanceof Vote)
+        .map(
+            m -> {
+              final var node = BFTNode.create(m.getSource().getPublicKey());
+              final var msg = m.getMessage();
+              var vote = (Vote) msg.getConsensusMessage();
+              return RemoteEvent.create(node, vote);
+            });
+  }
 
-	public Flowable<RemoteEvent<Proposal>> remoteProposals() {
-		return remoteBftEvents()
-			.filter(m -> m.getMessage().getConsensusMessage() instanceof Proposal)
-			.map(m -> {
-				final var node = BFTNode.create(m.getSource().getPublicKey());
-				final var msg = m.getMessage();
-				var proposal = (Proposal) msg.getConsensusMessage();
-				return RemoteEvent.create(node, proposal);
-			});
-	}
+  public Flowable<RemoteEvent<Proposal>> remoteProposals() {
+    return remoteBftEvents()
+        .filter(m -> m.getMessage().getConsensusMessage() instanceof Proposal)
+        .map(
+            m -> {
+              final var node = BFTNode.create(m.getSource().getPublicKey());
+              final var msg = m.getMessage();
+              var proposal = (Proposal) msg.getConsensusMessage();
+              return RemoteEvent.create(node, proposal);
+            });
+  }
 
-	private Flowable<MessageFromPeer<ConsensusEventMessage>> remoteBftEvents() {
-		return this.messageCentral
-			.messagesOf(ConsensusEventMessage.class)
-			.toFlowable(BackpressureStrategy.BUFFER);
-	}
+  private Flowable<MessageFromPeer<ConsensusEventMessage>> remoteBftEvents() {
+    return this.messageCentral
+        .messagesOf(ConsensusEventMessage.class)
+        .toFlowable(BackpressureStrategy.BUFFER);
+  }
 
-	public RemoteEventDispatcher<Proposal> proposalDispatcher() {
-		return this::sendProposal;
-	}
+  public RemoteEventDispatcher<Proposal> proposalDispatcher() {
+    return this::sendProposal;
+  }
 
-	private void sendProposal(BFTNode receiver, Proposal proposal) {
-		ConsensusEventMessage message = new ConsensusEventMessage(proposal);
-		send(message, receiver);
-	}
+  private void sendProposal(BFTNode receiver, Proposal proposal) {
+    ConsensusEventMessage message = new ConsensusEventMessage(proposal);
+    send(message, receiver);
+  }
 
-	public RemoteEventDispatcher<Vote> voteDispatcher() {
-		return this::sendVote;
-	}
+  public RemoteEventDispatcher<Vote> voteDispatcher() {
+    return this::sendVote;
+  }
 
-	private void sendVote(BFTNode receiver, Vote vote) {
-		ConsensusEventMessage message = new ConsensusEventMessage(vote);
-		send(message, receiver);
-	}
+  private void sendVote(BFTNode receiver, Vote vote) {
+    ConsensusEventMessage message = new ConsensusEventMessage(vote);
+    send(message, receiver);
+  }
 
-	private void send(Message message, BFTNode recipient) {
-		this.messageCentral.send(NodeId.fromPublicKey(recipient.getKey()), message);
-	}
+  private void send(Message message, BFTNode recipient) {
+    this.messageCentral.send(NodeId.fromPublicKey(recipient.getKey()), message);
+  }
 }

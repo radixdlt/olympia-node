@@ -64,6 +64,8 @@
 
 package com.radixdlt.consensus;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
@@ -74,95 +76,87 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
-import javax.annotation.concurrent.Immutable;
 import java.util.Objects;
+import javax.annotation.concurrent.Immutable;
 
-import static java.util.Objects.requireNonNull;
-
-/**
- * The bft header which gets voted upon by consensus.
- */
+/** The bft header which gets voted upon by consensus. */
 @Immutable
 @SerializerId2("consensus.bft_header")
 public final class BFTHeader {
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-	SerializerDummy serializer = SerializerDummy.DUMMY;
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+  SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private final View view;
+  private final View view;
 
-	@JsonProperty("vertex_id")
-	@DsonOutput(Output.ALL)
-	private final HashCode vertexId;
+  @JsonProperty("vertex_id")
+  @DsonOutput(Output.ALL)
+  private final HashCode vertexId;
 
-	@JsonProperty("ledger_header")
-	@DsonOutput(Output.ALL)
-	private final LedgerHeader ledgerHeader;
+  @JsonProperty("ledger_header")
+  @DsonOutput(Output.ALL)
+  private final LedgerHeader ledgerHeader;
 
-	// TODO: Move command output to a more opaque data structure
-	public BFTHeader(
-		View view, // consensus data
-		HashCode vertexId, // consensus data
-		LedgerHeader ledgerHeader
-	) {
-		this.view = requireNonNull(view);
-		this.vertexId = requireNonNull(vertexId);
-		this.ledgerHeader = requireNonNull(ledgerHeader);
-	}
+  // TODO: Move command output to a more opaque data structure
+  public BFTHeader(
+      View view, // consensus data
+      HashCode vertexId, // consensus data
+      LedgerHeader ledgerHeader) {
+    this.view = requireNonNull(view);
+    this.vertexId = requireNonNull(vertexId);
+    this.ledgerHeader = requireNonNull(ledgerHeader);
+  }
 
-	@JsonCreator
-	public static BFTHeader create(
-		@JsonProperty("view") long number,
-		@JsonProperty(value = "vertex_id", required = true) HashCode vertexId,
-		@JsonProperty(value = "ledger_header", required = true) LedgerHeader ledgerHeader
-	) {
-		return new BFTHeader(View.of(number), vertexId, ledgerHeader);
-	}
+  @JsonCreator
+  public static BFTHeader create(
+      @JsonProperty("view") long number,
+      @JsonProperty(value = "vertex_id", required = true) HashCode vertexId,
+      @JsonProperty(value = "ledger_header", required = true) LedgerHeader ledgerHeader) {
+    return new BFTHeader(View.of(number), vertexId, ledgerHeader);
+  }
 
-	public static BFTHeader ofGenesisAncestor(LedgerHeader ledgerHeader) {
-		return new BFTHeader(View.genesis(), HashUtils.zero256(), ledgerHeader);
-	}
+  public static BFTHeader ofGenesisAncestor(LedgerHeader ledgerHeader) {
+    return new BFTHeader(View.genesis(), HashUtils.zero256(), ledgerHeader);
+  }
 
-	public LedgerHeader getLedgerHeader() {
-		return ledgerHeader;
-	}
+  public LedgerHeader getLedgerHeader() {
+    return ledgerHeader;
+  }
 
-	public View getView() {
-		return view;
-	}
+  public View getView() {
+    return view;
+  }
 
-	public HashCode getVertexId() {
-		return vertexId;
-	}
+  public HashCode getVertexId() {
+    return vertexId;
+  }
 
-	@JsonProperty("view")
-	@DsonOutput(Output.ALL)
-	private long getSerializerView() {
-		return view.number();
-	}
+  @JsonProperty("view")
+  @DsonOutput(Output.ALL)
+  private long getSerializerView() {
+    return view.number();
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.vertexId, this.view, this.ledgerHeader);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.vertexId, this.view, this.ledgerHeader);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (o == this) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) {
+      return true;
+    }
 
-		return (o instanceof BFTHeader other)
-			   && Objects.equals(this.view, other.view)
-			   && Objects.equals(this.vertexId, other.vertexId)
-			   && Objects.equals(this.ledgerHeader, other.ledgerHeader);
-	}
+    return (o instanceof BFTHeader other)
+        && Objects.equals(this.view, other.view)
+        && Objects.equals(this.vertexId, other.vertexId)
+        && Objects.equals(this.ledgerHeader, other.ledgerHeader);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{view=%s ledger=%s}",
-			getClass().getSimpleName(), this.view, this.ledgerHeader
-		);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{view=%s ledger=%s}", getClass().getSimpleName(), this.view, this.ledgerHeader);
+  }
 }

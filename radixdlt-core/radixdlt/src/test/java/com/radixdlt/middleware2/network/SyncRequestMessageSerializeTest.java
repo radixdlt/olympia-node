@@ -70,13 +70,12 @@ import com.radixdlt.ledger.AccumulatorState;
 import org.radix.serialization.SerializeMessageObject;
 
 public class SyncRequestMessageSerializeTest extends SerializeMessageObject<SyncRequestMessage> {
-	public SyncRequestMessageSerializeTest() {
-		super(SyncRequestMessage.class, SyncRequestMessageSerializeTest::get);
-	}
+  public SyncRequestMessageSerializeTest() {
+    super(SyncRequestMessage.class, SyncRequestMessageSerializeTest::get);
+  }
 
-	private static SyncRequestMessage get() {
-		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-		return new SyncRequestMessage(LedgerProof.genesis(accumulatorState, null, 0).toDto());
-	}
-
+  private static SyncRequestMessage get() {
+    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    return new SyncRequestMessage(LedgerProof.genesis(accumulatorState, null, 0).toDto());
+  }
 }

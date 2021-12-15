@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.api.system;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.system.openapitools.model.Address;
@@ -73,45 +76,38 @@ import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.utils.PrivateKeys;
+import java.util.Set;
 import org.junit.Test;
 
-import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class AddressBookHandlerTest extends ApiTest {
-	@Inject
-	@NetworkId
-	private int networkId;
-	@Inject
-	private AddressBookHandler sut;
-	@Inject
-	private AddressBook addressBook;
-	@Inject
-	private Addressing addressing;
+  @Inject @NetworkId private int networkId;
+  @Inject private AddressBookHandler sut;
+  @Inject private AddressBook addressBook;
+  @Inject private Addressing addressing;
 
-	@Test
-	public void can_retrieve_address_book() throws Exception {
-		// Arrange
-		var peerKey = PrivateKeys.ofNumeric(2).getPublicKey();
-		var peerUri = RadixNodeUri.fromPubKeyAndAddress(networkId, peerKey, "localhost", 12345);
-		addressBook.addUncheckedPeers(Set.of(peerUri));
-		start();
+  @Test
+  public void can_retrieve_address_book() throws Exception {
+    // Arrange
+    var peerKey = PrivateKeys.ofNumeric(2).getPublicKey();
+    var peerUri = RadixNodeUri.fromPubKeyAndAddress(networkId, peerKey, "localhost", 12345);
+    addressBook.addUncheckedPeers(Set.of(peerUri));
+    start();
 
-		// Act
-		var response = handleRequestWithExpectedResponse(sut, SystemAddressBookResponse.class);
+    // Act
+    var response = handleRequestWithExpectedResponse(sut, SystemAddressBookResponse.class);
 
-		// Assert
-		var entries = response.getEntries();
-		assertThat(entries).containsExactly(new AddressBookEntry()
-			.peerId(addressing.forNodes().of(peerKey))
-			.banned(false)
-			.bannedUntil(null)
-			.addKnownAddressesItem(new Address()
-				.uri(peerUri.toString())
-				.blacklisted(false)
-				.lastConnectionStatus(Address.LastConnectionStatusEnum.UNKNOWN)
-			)
-		);
-	}
+    // Assert
+    var entries = response.getEntries();
+    assertThat(entries)
+        .containsExactly(
+            new AddressBookEntry()
+                .peerId(addressing.forNodes().of(peerKey))
+                .banned(false)
+                .bannedUntil(null)
+                .addKnownAddressesItem(
+                    new Address()
+                        .uri(peerUri.toString())
+                        .blacklisted(false)
+                        .lastConnectionStatus(Address.LastConnectionStatusEnum.UNKNOWN)));
+  }
 }

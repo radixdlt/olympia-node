@@ -65,21 +65,21 @@
 package com.radixdlt.constraintmachine;
 
 public final class ReducerResult {
-	private final ReducerState reducerState;
+  private final ReducerState reducerState;
 
-	private ReducerResult(ReducerState reducerState) {
-		this.reducerState = reducerState;
-	}
+  private ReducerResult(ReducerState reducerState) {
+    this.reducerState = reducerState;
+  }
 
-	public static ReducerResult incomplete(ReducerState reducerState) {
-		return new ReducerResult(reducerState);
-	}
+  public static ReducerResult incomplete(ReducerState reducerState) {
+    return new ReducerResult(reducerState);
+  }
 
-	public static ReducerResult complete() {
-		return new ReducerResult(null);
-	}
+  public static ReducerResult complete() {
+    return new ReducerResult(null);
+  }
 
-	public ReducerState state() {
-		return reducerState;
-	}
+  public ReducerState state() {
+    return reducerState;
+  }
 }

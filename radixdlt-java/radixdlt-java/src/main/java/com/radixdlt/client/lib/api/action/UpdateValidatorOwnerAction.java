@@ -71,12 +71,12 @@ import com.radixdlt.client.lib.api.ValidatorAddress;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class UpdateValidatorOwnerAction implements Action {
-	private final ActionType type = ActionType.UPDATE_VALIDATOR_OWNER;
-	private final ValidatorAddress validator;
-	private final AccountAddress owner;
+  private final ActionType type = ActionType.UPDATE_VALIDATOR_OWNER;
+  private final ValidatorAddress validator;
+  private final AccountAddress owner;
 
-	public UpdateValidatorOwnerAction(ValidatorAddress validator, AccountAddress owner) {
-		this.validator = validator;
-		this.owner = owner;
-	}
+  public UpdateValidatorOwnerAction(ValidatorAddress validator, AccountAddress owner) {
+    this.validator = validator;
+    this.owner = owner;
+  }
 }

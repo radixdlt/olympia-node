@@ -70,14 +70,14 @@ import com.radixdlt.client.lib.api.ValidatorAddress;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class RegisterValidatorAction implements Action {
-	private final ActionType type = ActionType.REGISTER_VALIDATOR;
-	private final ValidatorAddress validator;
-	private final String name;
-	private final String url;
+  private final ActionType type = ActionType.REGISTER_VALIDATOR;
+  private final ValidatorAddress validator;
+  private final String name;
+  private final String url;
 
-	public RegisterValidatorAction(ValidatorAddress validator, String name, String url) {
-		this.validator = validator;
-		this.name = name;
-		this.url = url;
-	}
+  public RegisterValidatorAction(ValidatorAddress validator, String name, String url) {
+    this.validator = validator;
+    this.name = name;
+    this.url = url;
+  }
 }

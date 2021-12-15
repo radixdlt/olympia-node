@@ -69,28 +69,28 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 public final class MintToken implements TxAction {
-	private final REAddr resourceAddr;
-	private final REAddr to;
-	private final UInt256 amount;
+  private final REAddr resourceAddr;
+  private final REAddr to;
+  private final UInt256 amount;
 
-	public MintToken(REAddr resourceAddr, REAddr to, UInt256 amount) {
-		if (amount.isZero()) {
-			throw new IllegalArgumentException("Amount must be > 0.");
-		}
-		this.resourceAddr = resourceAddr;
-		this.to = to;
-		this.amount = amount;
-	}
+  public MintToken(REAddr resourceAddr, REAddr to, UInt256 amount) {
+    if (amount.isZero()) {
+      throw new IllegalArgumentException("Amount must be > 0.");
+    }
+    this.resourceAddr = resourceAddr;
+    this.to = to;
+    this.amount = amount;
+  }
 
-	public REAddr resourceAddr() {
-		return resourceAddr;
-	}
+  public REAddr resourceAddr() {
+    return resourceAddr;
+  }
 
-	public REAddr to() {
-		return to;
-	}
+  public REAddr to() {
+    return to;
+  }
 
-	public UInt256 amount() {
-		return amount;
-	}
+  public UInt256 amount() {
+    return amount;
+  }
 }

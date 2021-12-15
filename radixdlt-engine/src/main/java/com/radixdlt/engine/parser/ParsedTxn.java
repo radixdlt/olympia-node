@@ -70,55 +70,53 @@ import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
-
 import java.util.List;
 import java.util.Optional;
 
 public final class ParsedTxn {
-	private final List<REInstruction> instructions;
-	private final Txn txn;
-	private final byte[] msg;
-	private final UInt256 feePaid;
-	private final boolean disableResourceAllocAndDestroy;
-	private final Pair<HashCode, ECDSASignature> payloadHashAndSig;
+  private final List<REInstruction> instructions;
+  private final Txn txn;
+  private final byte[] msg;
+  private final UInt256 feePaid;
+  private final boolean disableResourceAllocAndDestroy;
+  private final Pair<HashCode, ECDSASignature> payloadHashAndSig;
 
-	public ParsedTxn(
-		Txn txn,
-		UInt256 feePaid,
-		List<REInstruction> instructions,
-		byte[] msg,
-		Pair<HashCode, ECDSASignature> payloadHashAndSig,
-		boolean disableResourceAllocAndDestroy
-	) {
-		this.txn = txn;
-		this.feePaid = feePaid;
-		this.instructions = instructions;
-		this.msg = msg;
-		this.payloadHashAndSig = payloadHashAndSig;
-		this.disableResourceAllocAndDestroy = disableResourceAllocAndDestroy;
-	}
+  public ParsedTxn(
+      Txn txn,
+      UInt256 feePaid,
+      List<REInstruction> instructions,
+      byte[] msg,
+      Pair<HashCode, ECDSASignature> payloadHashAndSig,
+      boolean disableResourceAllocAndDestroy) {
+    this.txn = txn;
+    this.feePaid = feePaid;
+    this.instructions = instructions;
+    this.msg = msg;
+    this.payloadHashAndSig = payloadHashAndSig;
+    this.disableResourceAllocAndDestroy = disableResourceAllocAndDestroy;
+  }
 
-	public Txn txn() {
-		return txn;
-	}
+  public Txn txn() {
+    return txn;
+  }
 
-	public UInt256 getFeePaid() {
-		return feePaid == null ? UInt256.ZERO : feePaid;
-	}
+  public UInt256 getFeePaid() {
+    return feePaid == null ? UInt256.ZERO : feePaid;
+  }
 
-	public List<REInstruction> instructions() {
-		return instructions;
-	}
+  public List<REInstruction> instructions() {
+    return instructions;
+  }
 
-	public Optional<byte[]> getMsg() {
-		return Optional.ofNullable(msg);
-	}
+  public Optional<byte[]> getMsg() {
+    return Optional.ofNullable(msg);
+  }
 
-	public Optional<Pair<HashCode, ECDSASignature>> getPayloadHashAndSig() {
-		return Optional.ofNullable(payloadHashAndSig);
-	}
+  public Optional<Pair<HashCode, ECDSASignature>> getPayloadHashAndSig() {
+    return Optional.ofNullable(payloadHashAndSig);
+  }
 
-	public boolean disableResourceAllocAndDestroy() {
-		return disableResourceAllocAndDestroy;
-	}
+  public boolean disableResourceAllocAndDestroy() {
+    return disableResourceAllocAndDestroy;
+  }
 }

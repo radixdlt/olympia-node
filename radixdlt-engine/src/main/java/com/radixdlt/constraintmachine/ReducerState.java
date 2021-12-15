@@ -64,5 +64,4 @@
 
 package com.radixdlt.constraintmachine;
 
-public interface ReducerState {
-}
+public interface ReducerState {}

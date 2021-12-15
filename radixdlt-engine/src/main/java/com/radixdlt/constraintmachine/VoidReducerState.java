@@ -65,7 +65,7 @@
 package com.radixdlt.constraintmachine;
 
 public final class VoidReducerState implements ReducerState {
-	private VoidReducerState() {
-		throw new IllegalStateException("Cannot instantiate.");
-	}
+  private VoidReducerState() {
+    throw new IllegalStateException("Cannot instantiate.");
+  }
 }

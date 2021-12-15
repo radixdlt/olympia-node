@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,36 +64,34 @@
 
 package com.radixdlt.api.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.NetworkConfigurationHandler;
 import com.radixdlt.api.core.openapitools.model.NetworkConfigurationResponse;
 import com.radixdlt.networks.Addressing;
+import java.util.Map;
 import org.junit.Test;
 
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class NetworkConfigurationHandlerTest extends ApiTest {
-	@Inject
-	private NetworkConfigurationHandler sut;
-	@Inject
-	private Addressing addressing;
+  @Inject private NetworkConfigurationHandler sut;
+  @Inject private Addressing addressing;
 
-	@Test
-	public void network_configuration_should_return_correct_data() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void network_configuration_should_return_correct_data() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var response = handleRequestWithExpectedResponse(sut, Map.of(), NetworkConfigurationResponse.class);
+    // Act
+    var response =
+        handleRequestWithExpectedResponse(sut, Map.of(), NetworkConfigurationResponse.class);
 
-		// Assert
-		var bech32 = response.getBech32HumanReadableParts();
-		assertThat(bech32.getAccountHrp()).isEqualTo(addressing.forAccounts().getHrp());
-		assertThat(bech32.getNodeHrp()).isEqualTo(addressing.forNodes().getHrp());
-		assertThat(bech32.getValidatorHrp()).isEqualTo(addressing.forValidators().getHrp());
-		assertThat(bech32.getResourceHrpSuffix()).isEqualTo(addressing.forResources().getHrpSuffix());
-	}
+    // Assert
+    var bech32 = response.getBech32HumanReadableParts();
+    assertThat(bech32.getAccountHrp()).isEqualTo(addressing.forAccounts().getHrp());
+    assertThat(bech32.getNodeHrp()).isEqualTo(addressing.forNodes().getHrp());
+    assertThat(bech32.getValidatorHrp()).isEqualTo(addressing.forValidators().getHrp());
+    assertThat(bech32.getResourceHrpSuffix()).isEqualTo(addressing.forResources().getHrpSuffix());
+  }
 }

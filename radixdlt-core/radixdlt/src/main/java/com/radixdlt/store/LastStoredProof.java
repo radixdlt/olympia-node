@@ -64,20 +64,17 @@
 
 package com.radixdlt.store;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
 import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/**
- * Marks the proof as the last one stored
- */
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
+
+/** Marks the proof as the last one stored */
 @Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
+@Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface LastStoredProof {
-}
+public @interface LastStoredProof {}

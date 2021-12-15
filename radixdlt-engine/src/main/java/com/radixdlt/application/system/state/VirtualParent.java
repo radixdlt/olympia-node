@@ -66,37 +66,36 @@ package com.radixdlt.application.system.state;
 
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.utils.Bytes;
-
 import java.util.Arrays;
 
 public final class VirtualParent implements Particle {
-	private final byte[] data;
+  private final byte[] data;
 
-	public VirtualParent(byte[] data) {
-		this.data = data;
-	}
+  public VirtualParent(byte[] data) {
+    this.data = data;
+  }
 
-	public byte[] getData() {
-		return data;
-	}
+  public byte[] getData() {
+    return data;
+  }
 
-	@Override
-	public int hashCode() {
-		return Arrays.hashCode(data);
-	}
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(data);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof VirtualParent)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof VirtualParent)) {
+      return false;
+    }
 
-		var other = (VirtualParent) o;
-		return Arrays.equals(this.data, other.data);
-	}
+    var other = (VirtualParent) o;
+    return Arrays.equals(this.data, other.data);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{%s}", this.getClass().getSimpleName(), Bytes.toHexString(data));
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{%s}", this.getClass().getSimpleName(), Bytes.toHexString(data));
+  }
 }

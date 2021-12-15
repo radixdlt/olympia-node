@@ -64,50 +64,47 @@
 
 package com.radixdlt.consensus.bft;
 
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.utils.UInt256;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.utils.UInt256;
 import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
 public class ValidationStateTest {
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(ValidationState.class)
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(ValidationState.class).verify();
+  }
 
-	@Test
-	public void sensibleToString() {
-		String s = BFTValidatorSet.from(ImmutableList.of()).newValidationState().toString();
-		assertThat(s).contains(ValidationState.class.getSimpleName());
-	}
+  @Test
+  public void sensibleToString() {
+    String s = BFTValidatorSet.from(ImmutableList.of()).newValidationState().toString();
+    assertThat(s).contains(ValidationState.class.getSimpleName());
+  }
 
-	@Test
-	public void testAcceptableFaults() {
-		assertEquals(UInt256.ZERO, ValidationState.acceptableFaults(UInt256.ZERO));
-		assertEquals(UInt256.ZERO, ValidationState.acceptableFaults(UInt256.ONE));
-		assertEquals(UInt256.ZERO, ValidationState.acceptableFaults(UInt256.TWO));
-		assertEquals(UInt256.ZERO, ValidationState.acceptableFaults(UInt256.THREE));
-		assertEquals(UInt256.ONE, ValidationState.acceptableFaults(UInt256.FOUR));
-		assertEquals(UInt256.THREE, ValidationState.acceptableFaults(UInt256.TEN));
-		assertEquals(UInt256.from(33), ValidationState.acceptableFaults(UInt256.from(100)));
-		assertEquals(UInt256.from(333), ValidationState.acceptableFaults(UInt256.from(1000)));
-	}
+  @Test
+  public void testAcceptableFaults() {
+    assertEquals(UInt256.ZERO, ValidationState.acceptableFaults(UInt256.ZERO));
+    assertEquals(UInt256.ZERO, ValidationState.acceptableFaults(UInt256.ONE));
+    assertEquals(UInt256.ZERO, ValidationState.acceptableFaults(UInt256.TWO));
+    assertEquals(UInt256.ZERO, ValidationState.acceptableFaults(UInt256.THREE));
+    assertEquals(UInt256.ONE, ValidationState.acceptableFaults(UInt256.FOUR));
+    assertEquals(UInt256.THREE, ValidationState.acceptableFaults(UInt256.TEN));
+    assertEquals(UInt256.from(33), ValidationState.acceptableFaults(UInt256.from(100)));
+    assertEquals(UInt256.from(333), ValidationState.acceptableFaults(UInt256.from(1000)));
+  }
 
-	@Test
-	public void testThreshold() {
-		assertEquals(UInt256.ZERO, ValidationState.threshold(UInt256.ZERO));
-		assertEquals(UInt256.ONE, ValidationState.threshold(UInt256.ONE));
-		assertEquals(UInt256.TWO, ValidationState.threshold(UInt256.TWO));
-		assertEquals(UInt256.THREE, ValidationState.threshold(UInt256.THREE));
-		assertEquals(UInt256.THREE, ValidationState.threshold(UInt256.FOUR));
-		assertEquals(UInt256.SEVEN, ValidationState.threshold(UInt256.from(10)));
-		assertEquals(UInt256.from(67), ValidationState.threshold(UInt256.from(100)));
-		assertEquals(UInt256.from(667), ValidationState.threshold(UInt256.from(1000)));
-	}
+  @Test
+  public void testThreshold() {
+    assertEquals(UInt256.ZERO, ValidationState.threshold(UInt256.ZERO));
+    assertEquals(UInt256.ONE, ValidationState.threshold(UInt256.ONE));
+    assertEquals(UInt256.TWO, ValidationState.threshold(UInt256.TWO));
+    assertEquals(UInt256.THREE, ValidationState.threshold(UInt256.THREE));
+    assertEquals(UInt256.THREE, ValidationState.threshold(UInt256.FOUR));
+    assertEquals(UInt256.SEVEN, ValidationState.threshold(UInt256.from(10)));
+    assertEquals(UInt256.from(67), ValidationState.threshold(UInt256.from(100)));
+    assertEquals(UInt256.from(667), ValidationState.threshold(UInt256.from(1000)));
+  }
 }

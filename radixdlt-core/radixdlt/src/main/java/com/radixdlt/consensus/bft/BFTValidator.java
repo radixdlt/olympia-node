@@ -64,6 +64,8 @@
 
 package com.radixdlt.consensus.bft;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -74,95 +76,86 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
-
-import javax.annotation.concurrent.Immutable;
 import java.util.Objects;
+import javax.annotation.concurrent.Immutable;
 
-import static java.util.Objects.requireNonNull;
-
-
-/**
- * Represents a validator and their Proof-of-Stake status.
- */
+/** Represents a validator and their Proof-of-Stake status. */
 @Immutable
 @SerializerId2("consensus.bft_validator")
 public final class BFTValidator {
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput({Output.ALL})
-	SerializerDummy serializer = SerializerDummy.DUMMY;
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput({Output.ALL})
+  SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	// Power associated with each validator, could e.g. be based on staked tokens
-	@JsonProperty("power")
-	@DsonOutput({Output.ALL})
-	private final UInt256 power;
+  // Power associated with each validator, could e.g. be based on staked tokens
+  @JsonProperty("power")
+  @DsonOutput({Output.ALL})
+  private final UInt256 power;
 
-	// Public key for consensus
-	private final BFTNode node;
+  // Public key for consensus
+  private final BFTNode node;
 
-	@JsonCreator
-	private BFTValidator(
-		@JsonProperty(value = "node", required = true) String nodeKey,
-		@JsonProperty(value = "power", required = true) UInt256 power
-	) {
-		this(toBFTNode(requireNonNull(nodeKey)), power);
-	}
+  @JsonCreator
+  private BFTValidator(
+      @JsonProperty(value = "node", required = true) String nodeKey,
+      @JsonProperty(value = "power", required = true) UInt256 power) {
+    this(toBFTNode(requireNonNull(nodeKey)), power);
+  }
 
-	private BFTValidator(
-		BFTNode node,
-		UInt256 power
-	) {
-		this.node = requireNonNull(node);
-		this.power = requireNonNull(power);
-	}
+  private BFTValidator(BFTNode node, UInt256 power) {
+    this.node = requireNonNull(node);
+    this.power = requireNonNull(power);
+  }
 
-	public static BFTValidator from(BFTNode node, UInt256 power) {
-		return new BFTValidator(node, power);
-	}
+  public static BFTValidator from(BFTNode node, UInt256 power) {
+    return new BFTValidator(node, power);
+  }
 
-	public BFTNode getNode() {
-		return node;
-	}
+  public BFTNode getNode() {
+    return node;
+  }
 
-	public UInt256 getPower() {
-		return power;
-	}
+  public UInt256 getPower() {
+    return power;
+  }
 
-	@JsonProperty("node")
-	@DsonOutput(Output.ALL)
-	private String getSerializerNodeKey() {
-		return encodePublicKey(this.node);
-	}
+  @JsonProperty("node")
+  @DsonOutput(Output.ALL)
+  private String getSerializerNodeKey() {
+    return encodePublicKey(this.node);
+  }
 
-	private static String encodePublicKey(BFTNode key) {
-		return Bytes.toHexString(key.getKey().getBytes());
-	}
+  private static String encodePublicKey(BFTNode key) {
+    return Bytes.toHexString(key.getKey().getBytes());
+  }
 
-	private static BFTNode toBFTNode(String str) {
-		try {
-			return BFTNode.fromPublicKeyBytes(Bytes.fromHexString(str));
-		} catch (PublicKeyException e) {
-			throw new IllegalStateException("Error decoding public key", e);
-		}
-	}
+  private static BFTNode toBFTNode(String str) {
+    try {
+      return BFTNode.fromPublicKeyBytes(Bytes.fromHexString(str));
+    } catch (PublicKeyException e) {
+      throw new IllegalStateException("Error decoding public key", e);
+    }
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.node, this.power);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.node, this.power);
+  }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
 
-		return (obj instanceof BFTValidator other)
-			   && Objects.equals(this.node, other.node)
-			   && Objects.equals(this.power, other.power);
-	}
+    return (obj instanceof BFTValidator other)
+        && Objects.equals(this.node, other.node)
+        && Objects.equals(this.power, other.power);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{node=%s power=%s}", getClass().getSimpleName(), this.node.getSimpleName(), this.power);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{node=%s power=%s}", getClass().getSimpleName(), this.node.getSimpleName(), this.power);
+  }
 }

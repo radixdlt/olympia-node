@@ -66,124 +66,140 @@ package com.radixdlt.test.chaos.ansible;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.platform.commons.util.StringUtils;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.platform.commons.util.StringUtils;
 
 /**
- * We have our own image with ansible and several playbook. We use this image via docker.
- * This class has the docker commands needed to utilize these playbooks.
+ * We have our own image with ansible and several playbook. We use this image via docker. This class
+ * has the docker commands needed to utilize these playbooks.
  */
 @SuppressWarnings("deprecation")
 public class AnsibleImageWrapper {
 
-    private static final Logger logger = LogManager.getLogger();
+  private static final Logger logger = LogManager.getLogger();
 
-    public static final String DEFAULT_ANSIBLE_IMAGE = "eu.gcr.io/lunar-arc-236318/node-ansible";
-    private static final String KEY_VOLUME_NAME_USED_FOR_COPYING = "key-volume";
+  public static final String DEFAULT_ANSIBLE_IMAGE = "eu.gcr.io/lunar-arc-236318/node-ansible";
+  private static final String KEY_VOLUME_NAME_USED_FOR_COPYING = "key-volume";
 
-    private final String image;
-    private final String clusterName;
-    private Set<String> nodeAddresses;
+  private final String image;
+  private final String clusterName;
+  private Set<String> nodeAddresses;
 
-    public static AnsibleImageWrapper createWithDefaultImage() {
-        String sshKeyLocation = getSshIdentityLocation();
-        String clusterName = Optional.ofNullable(System.getenv("TESTNET_NAME")).orElseThrow();
-        // the ansible image needs an SSH key because it runs tasks over SSH
-        AnsibleImageWrapper wrapper = new AnsibleImageWrapper(DEFAULT_ANSIBLE_IMAGE, clusterName);
-        wrapper.copyfileToNamedVolume(sshKeyLocation);
-        wrapper.pullImage();
-        return wrapper;
+  public static AnsibleImageWrapper createWithDefaultImage() {
+    String sshKeyLocation = getSshIdentityLocation();
+    String clusterName = Optional.ofNullable(System.getenv("TESTNET_NAME")).orElseThrow();
+    // the ansible image needs an SSH key because it runs tasks over SSH
+    AnsibleImageWrapper wrapper = new AnsibleImageWrapper(DEFAULT_ANSIBLE_IMAGE, clusterName);
+    wrapper.copyfileToNamedVolume(sshKeyLocation);
+    wrapper.pullImage();
+    return wrapper;
+  }
+
+  public static String getSshIdentityLocation() {
+    return Optional.ofNullable(System.getenv("SSH_IDENTITY"))
+        .orElse(System.getenv("HOME") + "/.ssh/id_rsa");
+  }
+
+  private AnsibleImageWrapper(String image, String clusterName) {
+    this.image = image;
+    this.clusterName = clusterName;
+  }
+
+  /**
+   * The key needs to be copied to a volume, which is created with the help of a temp dummy
+   * container
+   */
+  @SuppressWarnings("deprecation") // CmdHelper is a placeholder
+  private void copyfileToNamedVolume(String localFileLocation) {
+    CmdHelper.runCommand(
+        String.format(
+            "docker container create --name dummy -v %s:%s curlimages/curl:7.70.0",
+            KEY_VOLUME_NAME_USED_FOR_COPYING, "/ansible/ssh"));
+    CmdHelper.runCommand(
+        String.format("docker cp %s dummy:%s", localFileLocation, "/ansible/ssh/testnet"));
+    CmdHelper.runCommand("docker rm -f dummy");
+  }
+
+  @SuppressWarnings("deprecation") // CmdHelper is a placeholder
+  private void pullImage() {
+    CmdHelper.runCommand("docker pull " + image);
+  }
+
+  @SuppressWarnings("deprecation") // CmdHelper is a placeholder
+  public String runPlaybook(String playbook, String options, String tag) {
+    String awsAccessKeyId = System.getenv("AWS_ACCESS_KEY_ID");
+    String awsSecretAccessKey = System.getenv("AWS_SECRET_ACCESS_KEY");
+    String testnetName =
+        clusterName.contains("_")
+            ? clusterName.substring(0, clusterName.indexOf("_"))
+            : clusterName;
+    List<String> commandParts =
+        Lists.newArrayList(
+            "docker",
+            "run",
+            "--rm",
+            "-v",
+            "key-volume:/ansible/ssh",
+            "--name",
+            "node-ansible",
+            "-e",
+            "AWS_ACCESS_KEY_ID=" + awsAccessKeyId,
+            "-e",
+            "AWS_SECRET_ACCESS_KEY=" + awsSecretAccessKey,
+            image,
+            "-i",
+            "aws-plugin-inventory/" + testnetName + "_aws_ec2.yml",
+            playbook,
+            "--limit",
+            clusterName,
+            "-t",
+            tag);
+    if (StringUtils.isNotBlank(options)) {
+      commandParts.add("-e");
+      commandParts.add("\"optionsArgs='" + options + "'\"");
     }
+    String[] commandArrayWithoutEmptyStrings =
+        commandParts.stream().filter(StringUtils::isNotBlank).toArray(String[]::new);
+    logger.info("Running docker command: {}", commandParts);
+    return CmdHelper.runCommand(commandArrayWithoutEmptyStrings, null, true).toString();
+  }
 
-    public static String getSshIdentityLocation() {
-        return Optional.ofNullable(System.getenv("SSH_IDENTITY"))
-            .orElse(System.getenv("HOME") + "/.ssh/id_rsa");
-    }
+  public String runPlaybook(String playbook, String tag) {
+    return runPlaybook(playbook, null, tag);
+  }
 
-    private AnsibleImageWrapper(String image, String clusterName) {
-        this.image = image;
-        this.clusterName = clusterName;
-    }
-
-    /**
-     * The key needs to be copied to a volume, which is created with the help of a temp dummy container
-     */
-    @SuppressWarnings("deprecation") // CmdHelper is a placeholder
-    private void copyfileToNamedVolume(String localFileLocation) {
-        CmdHelper.runCommand(String.format("docker container create --name dummy -v %s:%s curlimages/curl:7.70.0",
-                KEY_VOLUME_NAME_USED_FOR_COPYING, "/ansible/ssh"));
-        CmdHelper.runCommand(String.format("docker cp %s dummy:%s",
-                localFileLocation, "/ansible/ssh/testnet"));
-        CmdHelper.runCommand("docker rm -f dummy");
-    }
-
-    @SuppressWarnings("deprecation") // CmdHelper is a placeholder
-    private void pullImage() {
-        CmdHelper.runCommand("docker pull " + image);
-    }
-
-    @SuppressWarnings("deprecation") // CmdHelper is a placeholder
-    public String runPlaybook(String playbook, String options, String tag) {
-        String awsAccessKeyId = System.getenv("AWS_ACCESS_KEY_ID");
-        String awsSecretAccessKey = System.getenv("AWS_SECRET_ACCESS_KEY");
-        String testnetName = clusterName.contains("_") ? clusterName.substring(0, clusterName.indexOf("_")) : clusterName;
-        List<String> commandParts = Lists.newArrayList(
-                "docker", "run", "--rm", "-v", "key-volume:/ansible/ssh", "--name", "node-ansible",
-                "-e", "AWS_ACCESS_KEY_ID=" + awsAccessKeyId, "-e", "AWS_SECRET_ACCESS_KEY=" + awsSecretAccessKey,
-                image, "-i", "aws-plugin-inventory/" + testnetName + "_aws_ec2.yml", playbook, "--limit", clusterName, "-t", tag
-        );
-        if (StringUtils.isNotBlank(options)) {
-            commandParts.add("-e");
-            commandParts.add("\"optionsArgs='" + options + "'\"");
+  /** Uses the output of the check task to get a list of node IPs */
+  public Set<String> getNodeAddressList() {
+    if (nodeAddresses == null) {
+      nodeAddresses = Sets.newHashSet();
+      String playbookOutput = runPlaybook("check.yml", "check");
+      Matcher matcher = Pattern.compile("(?<=\\[).+?(?=\\])").matcher(playbookOutput);
+      while (matcher.find()) {
+        String raw = matcher.group(0);
+        if (raw.split("[.]").length == 4) {
+          nodeAddresses.add(raw);
         }
-        String[] commandArrayWithoutEmptyStrings =
-                commandParts.stream().filter(StringUtils::isNotBlank).toArray(String[]::new);
-        logger.info("Running docker command: {}", commandParts);
-        return CmdHelper.runCommand(commandArrayWithoutEmptyStrings, null, true).toString();
+      }
+      logger.info("Found {} nodes", nodeAddresses.size());
     }
+    return nodeAddresses;
+  }
 
-    public String runPlaybook(String playbook, String tag) {
-        return runPlaybook(playbook, null, tag);
-    }
+  /** returns one of the node addresses */
+  public String getRandomNodeHost() {
+    List<String> addressList = Lists.newArrayList(getNodeAddressList());
+    return addressList.get(new Random().nextInt(addressList.size()));
+  }
 
-    /**
-     * Uses the output of the check task to get a list of node IPs
-     */
-    public Set<String> getNodeAddressList() {
-        if (nodeAddresses == null) {
-            nodeAddresses = Sets.newHashSet();
-            String playbookOutput = runPlaybook("check.yml", "check");
-            Matcher matcher = Pattern.compile("(?<=\\[).+?(?=\\])").matcher(playbookOutput);
-            while (matcher.find()) {
-                String raw = matcher.group(0);
-                if (raw.split("[.]").length == 4) {
-                    nodeAddresses.add(raw);
-                }
-            }
-            logger.info("Found {} nodes", nodeAddresses.size());
-        }
-        return nodeAddresses;
-    }
-
-    /**
-     * returns one of the node addresses
-     */
-    public String getRandomNodeHost() {
-        List<String> addressList = Lists.newArrayList(getNodeAddressList());
-        return addressList.get(new Random().nextInt(addressList.size()));
-    }
-
-    @SuppressWarnings("deprecation") // CmdHelper is a placeholder
-    public void tearDown() {
-        CmdHelper.runCommand("docker volume rm -f " + KEY_VOLUME_NAME_USED_FOR_COPYING);
-    }
-
+  @SuppressWarnings("deprecation") // CmdHelper is a placeholder
+  public void tearDown() {
+    CmdHelper.runCommand("docker volume rm -f " + KEY_VOLUME_NAME_USED_FOR_COPYING);
+  }
 }

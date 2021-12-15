@@ -71,36 +71,34 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.HashUtils;
+import java.util.Optional;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-import java.util.Optional;
-
 public class SafetyStateTest {
 
-	@Test
-	public void when_build_with_no_new_views__then_should_return_the_same_object() {
-		SafetyState safetyState = SafetyState.initialState();
-		Builder builder = safetyState.toBuilder();
-		assertThat(builder.build()).isSameAs(safetyState);
-	}
+  @Test
+  public void when_build_with_no_new_views__then_should_return_the_same_object() {
+    SafetyState safetyState = SafetyState.initialState();
+    Builder builder = safetyState.toBuilder();
+    assertThat(builder.build()).isSameAs(safetyState);
+  }
 
-	@Test
-	public void when_build_with_new_last_vote__then_should_build_with_new_last_vote() {
-		SafetyState safetyState = SafetyState.initialState();
-		Builder builder = safetyState.toBuilder();
-		Vote vote = mock(Vote.class);
-		builder.lastVote(vote);
-		SafetyState nextSafetyState = builder.build();
-		assertThat(nextSafetyState.getLastVote()).isEqualTo(Optional.of(vote));
-		assertThat(nextSafetyState.getLockedView()).isEqualTo(safetyState.getLockedView());
-	}
+  @Test
+  public void when_build_with_new_last_vote__then_should_build_with_new_last_vote() {
+    SafetyState safetyState = SafetyState.initialState();
+    Builder builder = safetyState.toBuilder();
+    Vote vote = mock(Vote.class);
+    builder.lastVote(vote);
+    SafetyState nextSafetyState = builder.build();
+    assertThat(nextSafetyState.getLastVote()).isEqualTo(Optional.of(vote));
+    assertThat(nextSafetyState.getLockedView()).isEqualTo(safetyState.getLockedView());
+  }
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier
-			.forClass(SafetyState.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(SafetyState.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 }

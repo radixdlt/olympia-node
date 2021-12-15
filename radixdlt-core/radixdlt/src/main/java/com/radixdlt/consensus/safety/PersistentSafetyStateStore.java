@@ -66,11 +66,11 @@ package com.radixdlt.consensus.safety;
 
 import java.util.Optional;
 
-/**
- * Responsible for synchronously persisting safety state
- */
+/** Responsible for synchronously persisting safety state */
 public interface PersistentSafetyStateStore {
-	void commitState(SafetyState safetyState);
-	void close();
-	Optional<SafetyState> get();
+  void commitState(SafetyState safetyState);
+
+  void close();
+
+  Optional<SafetyState> get();
 }

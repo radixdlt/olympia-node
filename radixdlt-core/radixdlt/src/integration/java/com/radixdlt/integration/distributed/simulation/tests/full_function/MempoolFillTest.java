@@ -64,102 +64,98 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.full_function;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.application.MempoolFillerStarter;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.sync.SyncConfig;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.assertj.core.api.Condition;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.radix.TokenIssuance;
 
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-
-/**
- * Runs the chaos mempool filler and verifies that all operations are working normally
- */
+/** Runs the chaos mempool filler and verifies that all operations are working normally */
 public class MempoolFillTest {
-	private final SimulationTest.Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(4)
-		.networkModules(
-			NetworkOrdering.inOrder(),
-			NetworkLatencies.fixed()
-		)
-		.fullFunctionNodes(SyncConfig.of(800L, 10, 5000L))
-		.addRadixEngineConfigModules(
-			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(),
-			new ForksModule()
-		)
-		.addNodeModule(new AbstractModule() {
-			@Override
-			protected void configure() {
-				install(MempoolConfig.asModule(1000, 200));
-				install(new MempoolFillerModule());
-			}
+  private final SimulationTest.Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(4)
+          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .fullFunctionNodes(SyncConfig.of(800L, 10, 5000L))
+          .addRadixEngineConfigModules(
+              new MainnetForkConfigsModule(),
+              new RadixEngineForksLatestOnlyModule(),
+              new ForksModule())
+          .addNodeModule(
+              new AbstractModule() {
+                @Override
+                protected void configure() {
+                  install(MempoolConfig.asModule(1000, 200));
+                  install(new MempoolFillerModule());
+                }
 
-			@ProvidesIntoSet
-			private TokenIssuance mempoolFillerIssuance(@Genesis ImmutableList<ECPublicKey> validators) {
-				return TokenIssuance.of(validators.get(0), TokenUnitConversions.unitsToSubunits(10000000000L));
-			}
-		})
-		.addTestModules(
-			ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-			//ConsensusMonitors.noTimeouts(), // Removed for now to appease Jenkins
-			ConsensusMonitors.directParents(),
-			LedgerMonitors.consensusToLedger(),
-			LedgerMonitors.ordered(),
-			RadixEngineMonitors.noInvalidProposedCommands()
-		)
-		.addActor(MempoolFillerStarter.class);
+                @ProvidesIntoSet
+                private TokenIssuance mempoolFillerIssuance(
+                    @Genesis ImmutableList<ECPublicKey> validators) {
+                  return TokenIssuance.of(
+                      validators.get(0), TokenUnitConversions.unitsToSubunits(10000000000L));
+                }
+              })
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+              // ConsensusMonitors.noTimeouts(), // Removed for now to appease Jenkins
+              ConsensusMonitors.directParents(),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered(),
+              RadixEngineMonitors.noInvalidProposedCommands())
+          .addActor(MempoolFillerStarter.class);
 
-	@Test
-	@Ignore("Travis not playing nice")
-	public void sanity_tests_should_pass() {
-		SimulationTest simulationTest = bftTestBuilder
-			.build();
+  @Test
+  @Ignore("Travis not playing nice")
+  public void sanity_tests_should_pass() {
+    SimulationTest simulationTest = bftTestBuilder.build();
 
-		final var runningTest = simulationTest.run();
-		final var results = runningTest.awaitCompletion();
+    final var runningTest = simulationTest.run();
+    final var results = runningTest.awaitCompletion();
 
-		// Post conditions
-		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-		long invalidCommandsCount = runningTest.getNetwork().getSystemCounters().values().stream()
-			.map(s -> s.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS))
-			.mapToLong(l -> l)
-			.sum();
-		assertThat(invalidCommandsCount).isZero();
-	}
+    // Post conditions
+    assertThat(results)
+        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+    long invalidCommandsCount =
+        runningTest.getNetwork().getSystemCounters().values().stream()
+            .map(s -> s.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS))
+            .mapToLong(l -> l)
+            .sum();
+    assertThat(invalidCommandsCount).isZero();
+  }
 
-	@Test
-	@Ignore("Travis not playing nicely with timeouts so disable for now until fixed.")
-	public void filler_should_overwhelm_unratelimited_mempool() {
-		SimulationTest simulationTest = bftTestBuilder
-			.overrideWithIncorrectModule(MempoolConfig.asModule(100, 0))
-			.build();
+  @Test
+  @Ignore("Travis not playing nicely with timeouts so disable for now until fixed.")
+  public void filler_should_overwhelm_unratelimited_mempool() {
+    SimulationTest simulationTest =
+        bftTestBuilder.overrideWithIncorrectModule(MempoolConfig.asModule(100, 0)).build();
 
-		final var results = simulationTest.run().awaitCompletion();
-		assertThat(results).hasValueSatisfying(new Condition<>(Optional::isPresent, "Error exists"));
-	}
+    final var results = simulationTest.run().awaitCompletion();
+    assertThat(results).hasValueSatisfying(new Condition<>(Optional::isPresent, "Error exists"));
+  }
 }

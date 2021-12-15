@@ -69,55 +69,51 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 
-/**
- * Module which maintains crypto primitives for consensus
- */
+/** Module which maintains crypto primitives for consensus */
 public final class CryptoModule extends AbstractModule {
-	@Override
-	protected void configure() {
-		// Configuration
-		bind(Serialization.class).toProvider(DefaultSerialization::getInstance);
-	}
+  @Override
+  protected void configure() {
+    // Configuration
+    bind(Serialization.class).toProvider(DefaultSerialization::getInstance);
+  }
 
+  @Provides
+  Hasher hasher(Serialization serialization, SystemCounters counters) {
+    return new Hasher() {
+      private Sha256Hasher hasher = new Sha256Hasher(serialization);
 
-	@Provides
-	Hasher hasher(Serialization serialization, SystemCounters counters) {
-		return new Hasher() {
-			private Sha256Hasher hasher = new Sha256Hasher(serialization);
+      @Override
+      public int bytes() {
+        return 32;
+      }
 
-			@Override
-			public int bytes() {
-				return 32;
-			}
+      @Override
+      public HashCode hash(Object o) {
+        // Call hashBytes to ensure counters incremented
+        return this.hashBytes(serialization.toDson(o, Output.HASH));
+      }
 
-			@Override
-			public HashCode hash(Object o) {
-				// Call hashBytes to ensure counters incremented
-				return this.hashBytes(serialization.toDson(o, Output.HASH));
-			}
+      @Override
+      public HashCode hashBytes(byte[] bytes) {
+        counters.add(CounterType.HASHED_BYTES, bytes.length);
+        return hasher.hashBytes(bytes);
+      }
+    };
+  }
 
-			@Override
-			public HashCode hashBytes(byte[] bytes) {
-				counters.add(CounterType.HASHED_BYTES, bytes.length);
-				return hasher.hashBytes(bytes);
-			}
-		};
-	}
-
-	@Provides
-	@Singleton
-	HashVerifier hashVerifier(SystemCounters counters) {
-		return (pubKey, hash, signature) -> {
-			counters.increment(CounterType.SIGNATURES_VERIFIED);
-			return pubKey.verify(hash, signature);
-		};
-	}
-
+  @Provides
+  @Singleton
+  HashVerifier hashVerifier(SystemCounters counters) {
+    return (pubKey, hash, signature) -> {
+      counters.increment(CounterType.SIGNATURES_VERIFIED);
+      return pubKey.verify(hash, signature);
+    };
+  }
 }

@@ -65,18 +65,20 @@
 package com.radixdlt.application.system.scrypt;
 
 import com.radixdlt.application.system.state.RoundData;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
 public class StartNextRound implements ReducerState {
-	private final long expectedView;
-	public StartNextRound(long expectedView) {
-		this.expectedView = expectedView;
-	}
+  private final long expectedView;
 
-	public void update(RoundData next) throws ProcedureException {
-		if (this.expectedView != next.getView()) {
-			throw new ProcedureException("Expected view " + this.expectedView + " but was " + next.getView());
-		}
-	}
+  public StartNextRound(long expectedView) {
+    this.expectedView = expectedView;
+  }
+
+  public void update(RoundData next) throws ProcedureException {
+    if (this.expectedView != next.getView()) {
+      throw new ProcedureException(
+          "Expected view " + this.expectedView + " but was " + next.getView());
+    }
+  }
 }

@@ -65,37 +65,34 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.constraintmachine.exceptions.MissingProcedureException;
-
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class Procedures {
-	private final Map<ProcedureKey, Procedure> procedures;
+  private final Map<ProcedureKey, Procedure> procedures;
 
-	public Procedures(Map<ProcedureKey, Procedure> procedures) {
-		this.procedures = procedures;
-	}
+  public Procedures(Map<ProcedureKey, Procedure> procedures) {
+    this.procedures = procedures;
+  }
 
-	public static Procedures empty() {
-		return new Procedures(Map.of());
-	}
+  public static Procedures empty() {
+    return new Procedures(Map.of());
+  }
 
-	public Procedures combine(Procedures other) {
-		var combinedProcedures =
-			Stream.concat(
-				this.procedures.entrySet().stream(),
-				other.procedures.entrySet().stream()
-			).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  public Procedures combine(Procedures other) {
+    var combinedProcedures =
+        Stream.concat(this.procedures.entrySet().stream(), other.procedures.entrySet().stream())
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-		return new Procedures(combinedProcedures);
-	}
+    return new Procedures(combinedProcedures);
+  }
 
-	public Procedure getProcedure(ProcedureKey key) throws MissingProcedureException {
-		var procedure = procedures.get(key);
-		if (procedure == null) {
-			throw new MissingProcedureException(key);
-		}
-		return procedure;
-	}
+  public Procedure getProcedure(ProcedureKey key) throws MissingProcedureException {
+    var procedure = procedures.get(key);
+    if (procedure == null) {
+      throw new MissingProcedureException(key);
+    }
+    return procedure;
+  }
 }

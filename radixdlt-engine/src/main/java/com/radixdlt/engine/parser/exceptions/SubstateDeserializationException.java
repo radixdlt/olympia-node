@@ -68,7 +68,8 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.serialization.DeserializeException;
 
 public class SubstateDeserializationException extends DeserializeException {
-	public SubstateDeserializationException(Class<? extends Particle> substateClass, Throwable cause) {
-		super("Failed to deserialize " + substateClass.getSimpleName(), cause);
-	}
+  public SubstateDeserializationException(
+      Class<? extends Particle> substateClass, Throwable cause) {
+    super("Failed to deserialize " + substateClass.getSimpleName(), cause);
+  }
 }

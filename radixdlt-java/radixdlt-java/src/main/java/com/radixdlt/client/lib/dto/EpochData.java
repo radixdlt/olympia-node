@@ -66,48 +66,46 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.List;
 import java.util.Objects;
 
 public final class EpochData {
-	private final List<EpochValidatorData> validators;
+  private final List<EpochValidatorData> validators;
 
-	private EpochData(List<EpochValidatorData> validators) {
-		this.validators = validators;
-	}
+  private EpochData(List<EpochValidatorData> validators) {
+    this.validators = validators;
+  }
 
-	@JsonCreator
-	public static EpochData create(@JsonProperty("validators") List<EpochValidatorData> validators) {
-		return new EpochData(validators);
-	}
+  @JsonCreator
+  public static EpochData create(@JsonProperty("validators") List<EpochValidatorData> validators) {
+    return new EpochData(validators);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof EpochData)) {
-			return false;
-		}
+    if (!(o instanceof EpochData)) {
+      return false;
+    }
 
-		var epochData = (EpochData) o;
-		return validators.equals(epochData.validators);
-	}
+    var epochData = (EpochData) o;
+    return validators.equals(epochData.validators);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(validators);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(validators);
+  }
 
-	@Override
-	public String toString() {
-		return "{validators:" + validators + '}';
-	}
+  @Override
+  public String toString() {
+    return "{validators:" + validators + '}';
+  }
 
-	public List<EpochValidatorData> getValidators() {
-		return validators;
-	}
+  public List<EpochValidatorData> getValidators() {
+    return validators;
+  }
 }
-

@@ -67,58 +67,54 @@ package com.radixdlt.client.lib.dto;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Objects;
 
 public final class FeeTable {
-	private final PerUpSubstateFee perUpSubstateFee;
-	private final UInt256 perByteFee;
+  private final PerUpSubstateFee perUpSubstateFee;
+  private final UInt256 perByteFee;
 
-	private FeeTable(PerUpSubstateFee perUpSubstateFee, UInt256 perByteFee) {
-		this.perUpSubstateFee = perUpSubstateFee;
-		this.perByteFee = perByteFee;
-	}
+  private FeeTable(PerUpSubstateFee perUpSubstateFee, UInt256 perByteFee) {
+    this.perUpSubstateFee = perUpSubstateFee;
+    this.perByteFee = perByteFee;
+  }
 
-	@JsonCreator
-	public static FeeTable create(
-		@JsonProperty(value = "perUpSubstateFee", required = true) PerUpSubstateFee perUpSubstateFee,
-		@JsonProperty(value = "perByteFee", required = true) UInt256 perByteFee
-	) {
-		return new FeeTable(perUpSubstateFee, perByteFee);
-	}
+  @JsonCreator
+  public static FeeTable create(
+      @JsonProperty(value = "perUpSubstateFee", required = true) PerUpSubstateFee perUpSubstateFee,
+      @JsonProperty(value = "perByteFee", required = true) UInt256 perByteFee) {
+    return new FeeTable(perUpSubstateFee, perByteFee);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof FeeTable)) {
-			return false;
-		}
+    if (!(o instanceof FeeTable)) {
+      return false;
+    }
 
-		var feeTable = (FeeTable) o;
-		return perUpSubstateFee.equals(feeTable.perUpSubstateFee) && perByteFee.equals(feeTable.perByteFee);
-	}
+    var feeTable = (FeeTable) o;
+    return perUpSubstateFee.equals(feeTable.perUpSubstateFee)
+        && perByteFee.equals(feeTable.perByteFee);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(perUpSubstateFee, perByteFee);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(perUpSubstateFee, perByteFee);
+  }
 
-	@Override
-	public String toString() {
-		return "{"
-			+ "perUpSubstateFee=" + perUpSubstateFee
-			+ ", perByteFee=" + perByteFee
-			+ '}';
-	}
+  @Override
+  public String toString() {
+    return "{" + "perUpSubstateFee=" + perUpSubstateFee + ", perByteFee=" + perByteFee + '}';
+  }
 
-	public PerUpSubstateFee getPerUpSubstateFee() {
-		return perUpSubstateFee;
-	}
+  public PerUpSubstateFee getPerUpSubstateFee() {
+    return perUpSubstateFee;
+  }
 
-	public UInt256 getPerByteFee() {
-		return perByteFee;
-	}
+  public UInt256 getPerByteFee() {
+    return perByteFee;
+  }
 }

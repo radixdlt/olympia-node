@@ -64,42 +64,42 @@
 
 package com.radixdlt.middleware2.network;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
 public class GetVerticesRequestMessageTest {
-	@Test
-	public void sensibleToString() {
-		HashCode vertexId = HashUtils.random256();
-		GetVerticesRequestMessage msg1 = new GetVerticesRequestMessage(vertexId, 1);
-		String s1 = msg1.toString();
-		assertThat(s1)
-			.contains(GetVerticesRequestMessage.class.getSimpleName())
-			.contains(vertexId.toString());
-	}
+  @Test
+  public void sensibleToString() {
+    HashCode vertexId = HashUtils.random256();
+    GetVerticesRequestMessage msg1 = new GetVerticesRequestMessage(vertexId, 1);
+    String s1 = msg1.toString();
+    assertThat(s1)
+        .contains(GetVerticesRequestMessage.class.getSimpleName())
+        .contains(vertexId.toString());
+  }
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(GetVerticesRequestMessage.class)
-				.withIgnoredFields("instance")
-				.suppress(Warning.NONFINAL_FIELDS)
-				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-				.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(GetVerticesRequestMessage.class)
+        .withIgnoredFields("instance")
+        .suppress(Warning.NONFINAL_FIELDS)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializationWithNullThrowsException() {
-		new GetVerticesRequestMessage(null, 1);
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException() {
+    new GetVerticesRequestMessage(null, 1);
+  }
 
-	@Test(expected = IllegalArgumentException.class)
-	public void deserializationWithInvalidCountThrowsException() {
-		new GetVerticesRequestMessage(mock(HashCode.class), 0);
-	}
+  @Test(expected = IllegalArgumentException.class)
+  public void deserializationWithInvalidCountThrowsException() {
+    new GetVerticesRequestMessage(mock(HashCode.class), 0);
+  }
 }

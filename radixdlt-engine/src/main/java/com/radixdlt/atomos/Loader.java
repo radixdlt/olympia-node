@@ -67,16 +67,15 @@ package com.radixdlt.atomos;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Procedure;
 
-/**
- * The interface in which a constraint scrypt can be programmed against.
- */
+/** The interface in which a constraint scrypt can be programmed against. */
 public interface Loader {
-	/**
-	 * Registers a Particle.
-	 * This is required for all other system calls using the particle.
-	 * @param substateDefinition The particle definition
-	 * @param <T> The type of the particle
-	 */
-	<T extends Particle> void substate(SubstateDefinition<T> substateDefinition);
-	void procedure(Procedure procedure);
+  /**
+   * Registers a Particle. This is required for all other system calls using the particle.
+   *
+   * @param substateDefinition The particle definition
+   * @param <T> The type of the particle
+   */
+  <T extends Particle> void substate(SubstateDefinition<T> substateDefinition);
+
+  void procedure(Procedure procedure);
 }

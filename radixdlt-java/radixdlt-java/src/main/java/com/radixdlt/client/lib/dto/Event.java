@@ -68,65 +68,57 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.lib.api.EventType;
-
 import java.util.Objects;
 import java.util.Optional;
 
 public final class Event {
-	@JsonProperty("type")
-	private final EventType type;
+  @JsonProperty("type")
+  private final EventType type;
 
-	@JsonProperty("rri")
-	private final String rri;
+  @JsonProperty("rri")
+  private final String rri;
 
-	private Event(
-		EventType type, String rri) {
-		this.type = type;
-		this.rri = rri;
-	}
+  private Event(EventType type, String rri) {
+    this.type = type;
+    this.rri = rri;
+  }
 
-	@JsonCreator
-	public static Event create(
-		@JsonProperty("type") EventType type,
-		@JsonProperty("rri") String rri
-	) {
-		return new Event(type, rri);
-	}
+  @JsonCreator
+  public static Event create(
+      @JsonProperty("type") EventType type, @JsonProperty("rri") String rri) {
+    return new Event(type, rri);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof Event)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof Event)) {
+      return false;
+    }
 
-		var eventDTO = (Event) o;
-		return type == eventDTO.type
-			&& Objects.equals(rri, eventDTO.rri);
-	}
+    var eventDTO = (Event) o;
+    return type == eventDTO.type && Objects.equals(rri, eventDTO.rri);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(type, rri);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(type, rri);
+  }
 
-	@Override
-	public String toString() {
-		return "Event("
-			+ "type=" + type
-			+ ", rri=" + rri
-			+ ')';
-	}
+  @Override
+  public String toString() {
+    return "Event(" + "type=" + type + ", rri=" + rri + ')';
+  }
 
-	@JsonIgnore
-	public EventType getType() {
-		return type;
-	}
+  @JsonIgnore
+  public EventType getType() {
+    return type;
+  }
 
-	@JsonIgnore
-	public Optional<String> getRri() {
-		return Optional.ofNullable(rri);
-	}
+  @JsonIgnore
+  public Optional<String> getRri() {
+    return Optional.ofNullable(rri);
+  }
 }

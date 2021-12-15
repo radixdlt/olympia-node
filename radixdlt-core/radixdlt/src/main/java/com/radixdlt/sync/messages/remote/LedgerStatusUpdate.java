@@ -65,47 +65,47 @@
 package com.radixdlt.sync.messages.remote;
 
 import com.radixdlt.consensus.LedgerProof;
-
 import java.util.Objects;
 
 /**
- * A message pushed to a subset of connected non-validator nodes indicating that the ledger state has been updated.
+ * A message pushed to a subset of connected non-validator nodes indicating that the ledger state
+ * has been updated.
  */
 public final class LedgerStatusUpdate {
 
-	private final LedgerProof header;
+  private final LedgerProof header;
 
-	public static LedgerStatusUpdate create(LedgerProof header) {
-		return new LedgerStatusUpdate(header);
-	}
+  public static LedgerStatusUpdate create(LedgerProof header) {
+    return new LedgerStatusUpdate(header);
+  }
 
-	private LedgerStatusUpdate(LedgerProof header) {
-		this.header = header;
-	}
+  private LedgerStatusUpdate(LedgerProof header) {
+    this.header = header;
+  }
 
-	public LedgerProof getHeader() {
-		return header;
-	}
+  public LedgerProof getHeader() {
+    return header;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.header);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.header);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		LedgerStatusUpdate that = (LedgerStatusUpdate) o;
-		return Objects.equals(header, that.header);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    LedgerStatusUpdate that = (LedgerStatusUpdate) o;
+    return Objects.equals(header, that.header);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(header);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(header);
+  }
 }

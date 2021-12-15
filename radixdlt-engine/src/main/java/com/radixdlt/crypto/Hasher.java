@@ -66,22 +66,21 @@ package com.radixdlt.crypto;
 
 import com.google.common.hash.HashCode;
 
-/**
- * An object capable of hashing an object
- */
+/** An object capable of hashing an object */
 public interface Hasher {
-	int bytes();
+  int bytes();
 
-	/**
-	 * Serializes and hashes an arbitrary object into a byte array.
-	 *
-	 * @param o object to hash
-	 */
-	HashCode hash(Object o);
+  /**
+   * Serializes and hashes an arbitrary object into a byte array.
+   *
+   * @param o object to hash
+   */
+  HashCode hash(Object o);
 
-	/**
-	 * Hahes a raw byte array.
-	 * @param bytes byte array to hash
-	 */
-	HashCode hashBytes(byte[] bytes);
+  /**
+   * Hahes a raw byte array.
+   *
+   * @param bytes byte array to hash
+   */
+  HashCode hashBytes(byte[] bytes);
 }

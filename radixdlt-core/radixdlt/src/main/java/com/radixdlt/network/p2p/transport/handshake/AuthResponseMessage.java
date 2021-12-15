@@ -71,58 +71,56 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
 import java.util.Objects;
 
 @SerializerId2("message.handshake.auth_response")
 public final class AuthResponseMessage {
 
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(DsonOutput.Output.ALL)
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(DsonOutput.Output.ALL)
+  private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("ephemeralPublicKey")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final HashCode ephemeralPublicKey;
+  @JsonProperty("ephemeralPublicKey")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final HashCode ephemeralPublicKey;
 
-	@JsonProperty("nonce")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final HashCode nonce;
+  @JsonProperty("nonce")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final HashCode nonce;
 
-	@JsonCreator
-	public static AuthResponseMessage deserialize(
-		@JsonProperty(value = "ephemeralPublicKey", required = true) HashCode ephemeralPublicKey,
-		@JsonProperty(value = "nonce", required = true) HashCode nonce
-	) {
-		return new AuthResponseMessage(ephemeralPublicKey, nonce);
-	}
+  @JsonCreator
+  public static AuthResponseMessage deserialize(
+      @JsonProperty(value = "ephemeralPublicKey", required = true) HashCode ephemeralPublicKey,
+      @JsonProperty(value = "nonce", required = true) HashCode nonce) {
+    return new AuthResponseMessage(ephemeralPublicKey, nonce);
+  }
 
-	public AuthResponseMessage(HashCode ephemeralPublicKey, HashCode nonce) {
-		this.ephemeralPublicKey = ephemeralPublicKey;
-		this.nonce = nonce;
-	}
+  public AuthResponseMessage(HashCode ephemeralPublicKey, HashCode nonce) {
+    this.ephemeralPublicKey = ephemeralPublicKey;
+    this.nonce = nonce;
+  }
 
-	public HashCode getEphemeralPublicKey() {
-		return ephemeralPublicKey;
-	}
+  public HashCode getEphemeralPublicKey() {
+    return ephemeralPublicKey;
+  }
 
-	public HashCode getNonce() {
-		return nonce;
-	}
+  public HashCode getNonce() {
+    return nonce;
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof AuthResponseMessage that)
-			   && Objects.equals(ephemeralPublicKey, that.ephemeralPublicKey)
-			   && Objects.equals(nonce, that.nonce);
-	}
+    return (o instanceof AuthResponseMessage that)
+        && Objects.equals(ephemeralPublicKey, that.ephemeralPublicKey)
+        && Objects.equals(nonce, that.nonce);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(ephemeralPublicKey, nonce);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(ephemeralPublicKey, nonce);
+  }
 }

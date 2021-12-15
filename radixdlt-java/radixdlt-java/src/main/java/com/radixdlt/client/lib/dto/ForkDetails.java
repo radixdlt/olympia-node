@@ -66,77 +66,81 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class ForkDetails {
-	private final String name;
-	private final long epoch;
-	private final String version;
-	private final ForkDetailsConfiguration config;
+  private final String name;
+  private final long epoch;
+  private final String version;
+  private final ForkDetailsConfiguration config;
 
-	private ForkDetails(String name, long epoch, String version, ForkDetailsConfiguration config) {
-		this.name = name;
-		this.version = version;
-		this.epoch = epoch;
-		this.config = config;
-	}
+  private ForkDetails(String name, long epoch, String version, ForkDetailsConfiguration config) {
+    this.name = name;
+    this.version = version;
+    this.epoch = epoch;
+    this.config = config;
+  }
 
-	@JsonCreator
-	public static ForkDetails create(
-		@JsonProperty(value = "name", required = true) String name,
-		@JsonProperty(value = "epoch", required = true) long epoch,
-		@JsonProperty(value = "version", required = true) String version,
-		@JsonProperty(value = "config", required = true) ForkDetailsConfiguration config
-	) {
-		return new ForkDetails(name, epoch, version, config);
-	}
+  @JsonCreator
+  public static ForkDetails create(
+      @JsonProperty(value = "name", required = true) String name,
+      @JsonProperty(value = "epoch", required = true) long epoch,
+      @JsonProperty(value = "version", required = true) String version,
+      @JsonProperty(value = "config", required = true) ForkDetailsConfiguration config) {
+    return new ForkDetails(name, epoch, version, config);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof ForkDetails)) {
-			return false;
-		}
+    if (!(o instanceof ForkDetails)) {
+      return false;
+    }
 
-		var that = (ForkDetails) o;
-		return epoch == that.epoch
-			&& name.equals(that.name)
-			&& version.equals(that.version)
-			&& config.equals(that.config);
-	}
+    var that = (ForkDetails) o;
+    return epoch == that.epoch
+        && name.equals(that.name)
+        && version.equals(that.version)
+        && config.equals(that.config);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(name, epoch, version, config);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, epoch, version, config);
+  }
 
-	@Override
-	public String toString() {
-		return "{"
-			+ "name='" + name + '\''
-			+ ", epoch=" + epoch
-			+ ", version='" + version + '\''
-			+ ", config=" + config
-			+ '}';
-	}
+  @Override
+  public String toString() {
+    return "{"
+        + "name='"
+        + name
+        + '\''
+        + ", epoch="
+        + epoch
+        + ", version='"
+        + version
+        + '\''
+        + ", config="
+        + config
+        + '}';
+  }
 
-	public String getName() {
-		return name;
-	}
+  public String getName() {
+    return name;
+  }
 
-	public String getVersion() {
-		return version;
-	}
+  public String getVersion() {
+    return version;
+  }
 
-	public long getEpoch() {
-		return epoch;
-	}
+  public long getEpoch() {
+    return epoch;
+  }
 
-	public ForkDetailsConfiguration getConfig() {
-		return config;
-	}
+  public ForkDetailsConfiguration getConfig() {
+    return config;
+  }
 }

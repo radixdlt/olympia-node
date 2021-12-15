@@ -64,56 +64,56 @@
 
 package com.radixdlt.sanitytestsuite;
 
+import static com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner.sha256Hash;
+import static org.junit.Assert.assertEquals;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Files;
 import com.radixdlt.sanitytestsuite.model.SanityTestSuiteRoot;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.JSONFormatter;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import static com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner.sha256Hash;
-import static org.junit.Assert.assertEquals;
-
 public final class SanityTestSuiteTestLoader {
-	private final ObjectMapper mapper = new ObjectMapper();
+  private final ObjectMapper mapper = new ObjectMapper();
 
-	public SanityTestSuiteRoot sanityTestSuiteRootFromFileNamed(String sanityTestJSONFileName) {
-		try {
-			var sanityTestSuiteRoot =	readTestSuiteContent(sanityTestJSONFileName);
-			var calculated = calculateSuiteHash(sanityTestSuiteRoot);
-			var expected = sanityTestSuiteRoot.integrity.hashOfSuite;
+  public SanityTestSuiteRoot sanityTestSuiteRootFromFileNamed(String sanityTestJSONFileName) {
+    try {
+      var sanityTestSuiteRoot = readTestSuiteContent(sanityTestJSONFileName);
+      var calculated = calculateSuiteHash(sanityTestSuiteRoot);
+      var expected = sanityTestSuiteRoot.integrity.hashOfSuite;
 
-			// Compare saved hash in file with calculated hash of test.
-			assertEquals(prepareMessage(sanityTestSuiteRoot), expected, calculated);
+      // Compare saved hash in file with calculated hash of test.
+      assertEquals(prepareMessage(sanityTestSuiteRoot), expected, calculated);
 
-			return sanityTestSuiteRoot;
-		} catch (IOException e) {
-			throw new IllegalStateException("failed to sanity test suite", e);
-		}
-	}
+      return sanityTestSuiteRoot;
+    } catch (IOException e) {
+      throw new IllegalStateException("failed to sanity test suite", e);
+    }
+  }
 
-	private String prepareMessage(SanityTestSuiteRoot sanityTest) {
-		return String.format(
-			"Mismatch between calculated hash of test suite and expected (bundled hash), implementation info: %s",
-			sanityTest.integrity.implementationInfo
-		);
-	}
+  private String prepareMessage(SanityTestSuiteRoot sanityTest) {
+    return String.format(
+        "Mismatch between calculated hash of test suite and expected (bundled hash), implementation"
+            + " info: %s",
+        sanityTest.integrity.implementationInfo);
+  }
 
-	private String calculateSuiteHash(SanityTestSuiteRoot sanityTest) {
-		final var suiteStringRaw = JSONFormatter.sortPrettyPrintObject(sanityTest.suite);
-		final var suiteString = suiteStringRaw.replace("\r\n", "\n"); // Fix CRLF line ends
-		final var suiteBytes = suiteString.getBytes(StandardCharsets.UTF_8);
-		return Bytes.toHexString(sha256Hash(suiteBytes));
-	}
+  private String calculateSuiteHash(SanityTestSuiteRoot sanityTest) {
+    final var suiteStringRaw = JSONFormatter.sortPrettyPrintObject(sanityTest.suite);
+    final var suiteString = suiteStringRaw.replace("\r\n", "\n"); // Fix CRLF line ends
+    final var suiteBytes = suiteString.getBytes(StandardCharsets.UTF_8);
+    return Bytes.toHexString(sha256Hash(suiteBytes));
+  }
 
-	private SanityTestSuiteRoot readTestSuiteContent(String sanityTestJSONFileName) throws IOException {
-		var resource = getClass().getClassLoader().getResource(sanityTestJSONFileName);
-		File file = new File(resource.getFile());
+  private SanityTestSuiteRoot readTestSuiteContent(String sanityTestJSONFileName)
+      throws IOException {
+    var resource = getClass().getClassLoader().getResource(sanityTestJSONFileName);
+    File file = new File(resource.getFile());
 
-		var jsonFileContent = Files.asCharSource(file, StandardCharsets.UTF_8).read();
-		return mapper.readValue(jsonFileContent, SanityTestSuiteRoot.class);
-	}
+    var jsonFileContent = Files.asCharSource(file, StandardCharsets.UTF_8).read();
+    return mapper.readValue(jsonFileContent, SanityTestSuiteRoot.class);
+  }
 }

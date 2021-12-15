@@ -68,55 +68,55 @@ import com.google.common.collect.ClassToInstanceMap;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 public final class LedgerUpdate {
-	private final VerifiedTxnsAndProof verifiedTxnsAndProof;
-	// FIXME: Easiest way to implement this part for now
-	private final ClassToInstanceMap<Object> output;
+  private final VerifiedTxnsAndProof verifiedTxnsAndProof;
+  // FIXME: Easiest way to implement this part for now
+  private final ClassToInstanceMap<Object> output;
 
-	public LedgerUpdate(VerifiedTxnsAndProof verifiedTxnsAndProof, ClassToInstanceMap<Object> output) {
-		this.verifiedTxnsAndProof = Objects.requireNonNull(verifiedTxnsAndProof);
-		this.output = Objects.requireNonNull(output);
-	}
+  public LedgerUpdate(
+      VerifiedTxnsAndProof verifiedTxnsAndProof, ClassToInstanceMap<Object> output) {
+    this.verifiedTxnsAndProof = Objects.requireNonNull(verifiedTxnsAndProof);
+    this.output = Objects.requireNonNull(output);
+  }
 
-	public ClassToInstanceMap<Object> getStateComputerOutput() {
-		return output;
-	}
+  public ClassToInstanceMap<Object> getStateComputerOutput() {
+    return output;
+  }
 
-	public List<Txn> getNewTxns() {
-		return verifiedTxnsAndProof.getTxns();
-	}
+  public List<Txn> getNewTxns() {
+    return verifiedTxnsAndProof.getTxns();
+  }
 
-	public LedgerProof getTail() {
-		return verifiedTxnsAndProof.getProof();
-	}
+  public LedgerProof getTail() {
+    return verifiedTxnsAndProof.getProof();
+  }
 
-	public Optional<BFTValidatorSet> getNextValidatorSet() {
-		return verifiedTxnsAndProof.getProof().getNextValidatorSet();
-	}
+  public Optional<BFTValidatorSet> getNextValidatorSet() {
+    return verifiedTxnsAndProof.getProof().getNextValidatorSet();
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{commands=%s}", this.getClass().getSimpleName(), verifiedTxnsAndProof);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{commands=%s}", this.getClass().getSimpleName(), verifiedTxnsAndProof);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(verifiedTxnsAndProof, output);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(verifiedTxnsAndProof, output);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof LedgerUpdate)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof LedgerUpdate)) {
+      return false;
+    }
 
-		LedgerUpdate other = (LedgerUpdate) o;
-		return Objects.equals(other.verifiedTxnsAndProof, this.verifiedTxnsAndProof)
-			&& Objects.equals(other.output, this.output);
-	}
+    LedgerUpdate other = (LedgerUpdate) o;
+    return Objects.equals(other.verifiedTxnsAndProof, this.verifiedTxnsAndProof)
+        && Objects.equals(other.output, this.output);
+  }
 }

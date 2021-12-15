@@ -64,115 +64,118 @@
 
 package com.radixdlt.application.validators;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
+import com.radixdlt.application.validators.construction.RegisterValidatorConstructor;
 import com.radixdlt.application.validators.construction.UpdateRakeConstructor;
 import com.radixdlt.application.validators.construction.UpdateValidatorMetadataConstructor;
+import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
+import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.application.validators.construction.RegisterValidatorConstructor;
-import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
-import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.SubstateSerialization;
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 public class RegisterValidatorTest {
-	private RadixEngine<Void> engine;
-	private EngineStore<Void> store;
-	private SubstateSerialization serialization;
+  private RadixEngine<Void> engine;
+  private EngineStore<Void> store;
+  private SubstateSerialization serialization;
 
-	@Before
-	public void setup() throws Exception {
-		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScrypt());
-		cmAtomOS.load(new RoundUpdateConstraintScrypt(2));
-		cmAtomOS.load(new EpochUpdateConstraintScrypt(2, UInt256.NINE, 1, 1, 100));
-		cmAtomOS.load(new ValidatorConstraintScryptV2());
-		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
-		cmAtomOS.load(new ValidatorUpdateRakeConstraintScrypt(2));
-		var cm = new ConstraintMachine(
-			cmAtomOS.getProcedures(),
-			cmAtomOS.buildSubstateDeserialization(),
-			cmAtomOS.buildVirtualSubstateDeserialization()
-		);
-		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
-		this.serialization = cmAtomOS.buildSubstateSerialization();
-		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(
-			parser,
-			serialization,
-			REConstructor.newBuilder()
-				.put(RegisterValidator.class, new RegisterValidatorConstructor())
-				.put(CreateSystem.class, new CreateSystemConstructorV2())
-				.put(UpdateValidatorMetadata.class, new UpdateValidatorMetadataConstructor())
-				.put(UpdateValidatorFee.class, new UpdateRakeConstructor(2, 2000))
-				.build(),
-			cm,
-			store
-		);
-		var txn = this.engine.construct(new CreateSystem(0)).buildWithoutSignature();
-		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
-	}
+  @Before
+  public void setup() throws Exception {
+    var cmAtomOS = new CMAtomOS();
+    cmAtomOS.load(new SystemConstraintScrypt());
+    cmAtomOS.load(new RoundUpdateConstraintScrypt(2));
+    cmAtomOS.load(new EpochUpdateConstraintScrypt(2, UInt256.NINE, 1, 1, 100));
+    cmAtomOS.load(new ValidatorConstraintScryptV2());
+    cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
+    cmAtomOS.load(new ValidatorUpdateRakeConstraintScrypt(2));
+    var cm =
+        new ConstraintMachine(
+            cmAtomOS.getProcedures(),
+            cmAtomOS.buildSubstateDeserialization(),
+            cmAtomOS.buildVirtualSubstateDeserialization());
+    var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+    this.serialization = cmAtomOS.buildSubstateSerialization();
+    this.store = new InMemoryEngineStore<>();
+    this.engine =
+        new RadixEngine<>(
+            parser,
+            serialization,
+            REConstructor.newBuilder()
+                .put(RegisterValidator.class, new RegisterValidatorConstructor())
+                .put(CreateSystem.class, new CreateSystemConstructorV2())
+                .put(UpdateValidatorMetadata.class, new UpdateValidatorMetadataConstructor())
+                .put(UpdateValidatorFee.class, new UpdateRakeConstructor(2, 2000))
+                .build(),
+            cm,
+            store);
+    var txn = this.engine.construct(new CreateSystem(0)).buildWithoutSignature();
+    this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
+  }
 
-	@Test
-	public void register_validator() throws Exception {
-		// Arrange
-		var key = ECKeyPair.generateNew();
+  @Test
+  public void register_validator() throws Exception {
+    // Arrange
+    var key = ECKeyPair.generateNew();
 
-		// Act and Assert
-		var registerTxn = this.engine.construct(new RegisterValidator(key.getPublicKey()))
-			.signAndBuild(key::sign);
-		this.engine.execute(List.of(registerTxn));
-	}
+    // Act and Assert
+    var registerTxn =
+        this.engine.construct(new RegisterValidator(key.getPublicKey())).signAndBuild(key::sign);
+    this.engine.execute(List.of(registerTxn));
+  }
 
-	@Test
-	public void register_other_validator_should_fail() throws Exception {
-		// Arrange
-		var key = ECKeyPair.generateNew();
+  @Test
+  public void register_other_validator_should_fail() throws Exception {
+    // Arrange
+    var key = ECKeyPair.generateNew();
 
-		// Act and Assert
-		var registerTxn = this.engine.construct(new RegisterValidator(ECKeyPair.generateNew().getPublicKey()))
-			.signAndBuild(key::sign);
-		assertThatThrownBy(() -> this.engine.execute(List.of(registerTxn)))
-			.hasRootCauseInstanceOf(AuthorizationException.class);
-	}
+    // Act and Assert
+    var registerTxn =
+        this.engine
+            .construct(new RegisterValidator(ECKeyPair.generateNew().getPublicKey()))
+            .signAndBuild(key::sign);
+    assertThatThrownBy(() -> this.engine.execute(List.of(registerTxn)))
+        .hasRootCauseInstanceOf(AuthorizationException.class);
+  }
 
+  @Test
+  public void multiple_validator_actions() throws Exception {
+    // Arrange
+    var key = ECKeyPair.generateNew();
 
-	@Test
-	public void multiple_validator_actions() throws Exception {
-		// Arrange
-		var key = ECKeyPair.generateNew();
-
-		// Act and Assert
-		var txn = this.engine.construct(
-			TxnConstructionRequest.create()
-				.action(new RegisterValidator(key.getPublicKey()))
-				.action(new UpdateValidatorMetadata(key.getPublicKey(), "some_name", "http://test.com"))
-				.action(new UpdateValidatorFee(key.getPublicKey(), 2000))
-			)
-			.signAndBuild(key::sign);
-		this.engine.execute(List.of(txn));
-	}
+    // Act and Assert
+    var txn =
+        this.engine
+            .construct(
+                TxnConstructionRequest.create()
+                    .action(new RegisterValidator(key.getPublicKey()))
+                    .action(
+                        new UpdateValidatorMetadata(
+                            key.getPublicKey(), "some_name", "http://test.com"))
+                    .action(new UpdateValidatorFee(key.getPublicKey(), 2000)))
+            .signAndBuild(key::sign);
+    this.engine.execute(List.of(txn));
+  }
 }

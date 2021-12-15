@@ -69,25 +69,26 @@ import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.constraintmachine.REEvent;
 
 public final class ResourceCreatedEvent implements REEvent {
-	private final String symbol;
-	private final TokenResource tokenResource;
-	private final TokenResourceMetadata metadata;
+  private final String symbol;
+  private final TokenResource tokenResource;
+  private final TokenResourceMetadata metadata;
 
-	public ResourceCreatedEvent(String symbol, TokenResource tokenResource, TokenResourceMetadata metadata) {
-		this.symbol = symbol;
-		this.tokenResource = tokenResource;
-		this.metadata = metadata;
-	}
+  public ResourceCreatedEvent(
+      String symbol, TokenResource tokenResource, TokenResourceMetadata metadata) {
+    this.symbol = symbol;
+    this.tokenResource = tokenResource;
+    this.metadata = metadata;
+  }
 
-	public String getSymbol() {
-		return symbol;
-	}
+  public String getSymbol() {
+    return symbol;
+  }
 
-	public TokenResource getTokenResource() {
-		return tokenResource;
-	}
+  public TokenResource getTokenResource() {
+    return tokenResource;
+  }
 
-	public TokenResourceMetadata getMetadata() {
-		return metadata;
-	}
+  public TokenResourceMetadata getMetadata() {
+    return metadata;
+  }
 }

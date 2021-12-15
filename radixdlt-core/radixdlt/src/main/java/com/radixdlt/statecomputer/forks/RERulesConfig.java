@@ -64,203 +64,195 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.system.FeeTable;
-
+import com.radixdlt.application.tokens.Amount;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 public final class RERulesConfig {
-	private final Set<String> reservedSymbols;
-	private final Pattern tokenSymbolPattern;
-	private final FeeTable feeTable;
-	private final long maxTxnSize;
-	private final long maxRounds;
-	private final OptionalInt maxSigsPerRound;
-	private final long rakeIncreaseDebouncerEpochLength;
-	private final Amount minimumStake;
-	private final long unstakingEpochDelay;
-	private final Amount rewardsPerProposal;
-	private final int minimumCompletedProposalsPercentage;
-	private final int maxValidators;
+  private final Set<String> reservedSymbols;
+  private final Pattern tokenSymbolPattern;
+  private final FeeTable feeTable;
+  private final long maxTxnSize;
+  private final long maxRounds;
+  private final OptionalInt maxSigsPerRound;
+  private final long rakeIncreaseDebouncerEpochLength;
+  private final Amount minimumStake;
+  private final long unstakingEpochDelay;
+  private final Amount rewardsPerProposal;
+  private final int minimumCompletedProposalsPercentage;
+  private final int maxValidators;
 
-	public RERulesConfig(
-		Set<String> reservedSymbols,
-		Pattern tokenSymbolPattern,
-		FeeTable feeTable,
-		long maxTxnSize,
-		OptionalInt maxSigsPerRound,
-		long maxRounds,
-		long rakeIncreaseDebouncerEpochLength,
-		Amount minimumStake,
-		long unstakingEpochDelay,
-		Amount rewardsPerProposal,
-		int minimumCompletedProposalsPercentage,
-		int maxValidators
-	) {
-		this.reservedSymbols = reservedSymbols;
-		this.tokenSymbolPattern = tokenSymbolPattern;
-		this.feeTable = feeTable;
-		this.maxTxnSize = maxTxnSize;
-		this.maxSigsPerRound = maxSigsPerRound;
-		this.maxRounds = maxRounds;
-		this.rakeIncreaseDebouncerEpochLength = rakeIncreaseDebouncerEpochLength;
-		this.minimumStake = minimumStake;
-		this.unstakingEpochDelay = unstakingEpochDelay;
-		this.rewardsPerProposal = rewardsPerProposal;
-		this.minimumCompletedProposalsPercentage = minimumCompletedProposalsPercentage;
-		this.maxValidators = maxValidators;
-	}
+  public RERulesConfig(
+      Set<String> reservedSymbols,
+      Pattern tokenSymbolPattern,
+      FeeTable feeTable,
+      long maxTxnSize,
+      OptionalInt maxSigsPerRound,
+      long maxRounds,
+      long rakeIncreaseDebouncerEpochLength,
+      Amount minimumStake,
+      long unstakingEpochDelay,
+      Amount rewardsPerProposal,
+      int minimumCompletedProposalsPercentage,
+      int maxValidators) {
+    this.reservedSymbols = reservedSymbols;
+    this.tokenSymbolPattern = tokenSymbolPattern;
+    this.feeTable = feeTable;
+    this.maxTxnSize = maxTxnSize;
+    this.maxSigsPerRound = maxSigsPerRound;
+    this.maxRounds = maxRounds;
+    this.rakeIncreaseDebouncerEpochLength = rakeIncreaseDebouncerEpochLength;
+    this.minimumStake = minimumStake;
+    this.unstakingEpochDelay = unstakingEpochDelay;
+    this.rewardsPerProposal = rewardsPerProposal;
+    this.minimumCompletedProposalsPercentage = minimumCompletedProposalsPercentage;
+    this.maxValidators = maxValidators;
+  }
 
-	public static RERulesConfig testingDefault() {
-		return new RERulesConfig(
-			Set.of("xrd"),
-			Pattern.compile("[a-z0-9]+"),
-			FeeTable.create(Amount.zero(), Map.of()),
-			(long) 1024 * 1024,
-			OptionalInt.of(2),
-			10,
-			1,
-			Amount.ofTokens(10),
-			1,
-			Amount.ofMicroTokens(2307700), // Rewards per proposal
-			9800,
-			10
-		);
-	}
+  public static RERulesConfig testingDefault() {
+    return new RERulesConfig(
+        Set.of("xrd"),
+        Pattern.compile("[a-z0-9]+"),
+        FeeTable.create(Amount.zero(), Map.of()),
+        (long) 1024 * 1024,
+        OptionalInt.of(2),
+        10,
+        1,
+        Amount.ofTokens(10),
+        1,
+        Amount.ofMicroTokens(2307700), // Rewards per proposal
+        9800,
+        10);
+  }
 
-	public Pattern getTokenSymbolPattern() {
-		return tokenSymbolPattern;
-	}
+  public Pattern getTokenSymbolPattern() {
+    return tokenSymbolPattern;
+  }
 
-	public Set<String> getReservedSymbols() {
-		return reservedSymbols;
-	}
+  public Set<String> getReservedSymbols() {
+    return reservedSymbols;
+  }
 
-	public OptionalInt getMaxSigsPerRound() {
-		return maxSigsPerRound;
-	}
+  public OptionalInt getMaxSigsPerRound() {
+    return maxSigsPerRound;
+  }
 
-	public Amount getMinimumStake() {
-		return minimumStake;
-	}
+  public Amount getMinimumStake() {
+    return minimumStake;
+  }
 
-	public long getRakeIncreaseDebouncerEpochLength() {
-		return rakeIncreaseDebouncerEpochLength;
-	}
+  public long getRakeIncreaseDebouncerEpochLength() {
+    return rakeIncreaseDebouncerEpochLength;
+  }
 
-	public FeeTable getFeeTable() {
-		return feeTable;
-	}
+  public FeeTable getFeeTable() {
+    return feeTable;
+  }
 
-	public long getMaxTxnSize() {
-		return maxTxnSize;
-	}
+  public long getMaxTxnSize() {
+    return maxTxnSize;
+  }
 
-	public long getMaxRounds() {
-		return maxRounds;
-	}
+  public long getMaxRounds() {
+    return maxRounds;
+  }
 
-	public Amount getRewardsPerProposal() {
-		return rewardsPerProposal;
-	}
+  public Amount getRewardsPerProposal() {
+    return rewardsPerProposal;
+  }
 
-	public long getUnstakingEpochDelay() {
-		return unstakingEpochDelay;
-	}
+  public long getUnstakingEpochDelay() {
+    return unstakingEpochDelay;
+  }
 
-	public int getMinimumCompletedProposalsPercentage() {
-		return minimumCompletedProposalsPercentage;
-	}
+  public int getMinimumCompletedProposalsPercentage() {
+    return minimumCompletedProposalsPercentage;
+  }
 
-	public int getMaxValidators() {
-		return maxValidators;
-	}
+  public int getMaxValidators() {
+    return maxValidators;
+  }
 
-	public RERulesConfig overrideMinimumStake(Amount minimumStake) {
-		return new RERulesConfig(
-			this.reservedSymbols,
-			this.tokenSymbolPattern,
-			this.feeTable,
-			this.maxTxnSize,
-			this.maxSigsPerRound,
-			this.maxRounds,
-			this.rakeIncreaseDebouncerEpochLength,
-			minimumStake,
-			this.unstakingEpochDelay,
-			this.rewardsPerProposal,
-			this.minimumCompletedProposalsPercentage,
-			this.maxValidators
-		);
-	}
+  public RERulesConfig overrideMinimumStake(Amount minimumStake) {
+    return new RERulesConfig(
+        this.reservedSymbols,
+        this.tokenSymbolPattern,
+        this.feeTable,
+        this.maxTxnSize,
+        this.maxSigsPerRound,
+        this.maxRounds,
+        this.rakeIncreaseDebouncerEpochLength,
+        minimumStake,
+        this.unstakingEpochDelay,
+        this.rewardsPerProposal,
+        this.minimumCompletedProposalsPercentage,
+        this.maxValidators);
+  }
 
-	public RERulesConfig overrideMaxSigsPerRound(int maxSigsPerRound) {
-		return new RERulesConfig(
-			this.reservedSymbols,
-			this.tokenSymbolPattern,
-			this.feeTable,
-			this.maxTxnSize,
-			OptionalInt.of(maxSigsPerRound),
-			this.maxRounds,
-			this.rakeIncreaseDebouncerEpochLength,
-			this.minimumStake,
-			this.unstakingEpochDelay,
-			this.rewardsPerProposal,
-			this.minimumCompletedProposalsPercentage,
-			this.maxValidators
-		);
-	}
+  public RERulesConfig overrideMaxSigsPerRound(int maxSigsPerRound) {
+    return new RERulesConfig(
+        this.reservedSymbols,
+        this.tokenSymbolPattern,
+        this.feeTable,
+        this.maxTxnSize,
+        OptionalInt.of(maxSigsPerRound),
+        this.maxRounds,
+        this.rakeIncreaseDebouncerEpochLength,
+        this.minimumStake,
+        this.unstakingEpochDelay,
+        this.rewardsPerProposal,
+        this.minimumCompletedProposalsPercentage,
+        this.maxValidators);
+  }
 
-	public RERulesConfig removeSigsPerRoundLimit() {
-		return new RERulesConfig(
-			this.reservedSymbols,
-			this.tokenSymbolPattern,
-			this.feeTable,
-			this.maxTxnSize,
-			OptionalInt.empty(),
-			this.maxRounds,
-			this.rakeIncreaseDebouncerEpochLength,
-			this.minimumStake,
-			this.unstakingEpochDelay,
-			this.rewardsPerProposal,
-			this.minimumCompletedProposalsPercentage,
-			this.maxValidators
-		);
-	}
+  public RERulesConfig removeSigsPerRoundLimit() {
+    return new RERulesConfig(
+        this.reservedSymbols,
+        this.tokenSymbolPattern,
+        this.feeTable,
+        this.maxTxnSize,
+        OptionalInt.empty(),
+        this.maxRounds,
+        this.rakeIncreaseDebouncerEpochLength,
+        this.minimumStake,
+        this.unstakingEpochDelay,
+        this.rewardsPerProposal,
+        this.minimumCompletedProposalsPercentage,
+        this.maxValidators);
+  }
 
-	public RERulesConfig overrideFeeTable(FeeTable feeTable) {
-		return new RERulesConfig(
-			this.reservedSymbols,
-			this.tokenSymbolPattern,
-			feeTable,
-			this.maxTxnSize,
-			this.maxSigsPerRound,
-			this.maxRounds,
-			this.rakeIncreaseDebouncerEpochLength,
-			this.minimumStake,
-			this.unstakingEpochDelay,
-			this.rewardsPerProposal,
-			this.minimumCompletedProposalsPercentage,
-			this.maxValidators
-		);
-	}
+  public RERulesConfig overrideFeeTable(FeeTable feeTable) {
+    return new RERulesConfig(
+        this.reservedSymbols,
+        this.tokenSymbolPattern,
+        feeTable,
+        this.maxTxnSize,
+        this.maxSigsPerRound,
+        this.maxRounds,
+        this.rakeIncreaseDebouncerEpochLength,
+        this.minimumStake,
+        this.unstakingEpochDelay,
+        this.rewardsPerProposal,
+        this.minimumCompletedProposalsPercentage,
+        this.maxValidators);
+  }
 
-	public RERulesConfig overrideMaxRounds(long maxRounds) {
-		return new RERulesConfig(
-			this.reservedSymbols,
-			this.tokenSymbolPattern,
-			this.feeTable,
-			this.maxTxnSize,
-			this.maxSigsPerRound,
-			maxRounds,
-			this.rakeIncreaseDebouncerEpochLength,
-			this.minimumStake,
-			this.unstakingEpochDelay,
-			this.rewardsPerProposal,
-			this.minimumCompletedProposalsPercentage,
-			this.maxValidators
-		);
-	}
+  public RERulesConfig overrideMaxRounds(long maxRounds) {
+    return new RERulesConfig(
+        this.reservedSymbols,
+        this.tokenSymbolPattern,
+        this.feeTable,
+        this.maxTxnSize,
+        this.maxSigsPerRound,
+        maxRounds,
+        this.rakeIncreaseDebouncerEpochLength,
+        this.minimumStake,
+        this.unstakingEpochDelay,
+        this.rewardsPerProposal,
+        this.minimumCompletedProposalsPercentage,
+        this.maxValidators);
+  }
 }

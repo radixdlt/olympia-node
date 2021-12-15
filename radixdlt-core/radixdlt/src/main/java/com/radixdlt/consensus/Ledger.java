@@ -69,17 +69,15 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import java.util.LinkedList;
 import java.util.Optional;
 
-/**
- * A distributed computer which manages the computed state in a BFT.
- */
+/** A distributed computer which manages the computed state in a BFT. */
 public interface Ledger {
-	/**
-	 * Given a proposed vertex, executes prepare stage on
-	 * the state computer, the result of which gets persisted on ledger.
-	 *
-	 * @param previous parents of given vertex
-	 * @param vertex vertex to prepare
-	 * @return the results of executing the prepare stage
-	 */
-	Optional<PreparedVertex> prepare(LinkedList<PreparedVertex> previous, VerifiedVertex vertex);
+  /**
+   * Given a proposed vertex, executes prepare stage on the state computer, the result of which gets
+   * persisted on ledger.
+   *
+   * @param previous parents of given vertex
+   * @param vertex vertex to prepare
+   * @return the results of executing the prepare stage
+   */
+  Optional<PreparedVertex> prepare(LinkedList<PreparedVertex> previous, VerifiedVertex vertex);
 }

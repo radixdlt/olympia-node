@@ -68,11 +68,11 @@ import com.google.common.hash.HashCode;
 import java.util.Objects;
 
 /**
- * Exception specifying that a vertex cannot be inserted because
- * it's parent is missing from the current store.
+ * Exception specifying that a vertex cannot be inserted because it's parent is missing from the
+ * current store.
  */
 public class MissingParentException extends RuntimeException {
-	MissingParentException(HashCode parentId) {
-		super("Parent Vertex missing: " + Objects.requireNonNull(parentId));
-	}
+  MissingParentException(HashCode parentId) {
+    super("Parent Vertex missing: " + Objects.requireNonNull(parentId));
+  }
 }

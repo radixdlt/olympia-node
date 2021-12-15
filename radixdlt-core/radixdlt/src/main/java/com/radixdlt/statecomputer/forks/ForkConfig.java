@@ -64,48 +64,41 @@
 
 package com.radixdlt.statecomputer.forks;
 
-/**
- * Configuration used for hard forks
- */
+/** Configuration used for hard forks */
 public final class ForkConfig {
-	private final long epoch;
-	private final String name;
-	private final RERulesConfig config;
-	private final RERulesVersion version;
+  private final long epoch;
+  private final String name;
+  private final RERulesConfig config;
+  private final RERulesVersion version;
 
-	public ForkConfig(
-		long epoch,
-		String name,
-		RERulesVersion version,
-		RERulesConfig config
-	) {
-		this.epoch = epoch;
-		this.name = name;
-		this.config = config;
-		this.version = version;
-	}
+  public ForkConfig(long epoch, String name, RERulesVersion version, RERulesConfig config) {
+    this.epoch = epoch;
+    this.name = name;
+    this.config = config;
+    this.version = version;
+  }
 
-	public long getEpoch() {
-		return epoch;
-	}
+  public long getEpoch() {
+    return epoch;
+  }
 
-	public RERulesVersion getVersion() {
-		return version;
-	}
+  public RERulesVersion getVersion() {
+    return version;
+  }
 
-	public String getName() {
-		return name;
-	}
+  public String getName() {
+    return name;
+  }
 
-	public RERulesConfig getConfig() {
-		return config;
-	}
+  public RERulesConfig getConfig() {
+    return config;
+  }
 
-	public ForkConfig overrideEpoch(long epoch) {
-		return new ForkConfig(epoch, this.name, this.version, this.config);
-	}
+  public ForkConfig overrideEpoch(long epoch) {
+    return new ForkConfig(epoch, this.name, this.version, this.config);
+  }
 
-	public ForkConfig overrideConfig(RERulesConfig config) {
-		return new ForkConfig(this.epoch, this.name, this.version, config);
-	}
+  public ForkConfig overrideConfig(RERulesConfig config) {
+    return new ForkConfig(this.epoch, this.name, this.version, config);
+  }
 }

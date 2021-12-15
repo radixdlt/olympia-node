@@ -64,107 +64,104 @@
 
 package com.radixdlt.integration.mempool;
 
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.utils.PrivateKeys;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.mempoolfiller.MempoolFillerModule;
-import com.radixdlt.mempoolfiller.MempoolFillerUpdate;
-import com.radixdlt.mempoolfiller.ScheduledMempoolFill;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempoolfiller.MempoolFillerModule;
+import com.radixdlt.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
-
+import com.radixdlt.utils.PrivateKeys;
 import java.util.Set;
-
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 /**
- * Test which fills a mempool and then empties it checking to make sure there are no
- * stragglers left behind.
+ * Test which fills a mempool and then empties it checking to make sure there are no stragglers left
+ * behind.
  */
 public final class MempoolFillAndEmptyTest {
-	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
+  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-    @Inject private DeterministicProcessor processor;
-    @Inject private DeterministicNetwork network;
-    @Inject private EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher;
-    @Inject private EventDispatcher<ScheduledMempoolFill> scheduledMempoolFillEventDispatcher;
-    @Inject private SystemCounters systemCounters;
+  @Inject private DeterministicProcessor processor;
+  @Inject private DeterministicNetwork network;
+  @Inject private EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher;
+  @Inject private EventDispatcher<ScheduledMempoolFill> scheduledMempoolFillEventDispatcher;
+  @Inject private SystemCounters systemCounters;
 
-	private Injector createInjector() {
-		return Guice.createInjector(
-			MempoolConfig.asModule(1000, 10),
-			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
-			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
-			new MockedGenesisModule(
-				Set.of(TEST_KEY.getPublicKey()),
-				Amount.ofTokens(10000000000L),
-				Amount.ofTokens(1000)
-			),
-			new MempoolFillerModule(),
-			new AbstractModule() {
-				@Override
-				protected void configure() {
-					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-				}
-			}
-		);
-	}
+  private Injector createInjector() {
+    return Guice.createInjector(
+        MempoolConfig.asModule(1000, 10),
+        new MainnetForkConfigsModule(),
+        new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
+        new ForksModule(),
+        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
+        new MockedGenesisModule(
+            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(1000)),
+        new MempoolFillerModule(),
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            bindConstant()
+                .annotatedWith(DatabaseLocation.class)
+                .to(folder.getRoot().getAbsolutePath());
+          }
+        });
+  }
 
-    private void fillAndEmptyMempool() {
-        while (systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE) < 1000) {
-            ControlledMessage msg = network.nextMessage().value();
-            processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-            if (msg.message() instanceof EpochViewUpdate) {
-                scheduledMempoolFillEventDispatcher.dispatch(ScheduledMempoolFill.create());
-            }
-        }
-
-        for (int i = 0; i < 10000; i++) {
-            ControlledMessage msg = network.nextMessage().value();
-            processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-            if (systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE) == 0) {
-                break;
-            }
-        }
-
-        assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
+  private void fillAndEmptyMempool() {
+    while (systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE) < 1000) {
+      ControlledMessage msg = network.nextMessage().value();
+      processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
+      if (msg.message() instanceof EpochViewUpdate) {
+        scheduledMempoolFillEventDispatcher.dispatch(ScheduledMempoolFill.create());
+      }
     }
 
-    @Test
-    public void check_that_full_mempool_empties_itself() {
-        createInjector().injectMembers(this);
-        processor.start();
-
-        mempoolFillerUpdateEventDispatcher.dispatch(MempoolFillerUpdate.enable(50, true));
-
-        for (int i = 0; i < 10; i++) {
-            fillAndEmptyMempool();
-        }
-
-        assertThat(systemCounters.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS)).isZero();
+    for (int i = 0; i < 10000; i++) {
+      ControlledMessage msg = network.nextMessage().value();
+      processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
+      if (systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE) == 0) {
+        break;
+      }
     }
+
+    assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
+  }
+
+  @Test
+  public void check_that_full_mempool_empties_itself() {
+    createInjector().injectMembers(this);
+    processor.start();
+
+    mempoolFillerUpdateEventDispatcher.dispatch(MempoolFillerUpdate.enable(50, true));
+
+    for (int i = 0; i < 10; i++) {
+      fillAndEmptyMempool();
+    }
+
+    assertThat(
+            systemCounters.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS))
+        .isZero();
+  }
 }

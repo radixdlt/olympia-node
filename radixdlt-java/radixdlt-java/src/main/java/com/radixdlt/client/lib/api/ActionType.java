@@ -66,51 +66,50 @@ package com.radixdlt.client.lib.api;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public enum ActionType {
-	MSG("Message"),
-	TRANSFER("TokenTransfer"),
-	STAKE("StakeTokens"),
-	UNSTAKE("UnstakeTokens"),
-	BURN("BurnTokens"),
-	MINT("MintTokens"),
-	REGISTER_VALIDATOR("RegisterValidator"),
-	UNREGISTER_VALIDATOR("UnregisterValidator"),
-	UPDATE_VALIDATOR_METADATA("UpdateValidatorMetadata"),
-	UPDATE_VALIDATOR_FEE("UpdateValidatorFee"),
-	UPDATE_VALIDATOR_OWNER("UpdateValidatorOwnerAddress"),
-	UPDATE_VALIDATOR_DELEGATION_FLAG("UpdateAllowDelegationFlag"),
-	CREATE_FIXED("CreateFixedSupplyToken"),
-	CREATE_MUTABLE("CreateMutableSupplyToken"),
-	UNKNOWN("Other");
+  MSG("Message"),
+  TRANSFER("TokenTransfer"),
+  STAKE("StakeTokens"),
+  UNSTAKE("UnstakeTokens"),
+  BURN("BurnTokens"),
+  MINT("MintTokens"),
+  REGISTER_VALIDATOR("RegisterValidator"),
+  UNREGISTER_VALIDATOR("UnregisterValidator"),
+  UPDATE_VALIDATOR_METADATA("UpdateValidatorMetadata"),
+  UPDATE_VALIDATOR_FEE("UpdateValidatorFee"),
+  UPDATE_VALIDATOR_OWNER("UpdateValidatorOwnerAddress"),
+  UPDATE_VALIDATOR_DELEGATION_FLAG("UpdateAllowDelegationFlag"),
+  CREATE_FIXED("CreateFixedSupplyToken"),
+  CREATE_MUTABLE("CreateMutableSupplyToken"),
+  UNKNOWN("Other");
 
-	private final String text;
+  private final String text;
 
-	private static final Map<String, ActionType> TO_ACTION_TYPE = Arrays.stream(values())
-		.collect(Collectors.toMap(ActionType::toJson, Function.identity()));
+  private static final Map<String, ActionType> TO_ACTION_TYPE =
+      Arrays.stream(values()).collect(Collectors.toMap(ActionType::toJson, Function.identity()));
 
-	ActionType(String text) {
-		this.text = text;
-	}
+  ActionType(String text) {
+    this.text = text;
+  }
 
-	@JsonValue
-	public String toJson() {
-		return text;
-	}
+  @JsonValue
+  public String toJson() {
+    return text;
+  }
 
-	@JsonCreator
-	public static ActionType create(String action) {
-		var result = TO_ACTION_TYPE.get(action);
+  @JsonCreator
+  public static ActionType create(String action) {
+    var result = TO_ACTION_TYPE.get(action);
 
-		if (result == null) {
-			throw new IllegalArgumentException("Unable to parse ActionType from : " + action);
-		}
+    if (result == null) {
+      throw new IllegalArgumentException("Unable to parse ActionType from : " + action);
+    }
 
-		return result;
-	}
+    return result;
+  }
 }

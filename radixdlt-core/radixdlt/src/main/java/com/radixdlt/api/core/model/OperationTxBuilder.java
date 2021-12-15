@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -73,104 +74,99 @@ import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
 public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
-	private final Forks forks;
-	private final List<List<EntityOperation>> operationGroups;
-	private final String message;
+  private final Forks forks;
+  private final List<List<EntityOperation>> operationGroups;
+  private final String message;
 
-	public OperationTxBuilder(
-		String message,
-		List<List<EntityOperation>> operationGroups,
-		Forks forks
-	) {
-		this.message = message;
-		this.operationGroups = operationGroups;
-		this.forks = forks;
-	}
+  public OperationTxBuilder(
+      String message, List<List<EntityOperation>> operationGroups, Forks forks) {
+    this.message = message;
+    this.operationGroups = operationGroups;
+    this.forks = forks;
+  }
 
-	private void executeResourceOperation(
-		Entity entity,
-		ResourceOperation operation,
-		TxBuilder txBuilder,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		if (operation == null) {
-			return;
-		}
+  private void executeResourceOperation(
+      Entity entity,
+      ResourceOperation operation,
+      TxBuilder txBuilder,
+      Supplier<RERulesConfig> config)
+      throws TxBuilderException {
+    if (operation == null) {
+      return;
+    }
 
-		var amount = operation.getAmount();
-		if (operation.isDeposit()) {
-			entity.deposit(amount, txBuilder, config);
-		} else {
-			var withdrawal = entity.withdraw(amount.resource());
-			var feeInReserve = Optional.ofNullable(txBuilder.getFeeReserve()).orElse(UInt256.ZERO);
-			var change = withdrawal.execute(
-				txBuilder,
-				amount.amount(),
-				available -> new NotEnoughResourcesException(amount.resource(), amount.amount(), available, feeInReserve)
-			);
+    var amount = operation.getAmount();
+    if (operation.isDeposit()) {
+      entity.deposit(amount, txBuilder, config);
+    } else {
+      var withdrawal = entity.withdraw(amount.resource());
+      var feeInReserve = Optional.ofNullable(txBuilder.getFeeReserve()).orElse(UInt256.ZERO);
+      var change =
+          withdrawal.execute(
+              txBuilder,
+              amount.amount(),
+              available ->
+                  new NotEnoughResourcesException(
+                      amount.resource(), amount.amount(), available, feeInReserve));
 
-			if (!change.isZero()) {
-				var changeAmount = new ResourceUnsignedAmount(amount.resource(), change);
-				entity.deposit(changeAmount, txBuilder, config);
-			}
-		}
-	}
+      if (!change.isZero()) {
+        var changeAmount = new ResourceUnsignedAmount(amount.resource(), change);
+        entity.deposit(changeAmount, txBuilder, config);
+      }
+    }
+  }
 
-	private void executeDataOperation(
-		Entity entity,
-		DataOperation operation,
-		TxBuilder txBuilder,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		if (operation == null) {
-			return;
-		}
+  private void executeDataOperation(
+      Entity entity, DataOperation operation, TxBuilder txBuilder, Supplier<RERulesConfig> config)
+      throws TxBuilderException {
+    if (operation == null) {
+      return;
+    }
 
-		var dataAction = operation.getDataAction();
-		if (dataAction == Data.ActionEnum.CREATE) {
-			var parsedDataObject = operation.getParsedDataObject();
-			entity.overwriteDataObject(parsedDataObject, txBuilder, config);
-		} else {
-			throw new IllegalStateException("DataAction: " + dataAction + " not supported yet.");
-		}
-	}
+    var dataAction = operation.getDataAction();
+    if (dataAction == Data.ActionEnum.CREATE) {
+      var parsedDataObject = operation.getParsedDataObject();
+      entity.overwriteDataObject(parsedDataObject, txBuilder, config);
+    } else {
+      throw new IllegalStateException("DataAction: " + dataAction + " not supported yet.");
+    }
+  }
 
-	private void execute(
-		EntityOperation operation,
-		TxBuilder txBuilder,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		var entity = operation.entity();
-		var resourceOperation = operation.resourceOperation();
-		executeResourceOperation(entity, resourceOperation, txBuilder, config);
+  private void execute(
+      EntityOperation operation, TxBuilder txBuilder, Supplier<RERulesConfig> config)
+      throws TxBuilderException {
+    var entity = operation.entity();
+    var resourceOperation = operation.resourceOperation();
+    executeResourceOperation(entity, resourceOperation, txBuilder, config);
 
-		var dataOperation = operation.dataOperation();
-		executeDataOperation(entity, dataOperation, txBuilder, config);
-	}
+    var dataOperation = operation.dataOperation();
+    executeDataOperation(entity, dataOperation, txBuilder, config);
+  }
 
-	@Override
-	public void execute(TxBuilder txBuilder) throws TxBuilderException {
+  @Override
+  public void execute(TxBuilder txBuilder) throws TxBuilderException {
 
-		var configSupplier = Suppliers.memoize(() -> {
-			var epochData = txBuilder.findSystem(EpochData.class);
-			return forks.get(epochData.getEpoch()).getConfig();
-		});
+    var configSupplier =
+        Suppliers.memoize(
+            () -> {
+              var epochData = txBuilder.findSystem(EpochData.class);
+              return forks.get(epochData.getEpoch()).getConfig();
+            });
 
-		for (var operationGroup : this.operationGroups) {
-			for (var operation : operationGroup) {
-				execute(operation, txBuilder, configSupplier);
-			}
-			txBuilder.end();
-		}
+    for (var operationGroup : this.operationGroups) {
+      for (var operation : operationGroup) {
+        execute(operation, txBuilder, configSupplier);
+      }
+      txBuilder.end();
+    }
 
-		if (this.message != null) {
-			txBuilder.message(Bytes.fromHexString(message));
-		}
-	}
+    if (this.message != null) {
+      txBuilder.message(Bytes.fromHexString(message));
+    }
+  }
 }

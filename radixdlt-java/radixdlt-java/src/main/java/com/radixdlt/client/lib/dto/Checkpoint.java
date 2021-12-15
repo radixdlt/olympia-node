@@ -66,56 +66,54 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.List;
 import java.util.Objects;
 
 public final class Checkpoint {
-	private final List<String> txn;
-	private final Proof proof;
+  private final List<String> txn;
+  private final Proof proof;
 
-	private Checkpoint(List<String> txn, Proof proof) {
-		this.txn = txn;
-		this.proof = proof;
-	}
+  private Checkpoint(List<String> txn, Proof proof) {
+    this.txn = txn;
+    this.proof = proof;
+  }
 
-	@JsonCreator
-	public static Checkpoint create(
-		@JsonProperty(value = "txn", required = true) List<String> txn,
-		@JsonProperty(value = "proof", required = true) Proof proof
-	) {
-		return new Checkpoint(txn, proof);
-	}
+  @JsonCreator
+  public static Checkpoint create(
+      @JsonProperty(value = "txn", required = true) List<String> txn,
+      @JsonProperty(value = "proof", required = true) Proof proof) {
+    return new Checkpoint(txn, proof);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof Checkpoint)) {
-			return false;
-		}
+    if (!(o instanceof Checkpoint)) {
+      return false;
+    }
 
-		var that = (Checkpoint) o;
-		return txn.equals(that.txn) && proof.equals(that.proof);
-	}
+    var that = (Checkpoint) o;
+    return txn.equals(that.txn) && proof.equals(that.proof);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(txn, proof);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(txn, proof);
+  }
 
-	@Override
-	public String toString() {
-		return "{txn:" + txn + ", proof:" + proof + '}';
-	}
+  @Override
+  public String toString() {
+    return "{txn:" + txn + ", proof:" + proof + '}';
+  }
 
-	public List<String> getTxn() {
-		return txn;
-	}
+  public List<String> getTxn() {
+    return txn;
+  }
 
-	public Proof getProof() {
-		return proof;
-	}
+  public Proof getProof() {
+    return proof;
+  }
 }

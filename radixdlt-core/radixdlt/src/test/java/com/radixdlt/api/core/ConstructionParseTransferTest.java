@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.api.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.ConstructionParseHandler;
@@ -87,101 +90,89 @@ import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
-import org.junit.Test;
-
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.Test;
 
 public class ConstructionParseTransferTest extends ApiTest {
-	@Inject
-	private ConstructionParseHandler sut;
-	@Inject
-	private CoreModelMapper coreModelMapper;
-	@Inject
-	@Self
-	private ECPublicKey self;
-	@Inject
-	private RadixEngine<LedgerAndBFTProof> radixEngine;
-	@Inject
-	private Forks forks;
+  @Inject private ConstructionParseHandler sut;
+  @Inject private CoreModelMapper coreModelMapper;
+  @Inject @Self private ECPublicKey self;
+  @Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
+  @Inject private Forks forks;
 
-	private UInt256 transferAmount() {
-		return getLiquidAmount().toSubunits().subtract(Amount.ofTokens(1).toSubunits());
-	}
+  private UInt256 transferAmount() {
+    return getLiquidAmount().toSubunits().subtract(Amount.ofTokens(1).toSubunits());
+  }
 
-	private byte[] buildUnsignedTransferTxn(REAddr from, REAddr to) throws Exception {
-		final UInt256 toTransfer = transferAmount();
-		var entityOperationGroups =
-			List.of(List.of(
-				EntityOperation.from(
-					new AccountVaultEntity(from),
-					ResourceOperation.withdraw(
-						new TokenResource("xrd", REAddr.ofNativeToken()),
-						toTransfer
-					)
-				),
-				EntityOperation.from(
-					new AccountVaultEntity(to),
-					ResourceOperation.deposit(
-						new TokenResource("xrd", REAddr.ofNativeToken()),
-						toTransfer
-					)
-				)
-			));
-		var operationTxBuilder = new OperationTxBuilder(null, entityOperationGroups, forks);
-		var builder = radixEngine.constructWithFees(
-			operationTxBuilder, false, from, NotEnoughNativeTokensForFeesException::new
-		);
-		var unsignedTransaction = builder.buildForExternalSign();
-		return unsignedTransaction.blob();
-	}
+  private byte[] buildUnsignedTransferTxn(REAddr from, REAddr to) throws Exception {
+    final UInt256 toTransfer = transferAmount();
+    var entityOperationGroups =
+        List.of(
+            List.of(
+                EntityOperation.from(
+                    new AccountVaultEntity(from),
+                    ResourceOperation.withdraw(
+                        new TokenResource("xrd", REAddr.ofNativeToken()), toTransfer)),
+                EntityOperation.from(
+                    new AccountVaultEntity(to),
+                    ResourceOperation.deposit(
+                        new TokenResource("xrd", REAddr.ofNativeToken()), toTransfer))));
+    var operationTxBuilder = new OperationTxBuilder(null, entityOperationGroups, forks);
+    var builder =
+        radixEngine.constructWithFees(
+            operationTxBuilder, false, from, NotEnoughNativeTokensForFeesException::new);
+    var unsignedTransaction = builder.buildForExternalSign();
+    return unsignedTransaction.blob();
+  }
 
-	@Test
-	public void parsing_transaction_with_transfer_should_have_proper_substates() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void parsing_transaction_with_transfer_should_have_proper_substates() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var accountAddress = REAddr.ofPubKeyAccount(self);
-		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
-		var unsignedTxn = buildUnsignedTransferTxn(accountAddress, otherAddress);
-		var request = new ConstructionParseRequest()
-			.signed(false)
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.transaction(Bytes.toHexString(unsignedTxn));
-		var response = handleRequestWithExpectedResponse(sut, request, ConstructionParseResponse.class);
+    // Act
+    var accountAddress = REAddr.ofPubKeyAccount(self);
+    var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+    var unsignedTxn = buildUnsignedTransferTxn(accountAddress, otherAddress);
+    var request =
+        new ConstructionParseRequest()
+            .signed(false)
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .transaction(Bytes.toHexString(unsignedTxn));
+    var response = handleRequestWithExpectedResponse(sut, request, ConstructionParseResponse.class);
 
-		// Assert
-		assertThat(response.getMetadata()).isNotNull();
-		assertThat(response.getMetadata().getMessage()).isNull();
-		var feeValue = new BigInteger(response.getMetadata().getFee().getValue());
-		assertThat(feeValue).isGreaterThan(BigInteger.ZERO);
-		var entityHoldings = response.getOperationGroups().stream()
-			.flatMap(g -> g.getOperations().stream())
-			.peek(op -> {
-				assertThat(op.getSubstate()).isNotNull();
-				assertThat(op.getSubstate().getSubstateIdentifier()).isNotNull();
-				assertThat(op.getAmount()).isNotNull();
-				assertThat(op.getAmount().getResourceIdentifier()).isEqualTo(coreModelMapper.nativeToken());
-			})
-			.collect(Collectors.groupingBy(
-				Operation::getEntityIdentifier,
-				Collectors.mapping(
-					op -> new BigInteger(op.getAmount().getValue()),
-					Collectors.reducing(BigInteger.ZERO, BigInteger::add)
-				)
-			));
+    // Assert
+    assertThat(response.getMetadata()).isNotNull();
+    assertThat(response.getMetadata().getMessage()).isNull();
+    var feeValue = new BigInteger(response.getMetadata().getFee().getValue());
+    assertThat(feeValue).isGreaterThan(BigInteger.ZERO);
+    var entityHoldings =
+        response.getOperationGroups().stream()
+            .flatMap(g -> g.getOperations().stream())
+            .peek(
+                op -> {
+                  assertThat(op.getSubstate()).isNotNull();
+                  assertThat(op.getSubstate().getSubstateIdentifier()).isNotNull();
+                  assertThat(op.getAmount()).isNotNull();
+                  assertThat(op.getAmount().getResourceIdentifier())
+                      .isEqualTo(coreModelMapper.nativeToken());
+                })
+            .collect(
+                Collectors.groupingBy(
+                    Operation::getEntityIdentifier,
+                    Collectors.mapping(
+                        op -> new BigInteger(op.getAmount().getValue()),
+                        Collectors.reducing(BigInteger.ZERO, BigInteger::add))));
 
-		var accountEntityIdentifier = coreModelMapper.entityIdentifier(accountAddress);
-		var otherEntityIdentifier = coreModelMapper.entityIdentifier(otherAddress);
-		var transferAmount = new BigInteger(transferAmount().toString());
-		var expectedChange = transferAmount.negate().subtract(feeValue);
-		assertThat(entityHoldings).containsExactlyInAnyOrderEntriesOf(
-			Map.of(accountEntityIdentifier, expectedChange, otherEntityIdentifier, transferAmount)
-		);
-	}
+    var accountEntityIdentifier = coreModelMapper.entityIdentifier(accountAddress);
+    var otherEntityIdentifier = coreModelMapper.entityIdentifier(otherAddress);
+    var transferAmount = new BigInteger(transferAmount().toString());
+    var expectedChange = transferAmount.negate().subtract(feeValue);
+    assertThat(entityHoldings)
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of(accountEntityIdentifier, expectedChange, otherEntityIdentifier, transferAmount));
+  }
 }

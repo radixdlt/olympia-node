@@ -61,42 +61,39 @@
  * Work. You assume all risks associated with Your use of the Work and the exercise of
  * permissions under this License.
  */
+
 package com.radixdlt.mempool;
 
 import com.radixdlt.atom.Txn;
-
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
  * Basic mempool functionality.
- * <p>
- * Note that conceptually, a mempoolcan be thought of as a list indexable
- * by hash.
+ *
+ * <p>Note that conceptually, a mempoolcan be thought of as a list indexable by hash.
  */
 public interface Mempool<T> {
-	/**
-	 * Add a transaction to the local mempool.
-	 */
-	T add(Txn txn) throws MempoolRejectedException;
+  /** Add a transaction to the local mempool. */
+  T add(Txn txn) throws MempoolRejectedException;
 
-	/**
-	 * Retrieve a list of atoms from the local mempool for processing by
-	 * consensus.
-	 * <p>
-	 * Note that the supplied {@code seen} parameter is used to avoid inclusion
-	 * of atoms that are "in-flight" but not yet committed to the ledger.
-	 *
-	 * @param count the number of atoms to retrieve
-	 * @param seen hashes of commands seen by consensus, but not yet committed to the ledger
-	 * @return A list of commands for processing by consensus
-	 */
-	List<Txn> getTxns(int count, List<T> seen);
+  /**
+   * Retrieve a list of atoms from the local mempool for processing by consensus.
+   *
+   * <p>Note that the supplied {@code seen} parameter is used to avoid inclusion of atoms that are
+   * "in-flight" but not yet committed to the ledger.
+   *
+   * @param count the number of atoms to retrieve
+   * @param seen hashes of commands seen by consensus, but not yet committed to the ledger
+   * @return A list of commands for processing by consensus
+   */
+  List<Txn> getTxns(int count, List<T> seen);
 
-	List<Txn> scanUpdateAndGet(Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator);
+  List<Txn> scanUpdateAndGet(
+      Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator);
 
-	List<Txn> committed(List<T> committed);
+  List<Txn> committed(List<T> committed);
 
-	int getCount();
+  int getCount();
 }

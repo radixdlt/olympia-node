@@ -66,47 +66,46 @@ package com.radixdlt.utils;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
-
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class POW {
-	private final int magic;
-	private final HashCode seed;
-	private final long nonce;
-	private final ByteBuffer buffer = ByteBuffer.allocate(32 + 4 + Long.BYTES);
+  private final int magic;
+  private final HashCode seed;
+  private final long nonce;
+  private final ByteBuffer buffer = ByteBuffer.allocate(32 + 4 + Long.BYTES);
 
-	public POW(int magic, HashCode seed) {
-		this(magic, seed, Long.MIN_VALUE);
-	}
+  public POW(int magic, HashCode seed) {
+    this(magic, seed, Long.MIN_VALUE);
+  }
 
-	public POW(int magic, HashCode seed, long nonce) {
-		Objects.requireNonNull(seed);
+  public POW(int magic, HashCode seed, long nonce) {
+    Objects.requireNonNull(seed);
 
-		this.magic = magic;
-		this.seed = seed;
-		this.nonce = nonce;
-	}
+    this.magic = magic;
+    this.seed = seed;
+    this.nonce = nonce;
+  }
 
-	public int getMagic() {
-		return magic;
-	}
+  public int getMagic() {
+    return magic;
+  }
 
-	public HashCode getSeed() {
-		return seed;
-	}
+  public HashCode getSeed() {
+    return seed;
+  }
 
-	public long getNonce() {
-		return nonce;
-	}
+  public long getNonce() {
+    return nonce;
+  }
 
-	public synchronized HashCode getHash() {
-		buffer.clear();
-		buffer.putInt(magic);
-		buffer.put(seed.asBytes());
-		buffer.putLong(nonce);
-		buffer.flip();
+  public synchronized HashCode getHash() {
+    buffer.clear();
+    buffer.putInt(magic);
+    buffer.put(seed.asBytes());
+    buffer.putLong(nonce);
+    buffer.flip();
 
-		return HashUtils.sha256(buffer.array());
-	}
+    return HashUtils.sha256(buffer.array());
+  }
 }

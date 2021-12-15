@@ -64,14 +64,16 @@
 
 package com.radixdlt.acceptance.mutable_supply_tokens;
 
-import org.junit.runner.RunWith;
-
+import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
 import io.cucumber.junit.CucumberOptions.SnippetType;
-import io.cucumber.junit.Cucumber;
+import org.junit.runner.RunWith;
 
 @RunWith(Cucumber.class)
-@CucumberOptions(snippets = SnippetType.UNDERSCORE, monochrome = true, plugin = { "pretty" })
+@CucumberOptions(
+    snippets = SnippetType.UNDERSCORE,
+    monochrome = true,
+    plugin = {"pretty"})
 public class RunMutableSupplyTokens {
-	// Stub for running cucumber tests
+  // Stub for running cucumber tests
 }

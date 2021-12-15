@@ -73,12 +73,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
-/**
- * Identifies that the target concerns the identity of the
- * current running node
- */
+/** Identifies that the target concerns the identity of the current running node */
 @Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
+@Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface Self {
-}
+public @interface Self {}

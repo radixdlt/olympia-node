@@ -66,90 +66,93 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class ApiDbCount {
-	private final Count flush;
-	private final Size queue;
-	private final ReadWriteStats balance;
-	private final ReadWriteStats transaction;
-	private final ReadWriteStats token;
+  private final Count flush;
+  private final Size queue;
+  private final ReadWriteStats balance;
+  private final ReadWriteStats transaction;
+  private final ReadWriteStats token;
 
-	private ApiDbCount(
-		Count flush,
-		Size queue,
-		ReadWriteStats balance,
-		ReadWriteStats transaction,
-		ReadWriteStats token
-	) {
-		this.flush = flush;
-		this.queue = queue;
-		this.balance = balance;
-		this.transaction = transaction;
-		this.token = token;
-	}
+  private ApiDbCount(
+      Count flush,
+      Size queue,
+      ReadWriteStats balance,
+      ReadWriteStats transaction,
+      ReadWriteStats token) {
+    this.flush = flush;
+    this.queue = queue;
+    this.balance = balance;
+    this.transaction = transaction;
+    this.token = token;
+  }
 
-	@JsonCreator
-	public static ApiDbCount create(
-		@JsonProperty(value = "flush", required = true) Count flush,
-		@JsonProperty(value = "queue", required = true) Size queue,
-		@JsonProperty(value = "balance", required = true) ReadWriteStats balance,
-		@JsonProperty(value = "transaction", required = true) ReadWriteStats transaction,
-		@JsonProperty(value = "token", required = true) ReadWriteStats token
-	) {
-		return new ApiDbCount(flush, queue, balance, transaction, token);
-	}
+  @JsonCreator
+  public static ApiDbCount create(
+      @JsonProperty(value = "flush", required = true) Count flush,
+      @JsonProperty(value = "queue", required = true) Size queue,
+      @JsonProperty(value = "balance", required = true) ReadWriteStats balance,
+      @JsonProperty(value = "transaction", required = true) ReadWriteStats transaction,
+      @JsonProperty(value = "token", required = true) ReadWriteStats token) {
+    return new ApiDbCount(flush, queue, balance, transaction, token);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof ApiDbCount)) {
-			return false;
-		}
+    if (!(o instanceof ApiDbCount)) {
+      return false;
+    }
 
-		var that = (ApiDbCount) o;
-		return flush.equals(that.flush)
-			&& queue.equals(that.queue)
-			&& balance.equals(that.balance)
-			&& transaction.equals(that.transaction)
-			&& token.equals(that.token);
-	}
+    var that = (ApiDbCount) o;
+    return flush.equals(that.flush)
+        && queue.equals(that.queue)
+        && balance.equals(that.balance)
+        && transaction.equals(that.transaction)
+        && token.equals(that.token);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(flush, queue, balance, transaction, token);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(flush, queue, balance, transaction, token);
+  }
 
-	@Override
-	public String toString() {
-		return "{flush:" + flush
-			+ ", queue:" + queue
-			+ ", balance:" + balance
-			+ ", transaction:" + transaction
-			+ ", token:" + token + '}';
-	}
+  @Override
+  public String toString() {
+    return "{flush:"
+        + flush
+        + ", queue:"
+        + queue
+        + ", balance:"
+        + balance
+        + ", transaction:"
+        + transaction
+        + ", token:"
+        + token
+        + '}';
+  }
 
-	public Count getFlush() {
-		return flush;
-	}
+  public Count getFlush() {
+    return flush;
+  }
 
-	public Size getQueue() {
-		return queue;
-	}
+  public Size getQueue() {
+    return queue;
+  }
 
-	public ReadWriteStats getBalance() {
-		return balance;
-	}
+  public ReadWriteStats getBalance() {
+    return balance;
+  }
 
-	public ReadWriteStats getTransaction() {
-		return transaction;
-	}
+  public ReadWriteStats getTransaction() {
+    return transaction;
+  }
 
-	public ReadWriteStats getToken() {
-		return token;
-	}
+  public ReadWriteStats getToken() {
+    return token;
+  }
 }

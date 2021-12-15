@@ -72,80 +72,79 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
 import java.util.Objects;
 
 @SerializerId2("message.handshake.auth_initiate")
 public final class AuthInitiateMessage {
 
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(DsonOutput.Output.ALL)
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(DsonOutput.Output.ALL)
+  private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("signature")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final ECDSASignature signature;
+  @JsonProperty("signature")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final ECDSASignature signature;
 
-	@JsonProperty("publicKey")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final HashCode publicKey;
+  @JsonProperty("publicKey")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final HashCode publicKey;
 
-	@JsonProperty("nonce")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final HashCode nonce;
+  @JsonProperty("nonce")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final HashCode nonce;
 
-	@JsonProperty("networkId")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final int networkId;
+  @JsonProperty("networkId")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final int networkId;
 
-	@JsonCreator
-	public static AuthInitiateMessage deserialize(
-		@JsonProperty(value = "signature", required = true) ECDSASignature signature,
-		@JsonProperty(value = "publicKey", required = true) HashCode publicKey,
-		@JsonProperty(value = "nonce", required = true) HashCode nonce,
-		@JsonProperty("networkId") int networkId
-	) {
-		return new AuthInitiateMessage(signature, publicKey, nonce, networkId);
-	}
+  @JsonCreator
+  public static AuthInitiateMessage deserialize(
+      @JsonProperty(value = "signature", required = true) ECDSASignature signature,
+      @JsonProperty(value = "publicKey", required = true) HashCode publicKey,
+      @JsonProperty(value = "nonce", required = true) HashCode nonce,
+      @JsonProperty("networkId") int networkId) {
+    return new AuthInitiateMessage(signature, publicKey, nonce, networkId);
+  }
 
-	public AuthInitiateMessage(ECDSASignature signature, HashCode publicKey, HashCode nonce, int networkId) {
-		this.signature = signature;
-		this.publicKey = publicKey;
-		this.nonce = nonce;
-		this.networkId = networkId;
-	}
+  public AuthInitiateMessage(
+      ECDSASignature signature, HashCode publicKey, HashCode nonce, int networkId) {
+    this.signature = signature;
+    this.publicKey = publicKey;
+    this.nonce = nonce;
+    this.networkId = networkId;
+  }
 
-	public ECDSASignature getSignature() {
-		return signature;
-	}
+  public ECDSASignature getSignature() {
+    return signature;
+  }
 
-	public HashCode getPublicKey() {
-		return publicKey;
-	}
+  public HashCode getPublicKey() {
+    return publicKey;
+  }
 
-	public HashCode getNonce() {
-		return nonce;
-	}
+  public HashCode getNonce() {
+    return nonce;
+  }
 
-	public int getNetworkId() {
-		return networkId;
-	}
+  public int getNetworkId() {
+    return networkId;
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof AuthInitiateMessage that)
-			   && Objects.equals(signature, that.signature)
-			   && Objects.equals(publicKey, that.publicKey)
-			   && Objects.equals(nonce, that.nonce)
-			   && networkId == that.networkId;
-	}
+    return (o instanceof AuthInitiateMessage that)
+        && Objects.equals(signature, that.signature)
+        && Objects.equals(publicKey, that.publicKey)
+        && Objects.equals(nonce, that.nonce)
+        && networkId == that.networkId;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(signature, publicKey, nonce, networkId);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(signature, publicKey, nonce, networkId);
+  }
 }

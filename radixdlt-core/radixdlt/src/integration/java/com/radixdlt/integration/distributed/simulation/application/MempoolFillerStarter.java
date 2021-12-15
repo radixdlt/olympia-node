@@ -64,23 +64,20 @@
 
 package com.radixdlt.integration.distributed.simulation.application;
 
-import com.radixdlt.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
+import com.radixdlt.mempoolfiller.MempoolFillerUpdate;
 
-/**
- * Starts a mempool filler
- */
+/** Starts a mempool filler */
 public final class MempoolFillerStarter implements SimulationTest.SimulationNetworkActor {
-    @Override
-    public void start(SimulationNodes.RunningNetwork network) {
-        EventDispatcher<MempoolFillerUpdate> dispatcher = network
-                .getDispatcher(MempoolFillerUpdate.class, network.getNodes().get(0));
-        dispatcher.dispatch(MempoolFillerUpdate.enable(15, true));
-    }
+  @Override
+  public void start(SimulationNodes.RunningNetwork network) {
+    EventDispatcher<MempoolFillerUpdate> dispatcher =
+        network.getDispatcher(MempoolFillerUpdate.class, network.getNodes().get(0));
+    dispatcher.dispatch(MempoolFillerUpdate.enable(15, true));
+  }
 
-    @Override
-    public void stop() {
-    }
+  @Override
+  public void stop() {}
 }

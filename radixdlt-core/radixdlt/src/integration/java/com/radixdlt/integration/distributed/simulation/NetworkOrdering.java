@@ -71,29 +71,27 @@ import com.radixdlt.integration.distributed.simulation.network.InOrderChannels;
 import com.radixdlt.integration.distributed.simulation.network.OutOfOrderChannels;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.ChannelCommunication;
 
-/**
- * Modules which provide networking ordering properties
- */
+/** Modules which provide networking ordering properties */
 public final class NetworkOrdering {
-	public static Module inOrder() {
-		return new AbstractModule() {
-			@Override
-			protected void configure() {
-				bind(ChannelCommunication.class).to(InOrderChannels.class).in(Scopes.SINGLETON);
-			}
-		};
-	}
+  public static Module inOrder() {
+    return new AbstractModule() {
+      @Override
+      protected void configure() {
+        bind(ChannelCommunication.class).to(InOrderChannels.class).in(Scopes.SINGLETON);
+      }
+    };
+  }
 
-	public static Module outOfOrder() {
-		return new AbstractModule() {
-			@Override
-			protected void configure() {
-				bind(ChannelCommunication.class).to(OutOfOrderChannels.class).in(Scopes.SINGLETON);
-			}
-		};
-	}
+  public static Module outOfOrder() {
+    return new AbstractModule() {
+      @Override
+      protected void configure() {
+        bind(ChannelCommunication.class).to(OutOfOrderChannels.class).in(Scopes.SINGLETON);
+      }
+    };
+  }
 
-	private NetworkOrdering() {
-		throw new UnsupportedOperationException("Cannot instantiate.");
-	}
+  private NetworkOrdering() {
+    throw new UnsupportedOperationException("Cannot instantiate.");
+  }
 }

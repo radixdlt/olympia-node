@@ -66,58 +66,53 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class EpochInfo {
-	private final CurrentEpochInfo current;
-	private final Updates updates;
+  private final CurrentEpochInfo current;
+  private final Updates updates;
 
-	private EpochInfo(CurrentEpochInfo current, Updates updates) {
-		this.current = current;
-		this.updates = updates;
-	}
+  private EpochInfo(CurrentEpochInfo current, Updates updates) {
+    this.current = current;
+    this.updates = updates;
+  }
 
-	@JsonCreator
-	public static EpochInfo create(
-		@JsonProperty(value = "current", required = true) CurrentEpochInfo current,
-		@JsonProperty(value = "updates", required = true) Updates updates
-	) {
-		return new EpochInfo(current, updates);
-	}
+  @JsonCreator
+  public static EpochInfo create(
+      @JsonProperty(value = "current", required = true) CurrentEpochInfo current,
+      @JsonProperty(value = "updates", required = true) Updates updates) {
+    return new EpochInfo(current, updates);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof EpochInfo)) {
-			return false;
-		}
+    if (!(o instanceof EpochInfo)) {
+      return false;
+    }
 
-		var epochInfo = (EpochInfo) o;
-		return current.equals(epochInfo.current) && updates.equals(epochInfo.updates);
-	}
+    var epochInfo = (EpochInfo) o;
+    return current.equals(epochInfo.current) && updates.equals(epochInfo.updates);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(current, updates);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(current, updates);
+  }
 
-	@Override
-	public String toString() {
-		return "{"
-			+ "current=" + current
-			+ ", updates=" + updates
-			+ '}';
-	}
+  @Override
+  public String toString() {
+    return "{" + "current=" + current + ", updates=" + updates + '}';
+  }
 
-	public CurrentEpochInfo getCurrent() {
-		return current;
-	}
+  public CurrentEpochInfo getCurrent() {
+    return current;
+  }
 
-	public Updates getUpdates() {
-		return updates;
-	}
+  public Updates getUpdates() {
+    return updates;
+  }
 }

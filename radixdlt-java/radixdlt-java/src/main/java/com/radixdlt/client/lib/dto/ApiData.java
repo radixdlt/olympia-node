@@ -66,50 +66,48 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class ApiData {
-	private final ApiDataElapsed elapsed;
-	private final ApiDataCount count;
+  private final ApiDataElapsed elapsed;
+  private final ApiDataCount count;
 
-	private ApiData(ApiDataElapsed elapsed, ApiDataCount count) {
-		this.elapsed = elapsed;
-		this.count = count;
-	}
+  private ApiData(ApiDataElapsed elapsed, ApiDataCount count) {
+    this.elapsed = elapsed;
+    this.count = count;
+  }
 
-	@JsonCreator
-	public static ApiData create(
-		@JsonProperty(value = "elapsed", required = true) ApiDataElapsed elapsed,
-		@JsonProperty(value = "count", required = true) ApiDataCount count
-	) {
-		return new ApiData(elapsed, count);
-	}
+  @JsonCreator
+  public static ApiData create(
+      @JsonProperty(value = "elapsed", required = true) ApiDataElapsed elapsed,
+      @JsonProperty(value = "count", required = true) ApiDataCount count) {
+    return new ApiData(elapsed, count);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof ApiData)) {
-			return false;
-		}
+    if (!(o instanceof ApiData)) {
+      return false;
+    }
 
-		var that = (ApiData) o;
-		return elapsed.equals(that.elapsed) && count.equals(that.count);
-	}
+    var that = (ApiData) o;
+    return elapsed.equals(that.elapsed) && count.equals(that.count);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(elapsed, count);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(elapsed, count);
+  }
 
-	public ApiDataElapsed getElapsed() {
-		return elapsed;
-	}
+  public ApiDataElapsed getElapsed() {
+    return elapsed;
+  }
 
-	public ApiDataCount getCount() {
-		return count;
-	}
+  public ApiDataCount getCount() {
+    return count;
+  }
 }

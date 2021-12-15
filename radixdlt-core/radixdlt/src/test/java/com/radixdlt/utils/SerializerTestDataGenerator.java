@@ -86,7 +86,6 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.ledger.AccumulatorState;
-
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
@@ -94,88 +93,82 @@ import java.util.Random;
 
 public class SerializerTestDataGenerator {
 
-	private static final Random random = new Random();
+  private static final Random random = new Random();
 
-	private SerializerTestDataGenerator() {
-		// no-op
-	}
+  private SerializerTestDataGenerator() {
+    // no-op
+  }
 
-	public static QuorumCertificate randomQC() {
-		return new QuorumCertificate(randomVoteData(), randomTimestampedECDSASignatures());
-	}
+  public static QuorumCertificate randomQC() {
+    return new QuorumCertificate(randomVoteData(), randomTimestampedECDSASignatures());
+  }
 
-	public static Vote randomVote() {
-		return new Vote(
-			BFTNode.random(),
-			randomVoteData(),
-			Math.abs(random.nextLong()) + 1,
-			randomECDSASignature(),
-			randomHighQC(),
-			Optional.of(randomECDSASignature())
-		);
-	}
+  public static Vote randomVote() {
+    return new Vote(
+        BFTNode.random(),
+        randomVoteData(),
+        Math.abs(random.nextLong()) + 1,
+        randomECDSASignature(),
+        randomHighQC(),
+        Optional.of(randomECDSASignature()));
+  }
 
-	public static Proposal randomProposal() {
-		var qc = randomQC();
-		var txn = Txn.create(new byte[]{0, 1, 2, 3});
-		var author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		var vertex = UnverifiedVertex.create(qc, randomView(), List.of(txn), author);
-		return new Proposal(vertex, qc, ECDSASignature.zeroSignature(), Optional.empty());
-	}
+  public static Proposal randomProposal() {
+    var qc = randomQC();
+    var txn = Txn.create(new byte[] {0, 1, 2, 3});
+    var author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
+    var vertex = UnverifiedVertex.create(qc, randomView(), List.of(txn), author);
+    return new Proposal(vertex, qc, ECDSASignature.zeroSignature(), Optional.empty());
+  }
 
-	public static VoteData randomVoteData() {
-		return new VoteData(randomBFTHeader(), randomBFTHeader(), randomBFTHeader());
-	}
+  public static VoteData randomVoteData() {
+    return new VoteData(randomBFTHeader(), randomBFTHeader(), randomBFTHeader());
+  }
 
-	public static BFTHeader randomBFTHeader() {
-		return new BFTHeader(
-			randomView(),
-			HashCode.fromLong(random.nextLong()),
-			LedgerHeader.create(
-				Math.abs(random.nextLong()),
-				randomView(),
-				new AccumulatorState(Math.abs(random.nextLong()) + 1, HashCode.fromLong(random.nextLong())),
-				Math.abs(random.nextLong()) + 1,
-				BFTValidatorSet.from(
-					ImmutableSet.<BFTValidator>builder()
-						.add(BFTValidator.from(BFTNode.random(), UInt256.from(random.nextLong())))
-						.build())
-			)
-		);
-	}
+  public static BFTHeader randomBFTHeader() {
+    return new BFTHeader(
+        randomView(),
+        HashCode.fromLong(random.nextLong()),
+        LedgerHeader.create(
+            Math.abs(random.nextLong()),
+            randomView(),
+            new AccumulatorState(
+                Math.abs(random.nextLong()) + 1, HashCode.fromLong(random.nextLong())),
+            Math.abs(random.nextLong()) + 1,
+            BFTValidatorSet.from(
+                ImmutableSet.<BFTValidator>builder()
+                    .add(BFTValidator.from(BFTNode.random(), UInt256.from(random.nextLong())))
+                    .build())));
+  }
 
-	public static TimestampedECDSASignatures randomTimestampedECDSASignatures() {
-		return new TimestampedECDSASignatures(
-			ImmutableMap.<BFTNode, TimestampedECDSASignature>builder()
-				.put(BFTNode.random(), randomTimestampedECDSASignature())
-				.build()
-		);
-	}
+  public static TimestampedECDSASignatures randomTimestampedECDSASignatures() {
+    return new TimestampedECDSASignatures(
+        ImmutableMap.<BFTNode, TimestampedECDSASignature>builder()
+            .put(BFTNode.random(), randomTimestampedECDSASignature())
+            .build());
+  }
 
-	public static TimestampedECDSASignature randomTimestampedECDSASignature() {
-		return TimestampedECDSASignature.from(
-			Math.abs(random.nextLong()),
-			randomECDSASignature()
-		);
-	}
+  public static TimestampedECDSASignature randomTimestampedECDSASignature() {
+    return TimestampedECDSASignature.from(Math.abs(random.nextLong()), randomECDSASignature());
+  }
 
-	public static ECDSASignature randomECDSASignature() {
-		return ECDSASignature.create(
-			BigInteger.valueOf(Math.abs(random.nextLong())),
-			BigInteger.valueOf(Math.abs(random.nextLong())),
-			(random.nextInt() & 1)
-		);
-	}
+  public static ECDSASignature randomECDSASignature() {
+    return ECDSASignature.create(
+        BigInteger.valueOf(Math.abs(random.nextLong())),
+        BigInteger.valueOf(Math.abs(random.nextLong())),
+        (random.nextInt() & 1));
+  }
 
-	public static HighQC randomHighQC() {
-		return HighQC.from(randomQC(), randomQC(), Optional.of(randomTimeoutCertificate()));
-	}
+  public static HighQC randomHighQC() {
+    return HighQC.from(randomQC(), randomQC(), Optional.of(randomTimeoutCertificate()));
+  }
 
-	public static TimeoutCertificate randomTimeoutCertificate() {
-		return new TimeoutCertificate(Math.abs(random.nextLong()), randomView(), randomTimestampedECDSASignatures());
-	}
+  public static TimeoutCertificate randomTimeoutCertificate() {
+    return new TimeoutCertificate(
+        Math.abs(random.nextLong()), randomView(), randomTimestampedECDSASignatures());
+  }
 
-	public static View randomView() {
-		return View.of(Math.abs(random.nextLong()));
-	}
+  public static View randomView() {
+    return View.of(Math.abs(random.nextLong()));
+  }
 }

@@ -68,12 +68,10 @@ import com.google.inject.AbstractModule;
 import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.statecomputer.RandomHashTxnsGenerator;
 
-/**
- * Module which provides a random hash command generator
- */
+/** Module which provides a random hash command generator */
 public class MockedCommandGeneratorModule extends AbstractModule {
-	@Override
-	protected void configure() {
-		bind(NextTxnsGenerator.class).to(RandomHashTxnsGenerator.class);
-	}
+  @Override
+  protected void configure() {
+    bind(NextTxnsGenerator.class).to(RandomHashTxnsGenerator.class);
+  }
 }

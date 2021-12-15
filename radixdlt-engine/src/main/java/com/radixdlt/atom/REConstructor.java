@@ -66,57 +66,57 @@ package com.radixdlt.atom;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Set of action to constructors mapper
- */
+/** Set of action to constructors mapper */
 public final class REConstructor {
-	private final Map<Class<? extends TxAction>, ActionConstructor<?>> constructors;
-	private final UInt256 perByteFee;
+  private final Map<Class<? extends TxAction>, ActionConstructor<?>> constructors;
+  private final UInt256 perByteFee;
 
-	private REConstructor(Map<Class<? extends TxAction>, ActionConstructor<?>> constructors, UInt256 perByteFee) {
-		this.constructors = constructors;
-		this.perByteFee = perByteFee;
-	}
+  private REConstructor(
+      Map<Class<? extends TxAction>, ActionConstructor<?>> constructors, UInt256 perByteFee) {
+    this.constructors = constructors;
+    this.perByteFee = perByteFee;
+  }
 
-	public static Builder newBuilder() {
-		return new Builder();
-	}
+  public static Builder newBuilder() {
+    return new Builder();
+  }
 
-	public static class Builder {
-		private ImmutableMap.Builder<Class<? extends TxAction>, ActionConstructor<?>> mapBuilder = ImmutableMap.builder();
-		private UInt256 perByteFee;
+  public static class Builder {
+    private ImmutableMap.Builder<Class<? extends TxAction>, ActionConstructor<?>> mapBuilder =
+        ImmutableMap.builder();
+    private UInt256 perByteFee;
 
-		private Builder() {
-		}
+    private Builder() {}
 
-		public Builder perByteFee(UInt256 perByteFee) {
-			this.perByteFee = perByteFee;
-			return this;
-		}
+    public Builder perByteFee(UInt256 perByteFee) {
+      this.perByteFee = perByteFee;
+      return this;
+    }
 
-		public <T extends TxAction> Builder put(Class<T> actionClass, ActionConstructor<T> constructor) {
-			mapBuilder.put(actionClass, constructor);
-			return this;
-		}
+    public <T extends TxAction> Builder put(
+        Class<T> actionClass, ActionConstructor<T> constructor) {
+      mapBuilder.put(actionClass, constructor);
+      return this;
+    }
 
-		public REConstructor build() {
-			return new REConstructor(mapBuilder.build(), perByteFee);
-		}
-	}
+    public REConstructor build() {
+      return new REConstructor(mapBuilder.build(), perByteFee);
+    }
+  }
 
-	public Optional<UInt256> getPerByteFee() {
-		return Optional.ofNullable(perByteFee);
-	}
+  public Optional<UInt256> getPerByteFee() {
+    return Optional.ofNullable(perByteFee);
+  }
 
-	public <T extends TxAction> void construct(T action, TxBuilder txBuilder) throws TxBuilderException {
-		var actionConstructor = (ActionConstructor<T>) constructors.get(action.getClass());
-		if (actionConstructor == null) {
-			throw new IllegalArgumentException("Constructor not found for " + action);
-		}
-		actionConstructor.construct(action, txBuilder);
-	}
+  public <T extends TxAction> void construct(T action, TxBuilder txBuilder)
+      throws TxBuilderException {
+    var actionConstructor = (ActionConstructor<T>) constructors.get(action.getClass());
+    if (actionConstructor == null) {
+      throw new IllegalArgumentException("Constructor not found for " + action);
+    }
+    actionConstructor.construct(action, txBuilder);
+  }
 }

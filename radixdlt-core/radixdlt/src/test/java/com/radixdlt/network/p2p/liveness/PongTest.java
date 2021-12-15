@@ -68,9 +68,8 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 public final class PongTest {
-	@Test
-	public void equalsTest() {
-		EqualsVerifier.forClass(Pong.class)
-			.verify();
-	}
+  @Test
+  public void equalsTest() {
+    EqualsVerifier.forClass(Pong.class).verify();
+  }
 }

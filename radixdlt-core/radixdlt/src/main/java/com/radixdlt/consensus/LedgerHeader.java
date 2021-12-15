@@ -64,6 +64,8 @@
 
 package com.radixdlt.consensus;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
@@ -78,167 +80,165 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
-import javax.annotation.concurrent.Immutable;
 import java.util.Objects;
 import java.util.Optional;
+import javax.annotation.concurrent.Immutable;
 
-import static java.util.Objects.requireNonNull;
-
-/**
- * Ledger accumulator which gets voted and agreed upon
- */
+/** Ledger accumulator which gets voted and agreed upon */
 @Immutable
 @SerializerId2("consensus.ledger_header")
 public final class LedgerHeader {
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-	SerializerDummy serializer = SerializerDummy.DUMMY;
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+  SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("epoch")
-	@DsonOutput(Output.ALL)
-	private final long epoch;
+  @JsonProperty("epoch")
+  @DsonOutput(Output.ALL)
+  private final long epoch;
 
-	private final View view;
+  private final View view;
 
-	@JsonProperty("accumulator_state")
-	@DsonOutput(Output.ALL)
-	private final AccumulatorState accumulatorState;
+  @JsonProperty("accumulator_state")
+  @DsonOutput(Output.ALL)
+  private final AccumulatorState accumulatorState;
 
-	@JsonProperty("timestamp")
-	@DsonOutput(Output.ALL)
-	private final long timestamp; // TODO: Move into command accumulator
+  @JsonProperty("timestamp")
+  @DsonOutput(Output.ALL)
+  private final long timestamp; // TODO: Move into command accumulator
 
-	@JsonProperty("next_validators")
-	@DsonOutput(Output.ALL)
-	private final ImmutableSet<BFTValidator> nextValidators;
+  @JsonProperty("next_validators")
+  @DsonOutput(Output.ALL)
+  private final ImmutableSet<BFTValidator> nextValidators;
 
-	// TODO: Replace isEndOfEpoch with nextValidatorSet
-	@JsonCreator
-	@VisibleForTesting
-	LedgerHeader(
-		@JsonProperty("epoch") long epoch,
-		@JsonProperty("view") long view,
-		@JsonProperty(value = "accumulator_state", required = true) AccumulatorState accumulatorState,
-		@JsonProperty("timestamp") long timestamp,
-		@JsonProperty("next_validators") ImmutableSet<BFTValidator> nextValidators
-	) {
-		this(epoch, View.of(view), accumulatorState, timestamp, nextValidators);
-	}
+  // TODO: Replace isEndOfEpoch with nextValidatorSet
+  @JsonCreator
+  @VisibleForTesting
+  LedgerHeader(
+      @JsonProperty("epoch") long epoch,
+      @JsonProperty("view") long view,
+      @JsonProperty(value = "accumulator_state", required = true) AccumulatorState accumulatorState,
+      @JsonProperty("timestamp") long timestamp,
+      @JsonProperty("next_validators") ImmutableSet<BFTValidator> nextValidators) {
+    this(epoch, View.of(view), accumulatorState, timestamp, nextValidators);
+  }
 
-	private LedgerHeader(
-		long epoch,
-		View view,
-		AccumulatorState accumulatorState,
-		long timestamp,
-		ImmutableSet<BFTValidator> nextValidators
-	) {
-		this.epoch = epoch;
+  private LedgerHeader(
+      long epoch,
+      View view,
+      AccumulatorState accumulatorState,
+      long timestamp,
+      ImmutableSet<BFTValidator> nextValidators) {
+    this.epoch = epoch;
 
-		if (epoch < 0) {
-			throw new IllegalArgumentException("Epoch can't be < 0");
-		}
+    if (epoch < 0) {
+      throw new IllegalArgumentException("Epoch can't be < 0");
+    }
 
-		this.view = view;
-		this.accumulatorState = requireNonNull(accumulatorState);
-		this.nextValidators = nextValidators;
-		this.timestamp = timestamp;
-	}
+    this.view = view;
+    this.accumulatorState = requireNonNull(accumulatorState);
+    this.nextValidators = nextValidators;
+    this.timestamp = timestamp;
+  }
 
-	//TODO: used only for tests, move elsewhere https://radixdlt.atlassian.net/browse/NT-2
-	public static LedgerHeader mocked() {
-		return new LedgerHeader(0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0, null);
-	}
+  // TODO: used only for tests, move elsewhere https://radixdlt.atlassian.net/browse/NT-2
+  public static LedgerHeader mocked() {
+    return new LedgerHeader(
+        0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0, null);
+  }
 
-	public static LedgerHeader genesis(AccumulatorState accumulatorState, BFTValidatorSet nextValidators, long timestamp) {
-		return new LedgerHeader(
-			0, View.genesis(), accumulatorState, timestamp,
-			nextValidators == null ? null : nextValidators.getValidators()
-		);
-	}
+  public static LedgerHeader genesis(
+      AccumulatorState accumulatorState, BFTValidatorSet nextValidators, long timestamp) {
+    return new LedgerHeader(
+        0,
+        View.genesis(),
+        accumulatorState,
+        timestamp,
+        nextValidators == null ? null : nextValidators.getValidators());
+  }
 
-	public static LedgerHeader create(
-		long epoch,
-		View view,
-		AccumulatorState accumulatorState,
-		long timestamp
-	) {
-		return new LedgerHeader(epoch, view, accumulatorState, timestamp, null);
-	}
+  public static LedgerHeader create(
+      long epoch, View view, AccumulatorState accumulatorState, long timestamp) {
+    return new LedgerHeader(epoch, view, accumulatorState, timestamp, null);
+  }
 
-	public static LedgerHeader create(
-		long epoch,
-		View view,
-		AccumulatorState accumulatorState,
-		long timestamp,
-		BFTValidatorSet validatorSet
-	) {
-		return new LedgerHeader(epoch, view, accumulatorState, timestamp, validatorSet == null ? null : validatorSet.getValidators());
-	}
+  public static LedgerHeader create(
+      long epoch,
+      View view,
+      AccumulatorState accumulatorState,
+      long timestamp,
+      BFTValidatorSet validatorSet) {
+    return new LedgerHeader(
+        epoch,
+        view,
+        accumulatorState,
+        timestamp,
+        validatorSet == null ? null : validatorSet.getValidators());
+  }
 
-	public LedgerHeader updateViewAndTimestamp(View view, long timestamp) {
-		return new LedgerHeader(
-			this.epoch,
-			view,
-			this.accumulatorState,
-			timestamp,
-			this.nextValidators
-		);
-	}
+  public LedgerHeader updateViewAndTimestamp(View view, long timestamp) {
+    return new LedgerHeader(
+        this.epoch, view, this.accumulatorState, timestamp, this.nextValidators);
+  }
 
-	@JsonProperty("view")
-	@DsonOutput(Output.ALL)
-	private long getSerializerView() {
-		return view.number();
-	}
+  @JsonProperty("view")
+  @DsonOutput(Output.ALL)
+  private long getSerializerView() {
+    return view.number();
+  }
 
-	public View getView() {
-		return view;
-	}
+  public View getView() {
+    return view;
+  }
 
-	public Optional<BFTValidatorSet> getNextValidatorSet() {
-		return Optional.ofNullable(nextValidators).map(BFTValidatorSet::from);
-	}
+  public Optional<BFTValidatorSet> getNextValidatorSet() {
+    return Optional.ofNullable(nextValidators).map(BFTValidatorSet::from);
+  }
 
-	public AccumulatorState getAccumulatorState() {
-		return accumulatorState;
-	}
+  public AccumulatorState getAccumulatorState() {
+    return accumulatorState;
+  }
 
-	public long getEpoch() {
-		return epoch;
-	}
+  public long getEpoch() {
+    return epoch;
+  }
 
-	public boolean isEndOfEpoch() {
-		return nextValidators != null;
-	}
+  public boolean isEndOfEpoch() {
+    return nextValidators != null;
+  }
 
-	public long timestamp() {
-		return this.timestamp;
-	}
+  public long timestamp() {
+    return this.timestamp;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.accumulatorState, this.timestamp, this.epoch, this.view, this.nextValidators);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        this.accumulatorState, this.timestamp, this.epoch, this.view, this.nextValidators);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (o == this) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) {
+      return true;
+    }
 
-		return (o instanceof LedgerHeader other)
-			   && this.timestamp == other.timestamp
-			   && Objects.equals(this.accumulatorState, other.accumulatorState)
-			   && this.epoch == other.epoch
-			   && Objects.equals(this.view, other.view)
-			   && Objects.equals(this.nextValidators, other.nextValidators);
-	}
+    return (o instanceof LedgerHeader other)
+        && this.timestamp == other.timestamp
+        && Objects.equals(this.accumulatorState, other.accumulatorState)
+        && this.epoch == other.epoch
+        && Objects.equals(this.view, other.view)
+        && Objects.equals(this.nextValidators, other.nextValidators);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{accumulator=%s timestamp=%s epoch=%s view=%s nextValidators=%s}",
-			getClass().getSimpleName(), this.accumulatorState, this.timestamp, this.epoch, this.view, this.nextValidators
-		);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{accumulator=%s timestamp=%s epoch=%s view=%s nextValidators=%s}",
+        getClass().getSimpleName(),
+        this.accumulatorState,
+        this.timestamp,
+        this.epoch,
+        this.view,
+        this.nextValidators);
+  }
 }

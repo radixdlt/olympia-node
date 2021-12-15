@@ -65,6 +65,6 @@
 package com.radixdlt.client.lib.api.rpc;
 
 public enum PortSelector {
-	PRIMARY,
-	SECONDARY;
+  PRIMARY,
+  SECONDARY;
 }

@@ -76,68 +76,66 @@ import com.radixdlt.serialization.SerializerId2;
 
 @SerializerId2("client_atom")
 public class TestClientAtom implements TestLedgerAtom {
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput({Output.ALL})
-	SerializerDummy serializer = SerializerDummy.DUMMY;
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput({Output.ALL})
+  SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("metadata")
-	@DsonOutput({Output.ALL})
-	private final String metaData;
+  @JsonProperty("metadata")
+  @DsonOutput({Output.ALL})
+  private final String metaData;
 
-	@JsonProperty("aid")
-	@DsonOutput({Output.ALL})
-	private final AID aid;
+  @JsonProperty("aid")
+  @DsonOutput({Output.ALL})
+  private final AID aid;
 
-	@JsonCreator
-	protected TestClientAtom(
-			@JsonProperty("aid") AID aid,
-			@JsonProperty("metadata") String metaData
-	) {
-		this.aid = aid;
-		this.metaData = metaData == null ? "no metadata" : metaData;
-	}
+  @JsonCreator
+  protected TestClientAtom(
+      @JsonProperty("aid") AID aid, @JsonProperty("metadata") String metaData) {
+    this.aid = aid;
+    this.metaData = metaData == null ? "no metadata" : metaData;
+  }
 
-	public static TestClientAtom create(String metadata) {
-		var id = AID.from(HashUtils.random(AID.BYTES).asBytes());
-		return new TestClientAtom(id, metadata);
-	}
+  public static TestClientAtom create(String metadata) {
+    var id = AID.from(HashUtils.random(AID.BYTES).asBytes());
+    return new TestClientAtom(id, metadata);
+  }
 
-	public AID aid() {
-		return aid;
-	}
+  public AID aid() {
+    return aid;
+  }
 
-	public String metaData() {
-		return metaData;
-	}
+  public String metaData() {
+    return metaData;
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof TestClientAtom)) {
-			return false;
-		}
+    if (!(o instanceof TestClientAtom)) {
+      return false;
+    }
 
-		TestClientAtom that = (TestClientAtom) o;
+    TestClientAtom that = (TestClientAtom) o;
 
-		if (!metaData.equals(that.metaData)) {
-			return false;
-		}
+    if (!metaData.equals(that.metaData)) {
+      return false;
+    }
 
-		return aid.equals(that.aid);
-	}
+    return aid.equals(that.aid);
+  }
 
-	@Override
-	public int hashCode() {
-		int result = metaData.hashCode();
-		result = 31 * result + aid.hashCode();
-		return result;
-	}
+  @Override
+  public int hashCode() {
+    int result = metaData.hashCode();
+    result = 31 * result + aid.hashCode();
+    return result;
+  }
 
-	@Override
-	public String toString() {
-		return "ClientAtom(metaData: '" + metaData + "', aid: " + aid + ')';
-	}
+  @Override
+  public String toString() {
+    return "ClientAtom(metaData: '" + metaData + "', aid: " + aid + ')';
+  }
 }

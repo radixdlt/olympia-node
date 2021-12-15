@@ -77,39 +77,46 @@ import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Check that the network is making progress by ensuring that new QCs and epochs
- * are progressively increasing.
+ * Check that the network is making progress by ensuring that new QCs and epochs are progressively
+ * increasing.
  */
 public class LivenessInvariant implements TestInvariant {
-	private final NodeEvents nodeEvents;
-	private final long duration;
-	private final TimeUnit timeUnit;
+  private final NodeEvents nodeEvents;
+  private final long duration;
+  private final TimeUnit timeUnit;
 
-	public LivenessInvariant(NodeEvents nodeEvents, long duration, TimeUnit timeUnit) {
-		this.nodeEvents = nodeEvents;
-		this.duration = duration;
-		this.timeUnit = timeUnit;
-	}
+  public LivenessInvariant(NodeEvents nodeEvents, long duration, TimeUnit timeUnit) {
+    this.nodeEvents = nodeEvents;
+    this.duration = duration;
+    this.timeUnit = timeUnit;
+  }
 
-	@Override
-	public Observable<TestInvariantError> check(RunningNetwork network) {
-		return
-			Observable.<QuorumCertificate>create(emitter -> {
-				nodeEvents.addListener((node, highQCUpdate) -> {
-					emitter.onNext(highQCUpdate.getHighQC().highestQC());
-				}, BFTHighQCUpdate.class);
-				nodeEvents.addListener((node, committed) -> {
-					emitter.onNext(committed.getVertexStoreState().getHighQC().highestQC());
-				}, BFTCommittedUpdate.class);
-			})
-				.serialize()
-				.map(QuorumCertificate::getProposed)
-				.map(header -> EpochView.of(header.getLedgerHeader().getEpoch(), header.getView()))
-				.scan(EpochView.of(0, View.genesis()), Ordering.natural()::max)
-				.distinctUntilChanged()
-				.debounce(duration, timeUnit)
-				.map(epochView -> new TestInvariantError(
-					String.format("Highest QC hasn't increased from %s after %s %s", epochView, duration, timeUnit)
-				));
-	}
+  @Override
+  public Observable<TestInvariantError> check(RunningNetwork network) {
+    return Observable.<QuorumCertificate>create(
+            emitter -> {
+              nodeEvents.addListener(
+                  (node, highQCUpdate) -> {
+                    emitter.onNext(highQCUpdate.getHighQC().highestQC());
+                  },
+                  BFTHighQCUpdate.class);
+              nodeEvents.addListener(
+                  (node, committed) -> {
+                    emitter.onNext(committed.getVertexStoreState().getHighQC().highestQC());
+                  },
+                  BFTCommittedUpdate.class);
+            })
+        .serialize()
+        .map(QuorumCertificate::getProposed)
+        .map(header -> EpochView.of(header.getLedgerHeader().getEpoch(), header.getView()))
+        .scan(EpochView.of(0, View.genesis()), Ordering.natural()::max)
+        .distinctUntilChanged()
+        .debounce(duration, timeUnit)
+        .map(
+            epochView ->
+                new TestInvariantError(
+                    String.format(
+                        "Highest QC hasn't increased from %s after %s %s",
+                        epochView, duration, timeUnit)));
+  }
 }

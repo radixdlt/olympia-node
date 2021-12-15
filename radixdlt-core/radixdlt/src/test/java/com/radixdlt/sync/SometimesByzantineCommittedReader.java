@@ -77,200 +77,196 @@ import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import org.junit.Ignore;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.function.UnaryOperator;
+import org.junit.Ignore;
 
-/**
- * A reader which sometimes returns erroneous commands.
- */
+/** A reader which sometimes returns erroneous commands. */
 public final class SometimesByzantineCommittedReader implements CommittedReader {
-	private final InMemoryCommittedReader correctReader;
-	private final LedgerAccumulator accumulator;
-	private final Hasher hasher;
-	private ReadType currentReadType;
+  private final InMemoryCommittedReader correctReader;
+  private final LedgerAccumulator accumulator;
+  private final Hasher hasher;
+  private ReadType currentReadType;
 
-	@Inject
-	public SometimesByzantineCommittedReader(Random random, LedgerAccumulator accumulator, InMemoryCommittedReader correctReader, Hasher hasher) {
-		this.correctReader = Objects.requireNonNull(correctReader);
-		this.accumulator = Objects.requireNonNull(accumulator);
-		this.currentReadType = ReadType.values()[random.nextInt(ReadType.values().length)];
-		this.hasher = hasher;
-	}
+  @Inject
+  public SometimesByzantineCommittedReader(
+      Random random,
+      LedgerAccumulator accumulator,
+      InMemoryCommittedReader correctReader,
+      Hasher hasher) {
+    this.correctReader = Objects.requireNonNull(correctReader);
+    this.accumulator = Objects.requireNonNull(accumulator);
+    this.currentReadType = ReadType.values()[random.nextInt(ReadType.values().length)];
+    this.hasher = hasher;
+  }
 
-	public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
-		return this.correctReader.updateProcessor();
-	}
+  public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
+    return this.correctReader.updateProcessor();
+  }
 
-	private static class ByzantineVerifiedCommandsAndProofBuilder {
-		private DtoLedgerProof request;
-		private UnaryOperator<Txn> commandMapper;
-		private VerifiedTxnsAndProof base;
-		private TimestampedECDSASignatures overwriteSignatures;
-		private LedgerAccumulator accumulator;
-		private Hasher hasher;
+  private static class ByzantineVerifiedCommandsAndProofBuilder {
+    private DtoLedgerProof request;
+    private UnaryOperator<Txn> commandMapper;
+    private VerifiedTxnsAndProof base;
+    private TimestampedECDSASignatures overwriteSignatures;
+    private LedgerAccumulator accumulator;
+    private Hasher hasher;
 
-		public ByzantineVerifiedCommandsAndProofBuilder hasher(Hasher hasher) {
-			this.hasher = hasher;
-			return this;
-		}
+    public ByzantineVerifiedCommandsAndProofBuilder hasher(Hasher hasher) {
+      this.hasher = hasher;
+      return this;
+    }
 
-		public ByzantineVerifiedCommandsAndProofBuilder accumulator(DtoLedgerProof request, LedgerAccumulator accumulator) {
-			this.request = request;
-			this.accumulator = accumulator;
-			return this;
-		}
+    public ByzantineVerifiedCommandsAndProofBuilder accumulator(
+        DtoLedgerProof request, LedgerAccumulator accumulator) {
+      this.request = request;
+      this.accumulator = accumulator;
+      return this;
+    }
 
-		public ByzantineVerifiedCommandsAndProofBuilder base(VerifiedTxnsAndProof base) {
-			this.base = base;
-			return this;
-		}
+    public ByzantineVerifiedCommandsAndProofBuilder base(VerifiedTxnsAndProof base) {
+      this.base = base;
+      return this;
+    }
 
-		public ByzantineVerifiedCommandsAndProofBuilder replaceCommands(UnaryOperator<Txn> commandMapper) {
-			this.commandMapper = commandMapper;
-			return this;
-		}
+    public ByzantineVerifiedCommandsAndProofBuilder replaceCommands(
+        UnaryOperator<Txn> commandMapper) {
+      this.commandMapper = commandMapper;
+      return this;
+    }
 
-		public ByzantineVerifiedCommandsAndProofBuilder overwriteSignatures(TimestampedECDSASignatures overwriteSignatures) {
-			this.overwriteSignatures = overwriteSignatures;
-			return this;
-		}
+    public ByzantineVerifiedCommandsAndProofBuilder overwriteSignatures(
+        TimestampedECDSASignatures overwriteSignatures) {
+      this.overwriteSignatures = overwriteSignatures;
+      return this;
+    }
 
-		public VerifiedTxnsAndProof build() {
-			List<Txn> txns;
-			if (commandMapper != null) {
-				txns = base.getTxns().stream()
-					.map(commandMapper)
-					.collect(ImmutableList.toImmutableList());
-			} else {
-				txns = base.getTxns();
-			}
+    public VerifiedTxnsAndProof build() {
+      List<Txn> txns;
+      if (commandMapper != null) {
+        txns = base.getTxns().stream().map(commandMapper).collect(ImmutableList.toImmutableList());
+      } else {
+        txns = base.getTxns();
+      }
 
-			AccumulatorState accumulatorState;
-			if (accumulator != null) {
-				accumulatorState = request.getLedgerHeader().getAccumulatorState();
-				for (var txn : txns) {
-					accumulatorState = accumulator.accumulate(accumulatorState, txn.getId().asHashCode());
-				}
-			} else {
-				accumulatorState = base.getProof().getAccumulatorState();
-			}
+      AccumulatorState accumulatorState;
+      if (accumulator != null) {
+        accumulatorState = request.getLedgerHeader().getAccumulatorState();
+        for (var txn : txns) {
+          accumulatorState = accumulator.accumulate(accumulatorState, txn.getId().asHashCode());
+        }
+      } else {
+        accumulatorState = base.getProof().getAccumulatorState();
+      }
 
-			LedgerHeader ledgerHeader = LedgerHeader.create(
-				base.getProof().getEpoch(),
-				base.getProof().getView(),
-				accumulatorState,
-				base.getProof().timestamp(),
-				base.getProof().getNextValidatorSet().orElse(null)
-			);
-			var signatures = overwriteSignatures != null ? overwriteSignatures : base.getProof().getSignatures();
-			var headerAndProof = new LedgerProof(
-				base.getProof().toDto().getOpaque(),
-				ledgerHeader,
-				signatures
-			);
+      LedgerHeader ledgerHeader =
+          LedgerHeader.create(
+              base.getProof().getEpoch(),
+              base.getProof().getView(),
+              accumulatorState,
+              base.getProof().timestamp(),
+              base.getProof().getNextValidatorSet().orElse(null));
+      var signatures =
+          overwriteSignatures != null ? overwriteSignatures : base.getProof().getSignatures();
+      var headerAndProof =
+          new LedgerProof(base.getProof().toDto().getOpaque(), ledgerHeader, signatures);
 
-			return VerifiedTxnsAndProof.create(txns, headerAndProof);
-		}
-	}
+      return VerifiedTxnsAndProof.create(txns, headerAndProof);
+    }
+  }
 
-	@Ignore("This is not a test, but JUnit4 picks it as a test for some reason")
-	private enum ReadType {
-		GOOD {
-			@Override
-			VerifiedTxnsAndProof transform(
-				DtoLedgerProof request,
-				VerifiedTxnsAndProof correctCommands,
-				LedgerAccumulator ledgerAccumulator,
-				Hasher hasher
-			) {
-				return correctCommands;
-			}
-		},
-		BAD_COMMANDS {
-			@Override
-			VerifiedTxnsAndProof transform(
-				DtoLedgerProof request,
-				VerifiedTxnsAndProof correctCommands,
-				LedgerAccumulator ledgerAccumulator,
-				Hasher hasher
-			) {
-				return new ByzantineVerifiedCommandsAndProofBuilder()
-					.hasher(hasher)
-					.base(correctCommands)
-					.replaceCommands(cmd -> Txn.create(new byte[]{0}))
-					.build();
-			}
-		},
-		NO_SIGNATURES {
-			@Override
-			VerifiedTxnsAndProof transform(
-				DtoLedgerProof request,
-				VerifiedTxnsAndProof correctCommands,
-				LedgerAccumulator accumulator,
-				Hasher hasher
-			) {
-				return new ByzantineVerifiedCommandsAndProofBuilder()
-					.hasher(hasher)
-					.base(correctCommands)
-					.replaceCommands(cmd -> Txn.create(new byte[]{0}))
-					.accumulator(request, accumulator)
-					.overwriteSignatures(new TimestampedECDSASignatures())
-					.build();
-			}
-		},
-		BAD_SIGNATURES {
-			@Override
-			VerifiedTxnsAndProof transform(
-				DtoLedgerProof request,
-				VerifiedTxnsAndProof correctCommands,
-				LedgerAccumulator accumulator,
-				Hasher hasher
-			) {
-				return new ByzantineVerifiedCommandsAndProofBuilder()
-					.hasher(hasher)
-					.base(correctCommands)
-					.replaceCommands(cmd -> Txn.create(new byte[]{0}))
-					.accumulator(request, accumulator)
-					.build();
-			}
-		};
+  @Ignore("This is not a test, but JUnit4 picks it as a test for some reason")
+  private enum ReadType {
+    GOOD {
+      @Override
+      VerifiedTxnsAndProof transform(
+          DtoLedgerProof request,
+          VerifiedTxnsAndProof correctCommands,
+          LedgerAccumulator ledgerAccumulator,
+          Hasher hasher) {
+        return correctCommands;
+      }
+    },
+    BAD_COMMANDS {
+      @Override
+      VerifiedTxnsAndProof transform(
+          DtoLedgerProof request,
+          VerifiedTxnsAndProof correctCommands,
+          LedgerAccumulator ledgerAccumulator,
+          Hasher hasher) {
+        return new ByzantineVerifiedCommandsAndProofBuilder()
+            .hasher(hasher)
+            .base(correctCommands)
+            .replaceCommands(cmd -> Txn.create(new byte[] {0}))
+            .build();
+      }
+    },
+    NO_SIGNATURES {
+      @Override
+      VerifiedTxnsAndProof transform(
+          DtoLedgerProof request,
+          VerifiedTxnsAndProof correctCommands,
+          LedgerAccumulator accumulator,
+          Hasher hasher) {
+        return new ByzantineVerifiedCommandsAndProofBuilder()
+            .hasher(hasher)
+            .base(correctCommands)
+            .replaceCommands(cmd -> Txn.create(new byte[] {0}))
+            .accumulator(request, accumulator)
+            .overwriteSignatures(new TimestampedECDSASignatures())
+            .build();
+      }
+    },
+    BAD_SIGNATURES {
+      @Override
+      VerifiedTxnsAndProof transform(
+          DtoLedgerProof request,
+          VerifiedTxnsAndProof correctCommands,
+          LedgerAccumulator accumulator,
+          Hasher hasher) {
+        return new ByzantineVerifiedCommandsAndProofBuilder()
+            .hasher(hasher)
+            .base(correctCommands)
+            .replaceCommands(cmd -> Txn.create(new byte[] {0}))
+            .accumulator(request, accumulator)
+            .build();
+      }
+    };
 
-		abstract VerifiedTxnsAndProof transform(
-			DtoLedgerProof request,
-			VerifiedTxnsAndProof correctCommands,
-			LedgerAccumulator ledgerAccumulator,
-			Hasher hasher
-		);
-	}
+    abstract VerifiedTxnsAndProof transform(
+        DtoLedgerProof request,
+        VerifiedTxnsAndProof correctCommands,
+        LedgerAccumulator ledgerAccumulator,
+        Hasher hasher);
+  }
 
-	@Override
-	public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
-		VerifiedTxnsAndProof correctResult = correctReader.getNextCommittedTxns(start);
-		// TODO: Make epoch sync byzantine as well
-		if (start.getLedgerHeader().isEndOfEpoch()) {
-			return correctResult;
-		}
+  @Override
+  public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
+    VerifiedTxnsAndProof correctResult = correctReader.getNextCommittedTxns(start);
+    // TODO: Make epoch sync byzantine as well
+    if (start.getLedgerHeader().isEndOfEpoch()) {
+      return correctResult;
+    }
 
-		if (correctResult != null) {
-			currentReadType = ReadType.values()[(currentReadType.ordinal() + 1) % ReadType.values().length];
-			return currentReadType.transform(start, correctResult, accumulator, hasher);
-		}
+    if (correctResult != null) {
+      currentReadType =
+          ReadType.values()[(currentReadType.ordinal() + 1) % ReadType.values().length];
+      return currentReadType.transform(start, correctResult, accumulator, hasher);
+    }
 
-		return null;
-	}
+    return null;
+  }
 
-	@Override
-	public Optional<LedgerProof> getEpochProof(long epoch) {
-		return correctReader.getEpochProof(epoch);
-	}
+  @Override
+  public Optional<LedgerProof> getEpochProof(long epoch) {
+    return correctReader.getEpochProof(epoch);
+  }
 
-	@Override
-	public Optional<LedgerProof> getLastProof() {
-		return correctReader.getLastProof();
-	}
+  @Override
+  public Optional<LedgerProof> getLastProof() {
+    return correctReader.getLastProof();
+  }
 }

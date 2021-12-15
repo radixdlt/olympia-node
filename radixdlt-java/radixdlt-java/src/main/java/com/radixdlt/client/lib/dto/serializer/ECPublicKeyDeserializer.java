@@ -70,22 +70,22 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DeserializeException;
-
 import java.io.IOException;
 
 public class ECPublicKeyDeserializer extends StdDeserializer<ECPublicKey> {
-	public ECPublicKeyDeserializer() {
-		super(ECPublicKey.class);
-	}
+  public ECPublicKeyDeserializer() {
+    super(ECPublicKey.class);
+  }
 
-	@Override
-	public ECPublicKey deserialize(JsonParser parser, DeserializationContext ctxt) throws IOException {
-		var value = parser.getText();
+  @Override
+  public ECPublicKey deserialize(JsonParser parser, DeserializationContext ctxt)
+      throws IOException {
+    var value = parser.getText();
 
-		try {
-			return ECPublicKey.fromHex(value);
-		} catch (PublicKeyException e) {
-			throw new DeserializeException("Error while parsing address " + value, e);
-		}
-	}
+    try {
+      return ECPublicKey.fromHex(value);
+    } catch (PublicKeyException e) {
+      throw new DeserializeException("Error while parsing address " + value, e);
+    }
+  }
 }

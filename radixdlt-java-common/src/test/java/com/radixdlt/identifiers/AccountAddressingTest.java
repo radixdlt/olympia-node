@@ -64,91 +64,95 @@
 
 package com.radixdlt.identifiers;
 
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.Bytes;
-
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.Test;
 
 public class AccountAddressingTest {
-	private final AccountAddressing accountAddresses = AccountAddressing.bech32("brx");
-	private final BiMap<String, String> privateKeyToAccountAddress = HashBiMap.create(
-		Map.of(
-			"00", "brx1qsps28kdn4epn0c9ej2rcmwfz5a4jdhq2ez03x7h6jefvr4fnwnrtqqjqllv9",
-			"deadbeef", "brx1qspsel805pa0nhtdhemshp7hm0wjcvd60a8ulre6zxtd2qh3x4smq3sraak9a",
-			"deadbeefdeadbeef", "brx1qsp7gnv7g60plkk9lgskjghdlevyve6rtrzggk7x3fwmp4yfyjza7gcumgm9f",
-			"bead", "brx1qsppw0z477r695m9f9qjs3nj2vmdkd3rg4mfx7tf5v0gasrhz32jefqwxg7ul",
-			"aaaaaaaaaaaaaaaa", "brx1qspqsfad7e5k2k9agq74g40al0j9cllv7w0ylatvhy7m64wyrwymy5g7md96s"
-		)
-	);
+  private final AccountAddressing accountAddresses = AccountAddressing.bech32("brx");
+  private final BiMap<String, String> privateKeyToAccountAddress =
+      HashBiMap.create(
+          Map.of(
+              "00", "brx1qsps28kdn4epn0c9ej2rcmwfz5a4jdhq2ez03x7h6jefvr4fnwnrtqqjqllv9",
+              "deadbeef", "brx1qspsel805pa0nhtdhemshp7hm0wjcvd60a8ulre6zxtd2qh3x4smq3sraak9a",
+              "deadbeefdeadbeef",
+                  "brx1qsp7gnv7g60plkk9lgskjghdlevyve6rtrzggk7x3fwmp4yfyjza7gcumgm9f",
+              "bead", "brx1qsppw0z477r695m9f9qjs3nj2vmdkd3rg4mfx7tf5v0gasrhz32jefqwxg7ul",
+              "aaaaaaaaaaaaaaaa",
+                  "brx1qspqsfad7e5k2k9agq74g40al0j9cllv7w0ylatvhy7m64wyrwymy5g7md96s"));
 
-	private final BiMap<String, String> reAddrToAccountAddress = HashBiMap.create(
-		Map.of(
-			"04" + "02".repeat(33), "brx1qspqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqs7cr9az"
-		)
-	);
+  private final BiMap<String, String> reAddrToAccountAddress =
+      HashBiMap.create(
+          Map.of(
+              "04" + "02".repeat(33),
+              "brx1qspqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqs7cr9az"));
 
-	private final Map<String, String> invalidAddresses = Map.of(
-		"vb1qvz3anvawgvm7pwvjs7xmjg48dvndczkgnufh475k2tqa2vm5c6cq9u3702", "invalid hrp",
-		"brx1xhv8x3", "invalid address length 0",
-		"brx1qsqsyqcyq5rqzjh9c6", "invalid length for address type 4"
-	);
+  private final Map<String, String> invalidAddresses =
+      Map.of(
+          "vb1qvz3anvawgvm7pwvjs7xmjg48dvndczkgnufh475k2tqa2vm5c6cq9u3702", "invalid hrp",
+          "brx1xhv8x3", "invalid address length 0",
+          "brx1qsqsyqcyq5rqzjh9c6", "invalid length for address type 4");
 
-	@Test
-	public void test_validator_privkey_to_address_serialization() {
-		privateKeyToAccountAddress.forEach((privHex, expectedAddress) -> {
-			var keyPair = ECKeyPair.fromSeed(Bytes.fromHexString(privHex));
-			var publicKey = keyPair.getPublicKey();
-			var addr = REAddr.ofPubKeyAccount(publicKey);
-			var accountAddress = accountAddresses.of(addr);
-			assertThat(accountAddress).isEqualTo(expectedAddress);
-		});
-	}
+  @Test
+  public void test_validator_privkey_to_address_serialization() {
+    privateKeyToAccountAddress.forEach(
+        (privHex, expectedAddress) -> {
+          var keyPair = ECKeyPair.fromSeed(Bytes.fromHexString(privHex));
+          var publicKey = keyPair.getPublicKey();
+          var addr = REAddr.ofPubKeyAccount(publicKey);
+          var accountAddress = accountAddresses.of(addr);
+          assertThat(accountAddress).isEqualTo(expectedAddress);
+        });
+  }
 
-	@Test
-	public void test_re_addr_to_address_serialization() {
-		reAddrToAccountAddress.forEach((hex, expectedAddress) -> {
-			var addr = REAddr.of(Bytes.fromHexString(hex));
-			var accountAddr = accountAddresses.of(addr);
-			assertThat(accountAddr).isEqualTo(expectedAddress);
-		});
-	}
+  @Test
+  public void test_re_addr_to_address_serialization() {
+    reAddrToAccountAddress.forEach(
+        (hex, expectedAddress) -> {
+          var addr = REAddr.of(Bytes.fromHexString(hex));
+          var accountAddr = accountAddresses.of(addr);
+          assertThat(accountAddr).isEqualTo(expectedAddress);
+        });
+  }
 
-	@Test
-	public void test_priv_key_address_deserialization() {
-		for (var e : privateKeyToAccountAddress.entrySet()) {
-			var address = e.getValue();
-			var privHex = e.getKey();
-			var reAddr = accountAddresses.parseOrThrow(address, IllegalStateException::new);
-			var keyPair = ECKeyPair.fromSeed(Bytes.fromHexString(privHex));
-			var pubKey = keyPair.getPublicKey();
-			assertThat(reAddr).isEqualTo(REAddr.ofPubKeyAccount(pubKey));
-		}
-	}
+  @Test
+  public void test_priv_key_address_deserialization() {
+    for (var e : privateKeyToAccountAddress.entrySet()) {
+      var address = e.getValue();
+      var privHex = e.getKey();
+      var reAddr = accountAddresses.parseOrThrow(address, IllegalStateException::new);
+      var keyPair = ECKeyPair.fromSeed(Bytes.fromHexString(privHex));
+      var pubKey = keyPair.getPublicKey();
+      assertThat(reAddr).isEqualTo(REAddr.ofPubKeyAccount(pubKey));
+    }
+  }
 
-	@Test
-	public void test_re_addr_from_address_deserialization() {
-		for (var e : reAddrToAccountAddress.entrySet()) {
-			var address = e.getValue();
-			var hex = e.getKey();
-			var reAddr = REAddr.of(Bytes.fromHexString(hex));
-			assertThat(reAddr).isEqualTo(accountAddresses.parseOrThrow(address, IllegalStateException::new));
-		}
-	}
+  @Test
+  public void test_re_addr_from_address_deserialization() {
+    for (var e : reAddrToAccountAddress.entrySet()) {
+      var address = e.getValue();
+      var hex = e.getKey();
+      var reAddr = REAddr.of(Bytes.fromHexString(hex));
+      assertThat(reAddr)
+          .isEqualTo(accountAddresses.parseOrThrow(address, IllegalStateException::new));
+    }
+  }
 
-	@Test
-	public void test_invalid_addresses() {
-		for (var e : invalidAddresses.entrySet()) {
-			var address = e.getKey();
-			var expectedError = e.getValue();
-			assertThatThrownBy(() -> accountAddresses.parseOrThrow(address, IllegalStateException::new), expectedError)
-				.isInstanceOf(IllegalStateException.class);
-		}
-	}
+  @Test
+  public void test_invalid_addresses() {
+    for (var e : invalidAddresses.entrySet()) {
+      var address = e.getKey();
+      var expectedError = e.getValue();
+      assertThatThrownBy(
+              () -> accountAddresses.parseOrThrow(address, IllegalStateException::new),
+              expectedError)
+          .isInstanceOf(IllegalStateException.class);
+    }
+  }
 }

@@ -66,23 +66,23 @@ package com.radixdlt.crypto;
 
 import com.google.common.hash.HashCode;
 
-/**
- * An entity capable of producing a signature of type {@code <T>}.
- */
+/** An entity capable of producing a signature of type {@code <T>}. */
 public interface Signing<T> extends ECMultiplicationScalar {
-    /**
-     * Produces a signature of type {@code <T>} of {@code hash}.
-     * @param hash A hash of some message to sign as a byte array.
-     * @return A signature of type {@code <T>} of {@code hash}.
-     */
-    T sign(byte[] hash);
+  /**
+   * Produces a signature of type {@code <T>} of {@code hash}.
+   *
+   * @param hash A hash of some message to sign as a byte array.
+   * @return A signature of type {@code <T>} of {@code hash}.
+   */
+  T sign(byte[] hash);
 
-    /**
-     * Produces a signature of type {@code <T>} of {@code hash}.
-     * @param hash A hash of some message to sign.
-     * @return A signature of type {@code <T>} of {@code hash}.
-     */
-    default T sign(HashCode hash) {
-        return sign(hash.asBytes());
-    }
+  /**
+   * Produces a signature of type {@code <T>} of {@code hash}.
+   *
+   * @param hash A hash of some message to sign.
+   * @return A signature of type {@code <T>} of {@code hash}.
+   */
+  default T sign(HashCode hash) {
+    return sign(hash.asBytes());
+  }
 }

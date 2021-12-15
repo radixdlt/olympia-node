@@ -65,7 +65,7 @@
 package com.radixdlt.constraintmachine.exceptions;
 
 public final class SignedSystemException extends Exception {
-	public SignedSystemException() {
-		super("System updates should not be signed.");
-	}
+  public SignedSystemException() {
+    super("System updates should not be signed.");
+  }
 }

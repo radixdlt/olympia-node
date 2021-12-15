@@ -66,21 +66,20 @@ package com.radixdlt.application.system;
 
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.constraintmachine.REEvent;
-
 import java.util.List;
 
 public class NextValidatorSetEvent implements REEvent {
-	private final List<ValidatorStakeData> nextValidators;
+  private final List<ValidatorStakeData> nextValidators;
 
-	private NextValidatorSetEvent(List<ValidatorStakeData> nextValidators) {
-		this.nextValidators = nextValidators;
-	}
+  private NextValidatorSetEvent(List<ValidatorStakeData> nextValidators) {
+    this.nextValidators = nextValidators;
+  }
 
-	public static NextValidatorSetEvent create(List<ValidatorStakeData> nextValidators) {
-		return new NextValidatorSetEvent(List.copyOf(nextValidators));
-	}
+  public static NextValidatorSetEvent create(List<ValidatorStakeData> nextValidators) {
+    return new NextValidatorSetEvent(List.copyOf(nextValidators));
+  }
 
-	public List<ValidatorStakeData> nextValidators() {
-		return nextValidators;
-	}
+  public List<ValidatorStakeData> nextValidators() {
+    return nextValidators;
+  }
 }

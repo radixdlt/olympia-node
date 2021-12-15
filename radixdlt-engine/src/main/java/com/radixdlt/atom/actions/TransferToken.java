@@ -69,41 +69,42 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 public final class TransferToken implements TxAction {
-	private final REAddr from;
-	private final REAddr resourceAddr;
-	private final REAddr to;
-	private final UInt256 amount;
+  private final REAddr from;
+  private final REAddr resourceAddr;
+  private final REAddr to;
+  private final UInt256 amount;
 
-	public TransferToken(REAddr resourceAddr, REAddr from, REAddr to, UInt256 amount) {
-		if (amount.isZero()) {
-			throw new IllegalArgumentException("Must transfer > 0.");
-		}
+  public TransferToken(REAddr resourceAddr, REAddr from, REAddr to, UInt256 amount) {
+    if (amount.isZero()) {
+      throw new IllegalArgumentException("Must transfer > 0.");
+    }
 
-		this.resourceAddr = resourceAddr;
-		this.from = from;
-		this.to = to;
-		this.amount = amount;
-	}
+    this.resourceAddr = resourceAddr;
+    this.from = from;
+    this.to = to;
+    this.amount = amount;
+  }
 
-	public UInt256 amount() {
-		return amount;
-	}
+  public UInt256 amount() {
+    return amount;
+  }
 
-	public REAddr resourceAddr() {
-		return resourceAddr;
-	}
+  public REAddr resourceAddr() {
+    return resourceAddr;
+  }
 
-	public REAddr from() {
-		return from;
-	}
+  public REAddr from() {
+    return from;
+  }
 
-	public REAddr to() {
-		return to;
-	}
+  public REAddr to() {
+    return to;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{resource=%s from=%s to=%s amount=%s}", this.getClass().getSimpleName(),
-			resourceAddr, from, to, amount);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{resource=%s from=%s to=%s amount=%s}",
+        this.getClass().getSimpleName(), resourceAddr, from, to, amount);
+  }
 }

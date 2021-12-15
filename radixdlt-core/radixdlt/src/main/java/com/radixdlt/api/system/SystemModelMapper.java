@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.api.system;
 
+import static com.radixdlt.counters.SystemCounters.CounterType.*;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.system.openapitools.model.Address;
 import com.radixdlt.api.system.openapitools.model.AddressBookEntry;
@@ -79,166 +82,172 @@ import com.radixdlt.api.system.openapitools.model.Peer;
 import com.radixdlt.api.system.openapitools.model.PeerChannel;
 import com.radixdlt.api.system.openapitools.model.SyncConfiguration;
 import com.radixdlt.api.system.openapitools.model.SyncMetrics;
-import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
-import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.network.p2p.RadixNodeUri;
+import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
+import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.sync.SyncConfig;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 
-import static com.radixdlt.counters.SystemCounters.CounterType.*;
-
 public final class SystemModelMapper {
-	private final Addressing addressing;
+  private final Addressing addressing;
 
-	@Inject
-	SystemModelMapper(Addressing addressing) {
-		this.addressing = addressing;
-	}
+  @Inject
+  SystemModelMapper(Addressing addressing) {
+    this.addressing = addressing;
+  }
 
-	public NetworkingConfiguration networkingConfiguration(ECPublicKey self, P2PConfig config) {
-		return new NetworkingConfiguration()
-			.defaultPort(config.defaultPort())
-			.discoveryInterval(config.discoveryInterval())
-			.listenAddress(config.listenAddress())
-			.listenPort(config.listenPort())
-			.broadcastPort(config.broadcastPort())
-			.peerConnectionTimeout(config.peerConnectionTimeout())
-			.maxInboundChannels(config.maxInboundChannels())
-			.maxOutboundChannels(config.maxOutboundChannels())
-			.channelBufferSize(config.channelBufferSize())
-			.peerLivenessCheckInterval(config.peerLivenessCheckInterval())
-			.pingTimeout(config.pingTimeout())
-			.seedNodes(config.seedNodes())
-			.nodeAddress(addressing.forNodes().of(self));
-	}
+  public NetworkingConfiguration networkingConfiguration(ECPublicKey self, P2PConfig config) {
+    return new NetworkingConfiguration()
+        .defaultPort(config.defaultPort())
+        .discoveryInterval(config.discoveryInterval())
+        .listenAddress(config.listenAddress())
+        .listenPort(config.listenPort())
+        .broadcastPort(config.broadcastPort())
+        .peerConnectionTimeout(config.peerConnectionTimeout())
+        .maxInboundChannels(config.maxInboundChannels())
+        .maxOutboundChannels(config.maxOutboundChannels())
+        .channelBufferSize(config.channelBufferSize())
+        .peerLivenessCheckInterval(config.peerLivenessCheckInterval())
+        .pingTimeout(config.pingTimeout())
+        .seedNodes(config.seedNodes())
+        .nodeAddress(addressing.forNodes().of(self));
+  }
 
-	public SyncConfiguration syncConfiguration(SyncConfig syncConfig) {
-		return new SyncConfiguration()
-			.syncCheckInterval(syncConfig.syncCheckInterval())
-			.syncCheckMaxPeers(syncConfig.syncCheckMaxPeers())
-			.requestTimeout(syncConfig.syncRequestTimeout())
-			.ledgerStatusUpdateMaxPeersToNotify(syncConfig.ledgerStatusUpdateMaxPeersToNotify())
-			.maxLedgerUpdatesRate(BigDecimal.valueOf(syncConfig.maxLedgerUpdatesRate()));
-	}
+  public SyncConfiguration syncConfiguration(SyncConfig syncConfig) {
+    return new SyncConfiguration()
+        .syncCheckInterval(syncConfig.syncCheckInterval())
+        .syncCheckMaxPeers(syncConfig.syncCheckMaxPeers())
+        .requestTimeout(syncConfig.syncRequestTimeout())
+        .ledgerStatusUpdateMaxPeersToNotify(syncConfig.ledgerStatusUpdateMaxPeersToNotify())
+        .maxLedgerUpdatesRate(BigDecimal.valueOf(syncConfig.maxLedgerUpdatesRate()));
+  }
 
-	public NetworkingMetrics networkingMetrics(SystemCounters counters) {
-		return new NetworkingMetrics()
-			.bytesReceived(counters.get(NETWORKING_BYTES_RECEIVED))
-			.bytesSent(counters.get(NETWORKING_BYTES_SENT))
-			.inbound(networkingInboundMetrics(counters))
-			.outbound(networkingOutboundMetrics(counters));
-	}
+  public NetworkingMetrics networkingMetrics(SystemCounters counters) {
+    return new NetworkingMetrics()
+        .bytesReceived(counters.get(NETWORKING_BYTES_RECEIVED))
+        .bytesSent(counters.get(NETWORKING_BYTES_SENT))
+        .inbound(networkingInboundMetrics(counters))
+        .outbound(networkingOutboundMetrics(counters));
+  }
 
-	public NetworkingInboundMetrics networkingInboundMetrics(SystemCounters counters) {
-		return new NetworkingInboundMetrics()
-			.discarded(counters.get(MESSAGES_INBOUND_DISCARDED))
-			.processed(counters.get(MESSAGES_INBOUND_PROCESSED))
-			.received(counters.get(MESSAGES_INBOUND_RECEIVED));
-	}
+  public NetworkingInboundMetrics networkingInboundMetrics(SystemCounters counters) {
+    return new NetworkingInboundMetrics()
+        .discarded(counters.get(MESSAGES_INBOUND_DISCARDED))
+        .processed(counters.get(MESSAGES_INBOUND_PROCESSED))
+        .received(counters.get(MESSAGES_INBOUND_RECEIVED));
+  }
 
-	public NetworkingOutboundMetrics networkingOutboundMetrics(SystemCounters counters) {
-		return new NetworkingOutboundMetrics()
-			.aborted(counters.get(MESSAGES_OUTBOUND_ABORTED))
-			.processed(counters.get(MESSAGES_OUTBOUND_PROCESSED))
-			.pending(counters.get(MESSAGES_OUTBOUND_PENDING))
-			.aborted(counters.get(MESSAGES_OUTBOUND_ABORTED))
-			.sent(counters.get(MESSAGES_OUTBOUND_SENT));
-	}
+  public NetworkingOutboundMetrics networkingOutboundMetrics(SystemCounters counters) {
+    return new NetworkingOutboundMetrics()
+        .aborted(counters.get(MESSAGES_OUTBOUND_ABORTED))
+        .processed(counters.get(MESSAGES_OUTBOUND_PROCESSED))
+        .pending(counters.get(MESSAGES_OUTBOUND_PENDING))
+        .aborted(counters.get(MESSAGES_OUTBOUND_ABORTED))
+        .sent(counters.get(MESSAGES_OUTBOUND_SENT));
+  }
 
-	public MempoolMetrics mempoolMetrics(SystemCounters counters) {
-		return new MempoolMetrics()
-			.addFailure(counters.get(MEMPOOL_ADD_FAILURE))
-			.addSuccess(counters.get(MEMPOOL_ADD_SUCCESS))
-			.currentSize(counters.get(MEMPOOL_CURRENT_SIZE))
-			.relaysSent(counters.get(MEMPOOL_RELAYS_SENT));
-	}
+  public MempoolMetrics mempoolMetrics(SystemCounters counters) {
+    return new MempoolMetrics()
+        .addFailure(counters.get(MEMPOOL_ADD_FAILURE))
+        .addSuccess(counters.get(MEMPOOL_ADD_SUCCESS))
+        .currentSize(counters.get(MEMPOOL_CURRENT_SIZE))
+        .relaysSent(counters.get(MEMPOOL_RELAYS_SENT));
+  }
 
-	public BFTMetrics bftMetrics(SystemCounters counters) {
-		return new BFTMetrics()
-			.committedVertices(counters.get(BFT_COMMITTED_VERTICES))
-			.eventsReceived(counters.get(BFT_EVENTS_RECEIVED))
-			.noVotesSent(counters.get(BFT_NO_VOTES_SENT))
-			.timeoutQuorums(counters.get(BFT_TIMEOUT_QUORUMS))
-			.voteQuorums(counters.get(BFT_VOTE_QUORUMS))
-			.sync(bftSyncMetrics(counters))
-			.pacemaker(bftPacemakerMetrics(counters))
-			.vertexStore(bftVertexStoreMetrics(counters));
-	}
+  public BFTMetrics bftMetrics(SystemCounters counters) {
+    return new BFTMetrics()
+        .committedVertices(counters.get(BFT_COMMITTED_VERTICES))
+        .eventsReceived(counters.get(BFT_EVENTS_RECEIVED))
+        .noVotesSent(counters.get(BFT_NO_VOTES_SENT))
+        .timeoutQuorums(counters.get(BFT_TIMEOUT_QUORUMS))
+        .voteQuorums(counters.get(BFT_VOTE_QUORUMS))
+        .sync(bftSyncMetrics(counters))
+        .pacemaker(bftPacemakerMetrics(counters))
+        .vertexStore(bftVertexStoreMetrics(counters));
+  }
 
-	public SyncMetrics syncMetrics(SystemCounters counters) {
-		return new SyncMetrics()
-			.currentStateVersion(counters.get(SYNC_CURRENT_STATE_VERSION))
-			.targetStateVersion(counters.get(SYNC_TARGET_STATE_VERSION))
-			.invalidResponsesReceived(counters.get(SYNC_INVALID_RESPONSES_RECEIVED))
-			.validResponsesReceived(counters.get(SYNC_VALID_RESPONSES_RECEIVED))
-			.remoteRequestsReceived(counters.get(SYNC_REMOTE_REQUESTS_RECEIVED));
-	}
+  public SyncMetrics syncMetrics(SystemCounters counters) {
+    return new SyncMetrics()
+        .currentStateVersion(counters.get(SYNC_CURRENT_STATE_VERSION))
+        .targetStateVersion(counters.get(SYNC_TARGET_STATE_VERSION))
+        .invalidResponsesReceived(counters.get(SYNC_INVALID_RESPONSES_RECEIVED))
+        .validResponsesReceived(counters.get(SYNC_VALID_RESPONSES_RECEIVED))
+        .remoteRequestsReceived(counters.get(SYNC_REMOTE_REQUESTS_RECEIVED));
+  }
 
-	public BFTVertexStoreMetrics bftVertexStoreMetrics(SystemCounters counters) {
-		return new BFTVertexStoreMetrics()
-			.forks(counters.get(BFT_VERTEX_STORE_FORKS))
-			.indirectParents(counters.get(BFT_VERTEX_STORE_INDIRECT_PARENTS))
-			.rebuilds(counters.get(BFT_VERTEX_STORE_REBUILDS))
-			.size(counters.get(BFT_VERTEX_STORE_SIZE));
-	}
+  public BFTVertexStoreMetrics bftVertexStoreMetrics(SystemCounters counters) {
+    return new BFTVertexStoreMetrics()
+        .forks(counters.get(BFT_VERTEX_STORE_FORKS))
+        .indirectParents(counters.get(BFT_VERTEX_STORE_INDIRECT_PARENTS))
+        .rebuilds(counters.get(BFT_VERTEX_STORE_REBUILDS))
+        .size(counters.get(BFT_VERTEX_STORE_SIZE));
+  }
 
-	public BFTPacemakerMetrics bftPacemakerMetrics(SystemCounters counters) {
-		return new BFTPacemakerMetrics()
-			.proposalsSent(counters.get(BFT_PACEMAKER_PROPOSALS_SENT))
-			.proposedTransactions(counters.get(BFT_PACEMAKER_PROPOSED_TRANSACTIONS))
-			.round(counters.get(BFT_PACEMAKER_ROUND))
-			.timedOutRounds(counters.get(BFT_PACEMAKER_TIMED_OUT_ROUNDS))
-			.timeoutsSent(counters.get(BFT_PACEMAKER_TIMEOUTS_SENT));
-	}
+  public BFTPacemakerMetrics bftPacemakerMetrics(SystemCounters counters) {
+    return new BFTPacemakerMetrics()
+        .proposalsSent(counters.get(BFT_PACEMAKER_PROPOSALS_SENT))
+        .proposedTransactions(counters.get(BFT_PACEMAKER_PROPOSED_TRANSACTIONS))
+        .round(counters.get(BFT_PACEMAKER_ROUND))
+        .timedOutRounds(counters.get(BFT_PACEMAKER_TIMED_OUT_ROUNDS))
+        .timeoutsSent(counters.get(BFT_PACEMAKER_TIMEOUTS_SENT));
+  }
 
-	public BFTSyncMetrics bftSyncMetrics(SystemCounters counters) {
-		return new BFTSyncMetrics()
-			.requestsReceived(counters.get(BFT_SYNC_REQUESTS_RECEIVED))
-			.requestsSent(counters.get(BFT_SYNC_REQUESTS_SENT))
-			.requestTimeouts(counters.get(BFT_SYNC_REQUEST_TIMEOUTS));
-	}
+  public BFTSyncMetrics bftSyncMetrics(SystemCounters counters) {
+    return new BFTSyncMetrics()
+        .requestsReceived(counters.get(BFT_SYNC_REQUESTS_RECEIVED))
+        .requestsSent(counters.get(BFT_SYNC_REQUESTS_SENT))
+        .requestTimeouts(counters.get(BFT_SYNC_REQUEST_TIMEOUTS));
+  }
 
-	public Peer peer(PeersView.PeerInfo peerInfo) {
-		var peerId = addressing.forNodes().of(peerInfo.getNodeId().getPublicKey());
-		var peer = new Peer().peerId(peerId);
+  public Peer peer(PeersView.PeerInfo peerInfo) {
+    var peerId = addressing.forNodes().of(peerInfo.getNodeId().getPublicKey());
+    var peer = new Peer().peerId(peerId);
 
-		peerInfo.getChannels().forEach(channel -> {
-			var peerChannel = new PeerChannel()
-				.type(channel.isOutbound() ? PeerChannel.TypeEnum.OUT : PeerChannel.TypeEnum.IN)
-				.localPort(channel.getPort())
-				.ip(channel.getHost());
-			channel.getUri().map(RadixNodeUri::toString).ifPresent(peerChannel::uri);
-			peer.addChannelsItem(peerChannel);
-		});
-		return peer;
-	}
+    peerInfo
+        .getChannels()
+        .forEach(
+            channel -> {
+              var peerChannel =
+                  new PeerChannel()
+                      .type(
+                          channel.isOutbound() ? PeerChannel.TypeEnum.OUT : PeerChannel.TypeEnum.IN)
+                      .localPort(channel.getPort())
+                      .ip(channel.getHost());
+              channel.getUri().map(RadixNodeUri::toString).ifPresent(peerChannel::uri);
+              peer.addChannelsItem(peerChannel);
+            });
+    return peer;
+  }
 
-	public Address address(PeerAddressEntry entry) {
-		return new Address()
-			.uri(entry.getUri().toString())
-			.blacklisted(entry.blacklisted())
-			.lastConnectionStatus(Address.LastConnectionStatusEnum.fromValue(
-				entry.getLatestConnectionStatus().map(LatestConnectionStatus::toString).orElse("UNKNOWN")
-			));
-	}
+  public Address address(PeerAddressEntry entry) {
+    return new Address()
+        .uri(entry.getUri().toString())
+        .blacklisted(entry.blacklisted())
+        .lastConnectionStatus(
+            Address.LastConnectionStatusEnum.fromValue(
+                entry
+                    .getLatestConnectionStatus()
+                    .map(LatestConnectionStatus::toString)
+                    .orElse("UNKNOWN")));
+  }
 
-	public AddressBookEntry addressBookEntry(com.radixdlt.network.p2p.addressbook.AddressBookEntry entry) {
-		var addressBookEntry = new AddressBookEntry()
-			.peerId(addressing.forNodes().of(entry.getNodeId().getPublicKey()))
-				.banned(entry.isBanned());
-		entry.bannedUntil().map(Instant::toEpochMilli).ifPresent(addressBookEntry::bannedUntil);
-		entry.getKnownAddresses()
-			.stream().map(this::address)
-			.forEach(addressBookEntry::addKnownAddressesItem);
+  public AddressBookEntry addressBookEntry(
+      com.radixdlt.network.p2p.addressbook.AddressBookEntry entry) {
+    var addressBookEntry =
+        new AddressBookEntry()
+            .peerId(addressing.forNodes().of(entry.getNodeId().getPublicKey()))
+            .banned(entry.isBanned());
+    entry.bannedUntil().map(Instant::toEpochMilli).ifPresent(addressBookEntry::bannedUntil);
+    entry.getKnownAddresses().stream()
+        .map(this::address)
+        .forEach(addressBookEntry::addKnownAddressesItem);
 
-		return addressBookEntry;
-	}
-
+    return addressBookEntry;
+  }
 }

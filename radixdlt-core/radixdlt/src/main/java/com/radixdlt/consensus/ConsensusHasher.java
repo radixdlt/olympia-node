@@ -66,46 +66,46 @@ package com.radixdlt.consensus;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.Hasher;
-
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
 public final class ConsensusHasher {
-	private ConsensusHasher() {
-		throw new IllegalStateException();
-	}
+  private ConsensusHasher() {
+    throw new IllegalStateException();
+  }
 
-	public static HashCode toHash(HashCode opaque, LedgerHeader header, long nodeTimestamp, Hasher hasher) {
-		var raw = new ByteArrayOutputStream();
-		var outputStream = new DataOutputStream(raw);
-		try {
-			outputStream.writeInt(header != null ? 0 : 1); // 4 bytes (Version)
-			outputStream.write(opaque.asBytes()); // 32 bytes
-			if (header != null) {
-				outputStream.write(header.getAccumulatorState().getAccumulatorHash().asBytes()); // 32 bytes
-				outputStream.writeLong(header.getAccumulatorState().getStateVersion()); // 8 bytes
-				outputStream.writeLong(header.getEpoch()); // 8 bytes
-				outputStream.writeLong(header.getView().number()); // 8 bytes
-				outputStream.writeLong(header.timestamp()); // 8 bytes
-				if (header.getNextValidatorSet().isPresent()) {
-					var vset = header.getNextValidatorSet().get();
-					outputStream.writeInt(vset.getValidators().size()); // 4 bytes
-					for (var v : vset.getValidators().asList()) {
-						var key = v.getNode().getKey().getCompressedBytes();
-						outputStream.write(key);
-						var power = v.getPower();
-						outputStream.write(power.toByteArray());
-					}
-				} else {
-					outputStream.writeInt(0); // 4 bytes
-				}
-			}
-			outputStream.writeLong(nodeTimestamp); // 8 bytes
-		} catch (IOException e) {
-			throw new IllegalStateException();
-		}
-		var toHash = raw.toByteArray();
-		return hasher.hashBytes(toHash);
-	}
+  public static HashCode toHash(
+      HashCode opaque, LedgerHeader header, long nodeTimestamp, Hasher hasher) {
+    var raw = new ByteArrayOutputStream();
+    var outputStream = new DataOutputStream(raw);
+    try {
+      outputStream.writeInt(header != null ? 0 : 1); // 4 bytes (Version)
+      outputStream.write(opaque.asBytes()); // 32 bytes
+      if (header != null) {
+        outputStream.write(header.getAccumulatorState().getAccumulatorHash().asBytes()); // 32 bytes
+        outputStream.writeLong(header.getAccumulatorState().getStateVersion()); // 8 bytes
+        outputStream.writeLong(header.getEpoch()); // 8 bytes
+        outputStream.writeLong(header.getView().number()); // 8 bytes
+        outputStream.writeLong(header.timestamp()); // 8 bytes
+        if (header.getNextValidatorSet().isPresent()) {
+          var vset = header.getNextValidatorSet().get();
+          outputStream.writeInt(vset.getValidators().size()); // 4 bytes
+          for (var v : vset.getValidators().asList()) {
+            var key = v.getNode().getKey().getCompressedBytes();
+            outputStream.write(key);
+            var power = v.getPower();
+            outputStream.write(power.toByteArray());
+          }
+        } else {
+          outputStream.writeInt(0); // 4 bytes
+        }
+      }
+      outputStream.writeLong(nodeTimestamp); // 8 bytes
+    } catch (IOException e) {
+      throw new IllegalStateException();
+    }
+    var toHash = raw.toByteArray();
+    return hasher.hashBytes(toHash);
+  }
 }

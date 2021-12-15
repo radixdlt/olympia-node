@@ -64,43 +64,42 @@
 
 package com.radixdlt.network.hostip;
 
-import java.util.Optional;
-
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Optional;
+import org.junit.Test;
+
 public class EnvironmentHostIpTest {
 
-	@Test
-	public void testNull() {
-		EnvironmentHostIp ehip = make();
-		assertFalse(ehip.hostIp(null).isPresent());
-	}
+  @Test
+  public void testNull() {
+    EnvironmentHostIp ehip = make();
+    assertFalse(ehip.hostIp(null).isPresent());
+  }
 
-	@Test
-	public void testEmpty() {
-		EnvironmentHostIp ehip = make();
-		assertFalse(ehip.hostIp("").isPresent());
-	}
+  @Test
+  public void testEmpty() {
+    EnvironmentHostIp ehip = make();
+    assertFalse(ehip.hostIp("").isPresent());
+  }
 
-	@Test
-	public void testInvalid() {
-		EnvironmentHostIp ehip = make();
-		assertFalse(ehip.hostIp("notexist123456789.radixdlt.com").isPresent());
-	}
+  @Test
+  public void testInvalid() {
+    EnvironmentHostIp ehip = make();
+    assertFalse(ehip.hostIp("notexist123456789.radixdlt.com").isPresent());
+  }
 
-	@Test
-	public void testValid() {
-		EnvironmentHostIp ehip = make();
-		Optional<String> host = ehip.hostIp("127.0.0.1");
-		assertTrue(host.isPresent());
-		assertEquals("127.0.0.1", host.get());
-	}
+  @Test
+  public void testValid() {
+    EnvironmentHostIp ehip = make();
+    Optional<String> host = ehip.hostIp("127.0.0.1");
+    assertTrue(host.isPresent());
+    assertEquals("127.0.0.1", host.get());
+  }
 
-	private static EnvironmentHostIp make() {
-		return (EnvironmentHostIp) EnvironmentHostIp.create();
-	}
+  private static EnvironmentHostIp make() {
+    return (EnvironmentHostIp) EnvironmentHostIp.create();
+  }
 }

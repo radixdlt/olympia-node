@@ -71,45 +71,42 @@ import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import org.radix.network.messaging.Message;
-
 import java.util.Objects;
+import org.radix.network.messaging.Message;
 
 @SerializerId2("p2p.discovery.peers_response")
 public final class PeersResponseMessage extends Message {
-	@JsonProperty("peers")
-	@DsonOutput(Output.ALL)
-	private final ImmutableSet<RadixNodeUri> peers;
+  @JsonProperty("peers")
+  @DsonOutput(Output.ALL)
+  private final ImmutableSet<RadixNodeUri> peers;
 
-	@JsonCreator
-	public PeersResponseMessage(
-		@JsonProperty("peers") ImmutableSet<RadixNodeUri> peers
-	) {
-		this.peers = peers == null ? ImmutableSet.of() : peers;
-	}
+  @JsonCreator
+  public PeersResponseMessage(@JsonProperty("peers") ImmutableSet<RadixNodeUri> peers) {
+    this.peers = peers == null ? ImmutableSet.of() : peers;
+  }
 
-	public ImmutableSet<RadixNodeUri> getPeers() {
-		return peers;
-	}
+  public ImmutableSet<RadixNodeUri> getPeers() {
+    return peers;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), peers);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s[%s]", getClass().getSimpleName(), peers);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof PeersResponseMessage that)
-			   && Objects.equals(peers, that.peers)
-			   && Objects.equals(getTimestamp(), that.getTimestamp());
-	}
+    return (o instanceof PeersResponseMessage that)
+        && Objects.equals(peers, that.peers)
+        && Objects.equals(getTimestamp(), that.getTimestamp());
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(peers, getTimestamp());
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(peers, getTimestamp());
+  }
 }

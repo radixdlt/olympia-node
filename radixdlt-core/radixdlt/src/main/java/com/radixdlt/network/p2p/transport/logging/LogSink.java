@@ -66,58 +66,54 @@ package com.radixdlt.network.p2p.transport.logging;
 
 import org.apache.logging.log4j.Logger;
 
-/**
- * A sink that accepts log strings.
- */
+/** A sink that accepts log strings. */
 public interface LogSink {
 
-	/**
-	 * Returns {@code true} if trace logs enabled.
-	 *
-	 * return {@code true} if trace logs enabled.
-	 */
-	boolean isTraceEnabled();
+  /**
+   * Returns {@code true} if trace logs enabled.
+   *
+   * <p>return {@code true} if trace logs enabled.
+   */
+  boolean isTraceEnabled();
 
-	/**
-	 * Outputs the specified log message at trace level.
-	 *
-	 * @param message The message to output.
-	 */
-	void trace(String message);
+  /**
+   * Outputs the specified log message at trace level.
+   *
+   * @param message The message to output.
+   */
+  void trace(String message);
 
-	/**
-	 * Outputs the specified log message and exception at trace level.
-	 *
-	 * @param message The message to output.
-	 * @param ex The exception to include.
-	 */
-	void trace(String message, Throwable ex);
+  /**
+   * Outputs the specified log message and exception at trace level.
+   *
+   * @param message The message to output.
+   * @param ex The exception to include.
+   */
+  void trace(String message, Throwable ex);
 
-	/**
-	 * Create a {@link LogSink} using the specified logger.
-	 *
-	 * @param log The logger that will consume log messages
-	 * @return A newly constructed {@link LogSink}
-	 */
-	static LogSink using(Logger log) {
-		return new LogSink() {
+  /**
+   * Create a {@link LogSink} using the specified logger.
+   *
+   * @param log The logger that will consume log messages
+   * @return A newly constructed {@link LogSink}
+   */
+  static LogSink using(Logger log) {
+    return new LogSink() {
 
-			@Override
-			public boolean isTraceEnabled() {
-				return log.isTraceEnabled();
-			}
+      @Override
+      public boolean isTraceEnabled() {
+        return log.isTraceEnabled();
+      }
 
-			@Override
-			public void trace(String message) {
-				log.trace(message);
-			}
+      @Override
+      public void trace(String message) {
+        log.trace(message);
+      }
 
-			@Override
-			public void trace(String message, Throwable ex) {
-				log.trace(message, ex);
-			}
-
-		};
-	}
-
+      @Override
+      public void trace(String message, Throwable ex) {
+        log.trace(message, ex);
+      }
+    };
+  }
 }

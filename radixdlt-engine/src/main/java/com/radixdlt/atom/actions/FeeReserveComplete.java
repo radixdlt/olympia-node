@@ -68,16 +68,16 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.identifiers.REAddr;
 
 public class FeeReserveComplete implements TxAction {
-	private final REAddr to;
+  private final REAddr to;
 
-	public FeeReserveComplete(REAddr to) {
-		if (!to.isAccount()) {
-			throw new IllegalArgumentException("Address must be an account");
-		}
-		this.to = to;
-	}
+  public FeeReserveComplete(REAddr to) {
+    if (!to.isAccount()) {
+      throw new IllegalArgumentException("Address must be an account");
+    }
+    this.to = to;
+  }
 
-	public REAddr to() {
-		return to;
-	}
+  public REAddr to() {
+    return to;
+  }
 }

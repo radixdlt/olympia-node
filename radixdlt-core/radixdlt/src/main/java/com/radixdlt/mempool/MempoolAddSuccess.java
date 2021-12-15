@@ -66,60 +66,57 @@ package com.radixdlt.mempool;
 
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
-
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * Message indicating that a command was successfully added to the mempool
- */
+/** Message indicating that a command was successfully added to the mempool */
 public final class MempoolAddSuccess {
-	private final Txn txn;
-	private final Object processedTxn;
-	private final BFTNode origin;
+  private final Txn txn;
+  private final Object processedTxn;
+  private final BFTNode origin;
 
-	private MempoolAddSuccess(Txn txn, Object processedTxn, BFTNode origin) {
-		this.txn = txn;
-		this.processedTxn = processedTxn;
-		this.origin = origin;
-	}
+  private MempoolAddSuccess(Txn txn, Object processedTxn, BFTNode origin) {
+    this.txn = txn;
+    this.processedTxn = processedTxn;
+    this.origin = origin;
+  }
 
-	public Txn getTxn() {
-		return txn;
-	}
+  public Txn getTxn() {
+    return txn;
+  }
 
-	public <T> T getProcessedTxn(Class<T> processedTxnClass) {
-		return processedTxnClass.cast(processedTxn);
-	}
+  public <T> T getProcessedTxn(Class<T> processedTxnClass) {
+    return processedTxnClass.cast(processedTxn);
+  }
 
-	public Optional<BFTNode> getOrigin() {
-		return Optional.ofNullable(origin);
-	}
+  public Optional<BFTNode> getOrigin() {
+    return Optional.ofNullable(origin);
+  }
 
-	public static MempoolAddSuccess create(Txn txn, Object processedTxn, BFTNode origin) {
-		Objects.requireNonNull(txn);
-		return new MempoolAddSuccess(txn, processedTxn, origin);
-	}
+  public static MempoolAddSuccess create(Txn txn, Object processedTxn, BFTNode origin) {
+    Objects.requireNonNull(txn);
+    return new MempoolAddSuccess(txn, processedTxn, origin);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(txn, processedTxn, origin);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(txn, processedTxn, origin);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof MempoolAddSuccess)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof MempoolAddSuccess)) {
+      return false;
+    }
 
-		MempoolAddSuccess other = (MempoolAddSuccess) o;
-		return Objects.equals(this.txn, other.txn)
-			&& Objects.equals(this.processedTxn, other.processedTxn)
-			&& Objects.equals(this.origin, other.origin);
-	}
+    MempoolAddSuccess other = (MempoolAddSuccess) o;
+    return Objects.equals(this.txn, other.txn)
+        && Objects.equals(this.processedTxn, other.processedTxn)
+        && Objects.equals(this.origin, other.origin);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{txn=%s}", this.getClass().getSimpleName(), this.txn);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{txn=%s}", this.getClass().getSimpleName(), this.txn);
+  }
 }

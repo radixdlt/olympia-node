@@ -69,53 +69,52 @@ import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-
 import java.util.Objects;
 
 public final class StakeBucket implements Bucket {
-	private final ECPublicKey validatorKey;
+  private final ECPublicKey validatorKey;
 
-	public StakeBucket(ECPublicKey validatorKey) {
-		this.validatorKey = validatorKey;
-	}
+  public StakeBucket(ECPublicKey validatorKey) {
+    this.validatorKey = validatorKey;
+  }
 
-	@Override
-	public Authorization withdrawAuthorization() {
-		return new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { });
-	}
+  @Override
+  public Authorization withdrawAuthorization() {
+    return new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {});
+  }
 
-	@Override
-	public REAddr resourceAddr() {
-		return REAddr.ofNativeToken();
-	}
+  @Override
+  public REAddr resourceAddr() {
+    return REAddr.ofNativeToken();
+  }
 
-	@Override
-	public REAddr getOwner() {
-		return null;
-	}
+  @Override
+  public REAddr getOwner() {
+    return null;
+  }
 
-	@Override
-	public ECPublicKey getValidatorKey() {
-		return validatorKey;
-	}
+  @Override
+  public ECPublicKey getValidatorKey() {
+    return validatorKey;
+  }
 
-	@Override
-	public Long getEpochUnlock() {
-		return null;
-	}
+  @Override
+  public Long getEpochUnlock() {
+    return null;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(validatorKey);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(validatorKey);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof StakeBucket)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof StakeBucket)) {
+      return false;
+    }
 
-		var other = (StakeBucket) o;
-		return Objects.equals(this.validatorKey, other.validatorKey);
-	}
+    var other = (StakeBucket) o;
+    return Objects.equals(this.validatorKey, other.validatorKey);
+  }
 }

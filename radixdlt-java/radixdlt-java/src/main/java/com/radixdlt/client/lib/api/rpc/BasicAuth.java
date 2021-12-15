@@ -69,39 +69,39 @@ import java.util.Base64;
 import java.util.Objects;
 
 public final class BasicAuth {
-	private final String login;
-	private final String password;
+  private final String login;
+  private final String password;
 
-	private BasicAuth(String login, String password) {
-		this.login = login;
-		this.password = password;
-	}
+  private BasicAuth(String login, String password) {
+    this.login = login;
+    this.password = password;
+  }
 
-	public static BasicAuth with(String login, String password) {
-		return new BasicAuth(login, password);
-	}
+  public static BasicAuth with(String login, String password) {
+    return new BasicAuth(login, password);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof BasicAuth)) {
-			return false;
-		}
+    if (!(o instanceof BasicAuth)) {
+      return false;
+    }
 
-		var authData = (BasicAuth) o;
-		return login.equals(authData.login) && password.equals(authData.password);
-	}
+    var authData = (BasicAuth) o;
+    return login.equals(authData.login) && password.equals(authData.password);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(login, password);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(login, password);
+  }
 
-	public String asHeader() {
-		var auth = (login + ':' + password).getBytes(StandardCharsets.ISO_8859_1);
-		return "Basic " + new String(Base64.getEncoder().encode(auth));
-	}
+  public String asHeader() {
+    var auth = (login + ':' + password).getBytes(StandardCharsets.ISO_8859_1);
+    return "Basic " + new String(Base64.getEncoder().encode(auth));
+  }
 }

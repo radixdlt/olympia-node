@@ -68,9 +68,8 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 public final class PeerPingTimeoutTest {
-    @Test
-    public void equalsTest() {
-        EqualsVerifier.forClass(PeerPingTimeout.class)
-            .verify();
-    }
+  @Test
+  public void equalsTest() {
+    EqualsVerifier.forClass(PeerPingTimeout.class).verify();
+  }
 }

@@ -64,35 +64,28 @@
 
 package com.radixdlt.errors;
 
+import com.radixdlt.utils.functional.Functions;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.radixdlt.utils.functional.Functions;
-
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 public class ApiErrorsTest {
-	@Test
-	public void ensureUniqueCodes() {
-		//noinspection ResultOfMethodCallIgnored
-		Stream.of(ApiErrors.values())
-			.collect(Collectors.toMap(ApiErrors::code, Functions::identity));
-	}
+  @Test
+  public void ensureUniqueCodes() {
+    //noinspection ResultOfMethodCallIgnored
+    Stream.of(ApiErrors.values()).collect(Collectors.toMap(ApiErrors::code, Functions::identity));
+  }
 
-	@Test
-	@Ignore("Used only to generate list of error codes for the spec")
-	public void listErrors() {
-		Stream.of(ApiErrors.values())
-			.forEach(ApiErrorsTest::printError);
-	}
+  @Test
+  @Ignore("Used only to generate list of error codes for the spec")
+  public void listErrors() {
+    Stream.of(ApiErrors.values()).forEach(ApiErrorsTest::printError);
+  }
 
-	private static void printError(ApiErrors error) {
-		System.out.printf(
-			"{\n\t\"code\": %d,\n\t\"message\": \"%s\",\n\t\"data\": \"%s\"\n},\n",
-			error.code(),
-			error.name(),
-			error.message()
-		);
-	}
+  private static void printError(ApiErrors error) {
+    System.out.printf(
+        "{\n\t\"code\": %d,\n\t\"message\": \"%s\",\n\t\"data\": \"%s\"\n},\n",
+        error.code(), error.name(), error.message());
+  }
 }

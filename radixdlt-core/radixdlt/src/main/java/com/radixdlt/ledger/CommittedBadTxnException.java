@@ -67,11 +67,19 @@ package com.radixdlt.ledger;
 import com.radixdlt.engine.RadixEngineException;
 
 public class CommittedBadTxnException extends ByzantineQuorumException {
-	public CommittedBadTxnException(VerifiedTxnsAndProof txnsAndProof, RadixEngineException cause) {
-		super("epoch=" + txnsAndProof.getProof().getEpoch() + " version=" + versionWithIssue(txnsAndProof, cause), cause);
-	}
+  public CommittedBadTxnException(VerifiedTxnsAndProof txnsAndProof, RadixEngineException cause) {
+    super(
+        "epoch="
+            + txnsAndProof.getProof().getEpoch()
+            + " version="
+            + versionWithIssue(txnsAndProof, cause),
+        cause);
+  }
 
-	private static long versionWithIssue(VerifiedTxnsAndProof txnsAndProof, RadixEngineException cause) {
-		return txnsAndProof.getProof().getStateVersion() - txnsAndProof.getTxns().size() + cause.getTxnIndex();
-	}
+  private static long versionWithIssue(
+      VerifiedTxnsAndProof txnsAndProof, RadixEngineException cause) {
+    return txnsAndProof.getProof().getStateVersion()
+        - txnsAndProof.getTxns().size()
+        + cause.getTxnIndex();
+  }
 }

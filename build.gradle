@@ -147,7 +147,7 @@ allprojects {
         }
         java {
             // don't need to set target, it is inferred from java
-
+            targetExclude('**/openapitools/**/*.java')
             // apply a specific flavor of google-java-format
             googleJavaFormat('1.13.0').reflowLongStrings()
 

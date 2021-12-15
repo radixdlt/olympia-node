@@ -69,25 +69,25 @@ import java.util.TreeMap;
 import java.util.function.BiConsumer;
 
 public final class Forks {
-	private final TreeMap<Long, RERules> forks;
+  private final TreeMap<Long, RERules> forks;
 
-	public Forks(TreeMap<Long, RERules> forks) {
-		if (forks.isEmpty() || forks.get(0L) == null) {
-			throw new IllegalArgumentException();
-		}
+  public Forks(TreeMap<Long, RERules> forks) {
+    if (forks.isEmpty() || forks.get(0L) == null) {
+      throw new IllegalArgumentException();
+    }
 
-		this.forks = forks;
-	}
+    this.forks = forks;
+  }
 
-	public RERules get(long epoch) {
-		return this.forks.floorEntry(epoch).getValue();
-	}
+  public RERules get(long epoch) {
+    return this.forks.floorEntry(epoch).getValue();
+  }
 
-	public Optional<RERules> ifForkGet(long epoch) {
-		return Optional.ofNullable(this.forks.get(epoch));
-	}
+  public Optional<RERules> ifForkGet(long epoch) {
+    return Optional.ofNullable(this.forks.get(epoch));
+  }
 
-	public void forEach(BiConsumer<Long, RERules> consumer) {
-		forks.forEach(consumer);
-	}
+  public void forEach(BiConsumer<Long, RERules> consumer) {
+    forks.forEach(consumer);
+  }
 }

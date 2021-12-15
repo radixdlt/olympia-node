@@ -64,38 +64,34 @@
 
 package com.radixdlt.network.messaging;
 
-import java.util.Objects;
-
-import com.google.inject.Singleton;
-
 import com.google.inject.AbstractModule;
+import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.properties.RuntimeProperties;
+import java.util.Objects;
 
-/**
- * Guice configuration for {@link MessageCentral} that includes a UDP
- * transport.
- */
+/** Guice configuration for {@link MessageCentral} that includes a UDP transport. */
 public final class MessageCentralModule extends AbstractModule {
 
-	private final MessageCentralConfiguration config;
+  private final MessageCentralConfiguration config;
 
-	public MessageCentralModule(RuntimeProperties properties) {
-		this(MessageCentralConfiguration.fromRuntimeProperties(properties));
-	}
+  public MessageCentralModule(RuntimeProperties properties) {
+    this(MessageCentralConfiguration.fromRuntimeProperties(properties));
+  }
 
-	MessageCentralModule(MessageCentralConfiguration config) {
-		this.config = Objects.requireNonNull(config);
-	}
+  MessageCentralModule(MessageCentralConfiguration config) {
+    this.config = Objects.requireNonNull(config);
+  }
 
-	@Override
-	protected void configure() {
-		// The main target
-		bind(new TypeLiteral<EventQueueFactory<OutboundMessageEvent>>() { }).toInstance(SimplePriorityBlockingQueue::new);
+  @Override
+  protected void configure() {
+    // The main target
+    bind(new TypeLiteral<EventQueueFactory<OutboundMessageEvent>>() {})
+        .toInstance(SimplePriorityBlockingQueue::new);
 
-		bind(MessageCentral.class).to(MessageCentralImpl.class).in(Singleton.class);
+    bind(MessageCentral.class).to(MessageCentralImpl.class).in(Singleton.class);
 
-		// MessageCentral dependencies
-		bind(MessageCentralConfiguration.class).toInstance(this.config);
-	}
+    // MessageCentral dependencies
+    bind(MessageCentralConfiguration.class).toInstance(this.config);
+  }
 }

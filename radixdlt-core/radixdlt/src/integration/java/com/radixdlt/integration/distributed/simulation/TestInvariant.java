@@ -67,33 +67,31 @@ package com.radixdlt.integration.distributed.simulation;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
 
-/**
- * A running BFT check given access to network
- */
+/** A running BFT check given access to network */
 public interface TestInvariant {
-	class TestInvariantError {
-		private final String description;
-		public TestInvariantError(String description) {
-			this.description = description;
-		}
+  class TestInvariantError {
+    private final String description;
 
-		public String getDescription() {
-			return description;
-		}
+    public TestInvariantError(String description) {
+      this.description = description;
+    }
 
-		@Override
-		public String toString() {
-			return String.format("%s{desc=%s}", this.getClass().getSimpleName(), description);
-		}
-	}
+    public String getDescription() {
+      return description;
+    }
 
-	/**
-	 * Creates an observable which runs assertions against a bft network.
-	 * Assertions errors are expected to propagate down the observable.
-	 * TODO: Cleanup interface a bit
-	 *
-	 * @param network network to check
-	 * @return completable to subscribe to enable checking
-	 */
-	Observable<TestInvariantError> check(RunningNetwork network);
+    @Override
+    public String toString() {
+      return String.format("%s{desc=%s}", this.getClass().getSimpleName(), description);
+    }
+  }
+
+  /**
+   * Creates an observable which runs assertions against a bft network. Assertions errors are
+   * expected to propagate down the observable. TODO: Cleanup interface a bit
+   *
+   * @param network network to check
+   * @return completable to subscribe to enable checking
+   */
+  Observable<TestInvariantError> check(RunningNetwork network);
 }

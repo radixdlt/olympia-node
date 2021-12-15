@@ -64,51 +64,50 @@
 
 package org.radix;
 
-import org.junit.Test;
-
-import java.util.Map;
-
 import static org.junit.Assert.*;
 import static org.radix.Radix.calculateVersionString;
 
+import java.util.Map;
+import org.junit.Test;
+
 public class RadixVersionStringTest {
-	@Test
-	public void testCalculateVersionForCleanRepo() {
-		var details = Map.<String, Object>of(
-			"tag", "1.0-beta.35.1",
-			"last_tag", "1.0-beta.35.1"
-		);
+  @Test
+  public void testCalculateVersionForCleanRepo() {
+    var details =
+        Map.<String, Object>of(
+            "tag", "1.0-beta.35.1",
+            "last_tag", "1.0-beta.35.1");
 
-		var version = calculateVersionString(details);
+    var version = calculateVersionString(details);
 
-		assertEquals("1.0-beta.35.1", version);
-	}
+    assertEquals("1.0-beta.35.1", version);
+  }
 
-	@Test
-	public void testCalculateVersionForDirtyRepo() {
-		var details = Map.<String, Object>of(
-			"tag", "",
-			"last_tag", "1.0-beta.35.1",
-			"build", "ed0717c",
-			"branch", "feature/rpnv1-1306-refactor-json-rpc-implementation"
-		);
+  @Test
+  public void testCalculateVersionForDirtyRepo() {
+    var details =
+        Map.<String, Object>of(
+            "tag", "",
+            "last_tag", "1.0-beta.35.1",
+            "build", "ed0717c",
+            "branch", "feature/rpnv1-1306-refactor-json-rpc-implementation");
 
-		var version = calculateVersionString(details);
+    var version = calculateVersionString(details);
 
-		assertEquals("1.0-beta.35.1-feature~rpnv1-1306-refactor-json-rpc-implementation-ed0717c", version);
-	}
+    assertEquals(
+        "1.0-beta.35.1-feature~rpnv1-1306-refactor-json-rpc-implementation-ed0717c", version);
+  }
 
-	@Test
-	public void testCalculateVersionForDetachedHead() {
-		var details = Map.<String, Object>of(
-			"tag", "",
-			"last_tag", "1.0-beta.35.1",
-			"build", "ed0717c"
-		);
+  @Test
+  public void testCalculateVersionForDetachedHead() {
+    var details =
+        Map.<String, Object>of(
+            "tag", "",
+            "last_tag", "1.0-beta.35.1",
+            "build", "ed0717c");
 
-		var version = calculateVersionString(details);
+    var version = calculateVersionString(details);
 
-		assertEquals("detached-head-ed0717c", version);
-	}
-
+    assertEquals("detached-head-ed0717c", version);
+  }
 }

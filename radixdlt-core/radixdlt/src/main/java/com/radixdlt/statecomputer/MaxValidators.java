@@ -73,11 +73,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
-/**
- * DI annotation used to identify the maximum number of validators.
- */
+/** DI annotation used to identify the maximum number of validators. */
 @Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
+@Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface MaxValidators {
-}
+public @interface MaxValidators {}

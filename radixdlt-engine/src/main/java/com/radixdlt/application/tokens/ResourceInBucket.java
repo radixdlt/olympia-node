@@ -68,6 +68,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.utils.UInt256;
 
 public interface ResourceInBucket extends Particle {
-	UInt256 getAmount();
-	Bucket bucket();
+  UInt256 getAmount();
+
+  Bucket bucket();
 }

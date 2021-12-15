@@ -64,63 +64,61 @@
 
 package com.radixdlt.client.lib.dto;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Objects;
 
-import static java.util.Objects.requireNonNull;
-
 public final class BalanceStakes {
-	private final String delegate;
-	private final UInt256 amount;
+  private final String delegate;
+  private final UInt256 amount;
 
-	private BalanceStakes(String delegate, UInt256 amount) {
-		this.delegate = delegate;
-		this.amount = amount;
-	}
+  private BalanceStakes(String delegate, UInt256 amount) {
+    this.delegate = delegate;
+    this.amount = amount;
+  }
 
-	@JsonCreator
-	public static BalanceStakes create(
-		@JsonProperty(value = "delegate", required = true) String validator,
-		@JsonProperty(value = "amount", required = true) UInt256 amount
-	) {
-		requireNonNull(validator);
-		requireNonNull(amount);
+  @JsonCreator
+  public static BalanceStakes create(
+      @JsonProperty(value = "delegate", required = true) String validator,
+      @JsonProperty(value = "amount", required = true) UInt256 amount) {
+    requireNonNull(validator);
+    requireNonNull(amount);
 
-		return new BalanceStakes(validator, amount);
-	}
+    return new BalanceStakes(validator, amount);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof BalanceStakes)) {
-			return false;
-		}
+    if (!(o instanceof BalanceStakes)) {
+      return false;
+    }
 
-		var that = (BalanceStakes) o;
-		return delegate.equals(that.delegate) && amount.equals(that.amount);
-	}
+    var that = (BalanceStakes) o;
+    return delegate.equals(that.delegate) && amount.equals(that.amount);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(delegate, amount);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(delegate, amount);
+  }
 
-	@Override
-	public String toString() {
-		return "StakePositionsDTO(" + "validator=" + delegate + ", amount=" + amount +	')';
-	}
+  @Override
+  public String toString() {
+    return "StakePositionsDTO(" + "validator=" + delegate + ", amount=" + amount + ')';
+  }
 
-	public String getDelegate() {
-		return delegate;
-	}
+  public String getDelegate() {
+    return delegate;
+  }
 
-	public UInt256 getAmount() {
-		return amount;
-	}
+  public UInt256 getAmount() {
+    return amount;
+  }
 }

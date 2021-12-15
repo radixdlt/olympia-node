@@ -64,6 +64,11 @@
 
 package org.radix.serialization;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.properties.RuntimeProperties;
@@ -72,45 +77,41 @@ import org.junit.BeforeClass;
 import org.mockito.stubbing.Answer;
 import org.radix.time.NtpService;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 public abstract class RadixTest {
-	private static Serialization serialization;
-	private static NtpService ntpService;
-	private static RuntimeProperties properties;
-	private static ECKeyPair ecKeyPair;
+  private static Serialization serialization;
+  private static NtpService ntpService;
+  private static RuntimeProperties properties;
+  private static ECKeyPair ecKeyPair;
 
-	@BeforeClass
-	public static void startRadixTest() {
-		TestSetupUtils.installBouncyCastleProvider();
+  @BeforeClass
+  public static void startRadixTest() {
+    TestSetupUtils.installBouncyCastleProvider();
 
-		properties = mock(RuntimeProperties.class);
-		doAnswer(invocation -> invocation.getArgument(1)).when(properties).get(any(), any());
+    properties = mock(RuntimeProperties.class);
+    doAnswer(invocation -> invocation.getArgument(1)).when(properties).get(any(), any());
 
-		ntpService = mock(NtpService.class);
-		when(ntpService.getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
+    ntpService = mock(NtpService.class);
+    when(ntpService.getUTCTimeMS())
+        .thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
 
-		serialization = DefaultSerialization.getInstance();
+    serialization = DefaultSerialization.getInstance();
 
-		ecKeyPair = ECKeyPair.generateNew();
-	}
+    ecKeyPair = ECKeyPair.generateNew();
+  }
 
-	public static Serialization getSerialization() {
-		return serialization;
-	}
+  public static Serialization getSerialization() {
+    return serialization;
+  }
 
-	public static NtpService getNtpService() {
-		return ntpService;
-	}
+  public static NtpService getNtpService() {
+    return ntpService;
+  }
 
-	public static RuntimeProperties getProperties() {
-		return properties;
-	}
+  public static RuntimeProperties getProperties() {
+    return properties;
+  }
 
-	public static ECKeyPair getKeyPair() {
-		return ecKeyPair;
-	}
+  public static ECKeyPair getKeyPair() {
+    return ecKeyPair;
+  }
 }

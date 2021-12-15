@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,9 @@
 
 package com.radixdlt.api.core.model.entities;
 
+import static com.radixdlt.atom.SubstateTypeId.STAKE_OWNERSHIP;
+import static com.radixdlt.atom.SubstateTypeId.TOKENS;
+
 import com.radixdlt.api.core.model.Entity;
 import com.radixdlt.api.core.model.KeyQuery;
 import com.radixdlt.api.core.model.Resource;
@@ -81,80 +85,83 @@ import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
-import org.bouncycastle.util.Arrays;
-
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.function.Supplier;
-
-import static com.radixdlt.atom.SubstateTypeId.STAKE_OWNERSHIP;
-import static com.radixdlt.atom.SubstateTypeId.TOKENS;
+import org.bouncycastle.util.Arrays;
 
 public record AccountVaultEntity(REAddr accountAddress) implements Entity {
-	@Override
-	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) {
-		final Particle substate;
-		if (amount.resource() instanceof TokenResource tokenResource) {
-			var tokenAddress = tokenResource.tokenAddress();
-			substate = new TokensInAccount(accountAddress, tokenAddress, amount.amount());
-		} else if (amount.resource() instanceof StakeUnitResource stakeUnitResource) {
-			substate = new StakeOwnership(stakeUnitResource.validatorKey(), accountAddress, amount.amount());
-		} else {
-			throw new IllegalStateException("Unknown resource type " + amount.resource());
-		}
-		txBuilder.up(substate);
-	}
+  @Override
+  public void deposit(
+      ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) {
+    final Particle substate;
+    if (amount.resource() instanceof TokenResource tokenResource) {
+      var tokenAddress = tokenResource.tokenAddress();
+      substate = new TokensInAccount(accountAddress, tokenAddress, amount.amount());
+    } else if (amount.resource() instanceof StakeUnitResource stakeUnitResource) {
+      substate =
+          new StakeOwnership(stakeUnitResource.validatorKey(), accountAddress, amount.amount());
+    } else {
+      throw new IllegalStateException("Unknown resource type " + amount.resource());
+    }
+    txBuilder.up(substate);
+  }
 
-	@Override
-	public SubstateWithdrawal withdraw(Resource resource) {
-		if (resource instanceof TokenResource tokenResource) {
-			var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
-			buf.put(SubstateTypeId.TOKENS.id());
-			buf.put((byte) 0);
-			buf.put(accountAddress.getBytes());
-			SubstateIndex<ResourceInBucket> index = SubstateIndex.create(buf.array(), TokensInAccount.class);
-			return new SubstateWithdrawal(
-				index,
-				p -> p.bucket().resourceAddr().equals(tokenResource.tokenAddress())
-				&& p.bucket().getOwner().equals(accountAddress)
-			);
-		} else if (resource instanceof StakeUnitResource stakeUnitResource) {
-			var validatorKey = stakeUnitResource.validatorKey();
-			var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES));
-			buf.put(SubstateTypeId.STAKE_OWNERSHIP.id());
-			buf.put((byte) 0);
-			buf.put(validatorKey.getCompressedBytes());
-			buf.put(accountAddress.getBytes());
-			if (buf.hasRemaining()) {
-				// Sanity
-				throw new IllegalStateException("Buffer Size sanity check failed.");
-			}
-			SubstateIndex<ResourceInBucket> index = SubstateIndex.create(buf.array(), StakeOwnership.class);
-			return new SubstateWithdrawal(
-				index,
-				p -> p.bucket().getOwner().equals(accountAddress) && p.bucket().getValidatorKey().equals(validatorKey)
-			);
-		} else {
-			throw new IllegalStateException("Unknown resource: " + resource);
-		}
-	}
+  @Override
+  public SubstateWithdrawal withdraw(Resource resource) {
+    if (resource instanceof TokenResource tokenResource) {
+      var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
+      buf.put(SubstateTypeId.TOKENS.id());
+      buf.put((byte) 0);
+      buf.put(accountAddress.getBytes());
+      SubstateIndex<ResourceInBucket> index =
+          SubstateIndex.create(buf.array(), TokensInAccount.class);
+      return new SubstateWithdrawal(
+          index,
+          p ->
+              p.bucket().resourceAddr().equals(tokenResource.tokenAddress())
+                  && p.bucket().getOwner().equals(accountAddress));
+    } else if (resource instanceof StakeUnitResource stakeUnitResource) {
+      var validatorKey = stakeUnitResource.validatorKey();
+      var buf =
+          ByteBuffer.allocate(
+              2 + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES));
+      buf.put(SubstateTypeId.STAKE_OWNERSHIP.id());
+      buf.put((byte) 0);
+      buf.put(validatorKey.getCompressedBytes());
+      buf.put(accountAddress.getBytes());
+      if (buf.hasRemaining()) {
+        // Sanity
+        throw new IllegalStateException("Buffer Size sanity check failed.");
+      }
+      SubstateIndex<ResourceInBucket> index =
+          SubstateIndex.create(buf.array(), StakeOwnership.class);
+      return new SubstateWithdrawal(
+          index,
+          p ->
+              p.bucket().getOwner().equals(accountAddress)
+                  && p.bucket().getValidatorKey().equals(validatorKey));
+    } else {
+      throw new IllegalStateException("Unknown resource: " + resource);
+    }
+  }
 
-	@Override
-	public List<ResourceQuery> getResourceQueries() {
-		var tokenIndex = SubstateIndex.<ResourceInBucket>create(
-			Arrays.concatenate(new byte[]{TOKENS.id(), 0}, accountAddress.getBytes()),
-			TokensInAccount.class
-		);
-		// Unfortunately we prefixed Stakeownership in the wrong order so we'll need to do a scan
-		var ownershipIndex = SubstateIndex.<ResourceInBucket>create(STAKE_OWNERSHIP.id(), StakeOwnership.class);
-		return List.of(
-			ResourceQuery.from(tokenIndex),
-			ResourceQuery.from(ownershipIndex, b -> b.bucket().getOwner().equals(accountAddress))
-		);
-	}
+  @Override
+  public List<ResourceQuery> getResourceQueries() {
+    var tokenIndex =
+        SubstateIndex.<ResourceInBucket>create(
+            Arrays.concatenate(new byte[] {TOKENS.id(), 0}, accountAddress.getBytes()),
+            TokensInAccount.class);
+    // Unfortunately we prefixed Stakeownership in the wrong order so we'll need to do a scan
+    var ownershipIndex =
+        SubstateIndex.<ResourceInBucket>create(STAKE_OWNERSHIP.id(), StakeOwnership.class);
+    return List.of(
+        ResourceQuery.from(tokenIndex),
+        ResourceQuery.from(ownershipIndex, b -> b.bucket().getOwner().equals(accountAddress)));
+  }
 
-	@Override
-	public List<KeyQuery> getKeyQueries() {
-		return List.of();
-	}
+  @Override
+  public List<KeyQuery> getKeyQueries() {
+    return List.of();
+  }
 }

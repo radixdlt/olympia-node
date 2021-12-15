@@ -67,7 +67,7 @@ package com.radixdlt.engine.parser.exceptions;
 import com.radixdlt.serialization.DeserializeException;
 
 public class TrailingBytesException extends DeserializeException {
-	public TrailingBytesException(String message) {
-		super(message);
-	}
+  public TrailingBytesException(String message) {
+    super(message);
+  }
 }

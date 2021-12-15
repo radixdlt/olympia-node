@@ -69,41 +69,38 @@ import com.radixdlt.constraintmachine.ProcedureKey;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 
 public interface Meter {
-	void onStart(ExecutionContext context);
+  void onStart(ExecutionContext context);
 
-	void onUserProcedure(
-		ProcedureKey procedureKey,
-		Object param,
-		ExecutionContext context
-	) throws Exception;
+  void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context)
+      throws Exception;
 
-	void onSuperUserProcedure(
-		ProcedureKey procedureKey,
-		Object param,
-		ExecutionContext context
-	) throws Exception;
+  void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context)
+      throws Exception;
 
-	void onSigInstruction(ExecutionContext context) throws AuthorizationException;
+  void onSigInstruction(ExecutionContext context) throws AuthorizationException;
 
-	Meter EMPTY = new Meter() {
-		@Override
-		public void onStart(ExecutionContext context) {
-			// no-op
-		}
+  Meter EMPTY =
+      new Meter() {
+        @Override
+        public void onStart(ExecutionContext context) {
+          // no-op
+        }
 
-		@Override
-		public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) {
-			// no-op
-		}
+        @Override
+        public void onUserProcedure(
+            ProcedureKey procedureKey, Object param, ExecutionContext context) {
+          // no-op
+        }
 
-		@Override
-		public void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) {
-			// no-op
-		}
+        @Override
+        public void onSuperUserProcedure(
+            ProcedureKey procedureKey, Object param, ExecutionContext context) {
+          // no-op
+        }
 
-		@Override
-		public void onSigInstruction(ExecutionContext context) {
-			// no-op
-		}
-	};
+        @Override
+        public void onSigInstruction(ExecutionContext context) {
+          // no-op
+        }
+      };
 }

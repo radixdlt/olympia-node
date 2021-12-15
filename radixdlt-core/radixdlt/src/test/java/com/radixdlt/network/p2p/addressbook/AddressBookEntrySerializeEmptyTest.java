@@ -67,23 +67,24 @@ package com.radixdlt.network.p2p.addressbook;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.p2p.NodeId;
-import org.radix.serialization.SerializeMessageObject;
-
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Random;
+import org.radix.serialization.SerializeMessageObject;
 
 public class AddressBookEntrySerializeEmptyTest extends SerializeMessageObject<AddressBookEntry> {
-	public AddressBookEntrySerializeEmptyTest() {
-		super(AddressBookEntry.class, AddressBookEntrySerializeEmptyTest::get);
-	}
+  public AddressBookEntrySerializeEmptyTest() {
+    super(AddressBookEntry.class, AddressBookEntrySerializeEmptyTest::get);
+  }
 
-	private static AddressBookEntry get() {
-		final var rnd = new Random();
-		final var keyPair = ECKeyPair.generateNew();
-		final var bannedUntil = rnd.nextBoolean()
-			? Optional.of(Instant.ofEpochMilli(Math.abs(rnd.nextLong())))
-			: Optional.<Instant>empty();
-		return new AddressBookEntry(NodeId.fromPublicKey(keyPair.getPublicKey()), bannedUntil, ImmutableSet.of());
-	}
+  private static AddressBookEntry get() {
+    final var rnd = new Random();
+    final var keyPair = ECKeyPair.generateNew();
+    final var bannedUntil =
+        rnd.nextBoolean()
+            ? Optional.of(Instant.ofEpochMilli(Math.abs(rnd.nextLong())))
+            : Optional.<Instant>empty();
+    return new AddressBookEntry(
+        NodeId.fromPublicKey(keyPair.getPublicKey()), bannedUntil, ImmutableSet.of());
+  }
 }

@@ -69,90 +69,84 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 
-/**
- * A correct in memory committed reader used for testing
- */
+/** A correct in memory committed reader used for testing */
 class InMemoryCommittedReader implements CommittedReader {
-	private final Object lock = new Object();
-	private final TreeMap<Long, VerifiedTxnsAndProof> commandsAndProof = new TreeMap<>();
-	private final LedgerAccumulatorVerifier accumulatorVerifier;
-	private final Hasher hasher;
-	private final TreeMap<Long, LedgerProof> epochProofs = new TreeMap<>();
+  private final Object lock = new Object();
+  private final TreeMap<Long, VerifiedTxnsAndProof> commandsAndProof = new TreeMap<>();
+  private final LedgerAccumulatorVerifier accumulatorVerifier;
+  private final Hasher hasher;
+  private final TreeMap<Long, LedgerProof> epochProofs = new TreeMap<>();
 
-	@Inject
-	InMemoryCommittedReader(
-		LedgerAccumulatorVerifier accumulatorVerifier,
-		Hasher hasher
-	) {
-		this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
-		this.hasher = Objects.requireNonNull(hasher);
-	}
+  @Inject
+  InMemoryCommittedReader(LedgerAccumulatorVerifier accumulatorVerifier, Hasher hasher) {
+    this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
+    this.hasher = Objects.requireNonNull(hasher);
+  }
 
-	public EventProcessor<LedgerUpdate> updateProcessor() {
-		return update -> {
-			synchronized (lock) {
-				var commands = update.getNewTxns();
-				long firstVersion = update.getTail().getStateVersion() - commands.size() + 1;
-				for (long version = firstVersion; version <= update.getTail().getStateVersion(); version++) {
-					int index = (int) (version - firstVersion);
-					commandsAndProof.put(
-						version,
-						VerifiedTxnsAndProof.create(
-							commands.subList(index, commands.size()),
-							update.getTail()
-						)
-					);
-				}
+  public EventProcessor<LedgerUpdate> updateProcessor() {
+    return update -> {
+      synchronized (lock) {
+        var commands = update.getNewTxns();
+        long firstVersion = update.getTail().getStateVersion() - commands.size() + 1;
+        for (long version = firstVersion;
+            version <= update.getTail().getStateVersion();
+            version++) {
+          int index = (int) (version - firstVersion);
+          commandsAndProof.put(
+              version,
+              VerifiedTxnsAndProof.create(
+                  commands.subList(index, commands.size()), update.getTail()));
+        }
 
-				if (update.getTail().isEndOfEpoch()) {
-					this.epochProofs.put(update.getTail().getEpoch() + 1, update.getTail());
-				}
-			}
-		};
-	}
+        if (update.getTail().isEndOfEpoch()) {
+          this.epochProofs.put(update.getTail().getEpoch() + 1, update.getTail());
+        }
+      }
+    };
+  }
 
-	@Override
-	public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
-		synchronized (lock) {
-			final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-			Entry<Long, VerifiedTxnsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
+  @Override
+  public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
+    synchronized (lock) {
+      final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
+      Entry<Long, VerifiedTxnsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
 
-			if (entry != null) {
-				List<Txn> txns = accumulatorVerifier
-					.verifyAndGetExtension(
-						start.getLedgerHeader().getAccumulatorState(),
-						entry.getValue().getTxns(),
-						txn -> txn.getId().asHashCode(),
-						entry.getValue().getProof().getAccumulatorState()
-					).orElseThrow(() -> new RuntimeException());
+      if (entry != null) {
+        List<Txn> txns =
+            accumulatorVerifier
+                .verifyAndGetExtension(
+                    start.getLedgerHeader().getAccumulatorState(),
+                    entry.getValue().getTxns(),
+                    txn -> txn.getId().asHashCode(),
+                    entry.getValue().getProof().getAccumulatorState())
+                .orElseThrow(() -> new RuntimeException());
 
-				return VerifiedTxnsAndProof.create(txns, entry.getValue().getProof());
-			}
+        return VerifiedTxnsAndProof.create(txns, entry.getValue().getProof());
+      }
 
-			return null;
-		}
-	}
+      return null;
+    }
+  }
 
-	@Override
-	public Optional<LedgerProof> getEpochProof(long epoch) {
-		synchronized (lock) {
-			return Optional.ofNullable(epochProofs.get(epoch));
-		}
-	}
+  @Override
+  public Optional<LedgerProof> getEpochProof(long epoch) {
+    synchronized (lock) {
+      return Optional.ofNullable(epochProofs.get(epoch));
+    }
+  }
 
-	@Override
-	public Optional<LedgerProof> getLastProof() {
-		return Optional.ofNullable(commandsAndProof.lastEntry()).map(p -> p.getValue().getProof());
-	}
+  @Override
+  public Optional<LedgerProof> getLastProof() {
+    return Optional.ofNullable(commandsAndProof.lastEntry()).map(p -> p.getValue().getProof());
+  }
 }

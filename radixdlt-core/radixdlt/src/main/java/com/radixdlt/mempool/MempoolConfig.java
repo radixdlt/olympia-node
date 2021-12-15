@@ -66,34 +66,31 @@ package com.radixdlt.mempool;
 
 import com.google.inject.AbstractModule;
 
-/**
- * Configuration parameters for mempool.
- */
+/** Configuration parameters for mempool. */
 public final class MempoolConfig {
-	private MempoolConfig() {
-		throw new IllegalStateException("Cannot instantiate.");
-	}
+  private MempoolConfig() {
+    throw new IllegalStateException("Cannot instantiate.");
+  }
 
-	public static AbstractModule asModule(int maxSize, long throttleMs) {
-		return asModule(maxSize, throttleMs, 60000, 60000, 100);
-	}
+  public static AbstractModule asModule(int maxSize, long throttleMs) {
+    return asModule(maxSize, throttleMs, 60000, 60000, 100);
+  }
 
-	public static AbstractModule asModule(
-		int maxSize,
-		long throttleMs,
-		long relayInitialDelay,
-		long relayRepeatDelay,
-		int relayMaxPeers
-	) {
-		return new AbstractModule() {
-			@Override
-			protected void configure() {
-				bindConstant().annotatedWith(MempoolMaxSize.class).to(maxSize);
-				bindConstant().annotatedWith(MempoolThrottleMs.class).to(throttleMs);
-				bindConstant().annotatedWith(MempoolRelayInitialDelay.class).to(relayInitialDelay);
-				bindConstant().annotatedWith(MempoolRelayRepeatDelay.class).to(relayRepeatDelay);
-				bindConstant().annotatedWith(MempoolRelayMaxPeers.class).to(relayMaxPeers);
-			}
-		};
-	}
+  public static AbstractModule asModule(
+      int maxSize,
+      long throttleMs,
+      long relayInitialDelay,
+      long relayRepeatDelay,
+      int relayMaxPeers) {
+    return new AbstractModule() {
+      @Override
+      protected void configure() {
+        bindConstant().annotatedWith(MempoolMaxSize.class).to(maxSize);
+        bindConstant().annotatedWith(MempoolThrottleMs.class).to(throttleMs);
+        bindConstant().annotatedWith(MempoolRelayInitialDelay.class).to(relayInitialDelay);
+        bindConstant().annotatedWith(MempoolRelayRepeatDelay.class).to(relayRepeatDelay);
+        bindConstant().annotatedWith(MempoolRelayMaxPeers.class).to(relayMaxPeers);
+      }
+    };
+  }
 }

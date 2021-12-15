@@ -69,46 +69,44 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 
-/**
- * A request to sync ledger to a given version.
- */
+/** A request to sync ledger to a given version. */
 public final class LocalSyncRequest {
 
-	private final LedgerProof target;
-	private final ImmutableList<BFTNode> targetNodes;
+  private final LedgerProof target;
+  private final ImmutableList<BFTNode> targetNodes;
 
-	public LocalSyncRequest(LedgerProof target, ImmutableList<BFTNode> targetNodes) {
-		this.target = Objects.requireNonNull(target);
-		this.targetNodes = Objects.requireNonNull(targetNodes);
-	}
+  public LocalSyncRequest(LedgerProof target, ImmutableList<BFTNode> targetNodes) {
+    this.target = Objects.requireNonNull(target);
+    this.targetNodes = Objects.requireNonNull(targetNodes);
+  }
 
-	public LedgerProof getTarget() {
-		return target;
-	}
+  public LedgerProof getTarget() {
+    return target;
+  }
 
-	public ImmutableList<BFTNode> getTargetNodes() {
-		return targetNodes;
-	}
+  public ImmutableList<BFTNode> getTargetNodes() {
+    return targetNodes;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s {%s target=%s}", this.getClass().getSimpleName(), target, targetNodes);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s {%s target=%s}", this.getClass().getSimpleName(), target, targetNodes);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		LocalSyncRequest that = (LocalSyncRequest) o;
-		return Objects.equals(target, that.target) && Objects.equals(targetNodes, that.targetNodes);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    LocalSyncRequest that = (LocalSyncRequest) o;
+    return Objects.equals(target, that.target) && Objects.equals(targetNodes, that.targetNodes);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(target, targetNodes);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(target, targetNodes);
+  }
 }

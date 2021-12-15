@@ -65,7 +65,7 @@
 package com.radixdlt.constraintmachine.exceptions;
 
 public class MeterException extends Exception {
-	public MeterException(Exception cause) {
-		super(cause);
-	}
+  public MeterException(Exception cause) {
+    super(cause);
+  }
 }

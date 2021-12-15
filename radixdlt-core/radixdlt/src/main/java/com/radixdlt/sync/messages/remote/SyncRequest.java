@@ -65,48 +65,47 @@
 package com.radixdlt.sync.messages.remote;
 
 import com.radixdlt.ledger.DtoLedgerProof;
-
 import java.util.Objects;
 
 /**
- * A request to sync up ledger state, starting at the given header.
- * The node should respond with a SyncResponse message.
+ * A request to sync up ledger state, starting at the given header. The node should respond with a
+ * SyncResponse message.
  */
 public final class SyncRequest {
 
-	private final DtoLedgerProof header;
+  private final DtoLedgerProof header;
 
-	public static SyncRequest create(DtoLedgerProof header) {
-		return new SyncRequest(header);
-	}
+  public static SyncRequest create(DtoLedgerProof header) {
+    return new SyncRequest(header);
+  }
 
-	private SyncRequest(DtoLedgerProof header) {
-		this.header = header;
-	}
+  private SyncRequest(DtoLedgerProof header) {
+    this.header = header;
+  }
 
-	public DtoLedgerProof getHeader() {
-		return header;
-	}
+  public DtoLedgerProof getHeader() {
+    return header;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.header);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.header);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof SyncRequest)) {
-			return false;
-		}
-		SyncRequest that = (SyncRequest) o;
-		return Objects.equals(header, that.header);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof SyncRequest)) {
+      return false;
+    }
+    SyncRequest that = (SyncRequest) o;
+    return Objects.equals(header, that.header);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(header);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(header);
+  }
 }

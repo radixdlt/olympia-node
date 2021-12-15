@@ -66,28 +66,27 @@ package com.radixdlt.network.p2p.discovery;
 
 public final class GetPeers {
 
-	public static GetPeers create() {
-		return new GetPeers();
-	}
+  public static GetPeers create() {
+    return new GetPeers();
+  }
 
-	private GetPeers() {
-	}
+  private GetPeers() {}
 
-	@Override
-	public String toString() {
-		return String.format("%s{}", this.getClass().getSimpleName());
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{}", this.getClass().getSimpleName());
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		return o instanceof GetPeers;
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    return o instanceof GetPeers;
+  }
 
-	@Override
-	public int hashCode() {
-		return 1;
-	}
+  @Override
+  public int hashCode() {
+    return 1;
+  }
 }

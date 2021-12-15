@@ -64,6 +64,8 @@
 
 package com.radixdlt.network.p2p.discovery;
 
+import static java.util.function.Predicate.not;
+
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -75,11 +77,6 @@ import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.radix.network.discovery.SeedNodesConfigParser;
-
-import javax.inject.Inject;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -87,106 +84,110 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
-
-import static java.util.function.Predicate.not;
+import javax.inject.Inject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.radix.network.discovery.SeedNodesConfigParser;
 
 /**
- * Discovers peers network addresses and adds them to the address book.
- * Initial (seed) peers are "discovered" from the config (bootstrapDiscovery)
- * and more peers are requested from the peers we're already connected to.
+ * Discovers peers network addresses and adds them to the address book. Initial (seed) peers are
+ * "discovered" from the config (bootstrapDiscovery) and more peers are requested from the peers
+ * we're already connected to.
  */
 public final class PeerDiscovery {
-	private static final Logger log = LogManager.getLogger();
+  private static final Logger log = LogManager.getLogger();
 
-	private static final int MAX_PEERS_IN_RESPONSE = 50;
-	private static final int MAX_REQUESTS_SENT_AT_ONCE = 5;
+  private static final int MAX_PEERS_IN_RESPONSE = 50;
+  private static final int MAX_REQUESTS_SENT_AT_ONCE = 5;
 
-	private final RadixNodeUri selfUri;
-	private final PeerManager peerManager;
-	private final AddressBook addressBook;
-	private final PeerControl peerControl;
-	private final SeedNodesConfigParser seedNodesConfigParser;
-	private final RemoteEventDispatcher<GetPeers> getPeersRemoteEventDispatcher;
-	private final RemoteEventDispatcher<PeersResponse> peersResponseRemoteEventDispatcher;
+  private final RadixNodeUri selfUri;
+  private final PeerManager peerManager;
+  private final AddressBook addressBook;
+  private final PeerControl peerControl;
+  private final SeedNodesConfigParser seedNodesConfigParser;
+  private final RemoteEventDispatcher<GetPeers> getPeersRemoteEventDispatcher;
+  private final RemoteEventDispatcher<PeersResponse> peersResponseRemoteEventDispatcher;
 
-	private final Set<NodeId> peersAsked = new HashSet<>();
+  private final Set<NodeId> peersAsked = new HashSet<>();
 
-	@Inject
-	public PeerDiscovery(
-		@Self RadixNodeUri selfUri,
-		PeerManager peerManager,
-		AddressBook addressBook,
-		PeerControl peerControl,
-		SeedNodesConfigParser seedNodesConfigParser,
-		RemoteEventDispatcher<GetPeers> getPeersRemoteEventDispatcher,
-		RemoteEventDispatcher<PeersResponse> peersResponseRemoteEventDispatcher
-	) {
-		this.selfUri = Objects.requireNonNull(selfUri);
-		this.peerManager = Objects.requireNonNull(peerManager);
-		this.addressBook = Objects.requireNonNull(addressBook);
-		this.peerControl = Objects.requireNonNull(peerControl);
-		this.seedNodesConfigParser = Objects.requireNonNull(seedNodesConfigParser);
-		this.getPeersRemoteEventDispatcher = Objects.requireNonNull(getPeersRemoteEventDispatcher);
-		this.peersResponseRemoteEventDispatcher = Objects.requireNonNull(peersResponseRemoteEventDispatcher);
-	}
+  @Inject
+  public PeerDiscovery(
+      @Self RadixNodeUri selfUri,
+      PeerManager peerManager,
+      AddressBook addressBook,
+      PeerControl peerControl,
+      SeedNodesConfigParser seedNodesConfigParser,
+      RemoteEventDispatcher<GetPeers> getPeersRemoteEventDispatcher,
+      RemoteEventDispatcher<PeersResponse> peersResponseRemoteEventDispatcher) {
+    this.selfUri = Objects.requireNonNull(selfUri);
+    this.peerManager = Objects.requireNonNull(peerManager);
+    this.addressBook = Objects.requireNonNull(addressBook);
+    this.peerControl = Objects.requireNonNull(peerControl);
+    this.seedNodesConfigParser = Objects.requireNonNull(seedNodesConfigParser);
+    this.getPeersRemoteEventDispatcher = Objects.requireNonNull(getPeersRemoteEventDispatcher);
+    this.peersResponseRemoteEventDispatcher =
+        Objects.requireNonNull(peersResponseRemoteEventDispatcher);
+  }
 
-	public EventProcessor<DiscoverPeers> discoverPeersEventProcessor() {
-		return unused -> {
-			final var seedNodes = seedNodesConfigParser.getResolvedSeedNodes();
-			this.addressBook.addUncheckedPeers(seedNodes);
+  public EventProcessor<DiscoverPeers> discoverPeersEventProcessor() {
+    return unused -> {
+      final var seedNodes = seedNodesConfigParser.getResolvedSeedNodes();
+      this.addressBook.addUncheckedPeers(seedNodes);
 
-			final var channels = new ArrayList<>(this.peerManager.activeChannels());
-			Collections.shuffle(channels);
-			channels.stream()
-				.filter(not(c -> peersAsked.contains(c.getRemoteNodeId())))
-				.limit(MAX_REQUESTS_SENT_AT_ONCE)
-				.forEach(peer -> {
-					peersAsked.add(peer.getRemoteNodeId());
-					getPeersRemoteEventDispatcher.dispatch(
-						BFTNode.create(peer.getRemoteNodeId().getPublicKey()), GetPeers.create());
-				});
+      final var channels = new ArrayList<>(this.peerManager.activeChannels());
+      Collections.shuffle(channels);
+      channels.stream()
+          .filter(not(c -> peersAsked.contains(c.getRemoteNodeId())))
+          .limit(MAX_REQUESTS_SENT_AT_ONCE)
+          .forEach(
+              peer -> {
+                peersAsked.add(peer.getRemoteNodeId());
+                getPeersRemoteEventDispatcher.dispatch(
+                    BFTNode.create(peer.getRemoteNodeId().getPublicKey()), GetPeers.create());
+              });
 
-			this.tryConnectToSomeKnownPeers();
-		};
-	}
+      this.tryConnectToSomeKnownPeers();
+    };
+  }
 
-	private void tryConnectToSomeKnownPeers() {
-		final var remainingSlots = this.peerManager.getRemainingOutboundSlots();
-		final var maxSlotsToUse = Math.max(0, (remainingSlots / 2) - 2); // let's always leave some free slots
-		this.addressBook.bestCandidatesToConnect()
-			.filter(not(e -> peerManager.isPeerConnected(e.getNodeId())))
-			.limit(maxSlotsToUse)
-			.forEach(this.peerManager::tryConnect);
-	}
+  private void tryConnectToSomeKnownPeers() {
+    final var remainingSlots = this.peerManager.getRemainingOutboundSlots();
+    final var maxSlotsToUse =
+        Math.max(0, (remainingSlots / 2) - 2); // let's always leave some free slots
+    this.addressBook
+        .bestCandidatesToConnect()
+        .filter(not(e -> peerManager.isPeerConnected(e.getNodeId())))
+        .limit(maxSlotsToUse)
+        .forEach(this.peerManager::tryConnect);
+  }
 
-	public RemoteEventProcessor<PeersResponse> peersResponseRemoteEventProcessor() {
-		return (sender, peersResponse) -> {
-			final var senderNodeId = NodeId.fromPublicKey(sender.getKey());
-			if (!peersAsked.contains(senderNodeId)) {
-				log.warn("Received unexpected peers response from {}", senderNodeId);
-				this.peerControl.banPeer(senderNodeId, Duration.ofMinutes(15), "Unexpected peers response");
-				return;
-			}
+  public RemoteEventProcessor<PeersResponse> peersResponseRemoteEventProcessor() {
+    return (sender, peersResponse) -> {
+      final var senderNodeId = NodeId.fromPublicKey(sender.getKey());
+      if (!peersAsked.contains(senderNodeId)) {
+        log.warn("Received unexpected peers response from {}", senderNodeId);
+        this.peerControl.banPeer(senderNodeId, Duration.ofMinutes(15), "Unexpected peers response");
+        return;
+      }
 
-			this.peersAsked.remove(senderNodeId);
-			final var peersUpToLimit = peersResponse.getPeers()
-				.stream()
-				.limit(MAX_PEERS_IN_RESPONSE)
-				.collect(ImmutableSet.toImmutableSet());
-			this.addressBook.addUncheckedPeers(peersUpToLimit);
-		};
-	}
+      this.peersAsked.remove(senderNodeId);
+      final var peersUpToLimit =
+          peersResponse.getPeers().stream()
+              .limit(MAX_PEERS_IN_RESPONSE)
+              .collect(ImmutableSet.toImmutableSet());
+      this.addressBook.addUncheckedPeers(peersUpToLimit);
+    };
+  }
 
-	public RemoteEventProcessor<GetPeers> getPeersRemoteEventProcessor() {
-		return (sender, unused) -> {
-			final var peers =
-				Stream.concat(
-					Stream.of(selfUri),
-					this.addressBook.bestCandidatesToConnect()
-						.limit(MAX_PEERS_IN_RESPONSE - 1)
-				).collect(ImmutableSet.toImmutableSet());
+  public RemoteEventProcessor<GetPeers> getPeersRemoteEventProcessor() {
+    return (sender, unused) -> {
+      final var peers =
+          Stream.concat(
+                  Stream.of(selfUri),
+                  this.addressBook.bestCandidatesToConnect().limit(MAX_PEERS_IN_RESPONSE - 1))
+              .collect(ImmutableSet.toImmutableSet());
 
-			peersResponseRemoteEventDispatcher.dispatch(sender, PeersResponse.create(peers));
-		};
-	}
+      peersResponseRemoteEventDispatcher.dispatch(sender, PeersResponse.create(peers));
+    };
+  }
 }

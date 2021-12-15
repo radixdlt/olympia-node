@@ -64,24 +64,24 @@
 
 package com.radixdlt.sanitytestsuite.scenario.radixhashing;
 
-import com.radixdlt.sanitytestsuite.model.SanityTestVector;
-
-import java.nio.charset.StandardCharsets;
-
 import static com.radixdlt.sanitytestsuite.scenario.radixhashing.RadixHashingTestVector.Expected;
 import static com.radixdlt.sanitytestsuite.scenario.radixhashing.RadixHashingTestVector.Input;
 
+import com.radixdlt.sanitytestsuite.model.SanityTestVector;
+import java.nio.charset.StandardCharsets;
+
 // CHECKSTYLE:OFF checkstyle:VisibilityModifier
 public final class RadixHashingTestVector extends SanityTestVector<Input, Expected> {
-	public static final class Expected {
-		public String hashOfHash;
-	}
+  public static final class Expected {
+    public String hashOfHash;
+  }
 
-	public static final class Input {
-		public String stringToHash;
-		public byte[] bytesToHash() {
-			return this.stringToHash.getBytes(StandardCharsets.UTF_8);
-		}
-	}
+  public static final class Input {
+    public String stringToHash;
+
+    public byte[] bytesToHash() {
+      return this.stringToHash.getBytes(StandardCharsets.UTF_8);
+    }
+  }
 }
 // CHECKSTYLE:ON checkstyle:VisibilityModifier

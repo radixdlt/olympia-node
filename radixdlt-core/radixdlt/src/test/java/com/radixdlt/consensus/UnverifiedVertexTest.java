@@ -64,84 +64,85 @@
 
 package com.radixdlt.consensus;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import java.util.ArrayList;
+import java.util.List;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-
 public class UnverifiedVertexTest {
 
-	private UnverifiedVertex testObject;
-	private QuorumCertificate qc;
+  private UnverifiedVertex testObject;
+  private QuorumCertificate qc;
 
-	@Before
-	public void setUp() {
-		View baseView = View.of(1234567890L);
-		HashCode id = HashUtils.random256();
+  @Before
+  public void setUp() {
+    View baseView = View.of(1234567890L);
+    HashCode id = HashUtils.random256();
 
-		BFTHeader header = new BFTHeader(baseView.next(), id, mock(LedgerHeader.class));
-		BFTHeader parent = new BFTHeader(baseView, HashUtils.random256(), mock(LedgerHeader.class));
-		VoteData voteData = new VoteData(header, parent, parent);
+    BFTHeader header = new BFTHeader(baseView.next(), id, mock(LedgerHeader.class));
+    BFTHeader parent = new BFTHeader(baseView, HashUtils.random256(), mock(LedgerHeader.class));
+    VoteData voteData = new VoteData(header, parent, parent);
 
-		this.qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		this.testObject = UnverifiedVertex.create(this.qc, baseView.next().next(), List.of(), BFTNode.random());
-	}
+    this.qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
+    this.testObject =
+        UnverifiedVertex.create(this.qc, baseView.next().next(), List.of(), BFTNode.random());
+  }
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(UnverifiedVertex.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(UnverifiedVertex.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 
-	@Test
-	public void testGetters() {
-		assertEquals(this.qc, this.testObject.getQC());
-		assertEquals(View.of(1234567892L), this.testObject.getView());
-	}
+  @Test
+  public void testGetters() {
+    assertEquals(this.qc, this.testObject.getQC());
+    assertEquals(View.of(1234567892L), this.testObject.getView());
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializationWithNullThrowsException() throws PublicKeyException {
-		var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
-		UnverifiedVertex.create(null, 1, List.of(), proposer, false);
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException() throws PublicKeyException {
+    var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
+    UnverifiedVertex.create(null, 1, List.of(), proposer, false);
+  }
 
-	@Test(expected = IllegalArgumentException.class)
-	public void deserializationWithInvalidViewThrowsException() throws PublicKeyException {
-		var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
-		UnverifiedVertex.create(mock(QuorumCertificate.class), -1, List.of(), proposer, false);
-	}
+  @Test(expected = IllegalArgumentException.class)
+  public void deserializationWithInvalidViewThrowsException() throws PublicKeyException {
+    var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
+    UnverifiedVertex.create(mock(QuorumCertificate.class), -1, List.of(), proposer, false);
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializationWithInvalidTxnListThrowsException() throws PublicKeyException {
-		var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
-		var list = new ArrayList<byte[]>();
-		list.add(null);
-		UnverifiedVertex.create(mock(QuorumCertificate.class), 1, list, proposer, false);
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithInvalidTxnListThrowsException() throws PublicKeyException {
+    var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
+    var list = new ArrayList<byte[]>();
+    list.add(null);
+    UnverifiedVertex.create(mock(QuorumCertificate.class), 1, list, proposer, false);
+  }
 
-	@Test(expected = IllegalArgumentException.class)
-	public void deserializationWithInvalidCombinationOfProposerTimeoutAndTxnListThrowsException() throws PublicKeyException {
-		var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
-		var list = new ArrayList<byte[]>();
-		list.add(new byte[0]);
-		UnverifiedVertex.create(mock(QuorumCertificate.class), 1, list, proposer, true);
-	}
+  @Test(expected = IllegalArgumentException.class)
+  public void deserializationWithInvalidCombinationOfProposerTimeoutAndTxnListThrowsException()
+      throws PublicKeyException {
+    var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
+    var list = new ArrayList<byte[]>();
+    list.add(new byte[0]);
+    UnverifiedVertex.create(mock(QuorumCertificate.class), 1, list, proposer, true);
+  }
 
-	@Test(expected = PublicKeyException.class)
-	public void deserializationWithInvalidPublicKeyThrowsException() throws PublicKeyException {
-		var proposer = new byte[] {0x00};
-		UnverifiedVertex.create(mock(QuorumCertificate.class), 1, List.of(), proposer, false);
-	}
+  @Test(expected = PublicKeyException.class)
+  public void deserializationWithInvalidPublicKeyThrowsException() throws PublicKeyException {
+    var proposer = new byte[] {0x00};
+    UnverifiedVertex.create(mock(QuorumCertificate.class), 1, List.of(), proposer, false);
+  }
 }

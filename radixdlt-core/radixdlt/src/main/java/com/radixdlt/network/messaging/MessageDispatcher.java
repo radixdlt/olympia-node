@@ -64,28 +64,26 @@
 
 package com.radixdlt.network.messaging;
 
+import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
+import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
+
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.PeerManager;
+import com.radixdlt.network.p2p.transport.PeerChannel;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.utils.Compress;
+import com.radixdlt.utils.TimeSupplier;
+import com.radixdlt.utils.functional.Result;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.transport.PeerChannel;
-import com.radixdlt.network.p2p.PeerManager;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.utils.Compress;
-
-import com.radixdlt.utils.functional.Result;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
-
-import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
-import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
 
 /*
  * This could be moved into MessageCentralImpl at some stage, but has been
@@ -93,72 +91,75 @@ import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
  * required, and remove the stuff we don't want to keep.
  */
 class MessageDispatcher {
-	private static final Logger log = LogManager.getLogger();
+  private static final Logger log = LogManager.getLogger();
 
-	private final long messageTtlMs;
-	private final SystemCounters counters;
-	private final Serialization serialization;
-	private final TimeSupplier timeSource;
-	private final PeerManager peerManager;
+  private final long messageTtlMs;
+  private final SystemCounters counters;
+  private final Serialization serialization;
+  private final TimeSupplier timeSource;
+  private final PeerManager peerManager;
 
-	MessageDispatcher(
-		SystemCounters counters,
-		MessageCentralConfiguration config,
-		Serialization serialization,
-		TimeSupplier timeSource,
-		PeerManager peerManager
-	) {
-		this.messageTtlMs = Objects.requireNonNull(config).messagingTimeToLive(30_000L);
-		this.counters = Objects.requireNonNull(counters);
-		this.serialization = Objects.requireNonNull(serialization);
-		this.timeSource = Objects.requireNonNull(timeSource);
-		this.peerManager = Objects.requireNonNull(peerManager);
-	}
+  MessageDispatcher(
+      SystemCounters counters,
+      MessageCentralConfiguration config,
+      Serialization serialization,
+      TimeSupplier timeSource,
+      PeerManager peerManager) {
+    this.messageTtlMs = Objects.requireNonNull(config).messagingTimeToLive(30_000L);
+    this.counters = Objects.requireNonNull(counters);
+    this.serialization = Objects.requireNonNull(serialization);
+    this.timeSource = Objects.requireNonNull(timeSource);
+    this.peerManager = Objects.requireNonNull(peerManager);
+  }
 
-	CompletableFuture<Result<Object>> send(final OutboundMessageEvent outboundMessage) {
-		final var message = outboundMessage.message();
-		final var receiver = outboundMessage.receiver();
+  CompletableFuture<Result<Object>> send(final OutboundMessageEvent outboundMessage) {
+    final var message = outboundMessage.message();
+    final var receiver = outboundMessage.receiver();
 
-		if (timeSource.currentTime() - message.getTimestamp() > messageTtlMs) {
-			String msg = String.format("TTL for %s message to %s has expired", message.getClass().getSimpleName(), receiver);
-			log.warn(msg);
-			this.counters.increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
-			return CompletableFuture.completedFuture(MESSAGE_EXPIRED.result());
-		}
+    if (timeSource.currentTime() - message.getTimestamp() > messageTtlMs) {
+      String msg =
+          String.format(
+              "TTL for %s message to %s has expired", message.getClass().getSimpleName(), receiver);
+      log.warn(msg);
+      this.counters.increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
+      return CompletableFuture.completedFuture(MESSAGE_EXPIRED.result());
+    }
 
-		final var bytes = serialize(message);
+    final var bytes = serialize(message);
 
-		return peerManager.findOrCreateChannel(outboundMessage.receiver())
-			.thenApply(channel -> send(channel, bytes))
-			.thenApply(this::updateStatistics)
-			.exceptionally(t -> completionException(t, receiver, message));
-	}
+    return peerManager
+        .findOrCreateChannel(outboundMessage.receiver())
+        .thenApply(channel -> send(channel, bytes))
+        .thenApply(this::updateStatistics)
+        .exceptionally(t -> completionException(t, receiver, message));
+  }
 
-	private Result<Object> send(PeerChannel channel, byte[] bytes) {
-		this.counters.add(CounterType.NETWORKING_BYTES_SENT, bytes.length);
-		return channel.send(bytes);
-	}
+  private Result<Object> send(PeerChannel channel, byte[] bytes) {
+    this.counters.add(CounterType.NETWORKING_BYTES_SENT, bytes.length);
+    return channel.send(bytes);
+  }
 
-	private Result<Object> completionException(Throwable cause, NodeId receiver, Message message) {
-		final var msg = String.format("Send %s to %s failed", message.getClass().getSimpleName(), receiver);
-		log.warn("{}: {}", msg, cause.getMessage());
-		return IO_ERROR.result();
-	}
+  private Result<Object> completionException(Throwable cause, NodeId receiver, Message message) {
+    final var msg =
+        String.format("Send %s to %s failed", message.getClass().getSimpleName(), receiver);
+    log.warn("{}: {}", msg, cause.getMessage());
+    return IO_ERROR.result();
+  }
 
-	private Result<Object> updateStatistics(Result<Object> result) {
-		this.counters.increment(CounterType.MESSAGES_OUTBOUND_PROCESSED);
-		if (result.isSuccess()) {
-			this.counters.increment(CounterType.MESSAGES_OUTBOUND_SENT);
-		}
-		return result;
-	}
+  private Result<Object> updateStatistics(Result<Object> result) {
+    this.counters.increment(CounterType.MESSAGES_OUTBOUND_PROCESSED);
+    if (result.isSuccess()) {
+      this.counters.increment(CounterType.MESSAGES_OUTBOUND_SENT);
+    }
+    return result;
+  }
 
-	private byte[] serialize(Message out) {
-		try {
-			byte[] uncompressed = serialization.toDson(out, Output.WIRE);
-			return Compress.compress(uncompressed);
-		} catch (IOException e) {
-			throw new UncheckedIOException("While serializing message", e);
-		}
-	}
+  private byte[] serialize(Message out) {
+    try {
+      byte[] uncompressed = serialization.toDson(out, Output.WIRE);
+      return Compress.compress(uncompressed);
+    } catch (IOException e) {
+      throw new UncheckedIOException("While serializing message", e);
+    }
+  }
 }

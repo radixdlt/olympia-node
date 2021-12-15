@@ -64,20 +64,19 @@
 
 package org.radix.serialization;
 
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.ledger.AccumulatorState;
 
 public class BFTHeaderSerializeTest extends SerializeObject<BFTHeader> {
-	public BFTHeaderSerializeTest() {
-		super(BFTHeader.class, BFTHeaderSerializeTest::get);
-	}
+  public BFTHeaderSerializeTest() {
+    super(BFTHeader.class, BFTHeaderSerializeTest::get);
+  }
 
-	private static BFTHeader get() {
-		View view = View.of(1234567890L);
-		LedgerHeader ledgerHeader = LedgerHeader.mocked();
-		return new BFTHeader(view, HashUtils.random256(), ledgerHeader);
-	}
+  private static BFTHeader get() {
+    View view = View.of(1234567890L);
+    LedgerHeader ledgerHeader = LedgerHeader.mocked();
+    return new BFTHeader(view, HashUtils.random256(), ledgerHeader);
+  }
 }

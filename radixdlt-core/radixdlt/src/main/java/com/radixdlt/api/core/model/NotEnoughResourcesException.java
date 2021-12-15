@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -67,32 +68,33 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.utils.UInt256;
 
 public final class NotEnoughResourcesException extends TxBuilderException {
-	private final UInt256 fee;
-	private final UInt256 requested;
-	private final UInt256 available;
-	private final Resource resource;
+  private final UInt256 fee;
+  private final UInt256 requested;
+  private final UInt256 available;
+  private final Resource resource;
 
-	public NotEnoughResourcesException(Resource resource, UInt256 requested, UInt256 available, UInt256 fee) {
-		super("Requested " + requested + " but only " + available + " available");
-		this.resource = resource;
-		this.requested = requested;
-		this.available = available;
-		this.fee = fee;
-	}
+  public NotEnoughResourcesException(
+      Resource resource, UInt256 requested, UInt256 available, UInt256 fee) {
+    super("Requested " + requested + " but only " + available + " available");
+    this.resource = resource;
+    this.requested = requested;
+    this.available = available;
+    this.fee = fee;
+  }
 
-	public UInt256 getFee() {
-		return fee;
-	}
+  public UInt256 getFee() {
+    return fee;
+  }
 
-	public Resource getResource() {
-		return resource;
-	}
+  public Resource getResource() {
+    return resource;
+  }
 
-	public UInt256 getRequested() {
-		return requested;
-	}
+  public UInt256 getRequested() {
+    return requested;
+  }
 
-	public UInt256 getAvailable() {
-		return available;
-	}
+  public UInt256 getAvailable() {
+    return available;
+  }
 }

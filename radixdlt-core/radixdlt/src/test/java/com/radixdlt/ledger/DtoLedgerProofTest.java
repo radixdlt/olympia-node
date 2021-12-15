@@ -64,6 +64,8 @@
 
 package com.radixdlt.ledger;
 
+import static org.mockito.Mockito.mock;
+
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -71,28 +73,26 @@ import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-import static org.mockito.Mockito.mock;
-
 public class DtoLedgerProofTest {
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(DtoLedgerProof.class)
-				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-				.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(DtoLedgerProof.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializationWithNullThrowsException1() {
-		new DtoLedgerProof(null, mock(LedgerHeader.class), mock(TimestampedECDSASignatures.class));
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException1() {
+    new DtoLedgerProof(null, mock(LedgerHeader.class), mock(TimestampedECDSASignatures.class));
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializationWithNullThrowsException2() {
-		new DtoLedgerProof(mock(HashCode.class), null, mock(TimestampedECDSASignatures.class));
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException2() {
+    new DtoLedgerProof(mock(HashCode.class), null, mock(TimestampedECDSASignatures.class));
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializationWithNullThrowsException3() {
-		new DtoLedgerProof(mock(HashCode.class), mock(LedgerHeader.class), null);
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException3() {
+    new DtoLedgerProof(mock(HashCode.class), mock(LedgerHeader.class), null);
+  }
 }

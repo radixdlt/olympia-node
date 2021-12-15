@@ -67,33 +67,33 @@ package com.radixdlt.engine.parser.exceptions;
 import com.radixdlt.engine.parser.REParser;
 
 public class TxnParseException extends Exception {
-	private final REParser.ParserState parserState;
+  private final REParser.ParserState parserState;
 
-	public TxnParseException(REParser.ParserState parserState, String message, Throwable cause) {
-		super(toCurrent(parserState) + ": " + message + "\n" + toParsed(parserState), cause);
-		this.parserState = parserState;
-	}
+  public TxnParseException(REParser.ParserState parserState, String message, Throwable cause) {
+    super(toCurrent(parserState) + ": " + message + "\n" + toParsed(parserState), cause);
+    this.parserState = parserState;
+  }
 
-	public TxnParseException(REParser.ParserState parserState, Throwable cause) {
-		this(parserState, "", cause);
-	}
+  public TxnParseException(REParser.ParserState parserState, Throwable cause) {
+    this(parserState, "", cause);
+  }
 
-	public TxnParseException(REParser.ParserState parserState, String message) {
-		this(parserState, message, null);
-	}
+  public TxnParseException(REParser.ParserState parserState, String message) {
+    this(parserState, message, null);
+  }
 
-	private static String toCurrent(REParser.ParserState parserState) {
-		return String.format("pos=%s inst_index=%s", parserState.curPosition(), parserState.curIndex());
-	}
+  private static String toCurrent(REParser.ParserState parserState) {
+    return String.format("pos=%s inst_index=%s", parserState.curPosition(), parserState.curIndex());
+  }
 
-	private static String toParsed(REParser.ParserState parserState) {
-		var builder = new StringBuilder();
-		for (int i = 0; i < parserState.instructions().size(); i++) {
-			builder.append(i);
-			builder.append(": ");
-			builder.append(parserState.instructions().get(i));
-			builder.append("\n");
-		}
-		return builder.toString();
-	}
+  private static String toParsed(REParser.ParserState parserState) {
+    var builder = new StringBuilder();
+    for (int i = 0; i < parserState.instructions().size(); i++) {
+      builder.append(i);
+      builder.append(": ");
+      builder.append(parserState.instructions().get(i));
+      builder.append("\n");
+    }
+    return builder.toString();
+  }
 }

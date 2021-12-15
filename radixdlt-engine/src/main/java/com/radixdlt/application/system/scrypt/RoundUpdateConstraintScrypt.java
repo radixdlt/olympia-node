@@ -64,124 +64,128 @@
 
 package com.radixdlt.application.system.scrypt;
 
-import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.ValidatorBFTData;
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.KeyComparator;
-
 import java.util.TreeMap;
 
 public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
-	private final long maxRounds;
+  private final long maxRounds;
 
-	public RoundUpdateConstraintScrypt(long maxRounds) {
-		this.maxRounds = maxRounds;
-	}
+  public RoundUpdateConstraintScrypt(long maxRounds) {
+    this.maxRounds = maxRounds;
+  }
 
-	private class StartValidatorBFTUpdate implements ReducerState {
-		private final long closedRound;
-		private final TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate = new TreeMap<>(KeyComparator.instance());
+  private class StartValidatorBFTUpdate implements ReducerState {
+    private final long closedRound;
+    private final TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate =
+        new TreeMap<>(KeyComparator.instance());
 
-		StartValidatorBFTUpdate(long closedRound) {
-			this.closedRound = closedRound;
-		}
+    StartValidatorBFTUpdate(long closedRound) {
+      this.closedRound = closedRound;
+    }
 
-		public ReducerState beginUpdate(ValidatorBFTData validatorBFTData) throws ProcedureException {
-			if (validatorsToUpdate.containsKey(validatorBFTData.getValidatorKey())) {
-				throw new ProcedureException("Validator already started to update.");
-			}
+    public ReducerState beginUpdate(ValidatorBFTData validatorBFTData) throws ProcedureException {
+      if (validatorsToUpdate.containsKey(validatorBFTData.getValidatorKey())) {
+        throw new ProcedureException("Validator already started to update.");
+      }
 
-			validatorsToUpdate.put(validatorBFTData.getValidatorKey(), validatorBFTData);
-			return this;
-		}
+      validatorsToUpdate.put(validatorBFTData.getValidatorKey(), validatorBFTData);
+      return this;
+    }
 
-		public UpdatingValidatorBFTData exit() {
-			return new UpdatingValidatorBFTData(maxRounds, closedRound, validatorsToUpdate);
-		}
-	}
+    public UpdatingValidatorBFTData exit() {
+      return new UpdatingValidatorBFTData(maxRounds, closedRound, validatorsToUpdate);
+    }
+  }
 
-	@Override
-	public void main(Loader os) {
+  @Override
+  public void main(Loader os) {
 
-		os.substate(
-			new SubstateDefinition<>(
-				ValidatorBFTData.class,
-				SubstateTypeId.VALIDATOR_BFT_DATA.id(),
-				buf -> {
-					REFieldSerialization.deserializeReservedByte(buf);
-					var key = REFieldSerialization.deserializeKey(buf);
-					var proposalsCompleted = REFieldSerialization.deserializeNonNegativeLong(buf);
-					var proposalsMissed = REFieldSerialization.deserializeNonNegativeLong(buf);
-					return new ValidatorBFTData(key, proposalsCompleted, proposalsMissed);
-				},
-				(s, buf) -> {
-					REFieldSerialization.serializeReservedByte(buf);
-					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
-					buf.putLong(s.proposalsCompleted());
-					buf.putLong(s.proposalsMissed());
-				},
-				(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)
-			)
-		);
+    os.substate(
+        new SubstateDefinition<>(
+            ValidatorBFTData.class,
+            SubstateTypeId.VALIDATOR_BFT_DATA.id(),
+            buf -> {
+              REFieldSerialization.deserializeReservedByte(buf);
+              var key = REFieldSerialization.deserializeKey(buf);
+              var proposalsCompleted = REFieldSerialization.deserializeNonNegativeLong(buf);
+              var proposalsMissed = REFieldSerialization.deserializeNonNegativeLong(buf);
+              return new ValidatorBFTData(key, proposalsCompleted, proposalsMissed);
+            },
+            (s, buf) -> {
+              REFieldSerialization.serializeReservedByte(buf);
+              REFieldSerialization.serializeKey(buf, s.getValidatorKey());
+              buf.putLong(s.proposalsCompleted());
+              buf.putLong(s.proposalsMissed());
+            },
+            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)));
 
-		os.procedure(new DownProcedure<>(
-			VoidReducerState.class, RoundData.class,
-			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(d, s, r, c) -> ReducerResult.incomplete(new EndPrevRound(d))
-		));
+    os.procedure(
+        new DownProcedure<>(
+            VoidReducerState.class,
+            RoundData.class,
+            d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
+            (d, s, r, c) -> ReducerResult.incomplete(new EndPrevRound(d))));
 
-		os.procedure(new DownProcedure<>(
-			EndPrevRound.class, ValidatorBFTData.class,
-			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(d, s, r, c) -> {
-				var closedRound = s.getClosedRound().getView();
-				var next = new StartValidatorBFTUpdate(closedRound);
-				next.beginUpdate(d);
-				return ReducerResult.incomplete(next);
-			}
-		));
+    os.procedure(
+        new DownProcedure<>(
+            EndPrevRound.class,
+            ValidatorBFTData.class,
+            d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
+            (d, s, r, c) -> {
+              var closedRound = s.getClosedRound().getView();
+              var next = new StartValidatorBFTUpdate(closedRound);
+              next.beginUpdate(d);
+              return ReducerResult.incomplete(next);
+            }));
 
-		os.procedure(new DownProcedure<>(
-			StartValidatorBFTUpdate.class, ValidatorBFTData.class,
-			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(d, s, r, c) -> ReducerResult.incomplete(s.beginUpdate(d))
-		));
+    os.procedure(
+        new DownProcedure<>(
+            StartValidatorBFTUpdate.class,
+            ValidatorBFTData.class,
+            d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
+            (d, s, r, c) -> ReducerResult.incomplete(s.beginUpdate(d))));
 
-		os.procedure(new UpProcedure<>(
-			StartValidatorBFTUpdate.class, ValidatorBFTData.class,
-			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, c, r) -> {
-				var next = s.exit();
-				return ReducerResult.incomplete(next.update(u, c));
-			}
-		));
+    os.procedure(
+        new UpProcedure<>(
+            StartValidatorBFTUpdate.class,
+            ValidatorBFTData.class,
+            u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
+            (s, u, c, r) -> {
+              var next = s.exit();
+              return ReducerResult.incomplete(next.update(u, c));
+            }));
 
-		os.procedure(new UpProcedure<>(
-			UpdatingValidatorBFTData.class, ValidatorBFTData.class,
-			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, c, r) -> ReducerResult.incomplete(s.update(u, c))
-		));
+    os.procedure(
+        new UpProcedure<>(
+            UpdatingValidatorBFTData.class,
+            ValidatorBFTData.class,
+            u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
+            (s, u, c, r) -> ReducerResult.incomplete(s.update(u, c))));
 
-		os.procedure(new UpProcedure<>(
-			StartNextRound.class, RoundData.class,
-			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(s, u, c, r) -> {
-				s.update(u);
-				return ReducerResult.complete();
-			}
-		));
-	}
+    os.procedure(
+        new UpProcedure<>(
+            StartNextRound.class,
+            RoundData.class,
+            u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
+            (s, u, c, r) -> {
+              s.update(u);
+              return ReducerResult.complete();
+            }));
+  }
 }

@@ -66,66 +66,70 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class RadixEngineData {
-	private final long invalidProposedCommands;
-	private final long systemTransactions;
-	private final long userTransactions;
+  private final long invalidProposedCommands;
+  private final long systemTransactions;
+  private final long userTransactions;
 
-	private RadixEngineData(long invalidProposedCommands, long systemTransactions, long userTransactions) {
-		this.invalidProposedCommands = invalidProposedCommands;
-		this.systemTransactions = systemTransactions;
-		this.userTransactions = userTransactions;
-	}
+  private RadixEngineData(
+      long invalidProposedCommands, long systemTransactions, long userTransactions) {
+    this.invalidProposedCommands = invalidProposedCommands;
+    this.systemTransactions = systemTransactions;
+    this.userTransactions = userTransactions;
+  }
 
-	@JsonCreator
-	public static RadixEngineData create(
-		@JsonProperty(value = "invalidProposedCommands", required = true) long invalidProposedCommands,
-		@JsonProperty(value = "systemTransactions", required = true) long systemTransactions,
-		@JsonProperty(value = "userTransactions", required = true) long userTransactions
-	) {
-		return new RadixEngineData(invalidProposedCommands, systemTransactions, userTransactions);
-	}
+  @JsonCreator
+  public static RadixEngineData create(
+      @JsonProperty(value = "invalidProposedCommands", required = true)
+          long invalidProposedCommands,
+      @JsonProperty(value = "systemTransactions", required = true) long systemTransactions,
+      @JsonProperty(value = "userTransactions", required = true) long userTransactions) {
+    return new RadixEngineData(invalidProposedCommands, systemTransactions, userTransactions);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof RadixEngineData)) {
-			return false;
-		}
+    if (!(o instanceof RadixEngineData)) {
+      return false;
+    }
 
-		var that = (RadixEngineData) o;
-		return invalidProposedCommands == that.invalidProposedCommands
-			&& systemTransactions == that.systemTransactions
-			&& userTransactions == that.userTransactions;
-	}
+    var that = (RadixEngineData) o;
+    return invalidProposedCommands == that.invalidProposedCommands
+        && systemTransactions == that.systemTransactions
+        && userTransactions == that.userTransactions;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(invalidProposedCommands, systemTransactions, userTransactions);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(invalidProposedCommands, systemTransactions, userTransactions);
+  }
 
-	@Override
-	public String toString() {
-		return "{invalidProposedCommands:" + invalidProposedCommands
-			+ ", systemTransactions:" + systemTransactions
-			+ ", userTransactions:" + userTransactions + '}';
-	}
+  @Override
+  public String toString() {
+    return "{invalidProposedCommands:"
+        + invalidProposedCommands
+        + ", systemTransactions:"
+        + systemTransactions
+        + ", userTransactions:"
+        + userTransactions
+        + '}';
+  }
 
-	public long getInvalidProposedCommands() {
-		return invalidProposedCommands;
-	}
+  public long getInvalidProposedCommands() {
+    return invalidProposedCommands;
+  }
 
-	public long getSystemTransactions() {
-		return systemTransactions;
-	}
+  public long getSystemTransactions() {
+    return systemTransactions;
+  }
 
-	public long getUserTransactions() {
-		return userTransactions;
-	}
+  public long getUserTransactions() {
+    return userTransactions;
+  }
 }

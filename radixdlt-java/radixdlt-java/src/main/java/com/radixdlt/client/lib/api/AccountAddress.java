@@ -67,53 +67,52 @@ package com.radixdlt.client.lib.api;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
-
 import java.util.Objects;
 
 public class AccountAddress {
-	private final REAddr address;
+  private final REAddr address;
 
-	private AccountAddress(REAddr address) {
-		this.address = address;
-	}
+  private AccountAddress(REAddr address) {
+    this.address = address;
+  }
 
-	public static AccountAddress create(REAddr address) {
-		return new AccountAddress(address);
-	}
+  public static AccountAddress create(REAddr address) {
+    return new AccountAddress(address);
+  }
 
-	public static AccountAddress create(ECPublicKey publicKey) {
-		return create(REAddr.ofPubKeyAccount(publicKey));
-	}
+  public static AccountAddress create(ECPublicKey publicKey) {
+    return create(REAddr.ofPubKeyAccount(publicKey));
+  }
 
-	public REAddr getAddress() {
-		return address;
-	}
+  public REAddr getAddress() {
+    return address;
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof AccountAddress)) {
-			return false;
-		}
+    if (!(o instanceof AccountAddress)) {
+      return false;
+    }
 
-		var that = (AccountAddress) o;
-		return address.equals(that.address);
-	}
+    var that = (AccountAddress) o;
+    return address.equals(that.address);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(address);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(address);
+  }
 
-	@Override
-	public String toString() {
-		return "{" + address + '}';
-	}
+  @Override
+  public String toString() {
+    return "{" + address + '}';
+  }
 
-	public String toString(int networkId) {
-		return Addressing.ofNetworkId(networkId).forAccounts().of(address);
-	}
+  public String toString(int networkId) {
+    return Addressing.ofNetworkId(networkId).forAccounts().of(address);
+  }
 }

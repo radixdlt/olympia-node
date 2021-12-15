@@ -73,12 +73,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
-/**
- * Identifies the highest view per epoch until an epoch
- * change must occur.
- */
+/** Identifies the highest view per epoch until an epoch change must occur. */
 @Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
+@Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface EpochCeilingView {
-}
+public @interface EpochCeilingView {}

@@ -68,20 +68,20 @@ import com.radixdlt.atom.TxValidatorAction;
 import com.radixdlt.crypto.ECPublicKey;
 
 public final class UpdateAllowDelegationFlag implements TxValidatorAction {
-	private final ECPublicKey validatorKey;
-	private final boolean allowDelegation;
+  private final ECPublicKey validatorKey;
+  private final boolean allowDelegation;
 
-	public UpdateAllowDelegationFlag(ECPublicKey validatorKey, boolean allowDelegation) {
-		this.validatorKey = validatorKey;
-		this.allowDelegation = allowDelegation;
-	}
+  public UpdateAllowDelegationFlag(ECPublicKey validatorKey, boolean allowDelegation) {
+    this.validatorKey = validatorKey;
+    this.allowDelegation = allowDelegation;
+  }
 
-	@Override
-	public ECPublicKey validatorKey() {
-		return validatorKey;
-	}
+  @Override
+  public ECPublicKey validatorKey() {
+    return validatorKey;
+  }
 
-	public boolean allowDelegation() {
-		return allowDelegation;
-	}
+  public boolean allowDelegation() {
+    return allowDelegation;
+  }
 }

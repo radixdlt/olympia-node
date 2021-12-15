@@ -69,10 +69,8 @@ import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
 public class ProcedureKeyTest {
-	@Test
-	public void equalsVerifier() {
-		EqualsVerifier.forClass(ProcedureKey.class)
-			.suppress(Warning.NONFINAL_FIELDS)
-			.verify();
-	}
+  @Test
+  public void equalsVerifier() {
+    EqualsVerifier.forClass(ProcedureKey.class).suppress(Warning.NONFINAL_FIELDS).verify();
+  }
 }

@@ -71,37 +71,33 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-
+import com.radixdlt.statecomputer.forks.RERules;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Generates a new unique rri consumer command. Because new addresses are used
- * on every call, the command should never fail when executed on a radix engine.
+ * Generates a new unique rri consumer command. Because new addresses are used on every call, the
+ * command should never fail when executed on a radix engine.
  */
 public class RadixEngineUniqueGenerator implements TxnGenerator {
-	@Inject
-	private REParser parser;
+  @Inject private REParser parser;
 
-	@Inject
-	private RERules rules;
+  @Inject private RERules rules;
 
-	@Inject
-	@Genesis
-	private Txn genesis;
+  @Inject @Genesis private Txn genesis;
 
-	@Override
-	public Txn nextTxn() {
-		var keyPair = ECKeyPair.generateNew();
-		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "smthng");
-		var builder = TxBuilder.newBuilder(parser.getSubstateDeserialization(), rules.getSerialization())
-			.toLowLevelBuilder()
-			.syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
-			.virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
-			.end();
-		var sig = keyPair.sign(builder.hashToSign());
-		return builder.sig(sig).build();
-	}
+  @Override
+  public Txn nextTxn() {
+    var keyPair = ECKeyPair.generateNew();
+    var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "smthng");
+    var builder =
+        TxBuilder.newBuilder(parser.getSubstateDeserialization(), rules.getSerialization())
+            .toLowLevelBuilder()
+            .syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
+            .virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
+            .end();
+    var sig = keyPair.sign(builder.hashToSign());
+    return builder.sig(sig).build();
+  }
 }

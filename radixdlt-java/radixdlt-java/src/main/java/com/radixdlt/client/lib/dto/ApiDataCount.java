@@ -66,47 +66,46 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class ApiDataCount {
-	private final ApiDbCount apiDb;
+  private final ApiDbCount apiDb;
 
-	private ApiDataCount(ApiDbCount apiDb) {
-		this.apiDb = apiDb;
-	}
+  private ApiDataCount(ApiDbCount apiDb) {
+    this.apiDb = apiDb;
+  }
 
-	@JsonCreator
-	public static ApiDataCount create(@JsonProperty(value = "apidb", required = true) ApiDbCount apiDb) {
-		return new ApiDataCount(apiDb);
-	}
+  @JsonCreator
+  public static ApiDataCount create(
+      @JsonProperty(value = "apidb", required = true) ApiDbCount apiDb) {
+    return new ApiDataCount(apiDb);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof ApiDataCount)) {
-			return false;
-		}
+    if (!(o instanceof ApiDataCount)) {
+      return false;
+    }
 
-		var that = (ApiDataCount) o;
-		return apiDb.equals(that.apiDb);
-	}
+    var that = (ApiDataCount) o;
+    return apiDb.equals(that.apiDb);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(apiDb);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(apiDb);
+  }
 
-	@Override
-	public String toString() {
-		return "{apiDb:" + apiDb + '}';
-	}
+  @Override
+  public String toString() {
+    return "{apiDb:" + apiDb + '}';
+  }
 
-	public ApiDbCount getApiDb() {
-		return apiDb;
-	}
+  public ApiDbCount getApiDb() {
+    return apiDb;
+  }
 }
-

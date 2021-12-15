@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,23 +64,24 @@
 
 package com.radixdlt.api.system;
 
+import static org.radix.Radix.SYSTEM_VERSION_KEY;
+import static org.radix.Radix.VERSION_STRING_KEY;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.system.openapitools.model.VersionResponse;
 import org.radix.Radix;
 
-import static org.radix.Radix.SYSTEM_VERSION_KEY;
-import static org.radix.Radix.VERSION_STRING_KEY;
-
 public class VersionHandler extends SystemGetJsonHandler<VersionResponse> {
-	private final String version;
+  private final String version;
 
-	@Inject
-	public VersionHandler() {
-		this.version = (String) Radix.systemVersionInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
-	}
+  @Inject
+  public VersionHandler() {
+    this.version =
+        (String) Radix.systemVersionInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
+  }
 
-	@Override
-	public VersionResponse handleRequest() {
-		return new VersionResponse().version(version);
-	}
+  @Override
+  public VersionResponse handleRequest() {
+    return new VersionResponse().version(version);
+  }
 }

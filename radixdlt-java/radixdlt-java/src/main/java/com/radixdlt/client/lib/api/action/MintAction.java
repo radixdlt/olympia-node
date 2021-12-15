@@ -71,14 +71,14 @@ import com.radixdlt.utils.UInt256;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class MintAction implements Action {
-	private final ActionType type = ActionType.MINT;
-	private final AccountAddress to;
-	private final UInt256 amount;
-	private final String rri;
+  private final ActionType type = ActionType.MINT;
+  private final AccountAddress to;
+  private final UInt256 amount;
+  private final String rri;
 
-	public MintAction(AccountAddress to, UInt256 amount, String rri) {
-		this.to = to;
-		this.amount = amount;
-		this.rri = rri;
-	}
+  public MintAction(AccountAddress to, UInt256 amount, String rri) {
+    this.to = to;
+    this.amount = amount;
+    this.rri = rri;
+  }
 }

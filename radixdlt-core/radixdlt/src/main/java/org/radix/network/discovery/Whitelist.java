@@ -64,152 +64,150 @@
 
 package org.radix.network.discovery;
 
+import com.radixdlt.properties.RuntimeProperties;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-
-import com.radixdlt.properties.RuntimeProperties;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class Whitelist {
-	private static final Logger networkLog = LogManager.getLogger();
+  private static final Logger networkLog = LogManager.getLogger();
 
-	private Set<String> parameters = new HashSet<>();
+  private Set<String> parameters = new HashSet<>();
 
-	public Whitelist(String parameters) {
-		if (parameters == null) {
-			return;
-		}
+  public Whitelist(String parameters) {
+    if (parameters == null) {
+      return;
+    }
 
-		String[] split = parameters.split(",");
+    String[] split = parameters.split(",");
 
-		for (String parameter : split) {
-			if (parameter.trim().length() == 0) {
-				continue;
-			}
+    for (String parameter : split) {
+      if (parameter.trim().length() == 0) {
+        continue;
+      }
 
-			this.parameters.add(parameter.trim());
-		}
-	}
+      this.parameters.add(parameter.trim());
+    }
+  }
 
-	private int[] convert(String host) {
-		String[] segments;
-		int[] output;
+  private int[] convert(String host) {
+    String[] segments;
+    int[] output;
 
-		if (host.contains(".")) {            // IPV4 //
-			output = new int[4];
-			segments = host.split("\\.");
-		} else if (host.contains(":")) {    // IPV6 //
-			output = new int[8];
-			segments = host.split(":");
-		} else {
-			return new int[]{0, 0, 0, 0};
-		}
+    if (host.contains(".")) { // IPV4 //
+      output = new int[4];
+      segments = host.split("\\.");
+    } else if (host.contains(":")) { // IPV6 //
+      output = new int[8];
+      segments = host.split(":");
+    } else {
+      return new int[] {0, 0, 0, 0};
+    }
 
-		Arrays.fill(output, Integer.MAX_VALUE);
-		for (int s = 0; s < segments.length; s++) {
-			if (segments[s].equalsIgnoreCase("*")) {
-				break;
-			}
+    Arrays.fill(output, Integer.MAX_VALUE);
+    for (int s = 0; s < segments.length; s++) {
+      if (segments[s].equalsIgnoreCase("*")) {
+        break;
+      }
 
-			output[s] = Integer.valueOf(segments[s]);
-		}
+      output[s] = Integer.valueOf(segments[s]);
+    }
 
-		return output;
-	}
+    return output;
+  }
 
-	private boolean isRange(String parameter) {
-		if (parameter.contains("-")) {
-			return true;
-		}
+  private boolean isRange(String parameter) {
+    if (parameter.contains("-")) {
+      return true;
+    }
 
-			return false;
-		}
+    return false;
+  }
 
-	private boolean isInRange(String parameter, String address) {
-		String[] hosts = parameter.split("-");
+  private boolean isInRange(String parameter, String address) {
+    String[] hosts = parameter.split("-");
 
-		if (hosts.length != 2) {
-			throw new IllegalStateException("Range is invalid");
-		}
+    if (hosts.length != 2) {
+      throw new IllegalStateException("Range is invalid");
+    }
 
-		int[] target = convert(address);
-		int[] low = convert(hosts[0]);
-		int[] high = convert(hosts[1]);
+    int[] target = convert(address);
+    int[] low = convert(hosts[0]);
+    int[] high = convert(hosts[1]);
 
-		if (low.length != high.length || target.length != low.length) {
-			return false;
-		}
+    if (low.length != high.length || target.length != low.length) {
+      return false;
+    }
 
-		for (int s = 0; s < low.length; s++) {
-			if (low[s] < high[s]) {
-				int[] swap = low;
-				low = high;
-				high = swap;
-				break;
-			}
+    for (int s = 0; s < low.length; s++) {
+      if (low[s] < high[s]) {
+        int[] swap = low;
+        low = high;
+        high = swap;
+        break;
+      }
 
-			if (target[s] < low[s] || target[s] > high[s]) {
-				return false;
-			}
-		}
+      if (target[s] < low[s] || target[s] > high[s]) {
+        return false;
+      }
+    }
 
-		return true;
-	}
+    return true;
+  }
 
-	private boolean isMask(String parameter) {
-		if (parameter.contains("*") || parameter.contains("::")) {
-			return true;
-		}
+  private boolean isMask(String parameter) {
+    if (parameter.contains("*") || parameter.contains("::")) {
+      return true;
+    }
 
-			return false;
-		}
+    return false;
+  }
 
-	private boolean isMasked(String parameter, String address) {
-		int[] target = convert(address);
-		int[] mask = convert(parameter);
+  private boolean isMasked(String parameter, String address) {
+    int[] target = convert(address);
+    int[] mask = convert(parameter);
 
-		if (target.length != mask.length) {
-			return false;
-		}
+    if (target.length != mask.length) {
+      return false;
+    }
 
-		for (int s = 0; s < mask.length; s++) {
-			if (mask[s] == Integer.MAX_VALUE) {
-				return true;
-			} else if (target[s] != mask[s]) {
-				return false;
-			}
-		}
+    for (int s = 0; s < mask.length; s++) {
+      if (mask[s] == Integer.MAX_VALUE) {
+        return true;
+      } else if (target[s] != mask[s]) {
+        return false;
+      }
+    }
 
-		return false;
-	}
+    return false;
+  }
 
-	public boolean isWhitelisted(String hostName) {
-		if (parameters.isEmpty()) {
-			return true;
-		}
+  public boolean isWhitelisted(String hostName) {
+    if (parameters.isEmpty()) {
+      return true;
+    }
 
-		try {
-			String hostAddress = InetAddress.getByName(hostName).getHostAddress();
-			for (String parameter : parameters) {
-				if (parameter.equalsIgnoreCase(hostName)
-					|| isRange(parameter) && isInRange(parameter, hostAddress)
-					|| isMask(parameter) && isMasked(parameter, hostAddress)) {
-					return true;
-				}
-			}
-		} catch (UnknownHostException ex) {
-			networkLog.error("While checking whitelist", ex);
-		}
+    try {
+      String hostAddress = InetAddress.getByName(hostName).getHostAddress();
+      for (String parameter : parameters) {
+        if (parameter.equalsIgnoreCase(hostName)
+            || isRange(parameter) && isInRange(parameter, hostAddress)
+            || isMask(parameter) && isMasked(parameter, hostAddress)) {
+          return true;
+        }
+      }
+    } catch (UnknownHostException ex) {
+      networkLog.error("While checking whitelist", ex);
+    }
 
-		return false;
-	}
+    return false;
+  }
 
-	public static Whitelist from(RuntimeProperties properties) {
-		return new Whitelist(properties.get("network.whitelist", ""));
-	}
+  public static Whitelist from(RuntimeProperties properties) {
+    return new Whitelist(properties.get("network.whitelist", ""));
+  }
 }

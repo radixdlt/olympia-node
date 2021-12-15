@@ -70,19 +70,21 @@ import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.R
 import io.reactivex.rxjava3.core.Single;
 import java.util.Random;
 
-/**
- * Selects random nodes from changing validator sets given by epochs
- */
+/** Selects random nodes from changing validator sets given by epochs */
 public class EpochsNodeSelector implements NodeSelector {
-	private final Random random = new Random();
+  private final Random random = new Random();
 
-	@Override
-	public Single<BFTNode> nextNode(RunningNetwork network) {
-		return network.latestEpochChanges()
-			.map(e -> {
-				ImmutableList<BFTNode> validators = e.getBFTConfiguration().getValidatorSet().nodes().asList();
-				int validatorSetSize = validators.size();
-				return validators.get(random.nextInt(validatorSetSize));
-			}).firstOrError();
-	}
+  @Override
+  public Single<BFTNode> nextNode(RunningNetwork network) {
+    return network
+        .latestEpochChanges()
+        .map(
+            e -> {
+              ImmutableList<BFTNode> validators =
+                  e.getBFTConfiguration().getValidatorSet().nodes().asList();
+              int validatorSetSize = validators.size();
+              return validators.get(random.nextInt(validatorSetSize));
+            })
+        .firstOrError();
+  }
 }

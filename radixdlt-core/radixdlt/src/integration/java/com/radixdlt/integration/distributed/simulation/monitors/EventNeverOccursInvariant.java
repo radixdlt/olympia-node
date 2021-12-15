@@ -70,28 +70,28 @@ import io.reactivex.rxjava3.core.Observable;
 
 /**
  * Checks that an event of a certain class never occurs in a system
+ *
  * @param <T> the class of the event to check for
  */
 public final class EventNeverOccursInvariant<T> implements TestInvariant {
-	private final NodeEvents nodeEvents;
-	private final Class<T> eventClass;
+  private final NodeEvents nodeEvents;
+  private final Class<T> eventClass;
 
-	public EventNeverOccursInvariant(NodeEvents nodeEvents, Class<T> eventClass) {
-		this.nodeEvents = nodeEvents;
-		this.eventClass = eventClass;
-	}
+  public EventNeverOccursInvariant(NodeEvents nodeEvents, Class<T> eventClass) {
+    this.nodeEvents = nodeEvents;
+    this.eventClass = eventClass;
+  }
 
-	@Override
-	public Observable<TestInvariantError> check(SimulationNodes.RunningNetwork network) {
-		return Observable.<TestInvariant.TestInvariantError>create(
-			emitter ->
-				this.nodeEvents.addListener(
-					(node, event) -> emitter.onNext(new TestInvariant.TestInvariantError(
-						"Event " + event + " occurred at node " + node)
-					),
-					eventClass
-				)
-			)
-			.serialize();
-	}
+  @Override
+  public Observable<TestInvariantError> check(SimulationNodes.RunningNetwork network) {
+    return Observable.<TestInvariant.TestInvariantError>create(
+            emitter ->
+                this.nodeEvents.addListener(
+                    (node, event) ->
+                        emitter.onNext(
+                            new TestInvariant.TestInvariantError(
+                                "Event " + event + " occurred at node " + node)),
+                    eventClass))
+        .serialize();
+  }
 }

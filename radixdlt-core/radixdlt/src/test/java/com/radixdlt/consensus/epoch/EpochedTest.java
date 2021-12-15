@@ -71,11 +71,10 @@ import org.junit.Test;
 
 public class EpochedTest {
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(Epoched.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
-
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(Epoched.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 }

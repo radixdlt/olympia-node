@@ -67,83 +67,79 @@ package com.radixdlt.systeminfo;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
-
 import java.util.concurrent.atomic.AtomicReference;
 
-/**
- * Manages system information to be consumed by clients such as the api.
- */
+/** Manages system information to be consumed by clients such as the api. */
 public final class InMemorySystemInfo {
-	private final AtomicReference<EpochLocalTimeoutOccurrence> lastTimeout = new AtomicReference<>();
-	private final AtomicReference<EpochView> currentView = new AtomicReference<>(EpochView.of(0L, View.genesis()));
-	private final AtomicReference<QuorumCertificate> highQC = new AtomicReference<>();
-	private final AtomicReference<LedgerProof> ledgerProof;
-	private final AtomicReference<LedgerProof> epochsLedgerProof;
+  private final AtomicReference<EpochLocalTimeoutOccurrence> lastTimeout = new AtomicReference<>();
+  private final AtomicReference<EpochView> currentView =
+      new AtomicReference<>(EpochView.of(0L, View.genesis()));
+  private final AtomicReference<QuorumCertificate> highQC = new AtomicReference<>();
+  private final AtomicReference<LedgerProof> ledgerProof;
+  private final AtomicReference<LedgerProof> epochsLedgerProof;
 
-	@Inject
-	public InMemorySystemInfo(
-		@LastProof LedgerProof lastProof,
-		@LastEpochProof LedgerProof lastEpochProof
-	) {
-		this.ledgerProof = new AtomicReference<>(lastProof);
-		this.epochsLedgerProof = new AtomicReference<>(lastEpochProof);
-	}
+  @Inject
+  public InMemorySystemInfo(
+      @LastProof LedgerProof lastProof, @LastEpochProof LedgerProof lastEpochProof) {
+    this.ledgerProof = new AtomicReference<>(lastProof);
+    this.epochsLedgerProof = new AtomicReference<>(lastEpochProof);
+  }
 
-	public void processTimeout(EpochLocalTimeoutOccurrence timeout) {
-		lastTimeout.set(timeout);
-	}
+  public void processTimeout(EpochLocalTimeoutOccurrence timeout) {
+    lastTimeout.set(timeout);
+  }
 
-	public void processView(EpochView epochView) {
-		currentView.set(epochView);
-	}
+  public void processView(EpochView epochView) {
+    currentView.set(epochView);
+  }
 
-	public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
-		return update -> {
-			this.ledgerProof.set(update.getTail());
-			var epochChange = update.getStateComputerOutput().getInstance(EpochChange.class);
-			if (epochChange != null) {
-				epochsLedgerProof.set(update.getTail());
-			}
-		};
-	}
+  public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
+    return update -> {
+      this.ledgerProof.set(update.getTail());
+      var epochChange = update.getStateComputerOutput().getInstance(EpochChange.class);
+      if (epochChange != null) {
+        epochsLedgerProof.set(update.getTail());
+      }
+    };
+  }
 
-	public EventProcessor<BFTHighQCUpdate> bftHighQCEventProcessor() {
-		return update -> this.highQC.set(update.getHighQC().highestQC());
-	}
+  public EventProcessor<BFTHighQCUpdate> bftHighQCEventProcessor() {
+    return update -> this.highQC.set(update.getHighQC().highestQC());
+  }
 
-	public EventProcessor<BFTCommittedUpdate> bftCommittedUpdateEventProcessor() {
-		return update -> {
-			this.highQC.set(update.getVertexStoreState().getHighQC().highestQC());
-		};
-	}
+  public EventProcessor<BFTCommittedUpdate> bftCommittedUpdateEventProcessor() {
+    return update -> {
+      this.highQC.set(update.getVertexStoreState().getHighQC().highestQC());
+    };
+  }
 
-	public LedgerProof getCurrentProof() {
-		return ledgerProof.get();
-	}
+  public LedgerProof getCurrentProof() {
+    return ledgerProof.get();
+  }
 
-	public LedgerProof getEpochProof() {
-		return epochsLedgerProof.get();
-	}
+  public LedgerProof getEpochProof() {
+    return epochsLedgerProof.get();
+  }
 
-	public EpochView getCurrentView() {
-		return this.currentView.get();
-	}
+  public EpochView getCurrentView() {
+    return this.currentView.get();
+  }
 
-	public EpochLocalTimeoutOccurrence getLastTimeout() {
-		return this.lastTimeout.get();
-	}
+  public EpochLocalTimeoutOccurrence getLastTimeout() {
+    return this.lastTimeout.get();
+  }
 
-	public QuorumCertificate getHighestQC() {
-		return this.highQC.get();
-	}
+  public QuorumCertificate getHighestQC() {
+    return this.highQC.get();
+  }
 }

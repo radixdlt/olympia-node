@@ -69,8 +69,8 @@ import com.google.inject.Scopes;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
 public class MockedStateComputerModule extends AbstractModule {
-	@Override
-	public void configure() {
-		bind(StateComputer.class).to(MockedStateComputer.class).in(Scopes.SINGLETON);
-	}
+  @Override
+  public void configure() {
+    bind(StateComputer.class).to(MockedStateComputer.class).in(Scopes.SINGLETON);
+  }
 }

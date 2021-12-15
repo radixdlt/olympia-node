@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,9 @@
 
 package com.radixdlt.api.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.ConstructionDeriveHandler;
@@ -85,194 +89,208 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.PrivateKeys;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 public class ConstructionDeriveHandlerTest extends ApiTest {
 
-	@Inject
-	private ConstructionDeriveHandler sut;
-	@Inject
-	private CoreModelMapper coreModelMapper;
+  @Inject private ConstructionDeriveHandler sut;
+  @Inject private CoreModelMapper coreModelMapper;
 
-	@Test
-	public void derive_account_request_should_return_account_entity_identifier() throws CoreApiException {
-		// Arrange
-		var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
-		start();
+  @Test
+  public void derive_account_request_should_return_account_entity_identifier()
+      throws CoreApiException {
+    // Arrange
+    var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
+    start();
 
-		// Act
-		var request = new ConstructionDeriveRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.publicKey(coreModelMapper.publicKey(publicKey))
-			.metadata(new ConstructionDeriveRequestMetadataAccount().type("Account"));
-		var response = sut.handleRequest(request);
+    // Act
+    var request =
+        new ConstructionDeriveRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .publicKey(coreModelMapper.publicKey(publicKey))
+            .metadata(new ConstructionDeriveRequestMetadataAccount().type("Account"));
+    var response = sut.handleRequest(request);
 
-		// Assert
-		assertThat(response.getEntityIdentifier())
-			.isEqualTo(coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(publicKey)));
-	}
+    // Assert
+    assertThat(response.getEntityIdentifier())
+        .isEqualTo(coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(publicKey)));
+  }
 
-	@Test
-	public void derive_validator_request_should_return_validator_entity_identifier() throws CoreApiException {
-		// Arrange
-		var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
-		start();
+  @Test
+  public void derive_validator_request_should_return_validator_entity_identifier()
+      throws CoreApiException {
+    // Arrange
+    var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
+    start();
 
-		// Act
-		var request = new ConstructionDeriveRequest()
-			.networkIdentifier(networkIdentifier())
-			.publicKey(coreModelMapper.publicKey(publicKey))
-			.metadata(new ConstructionDeriveRequestMetadataValidator().type("Validator"));
-		var response = sut.handleRequest(request);
+    // Act
+    var request =
+        new ConstructionDeriveRequest()
+            .networkIdentifier(networkIdentifier())
+            .publicKey(coreModelMapper.publicKey(publicKey))
+            .metadata(new ConstructionDeriveRequestMetadataValidator().type("Validator"));
+    var response = sut.handleRequest(request);
 
-		// Assert
-		assertThat(response.getEntityIdentifier())
-			.isEqualTo(coreModelMapper.entityIdentifier(publicKey));
-	}
+    // Assert
+    assertThat(response.getEntityIdentifier())
+        .isEqualTo(coreModelMapper.entityIdentifier(publicKey));
+  }
 
-	@Test
-	public void derive_token_request_should_return_token_entity_identifier() throws CoreApiException {
-		// Arrange
-		var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
-		start();
+  @Test
+  public void derive_token_request_should_return_token_entity_identifier() throws CoreApiException {
+    // Arrange
+    var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
+    start();
 
-		// Act
-		var request = new ConstructionDeriveRequest()
-			.networkIdentifier(networkIdentifier())
-			.publicKey(coreModelMapper.publicKey(publicKey))
-			.metadata(new ConstructionDeriveRequestMetadataToken().symbol("test").type("Token"));
-		var response = sut.handleRequest(request);
+    // Act
+    var request =
+        new ConstructionDeriveRequest()
+            .networkIdentifier(networkIdentifier())
+            .publicKey(coreModelMapper.publicKey(publicKey))
+            .metadata(new ConstructionDeriveRequestMetadataToken().symbol("test").type("Token"));
+    var response = sut.handleRequest(request);
 
-		// Assert
-		assertThat(response.getEntityIdentifier())
-			.isEqualTo(coreModelMapper.entityIdentifier(
-				REAddr.ofHashedKey(publicKey, "test"), "test"
-			));
-	}
+    // Assert
+    assertThat(response.getEntityIdentifier())
+        .isEqualTo(coreModelMapper.entityIdentifier(REAddr.ofHashedKey(publicKey, "test"), "test"));
+  }
 
-	@Test
-	public void derive_prepared_stakes_should_return_entity_identifier() throws CoreApiException {
-		// Arrange
-		var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
-		var validatorKey = PrivateKeys.ofNumeric(3).getPublicKey();
-		start();
+  @Test
+  public void derive_prepared_stakes_should_return_entity_identifier() throws CoreApiException {
+    // Arrange
+    var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
+    var validatorKey = PrivateKeys.ofNumeric(3).getPublicKey();
+    start();
 
-		// Act
-		var request = new ConstructionDeriveRequest()
-			.networkIdentifier(networkIdentifier())
-			.publicKey(coreModelMapper.publicKey(publicKey))
-			.metadata(new ConstructionDeriveRequestMetadataPreparedStakes()
-				.validator(coreModelMapper.entityIdentifier(validatorKey))
-				.type("PreparedStakes")
-			);
-		var response = sut.handleRequest(request);
+    // Act
+    var request =
+        new ConstructionDeriveRequest()
+            .networkIdentifier(networkIdentifier())
+            .publicKey(coreModelMapper.publicKey(publicKey))
+            .metadata(
+                new ConstructionDeriveRequestMetadataPreparedStakes()
+                    .validator(coreModelMapper.entityIdentifier(validatorKey))
+                    .type("PreparedStakes"));
+    var response = sut.handleRequest(request);
 
-		// Assert
-		assertThat(response.getEntityIdentifier())
-			.isEqualTo(coreModelMapper.entityIdentifierPreparedStake(REAddr.ofPubKeyAccount(publicKey), validatorKey));
-	}
+    // Assert
+    assertThat(response.getEntityIdentifier())
+        .isEqualTo(
+            coreModelMapper.entityIdentifierPreparedStake(
+                REAddr.ofPubKeyAccount(publicKey), validatorKey));
+  }
 
-	@Test
-	public void derive_prepared_stakes_with_invalid_validator_should_return_error() {
-		// Arrange
-		var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
-		var validatorKey = PrivateKeys.ofNumeric(3).getPublicKey();
-		start();
+  @Test
+  public void derive_prepared_stakes_with_invalid_validator_should_return_error() {
+    // Arrange
+    var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
+    var validatorKey = PrivateKeys.ofNumeric(3).getPublicKey();
+    start();
 
-		// Act
-		// Assert
-		var request = new ConstructionDeriveRequest()
-			.networkIdentifier(networkIdentifier())
-			.publicKey(coreModelMapper.publicKey(publicKey))
-			.metadata(new ConstructionDeriveRequestMetadataPreparedStakes()
-				.validator(coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(validatorKey)))
-				.type("PreparedStakes")
-			);
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOfSatisfying(CoreApiException.class, e -> {
-				assertThat(e.toError().getDetails()).isInstanceOf(NotValidatorEntityError.class);
-			});
-	}
+    // Act
+    // Assert
+    var request =
+        new ConstructionDeriveRequest()
+            .networkIdentifier(networkIdentifier())
+            .publicKey(coreModelMapper.publicKey(publicKey))
+            .metadata(
+                new ConstructionDeriveRequestMetadataPreparedStakes()
+                    .validator(
+                        coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(validatorKey)))
+                    .type("PreparedStakes"));
+    assertThatThrownBy(() -> sut.handleRequest(request))
+        .isInstanceOfSatisfying(
+            CoreApiException.class,
+            e -> {
+              assertThat(e.toError().getDetails()).isInstanceOf(NotValidatorEntityError.class);
+            });
+  }
 
-	@Test
-	public void derive_validator_system_should_return_entity_identifier() throws CoreApiException {
-		// Arrange
-		var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
-		start();
+  @Test
+  public void derive_validator_system_should_return_entity_identifier() throws CoreApiException {
+    // Arrange
+    var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
+    start();
 
-		// Act
-		var request = new ConstructionDeriveRequest()
-			.networkIdentifier(networkIdentifier())
-			.publicKey(coreModelMapper.publicKey(publicKey))
-			.metadata(new ConstructionDeriveRequestMetadataValidatorSystem().type("ValidatorSystem"));
-		var response = sut.handleRequest(request);
+    // Act
+    var request =
+        new ConstructionDeriveRequest()
+            .networkIdentifier(networkIdentifier())
+            .publicKey(coreModelMapper.publicKey(publicKey))
+            .metadata(
+                new ConstructionDeriveRequestMetadataValidatorSystem().type("ValidatorSystem"));
+    var response = sut.handleRequest(request);
 
-		// Assert
-		assertThat(response.getEntityIdentifier())
-			.isEqualTo(coreModelMapper.entityIdentifierValidatorSystem(publicKey));
-	}
+    // Assert
+    assertThat(response.getEntityIdentifier())
+        .isEqualTo(coreModelMapper.entityIdentifierValidatorSystem(publicKey));
+  }
 
-	@Test
-	public void derive_prepared_unstakes_should_return_entity_identifier() throws CoreApiException {
-		// Arrange
-		var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
-		start();
+  @Test
+  public void derive_prepared_unstakes_should_return_entity_identifier() throws CoreApiException {
+    // Arrange
+    var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
+    start();
 
-		// Act
-		var request = new ConstructionDeriveRequest()
-			.networkIdentifier(networkIdentifier())
-			.publicKey(coreModelMapper.publicKey(publicKey))
-			.metadata(new ConstructionDeriveRequestMetadataPreparedUnstakes()
-				.type("PreparedUnstakes")
-			);
-		var response = sut.handleRequest(request);
+    // Act
+    var request =
+        new ConstructionDeriveRequest()
+            .networkIdentifier(networkIdentifier())
+            .publicKey(coreModelMapper.publicKey(publicKey))
+            .metadata(
+                new ConstructionDeriveRequestMetadataPreparedUnstakes().type("PreparedUnstakes"));
+    var response = sut.handleRequest(request);
 
-		// Assert
-		assertThat(response.getEntityIdentifier())
-			.isEqualTo(coreModelMapper.entityIdentifierPreparedUnstake(REAddr.ofPubKeyAccount(publicKey)));
-	}
+    // Assert
+    assertThat(response.getEntityIdentifier())
+        .isEqualTo(
+            coreModelMapper.entityIdentifierPreparedUnstake(REAddr.ofPubKeyAccount(publicKey)));
+  }
 
-	@Test
-	public void derive_exiting_unstakes_should_return_entity_identifier() throws CoreApiException {
-		// Arrange
-		var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
-		var validatorKey = PrivateKeys.ofNumeric(3).getPublicKey();
-		long epochUnlock = 236L;
-		start();
+  @Test
+  public void derive_exiting_unstakes_should_return_entity_identifier() throws CoreApiException {
+    // Arrange
+    var publicKey = PrivateKeys.ofNumeric(2).getPublicKey();
+    var validatorKey = PrivateKeys.ofNumeric(3).getPublicKey();
+    long epochUnlock = 236L;
+    start();
 
-		// Act
-		var request = new ConstructionDeriveRequest()
-			.networkIdentifier(networkIdentifier())
-			.publicKey(coreModelMapper.publicKey(publicKey))
-			.metadata(new ConstructionDeriveRequestMetadataExitingUnstakes()
-				.validator(coreModelMapper.entityIdentifier(validatorKey))
-				.epochUnlock(epochUnlock)
-				.type("ExitingUnstakes")
-			);
-		var response = sut.handleRequest(request);
+    // Act
+    var request =
+        new ConstructionDeriveRequest()
+            .networkIdentifier(networkIdentifier())
+            .publicKey(coreModelMapper.publicKey(publicKey))
+            .metadata(
+                new ConstructionDeriveRequestMetadataExitingUnstakes()
+                    .validator(coreModelMapper.entityIdentifier(validatorKey))
+                    .epochUnlock(epochUnlock)
+                    .type("ExitingUnstakes"));
+    var response = sut.handleRequest(request);
 
-		// Assert
-		assertThat(response.getEntityIdentifier())
-			.isEqualTo(coreModelMapper.entityIdentifierExitingStake(REAddr.ofPubKeyAccount(publicKey), validatorKey, epochUnlock));
-	}
+    // Assert
+    assertThat(response.getEntityIdentifier())
+        .isEqualTo(
+            coreModelMapper.entityIdentifierExitingStake(
+                REAddr.ofPubKeyAccount(publicKey), validatorKey, epochUnlock));
+  }
 
-	@Test
-	public void invalid_public_key_should_throw_exception() {
-		// Arrange
-		start();
+  @Test
+  public void invalid_public_key_should_throw_exception() {
+    // Arrange
+    start();
 
-		// Act
-		// Assert
-		var request = new ConstructionDeriveRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.publicKey(new PublicKey().hex("deadbeaddeadbead"))
-			.metadata(new ConstructionDeriveRequestMetadataToken().symbol("test").type("Token"));
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOfSatisfying(CoreApiException.class, e -> {
-				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(InvalidPublicKeyError.class);
-				assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
-			});
-	}
+    // Act
+    // Assert
+    var request =
+        new ConstructionDeriveRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .publicKey(new PublicKey().hex("deadbeaddeadbead"))
+            .metadata(new ConstructionDeriveRequestMetadataToken().symbol("test").type("Token"));
+    assertThatThrownBy(() -> sut.handleRequest(request))
+        .isInstanceOfSatisfying(
+            CoreApiException.class,
+            e -> {
+              var error = e.toError();
+              assertThat(error.getDetails()).isInstanceOf(InvalidPublicKeyError.class);
+              assertThat(error.getCode()).isEqualTo(CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+            });
+  }
 }

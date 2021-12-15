@@ -65,85 +65,87 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atom.SubstateId;
-
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-/**
- * Instruction which has been parsed and state checked by Radix Engine
- */
+/** Instruction which has been parsed and state checked by Radix Engine */
 public final class REStateUpdate {
-	private final REOp op;
-	private final SubstateId id;
-	private final byte typeByte;
-	private final Object parsed;
-	private final Supplier<ByteBuffer> stateBuf;
-	private final int instructionIndex;
+  private final REOp op;
+  private final SubstateId id;
+  private final byte typeByte;
+  private final Object parsed;
+  private final Supplier<ByteBuffer> stateBuf;
+  private final int instructionIndex;
 
-	private REStateUpdate(REOp op, int instructionIndex, SubstateId id, byte typeByte, Object parsed, Supplier<ByteBuffer> stateBuf) {
-		Objects.requireNonNull(op);
+  private REStateUpdate(
+      REOp op,
+      int instructionIndex,
+      SubstateId id,
+      byte typeByte,
+      Object parsed,
+      Supplier<ByteBuffer> stateBuf) {
+    Objects.requireNonNull(op);
 
-		this.op = op;
-		this.instructionIndex = instructionIndex;
-		this.id = id;
-		this.typeByte = typeByte;
-		this.parsed = parsed;
-		this.stateBuf = stateBuf;
-	}
+    this.op = op;
+    this.instructionIndex = instructionIndex;
+    this.id = id;
+    this.typeByte = typeByte;
+    this.parsed = parsed;
+    this.stateBuf = stateBuf;
+  }
 
-	public static REStateUpdate of(
-		REOp op,
-		int instructionIndex,
-		SubstateId substateId,
-		byte typeByte,
-		Object parsed,
-		Supplier<ByteBuffer> stateBuf
-	) {
-		if (op != REOp.DOWN && op != REOp.UP) {
-			throw new IllegalArgumentException();
-		}
-		return new REStateUpdate(op, instructionIndex, substateId, typeByte, parsed, stateBuf);
-	}
+  public static REStateUpdate of(
+      REOp op,
+      int instructionIndex,
+      SubstateId substateId,
+      byte typeByte,
+      Object parsed,
+      Supplier<ByteBuffer> stateBuf) {
+    if (op != REOp.DOWN && op != REOp.UP) {
+      throw new IllegalArgumentException();
+    }
+    return new REStateUpdate(op, instructionIndex, substateId, typeByte, parsed, stateBuf);
+  }
 
-	public byte typeByte() {
-		return typeByte;
-	}
+  public byte typeByte() {
+    return typeByte;
+  }
 
-	public int getInstructionIndex() {
-		return instructionIndex;
-	}
+  public int getInstructionIndex() {
+    return instructionIndex;
+  }
 
-	public SubstateId getId() {
-		return id;
-	}
+  public SubstateId getId() {
+    return id;
+  }
 
-	public ByteBuffer getStateBuf() {
-		return stateBuf.get();
-	}
+  public ByteBuffer getStateBuf() {
+    return stateBuf.get();
+  }
 
-	public boolean isBootUp() {
-		return this.op == REOp.UP;
-	}
+  public boolean isBootUp() {
+    return this.op == REOp.UP;
+  }
 
-	public boolean isShutDown() {
-		return this.op == REOp.DOWN;
-	}
+  public boolean isShutDown() {
+    return this.op == REOp.DOWN;
+  }
 
-	public Object getParsed() {
-		return parsed;
-	}
+  public Object getParsed() {
+    return parsed;
+  }
 
-	public RawSubstateBytes getRawSubstateBytes() {
-		var buffer = stateBuf.get();
-		int remaining = buffer.remaining();
-		var buf = new byte[remaining];
-		buffer.get(buf);
-		return new RawSubstateBytes(id.asBytes(), buf);
-	}
+  public RawSubstateBytes getRawSubstateBytes() {
+    var buffer = stateBuf.get();
+    int remaining = buffer.remaining();
+    var buf = new byte[remaining];
+    buffer.get(buf);
+    return new RawSubstateBytes(id.asBytes(), buf);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{op=%s state=%s}", getClass().getSimpleName(), op, parsed);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{op=%s state=%s}", getClass().getSimpleName(), op, parsed);
+  }
 }

@@ -66,26 +66,22 @@ package com.radixdlt.network.hostip;
 
 import com.radixdlt.properties.RuntimeProperties;
 
-/**
- * Provides a standard {@link HostIp} retriever.
- */
+/** Provides a standard {@link HostIp} retriever. */
 public final class StandardHostIp {
 
-	private StandardHostIp() {
-		throw new IllegalStateException("Can't construct");
-	}
+  private StandardHostIp() {
+    throw new IllegalStateException("Can't construct");
+  }
 
-	/**
-	 * Queries the {@value EnvironmentHostIp#ENV_VAR} environment variable
-	 * for a host name or IP, and if that fails, uses well-known web services
-	 * to determine a public IP address.
-	 *
-	 * @return A {@link HostIp} object from which a host address can be queried
-	 */
-	public static HostIp defaultHostIp(RuntimeProperties properties) {
-		return
-			RuntimePropertiesHostIp.create(properties)
-			.or(EnvironmentHostIp.create())
-			.or(NetworkQueryHostIp.create(properties));
-	}
+  /**
+   * Queries the {@value EnvironmentHostIp#ENV_VAR} environment variable for a host name or IP, and
+   * if that fails, uses well-known web services to determine a public IP address.
+   *
+   * @return A {@link HostIp} object from which a host address can be queried
+   */
+  public static HostIp defaultHostIp(RuntimeProperties properties) {
+    return RuntimePropertiesHostIp.create(properties)
+        .or(EnvironmentHostIp.create())
+        .or(NetworkQueryHostIp.create(properties));
+  }
 }

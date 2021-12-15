@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -77,47 +78,47 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.utils.Bytes;
-
 import java.util.TreeMap;
 
-public final class EngineConfigurationHandler extends CoreJsonRpcHandler<EngineConfigurationRequest, EngineConfigurationResponse> {
-	private final TreeMap<Long, ForkConfig> forks;
-	private final CoreModelMapper modelMapper;
-	private final VerifiedTxnsAndProof genesis;
+public final class EngineConfigurationHandler
+    extends CoreJsonRpcHandler<EngineConfigurationRequest, EngineConfigurationResponse> {
+  private final TreeMap<Long, ForkConfig> forks;
+  private final CoreModelMapper modelMapper;
+  private final VerifiedTxnsAndProof genesis;
 
-	@Inject
-	public EngineConfigurationHandler(
-		@Genesis VerifiedTxnsAndProof genesis,
-		TreeMap<Long, ForkConfig> forks,
-		CoreModelMapper modelMapper
-	) {
-		super(EngineConfigurationRequest.class);
-		this.genesis = genesis;
-		this.forks = forks;
-		this.modelMapper = modelMapper;
-	}
+  @Inject
+  public EngineConfigurationHandler(
+      @Genesis VerifiedTxnsAndProof genesis,
+      TreeMap<Long, ForkConfig> forks,
+      CoreModelMapper modelMapper) {
+    super(EngineConfigurationRequest.class);
+    this.genesis = genesis;
+    this.forks = forks;
+    this.modelMapper = modelMapper;
+  }
 
-	@Override
-	public EngineConfigurationResponse handleRequest(EngineConfigurationRequest request) throws CoreApiException {
-		modelMapper.verifyNetwork(request.getNetworkIdentifier());
+  @Override
+  public EngineConfigurationResponse handleRequest(EngineConfigurationRequest request)
+      throws CoreApiException {
+    modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var response = new EngineConfigurationResponse();
-		forks.forEach((epoch, config) -> response.addForksItem(modelMapper.fork(config)));
-		response.addCheckpointsItem(genesisCheckpoint());
-		return response;
-	}
+    var response = new EngineConfigurationResponse();
+    forks.forEach((epoch, config) -> response.addForksItem(modelMapper.fork(config)));
+    response.addCheckpointsItem(genesisCheckpoint());
+    return response;
+  }
 
-	private EngineCheckpoint genesisCheckpoint() {
-		return new EngineCheckpoint()
-			.checkpointTransaction(Bytes.toHexString(genesis.getTxns().get(0).getPayload()))
-			.engineStateIdentifier(new EngineStateIdentifier()
-				.stateIdentifier(new StateIdentifier()
-					.stateVersion(0L)
-					.transactionAccumulator(Bytes.toHexString(HashUtils.zero256().asBytes()))
-				)
-				.epoch(0L)
-				.round(0L)
-				.timestamp(genesis.getProof().timestamp())
-			);
-	}
+  private EngineCheckpoint genesisCheckpoint() {
+    return new EngineCheckpoint()
+        .checkpointTransaction(Bytes.toHexString(genesis.getTxns().get(0).getPayload()))
+        .engineStateIdentifier(
+            new EngineStateIdentifier()
+                .stateIdentifier(
+                    new StateIdentifier()
+                        .stateVersion(0L)
+                        .transactionAccumulator(Bytes.toHexString(HashUtils.zero256().asBytes())))
+                .epoch(0L)
+                .round(0L)
+                .timestamp(genesis.getProof().timestamp()));
+  }
 }

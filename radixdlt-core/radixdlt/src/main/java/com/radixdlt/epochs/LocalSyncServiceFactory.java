@@ -65,15 +65,12 @@
 package com.radixdlt.epochs;
 
 import com.radixdlt.sync.LocalSyncService;
-import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.SyncState;
+import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
 
-/**
- * A factory for creating LocalSyncService instances.
- */
+/** A factory for creating LocalSyncService instances. */
 public interface LocalSyncServiceFactory {
-	LocalSyncService create(
-		RemoteSyncResponseValidatorSetVerifier remoteSyncResponseValidatorSetVerifier,
-		SyncState syncState
-	);
+  LocalSyncService create(
+      RemoteSyncResponseValidatorSetVerifier remoteSyncResponseValidatorSetVerifier,
+      SyncState syncState);
 }

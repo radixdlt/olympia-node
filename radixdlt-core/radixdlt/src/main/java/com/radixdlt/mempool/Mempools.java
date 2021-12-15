@@ -65,46 +65,44 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.atom.Txn;
-
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-/**
- * Mempool which is always empty
- */
+/** Mempool which is always empty */
 public class Mempools {
-	private Mempools() {
-		throw new IllegalStateException("Cannot instantiate.");
-	}
+  private Mempools() {
+    throw new IllegalStateException("Cannot instantiate.");
+  }
 
-	public static <T> Mempool<T> empty() {
-		return new Mempool<>() {
-			@Override
-			public T add(Txn txn) throws MempoolFullException, MempoolDuplicateException {
-				// No-op
-				return null;
-			}
+  public static <T> Mempool<T> empty() {
+    return new Mempool<>() {
+      @Override
+      public T add(Txn txn) throws MempoolFullException, MempoolDuplicateException {
+        // No-op
+        return null;
+      }
 
-			@Override
-			public List<Txn> committed(List<T> committed) {
-				return List.of();
-			}
+      @Override
+      public List<Txn> committed(List<T> committed) {
+        return List.of();
+      }
 
-			@Override
-			public int getCount() {
-				return 0;
-			}
+      @Override
+      public int getCount() {
+        return 0;
+      }
 
-			@Override
-			public List<Txn> getTxns(int count, List<T> seen) {
-				return List.of();
-			}
+      @Override
+      public List<Txn> getTxns(int count, List<T> seen) {
+        return List.of();
+      }
 
-			@Override
-			public List<Txn> scanUpdateAndGet(Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
-				return List.of();
-			}
-		};
-	}
+      @Override
+      public List<Txn> scanUpdateAndGet(
+          Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
+        return List.of();
+      }
+    };
+  }
 }

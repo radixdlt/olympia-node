@@ -72,39 +72,39 @@ import java.util.Objects;
  */
 public final class SyncLedgerUpdateTimeout {
 
-	public static SyncLedgerUpdateTimeout create(long stateVersion) {
-		return new SyncLedgerUpdateTimeout(stateVersion);
-	}
+  public static SyncLedgerUpdateTimeout create(long stateVersion) {
+    return new SyncLedgerUpdateTimeout(stateVersion);
+  }
 
-	private final long stateVersion;
+  private final long stateVersion;
 
-	private SyncLedgerUpdateTimeout(long stateVersion) {
-		this.stateVersion = stateVersion;
-	}
+  private SyncLedgerUpdateTimeout(long stateVersion) {
+    this.stateVersion = stateVersion;
+  }
 
-	public long stateVersion() {
-		return this.stateVersion;
-	}
+  public long stateVersion() {
+    return this.stateVersion;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{stateVersion=%s}", this.getClass().getSimpleName(), stateVersion);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{stateVersion=%s}", this.getClass().getSimpleName(), stateVersion);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		final var that = (SyncLedgerUpdateTimeout) o;
-		return Objects.equals(stateVersion, that.stateVersion);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final var that = (SyncLedgerUpdateTimeout) o;
+    return Objects.equals(stateVersion, that.stateVersion);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(stateVersion);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(stateVersion);
+  }
 }

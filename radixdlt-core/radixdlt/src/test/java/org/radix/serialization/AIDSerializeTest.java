@@ -67,20 +67,20 @@ package org.radix.serialization;
 import com.radixdlt.identifiers.AID;
 
 public class AIDSerializeTest extends SerializeMessageObject<AID> {
-	public AIDSerializeTest() {
-		super(AID.class, AIDSerializeTest::getAID);
-	}
+  public AIDSerializeTest() {
+    super(AID.class, AIDSerializeTest::getAID);
+  }
 
-	private static AID getAID() {
-		byte[] bytes = new byte[AID.BYTES];
-		for (int i = 0; i < bytes.length; i++) {
-			bytes[i] = (byte) i;
-		}
-		return AID.from(bytes);
-	}
+  private static AID getAID() {
+    byte[] bytes = new byte[AID.BYTES];
+    for (int i = 0; i < bytes.length; i++) {
+      bytes[i] = (byte) i;
+    }
+    return AID.from(bytes);
+  }
 
-	@Override
-	public void testNONEIsEmpty() {
-		// Not applicable to Atom IDs
-	}
+  @Override
+  public void testNONEIsEmpty() {
+    // Not applicable to Atom IDs
+  }
 }

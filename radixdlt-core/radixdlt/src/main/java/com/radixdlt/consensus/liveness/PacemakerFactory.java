@@ -69,22 +69,19 @@ import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.safety.SafetyRules;
 
-/**
- * Pacemaker factory
- */
+/** Pacemaker factory */
 public interface PacemakerFactory {
 
-	/**
-	 * Creates a new clean pacemaker.
-	 *
-	 * @return a new pacemaker
-	 */
-	Pacemaker create(
-		BFTValidatorSet validatorSet,
-		VertexStore vertexStore,
-		PacemakerTimeoutCalculator timeoutCalculator,
-		SafetyRules safetyRules,
-		ViewUpdate initialViewUpdate,
-		long nextEpoch
-	);
+  /**
+   * Creates a new clean pacemaker.
+   *
+   * @return a new pacemaker
+   */
+  Pacemaker create(
+      BFTValidatorSet validatorSet,
+      VertexStore vertexStore,
+      PacemakerTimeoutCalculator timeoutCalculator,
+      SafetyRules safetyRules,
+      ViewUpdate initialViewUpdate,
+      long nextEpoch);
 }

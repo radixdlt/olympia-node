@@ -64,100 +64,98 @@
 
 package org.radix.benchmark;
 
-
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.serialization.ClassScanningSerializerIds;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.Serialization;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.infra.Blackhole;
-
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.ClassScanningSerializerIds;
-import com.radixdlt.serialization.Serialization;
-
 import org.radix.serialization.DummyTestObject;
 import org.radix.serialization.TestSetupUtils;
 
 /**
- * Some JMH driven benchmarks for testing serialisation performance of
- * Radix and some third party libraries.
- * <p>
- * Note that the build system has been set up to make it easier to
- * run these performance tests under gradle.  Using gradle, it should
- * be possible to execute:
+ * Some JMH driven benchmarks for testing serialisation performance of Radix and some third party
+ * libraries.
+ *
+ * <p>Note that the build system has been set up to make it easier to run these performance tests
+ * under gradle. Using gradle, it should be possible to execute:
+ *
  * <pre>
  *    $ gradle clean jmh
  * </pre>
- * from the RadixCode/radixdlt directory.  Note that the JMH plugin
- * does not appear to be super robust, and changes to benchmark tests
- * and other code are not always re-instrumented correctly by gradle
- * daemons.  This can be worked around by stopping the daemons before
- * starting the tests using:
+ *
+ * from the RadixCode/radixdlt directory. Note that the JMH plugin does not appear to be super
+ * robust, and changes to benchmark tests and other code are not always re-instrumented correctly by
+ * gradle daemons. This can be worked around by stopping the daemons before starting the tests
+ * using:
+ *
  * <pre>
  *    $ gradle --stop && gradle clean jmh
  * </pre>
- * Alternatively, the configuration option {@code org.gradle.daemon=false}
- * can be added to the {@code ~/.gradle/gradle.properties} to completely
- * disable gradle daemons.
+ *
+ * Alternatively, the configuration option {@code org.gradle.daemon=false} can be added to the
+ * {@code ~/.gradle/gradle.properties} to completely disable gradle daemons.
  */
 public class CodecBenchmark {
 
-	private static final DummyTestObject testObject;
+  private static final DummyTestObject testObject;
 
-	private static Serialization serialization;
+  private static Serialization serialization;
 
-	private static String jacksonJson;
-	private static byte[] jacksonBytes;
+  private static String jacksonJson;
+  private static byte[] jacksonBytes;
 
-	static {
-		// Disable this output for now, as the serialiser is quite verbose when starting.
-		Configurator.setLevel(LogManager.getLogger(ClassScanningSerializerIds.class).getName(), Level.INFO);
+  static {
+    // Disable this output for now, as the serialiser is quite verbose when starting.
+    Configurator.setLevel(
+        LogManager.getLogger(ClassScanningSerializerIds.class).getName(), Level.INFO);
 
-		TestSetupUtils.installBouncyCastleProvider();
+    TestSetupUtils.installBouncyCastleProvider();
 
-		serialization = DefaultSerialization.getInstance();
+    serialization = DefaultSerialization.getInstance();
 
-		testObject = new DummyTestObject(true);
+    testObject = new DummyTestObject(true);
 
-		jacksonJson = serialization.toJson(testObject, Output.ALL);
-		jacksonBytes = serialization.toDson(testObject, Output.ALL);
+    jacksonJson = serialization.toJson(testObject, Output.ALL);
+    jacksonBytes = serialization.toDson(testObject, Output.ALL);
 
-		System.out.format("DSON bytes length: %s%n", jacksonBytes.length);
-		System.out.format("JSON bytes length: %s%n", jacksonJson.length());
-	}
+    System.out.format("DSON bytes length: %s%n", jacksonBytes.length);
+    System.out.format("JSON bytes length: %s%n", jacksonJson.length());
+  }
 
-	@Benchmark
-	public void jacksonToBytesTest(Blackhole bh) {
-		byte[] bytes = serialization.toDson(testObject, Output.WIRE);
-		bh.consume(bytes);
-	}
+  @Benchmark
+  public void jacksonToBytesTest(Blackhole bh) {
+    byte[] bytes = serialization.toDson(testObject, Output.WIRE);
+    bh.consume(bytes);
+  }
 
-	@Benchmark
-	public void jacksonFromBytesTest(Blackhole bh) {
-		try {
-			DummyTestObject newObj = serialization.fromDson(jacksonBytes, DummyTestObject.class);
-			bh.consume(newObj);
-		} catch (DeserializeException ex) {
-			throw new IllegalStateException("While deserializing from DSON", ex);
-		}
-	}
+  @Benchmark
+  public void jacksonFromBytesTest(Blackhole bh) {
+    try {
+      DummyTestObject newObj = serialization.fromDson(jacksonBytes, DummyTestObject.class);
+      bh.consume(newObj);
+    } catch (DeserializeException ex) {
+      throw new IllegalStateException("While deserializing from DSON", ex);
+    }
+  }
 
+  @Benchmark
+  public void jacksonToJsonTest(Blackhole bh) {
+    String json = serialization.toJson(testObject, Output.WIRE);
+    bh.consume(json);
+  }
 
-	@Benchmark
-	public void jacksonToJsonTest(Blackhole bh) {
-		String json = serialization.toJson(testObject, Output.WIRE);
-		bh.consume(json);
-	}
-
-	@Benchmark
-	public void jacksonFromJsonTest(Blackhole bh) {
-		try {
-			DummyTestObject newObj = serialization.fromJson(jacksonJson, DummyTestObject.class);
-			bh.consume(newObj);
-		} catch (DeserializeException ex) {
-			throw new IllegalStateException("While deserializing from JSON", ex);
-		}
-	}
+  @Benchmark
+  public void jacksonFromJsonTest(Blackhole bh) {
+    try {
+      DummyTestObject newObj = serialization.fromJson(jacksonJson, DummyTestObject.class);
+      bh.consume(newObj);
+    } catch (DeserializeException ex) {
+      throw new IllegalStateException("While deserializing from JSON", ex);
+    }
+  }
 }

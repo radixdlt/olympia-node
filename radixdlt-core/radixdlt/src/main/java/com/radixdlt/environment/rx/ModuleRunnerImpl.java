@@ -77,9 +77,6 @@ import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
@@ -90,165 +87,166 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-/**
- * Executes chaos related events
- */
+/** Executes chaos related events */
 public final class ModuleRunnerImpl implements ModuleRunner {
-	private static final Logger logger = LogManager.getLogger();
-	private Scheduler singleThreadScheduler;
-	private ScheduledExecutorService executorService;
-	private final String threadName;
-	private final Object startLock = new Object();
-	private CompositeDisposable compositeDisposable;
+  private static final Logger logger = LogManager.getLogger();
+  private Scheduler singleThreadScheduler;
+  private ScheduledExecutorService executorService;
+  private final String threadName;
+  private final Object startLock = new Object();
+  private CompositeDisposable compositeDisposable;
 
-	private final Set<StartProcessor> startProcessors;
-	private final List<Subscription<?>> subscriptions;
-	private final ImmutableList<Consumer<ScheduledExecutorService>> onStart;
+  private final Set<StartProcessor> startProcessors;
+  private final List<Subscription<?>> subscriptions;
+  private final ImmutableList<Consumer<ScheduledExecutorService>> onStart;
 
-	private static class Subscription<T> {
-		final Observable<T> o;
-		final EventProcessor<T> p;
+  private static class Subscription<T> {
+    final Observable<T> o;
+    final EventProcessor<T> p;
 
-		Subscription(Observable<T> o, EventProcessor<T> p) {
-			this.o = o;
-			this.p = p;
-		}
+    Subscription(Observable<T> o, EventProcessor<T> p) {
+      this.o = o;
+      this.p = p;
+    }
 
-		Disposable subscribe(Scheduler s) {
-			return o.observeOn(s).subscribe(p::process, e -> {
-				// TODO: Implement better error handling especially against Byzantine nodes.
-				// TODO: Exit process for now.
-				e.printStackTrace();
-				Thread.sleep(1000);
-				System.exit(-1);
-			});
-		}
-	}
+    Disposable subscribe(Scheduler s) {
+      return o.observeOn(s)
+          .subscribe(
+              p::process,
+              e -> {
+                // TODO: Implement better error handling especially against Byzantine nodes.
+                // TODO: Exit process for now.
+                e.printStackTrace();
+                Thread.sleep(1000);
+                System.exit(-1);
+              });
+    }
+  }
 
-	private ModuleRunnerImpl(
-		String threadName,
-		Set<StartProcessor> startProcessors, // TODO: combine with onStart
-		List<Subscription<?>> subscriptions,
-		ImmutableList<Consumer<ScheduledExecutorService>> onStart
-	) {
-		this.threadName = threadName;
-		this.startProcessors = startProcessors;
-		this.subscriptions = subscriptions;
-		this.onStart = onStart;
-	}
+  private ModuleRunnerImpl(
+      String threadName,
+      Set<StartProcessor> startProcessors, // TODO: combine with onStart
+      List<Subscription<?>> subscriptions,
+      ImmutableList<Consumer<ScheduledExecutorService>> onStart) {
+    this.threadName = threadName;
+    this.startProcessors = startProcessors;
+    this.subscriptions = subscriptions;
+    this.onStart = onStart;
+  }
 
-	public static class Builder {
-		private HashSet<StartProcessor> startProcessors = new HashSet<>();
-		private ImmutableList.Builder<Subscription<?>> subscriptionsBuilder = ImmutableList.builder();
-		private ImmutableList.Builder<Consumer<ScheduledExecutorService>> onStartBuilder = new ImmutableList.Builder<>();
+  public static class Builder {
+    private HashSet<StartProcessor> startProcessors = new HashSet<>();
+    private ImmutableList.Builder<Subscription<?>> subscriptionsBuilder = ImmutableList.builder();
+    private ImmutableList.Builder<Consumer<ScheduledExecutorService>> onStartBuilder =
+        new ImmutableList.Builder<>();
 
-		public Builder add(StartProcessor startProcessor) {
-			startProcessors.add(startProcessor);
-			return this;
-		}
+    public Builder add(StartProcessor startProcessor) {
+      startProcessors.add(startProcessor);
+      return this;
+    }
 
-		public <T> Builder add(Observable<T> o, EventProcessor<T> p) {
-			subscriptionsBuilder.add(new Subscription<>(o, p));
-			return this;
-		}
+    public <T> Builder add(Observable<T> o, EventProcessor<T> p) {
+      subscriptionsBuilder.add(new Subscription<>(o, p));
+      return this;
+    }
 
-		public <T> Builder add(Flowable<T> o, EventProcessor<T> p) {
-			subscriptionsBuilder.add(new Subscription<>(o.toObservable(), p));
-			return this;
-		}
+    public <T> Builder add(Flowable<T> o, EventProcessor<T> p) {
+      subscriptionsBuilder.add(new Subscription<>(o.toObservable(), p));
+      return this;
+    }
 
-		public <T> Builder add(Flowable<RemoteEvent<T>> o, RemoteEventProcessor<T> p) {
-			subscriptionsBuilder.add(new Subscription<>(o.toObservable(), p::process));
-			return this;
-		}
+    public <T> Builder add(Flowable<RemoteEvent<T>> o, RemoteEventProcessor<T> p) {
+      subscriptionsBuilder.add(new Subscription<>(o.toObservable(), p::process));
+      return this;
+    }
 
-		public <T> Builder scheduleWithFixedDelay(
-			EventDispatcher<T> eventDispatcher,
-			Supplier<T> eventSupplier,
-			Duration initialDelay,
-			Duration interval
-		) {
-			return onStart(executor ->
-				executor.scheduleWithFixedDelay(
-					() -> eventDispatcher.dispatch(eventSupplier.get()),
-					initialDelay.toMillis(),
-					interval.toMillis(),
-					TimeUnit.MILLISECONDS
-				)
-			);
-		}
+    public <T> Builder scheduleWithFixedDelay(
+        EventDispatcher<T> eventDispatcher,
+        Supplier<T> eventSupplier,
+        Duration initialDelay,
+        Duration interval) {
+      return onStart(
+          executor ->
+              executor.scheduleWithFixedDelay(
+                  () -> eventDispatcher.dispatch(eventSupplier.get()),
+                  initialDelay.toMillis(),
+                  interval.toMillis(),
+                  TimeUnit.MILLISECONDS));
+    }
 
-		public Builder onStart(Consumer<ScheduledExecutorService> fn) {
-			this.onStartBuilder.add(fn);
-			return this;
-		}
+    public Builder onStart(Consumer<ScheduledExecutorService> fn) {
+      this.onStartBuilder.add(fn);
+      return this;
+    }
 
-		public ModuleRunnerImpl build(String threadName) {
-			return new ModuleRunnerImpl(
-				threadName,
-				Set.copyOf(startProcessors),
-				subscriptionsBuilder.build(),
-				onStartBuilder.build()
-			);
-		}
-	}
+    public ModuleRunnerImpl build(String threadName) {
+      return new ModuleRunnerImpl(
+          threadName,
+          Set.copyOf(startProcessors),
+          subscriptionsBuilder.build(),
+          onStartBuilder.build());
+    }
+  }
 
-	public static Builder builder() {
-		return new Builder();
-	}
+  public static Builder builder() {
+    return new Builder();
+  }
 
+  @Override
+  public void start() {
+    synchronized (this.startLock) {
+      if (this.compositeDisposable != null) {
+        return;
+      }
 
-	@Override
-	public void start() {
-		synchronized (this.startLock) {
-			if (this.compositeDisposable != null) {
-				return;
-			}
+      this.executorService =
+          Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads(threadName));
+      this.singleThreadScheduler = Schedulers.from(this.executorService);
 
-			this.executorService = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads(threadName));
-			this.singleThreadScheduler = Schedulers.from(this.executorService);
+      logger.info("Starting Runner: {}", this.threadName);
 
-			logger.info("Starting Runner: {}", this.threadName);
+      this.executorService.submit(() -> startProcessors.forEach(StartProcessor::start));
+      final var disposables =
+          this.subscriptions.stream()
+              .map(s -> s.subscribe(singleThreadScheduler))
+              .collect(Collectors.toList());
+      this.compositeDisposable = new CompositeDisposable(disposables);
 
-			this.executorService.submit(() -> startProcessors.forEach(StartProcessor::start));
-			final var disposables = this.subscriptions.stream()
-				.map(s -> s.subscribe(singleThreadScheduler))
-				.collect(Collectors.toList());
-			this.compositeDisposable = new CompositeDisposable(disposables);
+      this.onStart.forEach(f -> f.accept(this.executorService));
+    }
+  }
 
-			this.onStart.forEach(f -> f.accept(this.executorService));
-		}
-	}
+  @Override
+  public void stop() {
+    synchronized (this.startLock) {
+      if (compositeDisposable != null) {
+        compositeDisposable.dispose();
+        compositeDisposable = null;
 
-	@Override
-	public void stop() {
-		synchronized (this.startLock) {
-			if (compositeDisposable != null) {
-				compositeDisposable.dispose();
-				compositeDisposable = null;
+        this.shutdownAndAwaitTermination();
+      }
+    }
+  }
 
-				this.shutdownAndAwaitTermination();
-			}
-		}
-	}
-
-	private void shutdownAndAwaitTermination() {
-		this.executorService.shutdown(); // Disable new tasks from being submitted
-		try {
-			// Wait a while for existing tasks to terminate
-			if (!this.executorService.awaitTermination(2, TimeUnit.SECONDS)) {
-				this.executorService.shutdownNow(); // Cancel currently executing tasks
-				// Wait a while for tasks to respond to being cancelled
-				if (!this.executorService.awaitTermination(2, TimeUnit.SECONDS)) {
-					System.err.println("Pool " + this.threadName + " did not terminate");
-				}
-			}
-		} catch (InterruptedException ie) {
-			// (Re-)Cancel if current thread also interrupted
-			this.executorService.shutdownNow();
-			// Preserve interrupt status
-			Thread.currentThread().interrupt();
-		}
-	}
+  private void shutdownAndAwaitTermination() {
+    this.executorService.shutdown(); // Disable new tasks from being submitted
+    try {
+      // Wait a while for existing tasks to terminate
+      if (!this.executorService.awaitTermination(2, TimeUnit.SECONDS)) {
+        this.executorService.shutdownNow(); // Cancel currently executing tasks
+        // Wait a while for tasks to respond to being cancelled
+        if (!this.executorService.awaitTermination(2, TimeUnit.SECONDS)) {
+          System.err.println("Pool " + this.threadName + " did not terminate");
+        }
+      }
+    } catch (InterruptedException ie) {
+      // (Re-)Cancel if current thread also interrupted
+      this.executorService.shutdownNow();
+      // Preserve interrupt status
+      Thread.currentThread().interrupt();
+    }
+  }
 }

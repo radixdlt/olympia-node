@@ -68,21 +68,18 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 public class ResultTest {
-	@Test
-	public void resultOkEquals() {
-		EqualsVerifier.forClass(Result.ResultOk.class)
-			.verify();
-	}
+  @Test
+  public void resultOkEquals() {
+    EqualsVerifier.forClass(Result.ResultOk.class).verify();
+  }
 
-	@Test
-	public void resultFailEquals() {
-		EqualsVerifier.forClass(Result.ResultFail.class)
-			.verify();
-	}
+  @Test
+  public void resultFailEquals() {
+    EqualsVerifier.forClass(Result.ResultFail.class).verify();
+  }
 
-	@Test
-	public void failureEquals() {
-		EqualsVerifier.forClass(Failure.class)
-			.verify();
-	}
+  @Test
+  public void failureEquals() {
+    EqualsVerifier.forClass(Failure.class).verify();
+  }
 }

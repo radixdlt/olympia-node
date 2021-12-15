@@ -65,7 +65,7 @@
 package com.radixdlt.constraintmachine.exceptions;
 
 public class InvalidDelegationException extends Exception {
-	public InvalidDelegationException() {
-		super("Delegation not allowed by owner.");
-	}
+  public InvalidDelegationException() {
+    super("Delegation not allowed by owner.");
+  }
 }

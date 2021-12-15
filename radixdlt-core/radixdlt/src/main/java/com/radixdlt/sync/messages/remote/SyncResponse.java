@@ -65,47 +65,45 @@
 package com.radixdlt.sync.messages.remote;
 
 import com.radixdlt.ledger.DtoTxnsAndProof;
-
 import java.util.Objects;
 
-/**
- * A response to the SyncRequest message.
- */
+/** A response to the SyncRequest message. */
 public final class SyncResponse {
 
-	private final DtoTxnsAndProof commandsAndProof;
+  private final DtoTxnsAndProof commandsAndProof;
 
-	public static SyncResponse create(DtoTxnsAndProof commandsAndProof) {
-		return new SyncResponse(commandsAndProof);
-	}
+  public static SyncResponse create(DtoTxnsAndProof commandsAndProof) {
+    return new SyncResponse(commandsAndProof);
+  }
 
-	private SyncResponse(DtoTxnsAndProof commandsAndProof) {
-		this.commandsAndProof = Objects.requireNonNull(commandsAndProof);
-	}
+  private SyncResponse(DtoTxnsAndProof commandsAndProof) {
+    this.commandsAndProof = Objects.requireNonNull(commandsAndProof);
+  }
 
-	public DtoTxnsAndProof getTxnsAndProof() {
-		return commandsAndProof;
-	}
+  public DtoTxnsAndProof getTxnsAndProof() {
+    return commandsAndProof;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{commandsAndProof=%s}", this.getClass().getSimpleName(), commandsAndProof);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{commandsAndProof=%s}", this.getClass().getSimpleName(), commandsAndProof);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof SyncResponse)) {
-			return false;
-		}
-		SyncResponse that = (SyncResponse) o;
-		return Objects.equals(commandsAndProof, that.commandsAndProof);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof SyncResponse)) {
+      return false;
+    }
+    SyncResponse that = (SyncResponse) o;
+    return Objects.equals(commandsAndProof, that.commandsAndProof);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(commandsAndProof);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(commandsAndProof);
+  }
 }

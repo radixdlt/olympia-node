@@ -75,31 +75,31 @@ import com.radixdlt.integration.distributed.simulation.application.NodeValidator
 import com.radixdlt.integration.distributed.simulation.monitors.NodeEvents;
 import com.radixdlt.utils.Pair;
 
-/**
- * Monitors which occur at the mempool level or higher
- */
+/** Monitors which occur at the mempool level or higher */
 public final class ApplicationMonitors {
-    private ApplicationMonitors() {
-        throw new IllegalStateException("Cannot instantiate.");
-    }
+  private ApplicationMonitors() {
+    throw new IllegalStateException("Cannot instantiate.");
+  }
 
-    public static Module registeredNodeToEpoch() {
-        return new AbstractModule() {
-            @ProvidesIntoMap
-            @MonitorKey(Monitor.VALIDATOR_REGISTERED)
-            TestInvariant registeredValidator(NodeValidatorRegistrator validatorRegistrator) {
-                return new RegisteredValidatorChecker(validatorRegistrator.validatorRegistrationSubmissions());
-            }
-        };
-    }
+  public static Module registeredNodeToEpoch() {
+    return new AbstractModule() {
+      @ProvidesIntoMap
+      @MonitorKey(Monitor.VALIDATOR_REGISTERED)
+      TestInvariant registeredValidator(NodeValidatorRegistrator validatorRegistrator) {
+        return new RegisteredValidatorChecker(
+            validatorRegistrator.validatorRegistrationSubmissions());
+      }
+    };
+  }
 
-    public static Module mempoolCommitted() {
-        return new AbstractModule() {
-            @ProvidesIntoMap
-            @MonitorKey(Monitor.MEMPOOL_COMMITTED)
-            TestInvariant mempoolCommitted(LocalMempoolPeriodicSubmitter mempoolSubmitter, NodeEvents nodeEvents) {
-                return new CommittedChecker(mempoolSubmitter.issuedTxns().map(Pair::getFirst), nodeEvents);
-            }
-        };
-    }
+  public static Module mempoolCommitted() {
+    return new AbstractModule() {
+      @ProvidesIntoMap
+      @MonitorKey(Monitor.MEMPOOL_COMMITTED)
+      TestInvariant mempoolCommitted(
+          LocalMempoolPeriodicSubmitter mempoolSubmitter, NodeEvents nodeEvents) {
+        return new CommittedChecker(mempoolSubmitter.issuedTxns().map(Pair::getFirst), nodeEvents);
+      }
+    };
+  }
 }

@@ -67,72 +67,67 @@ package com.radixdlt.client.lib.api.rpc;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.utils.functional.Failure;
-
 import java.util.Objects;
 import java.util.Optional;
 
 public class ErrorInfo {
-	private final int code;
-	private final String message;
-	private final Object data;
+  private final int code;
+  private final String message;
+  private final Object data;
 
-	private ErrorInfo(int code, String message, Object data) {
-		this.code = code;
-		this.message = message;
-		this.data = data;
-	}
+  private ErrorInfo(int code, String message, Object data) {
+    this.code = code;
+    this.message = message;
+    this.data = data;
+  }
 
-	@JsonCreator
-	public static ErrorInfo create(
-		@JsonProperty("code") int code,
-		@JsonProperty("message") String message,
-		@JsonProperty("data") Object data
-	) {
-		return new ErrorInfo(code, message, data);
-	}
+  @JsonCreator
+  public static ErrorInfo create(
+      @JsonProperty("code") int code,
+      @JsonProperty("message") String message,
+      @JsonProperty("data") Object data) {
+    return new ErrorInfo(code, message, data);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof ErrorInfo)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof ErrorInfo)) {
+      return false;
+    }
 
-		var errorInfo = (ErrorInfo) o;
-		return code == errorInfo.code && Objects.equals(message, errorInfo.message);
-	}
+    var errorInfo = (ErrorInfo) o;
+    return code == errorInfo.code && Objects.equals(message, errorInfo.message);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(code, message);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(code, message);
+  }
 
-	@Override
-	public String toString() {
-		return "{" + code + ", '" + message + "'}";
-	}
+  @Override
+  public String toString() {
+    return "{" + code + ", '" + message + "'}";
+  }
 
-	public Failure toFailure() {
-		var text = (message == null && data == null)
-			   ? "<empty>"
-			   : message == null
-				 ? data.toString()
-				 : message;
+  public Failure toFailure() {
+    var text =
+        (message == null && data == null) ? "<empty>" : message == null ? data.toString() : message;
 
-		return Failure.failure(code, text);
-	}
+    return Failure.failure(code, text);
+  }
 
-	public int getCode() {
-		return code;
-	}
+  public int getCode() {
+    return code;
+  }
 
-	public Optional<String> getMessage() {
-		return Optional.ofNullable(message);
-	}
+  public Optional<String> getMessage() {
+    return Optional.ofNullable(message);
+  }
 
-	public Optional<Object> getData() {
-		return Optional.ofNullable(data);
-	}
+  public Optional<Object> getData() {
+    return Optional.ofNullable(data);
+  }
 }

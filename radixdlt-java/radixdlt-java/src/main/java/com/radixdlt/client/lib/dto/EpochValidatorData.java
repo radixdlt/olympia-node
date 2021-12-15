@@ -68,92 +68,96 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Objects;
 
 public final class EpochValidatorData {
-	private final UInt256 totalDelegatedStake;
-	private final double uptimePercentage;
-	private final long proposalsMissed;
-	private final long proposalsCompleted;
-	private final ValidatorAddress address;
+  private final UInt256 totalDelegatedStake;
+  private final double uptimePercentage;
+  private final long proposalsMissed;
+  private final long proposalsCompleted;
+  private final ValidatorAddress address;
 
-	private EpochValidatorData(
-		UInt256 totalDelegatedStake,
-		double uptimePercentage,
-		long proposalsMissed,
-		long proposalsCompleted,
-		ValidatorAddress address
-	) {
-		this.totalDelegatedStake = totalDelegatedStake;
-		this.uptimePercentage = uptimePercentage;
-		this.proposalsMissed = proposalsMissed;
-		this.proposalsCompleted = proposalsCompleted;
-		this.address = address;
-	}
+  private EpochValidatorData(
+      UInt256 totalDelegatedStake,
+      double uptimePercentage,
+      long proposalsMissed,
+      long proposalsCompleted,
+      ValidatorAddress address) {
+    this.totalDelegatedStake = totalDelegatedStake;
+    this.uptimePercentage = uptimePercentage;
+    this.proposalsMissed = proposalsMissed;
+    this.proposalsCompleted = proposalsCompleted;
+    this.address = address;
+  }
 
-	@JsonCreator
-	public static EpochValidatorData create(
-		@JsonProperty(value = "totalDelegatedStake", required = true) UInt256 totalDelegatedStake,
-		@JsonProperty(value = "uptimePercentage", required = true) double uptimePercentage,
-		@JsonProperty(value = "proposalsMissed", required = true) long proposalsMissed,
-		@JsonProperty(value = "proposalsCompleted", required = true) long proposalsCompleted,
-		@JsonProperty(value = "address", required = true) ValidatorAddress address
-	) {
-		return new EpochValidatorData(totalDelegatedStake, uptimePercentage, proposalsMissed, proposalsCompleted, address);
-	}
+  @JsonCreator
+  public static EpochValidatorData create(
+      @JsonProperty(value = "totalDelegatedStake", required = true) UInt256 totalDelegatedStake,
+      @JsonProperty(value = "uptimePercentage", required = true) double uptimePercentage,
+      @JsonProperty(value = "proposalsMissed", required = true) long proposalsMissed,
+      @JsonProperty(value = "proposalsCompleted", required = true) long proposalsCompleted,
+      @JsonProperty(value = "address", required = true) ValidatorAddress address) {
+    return new EpochValidatorData(
+        totalDelegatedStake, uptimePercentage, proposalsMissed, proposalsCompleted, address);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof EpochValidatorData)) {
-			return false;
-		}
+    if (!(o instanceof EpochValidatorData)) {
+      return false;
+    }
 
-		var that = (EpochValidatorData) o;
-		return Double.compare(that.uptimePercentage, uptimePercentage) == 0
-			&& proposalsMissed == that.proposalsMissed
-			&& proposalsCompleted == that.proposalsCompleted
-			&& totalDelegatedStake.equals(that.totalDelegatedStake)
-			&& address.equals(that.address);
-	}
+    var that = (EpochValidatorData) o;
+    return Double.compare(that.uptimePercentage, uptimePercentage) == 0
+        && proposalsMissed == that.proposalsMissed
+        && proposalsCompleted == that.proposalsCompleted
+        && totalDelegatedStake.equals(that.totalDelegatedStake)
+        && address.equals(that.address);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(totalDelegatedStake, uptimePercentage, proposalsMissed, proposalsCompleted, address);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        totalDelegatedStake, uptimePercentage, proposalsMissed, proposalsCompleted, address);
+  }
 
-	@Override
-	public String toString() {
-		return "{"
-			+ "totalDelegatedStake=" + totalDelegatedStake
-			+ ", uptimePercentage=" + uptimePercentage
-			+ ", proposalsMissed=" + proposalsMissed
-			+ ", proposalsCompleted=" + proposalsCompleted
-			+ ", address=" + address
-			+ '}';
-	}
+  @Override
+  public String toString() {
+    return "{"
+        + "totalDelegatedStake="
+        + totalDelegatedStake
+        + ", uptimePercentage="
+        + uptimePercentage
+        + ", proposalsMissed="
+        + proposalsMissed
+        + ", proposalsCompleted="
+        + proposalsCompleted
+        + ", address="
+        + address
+        + '}';
+  }
 
-	public UInt256 getTotalDelegatedStake() {
-		return totalDelegatedStake;
-	}
+  public UInt256 getTotalDelegatedStake() {
+    return totalDelegatedStake;
+  }
 
-	public double getUptimePercentage() {
-		return uptimePercentage;
-	}
+  public double getUptimePercentage() {
+    return uptimePercentage;
+  }
 
-	public long getProposalsMissed() {
-		return proposalsMissed;
-	}
+  public long getProposalsMissed() {
+    return proposalsMissed;
+  }
 
-	public long getProposalsCompleted() {
-		return proposalsCompleted;
-	}
+  public long getProposalsCompleted() {
+    return proposalsCompleted;
+  }
 
-	public ValidatorAddress getAddress() {
-		return address;
-	}
+  public ValidatorAddress getAddress() {
+    return address;
+  }
 }

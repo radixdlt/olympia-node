@@ -65,46 +65,44 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-
 import java.util.function.Function;
 
 public class EndProcedure<S extends ReducerState> implements Procedure {
-	private final Class<S> reducerStateClass;
-	private final Function<S, Authorization> authorization;
-	private final EndReducer<S> endReducer;
+  private final Class<S> reducerStateClass;
+  private final Function<S, Authorization> authorization;
+  private final EndReducer<S> endReducer;
 
-	public EndProcedure(
-		Class<S> reducerStateClass,
-		Function<S, Authorization> authorization,
-		EndReducer<S> endReducer
-	) {
-		this.reducerStateClass = reducerStateClass;
-		this.authorization = authorization;
-		this.endReducer = endReducer;
-	}
+  public EndProcedure(
+      Class<S> reducerStateClass,
+      Function<S, Authorization> authorization,
+      EndReducer<S> endReducer) {
+    this.reducerStateClass = reducerStateClass;
+    this.authorization = authorization;
+    this.endReducer = endReducer;
+  }
 
-	@Override
-	public ProcedureKey key() {
-		return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.END, null));
-	}
+  @Override
+  public ProcedureKey key() {
+    return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.END, null));
+  }
 
-	@Override
-	public Authorization authorization(Object o) {
-		return authorization.apply((S) o);
-	}
+  @Override
+  public Authorization authorization(Object o) {
+    return authorization.apply((S) o);
+  }
 
-	@Override
-	public ReducerResult call(
-		Object o,
-		ReducerState reducerState,
-		Resources immutableAddrs,
-		ExecutionContext executionContext
-	) throws ProcedureException {
-		try {
-			endReducer.reduce((S) reducerState, executionContext, immutableAddrs);
-			return ReducerResult.complete();
-		} catch (Exception e) {
-			throw new ProcedureException(e);
-		}
-	}
+  @Override
+  public ReducerResult call(
+      Object o,
+      ReducerState reducerState,
+      Resources immutableAddrs,
+      ExecutionContext executionContext)
+      throws ProcedureException {
+    try {
+      endReducer.reduce((S) reducerState, executionContext, immutableAddrs);
+      return ReducerResult.complete();
+    } catch (Exception e) {
+      throw new ProcedureException(e);
+    }
+  }
 }

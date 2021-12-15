@@ -64,19 +64,18 @@
 
 package com.radixdlt.store;
 
-/**
- * Specifies high level configuration options for persistent storage
- */
+/** Specifies high level configuration options for persistent storage */
 public final class StoreConfig {
-	private final int minimumProofBlockSize;
-	public StoreConfig(int minimumProofBlockSize) {
-		if (minimumProofBlockSize < 1) {
-			throw new IllegalArgumentException("Proof block size must be >= 1.");
-		}
-		this.minimumProofBlockSize = minimumProofBlockSize;
-	}
+  private final int minimumProofBlockSize;
 
-	public int getMinimumProofBlockSize() {
-		return minimumProofBlockSize;
-	}
+  public StoreConfig(int minimumProofBlockSize) {
+    if (minimumProofBlockSize < 1) {
+      throw new IllegalArgumentException("Proof block size must be >= 1.");
+    }
+    this.minimumProofBlockSize = minimumProofBlockSize;
+  }
+
+  public int getMinimumProofBlockSize() {
+    return minimumProofBlockSize;
+  }
 }

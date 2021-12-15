@@ -66,55 +66,53 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class ReadWrite {
-	private final long read;
-	private final long write;
+  private final long read;
+  private final long write;
 
-	private ReadWrite(long read, long write) {
-		this.read = read;
-		this.write = write;
-	}
+  private ReadWrite(long read, long write) {
+    this.read = read;
+    this.write = write;
+  }
 
-	@JsonCreator
-	public static ReadWrite create(
-		@JsonProperty(value = "read", required = true) long read,
-		@JsonProperty(value = "write", required = true) long write
-	) {
-		return new ReadWrite(read, write);
-	}
+  @JsonCreator
+  public static ReadWrite create(
+      @JsonProperty(value = "read", required = true) long read,
+      @JsonProperty(value = "write", required = true) long write) {
+    return new ReadWrite(read, write);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof ReadWrite)) {
-			return false;
-		}
+    if (!(o instanceof ReadWrite)) {
+      return false;
+    }
 
-		var that = (ReadWrite) o;
-		return read == that.read && write == that.write;
-	}
+    var that = (ReadWrite) o;
+    return read == that.read && write == that.write;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(read, write);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(read, write);
+  }
 
-	@Override
-	public String toString() {
-		return "{read:" + read + ", write: " + write + '}';
-	}
+  @Override
+  public String toString() {
+    return "{read:" + read + ", write: " + write + '}';
+  }
 
-	public long getRead() {
-		return read;
-	}
+  public long getRead() {
+    return read;
+  }
 
-	public long getWrite() {
-		return write;
-	}
+  public long getWrite() {
+    return write;
+  }
 }

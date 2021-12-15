@@ -66,94 +66,96 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.utils.Bytes;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
 public final class SubstateIndex<T extends Particle> {
-	private final byte[] index;
-	private final Class<? extends T> substateClass;
+  private final byte[] index;
+  private final Class<? extends T> substateClass;
 
-	private SubstateIndex(byte[] index, Class<? extends T> substateClass) {
-		this.index = index;
-		this.substateClass = substateClass;
-	}
+  private SubstateIndex(byte[] index, Class<? extends T> substateClass) {
+    this.index = index;
+    this.substateClass = substateClass;
+  }
 
-	public static SubstateIndex<?> create(byte[] prefix) {
-		return new SubstateIndex<>(prefix, SubstateTypeId.valueOf(prefix[0]).getSubstateClass());
-	}
+  public static SubstateIndex<?> create(byte[] prefix) {
+    return new SubstateIndex<>(prefix, SubstateTypeId.valueOf(prefix[0]).getSubstateClass());
+  }
 
-	public static <T extends Particle> SubstateIndex<T> create(byte[] prefix, Class<? extends T> substateClass) {
-		return new SubstateIndex<>(prefix, substateClass);
-	}
+  public static <T extends Particle> SubstateIndex<T> create(
+      byte[] prefix, Class<? extends T> substateClass) {
+    return new SubstateIndex<>(prefix, substateClass);
+  }
 
-	public static <T extends Particle> SubstateIndex<T> create(byte typeByte, Class<? extends T> substateClass) {
-		return new SubstateIndex<>(new byte[] {typeByte}, substateClass);
-	}
+  public static <T extends Particle> SubstateIndex<T> create(
+      byte typeByte, Class<? extends T> substateClass) {
+    return new SubstateIndex<>(new byte[] {typeByte}, substateClass);
+  }
 
-	public boolean test(RawSubstateBytes bytes) {
-		return test(bytes.getData());
-	}
+  public boolean test(RawSubstateBytes bytes) {
+    return test(bytes.getData());
+  }
 
-	public boolean test(byte[] dataBytes) {
-		if (dataBytes.length < index.length) {
-			return false;
-		}
+  public boolean test(byte[] dataBytes) {
+    if (dataBytes.length < index.length) {
+      return false;
+    }
 
-		return Arrays.equals(dataBytes, 0, index.length, index, 0, index.length);
-	}
+    return Arrays.equals(dataBytes, 0, index.length, index, 0, index.length);
+  }
 
-	public boolean test(ByteBuffer buffer) {
-		buffer.mark();
-		if (buffer.remaining() < index.length) {
-			return false;
-		}
+  public boolean test(ByteBuffer buffer) {
+    buffer.mark();
+    if (buffer.remaining() < index.length) {
+      return false;
+    }
 
-		for (byte b : index) {
-			if (buffer.get() != b) {
-				return false;
-			}
-		}
-		buffer.reset();
+    for (byte b : index) {
+      if (buffer.get() != b) {
+        return false;
+      }
+    }
+    buffer.reset();
 
-		return true;
-	}
+    return true;
+  }
 
-	public byte[] getPrefix() {
-		return index;
-	}
+  public byte[] getPrefix() {
+    return index;
+  }
 
-	public Class<? extends T> getSubstateClass() {
-		return substateClass;
-	}
+  public Class<? extends T> getSubstateClass() {
+    return substateClass;
+  }
 
-	public <U extends Particle> Optional<SubstateIndex<U>> toSubstateIndex(Class<U> substateClass) {
-		if (this.substateClass.equals(substateClass)) {
-			return Optional.of(new SubstateIndex<>(this.index, substateClass));
-		}
-		return Optional.empty();
-	}
+  public <U extends Particle> Optional<SubstateIndex<U>> toSubstateIndex(Class<U> substateClass) {
+    if (this.substateClass.equals(substateClass)) {
+      return Optional.of(new SubstateIndex<>(this.index, substateClass));
+    }
+    return Optional.empty();
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(Arrays.hashCode(index), substateClass);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(Arrays.hashCode(index), substateClass);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof SubstateIndex)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof SubstateIndex)) {
+      return false;
+    }
 
-		var other = (SubstateIndex) o;
-		return Arrays.equals(this.index, other.index)
-			&& Objects.equals(this.substateClass, other.substateClass);
-	}
+    var other = (SubstateIndex) o;
+    return Arrays.equals(this.index, other.index)
+        && Objects.equals(this.substateClass, other.substateClass);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{index=%s}", this.getClass().getSimpleName(), Bytes.toHexString(this.index));
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{index=%s}", this.getClass().getSimpleName(), Bytes.toHexString(this.index));
+  }
 }

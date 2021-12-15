@@ -65,7 +65,7 @@
 package com.radixdlt.constraintmachine.exceptions;
 
 public class InvalidHashedKeyException extends Exception {
-	public InvalidHashedKeyException(String message) {
-		super(message);
-	}
+  public InvalidHashedKeyException(String message) {
+    super(message);
+  }
 }

@@ -65,8 +65,8 @@
 package com.radixdlt.client.lib.dto;
 
 public enum TransactionStatus {
-	PENDING,
-	CONFIRMED,
-	FAILED,
-	TRANSACTION_NOT_FOUND
+  PENDING,
+  CONFIRMED,
+  FAILED,
+  TRANSACTION_NOT_FOUND
 }

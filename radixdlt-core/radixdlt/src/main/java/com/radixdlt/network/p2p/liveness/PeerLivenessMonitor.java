@@ -71,85 +71,83 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.PeerEvent.PeerLostLiveness;
-import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeersView;
-
-import javax.inject.Inject;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import javax.inject.Inject;
 
 /**
- * Periodically pings peers and awaits for pong response
- * if pong is not received on time then it fires a PeerLostLiveness event.
+ * Periodically pings peers and awaits for pong response if pong is not received on time then it
+ * fires a PeerLostLiveness event.
  */
 public final class PeerLivenessMonitor {
-	private final P2PConfig config;
-	private final PeersView peersView;
-	private final EventDispatcher<PeerEvent> peerEventDispatcher;
-	private final RemoteEventDispatcher<Ping> pingEventDispatcher;
-	private final RemoteEventDispatcher<Pong> pongEventDispatcher;
-	private final ScheduledEventDispatcher<PeerPingTimeout> pingTimeoutEventDispatcher;
+  private final P2PConfig config;
+  private final PeersView peersView;
+  private final EventDispatcher<PeerEvent> peerEventDispatcher;
+  private final RemoteEventDispatcher<Ping> pingEventDispatcher;
+  private final RemoteEventDispatcher<Pong> pongEventDispatcher;
+  private final ScheduledEventDispatcher<PeerPingTimeout> pingTimeoutEventDispatcher;
 
-	private final Set<NodeId> waitingForPong = new HashSet<>();
+  private final Set<NodeId> waitingForPong = new HashSet<>();
 
-	@Inject
-	public PeerLivenessMonitor(
-		P2PConfig config,
-		PeersView peersView,
-		EventDispatcher<PeerEvent> peerEventDispatcher,
-		RemoteEventDispatcher<Ping> pingEventDispatcher,
-		RemoteEventDispatcher<Pong> pongEventDispatcher,
-		ScheduledEventDispatcher<PeerPingTimeout> pingTimeoutEventDispatcher
-	) {
-		if (config.peerLivenessCheckInterval() <= config.pingTimeout()) {
-			throw new IllegalArgumentException("pingTimeout must be smaller than livenessCheckInterval");
-		}
-		this.config = Objects.requireNonNull(config);
-		this.peersView = Objects.requireNonNull(peersView);
-		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
-		this.pingEventDispatcher = Objects.requireNonNull(pingEventDispatcher);
-		this.pongEventDispatcher = Objects.requireNonNull(pongEventDispatcher);
-		this.pingTimeoutEventDispatcher = Objects.requireNonNull(pingTimeoutEventDispatcher);
-	}
+  @Inject
+  public PeerLivenessMonitor(
+      P2PConfig config,
+      PeersView peersView,
+      EventDispatcher<PeerEvent> peerEventDispatcher,
+      RemoteEventDispatcher<Ping> pingEventDispatcher,
+      RemoteEventDispatcher<Pong> pongEventDispatcher,
+      ScheduledEventDispatcher<PeerPingTimeout> pingTimeoutEventDispatcher) {
+    if (config.peerLivenessCheckInterval() <= config.pingTimeout()) {
+      throw new IllegalArgumentException("pingTimeout must be smaller than livenessCheckInterval");
+    }
+    this.config = Objects.requireNonNull(config);
+    this.peersView = Objects.requireNonNull(peersView);
+    this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
+    this.pingEventDispatcher = Objects.requireNonNull(pingEventDispatcher);
+    this.pongEventDispatcher = Objects.requireNonNull(pongEventDispatcher);
+    this.pingTimeoutEventDispatcher = Objects.requireNonNull(pingTimeoutEventDispatcher);
+  }
 
-	public EventProcessor<PeersLivenessCheckTrigger> peersLivenessCheckTriggerEventProcessor() {
-		return unused -> peersView.peers().forEach(this::pingPeer);
-	}
+  public EventProcessor<PeersLivenessCheckTrigger> peersLivenessCheckTriggerEventProcessor() {
+    return unused -> peersView.peers().forEach(this::pingPeer);
+  }
 
-	private void pingPeer(PeersView.PeerInfo peerInfo) {
-		final var nodeId = peerInfo.getNodeId();
+  private void pingPeer(PeersView.PeerInfo peerInfo) {
+    final var nodeId = peerInfo.getNodeId();
 
-		if (this.waitingForPong.contains(nodeId)) {
-			return; // already pinged
-		}
+    if (this.waitingForPong.contains(nodeId)) {
+      return; // already pinged
+    }
 
-		this.waitingForPong.add(nodeId);
-		this.pingEventDispatcher.dispatch(BFTNode.create(nodeId.getPublicKey()), Ping.create());
-		this.pingTimeoutEventDispatcher.dispatch(PeerPingTimeout.create(nodeId), config.pingTimeout());
-	}
+    this.waitingForPong.add(nodeId);
+    this.pingEventDispatcher.dispatch(BFTNode.create(nodeId.getPublicKey()), Ping.create());
+    this.pingTimeoutEventDispatcher.dispatch(PeerPingTimeout.create(nodeId), config.pingTimeout());
+  }
 
-	public EventProcessor<PeerPingTimeout> pingTimeoutEventProcessor() {
-		return timeout -> {
-			final var waitingForPeer = this.waitingForPong.remove(timeout.getNodeId());
-			if (waitingForPeer) {
-				this.peerEventDispatcher.dispatch(PeerLostLiveness.create(timeout.getNodeId()));
-			}
-		};
-	}
+  public EventProcessor<PeerPingTimeout> pingTimeoutEventProcessor() {
+    return timeout -> {
+      final var waitingForPeer = this.waitingForPong.remove(timeout.getNodeId());
+      if (waitingForPeer) {
+        this.peerEventDispatcher.dispatch(PeerLostLiveness.create(timeout.getNodeId()));
+      }
+    };
+  }
 
-	public RemoteEventProcessor<Ping> pingRemoteEventProcessor() {
-		return (sender, ping) -> {
-			this.pongEventDispatcher.dispatch(sender, Pong.create());
-		};
-	}
+  public RemoteEventProcessor<Ping> pingRemoteEventProcessor() {
+    return (sender, ping) -> {
+      this.pongEventDispatcher.dispatch(sender, Pong.create());
+    };
+  }
 
-	public RemoteEventProcessor<Pong> pongRemoteEventProcessor() {
-		return (sender, pong) -> {
-			final var nodeId = NodeId.fromPublicKey(sender.getKey());
-			this.waitingForPong.remove(nodeId);
-		};
-	}
+  public RemoteEventProcessor<Pong> pongRemoteEventProcessor() {
+    return (sender, pong) -> {
+      final var nodeId = NodeId.fromPublicKey(sender.getKey());
+      this.waitingForPong.remove(nodeId);
+    };
+  }
 }

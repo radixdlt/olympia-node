@@ -64,33 +64,30 @@
 
 package com.radixdlt.network.p2p.liveness;
 
-/**
- * A message acting as a trigger for PeerLivenessMonitor to send ping messages.
- */
+/** A message acting as a trigger for PeerLivenessMonitor to send ping messages. */
 public final class PeersLivenessCheckTrigger {
 
-	public static PeersLivenessCheckTrigger create() {
-		return new PeersLivenessCheckTrigger();
-	}
+  public static PeersLivenessCheckTrigger create() {
+    return new PeersLivenessCheckTrigger();
+  }
 
-	private PeersLivenessCheckTrigger() {
-	}
+  private PeersLivenessCheckTrigger() {}
 
-	@Override
-	public String toString() {
-		return String.format("%s{}", this.getClass().getSimpleName());
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{}", this.getClass().getSimpleName());
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		return o instanceof PeersLivenessCheckTrigger;
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    return o instanceof PeersLivenessCheckTrigger;
+  }
 
-	@Override
-	public int hashCode() {
-		return 1;
-	}
+  @Override
+  public int hashCode() {
+    return 1;
+  }
 }

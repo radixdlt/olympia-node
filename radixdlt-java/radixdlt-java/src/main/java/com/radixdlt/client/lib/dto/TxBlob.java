@@ -64,78 +64,82 @@
 
 package com.radixdlt.client.lib.dto;
 
-import org.bouncycastle.util.encoders.Hex;
+import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Arrays;
 import java.util.List;
-
-import static java.util.Objects.requireNonNull;
+import org.bouncycastle.util.encoders.Hex;
 
 public final class TxBlob {
-	private final byte[] blob;
-	private final byte[] hashToSign;
-	private final List<Notification> notifications;
+  private final byte[] blob;
+  private final byte[] hashToSign;
+  private final List<Notification> notifications;
 
-	private TxBlob(byte[] blob, byte[] hashToSign, List<Notification> notifications) {
-		this.blob = blob;
-		this.hashToSign = hashToSign;
-		this.notifications = notifications;
-	}
+  private TxBlob(byte[] blob, byte[] hashToSign, List<Notification> notifications) {
+    this.blob = blob;
+    this.hashToSign = hashToSign;
+    this.notifications = notifications;
+  }
 
-	@JsonCreator
-	public static TxBlob create(
-		@JsonProperty(value = "blob", required = true) String blob,
-		@JsonProperty(value = "hashOfBlobToSign", required = true) String hashToSign,
-		@JsonProperty("notifications") List<Notification> notifications
-	) {
-		requireNonNull(blob);
-		requireNonNull(hashToSign);
+  @JsonCreator
+  public static TxBlob create(
+      @JsonProperty(value = "blob", required = true) String blob,
+      @JsonProperty(value = "hashOfBlobToSign", required = true) String hashToSign,
+      @JsonProperty("notifications") List<Notification> notifications) {
+    requireNonNull(blob);
+    requireNonNull(hashToSign);
 
-		return new TxBlob(Hex.decode(blob), Hex.decode(hashToSign), notifications == null ? List.of() : notifications);
-	}
+    return new TxBlob(
+        Hex.decode(blob),
+        Hex.decode(hashToSign),
+        notifications == null ? List.of() : notifications);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof TxBlob)) {
-			return false;
-		}
+    if (!(o instanceof TxBlob)) {
+      return false;
+    }
 
-		var txBlob = (TxBlob) o;
-		return Arrays.equals(blob, txBlob.blob)
-			&& Arrays.equals(hashToSign, txBlob.hashToSign)
-			&& notifications.equals(txBlob.notifications);
-	}
+    var txBlob = (TxBlob) o;
+    return Arrays.equals(blob, txBlob.blob)
+        && Arrays.equals(hashToSign, txBlob.hashToSign)
+        && notifications.equals(txBlob.notifications);
+  }
 
-	@Override
-	public int hashCode() {
-		int result = Arrays.hashCode(blob);
-		result = 31 * result + Arrays.hashCode(hashToSign) + notifications.hashCode();
-		return result;
-	}
+  @Override
+  public int hashCode() {
+    int result = Arrays.hashCode(blob);
+    result = 31 * result + Arrays.hashCode(hashToSign) + notifications.hashCode();
+    return result;
+  }
 
-	@Override
-	public String toString() {
-		return "TxBlobDTO(blob=" + Hex.toHexString(blob)
-			+ ", hashToSign=" + Hex.toHexString(hashToSign)
-			+ ", notifications= " + notifications + ')';
-	}
+  @Override
+  public String toString() {
+    return "TxBlobDTO(blob="
+        + Hex.toHexString(blob)
+        + ", hashToSign="
+        + Hex.toHexString(hashToSign)
+        + ", notifications= "
+        + notifications
+        + ')';
+  }
 
-	public byte[] getBlob() {
-		return blob;
-	}
+  public byte[] getBlob() {
+    return blob;
+  }
 
-	public byte[] getHashToSign() {
-		return hashToSign;
-	}
+  public byte[] getHashToSign() {
+    return hashToSign;
+  }
 
-	public List<Notification> getNotifications() {
-		return notifications;
-	}
+  public List<Notification> getNotifications() {
+    return notifications;
+  }
 }

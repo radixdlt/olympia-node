@@ -68,13 +68,13 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 public final class RadixNodeUriTest {
-	@Test
-	public void equals_test() {
-		EqualsVerifier.forClass(RadixNodeUri.class).verify();
-	}
+  @Test
+  public void equals_test() {
+    EqualsVerifier.forClass(RadixNodeUri.class).verify();
+  }
 
-    @Test(expected = NullPointerException.class)
-    public void deserializationWithNullThrowsException() throws Exception {
-        RadixNodeUri.deserialize(null);
-    }
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException() throws Exception {
+    RadixNodeUri.deserialize(null);
+  }
 }

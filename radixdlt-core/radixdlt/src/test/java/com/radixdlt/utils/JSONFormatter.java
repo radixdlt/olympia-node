@@ -73,67 +73,61 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import java.io.IOException;
 import java.util.TreeMap;
 
 public class JSONFormatter {
-	private JSONFormatter() {
-		throw new UnsupportedOperationException("Cannot instantiate.");
-	}
+  private JSONFormatter() {
+    throw new UnsupportedOperationException("Cannot instantiate.");
+  }
 
-	static class SortingNodeFactory extends JsonNodeFactory {
-		@Override
-		public ObjectNode objectNode() {
-			return new ObjectNode(this, new TreeMap<String, JsonNode>());
-		}
-	}
+  static class SortingNodeFactory extends JsonNodeFactory {
+    @Override
+    public ObjectNode objectNode() {
+      return new ObjectNode(this, new TreeMap<String, JsonNode>());
+    }
+  }
 
-	static class MyPrettyPrinter extends DefaultPrettyPrinter {
-		@Override
-		public DefaultPrettyPrinter createInstance() {
-			MyPrettyPrinter printer = new MyPrettyPrinter();
+  static class MyPrettyPrinter extends DefaultPrettyPrinter {
+    @Override
+    public DefaultPrettyPrinter createInstance() {
+      MyPrettyPrinter printer = new MyPrettyPrinter();
 
-			DefaultPrettyPrinter.Indenter indenter =
-					new DefaultIndenter("    ", DefaultIndenter.SYS_LF);
+      DefaultPrettyPrinter.Indenter indenter = new DefaultIndenter("    ", DefaultIndenter.SYS_LF);
 
-			printer.indentObjectsWith(indenter);
-			printer.indentArraysWith(indenter);
+      printer.indentObjectsWith(indenter);
+      printer.indentArraysWith(indenter);
 
-			return printer;
-		}
+      return printer;
+    }
 
-		@Override
-		public void writeObjectFieldValueSeparator(JsonGenerator jg) throws IOException {
-			jg.writeRaw(": ");
-		}
-	}
+    @Override
+    public void writeObjectFieldValueSeparator(JsonGenerator jg) throws IOException {
+      jg.writeRaw(": ");
+    }
+  }
 
-	public static String sortPrettyPrintObject(Object object) {
-		ObjectMapper mapper = new ObjectMapper();
-		try {
-			var jsonString = mapper.writeValueAsString(object);
+  public static String sortPrettyPrintObject(Object object) {
+    ObjectMapper mapper = new ObjectMapper();
+    try {
+      var jsonString = mapper.writeValueAsString(object);
 
-			return sortPrettyPrintJSONString(jsonString);
-		} catch (JsonProcessingException e) {
-			throw new IllegalArgumentException("Failed to pretty print object to JSON string", e);
-		}
-	}
+      return sortPrettyPrintJSONString(jsonString);
+    } catch (JsonProcessingException e) {
+      throw new IllegalArgumentException("Failed to pretty print object to JSON string", e);
+    }
+  }
 
-	public static String sortPrettyPrintJSONString(String uglyJson) {
-		ObjectMapper mapper = JsonMapper.builder()
-				.nodeFactory(new SortingNodeFactory())
-				.build();
+  public static String sortPrettyPrintJSONString(String uglyJson) {
+    ObjectMapper mapper = JsonMapper.builder().nodeFactory(new SortingNodeFactory()).build();
 
-		try {
-			var jsonSorted = mapper.readTree(uglyJson);
+    try {
+      var jsonSorted = mapper.readTree(uglyJson);
 
-			return mapper
-				.writer(new MyPrettyPrinter())
-				.writeValueAsString(jsonSorted);
+      return mapper.writer(new MyPrettyPrinter()).writeValueAsString(jsonSorted);
 
-		} catch (JsonProcessingException e) {
-			throw new IllegalArgumentException("Failed to pretty print JSON string", e);
-		}
-	}
+    } catch (JsonProcessingException e) {
+      throw new IllegalArgumentException("Failed to pretty print JSON string", e);
+    }
+  }
 }

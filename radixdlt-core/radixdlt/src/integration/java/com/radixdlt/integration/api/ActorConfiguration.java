@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -66,28 +67,30 @@ package com.radixdlt.integration.api;
 import java.util.function.Supplier;
 
 /**
- * Configuration which describes how often an actor will be called upon to act in a deterministic test.
+ * Configuration which describes how often an actor will be called upon to act in a deterministic
+ * test.
  */
 public final class ActorConfiguration {
-	private final Supplier<DeterministicActor> actorSupplier;
-	private final int numerator;
-	private final int denominator;
+  private final Supplier<DeterministicActor> actorSupplier;
+  private final int numerator;
+  private final int denominator;
 
-	public ActorConfiguration(Supplier<DeterministicActor> actorSupplier, int numerator, int denominator) {
-		this.actorSupplier = actorSupplier;
-		this.numerator = numerator;
-		this.denominator = denominator;
-	}
+  public ActorConfiguration(
+      Supplier<DeterministicActor> actorSupplier, int numerator, int denominator) {
+    this.actorSupplier = actorSupplier;
+    this.numerator = numerator;
+    this.denominator = denominator;
+  }
 
-	public int getNumerator() {
-		return numerator;
-	}
+  public int getNumerator() {
+    return numerator;
+  }
 
-	public int getDenominator() {
-		return denominator;
-	}
+  public int getDenominator() {
+    return denominator;
+  }
 
-	public DeterministicActor createActor() {
-		return actorSupplier.get();
-	}
+  public DeterministicActor createActor() {
+    return actorSupplier.get();
+  }
 }

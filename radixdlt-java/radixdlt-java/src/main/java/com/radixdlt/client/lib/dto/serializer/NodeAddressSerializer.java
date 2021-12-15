@@ -70,19 +70,19 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.radixdlt.client.lib.api.NodeAddress;
 import com.radixdlt.identifiers.NodeAddressing;
 import com.radixdlt.networks.Addressing;
-
 import java.io.IOException;
 
 public class NodeAddressSerializer extends StdSerializer<NodeAddress> {
-	private final NodeAddressing addressing;
+  private final NodeAddressing addressing;
 
-	public NodeAddressSerializer(Addressing networkAddressing) {
-		super(NodeAddress.class);
-		addressing = networkAddressing.forNodes();
-	}
+  public NodeAddressSerializer(Addressing networkAddressing) {
+    super(NodeAddress.class);
+    addressing = networkAddressing.forNodes();
+  }
 
-	@Override
-	public void serialize(NodeAddress value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-		gen.writeString(addressing.of(value.getAddress()));
-	}
+  @Override
+  public void serialize(NodeAddress value, JsonGenerator gen, SerializerProvider provider)
+      throws IOException {
+    gen.writeString(addressing.of(value.getAddress()));
+  }
 }

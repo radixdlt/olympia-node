@@ -64,80 +64,79 @@
 
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
-import com.radixdlt.counters.SystemCounters.CounterType;
-import java.util.Random;
-
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.counters.SystemCounters;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
+import java.util.Random;
+import org.junit.Test;
 
 public class OneProposalTimeoutResponsiveTest {
-	private final Random random = new Random(123456);
+  private final Random random = new Random(123456);
 
-	private void run(int numNodes, long numViews, long dropPeriod) {
-		DeterministicTest test = DeterministicTest.builder()
-			.numNodes(numNodes)
-			.messageSelector(MessageSelector.randomSelector(random))
-			.messageMutator(dropSomeProposals(dropPeriod))
-			.buildWithoutEpochs()
-			.runUntil(DeterministicTest.hasReachedView(View.of(numViews)));
+  private void run(int numNodes, long numViews, long dropPeriod) {
+    DeterministicTest test =
+        DeterministicTest.builder()
+            .numNodes(numNodes)
+            .messageSelector(MessageSelector.randomSelector(random))
+            .messageMutator(dropSomeProposals(dropPeriod))
+            .buildWithoutEpochs()
+            .runUntil(DeterministicTest.hasReachedView(View.of(numViews)));
 
-		long requiredIndirectParents =
-			numNodes <= 3
-				? 0 // there are no indirect parents for 3 nodes (QC is always formed)
-				: (numViews - 1) / dropPeriod; // Edge case if dropPeriod a factor of numViews
+    long requiredIndirectParents =
+        numNodes <= 3
+            ? 0 // there are no indirect parents for 3 nodes (QC is always formed)
+            : (numViews - 1) / dropPeriod; // Edge case if dropPeriod a factor of numViews
 
-		long requiredTimeouts = numViews / dropPeriod * 2;
+    long requiredTimeouts = numViews / dropPeriod * 2;
 
-		long timeoutQuorums =
-			numNodes <= 3
-				? 0 // no timeout quorums for 3 nodes
-				: requiredTimeouts / 2; // otherwise, every 2nd timeout forms a TC
+    long timeoutQuorums =
+        numNodes <= 3
+            ? 0 // no timeout quorums for 3 nodes
+            : requiredTimeouts / 2; // otherwise, every 2nd timeout forms a TC
 
-		for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
-			SystemCounters counters = test.getSystemCounters(nodeIndex);
-			long numberOfIndirectParents = counters.get(CounterType.BFT_VERTEX_STORE_INDIRECT_PARENTS);
-			long totalNumberOfTimeouts = counters.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT);
-			long totalNumberOfTimeoutQuorums = counters.get(CounterType.BFT_TIMEOUT_QUORUMS);
-			assertThat(numberOfIndirectParents).isEqualTo(requiredIndirectParents);
-			assertThat(totalNumberOfTimeouts).isEqualTo(requiredTimeouts);
-			assertThat(totalNumberOfTimeoutQuorums).isBetween(timeoutQuorums - 1, timeoutQuorums);
-		}
-	}
+    for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
+      SystemCounters counters = test.getSystemCounters(nodeIndex);
+      long numberOfIndirectParents = counters.get(CounterType.BFT_VERTEX_STORE_INDIRECT_PARENTS);
+      long totalNumberOfTimeouts = counters.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT);
+      long totalNumberOfTimeoutQuorums = counters.get(CounterType.BFT_TIMEOUT_QUORUMS);
+      assertThat(numberOfIndirectParents).isEqualTo(requiredIndirectParents);
+      assertThat(totalNumberOfTimeouts).isEqualTo(requiredTimeouts);
+      assertThat(totalNumberOfTimeoutQuorums).isBetween(timeoutQuorums - 1, timeoutQuorums);
+    }
+  }
 
-	private static MessageMutator dropSomeProposals(long dropPeriod) {
-		return (message, queue) -> {
-			Object msg = message.message();
-			if (msg instanceof Proposal) {
-				final Proposal proposal = (Proposal) msg;
-				final View view = proposal.getVertex().getView();
-				final long viewNumber = view.number();
+  private static MessageMutator dropSomeProposals(long dropPeriod) {
+    return (message, queue) -> {
+      Object msg = message.message();
+      if (msg instanceof Proposal) {
+        final Proposal proposal = (Proposal) msg;
+        final View view = proposal.getVertex().getView();
+        final long viewNumber = view.number();
 
-				return viewNumber % dropPeriod == 0;
-			}
-			return false;
-		};
-	}
+        return viewNumber % dropPeriod == 0;
+      }
+      return false;
+    };
+  }
 
-	@Test
-	public void when_run_3_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
-		this.run(3, 50_000, 100);
-	}
+  @Test
+  public void when_run_3_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
+    this.run(3, 50_000, 100);
+  }
 
-	@Test
-	public void when_run_4_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
-		this.run(4, 50_000, 100);
-	}
+  @Test
+  public void when_run_4_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
+    this.run(4, 50_000, 100);
+  }
 
-	@Test
-	public void when_run_100_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
-		this.run(100, 1_000, 100);
-	}
+  @Test
+  public void when_run_100_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
+    this.run(100, 1_000, 100);
+  }
 }

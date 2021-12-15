@@ -72,27 +72,26 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class MessageDropper implements Predicate<MessageInTransit> {
-	private final Set<Class<?>> msgClassesToDrop;
-	private final Random random;
-	private final double dropRate;
+  private final Set<Class<?>> msgClassesToDrop;
+  private final Random random;
+  private final double dropRate;
 
+  public MessageDropper(Class<?>... msgClasses) {
+    this(null, 0.0, msgClasses);
+  }
 
-	public MessageDropper(Class<?>... msgClasses) {
-		this(null, 0.0, msgClasses);
-	}
+  public MessageDropper(Random random, double dropRate, Class<?>... msgClasses) {
+    this.msgClassesToDrop = Arrays.stream(msgClasses).collect(Collectors.toSet());
+    this.random = random;
+    this.dropRate = dropRate;
+  }
 
-	public MessageDropper(Random random, double dropRate, Class<?>... msgClasses) {
-		this.msgClassesToDrop = Arrays.stream(msgClasses).collect(Collectors.toSet());
-		this.random = random;
-		this.dropRate = dropRate;
-	}
+  @Override
+  public boolean test(MessageInTransit messageInTransit) {
+    if (msgClassesToDrop.stream().noneMatch(c -> c.isInstance(messageInTransit.getContent()))) {
+      return false;
+    }
 
-	@Override
-	public boolean test(MessageInTransit messageInTransit) {
-		if (msgClassesToDrop.stream().noneMatch(c -> c.isInstance(messageInTransit.getContent()))) {
-			return false;
-		}
-
-		return random == null || random.nextDouble() < dropRate;
-	}
+    return random == null || random.nextDouble() < dropRate;
+  }
 }

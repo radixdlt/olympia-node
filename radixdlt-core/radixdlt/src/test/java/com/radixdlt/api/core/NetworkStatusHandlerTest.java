@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.api.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.NetworkStatusHandler;
@@ -78,56 +81,51 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.utils.Bytes;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class NetworkStatusHandlerTest extends ApiTest {
-	@Inject
-	private NetworkStatusHandler sut;
-	@Inject
-	private CoreModelMapper mapper;
-	@Inject
-	@Genesis
-	private VerifiedTxnsAndProof genesis;
+  @Inject private NetworkStatusHandler sut;
+  @Inject private CoreModelMapper mapper;
+  @Inject @Genesis private VerifiedTxnsAndProof genesis;
 
-	@Test
-	public void network_status_should_return_correct_data() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void network_status_should_return_correct_data() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var request = new NetworkStatusRequest().networkIdentifier(networkIdentifier());
-		var response = handleRequestWithExpectedResponse(sut, request, NetworkStatusResponse.class);
+    // Act
+    var request = new NetworkStatusRequest().networkIdentifier(networkIdentifier());
+    var response = handleRequestWithExpectedResponse(sut, request, NetworkStatusResponse.class);
 
-		// Assert
-		var genesisStateIdentifier = mapper.stateIdentifier(genesis.getProof().getAccumulatorState());
-		assertThat(response.getCurrentStateIdentifier()).isEqualTo(genesisStateIdentifier);
-		assertThat(response.getGenesisStateIdentifier()).isEqualTo(genesisStateIdentifier);
-	}
+    // Assert
+    var genesisStateIdentifier = mapper.stateIdentifier(genesis.getProof().getAccumulatorState());
+    assertThat(response.getCurrentStateIdentifier()).isEqualTo(genesisStateIdentifier);
+    assertThat(response.getGenesisStateIdentifier()).isEqualTo(genesisStateIdentifier);
+  }
 
-	@Test
-	public void invalid_json_should_return_json_error() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void invalid_json_should_return_json_error() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var requestBytes = Bytes.fromHexString("deadbeef");
-		var response = handleRequestWithExpectedResponse(sut, requestBytes, UnexpectedError.class);
+    // Act
+    var requestBytes = Bytes.fromHexString("deadbeef");
+    var response = handleRequestWithExpectedResponse(sut, requestBytes, UnexpectedError.class);
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(InvalidJsonError.class);
-	}
+    // Assert
+    assertThat(response.getDetails()).isInstanceOf(InvalidJsonError.class);
+  }
 
-	@Test
-	public void unknown_network_should_return_error() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void unknown_network_should_return_error() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var request = new NetworkStatusRequest()
-			.networkIdentifier(new NetworkIdentifier().network("unknown_network"));
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+    // Act
+    var request =
+        new NetworkStatusRequest()
+            .networkIdentifier(new NetworkIdentifier().network("unknown_network"));
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(NetworkNotSupportedError.class);
-	}
+    // Assert
+    assertThat(response.getDetails()).isInstanceOf(NetworkNotSupportedError.class);
+  }
 }

@@ -71,20 +71,20 @@ import com.radixdlt.crypto.ECPublicKey;
  * @see com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt for details
  */
 public class UpdateValidatorFee implements TxValidatorAction {
-	private final ECPublicKey validatorKey;
-	private final int feePercentage;
+  private final ECPublicKey validatorKey;
+  private final int feePercentage;
 
-	public UpdateValidatorFee(ECPublicKey validatorKey, int feePercentage) {
-		this.validatorKey = validatorKey;
-		this.feePercentage = feePercentage;
-	}
+  public UpdateValidatorFee(ECPublicKey validatorKey, int feePercentage) {
+    this.validatorKey = validatorKey;
+    this.feePercentage = feePercentage;
+  }
 
-	@Override
-	public ECPublicKey validatorKey() {
-		return validatorKey;
-	}
+  @Override
+  public ECPublicKey validatorKey() {
+    return validatorKey;
+  }
 
-	public int getFeePercentage() {
-		return feePercentage;
-	}
+  public int getFeePercentage() {
+    return feePercentage;
+  }
 }

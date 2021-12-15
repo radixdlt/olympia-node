@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -76,62 +77,67 @@ import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-
 import java.util.function.Function;
 
 public class EntityHandler extends CoreJsonRpcHandler<EntityRequest, EntityResponse> {
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final CoreModelMapper modelMapper;
+  private final RadixEngine<LedgerAndBFTProof> radixEngine;
+  private final CoreModelMapper modelMapper;
 
-	@Inject
-	EntityHandler(
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		CoreModelMapper modelMapper
-	) {
-		super(EntityRequest.class);
-		this.radixEngine = radixEngine;
-		this.modelMapper = modelMapper;
-	}
+  @Inject
+  EntityHandler(RadixEngine<LedgerAndBFTProof> radixEngine, CoreModelMapper modelMapper) {
+    super(EntityRequest.class);
+    this.radixEngine = radixEngine;
+    this.modelMapper = modelMapper;
+  }
 
-	@Override
-	public EntityResponse handleRequest(EntityRequest request) throws CoreApiException {
-		modelMapper.verifyNetwork(request.getNetworkIdentifier());
+  @Override
+  public EntityResponse handleRequest(EntityRequest request) throws CoreApiException {
+    modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var entity = modelMapper.entity(request.getEntityIdentifier());
-		var keyQueries = entity.getKeyQueries();
-		var resourceQueries = entity.getResourceQueries();
+    var entity = modelMapper.entity(request.getEntityIdentifier());
+    var keyQueries = entity.getKeyQueries();
+    var resourceQueries = entity.getResourceQueries();
 
-		// This must be read atomically
-		return radixEngine.read(reader -> {
-			Function<REAddr, String> addressToSymbol = addr -> {
-				var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-				var substate = reader.get(mapKey).orElseThrow();
-				var tokenResource = (TokenResourceMetadata) substate;
-				return tokenResource.getSymbol();
-			};
-			var proof = reader.getMetadata().getProof();
-			var response = new EntityResponse()
-				.stateIdentifier(modelMapper.stateIdentifier(proof.getAccumulatorState()));
+    // This must be read atomically
+    return radixEngine.read(
+        reader -> {
+          Function<REAddr, String> addressToSymbol =
+              addr -> {
+                var mapKey =
+                    SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+                var substate = reader.get(mapKey).orElseThrow();
+                var tokenResource = (TokenResourceMetadata) substate;
+                return tokenResource.getSymbol();
+              };
+          var proof = reader.getMetadata().getProof();
+          var response =
+              new EntityResponse()
+                  .stateIdentifier(modelMapper.stateIdentifier(proof.getAccumulatorState()));
 
-			for (var resourceQuery : resourceQueries) {
-				resourceQuery.fold(
-					(index, bucketPredicate) ->
-						reader.reduceResources(index, ResourceInBucket::bucket, bucketPredicate)
-							.entrySet()
-							.stream()
-							.map(e -> modelMapper.resourceOperation(e.getKey(), e.getValue(), addressToSymbol)),
-					systemMapKey ->
-						reader.get(systemMapKey).map(ResourceInBucket.class::cast).stream()
-							.map(b -> modelMapper.resourceOperation(b, true, addressToSymbol))
-				).forEach(response::addBalancesItem);
-			}
+          for (var resourceQuery : resourceQueries) {
+            resourceQuery
+                .fold(
+                    (index, bucketPredicate) ->
+                        reader
+                            .reduceResources(index, ResourceInBucket::bucket, bucketPredicate)
+                            .entrySet()
+                            .stream()
+                            .map(
+                                e ->
+                                    modelMapper.resourceOperation(
+                                        e.getKey(), e.getValue(), addressToSymbol)),
+                    systemMapKey ->
+                        reader.get(systemMapKey).map(ResourceInBucket.class::cast).stream()
+                            .map(b -> modelMapper.resourceOperation(b, true, addressToSymbol)))
+                .forEach(response::addBalancesItem);
+          }
 
-			for (var keyQuery : keyQueries) {
-				var substate = keyQuery.get(reader);
-				substate.flatMap(modelMapper::dataObject).ifPresent(response::addDataObjectsItem);
-			}
+          for (var keyQuery : keyQueries) {
+            var substate = keyQuery.get(reader);
+            substate.flatMap(modelMapper::dataObject).ifPresent(response::addDataObjectsItem);
+          }
 
-			return response;
-		});
-	}
+          return response;
+        });
+  }
 }

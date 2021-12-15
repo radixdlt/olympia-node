@@ -64,35 +64,32 @@
 
 package com.radixdlt.application;
 
-import org.junit.Test;
-import org.reflections.Reflections;
-
 import com.google.common.hash.HashCode;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.HashUtils;
-
 import java.lang.reflect.Modifier;
 import java.util.Set;
-
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
+import org.junit.Test;
+import org.reflections.Reflections;
 
 public class ParticlesEqualsHashCode {
-	@Test
-	public void verify_all_particle_subtypes_correctly_override_equals_and_hash_code() {
-		findSubTypesInPkg("com.radixdlt").stream()
-			.filter(cls -> !Modifier.isAbstract(cls.getModifiers()))
-			.forEachOrdered(this::testEquals);
-	}
+  @Test
+  public void verify_all_particle_subtypes_correctly_override_equals_and_hash_code() {
+    findSubTypesInPkg("com.radixdlt").stream()
+        .filter(cls -> !Modifier.isAbstract(cls.getModifiers()))
+        .forEachOrdered(this::testEquals);
+  }
 
-	private void testEquals(Class<? extends Particle> cls) {
-		EqualsVerifier.forClass(cls)
-			.suppress(Warning.NONFINAL_FIELDS)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
+  private void testEquals(Class<? extends Particle> cls) {
+    EqualsVerifier.forClass(cls)
+        .suppress(Warning.NONFINAL_FIELDS)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 
-	private Set<Class<? extends Particle>> findSubTypesInPkg(String packagePrefix) {
-		return new Reflections(packagePrefix).getSubTypesOf(Particle.class);
-	}
+  private Set<Class<? extends Particle>> findSubTypesInPkg(String packagePrefix) {
+    return new Reflections(packagePrefix).getSubTypesOf(Particle.class);
+  }
 }

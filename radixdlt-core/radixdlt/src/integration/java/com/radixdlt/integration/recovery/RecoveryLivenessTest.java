@@ -64,19 +64,59 @@
 
 package com.radixdlt.integration.recovery;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.ClassToInstanceMap;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Provides;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.PersistedNodeForTestingModule;
+import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.LastEventsModule;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.MessageQueue;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.store.DatabaseEnvironment;
+import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.utils.KeyComparator;
+import io.reactivex.rxjava3.schedulers.Timed;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.Set;
+import java.util.function.Supplier;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -89,348 +129,314 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import com.google.common.collect.ImmutableList;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.PersistedNodeForTestingModule;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageQueue;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.store.DatabaseEnvironment;
-import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
-import com.radixdlt.sync.messages.local.SyncCheckTrigger;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.Set;
-import java.util.function.Supplier;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import io.reactivex.rxjava3.schedulers.Timed;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
-/**
- * Various liveness+recovery tests
- */
+/** Various liveness+recovery tests */
 @RunWith(Parameterized.class)
 public class RecoveryLivenessTest {
-	private static final Logger logger = LogManager.getLogger();
+  private static final Logger logger = LogManager.getLogger();
 
-	@Parameters
-	public static Collection<Object[]> numNodes() {
-		return List.of(new Object[][] {
-			{1, 88L}, {2, 88L}, {3, 88L}, {4, 88L},
-			{2, 1L}, {10, 100L}
-		});
-	}
+  @Parameters
+  public static Collection<Object[]> numNodes() {
+    return List.of(new Object[][] {{1, 88L}, {2, 88L}, {3, 88L}, {4, 88L}, {2, 1L}, {10, 100L}});
+  }
 
-	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
-	private DeterministicNetwork network;
-	private List<Supplier<Injector>> nodeCreators;
-	private List<Injector> nodes = new ArrayList<>();
-	private final ImmutableList<ECKeyPair> nodeKeys;
-	private final long epochCeilingView;
-	private MessageMutator messageMutator;
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+  private DeterministicNetwork network;
+  private List<Supplier<Injector>> nodeCreators;
+  private List<Injector> nodes = new ArrayList<>();
+  private final ImmutableList<ECKeyPair> nodeKeys;
+  private final long epochCeilingView;
+  private MessageMutator messageMutator;
 
-	public RecoveryLivenessTest(int numNodes, long epochCeilingView) {
-		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
-			.limit(numNodes)
-			.sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
-			.collect(ImmutableList.toImmutableList());
-		this.epochCeilingView = epochCeilingView;
-	}
+  public RecoveryLivenessTest(int numNodes, long epochCeilingView) {
+    this.nodeKeys =
+        Stream.generate(ECKeyPair::generateNew)
+            .limit(numNodes)
+            .sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
+            .collect(ImmutableList.toImmutableList());
+    this.epochCeilingView = epochCeilingView;
+  }
 
-	@Before
-	public void setup() {
-		this.messageMutator = MessageMutator.nothing();
-		this.network = new DeterministicNetwork(
-			nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList()),
-			MessageSelector.firstSelector(),
-			this::mutate
-		);
+  @Before
+  public void setup() {
+    this.messageMutator = MessageMutator.nothing();
+    this.network =
+        new DeterministicNetwork(
+            nodeKeys.stream()
+                .map(k -> BFTNode.create(k.getPublicKey()))
+                .collect(Collectors.toList()),
+            MessageSelector.firstSelector(),
+            this::mutate);
 
-		List<BFTNode> allNodes = nodeKeys.stream()
-			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
+    List<BFTNode> allNodes =
+        nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
 
-		this.nodeCreators = nodeKeys.stream()
-			.<Supplier<Injector>>map(k -> () -> createRunner(k, allNodes))
-			.collect(Collectors.toList());
+    this.nodeCreators =
+        nodeKeys.stream()
+            .<Supplier<Injector>>map(k -> () -> createRunner(k, allNodes))
+            .collect(Collectors.toList());
 
-		for (Supplier<Injector> nodeCreator : nodeCreators) {
-			this.nodes.add(nodeCreator.get());
-		}
-		this.nodes.forEach(i -> i.getInstance(DeterministicProcessor.class).start());
-	}
+    for (Supplier<Injector> nodeCreator : nodeCreators) {
+      this.nodes.add(nodeCreator.get());
+    }
+    this.nodes.forEach(i -> i.getInstance(DeterministicProcessor.class).start());
+  }
 
-	boolean mutate(ControlledMessage message, MessageQueue queue) {
-		return messageMutator.mutate(message, queue);
-	}
+  boolean mutate(ControlledMessage message, MessageQueue queue) {
+    return messageMutator.mutate(message, queue);
+  }
 
-	private void stopDatabase(Injector injector) {
-		injector.getInstance(BerkeleyLedgerEntryStore.class).close();
-		injector.getInstance(PersistentSafetyStateStore.class).close();
-		injector.getInstance(DatabaseEnvironment.class).stop();
-	}
+  private void stopDatabase(Injector injector) {
+    injector.getInstance(BerkeleyLedgerEntryStore.class).close();
+    injector.getInstance(PersistentSafetyStateStore.class).close();
+    injector.getInstance(DatabaseEnvironment.class).stop();
+  }
 
-	@After
-	public void teardown() {
-		this.nodes.forEach(this::stopDatabase);
-	}
+  @After
+  public void teardown() {
+    this.nodes.forEach(this::stopDatabase);
+  }
 
-	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
-		return Guice.createInjector(
-			new MockedGenesisModule(
-				nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
-				Amount.ofTokens(100000),
-				Amount.ofTokens(1000)
-			),
-			MempoolConfig.asModule(10, 10),
-			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(
-				new RERulesConfig(
-					Set.of("xrd"),
-					Pattern.compile("[a-z0-9]+"),
-					FeeTable.noFees(),
-					1024 * 1024,
-					OptionalInt.of(50),
-					epochCeilingView,
-					2,
-					Amount.ofTokens(10),
-					1,
-					Amount.ofTokens(10),
-					9800,
-					10
-				)),
-			new ForksModule(),
-			new PersistedNodeForTestingModule(),
-			new LastEventsModule(EpochViewUpdate.class),
-			new AbstractModule() {
-				@Override
-				protected void configure() {
-					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
-					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
-					bind(Environment.class).toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
-					bindConstant().annotatedWith(DatabaseLocation.class)
-						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
-				}
+  private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
+    return Guice.createInjector(
+        new MockedGenesisModule(
+            nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
+            Amount.ofTokens(100000),
+            Amount.ofTokens(1000)),
+        MempoolConfig.asModule(10, 10),
+        new MainnetForkConfigsModule(),
+        new RadixEngineForksLatestOnlyModule(
+            new RERulesConfig(
+                Set.of("xrd"),
+                Pattern.compile("[a-z0-9]+"),
+                FeeTable.noFees(),
+                1024 * 1024,
+                OptionalInt.of(50),
+                epochCeilingView,
+                2,
+                Amount.ofTokens(10),
+                1,
+                Amount.ofTokens(10),
+                9800,
+                10)),
+        new ForksModule(),
+        new PersistedNodeForTestingModule(),
+        new LastEventsModule(EpochViewUpdate.class),
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
+            bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(allNodes);
+            bind(Environment.class)
+                .toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
+            bindConstant()
+                .annotatedWith(DatabaseLocation.class)
+                .to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
+          }
 
-				@Provides
-				private PeersView peersView(@Self BFTNode self) {
-					return () -> allNodes.stream()
-						.filter(n -> !self.equals(n))
-						.map(PeersView.PeerInfo::fromBftNode);
-				}
-			}
-		);
-	}
+          @Provides
+          private PeersView peersView(@Self BFTNode self) {
+            return () ->
+                allNodes.stream().filter(n -> !self.equals(n)).map(PeersView.PeerInfo::fromBftNode);
+          }
+        });
+  }
 
-	private void restartNode(int index) {
-		this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
-		Injector injector = nodeCreators.get(index).get();
-		stopDatabase(this.nodes.set(index, injector));
-		withThreadCtx(injector, () -> injector.getInstance(DeterministicProcessor.class).start());
-	}
+  private void restartNode(int index) {
+    this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
+    Injector injector = nodeCreators.get(index).get();
+    stopDatabase(this.nodes.set(index, injector));
+    withThreadCtx(injector, () -> injector.getInstance(DeterministicProcessor.class).start());
+  }
 
-	private void initSync() {
-		for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
-			final var injector = nodeCreators.get(nodeIndex).get();
-			withThreadCtx(injector, () -> {
-				// need to manually init sync check, normally sync runner schedules it periodically
-				injector.getInstance(new Key<EventDispatcher<SyncCheckTrigger>>() { }).dispatch(SyncCheckTrigger.create());
-			});
-		}
-	}
+  private void initSync() {
+    for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
+      final var injector = nodeCreators.get(nodeIndex).get();
+      withThreadCtx(
+          injector,
+          () -> {
+            // need to manually init sync check, normally sync runner schedules it periodically
+            injector
+                .getInstance(new Key<EventDispatcher<SyncCheckTrigger>>() {})
+                .dispatch(SyncCheckTrigger.create());
+          });
+    }
+  }
 
-	private void withThreadCtx(Injector injector, Runnable r) {
-		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
-		try {
-			r.run();
-		} finally {
-			ThreadContext.remove("self");
-		}
-	}
+  private void withThreadCtx(Injector injector, Runnable r) {
+    ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
+    try {
+      r.run();
+    } finally {
+      ThreadContext.remove("self");
+    }
+  }
 
-	private Timed<ControlledMessage> processNext() {
-		Timed<ControlledMessage> msg = this.network.nextMessage();
-		logger.debug("Processing message {}", msg);
+  private Timed<ControlledMessage> processNext() {
+    Timed<ControlledMessage> msg = this.network.nextMessage();
+    logger.debug("Processing message {}", msg);
 
-		int nodeIndex = msg.value().channelId().receiverIndex();
-		Injector injector = this.nodes.get(nodeIndex);
-		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
-		try {
-			injector.getInstance(DeterministicProcessor.class)
-				.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral());
-		} finally {
-			ThreadContext.remove("self");
-		}
+    int nodeIndex = msg.value().channelId().receiverIndex();
+    Injector injector = this.nodes.get(nodeIndex);
+    ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
+    try {
+      injector
+          .getInstance(DeterministicProcessor.class)
+          .handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral());
+    } finally {
+      ThreadContext.remove("self");
+    }
 
-		return msg;
-	}
+    return msg;
+  }
 
-	private Optional<EpochView> lastCommitViewEmitted() {
-		return network.allMessages().stream()
-			.filter(msg -> msg.message() instanceof EpochViewUpdate)
-			.map(msg -> (EpochViewUpdate) msg.message())
-			.map(e -> new EpochView(e.getEpoch(), e.getViewUpdate().getHighQC().highestCommittedQC().getView()))
-			.max(Comparator.naturalOrder());
-	}
+  private Optional<EpochView> lastCommitViewEmitted() {
+    return network.allMessages().stream()
+        .filter(msg -> msg.message() instanceof EpochViewUpdate)
+        .map(msg -> (EpochViewUpdate) msg.message())
+        .map(
+            e ->
+                new EpochView(
+                    e.getEpoch(), e.getViewUpdate().getHighQC().highestCommittedQC().getView()))
+        .max(Comparator.naturalOrder());
+  }
 
-	private EpochView latestEpochView() {
-		return this.nodes.stream()
-			.map(i -> i.getInstance(Key.get(new TypeLiteral<ClassToInstanceMap<Object>>() { })).getInstance(EpochViewUpdate.class))
-			.map(e -> e == null ? new EpochView(0, View.genesis()) : e.getEpochView())
-			.max(Comparator.naturalOrder()).orElse(new EpochView(0, View.genesis()));
-	}
+  private EpochView latestEpochView() {
+    return this.nodes.stream()
+        .map(
+            i ->
+                i.getInstance(Key.get(new TypeLiteral<ClassToInstanceMap<Object>>() {}))
+                    .getInstance(EpochViewUpdate.class))
+        .map(e -> e == null ? new EpochView(0, View.genesis()) : e.getEpochView())
+        .max(Comparator.naturalOrder())
+        .orElse(new EpochView(0, View.genesis()));
+  }
 
-	private int processUntilNextCommittedEmitted(int maxSteps) {
-		EpochView lastCommitted = this.lastCommitViewEmitted().orElse(new EpochView(0, View.genesis()));
-		int count = 0;
-		int senderIndex;
-		do {
-			if (count > maxSteps) {
-				throw new IllegalStateException("Already lost liveness");
-			}
+  private int processUntilNextCommittedEmitted(int maxSteps) {
+    EpochView lastCommitted = this.lastCommitViewEmitted().orElse(new EpochView(0, View.genesis()));
+    int count = 0;
+    int senderIndex;
+    do {
+      if (count > maxSteps) {
+        throw new IllegalStateException("Already lost liveness");
+      }
 
-			Timed<ControlledMessage> msg = processNext();
-			senderIndex = msg.value().channelId().senderIndex();
-			count++;
-		} while (this.lastCommitViewEmitted().stream().noneMatch(v -> v.compareTo(lastCommitted) > 0));
+      Timed<ControlledMessage> msg = processNext();
+      senderIndex = msg.value().channelId().senderIndex();
+      count++;
+    } while (this.lastCommitViewEmitted().stream().noneMatch(v -> v.compareTo(lastCommitted) > 0));
 
-		return senderIndex;
-	}
+    return senderIndex;
+  }
 
-	private void processForCount(int messageCount) {
-		for (int i = 0; i < messageCount; i++) {
-			processNext();
-		}
-	}
+  private void processForCount(int messageCount) {
+    for (int i = 0; i < messageCount; i++) {
+      processNext();
+    }
+  }
 
-	/**
-	 * Given that one validator is always alive means that that validator will
-	 * always have the latest committed vertex which the validator can sync
-	 * others with.
-	 */
-	@Test
-	public void liveness_check_when_restart_all_but_one_node() {
-		EpochView epochView = this.latestEpochView();
+  /**
+   * Given that one validator is always alive means that that validator will always have the latest
+   * committed vertex which the validator can sync others with.
+   */
+  @Test
+  public void liveness_check_when_restart_all_but_one_node() {
+    EpochView epochView = this.latestEpochView();
 
-		for (int restart = 0; restart < 5; restart++) {
-			processForCount(5000);
+    for (int restart = 0; restart < 5; restart++) {
+      processForCount(5000);
 
-			EpochView nextEpochView = latestEpochView();
-			assertThat(nextEpochView).isGreaterThan(epochView);
-			epochView = nextEpochView;
+      EpochView nextEpochView = latestEpochView();
+      assertThat(nextEpochView).isGreaterThan(epochView);
+      epochView = nextEpochView;
 
-			logger.info("Restarting " + restart);
-			for (int nodeIndex = 1; nodeIndex < nodes.size(); nodeIndex++) {
-				restartNode(nodeIndex);
-			}
-			initSync();
-		}
+      logger.info("Restarting " + restart);
+      for (int nodeIndex = 1; nodeIndex < nodes.size(); nodeIndex++) {
+        restartNode(nodeIndex);
+      }
+      initSync();
+    }
 
-		assertThat(epochView.getEpoch()).isGreaterThan(1);
-	}
+    assertThat(epochView.getEpoch()).isGreaterThan(1);
+  }
 
-	@Test
-	public void liveness_check_when_restart_node_on_view_update_with_commit() {
-		EpochView epochView = this.latestEpochView();
+  @Test
+  public void liveness_check_when_restart_node_on_view_update_with_commit() {
+    EpochView epochView = this.latestEpochView();
 
-		for (int restart = 0; restart < 5; restart++) {
-			processForCount(5000);
+    for (int restart = 0; restart < 5; restart++) {
+      processForCount(5000);
 
-			EpochView nextEpochView = latestEpochView();
-			assertThat(nextEpochView).isGreaterThan(epochView);
-			epochView = nextEpochView;
+      EpochView nextEpochView = latestEpochView();
+      assertThat(nextEpochView).isGreaterThan(epochView);
+      epochView = nextEpochView;
 
-			int nodeToRestart = processUntilNextCommittedEmitted(5000);
+      int nodeToRestart = processUntilNextCommittedEmitted(5000);
 
-			logger.info("Restarting " + restart);
-			for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
-				if (nodeIndex != (nodeToRestart + 1) % nodes.size()) {
-					restartNode(nodeIndex);
-				}
-			}
-			initSync();
-		}
+      logger.info("Restarting " + restart);
+      for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
+        if (nodeIndex != (nodeToRestart + 1) % nodes.size()) {
+          restartNode(nodeIndex);
+        }
+      }
+      initSync();
+    }
 
-		assertThat(epochView.getEpoch()).isGreaterThan(1);
-	}
+    assertThat(epochView.getEpoch()).isGreaterThan(1);
+  }
 
-	@Test
-	public void liveness_check_when_restart_all_nodes() {
-		EpochView epochView = this.latestEpochView();
+  @Test
+  public void liveness_check_when_restart_all_nodes() {
+    EpochView epochView = this.latestEpochView();
 
-		for (int restart = 0; restart < 5; restart++) {
-			processForCount(5000);
+    for (int restart = 0; restart < 5; restart++) {
+      processForCount(5000);
 
-			EpochView nextEpochView = latestEpochView();
-			assertThat(nextEpochView).isGreaterThan(epochView);
-			epochView = nextEpochView;
+      EpochView nextEpochView = latestEpochView();
+      assertThat(nextEpochView).isGreaterThan(epochView);
+      epochView = nextEpochView;
 
-			logger.info("Restarting " + restart);
-			for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
-				restartNode(nodeIndex);
-			}
-			initSync();
-		}
+      logger.info("Restarting " + restart);
+      for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
+        restartNode(nodeIndex);
+      }
+      initSync();
+    }
 
-		assertThat(epochView.getEpoch()).isGreaterThan(1);
-	}
+    assertThat(epochView.getEpoch()).isGreaterThan(1);
+  }
 
-	/**
-	 * This test tests for recovery when there is a vertex chain > 3 due to timeouts.
-	 * Probably won't be an issue once timeout certificates implemented.
-	 */
-	@Test
-	public void liveness_check_when_restart_all_nodes_and_f_nodes_down() {
-		int f = (nodes.size() - 1) / 3;
-		if (f <= 0) {
-			// if f <= 0, this is equivalent to liveness_check_when_restart_all_nodes();
-			return;
-		}
+  /**
+   * This test tests for recovery when there is a vertex chain > 3 due to timeouts. Probably won't
+   * be an issue once timeout certificates implemented.
+   */
+  @Test
+  public void liveness_check_when_restart_all_nodes_and_f_nodes_down() {
+    int f = (nodes.size() - 1) / 3;
+    if (f <= 0) {
+      // if f <= 0, this is equivalent to liveness_check_when_restart_all_nodes();
+      return;
+    }
 
-		this.messageMutator = (message, queue) -> message.channelId().receiverIndex() < f || message.channelId().senderIndex() < f;
+    this.messageMutator =
+        (message, queue) ->
+            message.channelId().receiverIndex() < f || message.channelId().senderIndex() < f;
 
-		EpochView epochView = this.latestEpochView();
+    EpochView epochView = this.latestEpochView();
 
-		for (int restart = 0; restart < 5; restart++) {
-			processForCount(5000);
+    for (int restart = 0; restart < 5; restart++) {
+      processForCount(5000);
 
-			EpochView nextEpochView = latestEpochView();
-			assertThat(nextEpochView).isGreaterThan(epochView);
-			epochView = nextEpochView;
+      EpochView nextEpochView = latestEpochView();
+      assertThat(nextEpochView).isGreaterThan(epochView);
+      epochView = nextEpochView;
 
-			logger.info("Restarting " + restart);
-			for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
-				restartNode(nodeIndex);
-			}
-			initSync();
-		}
+      logger.info("Restarting " + restart);
+      for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
+        restartNode(nodeIndex);
+      }
+      initSync();
+    }
 
-		assertThat(epochView.getEpoch()).isGreaterThan(1);
-	}
+    assertThat(epochView.getEpoch()).isGreaterThan(1);
+  }
 }

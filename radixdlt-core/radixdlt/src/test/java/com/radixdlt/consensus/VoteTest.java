@@ -64,6 +64,10 @@
 
 package com.radixdlt.consensus;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
@@ -71,88 +75,123 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import java.util.Optional;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Optional;
-
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-
 public class VoteTest {
-	private BFTNode author;
-	private Vote testObject;
-	private VoteData voteData;
-	private HighQC highQC;
+  private BFTNode author;
+  private Vote testObject;
+  private VoteData voteData;
+  private HighQC highQC;
 
-	@Before
-	public void setUp() {
-		BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), mock(LedgerHeader.class));
-		this.voteData = new VoteData(BFTHeader.ofGenesisAncestor(mock(LedgerHeader.class)), parent, null);
-		this.author = mock(BFTNode.class);
-		this.highQC = mock(HighQC.class);
-		this.testObject = new Vote(author, this.voteData, 123456L, ECDSASignature.zeroSignature(), highQC, Optional.empty());
-	}
+  @Before
+  public void setUp() {
+    BFTHeader parent =
+        new BFTHeader(View.of(1234567890L), HashUtils.random256(), mock(LedgerHeader.class));
+    this.voteData =
+        new VoteData(BFTHeader.ofGenesisAncestor(mock(LedgerHeader.class)), parent, null);
+    this.author = mock(BFTNode.class);
+    this.highQC = mock(HighQC.class);
+    this.testObject =
+        new Vote(
+            author,
+            this.voteData,
+            123456L,
+            ECDSASignature.zeroSignature(),
+            highQC,
+            Optional.empty());
+  }
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(Vote.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(Vote.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 
-	@Test
-	public void testGetters() {
-		assertEquals(this.testObject.getEpoch(), voteData.getProposed().getLedgerHeader().getEpoch());
-		assertEquals(this.voteData, this.testObject.getVoteData());
-		assertEquals(this.author, this.testObject.getAuthor());
-		assertEquals(this.highQC, this.testObject.highQC());
-	}
+  @Test
+  public void testGetters() {
+    assertEquals(this.testObject.getEpoch(), voteData.getProposed().getLedgerHeader().getEpoch());
+    assertEquals(this.voteData, this.testObject.getVoteData());
+    assertEquals(this.author, this.testObject.getAuthor());
+    assertEquals(this.highQC, this.testObject.highQC());
+  }
 
-	@Test
-	public void testToString() {
-		assertThat(this.testObject.toString())
-			.isNotNull()
-			.contains(Vote.class.getSimpleName())
-			.contains("epoch=0")
-			.contains("view=0")
-			.contains(this.author.toString());
-	}
+  @Test
+  public void testToString() {
+    assertThat(this.testObject.toString())
+        .isNotNull()
+        .contains(Vote.class.getSimpleName())
+        .contains("epoch=0")
+        .contains("view=0")
+        .contains(this.author.toString());
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializationWithNullThrowsException1() throws PublicKeyException {
-		new Vote(null, mock(VoteData.class), 1L, mock(ECDSASignature.class), mock(HighQC.class), mock(ECDSASignature.class));
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException1() throws PublicKeyException {
+    new Vote(
+        null,
+        mock(VoteData.class),
+        1L,
+        mock(ECDSASignature.class),
+        mock(HighQC.class),
+        mock(ECDSASignature.class));
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializationWithNullThrowsException2() throws PublicKeyException {
-		var author = ECKeyPair.generateNew().getPublicKey().getBytes();
-		new Vote(author, null, 1L, mock(ECDSASignature.class), mock(HighQC.class), mock(ECDSASignature.class));
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException2() throws PublicKeyException {
+    var author = ECKeyPair.generateNew().getPublicKey().getBytes();
+    new Vote(
+        author,
+        null,
+        1L,
+        mock(ECDSASignature.class),
+        mock(HighQC.class),
+        mock(ECDSASignature.class));
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializationWithNullThrowsException3() throws PublicKeyException {
-		var author = ECKeyPair.generateNew().getPublicKey().getBytes();
-		new Vote(author, mock(VoteData.class), 1L, null, mock(HighQC.class), mock(ECDSASignature.class));
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException3() throws PublicKeyException {
+    var author = ECKeyPair.generateNew().getPublicKey().getBytes();
+    new Vote(
+        author, mock(VoteData.class), 1L, null, mock(HighQC.class), mock(ECDSASignature.class));
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializationWithNullThrowsException4() throws PublicKeyException {
-		var author = ECKeyPair.generateNew().getPublicKey().getBytes();
-		new Vote(author, mock(VoteData.class), 1L, mock(ECDSASignature.class), null, mock(ECDSASignature.class));
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException4() throws PublicKeyException {
+    var author = ECKeyPair.generateNew().getPublicKey().getBytes();
+    new Vote(
+        author,
+        mock(VoteData.class),
+        1L,
+        mock(ECDSASignature.class),
+        null,
+        mock(ECDSASignature.class));
+  }
 
-	@Test(expected = IllegalArgumentException.class)
-	public void deserializationWithInvalidEpochThrowsException4() throws PublicKeyException {
-		var author = ECKeyPair.generateNew().getPublicKey().getBytes();
-		new Vote(author, mock(VoteData.class), -1L, mock(ECDSASignature.class), mock(HighQC.class), mock(ECDSASignature.class));
-	}
+  @Test(expected = IllegalArgumentException.class)
+  public void deserializationWithInvalidEpochThrowsException4() throws PublicKeyException {
+    var author = ECKeyPair.generateNew().getPublicKey().getBytes();
+    new Vote(
+        author,
+        mock(VoteData.class),
+        -1L,
+        mock(ECDSASignature.class),
+        mock(HighQC.class),
+        mock(ECDSASignature.class));
+  }
 
-	@Test(expected = PublicKeyException.class)
-	public void deserializationWithInvalidAuthorThrowsException4() throws PublicKeyException {
-		var author = new byte[0];
-		new Vote(author, mock(VoteData.class), 1L, mock(ECDSASignature.class), mock(HighQC.class), mock(ECDSASignature.class));
-	}
+  @Test(expected = PublicKeyException.class)
+  public void deserializationWithInvalidAuthorThrowsException4() throws PublicKeyException {
+    var author = new byte[0];
+    new Vote(
+        author,
+        mock(VoteData.class),
+        1L,
+        mock(ECDSASignature.class),
+        mock(HighQC.class),
+        mock(ECDSASignature.class));
+  }
 }

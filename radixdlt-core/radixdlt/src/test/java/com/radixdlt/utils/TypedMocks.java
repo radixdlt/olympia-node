@@ -64,45 +64,42 @@
 
 package com.radixdlt.utils;
 
-import com.google.inject.TypeLiteral;
-
 import static org.mockito.Mockito.mock;
 
-/**
- * Typed mock wrappers to avoid compiler warnings where they are not
- * warranted.
- */
+import com.google.inject.TypeLiteral;
+
+/** Typed mock wrappers to avoid compiler warnings where they are not warranted. */
 public final class TypedMocks {
 
-	private TypedMocks() {
-		throw new IllegalStateException("Can't construct");
-	}
+  private TypedMocks() {
+    throw new IllegalStateException("Can't construct");
+  }
 
-	/**
-	 * Runtime checked typed mock, primarily for types with type arguments.
-	 *
-	 * @param <T> The type of the mock without type arguments, eg {@code List}
-	 * @param <U> The type of the mock with type arguments, eg {@code List<Long>}
-	 * @param cls The raw class for the mocked type
-	 * @return the mock, cast to type {@code U}.  If {@code U} is not assignable
-	 * 		from {@code T}, then a {@code ClassCastException} will occur.
-	 */
-	public static <T, U> U rmock(Class<T> cls) {
-		@SuppressWarnings("unchecked")
-		U value = (U) mock(cls);
-		return value;
-	}
+  /**
+   * Runtime checked typed mock, primarily for types with type arguments.
+   *
+   * @param <T> The type of the mock without type arguments, eg {@code List}
+   * @param <U> The type of the mock with type arguments, eg {@code List<Long>}
+   * @param cls The raw class for the mocked type
+   * @return the mock, cast to type {@code U}. If {@code U} is not assignable from {@code T}, then a
+   *     {@code ClassCastException} will occur.
+   */
+  public static <T, U> U rmock(Class<T> cls) {
+    @SuppressWarnings("unchecked")
+    U value = (U) mock(cls);
+    return value;
+  }
 
-	/**
-	 * Compile time checked typed mock, primarily for types with type arguments.
-	 *
-	 * @param <T> The type of the mock without type arguments, eg {@code List}
-	 * @param type The type literal describing the type of the mock
-	 * @return the mock
-	 */
-	public static <T> T cmock(TypeLiteral<T> type) {
-		@SuppressWarnings("unchecked")
-		T value = (T) mock(type.getRawType());
-		return value;
-	}
+  /**
+   * Compile time checked typed mock, primarily for types with type arguments.
+   *
+   * @param <T> The type of the mock without type arguments, eg {@code List}
+   * @param type The type literal describing the type of the mock
+   * @return the mock
+   */
+  public static <T> T cmock(TypeLiteral<T> type) {
+    @SuppressWarnings("unchecked")
+    T value = (T) mock(type.getRawType());
+    return value;
+  }
 }

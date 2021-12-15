@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -79,57 +80,62 @@ import com.radixdlt.api.core.openapitools.model.ConstructionDeriveRequestMetadat
 import com.radixdlt.api.core.openapitools.model.ConstructionDeriveResponse;
 import com.radixdlt.identifiers.REAddr;
 
-public final class ConstructionDeriveHandler extends CoreJsonRpcHandler<ConstructionDeriveRequest, ConstructionDeriveResponse> {
-	private final CoreModelMapper coreModelMapper;
+public final class ConstructionDeriveHandler
+    extends CoreJsonRpcHandler<ConstructionDeriveRequest, ConstructionDeriveResponse> {
+  private final CoreModelMapper coreModelMapper;
 
-	@Inject
-	ConstructionDeriveHandler(CoreModelMapper coreModelMapper) {
-		super(ConstructionDeriveRequest.class);
+  @Inject
+  ConstructionDeriveHandler(CoreModelMapper coreModelMapper) {
+    super(ConstructionDeriveRequest.class);
 
-		this.coreModelMapper = coreModelMapper;
-	}
+    this.coreModelMapper = coreModelMapper;
+  }
 
-	@Override
-	public ConstructionDeriveResponse handleRequest(ConstructionDeriveRequest request) throws CoreApiException {
-		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
+  @Override
+  public ConstructionDeriveResponse handleRequest(ConstructionDeriveRequest request)
+      throws CoreApiException {
+    coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var publicKey = coreModelMapper.ecPublicKey(request.getPublicKey());
+    var publicKey = coreModelMapper.ecPublicKey(request.getPublicKey());
 
-		var response = new ConstructionDeriveResponse();
-		var metadata = request.getMetadata();
-		if (metadata instanceof ConstructionDeriveRequestMetadataAccount) {
-			var address = REAddr.ofPubKeyAccount(publicKey);
-			response.entityIdentifier(coreModelMapper.entityIdentifier(address));
-		} else if (metadata instanceof ConstructionDeriveRequestMetadataValidator) {
-			response.entityIdentifier(coreModelMapper.entityIdentifier(publicKey));
-		} else if (metadata instanceof ConstructionDeriveRequestMetadataToken token) {
-			var tokenAddress = REAddr.ofHashedKey(publicKey, token.getSymbol());
-			response.entityIdentifier(coreModelMapper.entityIdentifier(tokenAddress, token.getSymbol()));
-		} else if (metadata instanceof ConstructionDeriveRequestMetadataPreparedStakes preparedStakesMetadata) {
-			var entity = coreModelMapper.entity(preparedStakesMetadata.getValidator());
-			if (!(entity instanceof ValidatorEntity validatorEntity)) {
-				throw coreModelMapper.notValidatorEntityException(preparedStakesMetadata.getValidator());
-			}
-			var address = REAddr.ofPubKeyAccount(publicKey);
-			response.entityIdentifier(coreModelMapper.entityIdentifierPreparedStake(address, validatorEntity.validatorKey()));
-		} else if (metadata instanceof ConstructionDeriveRequestMetadataPreparedUnstakes) {
-			var address = REAddr.ofPubKeyAccount(publicKey);
-			response.entityIdentifier(coreModelMapper.entityIdentifierPreparedUnstake(address));
-		} else if (metadata instanceof ConstructionDeriveRequestMetadataExitingUnstakes exitingUnstakes) {
-			var entity = coreModelMapper.entity(exitingUnstakes.getValidator());
-			if (!(entity instanceof ValidatorEntity validatorEntity)) {
-				throw coreModelMapper.notValidatorEntityException(exitingUnstakes.getValidator());
-			}
-			var address = REAddr.ofPubKeyAccount(publicKey);
-			response.entityIdentifier(coreModelMapper.entityIdentifierExitingStake(
-				address, validatorEntity.validatorKey(), exitingUnstakes.getEpochUnlock()
-			));
-		} else if (metadata instanceof ConstructionDeriveRequestMetadataValidatorSystem) {
-			response.entityIdentifier(coreModelMapper.entityIdentifierValidatorSystem(publicKey));
-		} else {
-			throw new IllegalStateException("Unknown metadata type: " + metadata);
-		}
+    var response = new ConstructionDeriveResponse();
+    var metadata = request.getMetadata();
+    if (metadata instanceof ConstructionDeriveRequestMetadataAccount) {
+      var address = REAddr.ofPubKeyAccount(publicKey);
+      response.entityIdentifier(coreModelMapper.entityIdentifier(address));
+    } else if (metadata instanceof ConstructionDeriveRequestMetadataValidator) {
+      response.entityIdentifier(coreModelMapper.entityIdentifier(publicKey));
+    } else if (metadata instanceof ConstructionDeriveRequestMetadataToken token) {
+      var tokenAddress = REAddr.ofHashedKey(publicKey, token.getSymbol());
+      response.entityIdentifier(coreModelMapper.entityIdentifier(tokenAddress, token.getSymbol()));
+    } else if (metadata
+        instanceof ConstructionDeriveRequestMetadataPreparedStakes preparedStakesMetadata) {
+      var entity = coreModelMapper.entity(preparedStakesMetadata.getValidator());
+      if (!(entity instanceof ValidatorEntity validatorEntity)) {
+        throw coreModelMapper.notValidatorEntityException(preparedStakesMetadata.getValidator());
+      }
+      var address = REAddr.ofPubKeyAccount(publicKey);
+      response.entityIdentifier(
+          coreModelMapper.entityIdentifierPreparedStake(address, validatorEntity.validatorKey()));
+    } else if (metadata instanceof ConstructionDeriveRequestMetadataPreparedUnstakes) {
+      var address = REAddr.ofPubKeyAccount(publicKey);
+      response.entityIdentifier(coreModelMapper.entityIdentifierPreparedUnstake(address));
+    } else if (metadata
+        instanceof ConstructionDeriveRequestMetadataExitingUnstakes exitingUnstakes) {
+      var entity = coreModelMapper.entity(exitingUnstakes.getValidator());
+      if (!(entity instanceof ValidatorEntity validatorEntity)) {
+        throw coreModelMapper.notValidatorEntityException(exitingUnstakes.getValidator());
+      }
+      var address = REAddr.ofPubKeyAccount(publicKey);
+      response.entityIdentifier(
+          coreModelMapper.entityIdentifierExitingStake(
+              address, validatorEntity.validatorKey(), exitingUnstakes.getEpochUnlock()));
+    } else if (metadata instanceof ConstructionDeriveRequestMetadataValidatorSystem) {
+      response.entityIdentifier(coreModelMapper.entityIdentifierValidatorSystem(publicKey));
+    } else {
+      throw new IllegalStateException("Unknown metadata type: " + metadata);
+    }
 
-		return response;
-	}
+    return response;
+  }
 }

@@ -64,18 +64,10 @@
 
 package com.radixdlt;
 
-import com.radixdlt.api.ApiModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.StokenetForkConfigsModule;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.util.Strings;
-import org.json.JSONObject;
-import org.radix.utils.IOUtils;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.api.ApiModule;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -105,186 +97,195 @@ import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.StokenetForkConfigsModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.Bytes;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.util.Strings;
+import org.json.JSONObject;
+import org.radix.utils.IOUtils;
 
-/**
- * Module which manages everything in a single node
- */
+/** Module which manages everything in a single node */
 public final class RadixNodeModule extends AbstractModule {
-	private static final int DEFAULT_CORE_PORT = 3333;
-	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
-	private static final Logger log = LogManager.getLogger();
+  private static final int DEFAULT_CORE_PORT = 3333;
+  private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+  private static final Logger log = LogManager.getLogger();
 
-	private final RuntimeProperties properties;
-	private final int networkId;
+  private final RuntimeProperties properties;
+  private final int networkId;
 
-	public RadixNodeModule(RuntimeProperties properties) {
-		this.properties = properties;
-		var networkId = properties.get("network.id");
-		if (networkId == null) {
-			throw new IllegalStateException("Must specify network.id");
-		}
-		this.networkId = Integer.parseInt(networkId);
-	}
+  public RadixNodeModule(RuntimeProperties properties) {
+    this.properties = properties;
+    var networkId = properties.get("network.id");
+    if (networkId == null) {
+      throw new IllegalStateException("Must specify network.id");
+    }
+    this.networkId = Integer.parseInt(networkId);
+  }
 
-	@Provides
-	@Genesis
-	@Singleton
-	VerifiedTxnsAndProof genesis(@Genesis Txn genesis, GenesisBuilder genesisBuilder) throws RadixEngineException {
-		var proof = genesisBuilder.generateGenesisProof(genesis);
-		return VerifiedTxnsAndProof.create(List.of(genesis), proof);
-	}
+  @Provides
+  @Genesis
+  @Singleton
+  VerifiedTxnsAndProof genesis(@Genesis Txn genesis, GenesisBuilder genesisBuilder)
+      throws RadixEngineException {
+    var proof = genesisBuilder.generateGenesisProof(genesis);
+    return VerifiedTxnsAndProof.create(List.of(genesis), proof);
+  }
 
-	private Txn loadGenesisFile(String genesisFile) {
-		try (var genesisJsonString = new FileInputStream(genesisFile)) {
-			var genesisJson = new JSONObject(IOUtils.toString(genesisJsonString));
-			var genesisHex = genesisJson.getString("genesis");
-			return Txn.create(Bytes.fromHexString(genesisHex));
-		} catch (IOException e) {
-			throw new IllegalStateException(e);
-		}
-	}
+  private Txn loadGenesisFile(String genesisFile) {
+    try (var genesisJsonString = new FileInputStream(genesisFile)) {
+      var genesisJson = new JSONObject(IOUtils.toString(genesisJsonString));
+      var genesisHex = genesisJson.getString("genesis");
+      return Txn.create(Bytes.fromHexString(genesisHex));
+    } catch (IOException e) {
+      throw new IllegalStateException(e);
+    }
+  }
 
-	private Txn loadGenesis(int networkId) {
-		var genesisTxnHex = properties.get("network.genesis_txn");
-		var genesisFile = properties.get("network.genesis_file");
-		var network = Network.ofId(networkId);
-		var networkGenesis = network
-			.flatMap(Network::genesisTxn)
-			.map(Bytes::fromHexString)
-			.map(Txn::create);
+  private Txn loadGenesis(int networkId) {
+    var genesisTxnHex = properties.get("network.genesis_txn");
+    var genesisFile = properties.get("network.genesis_file");
+    var network = Network.ofId(networkId);
+    var networkGenesis =
+        network.flatMap(Network::genesisTxn).map(Bytes::fromHexString).map(Txn::create);
 
-		if (networkGenesis.isPresent()) {
-			if (Strings.isNotBlank(genesisTxnHex)) {
-				throw new IllegalStateException("Cannot provide genesis txn for well-known network " + network.orElseThrow());
-			}
+    if (networkGenesis.isPresent()) {
+      if (Strings.isNotBlank(genesisTxnHex)) {
+        throw new IllegalStateException(
+            "Cannot provide genesis txn for well-known network " + network.orElseThrow());
+      }
 
-			if (Strings.isNotBlank(genesisFile)) {
-				throw new IllegalStateException("Cannot provide genesis file for well-known network " + network.orElseThrow());
-			}
-			return networkGenesis.get();
-		} else {
-			var genesisCount = 0;
-			genesisCount += Strings.isNotBlank(genesisTxnHex) ? 1 : 0;
-			genesisCount += Strings.isNotBlank(genesisFile) ? 1 : 0;
-			if (genesisCount > 1) {
-				throw new IllegalStateException("Multiple genesis txn specified.");
-			}
-			if (genesisCount == 0) {
-				throw new IllegalStateException("No genesis txn specified.");
-			}
-			return Strings.isNotBlank(genesisTxnHex) ? Txn.create(Bytes.fromHexString(genesisTxnHex)) : loadGenesisFile(genesisFile);
-		}
-	}
+      if (Strings.isNotBlank(genesisFile)) {
+        throw new IllegalStateException(
+            "Cannot provide genesis file for well-known network " + network.orElseThrow());
+      }
+      return networkGenesis.get();
+    } else {
+      var genesisCount = 0;
+      genesisCount += Strings.isNotBlank(genesisTxnHex) ? 1 : 0;
+      genesisCount += Strings.isNotBlank(genesisFile) ? 1 : 0;
+      if (genesisCount > 1) {
+        throw new IllegalStateException("Multiple genesis txn specified.");
+      }
+      if (genesisCount == 0) {
+        throw new IllegalStateException("No genesis txn specified.");
+      }
+      return Strings.isNotBlank(genesisTxnHex)
+          ? Txn.create(Bytes.fromHexString(genesisTxnHex))
+          : loadGenesisFile(genesisFile);
+    }
+  }
 
-	@Override
-	protected void configure() {
-		if (this.networkId <= 0) {
-			throw new IllegalStateException("Illegal networkId " + networkId);
-		}
+  @Override
+  protected void configure() {
+    if (this.networkId <= 0) {
+      throw new IllegalStateException("Illegal networkId " + networkId);
+    }
 
-		var addressing = Addressing.ofNetworkId(networkId);
-		bind(Addressing.class).toInstance(addressing);
-		bindConstant().annotatedWith(NetworkId.class).to(networkId);
-		var genesis = loadGenesis(networkId);
-		bind(Txn.class).annotatedWith(Genesis.class).toInstance(genesis);
-		// TODO: Refactor
-		if (networkId == Network.MAINNET.getId()) {
-			install(new MainnetForkConfigsModule());
-		} else {
-			install(new StokenetForkConfigsModule());
-		}
-		bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
-		bind(RuntimeProperties.class).toInstance(properties);
+    var addressing = Addressing.ofNetworkId(networkId);
+    bind(Addressing.class).toInstance(addressing);
+    bindConstant().annotatedWith(NetworkId.class).to(networkId);
+    var genesis = loadGenesis(networkId);
+    bind(Txn.class).annotatedWith(Genesis.class).toInstance(genesis);
+    // TODO: Refactor
+    if (networkId == Network.MAINNET.getId()) {
+      install(new MainnetForkConfigsModule());
+    } else {
+      install(new StokenetForkConfigsModule());
+    }
+    bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
+    bind(RuntimeProperties.class).toInstance(properties);
 
-		// Consensus configuration
-		// These cannot be changed without introducing possibilities of
-		// going out of sync with consensus.
-		bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(properties.get("bft.sync.patience", 200));
-		// Default values mean that pacemakers will sync if they are within 5 views of each other.
-		// 5 consecutive failing views will take 1*(2^6)-1 seconds = 63 seconds.
-		bindConstant().annotatedWith(PacemakerTimeout.class).to(3000L);
-		bindConstant().annotatedWith(PacemakerRate.class).to(1.1);
-		bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
+    // Consensus configuration
+    // These cannot be changed without introducing possibilities of
+    // going out of sync with consensus.
+    bindConstant()
+        .annotatedWith(BFTSyncPatienceMillis.class)
+        .to(properties.get("bft.sync.patience", 200));
+    // Default values mean that pacemakers will sync if they are within 5 views of each other.
+    // 5 consecutive failing views will take 1*(2^6)-1 seconds = 63 seconds.
+    bindConstant().annotatedWith(PacemakerTimeout.class).to(3000L);
+    bindConstant().annotatedWith(PacemakerRate.class).to(1.1);
+    bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
 
-		// Mempool configuration
-		var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
-		install(MempoolConfig.asModule(mempoolMaxSize, 5, 60000, 60000, 100));
+    // Mempool configuration
+    var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
+    install(MempoolConfig.asModule(mempoolMaxSize, 5, 60000, 60000, 100));
 
-		// Sync configuration
-		final long syncPatience = properties.get("sync.patience", 5000L);
-		bind(SyncConfig.class).toInstance(SyncConfig.of(syncPatience, 10, 3000L));
+    // Sync configuration
+    final long syncPatience = properties.get("sync.patience", 5000L);
+    bind(SyncConfig.class).toInstance(SyncConfig.of(syncPatience, 10, 3000L));
 
-		// System (e.g. time, random)
-		install(new SystemModule());
+    // System (e.g. time, random)
+    install(new SystemModule());
 
-		install(new RxEnvironmentModule());
+    install(new RxEnvironmentModule());
 
-		install(new EventLoggerModule());
-		install(new DispatcherModule());
+    install(new EventLoggerModule());
+    install(new DispatcherModule());
 
-		// Consensus
-		install(new PersistedBFTKeyModule());
-		install(new CryptoModule());
-		install(new ConsensusModule());
+    // Consensus
+    install(new PersistedBFTKeyModule());
+    install(new CryptoModule());
+    install(new ConsensusModule());
 
-		// Ledger
-		install(new LedgerModule());
-		install(new MempoolReceiverModule());
+    // Ledger
+    install(new LedgerModule());
+    install(new MempoolReceiverModule());
 
-		// Mempool Relay
-		install(new MempoolRelayerModule());
+    // Mempool Relay
+    install(new MempoolRelayerModule());
 
-		// Sync
-		install(new SyncServiceModule());
+    // Sync
+    install(new SyncServiceModule());
 
-		// Epochs - Consensus
-		install(new EpochsConsensusModule());
-		// Epochs - Sync
-		install(new EpochsSyncModule());
+    // Epochs - Consensus
+    install(new EpochsConsensusModule());
+    // Epochs - Sync
+    install(new EpochsSyncModule());
 
-		// State Computer
-		install(new ForksModule());
-		if (properties.get("overwrite_forks.enable", false)) {
-			log.info("Enabling fork overwrites");
-			install(new ForkOverwritesFromPropertiesModule());
-		}
-		install(new RadixEngineStateComputerModule());
-		install(new RadixEngineModule());
-		install(new RadixEngineStoreModule());
+    // State Computer
+    install(new ForksModule());
+    if (properties.get("overwrite_forks.enable", false)) {
+      log.info("Enabling fork overwrites");
+      install(new ForkOverwritesFromPropertiesModule());
+    }
+    install(new RadixEngineStateComputerModule());
+    install(new RadixEngineModule());
+    install(new RadixEngineStoreModule());
 
-		// Checkpoints
-		install(new RadixEngineCheckpointModule());
+    // Checkpoints
+    install(new RadixEngineCheckpointModule());
 
-		// Storage
-		install(new DatabasePropertiesModule());
-		install(new PersistenceModule());
-		install(new ConsensusRecoveryModule());
-		install(new LedgerRecoveryModule());
+    // Storage
+    install(new DatabasePropertiesModule());
+    install(new PersistenceModule());
+    install(new ConsensusRecoveryModule());
+    install(new LedgerRecoveryModule());
 
-		// System Info
-		install(new SystemInfoModule());
+    // System Info
+    install(new SystemInfoModule());
 
-		// Network
-		install(new MessagingModule());
-		install(new MessageCentralModule(properties));
-		install(new HostIpModule(properties));
-		install(new P2PModule(properties));
-		install(new PeerDiscoveryModule());
-		install(new PeerLivenessMonitorModule());
+    // Network
+    install(new MessagingModule());
+    install(new MessageCentralModule(properties));
+    install(new HostIpModule(properties));
+    install(new P2PModule(properties));
+    install(new PeerDiscoveryModule());
+    install(new PeerLivenessMonitorModule());
 
-		// API
-		String bindAddress = properties.get("api.bind.address", DEFAULT_BIND_ADDRESS);
-		int port = properties.get("api.port", DEFAULT_CORE_PORT);
-		boolean enableTransactions = properties.get("api.transactions.enable", false);
-		boolean enableSign = properties.get("api.sign.enable", false);
-		install(new ApiModule(bindAddress, port, enableTransactions, enableSign));
-	}
+    // API
+    String bindAddress = properties.get("api.bind.address", DEFAULT_BIND_ADDRESS);
+    int port = properties.get("api.port", DEFAULT_CORE_PORT);
+    boolean enableTransactions = properties.get("api.transactions.enable", false);
+    boolean enableSign = properties.get("api.sign.enable", false);
+    install(new ApiModule(bindAddress, port, enableTransactions, enableSign));
+  }
 }

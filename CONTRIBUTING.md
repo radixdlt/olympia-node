@@ -11,13 +11,13 @@
   - [Features](#features)
   - [Release candidates](#release-candidates)
   - [Releases](#releases)
-  - [Hotfixes](#hotfixes)  
+  - [Hotfixes](#hotfixes)
 - [Contribute](#contribute)
   - [Code style](#code-style)
   - [Code structure](#code-structure)
   - [Commit messages](#commit-messages)
   - [Opening a pull request](#opening-a-pull-request)
-  
+
 
 ## Code of conduct
 
@@ -32,7 +32,7 @@ Please report unacceptable behavior to [hello@radixdlt.com](mailto:hello@radixdl
 * **Ensure the bug was not already reported** by searching on GitHub under [Issues](https://github.com/radixdlt/radixdlt-parent/issues).
 * If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/radixdlt/radixdlt-parent/issues/new). Be sure to include:
   * a **title**,
-  * a **clear description**, 
+  * a **clear description**,
   * as much **relevant information** as possible,
   * a **code sample** or an **executable test case** demonstrating the expected behavior that is not occurring.
 
@@ -85,7 +85,7 @@ When QA gives the green light, a new release branch is created
 
 These branches will stay alive forever, or at least while we support the release, thereby allowing us to release security hotfixes for older versions.
 
-If QA discovers a bug with any of the features before a release happens, it is fixed in the feature branch taken from the release branch and then merged into the release again. 
+If QA discovers a bug with any of the features before a release happens, it is fixed in the feature branch taken from the release branch and then merged into the release again.
 
 These changes should immediately be propagated to the current release candidate branch.
 

@@ -71,25 +71,25 @@ import com.radixdlt.client.lib.api.NodeAddress;
 import com.radixdlt.identifiers.NodeAddressing;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
-
 import java.io.IOException;
 
 public class NodeAddressDeserializer extends StdDeserializer<NodeAddress> {
-	private final NodeAddressing addressing;
+  private final NodeAddressing addressing;
 
-	public NodeAddressDeserializer(Addressing networkAddressing) {
-		super(NodeAddress.class);
-		addressing = networkAddressing.forNodes();
-	}
+  public NodeAddressDeserializer(Addressing networkAddressing) {
+    super(NodeAddress.class);
+    addressing = networkAddressing.forNodes();
+  }
 
-	@Override
-	public NodeAddress deserialize(JsonParser parser, DeserializationContext ctxt) throws IOException {
-		var value = parser.getText();
+  @Override
+  public NodeAddress deserialize(JsonParser parser, DeserializationContext ctxt)
+      throws IOException {
+    var value = parser.getText();
 
-		try {
-			return NodeAddress.of(addressing.parse(value));
-		} catch (IllegalArgumentException e) {
-			throw new DeserializeException("Error while parsing address " + value, e);
-		}
-	}
+    try {
+      return NodeAddress.of(addressing.parse(value));
+    } catch (IllegalArgumentException e) {
+      throw new DeserializeException("Error while parsing address " + value, e);
+    }
+  }
 }

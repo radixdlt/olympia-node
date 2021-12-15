@@ -71,14 +71,14 @@ import com.radixdlt.utils.UInt256;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class BurnAction implements Action {
-	private final ActionType type = ActionType.BURN;
-	private final AccountAddress from;
-	private final UInt256 amount;
-	private final String rri;
+  private final ActionType type = ActionType.BURN;
+  private final AccountAddress from;
+  private final UInt256 amount;
+  private final String rri;
 
-	public BurnAction(AccountAddress from, UInt256 amount, String rri) {
-		this.from = from;
-		this.amount = amount;
-		this.rri = rri;
-	}
+  public BurnAction(AccountAddress from, UInt256 amount, String rri) {
+    this.from = from;
+    this.amount = amount;
+    this.rri = rri;
+  }
 }

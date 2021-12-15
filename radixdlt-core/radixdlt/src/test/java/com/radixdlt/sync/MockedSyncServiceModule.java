@@ -93,170 +93,170 @@ import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.LongStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class MockedSyncServiceModule extends AbstractModule {
-	private static final Logger logger = LogManager.getLogger();
+  private static final Logger logger = LogManager.getLogger();
 
-	private final ConcurrentMap<Long, Txn> sharedCommittedCommands;
-	private final ConcurrentMap<Long, LedgerProof> sharedEpochProofs;
+  private final ConcurrentMap<Long, Txn> sharedCommittedCommands;
+  private final ConcurrentMap<Long, LedgerProof> sharedEpochProofs;
 
-	public MockedSyncServiceModule() {
-		this.sharedCommittedCommands = new ConcurrentHashMap<>();
-		this.sharedEpochProofs = new ConcurrentHashMap<>();
-	}
+  public MockedSyncServiceModule() {
+    this.sharedCommittedCommands = new ConcurrentHashMap<>();
+    this.sharedEpochProofs = new ConcurrentHashMap<>();
+  }
 
-	@Override
-	public void configure() {
-		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
-			.permitDuplicates();
-		eventBinder.addBinding().toInstance(SyncCheckTrigger.class);
-		eventBinder.addBinding().toInstance(SyncCheckReceiveStatusTimeout.class);
-		eventBinder.addBinding().toInstance(SyncRequestTimeout.class);
-		eventBinder.addBinding().toInstance(LocalSyncRequest.class);
-		eventBinder.addBinding().toInstance(SyncLedgerUpdateTimeout.class);
-	}
+  @Override
+  public void configure() {
+    var eventBinder =
+        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
+            .permitDuplicates();
+    eventBinder.addBinding().toInstance(SyncCheckTrigger.class);
+    eventBinder.addBinding().toInstance(SyncCheckReceiveStatusTimeout.class);
+    eventBinder.addBinding().toInstance(SyncRequestTimeout.class);
+    eventBinder.addBinding().toInstance(LocalSyncRequest.class);
+    eventBinder.addBinding().toInstance(SyncLedgerUpdateTimeout.class);
+  }
 
-	@Singleton
-	@ProvidesIntoSet
-	private EventProcessorOnDispatch<?> ledgerUpdateEventProcessor() {
-		return new EventProcessorOnDispatch<>(
-			LedgerUpdate.class,
-			update -> {
-				final LedgerProof headerAndProof = update.getTail();
-				long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
-				long firstVersion = stateVersion - update.getNewTxns().size() + 1;
-				for (int i = 0; i < update.getNewTxns().size(); i++) {
-					sharedCommittedCommands.put(firstVersion + i, update.getNewTxns().get(i));
-				}
+  @Singleton
+  @ProvidesIntoSet
+  private EventProcessorOnDispatch<?> ledgerUpdateEventProcessor() {
+    return new EventProcessorOnDispatch<>(
+        LedgerUpdate.class,
+        update -> {
+          final LedgerProof headerAndProof = update.getTail();
+          long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
+          long firstVersion = stateVersion - update.getNewTxns().size() + 1;
+          for (int i = 0; i < update.getNewTxns().size(); i++) {
+            sharedCommittedCommands.put(firstVersion + i, update.getNewTxns().get(i));
+          }
 
-				if (update.getTail().isEndOfEpoch()) {
-					logger.info("Epoch Proof: " + (update.getTail().getEpoch() + 1));
-					sharedEpochProofs.put(update.getTail().getEpoch() + 1, update.getTail());
-				}
-			}
-		);
-	}
+          if (update.getTail().isEndOfEpoch()) {
+            logger.info("Epoch Proof: " + (update.getTail().getEpoch() + 1));
+            sharedEpochProofs.put(update.getTail().getEpoch() + 1, update.getTail());
+          }
+        });
+  }
 
-	@ProvidesIntoSet
-	@Singleton
-	@ProcessOnDispatch
-	EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
-		@LastEpochProof LedgerProof genesis,
-		EventDispatcher<VerifiedTxnsAndProof> syncCommandsDispatcher
-	) {
-		return new EventProcessor<>() {
-			long currentVersion = genesis.getStateVersion();
-			long currentEpoch = genesis.getEpoch() + 1;
+  @ProvidesIntoSet
+  @Singleton
+  @ProcessOnDispatch
+  EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
+      @LastEpochProof LedgerProof genesis,
+      EventDispatcher<VerifiedTxnsAndProof> syncCommandsDispatcher) {
+    return new EventProcessor<>() {
+      long currentVersion = genesis.getStateVersion();
+      long currentEpoch = genesis.getEpoch() + 1;
 
-			private void syncTo(LedgerProof proof) {
-				var txns = LongStream.range(currentVersion + 1, proof.getStateVersion() + 1)
-					.mapToObj(sharedCommittedCommands::get)
-					.collect(ImmutableList.toImmutableList());
-				syncCommandsDispatcher.dispatch(VerifiedTxnsAndProof.create(txns, proof));
-				currentVersion = proof.getStateVersion();
-				if (proof.isEndOfEpoch()) {
-					currentEpoch = proof.getEpoch() + 1;
-				} else {
-					currentEpoch = proof.getEpoch();
-				}
-			}
+      private void syncTo(LedgerProof proof) {
+        var txns =
+            LongStream.range(currentVersion + 1, proof.getStateVersion() + 1)
+                .mapToObj(sharedCommittedCommands::get)
+                .collect(ImmutableList.toImmutableList());
+        syncCommandsDispatcher.dispatch(VerifiedTxnsAndProof.create(txns, proof));
+        currentVersion = proof.getStateVersion();
+        if (proof.isEndOfEpoch()) {
+          currentEpoch = proof.getEpoch() + 1;
+        } else {
+          currentEpoch = proof.getEpoch();
+        }
+      }
 
-			@Override
-			public void process(LocalSyncRequest request) {
-				while (currentEpoch < request.getTarget().getEpoch()) {
-					if (!sharedEpochProofs.containsKey(currentEpoch + 1)) {
-						throw new IllegalStateException("Epoch proof does not exist: " + currentEpoch + 1);
-					}
+      @Override
+      public void process(LocalSyncRequest request) {
+        while (currentEpoch < request.getTarget().getEpoch()) {
+          if (!sharedEpochProofs.containsKey(currentEpoch + 1)) {
+            throw new IllegalStateException("Epoch proof does not exist: " + currentEpoch + 1);
+          }
 
-					syncTo(sharedEpochProofs.get(currentEpoch + 1));
-				}
+          syncTo(sharedEpochProofs.get(currentEpoch + 1));
+        }
 
-				syncTo(request.getTarget());
+        syncTo(request.getTarget());
 
-				final long targetVersion = request.getTarget().getStateVersion();
-				var txns = LongStream.range(currentVersion + 1, targetVersion + 1)
-					.mapToObj(sharedCommittedCommands::get)
-					.collect(ImmutableList.toImmutableList());
+        final long targetVersion = request.getTarget().getStateVersion();
+        var txns =
+            LongStream.range(currentVersion + 1, targetVersion + 1)
+                .mapToObj(sharedCommittedCommands::get)
+                .collect(ImmutableList.toImmutableList());
 
-				syncCommandsDispatcher.dispatch(VerifiedTxnsAndProof.create(txns, request.getTarget()));
-				currentVersion = targetVersion;
-				currentEpoch = request.getTarget().getEpoch();
-			}
-		};
-	}
+        syncCommandsDispatcher.dispatch(VerifiedTxnsAndProof.create(txns, request.getTarget()));
+        currentVersion = targetVersion;
+        currentEpoch = request.getTarget().getEpoch();
+      }
+    };
+  }
 
-	@ProvidesIntoSet
-	private RemoteEventProcessorOnRunner<?> ledgerStatusUpdateRemoteEventProcessor(
-		EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher
-	) {
-		return new RemoteEventProcessorOnRunner<>(
-			Runners.SYNC,
-			LedgerStatusUpdate.class,
-			(sender, ev) -> localSyncRequestEventDispatcher.dispatch(new LocalSyncRequest(ev.getHeader(), ImmutableList.of(sender)))
-		);
-	}
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?> ledgerStatusUpdateRemoteEventProcessor(
+      EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.SYNC,
+        LedgerStatusUpdate.class,
+        (sender, ev) ->
+            localSyncRequestEventDispatcher.dispatch(
+                new LocalSyncRequest(ev.getHeader(), ImmutableList.of(sender))));
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> epochsLedgerUpdateEventProcessor() {
-		return noOpProcessor(LedgerUpdate.class);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> epochsLedgerUpdateEventProcessor() {
+    return noOpProcessor(LedgerUpdate.class);
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> syncCheckTriggerEventProcessor() {
-		return noOpProcessor(SyncCheckTrigger.class);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> syncCheckTriggerEventProcessor() {
+    return noOpProcessor(SyncCheckTrigger.class);
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> syncCheckReceiveStatusTimeoutEventProcessor() {
-		return noOpProcessor(SyncCheckReceiveStatusTimeout.class);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> syncCheckReceiveStatusTimeoutEventProcessor() {
+    return noOpProcessor(SyncCheckReceiveStatusTimeout.class);
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> syncRequestTimeoutEventProcessor() {
-		return noOpProcessor(SyncRequestTimeout.class);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> syncRequestTimeoutEventProcessor() {
+    return noOpProcessor(SyncRequestTimeout.class);
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> localSyncRequestEventProcessor() {
-		return noOpProcessor(LocalSyncRequest.class);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> localSyncRequestEventProcessor() {
+    return noOpProcessor(LocalSyncRequest.class);
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> syncLedgerUpdateTimeoutEventProcessor() {
-		return noOpProcessor(SyncLedgerUpdateTimeout.class);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> syncLedgerUpdateTimeoutEventProcessor() {
+    return noOpProcessor(SyncLedgerUpdateTimeout.class);
+  }
 
-	@ProvidesIntoSet
-	private RemoteEventProcessorOnRunner<?> statusRequestEventProcessor() {
-		return noOpRemoteProcessor(StatusRequest.class);
-	}
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?> statusRequestEventProcessor() {
+    return noOpRemoteProcessor(StatusRequest.class);
+  }
 
-	@ProvidesIntoSet
-	private RemoteEventProcessorOnRunner<?> statusResponseEventProcessor() {
-		return noOpRemoteProcessor(StatusResponse.class);
-	}
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?> statusResponseEventProcessor() {
+    return noOpRemoteProcessor(StatusResponse.class);
+  }
 
-	@ProvidesIntoSet
-	private RemoteEventProcessorOnRunner<?> syncRequestEventProcessor() {
-		return noOpRemoteProcessor(SyncRequest.class);
-	}
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?> syncRequestEventProcessor() {
+    return noOpRemoteProcessor(SyncRequest.class);
+  }
 
-	@ProvidesIntoSet
-	private RemoteEventProcessorOnRunner<?> syncResponseEventProcessor() {
-		return noOpRemoteProcessor(SyncResponse.class);
-	}
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?> syncResponseEventProcessor() {
+    return noOpRemoteProcessor(SyncResponse.class);
+  }
 
-	private EventProcessorOnRunner<?> noOpProcessor(Class<?> clazz) {
-		return new EventProcessorOnRunner<>(Runners.SYNC, clazz, ev -> { });
-	}
+  private EventProcessorOnRunner<?> noOpProcessor(Class<?> clazz) {
+    return new EventProcessorOnRunner<>(Runners.SYNC, clazz, ev -> {});
+  }
 
-	private RemoteEventProcessorOnRunner<?> noOpRemoteProcessor(Class<?> clazz) {
-		return new RemoteEventProcessorOnRunner<>(Runners.SYNC, clazz, (sender, ev) -> { });
-	}
+  private RemoteEventProcessorOnRunner<?> noOpRemoteProcessor(Class<?> clazz) {
+    return new RemoteEventProcessorOnRunner<>(Runners.SYNC, clazz, (sender, ev) -> {});
+  }
 }

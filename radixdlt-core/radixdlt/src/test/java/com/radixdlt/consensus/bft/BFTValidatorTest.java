@@ -64,34 +64,32 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.utils.UInt256;
-import org.junit.Test;
-
-import nl.jqno.equalsverifier.EqualsVerifier;
-
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
-import static org.assertj.core.api.Assertions.assertThat;
+
+import com.radixdlt.utils.UInt256;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
 public class BFTValidatorTest {
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(BFTValidator.class)
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(BFTValidator.class).verify();
+  }
 
-	@Test
-	public void sensibleToString() {
-		String s = create().toString();
-		assertThat(s).contains(BFTValidator.class.getSimpleName());
-	}
+  @Test
+  public void sensibleToString() {
+    String s = create().toString();
+    assertThat(s).contains(BFTValidator.class.getSimpleName());
+  }
 
-	@Test
-	public void testGetter() {
-		assertNotNull(create().getNode());
-	}
+  @Test
+  public void testGetter() {
+    assertNotNull(create().getNode());
+  }
 
-	private static BFTValidator create() {
-		return BFTValidator.from(mock(BFTNode.class), UInt256.ONE);
-	}
+  private static BFTValidator create() {
+    return BFTValidator.from(mock(BFTNode.class), UInt256.ONE);
+  }
 }

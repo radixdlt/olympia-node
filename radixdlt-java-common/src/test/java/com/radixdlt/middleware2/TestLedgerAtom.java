@@ -67,5 +67,4 @@ package com.radixdlt.middleware2;
 import com.radixdlt.serialization.SerializerRoot;
 
 @SerializerRoot
-public interface TestLedgerAtom {
-}
+public interface TestLedgerAtom {}

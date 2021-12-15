@@ -69,23 +69,22 @@ import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.sleepycat.je.Transaction;
-
 import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * Simple way to add an additional store
- * TODO: perhaps needs to be integrated at a higher level with RadixEngine
- * TODO: Make more generic rather than just attachment to BerkeleyLedgerEntryStore
- * TODO: Implement all other additional databases with this interface
+ * Simple way to add an additional store TODO: perhaps needs to be integrated at a higher level with
+ * RadixEngine TODO: Make more generic rather than just attachment to BerkeleyLedgerEntryStore TODO:
+ * Implement all other additional databases with this interface
  */
 public interface BerkeleyAdditionalStore {
-	void open(DatabaseEnvironment dbEnv);
-	void close();
-	void process(
-		Transaction dbTxn,
-		REProcessedTxn txn,
-		long stateVersion,
-		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper
-	);
+  void open(DatabaseEnvironment dbEnv);
+
+  void close();
+
+  void process(
+      Transaction dbTxn,
+      REProcessedTxn txn,
+      long stateVersion,
+      Function<SystemMapKey, Optional<RawSubstateBytes>> mapper);
 }

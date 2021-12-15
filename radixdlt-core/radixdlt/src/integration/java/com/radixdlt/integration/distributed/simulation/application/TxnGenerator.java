@@ -66,9 +66,7 @@ package com.radixdlt.integration.distributed.simulation.application;
 
 import com.radixdlt.atom.Txn;
 
-/**
- * Generator of commands for consensus processing
- */
+/** Generator of commands for consensus processing */
 public interface TxnGenerator {
-	Txn nextTxn();
+  Txn nextTxn();
 }
