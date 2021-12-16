@@ -24,9 +24,9 @@ info:
     where detailed ledger data is required and the integrator can be expected to
     run their node to provide the Core API for their own consumption.
 
-    For a higher level API, see the Gateway API.
+    For a higher level API, see the [Gateway API](https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/radixdlt/radixdlt-network-gateway/develop/generation/gateway-api-spec.yaml).
 
-    For node monitoring, see the System API.
+    For node monitoring, see the [System API](https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/radixdlt/radixdlt/develop/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/system/api.yaml).
 
     ## Rosetta
 
@@ -575,7 +575,7 @@ tags:
 
       Once `payload_to_sign` has been signed, the original payload along with signature can be sent to
       `/construction/finalize` in order to get a `signed_transaction`. This can then be submitted to
-      `construction/submit`. You have successfully submitted a XRD transfer transaction!
+      `construction/submit`. You have successfully submitted an XRD transfer transaction!
 
       ```
       ConstructionApi api = new ConstructionApi();
@@ -720,7 +720,7 @@ tags:
 
       ## Update Balance Store
 
-      Now that we can compute balance chaneg we can now start updating some balance store.
+      Now that we can compute balance change we can now start updating some balance store.
 
       In this example we simply use a hash map from entity to balance. In your system you may
       store these changes in a persistent database.
@@ -1029,20 +1029,19 @@ tags:
 
       If you wish to also check the consistency of this accumulator, the following should be true:
 
-      `post_transaction_state_accumulator = SHA256(SHA256(pre_transaction_state_accumulator | transaction_identifier_hash)`
+      `post_transaction_state_accumulator = SHA256(SHA256(pre_transaction_state_accumulator | transaction_identifier_hash))`
 
       Where `|` is the byte concatenation operator. Note that this uses two rounds of SHA256. The first maps from
       64 bytes to 32 bytes, the second from 32 bytes to 32 bytes.
 
       ### Timestamps
 
-      If you care about the timestamps that various transactions were committed, you can filter for operations which
-      have a `data` part, with a `data.action` of `CREATE`, and a `data.data_object.type` of `RoundData`.
+      If you care about the timestamps that various transactions were committed, you can track the `RoundData`
+      data object under the `system` entity.
 
-      Then, `data.data_object.timestamp` gives a UNIX timestamp in milliseconds, which captures a timestamp of when
-      this transaction was committed to ledger. This timestamp is derived as an average of the timestamp of all
-      the validators performing consensus. As a consequence of this, it is _not_ guaranteed to be increasing, and it
-      may be affected by Byzantine nodes.
+      Then, `timestamp` in `RoundData` gives a UNIX timestamp in milliseconds, derived from votes of each validator
+      of what the current wall clock time is. It is _not_ guaranteed to be increasing and should only be used for
+      convenience and not as an accurate representation of the actual time of commit.
 
   - name: network
     x-displayName: Network
