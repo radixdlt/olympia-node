@@ -69,45 +69,39 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.liveness.NextTxnsGenerator;
-import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.EventProcessorOnRunner;
+import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.StateComputerLedger;
 
 public class MempoolReceiverModule extends AbstractModule {
-	@Override
-	protected void configure() {
-		bind(NextTxnsGenerator.class).to(StateComputerLedger.class);
-		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
-			.permitDuplicates();
-		eventBinder.addBinding().toInstance(MempoolAdd.class);
-	}
+  @Override
+  protected void configure() {
+    bind(NextTxnsGenerator.class).to(StateComputerLedger.class);
+    var eventBinder =
+        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
+            .permitDuplicates();
+    eventBinder.addBinding().toInstance(MempoolAdd.class);
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> mempoolAddEventProcessor(
-		StateComputerLedger stateComputerLedger,
-		@MempoolThrottleMs long mempoolThrottleMs
-	) {
-		return new EventProcessorOnRunner<>(
-			Runners.MEMPOOL,
-			MempoolAdd.class,
-			stateComputerLedger.mempoolAddEventProcessor(),
-			mempoolThrottleMs
-		);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> mempoolAddEventProcessor(
+      StateComputerLedger stateComputerLedger, @MempoolThrottleMs long mempoolThrottleMs) {
+    return new EventProcessorOnRunner<>(
+        Runners.MEMPOOL,
+        MempoolAdd.class,
+        stateComputerLedger.mempoolAddEventProcessor(),
+        mempoolThrottleMs);
+  }
 
-	@ProvidesIntoSet
-	private RemoteEventProcessorOnRunner<?> mempoolAddRemoteEventProcessor(
-		StateComputerLedger stateComputerLedger,
-		@MempoolThrottleMs long mempoolThrottleMs
-	) {
-		return new RemoteEventProcessorOnRunner<>(
-			Runners.MEMPOOL,
-			MempoolAdd.class,
-			stateComputerLedger.mempoolAddRemoteEventProcessor(),
-			mempoolThrottleMs
-		);
-	}
-
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?> mempoolAddRemoteEventProcessor(
+      StateComputerLedger stateComputerLedger, @MempoolThrottleMs long mempoolThrottleMs) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.MEMPOOL,
+        MempoolAdd.class,
+        stateComputerLedger.mempoolAddRemoteEventProcessor(),
+        mempoolThrottleMs);
+  }
 }

@@ -71,114 +71,122 @@ import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.ActionType;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Objects;
 import java.util.Optional;
 
 public final class Action {
-	@JsonProperty("type")
-	private final ActionType type;
+  @JsonProperty("type")
+  private final ActionType type;
 
-	@JsonProperty("from")
-	private final AccountAddress from;
+  @JsonProperty("from")
+  private final AccountAddress from;
 
-	@JsonProperty("to")
-	private final AccountAddress to;
+  @JsonProperty("to")
+  private final AccountAddress to;
 
-	@JsonProperty("validator")
-	private final ValidatorAddress validator;
+  @JsonProperty("validator")
+  private final ValidatorAddress validator;
 
-	@JsonProperty("amount")
-	private final UInt256 amount;
+  @JsonProperty("amount")
+  private final UInt256 amount;
 
-	@JsonProperty("rri")
-	private final String rri;
+  @JsonProperty("rri")
+  private final String rri;
 
-	private Action(
-		ActionType type, AccountAddress from, AccountAddress to, ValidatorAddress validator, UInt256 amount, String rri
-	) {
-		this.type = type;
-		this.from = from;
-		this.to = to;
-		this.validator = validator;
-		this.amount = amount;
-		this.rri = rri;
-	}
+  private Action(
+      ActionType type,
+      AccountAddress from,
+      AccountAddress to,
+      ValidatorAddress validator,
+      UInt256 amount,
+      String rri) {
+    this.type = type;
+    this.from = from;
+    this.to = to;
+    this.validator = validator;
+    this.amount = amount;
+    this.rri = rri;
+  }
 
-	@JsonCreator
-	public static Action create(
-		@JsonProperty("type") ActionType type,
-		@JsonProperty("from") AccountAddress from,
-		@JsonProperty("to") AccountAddress to,
-		@JsonProperty("validator") ValidatorAddress validator,
-		@JsonProperty("amount") UInt256 amount,
-		@JsonProperty("rri") String rri
-	) {
-		return new Action(type, from, to, validator, amount, rri);
-	}
+  @JsonCreator
+  public static Action create(
+      @JsonProperty("type") ActionType type,
+      @JsonProperty("from") AccountAddress from,
+      @JsonProperty("to") AccountAddress to,
+      @JsonProperty("validator") ValidatorAddress validator,
+      @JsonProperty("amount") UInt256 amount,
+      @JsonProperty("rri") String rri) {
+    return new Action(type, from, to, validator, amount, rri);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof Action)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof Action)) {
+      return false;
+    }
 
-		var actionDTO = (Action) o;
-		return type == actionDTO.type
-			&& Objects.equals(from, actionDTO.from)
-			&& Objects.equals(to, actionDTO.to)
-			&& Objects.equals(validator, actionDTO.validator)
-			&& Objects.equals(amount, actionDTO.amount)
-			&& Objects.equals(rri, actionDTO.rri);
-	}
+    var actionDTO = (Action) o;
+    return type == actionDTO.type
+        && Objects.equals(from, actionDTO.from)
+        && Objects.equals(to, actionDTO.to)
+        && Objects.equals(validator, actionDTO.validator)
+        && Objects.equals(amount, actionDTO.amount)
+        && Objects.equals(rri, actionDTO.rri);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(type, from, to, validator, amount, rri);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(type, from, to, validator, amount, rri);
+  }
 
-	@Override
-	public String toString() {
-		return "Action("
-			+ "type=" + type
-			+ ", from=" + from
-			+ ", to=" + to
-			+ ", validator=" + validator
-			+ ", amount=" + amount
-			+ ", rri=" + rri
-			+ ')';
-	}
+  @Override
+  public String toString() {
+    return "Action("
+        + "type="
+        + type
+        + ", from="
+        + from
+        + ", to="
+        + to
+        + ", validator="
+        + validator
+        + ", amount="
+        + amount
+        + ", rri="
+        + rri
+        + ')';
+  }
 
-	@JsonIgnore
-	public ActionType getType() {
-		return type;
-	}
+  @JsonIgnore
+  public ActionType getType() {
+    return type;
+  }
 
-	@JsonIgnore
-	public Optional<AccountAddress> getFrom() {
-		return Optional.ofNullable(from);
-	}
+  @JsonIgnore
+  public Optional<AccountAddress> getFrom() {
+    return Optional.ofNullable(from);
+  }
 
-	@JsonIgnore
-	public Optional<AccountAddress> getTo() {
-		return Optional.ofNullable(to);
-	}
+  @JsonIgnore
+  public Optional<AccountAddress> getTo() {
+    return Optional.ofNullable(to);
+  }
 
-	@JsonIgnore
-	public Optional<ValidatorAddress> getValidator() {
-		return Optional.ofNullable(validator);
-	}
+  @JsonIgnore
+  public Optional<ValidatorAddress> getValidator() {
+    return Optional.ofNullable(validator);
+  }
 
-	@JsonIgnore
-	public Optional<UInt256> getAmount() {
-		return Optional.ofNullable(amount);
-	}
+  @JsonIgnore
+  public Optional<UInt256> getAmount() {
+    return Optional.ofNullable(amount);
+  }
 
-	@JsonIgnore
-	public Optional<String> getRri() {
-		return Optional.ofNullable(rri);
-	}
+  @JsonIgnore
+  public Optional<String> getRri() {
+    return Optional.ofNullable(rri);
+  }
 }

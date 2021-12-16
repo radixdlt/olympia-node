@@ -66,37 +66,36 @@ package com.radixdlt.client.lib.api;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public enum EventType {
-	TOKEN_CREATED("token_created");
+  TOKEN_CREATED("token_created");
 
-	private final String text;
+  private final String text;
 
-	private static final Map<String, EventType> TO_EVENT_TYPE = Arrays.stream(values())
-		.collect(Collectors.toMap(EventType::toJson, Function.identity()));
+  private static final Map<String, EventType> TO_EVENT_TYPE =
+      Arrays.stream(values()).collect(Collectors.toMap(EventType::toJson, Function.identity()));
 
-	EventType(String text) {
-		this.text = text;
-	}
+  EventType(String text) {
+    this.text = text;
+  }
 
-	@JsonValue
-	public String toJson() {
-		return text;
-	}
+  @JsonValue
+  public String toJson() {
+    return text;
+  }
 
-	@JsonCreator
-	public static EventType create(String action) {
-		var result = TO_EVENT_TYPE.get(action);
+  @JsonCreator
+  public static EventType create(String action) {
+    var result = TO_EVENT_TYPE.get(action);
 
-		if (result == null) {
-			throw new IllegalArgumentException("Unable to parse ActionType from : " + action);
-		}
+    if (result == null) {
+      throw new IllegalArgumentException("Unable to parse ActionType from : " + action);
+    }
 
-		return result;
-	}
+    return result;
+  }
 }

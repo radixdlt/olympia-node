@@ -64,20 +64,19 @@
 
 package com.radixdlt.application.validators.construction;
 
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
 
-public class UpdateAllowDelegationFlagConstructor implements ActionConstructor<UpdateAllowDelegationFlag> {
-	@Override
-	public void construct(UpdateAllowDelegationFlag action, TxBuilder builder) throws TxBuilderException {
-		builder.down(AllowDelegationFlag.class, action.validatorKey());
-		builder.up(new AllowDelegationFlag(
-			action.validatorKey(),
-			action.allowDelegation()
-		));
-		builder.end();
-	}
+public class UpdateAllowDelegationFlagConstructor
+    implements ActionConstructor<UpdateAllowDelegationFlag> {
+  @Override
+  public void construct(UpdateAllowDelegationFlag action, TxBuilder builder)
+      throws TxBuilderException {
+    builder.down(AllowDelegationFlag.class, action.validatorKey());
+    builder.up(new AllowDelegationFlag(action.validatorKey(), action.allowDelegation()));
+    builder.end();
+  }
 }

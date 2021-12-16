@@ -67,88 +67,96 @@ package com.radixdlt.client.lib.dto;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.lib.api.ValidatorAddress;
-
 import java.util.Objects;
 
 public final class LocalValidatorInfo {
-	private final ValidatorAddress address;
-	private final String name;
-	private final String url;
-	private final boolean allowDelegation;
-	private final EpochInfo epochInfo;
+  private final ValidatorAddress address;
+  private final String name;
+  private final String url;
+  private final boolean allowDelegation;
+  private final EpochInfo epochInfo;
 
-	private LocalValidatorInfo(
-		ValidatorAddress address, String name, String url, boolean allowDelegation, EpochInfo epochInfo
-	) {
-		this.address = address;
-		this.name = name;
-		this.url = url;
-		this.allowDelegation = allowDelegation;
-		this.epochInfo = epochInfo;
-	}
+  private LocalValidatorInfo(
+      ValidatorAddress address,
+      String name,
+      String url,
+      boolean allowDelegation,
+      EpochInfo epochInfo) {
+    this.address = address;
+    this.name = name;
+    this.url = url;
+    this.allowDelegation = allowDelegation;
+    this.epochInfo = epochInfo;
+  }
 
-	@JsonCreator
-	public static LocalValidatorInfo create(
-		@JsonProperty(value = "address", required = true) ValidatorAddress address,
-		@JsonProperty(value = "name", required = true) String name,
-		@JsonProperty(value = "url", required = true) String url,
-		@JsonProperty(value = "allowDelegation", required = true) boolean allowDelegation,
-		@JsonProperty(value = "epochInfo", required = true) EpochInfo epochInfo
-	) {
-		return new LocalValidatorInfo(address, name, url, allowDelegation, epochInfo);
-	}
+  @JsonCreator
+  public static LocalValidatorInfo create(
+      @JsonProperty(value = "address", required = true) ValidatorAddress address,
+      @JsonProperty(value = "name", required = true) String name,
+      @JsonProperty(value = "url", required = true) String url,
+      @JsonProperty(value = "allowDelegation", required = true) boolean allowDelegation,
+      @JsonProperty(value = "epochInfo", required = true) EpochInfo epochInfo) {
+    return new LocalValidatorInfo(address, name, url, allowDelegation, epochInfo);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof LocalValidatorInfo)) {
-			return false;
-		}
+    if (!(o instanceof LocalValidatorInfo)) {
+      return false;
+    }
 
-		var that = (LocalValidatorInfo) o;
-		return allowDelegation == that.allowDelegation
-			&& address.equals(that.address)
-			&& name.equals(that.name)
-			&& url.equals(that.url)
-			&& epochInfo.equals(that.epochInfo);
-	}
+    var that = (LocalValidatorInfo) o;
+    return allowDelegation == that.allowDelegation
+        && address.equals(that.address)
+        && name.equals(that.name)
+        && url.equals(that.url)
+        && epochInfo.equals(that.epochInfo);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(address, name, url, allowDelegation, epochInfo);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(address, name, url, allowDelegation, epochInfo);
+  }
 
-	@Override
-	public String toString() {
-		return "{"
-			+ "address=" + address
-			+ ", name='" + name + '\''
-			+ ", url='" + url + '\''
-			+ ", allowDelegation=" + allowDelegation
-			+ ", epochInfo=" + epochInfo
-			+ '}';
-	}
+  @Override
+  public String toString() {
+    return "{"
+        + "address="
+        + address
+        + ", name='"
+        + name
+        + '\''
+        + ", url='"
+        + url
+        + '\''
+        + ", allowDelegation="
+        + allowDelegation
+        + ", epochInfo="
+        + epochInfo
+        + '}';
+  }
 
-	public ValidatorAddress getAddress() {
-		return address;
-	}
+  public ValidatorAddress getAddress() {
+    return address;
+  }
 
-	public String getName() {
-		return name;
-	}
+  public String getName() {
+    return name;
+  }
 
-	public String getUrl() {
-		return url;
-	}
+  public String getUrl() {
+    return url;
+  }
 
-	public boolean isAllowDelegation() {
-		return allowDelegation;
-	}
+  public boolean isAllowDelegation() {
+    return allowDelegation;
+  }
 
-	public EpochInfo getEpochInfo() {
-		return epochInfo;
-	}
+  public EpochInfo getEpochInfo() {
+    return epochInfo;
+  }
 }

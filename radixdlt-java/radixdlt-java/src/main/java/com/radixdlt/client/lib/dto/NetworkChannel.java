@@ -66,79 +66,82 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 import java.util.Optional;
 
 public final class NetworkChannel {
-	private final long localPort;
-	private final String ip;
-	private final ChannelType type;
-	private final String uri;
+  private final long localPort;
+  private final String ip;
+  private final ChannelType type;
+  private final String uri;
 
-	private NetworkChannel(long localPort, String ip, ChannelType type, String uri) {
-		this.localPort = localPort;
-		this.ip = ip;
-		this.type = type;
-		this.uri = uri;
-	}
+  private NetworkChannel(long localPort, String ip, ChannelType type, String uri) {
+    this.localPort = localPort;
+    this.ip = ip;
+    this.type = type;
+    this.uri = uri;
+  }
 
-	@JsonCreator
-	public static NetworkChannel create(
-		@JsonProperty(value = "localPort", required = true) long localPort,
-		@JsonProperty(value = "ip", required = true) String ip,
-		@JsonProperty(value = "type", required = true) ChannelType type,
-		@JsonProperty("uri") String uri
-	) {
-		return new NetworkChannel(localPort, ip, type, uri);
-	}
+  @JsonCreator
+  public static NetworkChannel create(
+      @JsonProperty(value = "localPort", required = true) long localPort,
+      @JsonProperty(value = "ip", required = true) String ip,
+      @JsonProperty(value = "type", required = true) ChannelType type,
+      @JsonProperty("uri") String uri) {
+    return new NetworkChannel(localPort, ip, type, uri);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof NetworkChannel)) {
-			return false;
-		}
+    if (!(o instanceof NetworkChannel)) {
+      return false;
+    }
 
-		var that = (NetworkChannel) o;
-		return localPort == that.localPort
-			&& ip.equals(that.ip)
-			&& type == that.type
-			&& Objects.equals(uri, that.uri);
-	}
+    var that = (NetworkChannel) o;
+    return localPort == that.localPort
+        && ip.equals(that.ip)
+        && type == that.type
+        && Objects.equals(uri, that.uri);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(localPort, ip, type, uri);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(localPort, ip, type, uri);
+  }
 
-	@Override
-	public String toString() {
-		return "{"
-			+ "localPort=" + localPort
-			+ ", ip='" + ip + '\''
-			+ ", type=" + type
-			+ ", uri='" + (uri == null ? "none" : uri) + '\''
-			+ '}';
-	}
+  @Override
+  public String toString() {
+    return "{"
+        + "localPort="
+        + localPort
+        + ", ip='"
+        + ip
+        + '\''
+        + ", type="
+        + type
+        + ", uri='"
+        + (uri == null ? "none" : uri)
+        + '\''
+        + '}';
+  }
 
+  public long getLocalPort() {
+    return localPort;
+  }
 
-	public long getLocalPort() {
-		return localPort;
-	}
+  public String getIp() {
+    return ip;
+  }
 
-	public String getIp() {
-		return ip;
-	}
+  public ChannelType getType() {
+    return type;
+  }
 
-	public ChannelType getType() {
-		return type;
-	}
-
-	public Optional<String> getUri() {
-		return Optional.ofNullable(uri);
-	}
+  public Optional<String> getUri() {
+    return Optional.ofNullable(uri);
+  }
 }

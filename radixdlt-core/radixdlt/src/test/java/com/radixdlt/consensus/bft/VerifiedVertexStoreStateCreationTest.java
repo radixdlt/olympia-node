@@ -80,70 +80,61 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Optional;
-
 public class VerifiedVertexStoreStateCreationTest {
-	private VerifiedVertex genesisVertex;
-	private HashCode genesisHash;
-	private Hasher hasher;
-	private static final LedgerHeader MOCKED_HEADER = LedgerHeader.create(
-		0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0
-	);
+  private VerifiedVertex genesisVertex;
+  private HashCode genesisHash;
+  private Hasher hasher;
+  private static final LedgerHeader MOCKED_HEADER =
+      LedgerHeader.create(0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0);
 
-	@Before
-	public void setup() {
-		this.genesisHash = HashUtils.zero256();
-		this.genesisVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(MOCKED_HEADER), genesisHash);
-		this.hasher = new Sha256Hasher(DefaultSerialization.getInstance());
-	}
+  @Before
+  public void setup() {
+    this.genesisHash = HashUtils.zero256();
+    this.genesisVertex =
+        new VerifiedVertex(UnverifiedVertex.createGenesis(MOCKED_HEADER), genesisHash);
+    this.hasher = new Sha256Hasher(DefaultSerialization.getInstance());
+  }
 
-	@Test
-	public void creating_vertex_store_with_root_not_committed_should_fail() {
-		BFTHeader genesisHeader = new BFTHeader(View.of(0), genesisHash, mock(LedgerHeader.class));
-		VoteData voteData = new VoteData(genesisHeader, genesisHeader, null);
-		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		assertThatThrownBy(() ->
-			VerifiedVertexStoreState.create(
-				HighQC.from(badRootQC),
-				genesisVertex,
-				Optional.empty(),
-				hasher
-			)
-		).isInstanceOf(IllegalStateException.class);
-	}
+  @Test
+  public void creating_vertex_store_with_root_not_committed_should_fail() {
+    BFTHeader genesisHeader = new BFTHeader(View.of(0), genesisHash, mock(LedgerHeader.class));
+    VoteData voteData = new VoteData(genesisHeader, genesisHeader, null);
+    QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
+    assertThatThrownBy(
+            () ->
+                VerifiedVertexStoreState.create(
+                    HighQC.from(badRootQC), genesisVertex, Optional.empty(), hasher))
+        .isInstanceOf(IllegalStateException.class);
+  }
 
-	@Test
-	public void creating_vertex_store_with_committed_qc_not_matching_vertex_should_fail() {
-		BFTHeader genesisHeader = new BFTHeader(View.of(0), genesisHash, mock(LedgerHeader.class));
-		BFTHeader otherHeader = new BFTHeader(View.of(0), HashUtils.random256(), mock(LedgerHeader.class));
-		VoteData voteData = new VoteData(genesisHeader, genesisHeader, otherHeader);
-		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		assertThatThrownBy(() ->
-			VerifiedVertexStoreState.create(
-				HighQC.from(badRootQC),
-				genesisVertex,
-				Optional.empty(),
-				hasher
-			)
-		).isInstanceOf(IllegalStateException.class);
-	}
+  @Test
+  public void creating_vertex_store_with_committed_qc_not_matching_vertex_should_fail() {
+    BFTHeader genesisHeader = new BFTHeader(View.of(0), genesisHash, mock(LedgerHeader.class));
+    BFTHeader otherHeader =
+        new BFTHeader(View.of(0), HashUtils.random256(), mock(LedgerHeader.class));
+    VoteData voteData = new VoteData(genesisHeader, genesisHeader, otherHeader);
+    QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
+    assertThatThrownBy(
+            () ->
+                VerifiedVertexStoreState.create(
+                    HighQC.from(badRootQC), genesisVertex, Optional.empty(), hasher))
+        .isInstanceOf(IllegalStateException.class);
+  }
 
-	@Test
-	public void creating_vertex_store_with_qc_not_matching_vertex_should_fail() {
-		BFTHeader genesisHeader = new BFTHeader(View.of(0), HashUtils.random256(), mock(LedgerHeader.class));
-		VoteData voteData = new VoteData(genesisHeader, genesisHeader, genesisHeader);
-		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		assertThatThrownBy(() ->
-			VerifiedVertexStoreState.create(
-				HighQC.from(badRootQC),
-				genesisVertex,
-				Optional.empty(),
-				hasher
-			)
-		).isInstanceOf(IllegalStateException.class);
-	}
-
+  @Test
+  public void creating_vertex_store_with_qc_not_matching_vertex_should_fail() {
+    BFTHeader genesisHeader =
+        new BFTHeader(View.of(0), HashUtils.random256(), mock(LedgerHeader.class));
+    VoteData voteData = new VoteData(genesisHeader, genesisHeader, genesisHeader);
+    QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
+    assertThatThrownBy(
+            () ->
+                VerifiedVertexStoreState.create(
+                    HighQC.from(badRootQC), genesisVertex, Optional.empty(), hasher))
+        .isInstanceOf(IllegalStateException.class);
+  }
 }

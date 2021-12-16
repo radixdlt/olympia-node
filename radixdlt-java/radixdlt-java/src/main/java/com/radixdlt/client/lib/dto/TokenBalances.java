@@ -64,63 +64,61 @@
 
 package com.radixdlt.client.lib.dto;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.lib.api.AccountAddress;
-
 import java.util.List;
 import java.util.Objects;
 
-import static java.util.Objects.requireNonNull;
-
 public final class TokenBalances {
-	private final AccountAddress owner;
-	private final List<Balance> tokenBalances;
+  private final AccountAddress owner;
+  private final List<Balance> tokenBalances;
 
-	private TokenBalances(AccountAddress owner, List<Balance> tokenBalances) {
-		this.owner = owner;
-		this.tokenBalances = tokenBalances;
-	}
+  private TokenBalances(AccountAddress owner, List<Balance> tokenBalances) {
+    this.owner = owner;
+    this.tokenBalances = tokenBalances;
+  }
 
-	@JsonCreator
-	public static TokenBalances create(
-		@JsonProperty(value = "owner", required = true) AccountAddress owner,
-		@JsonProperty(value = "tokenBalances", required = true) List<Balance> tokenBalances
-	) {
-		requireNonNull(owner);
-		requireNonNull(tokenBalances);
+  @JsonCreator
+  public static TokenBalances create(
+      @JsonProperty(value = "owner", required = true) AccountAddress owner,
+      @JsonProperty(value = "tokenBalances", required = true) List<Balance> tokenBalances) {
+    requireNonNull(owner);
+    requireNonNull(tokenBalances);
 
-		return new TokenBalances(owner, tokenBalances);
-	}
+    return new TokenBalances(owner, tokenBalances);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof TokenBalances)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof TokenBalances)) {
+      return false;
+    }
 
-		var that = (TokenBalances) o;
-		return owner.equals(that.owner) && tokenBalances.equals(that.tokenBalances);
-	}
+    var that = (TokenBalances) o;
+    return owner.equals(that.owner) && tokenBalances.equals(that.tokenBalances);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(owner, tokenBalances);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(owner, tokenBalances);
+  }
 
-	@Override
-	public String toString() {
-		return "TokenBalancesDTO(" + "owner=" + owner + ", tokenBalances=" + tokenBalances + ')';
-	}
+  @Override
+  public String toString() {
+    return "TokenBalancesDTO(" + "owner=" + owner + ", tokenBalances=" + tokenBalances + ')';
+  }
 
-	public AccountAddress getOwner() {
-		return owner;
-	}
+  public AccountAddress getOwner() {
+    return owner;
+  }
 
-	public List<Balance> getTokenBalances() {
-		return tokenBalances;
-	}
+  public List<Balance> getTokenBalances() {
+    return tokenBalances;
+  }
 }

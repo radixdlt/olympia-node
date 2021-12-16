@@ -67,100 +67,101 @@ package com.radixdlt.client.lib.dto;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.lib.api.AccountAddress;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 public final class Updates {
-	private final Optional<Double> validatorFee;
-	private final Optional<Boolean> registered;
-	private final Optional<AccountAddress> owner;
-	private final List<DelegatedStake> stakes;
-	private final List<DelegatedStake> unstakes;
+  private final Optional<Double> validatorFee;
+  private final Optional<Boolean> registered;
+  private final Optional<AccountAddress> owner;
+  private final List<DelegatedStake> stakes;
+  private final List<DelegatedStake> unstakes;
 
-	private Updates(
-		Optional<Double> validatorFee,
-		Optional<Boolean> registered,
-		Optional<AccountAddress> owner,
-		List<DelegatedStake> stakes,
-		List<DelegatedStake> unstakes
-	) {
-		this.validatorFee = validatorFee;
-		this.registered = registered;
-		this.owner = owner;
-		this.stakes = stakes;
-		this.unstakes = unstakes;
-	}
+  private Updates(
+      Optional<Double> validatorFee,
+      Optional<Boolean> registered,
+      Optional<AccountAddress> owner,
+      List<DelegatedStake> stakes,
+      List<DelegatedStake> unstakes) {
+    this.validatorFee = validatorFee;
+    this.registered = registered;
+    this.owner = owner;
+    this.stakes = stakes;
+    this.unstakes = unstakes;
+  }
 
-	@JsonCreator
-	public static Updates create(
-		@JsonProperty("validatorFee") Double validatorFee,
-		@JsonProperty("registered") Boolean registered,
-		@JsonProperty("owner") AccountAddress owner,
-		@JsonProperty("stakes") List<DelegatedStake> stakes,
-		@JsonProperty("unstakes") List<DelegatedStake> unstakes
-	) {
-		return new Updates(
-			Optional.ofNullable(validatorFee),
-			Optional.ofNullable(registered),
-			Optional.ofNullable(owner),
-			stakes == null ? List.of() : stakes,
-			unstakes == null ? List.of() : unstakes
-		);
-	}
+  @JsonCreator
+  public static Updates create(
+      @JsonProperty("validatorFee") Double validatorFee,
+      @JsonProperty("registered") Boolean registered,
+      @JsonProperty("owner") AccountAddress owner,
+      @JsonProperty("stakes") List<DelegatedStake> stakes,
+      @JsonProperty("unstakes") List<DelegatedStake> unstakes) {
+    return new Updates(
+        Optional.ofNullable(validatorFee),
+        Optional.ofNullable(registered),
+        Optional.ofNullable(owner),
+        stakes == null ? List.of() : stakes,
+        unstakes == null ? List.of() : unstakes);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof Updates)) {
-			return false;
-		}
+    if (!(o instanceof Updates)) {
+      return false;
+    }
 
-		var updates = (Updates) o;
-		return validatorFee.equals(updates.validatorFee)
-			&& registered.equals(updates.registered)
-			&& owner.equals(updates.owner)
-			&& stakes.equals(updates.stakes)
-			&& unstakes.equals(updates.unstakes);
-	}
+    var updates = (Updates) o;
+    return validatorFee.equals(updates.validatorFee)
+        && registered.equals(updates.registered)
+        && owner.equals(updates.owner)
+        && stakes.equals(updates.stakes)
+        && unstakes.equals(updates.unstakes);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(validatorFee, registered, owner, stakes, unstakes);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(validatorFee, registered, owner, stakes, unstakes);
+  }
 
-	@Override
-	public String toString() {
-		return "{"
-			+ "validatorFee=" + validatorFee
-			+ ", registered=" + registered
-			+ ", owner=" + owner
-			+ ", stakes=" + stakes
-			+ ", unstakes=" + unstakes
-			+ '}';
-	}
+  @Override
+  public String toString() {
+    return "{"
+        + "validatorFee="
+        + validatorFee
+        + ", registered="
+        + registered
+        + ", owner="
+        + owner
+        + ", stakes="
+        + stakes
+        + ", unstakes="
+        + unstakes
+        + '}';
+  }
 
-	public Optional<Double> getValidatorFee() {
-		return validatorFee;
-	}
+  public Optional<Double> getValidatorFee() {
+    return validatorFee;
+  }
 
-	public Optional<Boolean> getRegistered() {
-		return registered;
-	}
+  public Optional<Boolean> getRegistered() {
+    return registered;
+  }
 
-	public Optional<AccountAddress> getOwner() {
-		return owner;
-	}
+  public Optional<AccountAddress> getOwner() {
+    return owner;
+  }
 
-	public List<DelegatedStake> getStakes() {
-		return stakes;
-	}
+  public List<DelegatedStake> getStakes() {
+    return stakes;
+  }
 
-	public List<DelegatedStake> getUnstakes() {
-		return unstakes;
-	}
+  public List<DelegatedStake> getUnstakes() {
+    return unstakes;
+  }
 }

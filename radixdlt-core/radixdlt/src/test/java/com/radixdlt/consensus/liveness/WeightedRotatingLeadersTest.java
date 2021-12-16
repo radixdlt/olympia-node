@@ -71,14 +71,13 @@ import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Comparator;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -87,106 +86,115 @@ import java.util.stream.Stream;
 import org.junit.Test;
 
 public class WeightedRotatingLeadersTest {
-	private WeightedRotatingLeaders weightedRotatingLeaders;
-	private WeightedRotatingLeaders weightedRotatingLeaders2;
-	private ImmutableList<BFTValidator> validatorsInOrder;
+  private WeightedRotatingLeaders weightedRotatingLeaders;
+  private WeightedRotatingLeaders weightedRotatingLeaders2;
+  private ImmutableList<BFTValidator> validatorsInOrder;
 
-	private void setUp(int validatorSetSize, int sizeOfCache) {
-		this.validatorsInOrder = Stream.generate(() -> ECKeyPair.generateNew().getPublicKey())
-			.limit(validatorSetSize)
-			.map(BFTNode::create)
-			.map(node -> BFTValidator.from(node, UInt256.ONE))
-			.sorted(Comparator.comparing(v -> v.getNode().getKey(), KeyComparator.instance().reversed()))
-			.collect(ImmutableList.toImmutableList());
+  private void setUp(int validatorSetSize, int sizeOfCache) {
+    this.validatorsInOrder =
+        Stream.generate(() -> ECKeyPair.generateNew().getPublicKey())
+            .limit(validatorSetSize)
+            .map(BFTNode::create)
+            .map(node -> BFTValidator.from(node, UInt256.ONE))
+            .sorted(
+                Comparator.comparing(
+                    v -> v.getNode().getKey(), KeyComparator.instance().reversed()))
+            .collect(ImmutableList.toImmutableList());
 
-		BFTValidatorSet validatorSet = BFTValidatorSet.from(validatorsInOrder);
-		this.weightedRotatingLeaders =
-			new WeightedRotatingLeaders(validatorSet, sizeOfCache);
-		this.weightedRotatingLeaders2 =
-			new WeightedRotatingLeaders(validatorSet, sizeOfCache);
-	}
+    BFTValidatorSet validatorSet = BFTValidatorSet.from(validatorsInOrder);
+    this.weightedRotatingLeaders = new WeightedRotatingLeaders(validatorSet, sizeOfCache);
+    this.weightedRotatingLeaders2 = new WeightedRotatingLeaders(validatorSet, sizeOfCache);
+  }
 
-	@Test
-	public void when_equivalent_leaders__then_leaders_are_round_robined_deterministically() {
-		for (int validatorSetSize = 1; validatorSetSize <= 128; validatorSetSize *= 2) {
-			for (int sizeOfCache = 1; sizeOfCache <= 128; sizeOfCache *= 2) {
-				setUp(validatorSetSize, sizeOfCache);
+  @Test
+  public void when_equivalent_leaders__then_leaders_are_round_robined_deterministically() {
+    for (int validatorSetSize = 1; validatorSetSize <= 128; validatorSetSize *= 2) {
+      for (int sizeOfCache = 1; sizeOfCache <= 128; sizeOfCache *= 2) {
+        setUp(validatorSetSize, sizeOfCache);
 
-				// 2 round robins
-				final int viewsToTest = 2 * validatorSetSize;
+        // 2 round robins
+        final int viewsToTest = 2 * validatorSetSize;
 
-				for (int view = 0; view < viewsToTest; view++) {
-					var expectedNodeForView = validatorsInOrder.get(validatorSetSize - (view % validatorSetSize) - 1).getNode();
-					assertThat(weightedRotatingLeaders.getProposer(View.of(view))).isEqualTo(expectedNodeForView);
-				}
-			}
-		}
-	}
+        for (int view = 0; view < viewsToTest; view++) {
+          var expectedNodeForView =
+              validatorsInOrder.get(validatorSetSize - (view % validatorSetSize) - 1).getNode();
+          assertThat(weightedRotatingLeaders.getProposer(View.of(view)))
+              .isEqualTo(expectedNodeForView);
+        }
+      }
+    }
+  }
 
+  @Test
+  public void when_get_proposer_multiple_times__then_should_return_the_same_key() {
+    for (int validatorSetSize = 1; validatorSetSize <= 128; validatorSetSize *= 2) {
+      for (int sizeOfCache = 1; sizeOfCache <= 128; sizeOfCache *= 2) {
+        setUp(validatorSetSize, sizeOfCache);
 
-	@Test
-	public void when_get_proposer_multiple_times__then_should_return_the_same_key() {
-		for (int validatorSetSize = 1; validatorSetSize <= 128; validatorSetSize *= 2) {
-			for (int sizeOfCache = 1; sizeOfCache <= 128; sizeOfCache *= 2) {
-				setUp(validatorSetSize, sizeOfCache);
+        // 2 * sizeOfCache so cache eviction occurs
+        final int viewsToTest = 2 * sizeOfCache;
 
-				// 2 * sizeOfCache so cache eviction occurs
-				final int viewsToTest = 2 * sizeOfCache;
+        BFTNode expectedNodeForView0 = weightedRotatingLeaders.getProposer(View.of(0));
+        for (View view = View.of(1);
+            view.compareTo(View.of(viewsToTest)) <= 0;
+            view = view.next()) {
+          weightedRotatingLeaders.getProposer(view);
+        }
+        assertThat(weightedRotatingLeaders.getProposer(View.of(0))).isEqualTo(expectedNodeForView0);
+      }
+    }
+  }
 
-				BFTNode expectedNodeForView0 = weightedRotatingLeaders.getProposer(View.of(0));
-				for (View view = View.of(1); view.compareTo(View.of(viewsToTest)) <= 0; view = view.next()) {
-					weightedRotatingLeaders.getProposer(view);
-				}
-				assertThat(weightedRotatingLeaders.getProposer(View.of(0))).isEqualTo(expectedNodeForView0);
-			}
-		}
-	}
+  @Test
+  public void when_get_proposer_skipping_views__then_should_return_same_result_as_in_order() {
+    for (int validatorSetSize = 1; validatorSetSize <= 128; validatorSetSize *= 2) {
+      for (int sizeOfCache = 1; sizeOfCache <= 128; sizeOfCache *= 2) {
+        setUp(validatorSetSize, sizeOfCache);
 
-	@Test
-	public void when_get_proposer_skipping_views__then_should_return_same_result_as_in_order() {
-		for (int validatorSetSize = 1; validatorSetSize <= 128; validatorSetSize *= 2) {
-			for (int sizeOfCache = 1; sizeOfCache <= 128; sizeOfCache *= 2) {
-				setUp(validatorSetSize, sizeOfCache);
+        // 2 * sizeOfCache so cache eviction occurs
+        final int viewsToTest = 2 * sizeOfCache;
 
-				// 2 * sizeOfCache so cache eviction occurs
-				final int viewsToTest = 2 * sizeOfCache;
+        for (int view = 0; view < viewsToTest; view++) {
+          weightedRotatingLeaders2.getProposer(View.of(view));
+        }
+        BFTNode node1 = weightedRotatingLeaders.getProposer(View.of(viewsToTest - 1));
+        BFTNode node2 = weightedRotatingLeaders2.getProposer(View.of(viewsToTest - 1));
+        assertThat(node1).isEqualTo(node2);
+      }
+    }
+  }
 
-				for (int view = 0; view < viewsToTest; view++) {
-					weightedRotatingLeaders2.getProposer(View.of(view));
-				}
-				BFTNode node1 = weightedRotatingLeaders.getProposer(View.of(viewsToTest - 1));
-				BFTNode node2 = weightedRotatingLeaders2.getProposer(View.of(viewsToTest - 1));
-				assertThat(node1).isEqualTo(node2);
-			}
-		}
-	}
+  @Test
+  public void
+      when_validators_distributed_by_fibonacci__then_leaders_also_distributed_in_fibonacci() {
+    // fibonacci sequence can quickly explode so keep sizes small
+    final int validatorSetSize = 8;
+    final int sizeOfCache = 4;
+    final Supplier<IntStream> fibonacci =
+        () ->
+            Stream.iterate(new int[] {1, 1}, t -> new int[] {t[1], t[0] + t[1]})
+                .mapToInt(t -> t[0])
+                .limit(validatorSetSize);
 
-	@Test
-	public void when_validators_distributed_by_fibonacci__then_leaders_also_distributed_in_fibonacci() {
-		// fibonacci sequence can quickly explode so keep sizes small
-		final int validatorSetSize = 8;
-		final int sizeOfCache = 4;
-		final Supplier<IntStream> fibonacci = () -> Stream.iterate(new int[]{1, 1}, t -> new int[]{t[1], t[0] + t[1]})
-			.mapToInt(t -> t[0])
-			.limit(validatorSetSize);
+    final int sumOfPower = fibonacci.get().sum();
+    this.validatorsInOrder =
+        fibonacci
+            .get()
+            .mapToObj(p -> BFTValidator.from(BFTNode.random(), UInt256.from(p)))
+            .collect(ImmutableList.toImmutableList());
 
-		final int sumOfPower = fibonacci.get().sum();
-		this.validatorsInOrder = fibonacci.get()
-			.mapToObj(p -> BFTValidator.from(BFTNode.random(), UInt256.from(p)))
-			.collect(ImmutableList.toImmutableList());
+    BFTValidatorSet validatorSet = BFTValidatorSet.from(validatorsInOrder);
+    this.weightedRotatingLeaders = new WeightedRotatingLeaders(validatorSet, sizeOfCache);
 
-		BFTValidatorSet validatorSet = BFTValidatorSet.from(validatorsInOrder);
-		this.weightedRotatingLeaders = new WeightedRotatingLeaders(validatorSet, sizeOfCache);
+    Map<BFTNode, UInt256> proposerCounts =
+        Stream.iterate(View.of(0), View::next)
+            .limit(sumOfPower)
+            .map(this.weightedRotatingLeaders::getProposer)
+            .collect(groupingBy(p -> p, collectingAndThen(counting(), UInt256::from)));
 
-		Map<BFTNode, UInt256> proposerCounts = Stream.iterate(View.of(0), View::next)
-			.limit(sumOfPower)
-			.map(this.weightedRotatingLeaders::getProposer)
-			.collect(groupingBy(p -> p, collectingAndThen(counting(), UInt256::from)));
+    Map<BFTNode, UInt256> expected =
+        validatorsInOrder.stream().collect(toMap(BFTValidator::getNode, BFTValidator::getPower));
 
-		Map<BFTNode, UInt256> expected = validatorsInOrder.stream()
-			.collect(toMap(BFTValidator::getNode, BFTValidator::getPower));
-
-		assertThat(proposerCounts).isEqualTo(expected);
-	}
-
+    assertThat(proposerCounts).isEqualTo(expected);
+  }
 }

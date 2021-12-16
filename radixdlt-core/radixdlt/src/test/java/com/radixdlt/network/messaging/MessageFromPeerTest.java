@@ -69,10 +69,8 @@ import org.junit.Test;
 
 public class MessageFromPeerTest {
 
-    @Test
-    public void test_equals() {
-        EqualsVerifier.forClass(MessageFromPeer.class)
-            .verify();
-    }
+  @Test
+  public void test_equals() {
+    EqualsVerifier.forClass(MessageFromPeer.class).verify();
+  }
 }
-

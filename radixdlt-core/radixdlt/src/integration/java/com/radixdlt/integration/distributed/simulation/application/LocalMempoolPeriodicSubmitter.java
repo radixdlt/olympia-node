@@ -76,47 +76,46 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Contributes to steady state by submitting commands to the mempool every few seconds
- */
+/** Contributes to steady state by submitting commands to the mempool every few seconds */
 public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
 
-	private final PublishSubject<Pair<Txn, BFTNode>> txns;
-	private final TxnGenerator txnGenerator;
-	private final NodeSelector nodeSelector;
+  private final PublishSubject<Pair<Txn, BFTNode>> txns;
+  private final TxnGenerator txnGenerator;
+  private final NodeSelector nodeSelector;
 
-	private Disposable commandsDisposable;
+  private Disposable commandsDisposable;
 
-	public LocalMempoolPeriodicSubmitter(TxnGenerator txnGenerator, NodeSelector nodeSelector) {
-		this.txns = PublishSubject.create();
-		this.txnGenerator = txnGenerator;
-		this.nodeSelector = nodeSelector;
-	}
+  public LocalMempoolPeriodicSubmitter(TxnGenerator txnGenerator, NodeSelector nodeSelector) {
+    this.txns = PublishSubject.create();
+    this.txnGenerator = txnGenerator;
+    this.nodeSelector = nodeSelector;
+  }
 
-	private void act(RunningNetwork network, Txn txn, BFTNode node) {
-		network.getDispatcher(MempoolAdd.class, node).dispatch(MempoolAdd.create(txn));
-	}
+  private void act(RunningNetwork network, Txn txn, BFTNode node) {
+    network.getDispatcher(MempoolAdd.class, node).dispatch(MempoolAdd.create(txn));
+  }
 
-	public Observable<Pair<Txn, BFTNode>> issuedTxns() {
-		return txns.observeOn(Schedulers.io());
-	}
+  public Observable<Pair<Txn, BFTNode>> issuedTxns() {
+    return txns.observeOn(Schedulers.io());
+  }
 
-	@Override
-	public void start(RunningNetwork network) {
-		if (commandsDisposable != null) {
-			return;
-		}
+  @Override
+  public void start(RunningNetwork network) {
+    if (commandsDisposable != null) {
+      return;
+    }
 
-		commandsDisposable = Observable.interval(1, 10, TimeUnit.SECONDS)
-			.map(i -> txnGenerator.nextTxn())
-			.flatMapSingle(cmd -> nodeSelector.nextNode(network).map(node -> Pair.of(cmd, node)))
-			.doOnNext(p -> this.act(network, p.getFirst(), p.getSecond()))
-			.subscribe(txns::onNext);
-	}
+    commandsDisposable =
+        Observable.interval(1, 10, TimeUnit.SECONDS)
+            .map(i -> txnGenerator.nextTxn())
+            .flatMapSingle(cmd -> nodeSelector.nextNode(network).map(node -> Pair.of(cmd, node)))
+            .doOnNext(p -> this.act(network, p.getFirst(), p.getSecond()))
+            .subscribe(txns::onNext);
+  }
 
-	@Override
-	public void stop() {
-		commandsDisposable.dispose();
-		txns.onComplete();
-	}
+  @Override
+  public void stop() {
+    commandsDisposable.dispose();
+    txns.onComplete();
+  }
 }

@@ -74,29 +74,26 @@ import com.radixdlt.integration.distributed.simulation.network.LatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
 import com.radixdlt.qualifier.LatencyProviderBase;
-
 import java.util.Set;
 import java.util.function.Predicate;
 
 public class SimulationNetworkModule extends AbstractModule {
-	@Override
-	protected void configure() {
-		Multibinder.newSetBinder(binder(), new TypeLiteral<Predicate<MessageInTransit>>() { });
-		bind(SimulationNetwork.class).in(Scopes.SINGLETON);
-	}
+  @Override
+  protected void configure() {
+    Multibinder.newSetBinder(binder(), new TypeLiteral<Predicate<MessageInTransit>>() {});
+    bind(SimulationNetwork.class).in(Scopes.SINGLETON);
+  }
 
-	@Provides
-	@Singleton
-	private LatencyProvider latencyProvider(
-		@LatencyProviderBase LatencyProvider base,
-		Set<Predicate<MessageInTransit>> droppers
-	) {
-		return msg -> {
-			if (droppers.stream().anyMatch(f -> f.test(msg))) {
-				return -1; // -1 Drops the message
-			}
+  @Provides
+  @Singleton
+  private LatencyProvider latencyProvider(
+      @LatencyProviderBase LatencyProvider base, Set<Predicate<MessageInTransit>> droppers) {
+    return msg -> {
+      if (droppers.stream().anyMatch(f -> f.test(msg))) {
+        return -1; // -1 Drops the message
+      }
 
-			return base.nextLatency(msg);
-		};
-	}
+      return base.nextLatency(msg);
+    };
+  }
 }

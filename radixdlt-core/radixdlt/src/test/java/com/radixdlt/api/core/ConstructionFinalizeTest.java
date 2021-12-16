@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.api.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.ConstructionFinalizeHandler;
@@ -92,113 +95,98 @@ import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
+import java.io.ByteArrayOutputStream;
+import java.util.List;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1OutputStream;
 import org.bouncycastle.asn1.DLSequence;
 import org.junit.Test;
 
-import java.io.ByteArrayOutputStream;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class ConstructionFinalizeTest extends ApiTest {
 
-	@Inject
-	private ConstructionFinalizeHandler sut;
-	@Inject
-	@LocalSigner
-	private HashSigner hashSigner;
-	@Inject
-	private CoreModelMapper coreModelMapper;
-	@Inject
-	@Self
-	private ECPublicKey self;
-	@Inject
-	private RadixEngine<LedgerAndBFTProof> radixEngine;
-	@Inject
-	private Forks forks;
+  @Inject private ConstructionFinalizeHandler sut;
+  @Inject @LocalSigner private HashSigner hashSigner;
+  @Inject private CoreModelMapper coreModelMapper;
+  @Inject @Self private ECPublicKey self;
+  @Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
+  @Inject private Forks forks;
 
-	private UnsignedTxnData buildUnsignedTransferTxn(REAddr from, REAddr to) throws Exception {
-		final UInt256 toTransfer = getLiquidAmount().toSubunits().subtract(Amount.ofTokens(1).toSubunits());
-		var entityOperationGroups =
-			List.of(List.of(
-				EntityOperation.from(
-					new AccountVaultEntity(from),
-					ResourceOperation.withdraw(
-						new TokenResource("xrd", REAddr.ofNativeToken()),
-						toTransfer
-					)
-				),
-				EntityOperation.from(
-					new AccountVaultEntity(to),
-					ResourceOperation.deposit(
-						new TokenResource("xrd", REAddr.ofNativeToken()),
-						toTransfer
-					)
-				)
-			));
-		var operationTxBuilder = new OperationTxBuilder(null, entityOperationGroups, forks);
-		var builder = radixEngine.constructWithFees(
-			operationTxBuilder, false, from, NotEnoughNativeTokensForFeesException::new
-		);
-		return builder.buildForExternalSign();
-	}
+  private UnsignedTxnData buildUnsignedTransferTxn(REAddr from, REAddr to) throws Exception {
+    final UInt256 toTransfer =
+        getLiquidAmount().toSubunits().subtract(Amount.ofTokens(1).toSubunits());
+    var entityOperationGroups =
+        List.of(
+            List.of(
+                EntityOperation.from(
+                    new AccountVaultEntity(from),
+                    ResourceOperation.withdraw(
+                        new TokenResource("xrd", REAddr.ofNativeToken()), toTransfer)),
+                EntityOperation.from(
+                    new AccountVaultEntity(to),
+                    ResourceOperation.deposit(
+                        new TokenResource("xrd", REAddr.ofNativeToken()), toTransfer))));
+    var operationTxBuilder = new OperationTxBuilder(null, entityOperationGroups, forks);
+    var builder =
+        radixEngine.constructWithFees(
+            operationTxBuilder, false, from, NotEnoughNativeTokensForFeesException::new);
+    return builder.buildForExternalSign();
+  }
 
-	@Test
-	public void finalizing_a_transaction_with_signature_should_return_back_signed_tranaction() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void finalizing_a_transaction_with_signature_should_return_back_signed_tranaction()
+      throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var accountAddress = REAddr.ofPubKeyAccount(self);
-		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
-		var unsignedTxn = buildUnsignedTransferTxn(accountAddress, otherAddress);
-		var sig = hashSigner.sign(unsignedTxn.hashToSign());
-		var os = new ByteArrayOutputStream();
-		var asn1OutputStream = ASN1OutputStream.create(os);
-		asn1OutputStream.writeObject(new DLSequence(new ASN1Encodable[] {
-			new ASN1Integer(sig.getR()),
-			new ASN1Integer(sig.getS())
-		}));
-		var derSignature = os.toByteArray();
-		var request = new ConstructionFinalizeRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.unsignedTransaction(Bytes.toHexString(unsignedTxn.blob()))
-			.signature(new Signature()
-				.bytes(Bytes.toHexString(derSignature))
-				.publicKey(coreModelMapper.publicKey(self))
-			);
-		var response = handleRequestWithExpectedResponse(sut, request, ConstructionFinalizeResponse.class);
+    // Act
+    var accountAddress = REAddr.ofPubKeyAccount(self);
+    var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+    var unsignedTxn = buildUnsignedTransferTxn(accountAddress, otherAddress);
+    var sig = hashSigner.sign(unsignedTxn.hashToSign());
+    var os = new ByteArrayOutputStream();
+    var asn1OutputStream = ASN1OutputStream.create(os);
+    asn1OutputStream.writeObject(
+        new DLSequence(
+            new ASN1Encodable[] {new ASN1Integer(sig.getR()), new ASN1Integer(sig.getS())}));
+    var derSignature = os.toByteArray();
+    var request =
+        new ConstructionFinalizeRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .unsignedTransaction(Bytes.toHexString(unsignedTxn.blob()))
+            .signature(
+                new Signature()
+                    .bytes(Bytes.toHexString(derSignature))
+                    .publicKey(coreModelMapper.publicKey(self)));
+    var response =
+        handleRequestWithExpectedResponse(sut, request, ConstructionFinalizeResponse.class);
 
-		// Assert
-		var bytes = Bytes.fromHexString(response.getSignedTransaction());
-		assertThat(bytes).isNotNull();
-	}
+    // Assert
+    var bytes = Bytes.fromHexString(response.getSignedTransaction());
+    assertThat(bytes).isNotNull();
+  }
 
+  @Test
+  public void finalizing_a_transaction_with_invalid_signature_should_throw() throws Exception {
+    // Arrange
+    start();
 
-	@Test
-	public void finalizing_a_transaction_with_invalid_signature_should_throw() throws Exception {
-		// Arrange
-		start();
+    // Act
+    var accountAddress = REAddr.ofPubKeyAccount(self);
+    var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+    var unsignedTxn = buildUnsignedTransferTxn(accountAddress, otherAddress);
+    var sig = hashSigner.sign(unsignedTxn.hashToSign());
+    var invalidSignature =
+        sig.toHexString(); // This is an invalid signature since it must be DER encoded
+    var request =
+        new ConstructionFinalizeRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .unsignedTransaction(Bytes.toHexString(unsignedTxn.blob()))
+            .signature(
+                new Signature().bytes(invalidSignature).publicKey(coreModelMapper.publicKey(self)));
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Act
-		var accountAddress = REAddr.ofPubKeyAccount(self);
-		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
-		var unsignedTxn = buildUnsignedTransferTxn(accountAddress, otherAddress);
-		var sig = hashSigner.sign(unsignedTxn.hashToSign());
-		var invalidSignature = sig.toHexString(); // This is an invalid signature since it must be DER encoded
-		var request = new ConstructionFinalizeRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.unsignedTransaction(Bytes.toHexString(unsignedTxn.blob()))
-			.signature(new Signature()
-				.bytes(invalidSignature)
-				.publicKey(coreModelMapper.publicKey(self))
-			);
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
-
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(InvalidSignatureError.class);
-	}
+    // Assert
+    assertThat(response.getDetails()).isInstanceOf(InvalidSignatureError.class);
+  }
 }

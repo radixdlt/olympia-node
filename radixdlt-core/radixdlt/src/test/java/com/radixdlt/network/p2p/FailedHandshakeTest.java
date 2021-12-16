@@ -64,49 +64,50 @@
 
 package com.radixdlt.network.p2p;
 
+import static org.junit.Assert.assertTrue;
+
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.NodeAddressing;
 import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
+import java.net.URI;
+import java.util.Set;
 import org.junit.After;
 import org.junit.Test;
 
-import java.net.URI;
-import java.util.Set;
-
-import static org.junit.Assert.assertTrue;
-
 public final class FailedHandshakeTest extends DeterministicP2PNetworkTest {
 
-	@After
-	public void cleanup() {
-		testNetworkRunner.cleanup();
-	}
+  @After
+  public void cleanup() {
+    testNetworkRunner.cleanup();
+  }
 
-	@Test
-	public void test_failed_handshake() throws Exception {
-		setupTestRunner(2, defaultProperties());
+  @Test
+  public void test_failed_handshake() throws Exception {
+    setupTestRunner(2, defaultProperties());
 
-		final var correctUri = uriOfNode(1);
+    final var correctUri = uriOfNode(1);
 
-		final var messedUpUri = RadixNodeUri.fromUri(new URI(
-			String.format(
-				"radix://%s@%s:%s",
-				NodeAddressing.of(correctUri.getNetworkNodeHrp(), ECKeyPair.generateNew().getPublicKey()),
-				correctUri.getHost(),
-				correctUri.getPort()
-			)
-		));
+    final var messedUpUri =
+        RadixNodeUri.fromUri(
+            new URI(
+                String.format(
+                    "radix://%s@%s:%s",
+                    NodeAddressing.of(
+                        correctUri.getNetworkNodeHrp(), ECKeyPair.generateNew().getPublicKey()),
+                    correctUri.getHost(),
+                    correctUri.getPort())));
 
-		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(messedUpUri));
+    testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(messedUpUri));
 
-		final var channel1Future = testNetworkRunner.peerManager(0)
-			.findOrCreateChannel(messedUpUri.getNodeId());
+    final var channel1Future =
+        testNetworkRunner.peerManager(0).findOrCreateChannel(messedUpUri.getNodeId());
 
-		processAll();
+    processAll();
 
-		assertTrue(channel1Future.isCompletedExceptionally());
+    assertTrue(channel1Future.isCompletedExceptionally());
 
-		final var entry = testNetworkRunner.addressBook(0).findById(messedUpUri.getNodeId()).orElseThrow();
-		assertTrue(entry.getKnownAddresses().stream().findFirst().orElseThrow().blacklisted());
-	}
+    final var entry =
+        testNetworkRunner.addressBook(0).findById(messedUpUri.getNodeId()).orElseThrow();
+    assertTrue(entry.getKnownAddresses().stream().findFirst().orElseThrow().blacklisted());
+  }
 }

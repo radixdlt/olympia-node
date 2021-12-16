@@ -64,9 +64,6 @@
 
 package com.radixdlt;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
@@ -78,73 +75,73 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-/**
- * For testing where verification and signing is skipped
- */
+/** For testing where verification and signing is skipped */
 public class MockedCryptoModule extends AbstractModule {
-	private static final Logger log = LogManager.getLogger();
-	private static final HashFunction hashFunction = Hashing.goodFastHash(8 * 32);
+  private static final Logger log = LogManager.getLogger();
+  private static final HashFunction hashFunction = Hashing.goodFastHash(8 * 32);
 
-	@Override
-	public void configure() {
-		bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
-		bind(HashFunction.class).toInstance(hashFunction);
-	}
+  @Override
+  public void configure() {
+    bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
+    bind(HashFunction.class).toInstance(hashFunction);
+  }
 
-	@Provides
-	private HashVerifier hashVerifier(SystemCounters counters) {
-		return (pubKey, hash, sig) -> {
-			byte[] concat = new byte[64];
-			System.arraycopy(hash.asBytes(), 0, concat, 0, hash.asBytes().length);
-			System.arraycopy(pubKey.getBytes(), 0, concat, 32, 32);
-			long hashCode = hashFunction.hashBytes(concat).asLong();
-			counters.increment(SystemCounters.CounterType.SIGNATURES_VERIFIED);
-			return sig.getR().longValue() == hashCode;
-		};
-	}
+  @Provides
+  private HashVerifier hashVerifier(SystemCounters counters) {
+    return (pubKey, hash, sig) -> {
+      byte[] concat = new byte[64];
+      System.arraycopy(hash.asBytes(), 0, concat, 0, hash.asBytes().length);
+      System.arraycopy(pubKey.getBytes(), 0, concat, 32, 32);
+      long hashCode = hashFunction.hashBytes(concat).asLong();
+      counters.increment(SystemCounters.CounterType.SIGNATURES_VERIFIED);
+      return sig.getR().longValue() == hashCode;
+    };
+  }
 
-	@Provides
-	private Hasher hasher(Serialization serialization, SystemCounters counters) {
-		AtomicBoolean running = new AtomicBoolean(false);
-		Hasher hasher = new Hasher() {
-			@Override
-			public int bytes() {
-				return 32;
-			}
+  @Provides
+  private Hasher hasher(Serialization serialization, SystemCounters counters) {
+    AtomicBoolean running = new AtomicBoolean(false);
+    Hasher hasher =
+        new Hasher() {
+          @Override
+          public int bytes() {
+            return 32;
+          }
 
-			@Override
-			public HashCode hash(Object o) {
-				byte[] dson = timeWhinge("Serialization", () -> serialization.toDson(o, Output.HASH));
-				return this.hashBytes(dson);
-			}
+          @Override
+          public HashCode hash(Object o) {
+            byte[] dson = timeWhinge("Serialization", () -> serialization.toDson(o, Output.HASH));
+            return this.hashBytes(dson);
+          }
 
-			@Override
-			public HashCode hashBytes(byte[] bytes) {
-				byte[] hashCode = timeWhinge("Hashing", () -> hashFunction.hashBytes(bytes).asBytes());
-				return HashCode.fromBytes(hashCode);
-			}
+          @Override
+          public HashCode hashBytes(byte[] bytes) {
+            byte[] hashCode = timeWhinge("Hashing", () -> hashFunction.hashBytes(bytes).asBytes());
+            return HashCode.fromBytes(hashCode);
+          }
 
-			private <T> T timeWhinge(String what, Supplier<T> exec) {
-				long start = System.nanoTime();
-				T result = exec.get();
-				long end = System.nanoTime();
-				long durationMs = (end - start) / 1_000_000L;
-				if (durationMs > 50) {
-					log.warn("{} took {}ms", what, durationMs);
-				}
-				return result;
-			}
-		};
+          private <T> T timeWhinge(String what, Supplier<T> exec) {
+            long start = System.nanoTime();
+            T result = exec.get();
+            long end = System.nanoTime();
+            long durationMs = (end - start) / 1_000_000L;
+            if (durationMs > 50) {
+              log.warn("{} took {}ms", what, durationMs);
+            }
+            return result;
+          }
+        };
 
-		// Make sure classes etc loaded, as first use seems to take some time
-		Object dummyObject = ECDSASignature.zeroSignature(); // Arbitrary serializable class
-		hasher.hash(dummyObject);
-		running.set(true);
+    // Make sure classes etc loaded, as first use seems to take some time
+    Object dummyObject = ECDSASignature.zeroSignature(); // Arbitrary serializable class
+    hasher.hash(dummyObject);
+    running.set(true);
 
-		return hasher;
-	}
+    return hasher;
+  }
 }

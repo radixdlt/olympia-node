@@ -67,7 +67,7 @@ package com.radixdlt.engine.parser.exceptions;
 import com.radixdlt.constraintmachine.REInstruction;
 
 public class REInstructionDataDeserializeException extends Exception {
-	public REInstructionDataDeserializeException(REInstruction.REMicroOp microOp, Throwable cause) {
-		super("op=" + microOp, cause);
-	}
+  public REInstructionDataDeserializeException(REInstruction.REMicroOp microOp, Throwable cause) {
+    super("op=" + microOp, cause);
+  }
 }

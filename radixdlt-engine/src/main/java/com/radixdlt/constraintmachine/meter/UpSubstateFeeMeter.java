@@ -70,45 +70,47 @@ import com.radixdlt.constraintmachine.ProcedureKey;
 import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Map;
 
 public final class UpSubstateFeeMeter implements Meter {
-	private final Map<Class<? extends Particle>, UInt256> perUpSubstateFee;
+  private final Map<Class<? extends Particle>, UInt256> perUpSubstateFee;
 
-	private UpSubstateFeeMeter(Map<Class<? extends Particle>, UInt256> perUpSubstateFee) {
-		this.perUpSubstateFee = perUpSubstateFee;
-	}
+  private UpSubstateFeeMeter(Map<Class<? extends Particle>, UInt256> perUpSubstateFee) {
+    this.perUpSubstateFee = perUpSubstateFee;
+  }
 
-	public static UpSubstateFeeMeter create(Map<Class<? extends Particle>, UInt256> perUpSubstateFee) {
-		return new UpSubstateFeeMeter(perUpSubstateFee);
-	}
+  public static UpSubstateFeeMeter create(
+      Map<Class<? extends Particle>, UInt256> perUpSubstateFee) {
+    return new UpSubstateFeeMeter(perUpSubstateFee);
+  }
 
-	@Override
-	public void onStart(ExecutionContext context) {
-		// No-op
-	}
+  @Override
+  public void onStart(ExecutionContext context) {
+    // No-op
+  }
 
-	@Override
-	public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
-		// TODO: Clean this up
-		if (procedureKey.opSignature().op() == REOp.UP && param instanceof Particle) {
-			var substate = (Particle) param;
-			var c = substate.getClass();
-			var fee = perUpSubstateFee.get(c);
-			if (fee != null) {
-				context.charge(fee);
-			}
-		}
-	}
+  @Override
+  public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context)
+      throws Exception {
+    // TODO: Clean this up
+    if (procedureKey.opSignature().op() == REOp.UP && param instanceof Particle) {
+      var substate = (Particle) param;
+      var c = substate.getClass();
+      var fee = perUpSubstateFee.get(c);
+      if (fee != null) {
+        context.charge(fee);
+      }
+    }
+  }
 
-	@Override
-	public void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
-		// No-op
-	}
+  @Override
+  public void onSuperUserProcedure(
+      ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
+    // No-op
+  }
 
-	@Override
-	public void onSigInstruction(ExecutionContext context) throws AuthorizationException {
-		 // No-op
-	}
+  @Override
+  public void onSigInstruction(ExecutionContext context) throws AuthorizationException {
+    // No-op
+  }
 }

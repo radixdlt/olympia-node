@@ -64,41 +64,40 @@
 
 package com.radixdlt.consensus;
 
+import static org.mockito.Mockito.mock;
+
 import com.radixdlt.utils.SerializerTestDataGenerator;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 import org.radix.serialization.SerializeMessageObject;
 
-import static org.mockito.Mockito.mock;
-
 public class TimeoutCertificateTest extends SerializeMessageObject<TimeoutCertificate> {
 
-    public TimeoutCertificateTest() {
-        super(TimeoutCertificate.class, TimeoutCertificateTest::get);
-    }
+  public TimeoutCertificateTest() {
+    super(TimeoutCertificate.class, TimeoutCertificateTest::get);
+  }
 
-    private static TimeoutCertificate get() {
-        return SerializerTestDataGenerator.randomTimeoutCertificate();
-    }
+  private static TimeoutCertificate get() {
+    return SerializerTestDataGenerator.randomTimeoutCertificate();
+  }
 
-    @Test
-    public void equalsTest() {
-        EqualsVerifier.forClass(TimeoutCertificate.class)
-                .verify();
-    }
+  @Test
+  public void equalsTest() {
+    EqualsVerifier.forClass(TimeoutCertificate.class).verify();
+  }
 
-    @Test(expected = NullPointerException.class)
-    public void deserializationWithNullThrowsException() {
-        TimeoutCertificate.serializerCreate(1, 1, null);
-    }
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException() {
+    TimeoutCertificate.serializerCreate(1, 1, null);
+  }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void deserializationWithInvalidEpochThrowsException() {
-        TimeoutCertificate.serializerCreate(-1, 1, mock(TimestampedECDSASignatures.class));
-    }
+  @Test(expected = IllegalArgumentException.class)
+  public void deserializationWithInvalidEpochThrowsException() {
+    TimeoutCertificate.serializerCreate(-1, 1, mock(TimestampedECDSASignatures.class));
+  }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void deserializationWithInvalidViewThrowsException() {
-        TimeoutCertificate.serializerCreate(1, -1, mock(TimestampedECDSASignatures.class));
-    }
+  @Test(expected = IllegalArgumentException.class)
+  public void deserializationWithInvalidViewThrowsException() {
+    TimeoutCertificate.serializerCreate(1, -1, mock(TimestampedECDSASignatures.class));
+  }
 }

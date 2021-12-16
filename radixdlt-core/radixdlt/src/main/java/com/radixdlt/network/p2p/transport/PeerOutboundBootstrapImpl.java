@@ -78,64 +78,63 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-
 import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Optional;
 
 public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
-	private final P2PConfig config;
-	private final Addressing addressing;
-	private final int networkId;
-	private final SystemCounters counters;
-	private final Serialization serialization;
-	private final SecureRandom secureRandom;
-	private final ECKeyOps ecKeyOps;
-	private final EventDispatcher<PeerEvent> peerEventDispatcher;
+  private final P2PConfig config;
+  private final Addressing addressing;
+  private final int networkId;
+  private final SystemCounters counters;
+  private final Serialization serialization;
+  private final SecureRandom secureRandom;
+  private final ECKeyOps ecKeyOps;
+  private final EventDispatcher<PeerEvent> peerEventDispatcher;
 
-	private final NioEventLoopGroup clientWorkerGroup;
+  private final NioEventLoopGroup clientWorkerGroup;
 
-	@Inject
-	public PeerOutboundBootstrapImpl(
-		P2PConfig config,
-		Addressing addressing,
-		@NetworkId int networkId,
-		SystemCounters counters,
-		Serialization serialization,
-		SecureRandom secureRandom,
-		ECKeyOps ecKeyOps,
-		EventDispatcher<PeerEvent> peerEventDispatcher
-	) {
-		this.config = Objects.requireNonNull(config);
-		this.addressing = Objects.requireNonNull(addressing);
-		this.networkId = networkId;
-		this.counters = Objects.requireNonNull(counters);
-		this.serialization = Objects.requireNonNull(serialization);
-		this.secureRandom = Objects.requireNonNull(secureRandom);
-		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
-		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
+  @Inject
+  public PeerOutboundBootstrapImpl(
+      P2PConfig config,
+      Addressing addressing,
+      @NetworkId int networkId,
+      SystemCounters counters,
+      Serialization serialization,
+      SecureRandom secureRandom,
+      ECKeyOps ecKeyOps,
+      EventDispatcher<PeerEvent> peerEventDispatcher) {
+    this.config = Objects.requireNonNull(config);
+    this.addressing = Objects.requireNonNull(addressing);
+    this.networkId = networkId;
+    this.counters = Objects.requireNonNull(counters);
+    this.serialization = Objects.requireNonNull(serialization);
+    this.secureRandom = Objects.requireNonNull(secureRandom);
+    this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
+    this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
 
-		this.clientWorkerGroup = new NioEventLoopGroup();
-	}
+    this.clientWorkerGroup = new NioEventLoopGroup();
+  }
 
-	@Override
-	public void initOutboundConnection(RadixNodeUri uri) {
-		final var bootstrap = new Bootstrap();
-		bootstrap.group(clientWorkerGroup)
-			.channel(NioSocketChannel.class)
-			.option(ChannelOption.TCP_NODELAY, true)
-			.option(ChannelOption.SO_KEEPALIVE, true)
-			.handler(new PeerChannelInitializer(
-				config,
-				addressing,
-				networkId,
-				counters,
-				serialization,
-				secureRandom,
-				ecKeyOps,
-				peerEventDispatcher,
-				Optional.of(uri)
-			))
-			.connect(uri.getHost(), uri.getPort());
-	}
+  @Override
+  public void initOutboundConnection(RadixNodeUri uri) {
+    final var bootstrap = new Bootstrap();
+    bootstrap
+        .group(clientWorkerGroup)
+        .channel(NioSocketChannel.class)
+        .option(ChannelOption.TCP_NODELAY, true)
+        .option(ChannelOption.SO_KEEPALIVE, true)
+        .handler(
+            new PeerChannelInitializer(
+                config,
+                addressing,
+                networkId,
+                counters,
+                serialization,
+                secureRandom,
+                ecKeyOps,
+                peerEventDispatcher,
+                Optional.of(uri)))
+        .connect(uri.getHost(), uri.getPort());
+  }
 }

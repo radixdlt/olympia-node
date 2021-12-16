@@ -69,71 +69,64 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
-import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.application.IncrementalBytes;
-import com.radixdlt.mempool.Mempools;
+import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.Mempools;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-/**
- * Simple mempool sanity test which runs the mempool submit and commit invariant.
- */
+/** Simple mempool sanity test which runs the mempool submit and commit invariant. */
 public class MempoolSanityTest {
-	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(4)
-		.networkModules(
-			NetworkOrdering.inOrder(),
-			NetworkLatencies.fixed()
-		)
-		.ledgerAndMempool()
-		.pacemakerTimeout(3000)
-		.addTestModules(
-			ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-			ConsensusMonitors.noTimeouts(),
-			ConsensusMonitors.directParents(),
-			LedgerMonitors.consensusToLedger(),
-			LedgerMonitors.ordered(),
-			ApplicationMonitors.mempoolCommitted()
-		)
-		.addMempoolSubmissionsSteadyState(IncrementalBytes.class);
+  private final Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(4)
+          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .ledgerAndMempool()
+          .pacemakerTimeout(3000)
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+              ConsensusMonitors.noTimeouts(),
+              ConsensusMonitors.directParents(),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered(),
+              ApplicationMonitors.mempoolCommitted())
+          .addMempoolSubmissionsSteadyState(IncrementalBytes.class);
 
-	/**
-	 * TODO: This is more of a test for mempoolSubmissionSteadyState, should move somewhere else
-	 */
-	@Test
-	public void when_submitting_items_to_null_mempool__then_test_should_fail() {
-		SimulationTest simulationTest = bftTestBuilder
-			.overrideWithIncorrectModule(new AbstractModule() {
-				@Override
-				protected void configure() {
-					bind(new TypeLiteral<Mempool<Txn>>() { }).toInstance(Mempools.empty());
-				}
-			})
-			.build();
+  /** TODO: This is more of a test for mempoolSubmissionSteadyState, should move somewhere else */
+  @Test
+  public void when_submitting_items_to_null_mempool__then_test_should_fail() {
+    SimulationTest simulationTest =
+        bftTestBuilder
+            .overrideWithIncorrectModule(
+                new AbstractModule() {
+                  @Override
+                  protected void configure() {
+                    bind(new TypeLiteral<Mempool<Txn>>() {}).toInstance(Mempools.empty());
+                  }
+                })
+            .build();
 
-		final var checkResults = simulationTest.run().awaitCompletion();
-		assertThat(checkResults).hasEntrySatisfying(
-			Monitor.MEMPOOL_COMMITTED,
-			error -> assertThat(error).isPresent()
-		);
-	}
+    final var checkResults = simulationTest.run().awaitCompletion();
+    assertThat(checkResults)
+        .hasEntrySatisfying(Monitor.MEMPOOL_COMMITTED, error -> assertThat(error).isPresent());
+  }
 
-	@Test
-	public void when_submitting_items_to_mempool__then_they_should_get_executed() {
-		SimulationTest simulationTest = bftTestBuilder
-			.build();
+  @Test
+  public void when_submitting_items_to_mempool__then_they_should_get_executed() {
+    SimulationTest simulationTest = bftTestBuilder.build();
 
-		final var checkResults = simulationTest.run().awaitCompletion();
-		assertThat(checkResults).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-	}
+    final var checkResults = simulationTest.run().awaitCompletion();
+    assertThat(checkResults)
+        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+  }
 }

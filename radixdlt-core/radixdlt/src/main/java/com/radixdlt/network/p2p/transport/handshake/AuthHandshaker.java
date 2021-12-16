@@ -64,6 +64,10 @@
 
 package com.radixdlt.network.p2p.transport.handshake;
 
+import static com.radixdlt.crypto.HashUtils.kec256;
+import static com.radixdlt.utils.Bytes.bigIntegerToBytes;
+import static com.radixdlt.utils.Bytes.xor;
+
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECIESCoder;
@@ -73,250 +77,259 @@ import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
 import com.radixdlt.utils.Pair;
 import io.netty.buffer.ByteBuf;
-import org.bouncycastle.crypto.InvalidCipherTextException;
-import org.bouncycastle.crypto.agreement.ECDHBasicAgreement;
-import org.bouncycastle.crypto.digests.KeccakDigest;
-import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
-import org.bouncycastle.crypto.params.ECPublicKeyParameters;
-
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Optional;
+import org.bouncycastle.crypto.InvalidCipherTextException;
+import org.bouncycastle.crypto.agreement.ECDHBasicAgreement;
+import org.bouncycastle.crypto.digests.KeccakDigest;
+import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
+import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 
-import static com.radixdlt.crypto.HashUtils.kec256;
-import static com.radixdlt.utils.Bytes.bigIntegerToBytes;
-import static com.radixdlt.utils.Bytes.xor;
-
-/**
- * Handles the auth handshake to create an encrypted communication channel between peers.
- */
+/** Handles the auth handshake to create an encrypted communication channel between peers. */
 public final class AuthHandshaker {
-	private static final byte STATUS_OK = 0x01;
-	private static final byte STATUS_ERROR = 0x02;
+  private static final byte STATUS_OK = 0x01;
+  private static final byte STATUS_ERROR = 0x02;
 
-	private static final int NONCE_SIZE = 32;
-	private static final int MIN_PADDING = 100;
-	private static final int MAX_PADDING = 300;
-	private static final int SECRET_SIZE = 32;
-	private static final int MAC_SIZE = 256;
+  private static final int NONCE_SIZE = 32;
+  private static final int MIN_PADDING = 100;
+  private static final int MAX_PADDING = 300;
+  private static final int SECRET_SIZE = 32;
+  private static final int MAC_SIZE = 256;
 
-	private final Serialization serialization;
-	private final SecureRandom secureRandom;
-	private final ECKeyOps ecKeyOps;
-	private final byte[] nonce;
-	private final ECKeyPair ephemeralKey;
-	private final int networkId;
-	private boolean isInitiator = false;
-	private Optional<byte[]> initiatePacketOpt = Optional.empty();
-	private Optional<byte[]> responsePacketOpt = Optional.empty();
-	private Optional<ECPublicKey> remotePubKeyOpt;
+  private final Serialization serialization;
+  private final SecureRandom secureRandom;
+  private final ECKeyOps ecKeyOps;
+  private final byte[] nonce;
+  private final ECKeyPair ephemeralKey;
+  private final int networkId;
+  private boolean isInitiator = false;
+  private Optional<byte[]> initiatePacketOpt = Optional.empty();
+  private Optional<byte[]> responsePacketOpt = Optional.empty();
+  private Optional<ECPublicKey> remotePubKeyOpt;
 
-	public AuthHandshaker(
-		Serialization serialization,
-		SecureRandom secureRandom,
-		ECKeyOps ecKeyOps,
-		int networkId
-	) {
-		this.serialization = Objects.requireNonNull(serialization);
-		this.secureRandom = Objects.requireNonNull(secureRandom);
-		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
-		this.nonce = randomBytes(NONCE_SIZE);
-		this.ephemeralKey = ECKeyPair.generateNew();
-		this.networkId = networkId;
-	}
+  public AuthHandshaker(
+      Serialization serialization, SecureRandom secureRandom, ECKeyOps ecKeyOps, int networkId) {
+    this.serialization = Objects.requireNonNull(serialization);
+    this.secureRandom = Objects.requireNonNull(secureRandom);
+    this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
+    this.nonce = randomBytes(NONCE_SIZE);
+    this.ephemeralKey = ECKeyPair.generateNew();
+    this.networkId = networkId;
+  }
 
-	public byte[] initiate(ECPublicKey remotePubKey) {
-		final var message = createAuthInitiateMessage(remotePubKey);
-		final var encoded = serialization.toDson(message, DsonOutput.Output.WIRE);
-		final var padding = randomBytes(secureRandom.nextInt(MAX_PADDING - MIN_PADDING) + MIN_PADDING);
-		final var padded = new byte[encoded.length + padding.length];
-		System.arraycopy(encoded, 0, padded, 0, encoded.length);
-		System.arraycopy(padding, 0, padded, encoded.length, padding.length);
+  public byte[] initiate(ECPublicKey remotePubKey) {
+    final var message = createAuthInitiateMessage(remotePubKey);
+    final var encoded = serialization.toDson(message, DsonOutput.Output.WIRE);
+    final var padding = randomBytes(secureRandom.nextInt(MAX_PADDING - MIN_PADDING) + MIN_PADDING);
+    final var padded = new byte[encoded.length + padding.length];
+    System.arraycopy(encoded, 0, padded, 0, encoded.length);
+    System.arraycopy(padding, 0, padded, encoded.length, padding.length);
 
-		final var encryptedSize = padded.length + ECIESCoder.OVERHEAD_SIZE;
-		final var sizePrefix = ByteBuffer.allocate(2).putShort((short) encryptedSize).array();
-		final var encryptedPayload = ECIESCoder.encrypt(remotePubKey.getEcPoint(), padded, sizePrefix);
-		final var packet = new byte[sizePrefix.length + encryptedPayload.length];
-		System.arraycopy(sizePrefix, 0, packet, 0, sizePrefix.length);
-		System.arraycopy(encryptedPayload, 0, packet, sizePrefix.length, encryptedPayload.length);
+    final var encryptedSize = padded.length + ECIESCoder.OVERHEAD_SIZE;
+    final var sizePrefix = ByteBuffer.allocate(2).putShort((short) encryptedSize).array();
+    final var encryptedPayload = ECIESCoder.encrypt(remotePubKey.getEcPoint(), padded, sizePrefix);
+    final var packet = new byte[sizePrefix.length + encryptedPayload.length];
+    System.arraycopy(sizePrefix, 0, packet, 0, sizePrefix.length);
+    System.arraycopy(encryptedPayload, 0, packet, sizePrefix.length, encryptedPayload.length);
 
-		this.isInitiator = true;
-		this.initiatePacketOpt = Optional.of(packet);
-		this.remotePubKeyOpt = Optional.of(remotePubKey);
+    this.isInitiator = true;
+    this.initiatePacketOpt = Optional.of(packet);
+    this.remotePubKeyOpt = Optional.of(remotePubKey);
 
-		return packet;
-	}
+    return packet;
+  }
 
-	private AuthInitiateMessage createAuthInitiateMessage(ECPublicKey remotePubKey) {
-		final var sharedSecret = bigIntegerToBytes(ecKeyOps.ecdhAgreement(remotePubKey), NONCE_SIZE);
-		final var messageToSign = xor(sharedSecret, nonce);
-		final var signature = ephemeralKey.sign(messageToSign);
-		return new AuthInitiateMessage(
-			signature,
-			HashCode.fromBytes(ecKeyOps.nodePubKey().getBytes()),
-			HashCode.fromBytes(nonce),
-			networkId
-		);
-	}
+  private AuthInitiateMessage createAuthInitiateMessage(ECPublicKey remotePubKey) {
+    final var sharedSecret = bigIntegerToBytes(ecKeyOps.ecdhAgreement(remotePubKey), NONCE_SIZE);
+    final var messageToSign = xor(sharedSecret, nonce);
+    final var signature = ephemeralKey.sign(messageToSign);
+    return new AuthInitiateMessage(
+        signature,
+        HashCode.fromBytes(ecKeyOps.nodePubKey().getBytes()),
+        HashCode.fromBytes(nonce),
+        networkId);
+  }
 
-	public Pair<byte[], AuthHandshakeResult> handleInitialMessage(ByteBuf data) {
-		try {
-			final var sizeBytes = new byte[2];
-			data.getBytes(0, sizeBytes, 0, sizeBytes.length);
-			final var encryptedPayload = new byte[data.readableBytes() - sizeBytes.length];
-			data.getBytes(sizeBytes.length, encryptedPayload, 0, encryptedPayload.length);
-			final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
-			final var message = serialization.fromDson(plaintext, AuthInitiateMessage.class);
-			final var remotePubKey = ECPublicKey.fromBytes(message.getPublicKey().asBytes());
+  public Pair<byte[], AuthHandshakeResult> handleInitialMessage(ByteBuf data) {
+    try {
+      final var sizeBytes = new byte[2];
+      data.getBytes(0, sizeBytes, 0, sizeBytes.length);
+      final var encryptedPayload = new byte[data.readableBytes() - sizeBytes.length];
+      data.getBytes(sizeBytes.length, encryptedPayload, 0, encryptedPayload.length);
+      final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
+      final var message = serialization.fromDson(plaintext, AuthInitiateMessage.class);
+      final var remotePubKey = ECPublicKey.fromBytes(message.getPublicKey().asBytes());
 
-			if (message.getNetworkId() != this.networkId) {
-				return Pair.of(new byte[] {STATUS_ERROR}, AuthHandshakeResult.error(
-					String.format("Network ID mismatch (expected %s, got %s)", this.networkId, message.getNetworkId()),
-					Optional.of(NodeId.fromPublicKey(remotePubKey))
-				));
-			}
+      if (message.getNetworkId() != this.networkId) {
+        return Pair.of(
+            new byte[] {STATUS_ERROR},
+            AuthHandshakeResult.error(
+                String.format(
+                    "Network ID mismatch (expected %s, got %s)",
+                    this.networkId, message.getNetworkId()),
+                Optional.of(NodeId.fromPublicKey(remotePubKey))));
+      }
 
-			final var response = new AuthResponseMessage(
-				HashCode.fromBytes(ephemeralKey.getPublicKey().getBytes()),
-				HashCode.fromBytes(nonce)
-			);
-			final var encodedResponse = serialization.toDson(response, DsonOutput.Output.WIRE);
+      final var response =
+          new AuthResponseMessage(
+              HashCode.fromBytes(ephemeralKey.getPublicKey().getBytes()),
+              HashCode.fromBytes(nonce));
+      final var encodedResponse = serialization.toDson(response, DsonOutput.Output.WIRE);
 
-			final var encryptedSize = encodedResponse.length + ECIESCoder.OVERHEAD_SIZE;
-			final var sizePrefix = ByteBuffer.allocate(2).putShort((short) encryptedSize).array();
-			final var encryptedResponsePayload =
-				ECIESCoder.encrypt(remotePubKey.getEcPoint(), encodedResponse, sizePrefix);
+      final var encryptedSize = encodedResponse.length + ECIESCoder.OVERHEAD_SIZE;
+      final var sizePrefix = ByteBuffer.allocate(2).putShort((short) encryptedSize).array();
+      final var encryptedResponsePayload =
+          ECIESCoder.encrypt(remotePubKey.getEcPoint(), encodedResponse, sizePrefix);
 
-			final var packet = new byte[1 + sizePrefix.length + encryptedResponsePayload.length];
-			packet[0] = STATUS_OK;
-			System.arraycopy(sizePrefix, 0, packet, 1, sizePrefix.length);
-			System.arraycopy(encryptedResponsePayload, 0, packet, 1 + sizePrefix.length, encryptedResponsePayload.length);
+      final var packet = new byte[1 + sizePrefix.length + encryptedResponsePayload.length];
+      packet[0] = STATUS_OK;
+      System.arraycopy(sizePrefix, 0, packet, 1, sizePrefix.length);
+      System.arraycopy(
+          encryptedResponsePayload,
+          0,
+          packet,
+          1 + sizePrefix.length,
+          encryptedResponsePayload.length);
 
-			final var remoteEphemeralKey = extractEphemeralKey(
-				message.getSignature(),
-				message.getNonce(),
-				remotePubKey
-			);
+      final var remoteEphemeralKey =
+          extractEphemeralKey(message.getSignature(), message.getNonce(), remotePubKey);
 
-			final var initiatePacket = new byte[data.readableBytes()];
-			data.getBytes(0, initiatePacket);
-			this.initiatePacketOpt = Optional.of(initiatePacket);
-			this.responsePacketOpt = Optional.of(packet);
-			this.remotePubKeyOpt = Optional.of(remotePubKey);
+      final var initiatePacket = new byte[data.readableBytes()];
+      data.getBytes(0, initiatePacket);
+      this.initiatePacketOpt = Optional.of(initiatePacket);
+      this.responsePacketOpt = Optional.of(packet);
+      this.remotePubKeyOpt = Optional.of(remotePubKey);
 
-			final var handshakeResult = finalizeHandshake(remoteEphemeralKey, message.getNonce());
+      final var handshakeResult = finalizeHandshake(remoteEphemeralKey, message.getNonce());
 
-			return Pair.of(packet, handshakeResult);
-		} catch (PublicKeyException | InvalidCipherTextException | IOException ex) {
-			return Pair.of(new byte[] {STATUS_ERROR}, AuthHandshakeResult.error(
-				String.format("Handshake decryption failed (%s)", ex.getMessage()),
-				Optional.empty())
-			);
-		}
-	}
+      return Pair.of(packet, handshakeResult);
+    } catch (PublicKeyException | InvalidCipherTextException | IOException ex) {
+      return Pair.of(
+          new byte[] {STATUS_ERROR},
+          AuthHandshakeResult.error(
+              String.format("Handshake decryption failed (%s)", ex.getMessage()),
+              Optional.empty()));
+    }
+  }
 
-	public AuthHandshakeResult handleResponseMessage(ByteBuf data) throws IOException {
-		try {
-			final var statusByte = data.getByte(0);
-			if (statusByte != STATUS_OK) {
-				return AuthHandshakeResult.error("Received error response", Optional.empty());
-			}
+  public AuthHandshakeResult handleResponseMessage(ByteBuf data) throws IOException {
+    try {
+      final var statusByte = data.getByte(0);
+      if (statusByte != STATUS_OK) {
+        return AuthHandshakeResult.error("Received error response", Optional.empty());
+      }
 
-			final var sizeBytes = new byte[2];
-			data.getBytes(1, sizeBytes, 0, sizeBytes.length);
-			final var encryptedPayload = new byte[data.readableBytes() - 3];
-			data.getBytes(3, encryptedPayload, 0, encryptedPayload.length);
-			final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
-			final var message = serialization.fromDson(plaintext, AuthResponseMessage.class);
-			final var responsePacket = new byte[data.readableBytes()];
-			data.getBytes(0, responsePacket);
-			this.responsePacketOpt = Optional.of(responsePacket);
-			final var remoteEphemeralKey = ECPublicKey.fromBytes(message.getEphemeralPublicKey().asBytes());
-			return finalizeHandshake(remoteEphemeralKey, message.getNonce());
-		} catch (PublicKeyException | InvalidCipherTextException ex) {
-			return AuthHandshakeResult.error(
-				String.format("Handshake decryption failed (%s)", ex.getMessage()),
-				Optional.empty()
-			);
-		}
-	}
+      final var sizeBytes = new byte[2];
+      data.getBytes(1, sizeBytes, 0, sizeBytes.length);
+      final var encryptedPayload = new byte[data.readableBytes() - 3];
+      data.getBytes(3, encryptedPayload, 0, encryptedPayload.length);
+      final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
+      final var message = serialization.fromDson(plaintext, AuthResponseMessage.class);
+      final var responsePacket = new byte[data.readableBytes()];
+      data.getBytes(0, responsePacket);
+      this.responsePacketOpt = Optional.of(responsePacket);
+      final var remoteEphemeralKey =
+          ECPublicKey.fromBytes(message.getEphemeralPublicKey().asBytes());
+      return finalizeHandshake(remoteEphemeralKey, message.getNonce());
+    } catch (PublicKeyException | InvalidCipherTextException ex) {
+      return AuthHandshakeResult.error(
+          String.format("Handshake decryption failed (%s)", ex.getMessage()), Optional.empty());
+    }
+  }
 
-	private ECPublicKey extractEphemeralKey(ECDSASignature signature, HashCode nonce, ECPublicKey publicKey) {
-		final var sharedSecret = ecKeyOps.ecdhAgreement(publicKey);
-		final var token = bigIntegerToBytes(sharedSecret, NONCE_SIZE);
-		final var signed = xor(token, nonce.asBytes());
-		return ECPublicKey.recoverFrom(HashCode.fromBytes(signed), signature).orElseThrow();
-	}
+  private ECPublicKey extractEphemeralKey(
+      ECDSASignature signature, HashCode nonce, ECPublicKey publicKey) {
+    final var sharedSecret = ecKeyOps.ecdhAgreement(publicKey);
+    final var token = bigIntegerToBytes(sharedSecret, NONCE_SIZE);
+    final var signed = xor(token, nonce.asBytes());
+    return ECPublicKey.recoverFrom(HashCode.fromBytes(signed), signature).orElseThrow();
+  }
 
-	private AuthHandshakeSuccess finalizeHandshake(ECPublicKey remoteEphemeralKey, HashCode remoteNonce) {
-		final var initiatePacket = initiatePacketOpt.get();
-		final var responsePacket = responsePacketOpt.get();
-		final var remotePubKey = remotePubKeyOpt.get();
+  private AuthHandshakeSuccess finalizeHandshake(
+      ECPublicKey remoteEphemeralKey, HashCode remoteNonce) {
+    final var initiatePacket = initiatePacketOpt.get();
+    final var responsePacket = responsePacketOpt.get();
+    final var remotePubKey = remotePubKeyOpt.get();
 
-		final var agreement = new ECDHBasicAgreement();
-		agreement.init(new ECPrivateKeyParameters(new BigInteger(1, ephemeralKey.getPrivateKey()), ECKeyUtils.domain()));
-		final var secretScalar = agreement.calculateAgreement(
-			new ECPublicKeyParameters(remoteEphemeralKey.getEcPoint(),
-			ECKeyUtils.domain())
-		);
-		final var agreedSecret = bigIntegerToBytes(secretScalar, SECRET_SIZE);
+    final var agreement = new ECDHBasicAgreement();
+    agreement.init(
+        new ECPrivateKeyParameters(
+            new BigInteger(1, ephemeralKey.getPrivateKey()), ECKeyUtils.domain()));
+    final var secretScalar =
+        agreement.calculateAgreement(
+            new ECPublicKeyParameters(remoteEphemeralKey.getEcPoint(), ECKeyUtils.domain()));
+    final var agreedSecret = bigIntegerToBytes(secretScalar, SECRET_SIZE);
 
-		final var sharedSecret = isInitiator
-			? kec256(agreedSecret, kec256(remoteNonce.asBytes(), nonce))
-			: kec256(agreedSecret, kec256(nonce, remoteNonce.asBytes()));
+    final var sharedSecret =
+        isInitiator
+            ? kec256(agreedSecret, kec256(remoteNonce.asBytes(), nonce))
+            : kec256(agreedSecret, kec256(nonce, remoteNonce.asBytes()));
 
-		final var aesSecret = kec256(agreedSecret, sharedSecret);
+    final var aesSecret = kec256(agreedSecret, sharedSecret);
 
-		final var macSecrets = isInitiator
-			? macSecretSetup(agreedSecret, aesSecret, initiatePacket, nonce, responsePacket, remoteNonce.asBytes())
-			: macSecretSetup(agreedSecret, aesSecret, initiatePacket, remoteNonce.asBytes(), responsePacket, nonce);
+    final var macSecrets =
+        isInitiator
+            ? macSecretSetup(
+                agreedSecret,
+                aesSecret,
+                initiatePacket,
+                nonce,
+                responsePacket,
+                remoteNonce.asBytes())
+            : macSecretSetup(
+                agreedSecret,
+                aesSecret,
+                initiatePacket,
+                remoteNonce.asBytes(),
+                responsePacket,
+                nonce);
 
-		final var secrets = new Secrets(
-			aesSecret,
-			kec256(agreedSecret, aesSecret),
-			kec256(sharedSecret),
-			macSecrets.getFirst(),
-			macSecrets.getSecond()
-		);
+    final var secrets =
+        new Secrets(
+            aesSecret,
+            kec256(agreedSecret, aesSecret),
+            kec256(sharedSecret),
+            macSecrets.getFirst(),
+            macSecrets.getSecond());
 
-		return AuthHandshakeResult.success(remotePubKey, secrets);
-	}
+    return AuthHandshakeResult.success(remotePubKey, secrets);
+  }
 
-	private Pair<KeccakDigest, KeccakDigest> macSecretSetup(
-		byte[] agreedSecret,
-		byte[] aesSecret,
-		byte[] initiatePacket,
-		byte[] initiateNonce,
-		byte[] responsePacket,
-		byte[] responseNonce
-	) {
-		final var macSecret = kec256(agreedSecret, aesSecret);
-		final var mac1 = new KeccakDigest(MAC_SIZE);
-		mac1.update(xor(macSecret, responseNonce), 0, macSecret.length);
-		final var bufSize = 32;
-		final var buf = new byte[bufSize];
-		new KeccakDigest(mac1).doFinal(buf, 0);
-		mac1.update(initiatePacket, 0, initiatePacket.length);
-		new KeccakDigest(mac1).doFinal(buf, 0);
-		final var mac2 = new KeccakDigest(MAC_SIZE);
-		mac2.update(xor(macSecret, initiateNonce), 0, macSecret.length);
-		new KeccakDigest(mac2).doFinal(buf, 0);
-		mac2.update(responsePacket, 0, responsePacket.length);
-		new KeccakDigest(mac2).doFinal(buf, 0);
-		return isInitiator ? Pair.of(mac1, mac2) : Pair.of(mac2, mac1);
-	}
+  private Pair<KeccakDigest, KeccakDigest> macSecretSetup(
+      byte[] agreedSecret,
+      byte[] aesSecret,
+      byte[] initiatePacket,
+      byte[] initiateNonce,
+      byte[] responsePacket,
+      byte[] responseNonce) {
+    final var macSecret = kec256(agreedSecret, aesSecret);
+    final var mac1 = new KeccakDigest(MAC_SIZE);
+    mac1.update(xor(macSecret, responseNonce), 0, macSecret.length);
+    final var bufSize = 32;
+    final var buf = new byte[bufSize];
+    new KeccakDigest(mac1).doFinal(buf, 0);
+    mac1.update(initiatePacket, 0, initiatePacket.length);
+    new KeccakDigest(mac1).doFinal(buf, 0);
+    final var mac2 = new KeccakDigest(MAC_SIZE);
+    mac2.update(xor(macSecret, initiateNonce), 0, macSecret.length);
+    new KeccakDigest(mac2).doFinal(buf, 0);
+    mac2.update(responsePacket, 0, responsePacket.length);
+    new KeccakDigest(mac2).doFinal(buf, 0);
+    return isInitiator ? Pair.of(mac1, mac2) : Pair.of(mac2, mac1);
+  }
 
-	private byte[] randomBytes(int len) {
-		final var arr = new byte[len];
-		secureRandom.nextBytes(arr);
-		return arr;
-	}
+  private byte[] randomBytes(int len) {
+    final var arr = new byte[len];
+    secureRandom.nextBytes(arr);
+    return arr;
+  }
 }

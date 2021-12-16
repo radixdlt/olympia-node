@@ -66,33 +66,31 @@ package org.radix.network.messages;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.radixdlt.serialization.SerializerId2;
-import org.radix.network.messaging.Message;
-
 import java.util.Objects;
+import org.radix.network.messaging.Message;
 
 @SerializerId2("p2p.liveness.ping")
 public final class PeerPingMessage extends Message {
-	@JsonCreator
-	public PeerPingMessage() {
-	}
+  @JsonCreator
+  public PeerPingMessage() {}
 
-	@Override
-	public String toString() {
-		return String.format("%s[]", getClass().getSimpleName());
-	}
+  @Override
+  public String toString() {
+    return String.format("%s[]", getClass().getSimpleName());
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof PeerPingMessage that)
-			   && Objects.equals(getTimestamp(), that.getTimestamp());
-	}
+    return (o instanceof PeerPingMessage that)
+        && Objects.equals(getTimestamp(), that.getTimestamp());
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(getTimestamp());
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(getTimestamp());
+  }
 }

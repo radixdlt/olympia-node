@@ -67,7 +67,7 @@ package com.radixdlt.constraintmachine.exceptions;
 import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
 
 public class ExecutionContextDestroyException extends Exception {
-	public ExecutionContextDestroyException(TokenHoldingBucket reserve) {
-		super("Reserve not empty: " + reserve);
-	}
+  public ExecutionContextDestroyException(TokenHoldingBucket reserve) {
+    super("Reserve not empty: " + reserve);
+  }
 }

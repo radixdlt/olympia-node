@@ -64,16 +64,15 @@
 
 package com.radixdlt.ledger;
 
-import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.liveness.NextTxnsGenerator;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.LinkedList;
 import java.util.List;
@@ -82,31 +81,34 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class MockedLedgerModule extends AbstractModule {
-	@Override
-	public void configure() {
-		bind(NextTxnsGenerator.class).toInstance((view, aids) -> List.of());
-	}
+  @Override
+  public void configure() {
+    bind(NextTxnsGenerator.class).toInstance((view, aids) -> List.of());
+  }
 
-	@Provides
-	@Singleton
-	Ledger syncedLedger(TimeSupplier timeSupplier) {
-		return new Ledger() {
-			@Override
-			public Optional<PreparedVertex> prepare(LinkedList<PreparedVertex> previous, VerifiedVertex vertex) {
-				final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
-				final LedgerHeader ledgerHeader = vertex.getParentHeader().getLedgerHeader()
-					.updateViewAndTimestamp(vertex.getView(), timestamp);
+  @Provides
+  @Singleton
+  Ledger syncedLedger(TimeSupplier timeSupplier) {
+    return new Ledger() {
+      @Override
+      public Optional<PreparedVertex> prepare(
+          LinkedList<PreparedVertex> previous, VerifiedVertex vertex) {
+        final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
+        final LedgerHeader ledgerHeader =
+            vertex
+                .getParentHeader()
+                .getLedgerHeader()
+                .updateViewAndTimestamp(vertex.getView(), timestamp);
 
-				return Optional.of(vertex
-					.withHeader(ledgerHeader, timeSupplier.currentTime())
-					.andTxns(
-						vertex.getTxns().stream()
-							.<PreparedTxn>map(MockPrepared::new)
-							.collect(Collectors.toList()),
-						Map.of()
-					)
-				);
-			}
-		};
-	}
+        return Optional.of(
+            vertex
+                .withHeader(ledgerHeader, timeSupplier.currentTime())
+                .andTxns(
+                    vertex.getTxns().stream()
+                        .<PreparedTxn>map(MockPrepared::new)
+                        .collect(Collectors.toList()),
+                    Map.of()));
+      }
+    };
+  }
 }

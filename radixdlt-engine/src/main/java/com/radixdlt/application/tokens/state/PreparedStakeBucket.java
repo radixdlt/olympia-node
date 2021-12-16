@@ -69,56 +69,55 @@ import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-
 import java.util.Objects;
 
 public final class PreparedStakeBucket implements Bucket {
-	private final REAddr owner;
-	private final ECPublicKey delegateKey;
+  private final REAddr owner;
+  private final ECPublicKey delegateKey;
 
-	public PreparedStakeBucket(REAddr owner, ECPublicKey delegateKey) {
-		this.owner = owner;
-		this.delegateKey = delegateKey;
-	}
+  public PreparedStakeBucket(REAddr owner, ECPublicKey delegateKey) {
+    this.owner = owner;
+    this.delegateKey = delegateKey;
+  }
 
-	@Override
-	public Authorization withdrawAuthorization() {
-		return new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { });
-	}
+  @Override
+  public Authorization withdrawAuthorization() {
+    return new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {});
+  }
 
-	@Override
-	public REAddr resourceAddr() {
-		return REAddr.ofNativeToken();
-	}
+  @Override
+  public REAddr resourceAddr() {
+    return REAddr.ofNativeToken();
+  }
 
-	@Override
-	public REAddr getOwner() {
-		return owner;
-	}
+  @Override
+  public REAddr getOwner() {
+    return owner;
+  }
 
-	@Override
-	public ECPublicKey getValidatorKey() {
-		return delegateKey;
-	}
+  @Override
+  public ECPublicKey getValidatorKey() {
+    return delegateKey;
+  }
 
-	@Override
-	public Long getEpochUnlock() {
-		return null;
-	}
+  @Override
+  public Long getEpochUnlock() {
+    return null;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(owner, delegateKey);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(owner, delegateKey);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof PreparedStakeBucket)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof PreparedStakeBucket)) {
+      return false;
+    }
 
-		var other = (PreparedStakeBucket) o;
-		return Objects.equals(this.owner, other.owner)
-			&& Objects.equals(this.delegateKey, other.delegateKey);
-	}
+    var other = (PreparedStakeBucket) o;
+    return Objects.equals(this.owner, other.owner)
+        && Objects.equals(this.delegateKey, other.delegateKey);
+  }
 }

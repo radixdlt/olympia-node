@@ -64,13 +64,11 @@
 
 package com.radixdlt.mempoolfiller;
 
-/**
- * Scheduled event for filling the mempool
- */
+/** Scheduled event for filling the mempool */
 public enum ScheduledMempoolFill {
-    INSTANCE;
+  INSTANCE;
 
-    public static ScheduledMempoolFill create() {
-        return INSTANCE;
-    }
+  public static ScheduledMempoolFill create() {
+    return INSTANCE;
+  }
 }

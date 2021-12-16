@@ -73,44 +73,44 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.ValidationState;
-import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import org.junit.Before;
 import org.junit.Test;
 
 public class RemoteSyncResponseValidatorSetVerifierTest {
-	private BFTValidatorSet validatorSet;
-	private RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
-	private DtoTxnsAndProof commandsAndProof;
+  private BFTValidatorSet validatorSet;
+  private RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
+  private DtoTxnsAndProof commandsAndProof;
 
-	@Before
-	public void setup() {
-		this.validatorSet = mock(BFTValidatorSet.class);
-		this.validatorSetVerifier = new RemoteSyncResponseValidatorSetVerifier(validatorSet);
-		commandsAndProof = mock(DtoTxnsAndProof.class);
-		DtoLedgerProof headerAndProof = mock(DtoLedgerProof.class);
-		TimestampedECDSASignatures signatures = mock(TimestampedECDSASignatures.class);
-		when(signatures.getSignatures()).thenReturn(ImmutableMap.of());
-		when(headerAndProof.getSignatures()).thenReturn(signatures);
-		when(commandsAndProof.getTail()).thenReturn(headerAndProof);
-	}
+  @Before
+  public void setup() {
+    this.validatorSet = mock(BFTValidatorSet.class);
+    this.validatorSetVerifier = new RemoteSyncResponseValidatorSetVerifier(validatorSet);
+    commandsAndProof = mock(DtoTxnsAndProof.class);
+    DtoLedgerProof headerAndProof = mock(DtoLedgerProof.class);
+    TimestampedECDSASignatures signatures = mock(TimestampedECDSASignatures.class);
+    when(signatures.getSignatures()).thenReturn(ImmutableMap.of());
+    when(headerAndProof.getSignatures()).thenReturn(signatures);
+    when(commandsAndProof.getTail()).thenReturn(headerAndProof);
+  }
 
-	@Test
-	public void when_process_good_validator_set__then_sends_verified() {
-		ValidationState validationState = mock(ValidationState.class);
-		when(validatorSet.newValidationState()).thenReturn(validationState);
-		when(validationState.complete()).thenReturn(true);
+  @Test
+  public void when_process_good_validator_set__then_sends_verified() {
+    ValidationState validationState = mock(ValidationState.class);
+    when(validatorSet.newValidationState()).thenReturn(validationState);
+    when(validationState.complete()).thenReturn(true);
 
-		assertTrue(validatorSetVerifier.verifyValidatorSet(SyncResponse.create(commandsAndProof)));
-	}
+    assertTrue(validatorSetVerifier.verifyValidatorSet(SyncResponse.create(commandsAndProof)));
+  }
 
-	@Test
-	public void when_process_bad_validator_set__then_sends_invalid() {
-		ValidationState validationState = mock(ValidationState.class);
-		when(validatorSet.newValidationState()).thenReturn(validationState);
-		when(validationState.complete()).thenReturn(false);
+  @Test
+  public void when_process_bad_validator_set__then_sends_invalid() {
+    ValidationState validationState = mock(ValidationState.class);
+    when(validatorSet.newValidationState()).thenReturn(validationState);
+    when(validationState.complete()).thenReturn(false);
 
-		assertFalse(validatorSetVerifier.verifyValidatorSet(SyncResponse.create(commandsAndProof)));
-	}
+    assertFalse(validatorSetVerifier.verifyValidatorSet(SyncResponse.create(commandsAndProof)));
+  }
 }

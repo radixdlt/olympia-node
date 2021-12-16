@@ -76,60 +76,55 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.network.p2p.PeersView;
-
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * Module which injects a full one node network
- */
+/** Module which injects a full one node network */
 public final class SingleNodeAndPeersDeterministicNetworkModule extends AbstractModule {
-    private final ECKeyPair self;
-    private final int numPeers;
+  private final ECKeyPair self;
+  private final int numPeers;
 
-    public SingleNodeAndPeersDeterministicNetworkModule(ECKeyPair self, int numPeers) {
-        this.self = self;
-        this.numPeers = numPeers;
-    }
+  public SingleNodeAndPeersDeterministicNetworkModule(ECKeyPair self, int numPeers) {
+    this.self = self;
+    this.numPeers = numPeers;
+  }
 
-    @Override
-    protected void configure() {
-        bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(self);
-        install(new PersistedNodeForTestingModule());
-    }
+  @Override
+  protected void configure() {
+    bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(self);
+    install(new PersistedNodeForTestingModule());
+  }
 
-    @Provides
-    @Singleton
-    public PeersView peers() {
-        final var peers = Stream.generate(BFTNode::random)
+  @Provides
+  @Singleton
+  public PeersView peers() {
+    final var peers =
+        Stream.generate(BFTNode::random)
             .limit(numPeers)
             .map(PeersView.PeerInfo::fromBftNode)
             .collect(ImmutableList.toImmutableList());
-        return peers::stream;
-    }
+    return peers::stream;
+  }
 
-    @Provides
-    public List<BFTNode> nodes(@Self BFTNode self) {
-        return List.of(self);
-    }
+  @Provides
+  public List<BFTNode> nodes(@Self BFTNode self) {
+    return List.of(self);
+  }
 
-    @Provides
-    @Singleton
-    public DeterministicNetwork network(@Self BFTNode self, PeersView peersView) {
-        return new DeterministicNetwork(
-            Stream.concat(
-                Stream.of(self),
-                peersView.peers().map(PeersView.PeerInfo::bftNode)
-            ).collect(Collectors.toList()),
-            MessageSelector.firstSelector(),
-            MessageMutator.nothing()
-        );
-    }
+  @Provides
+  @Singleton
+  public DeterministicNetwork network(@Self BFTNode self, PeersView peersView) {
+    return new DeterministicNetwork(
+        Stream.concat(Stream.of(self), peersView.peers().map(PeersView.PeerInfo::bftNode))
+            .collect(Collectors.toList()),
+        MessageSelector.firstSelector(),
+        MessageMutator.nothing());
+  }
 
-    @Provides
-	@Singleton
-    Environment environment(@Self BFTNode self, DeterministicNetwork network) {
-        return network.createSender(self);
-    }
+  @Provides
+  @Singleton
+  Environment environment(@Self BFTNode self, DeterministicNetwork network) {
+    return network.createSender(self);
+  }
 }

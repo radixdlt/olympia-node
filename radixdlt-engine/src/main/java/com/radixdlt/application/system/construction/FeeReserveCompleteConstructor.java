@@ -64,88 +64,89 @@
 
 package com.radixdlt.application.system.construction;
 
+import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.FeeReserveComplete;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Objects;
 import java.util.Optional;
 
 public class FeeReserveCompleteConstructor implements ActionConstructor<FeeReserveComplete> {
-	private final FeeTable feeTable;
-	public FeeReserveCompleteConstructor(FeeTable feeTable) {
-		this.feeTable = feeTable;
-	}
+  private final FeeTable feeTable;
 
-	@Override
-	public void construct(FeeReserveComplete action, TxBuilder builder) throws TxBuilderException {
-		var feeReserve = Optional.ofNullable(builder.getFeeReserve()).orElse(UInt256.ZERO);
-		int curSize = builder.toLowLevelBuilder().size() + signatureInstructionSize();
-		var perByteFee = feeTable.getPerByteFee();
-		var upSubstateFeeTable = feeTable.getPerUpSubstateFee();
-		var substateCost = builder.toLowLevelBuilder().localUpSubstate().stream()
-			.map(s -> s.getParticle().getClass())
-			.map(upSubstateFeeTable::get)
-			.filter(Objects::nonNull)
-			.reduce(UInt256::add).orElse(UInt256.ZERO);
+  public FeeReserveCompleteConstructor(FeeTable feeTable) {
+    this.feeTable = feeTable;
+  }
 
+  @Override
+  public void construct(FeeReserveComplete action, TxBuilder builder) throws TxBuilderException {
+    var feeReserve = Optional.ofNullable(builder.getFeeReserve()).orElse(UInt256.ZERO);
+    int curSize = builder.toLowLevelBuilder().size() + signatureInstructionSize();
+    var perByteFee = feeTable.getPerByteFee();
+    var upSubstateFeeTable = feeTable.getPerUpSubstateFee();
+    var substateCost =
+        builder.toLowLevelBuilder().localUpSubstate().stream()
+            .map(s -> s.getParticle().getClass())
+            .map(upSubstateFeeTable::get)
+            .filter(Objects::nonNull)
+            .reduce(UInt256::add)
+            .orElse(UInt256.ZERO);
 
-		var txnBytesCost = perByteFee.multiply(UInt256.from(curSize));
-		var expectedFee1 = txnBytesCost.add(substateCost);
-		if (feeReserve.compareTo(expectedFee1) < 0) {
-			throw new FeeReserveCompleteException(feeReserve, expectedFee1);
-		}
+    var txnBytesCost = perByteFee.multiply(UInt256.from(curSize));
+    var expectedFee1 = txnBytesCost.add(substateCost);
+    if (feeReserve.compareTo(expectedFee1) < 0) {
+      throw new FeeReserveCompleteException(feeReserve, expectedFee1);
+    }
 
-		if (feeReserve.compareTo(expectedFee1) == 0) {
-			// Fees all accounted for, no need to add END
-			return;
-		}
+    if (feeReserve.compareTo(expectedFee1) == 0) {
+      // Fees all accounted for, no need to add END
+      return;
+    }
 
-		// TODO: Figure out cleaner way to do this which isn't so fragile
-		var expectedSizeWithNoReturn = curSize + syscallInstructionSize() + endInstructionSize();
-		var expectedFee = perByteFee.multiply(UInt256.from(expectedSizeWithNoReturn)).add(substateCost);
-		if (!expectedFee.equals(feeReserve)) {
-			var expectedSizeWithReturn = expectedSizeWithNoReturn + returnedSubstateInstructionSize();
-			expectedFee = perByteFee.multiply(UInt256.from(expectedSizeWithReturn)).add(substateCost);
-		}
-		if (feeReserve.compareTo(expectedFee) < 0) {
-			throw new FeeReserveCompleteException(feeReserve, expectedFee);
-		}
-		var leftover = feeReserve.subtract(expectedFee);
-		builder.takeFeeReserve(action.to(), leftover);
-		builder.end();
-	}
+    // TODO: Figure out cleaner way to do this which isn't so fragile
+    var expectedSizeWithNoReturn = curSize + syscallInstructionSize() + endInstructionSize();
+    var expectedFee = perByteFee.multiply(UInt256.from(expectedSizeWithNoReturn)).add(substateCost);
+    if (!expectedFee.equals(feeReserve)) {
+      var expectedSizeWithReturn = expectedSizeWithNoReturn + returnedSubstateInstructionSize();
+      expectedFee = perByteFee.multiply(UInt256.from(expectedSizeWithReturn)).add(substateCost);
+    }
+    if (feeReserve.compareTo(expectedFee) < 0) {
+      throw new FeeReserveCompleteException(feeReserve, expectedFee);
+    }
+    var leftover = feeReserve.subtract(expectedFee);
+    builder.takeFeeReserve(action.to(), leftover);
+    builder.end();
+  }
 
-	private static int endInstructionSize() {
-		return 1;
-	}
+  private static int endInstructionSize() {
+    return 1;
+  }
 
-	private static int signatureInstructionSize() {
-		return 1 + 32 + 32 + 1;
-	}
+  private static int signatureInstructionSize() {
+    return 1 + 32 + 32 + 1;
+  }
 
-	private static int syscallInstructionSize() {
-		var syscallSize = 0;
-		syscallSize++; // REInstruction
-		syscallSize += 2; // size
-		syscallSize++; // syscall id
-		syscallSize += UInt256.BYTES;
-		return syscallSize;
-	}
+  private static int syscallInstructionSize() {
+    var syscallSize = 0;
+    syscallSize++; // REInstruction
+    syscallSize += 2; // size
+    syscallSize++; // syscall id
+    syscallSize += UInt256.BYTES;
+    return syscallSize;
+  }
 
-	private static int returnedSubstateInstructionSize() {
-		var returnSubstateSize = 0;
-		returnSubstateSize++; // REInstruction
-		returnSubstateSize += 2; // Substate size
-		returnSubstateSize++; // Substate typeId
-		returnSubstateSize++; // Reserved
-		returnSubstateSize += ECPublicKey.COMPRESSED_BYTES + 1; // PubKey addr
-		returnSubstateSize++; // Native token addr
-		returnSubstateSize += UInt256.BYTES; // amount
-		return returnSubstateSize;
-	}
+  private static int returnedSubstateInstructionSize() {
+    var returnSubstateSize = 0;
+    returnSubstateSize++; // REInstruction
+    returnSubstateSize += 2; // Substate size
+    returnSubstateSize++; // Substate typeId
+    returnSubstateSize++; // Reserved
+    returnSubstateSize += ECPublicKey.COMPRESSED_BYTES + 1; // PubKey addr
+    returnSubstateSize++; // Native token addr
+    returnSubstateSize += UInt256.BYTES; // amount
+    return returnSubstateSize;
+  }
 }

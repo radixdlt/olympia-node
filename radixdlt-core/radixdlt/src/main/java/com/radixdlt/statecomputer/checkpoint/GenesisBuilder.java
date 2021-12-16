@@ -86,77 +86,76 @@ import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.store.InMemoryEngineStore;
-
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public final class GenesisBuilder {
-	private final LedgerAccumulator ledgerAccumulator;
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+  private final LedgerAccumulator ledgerAccumulator;
+  private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
-	@Inject
-	public GenesisBuilder(
-		RERules rules,
-		LedgerAccumulator ledgerAccumulator
-	) {
-		this.ledgerAccumulator = ledgerAccumulator;
-		var cmConfig = rules.getConstraintMachineConfig();
-		var cm = new ConstraintMachine(
-			cmConfig.getProcedures(),
-			cmConfig.getDeserialization(),
-			cmConfig.getVirtualSubstateDeserialization(),
-			cmConfig.getMeter()
-		);
-		this.radixEngine = new RadixEngine<>(
-			rules.getParser(),
-			rules.getSerialization(),
-			rules.getActionConstructors(),
-			cm,
-			new InMemoryEngineStore<>(),
-			rules.getBatchVerifier()
-		);
-	}
+  @Inject
+  public GenesisBuilder(RERules rules, LedgerAccumulator ledgerAccumulator) {
+    this.ledgerAccumulator = ledgerAccumulator;
+    var cmConfig = rules.getConstraintMachineConfig();
+    var cm =
+        new ConstraintMachine(
+            cmConfig.getProcedures(),
+            cmConfig.getDeserialization(),
+            cmConfig.getVirtualSubstateDeserialization(),
+            cmConfig.getMeter());
+    this.radixEngine =
+        new RadixEngine<>(
+            rules.getParser(),
+            rules.getSerialization(),
+            rules.getActionConstructors(),
+            cm,
+            new InMemoryEngineStore<>(),
+            rules.getBatchVerifier());
+  }
 
-	public Txn build(String message, long timestamp, List<TxAction> actions) throws TxBuilderException, RadixEngineException {
-		var txnConstructionRequest = TxnConstructionRequest.create();
-		txnConstructionRequest.msg(message.getBytes(StandardCharsets.UTF_8));
-		txnConstructionRequest.action(new CreateSystem(timestamp));
-		actions.forEach(txnConstructionRequest::action);
-		txnConstructionRequest.action(new NextEpoch(timestamp));
-		var txn = radixEngine.construct(txnConstructionRequest).buildWithoutSignature();
+  public Txn build(String message, long timestamp, List<TxAction> actions)
+      throws TxBuilderException, RadixEngineException {
+    var txnConstructionRequest = TxnConstructionRequest.create();
+    txnConstructionRequest.msg(message.getBytes(StandardCharsets.UTF_8));
+    txnConstructionRequest.action(new CreateSystem(timestamp));
+    actions.forEach(txnConstructionRequest::action);
+    txnConstructionRequest.action(new NextEpoch(timestamp));
+    var txn = radixEngine.construct(txnConstructionRequest).buildWithoutSignature();
 
-		// Verify that it executes okay
-		var branch = radixEngine.transientBranch();
-		branch.execute(List.of(txn), PermissionLevel.SYSTEM);
-		radixEngine.deleteBranches();
+    // Verify that it executes okay
+    var branch = radixEngine.transientBranch();
+    branch.execute(List.of(txn), PermissionLevel.SYSTEM);
+    radixEngine.deleteBranches();
 
-		return txn;
-	}
+    return txn;
+  }
 
-	public LedgerProof generateGenesisProof(Txn txn) throws RadixEngineException {
-		var branch = radixEngine.transientBranch();
-		var result = branch.execute(List.of(txn), PermissionLevel.SYSTEM);
-		radixEngine.deleteBranches();
-		var genesisValidatorSet = result.getProcessedTxn().getEvents().stream()
-			.filter(NextValidatorSetEvent.class::isInstance)
-			.map(NextValidatorSetEvent.class::cast)
-			.findFirst()
-			.map(e -> BFTValidatorSet.from(
-				e.nextValidators().stream()
-					.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount())))
-			).orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
+  public LedgerProof generateGenesisProof(Txn txn) throws RadixEngineException {
+    var branch = radixEngine.transientBranch();
+    var result = branch.execute(List.of(txn), PermissionLevel.SYSTEM);
+    radixEngine.deleteBranches();
+    var genesisValidatorSet =
+        result.getProcessedTxn().getEvents().stream()
+            .filter(NextValidatorSetEvent.class::isInstance)
+            .map(NextValidatorSetEvent.class::cast)
+            .findFirst()
+            .map(
+                e ->
+                    BFTValidatorSet.from(
+                        e.nextValidators().stream()
+                            .map(
+                                v ->
+                                    BFTValidator.from(
+                                        BFTNode.create(v.getValidatorKey()), v.getAmount()))))
+            .orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
 
-		var init = new AccumulatorState(0, HashUtils.zero256());
-		var accumulatorState = ledgerAccumulator.accumulate(init, txn.getId().asHashCode());
-		var genesisProof = LedgerProof.genesis(
-			accumulatorState,
-			genesisValidatorSet,
-			0L
-		);
-		if (!genesisProof.isEndOfEpoch()) {
-			throw new IllegalStateException("Genesis must be end of epoch");
-		}
+    var init = new AccumulatorState(0, HashUtils.zero256());
+    var accumulatorState = ledgerAccumulator.accumulate(init, txn.getId().asHashCode());
+    var genesisProof = LedgerProof.genesis(accumulatorState, genesisValidatorSet, 0L);
+    if (!genesisProof.isEndOfEpoch()) {
+      throw new IllegalStateException("Genesis must be end of epoch");
+    }
 
-		return genesisProof;
-	}
+    return genesisProof;
+  }
 }

@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -67,64 +68,81 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.api.HandlerRoute;
 import com.radixdlt.api.core.handlers.ConstructionBuildHandler;
 import com.radixdlt.api.core.handlers.ConstructionDeriveHandler;
 import com.radixdlt.api.core.handlers.ConstructionFinalizeHandler;
 import com.radixdlt.api.core.handlers.ConstructionHashHandler;
+import com.radixdlt.api.core.handlers.ConstructionParseHandler;
 import com.radixdlt.api.core.handlers.ConstructionSubmitHandler;
 import com.radixdlt.api.core.handlers.EngineConfigurationHandler;
 import com.radixdlt.api.core.handlers.EngineStatusHandler;
 import com.radixdlt.api.core.handlers.EntityHandler;
+import com.radixdlt.api.core.handlers.KeyListHandler;
+import com.radixdlt.api.core.handlers.KeySignHandler;
 import com.radixdlt.api.core.handlers.MempoolHandler;
 import com.radixdlt.api.core.handlers.MempoolTransactionHandler;
 import com.radixdlt.api.core.handlers.NetworkConfigurationHandler;
 import com.radixdlt.api.core.handlers.NetworkStatusHandler;
-import com.radixdlt.api.core.handlers.ConstructionParseHandler;
-import com.radixdlt.api.core.handlers.KeyListHandler;
-import com.radixdlt.api.core.handlers.KeySignHandler;
 import com.radixdlt.api.core.handlers.TransactionsHandler;
 import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
-import com.radixdlt.api.HandlerRoute;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import io.undertow.server.HttpHandler;
 
 public class CoreApiModule extends AbstractModule {
-	private final boolean transactionsEnable;
-	private final boolean signEnable;
+  private final boolean transactionsEnable;
+  private final boolean signEnable;
 
-	public CoreApiModule(boolean transactionsEnable, boolean signEnable) {
-		this.transactionsEnable = transactionsEnable;
-		this.signEnable = signEnable;
-	}
+  public CoreApiModule(boolean transactionsEnable, boolean signEnable) {
+    this.transactionsEnable = transactionsEnable;
+    this.signEnable = signEnable;
+  }
 
-	@Override
-	public void configure() {
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), HandlerRoute.class, HttpHandler.class
-		);
+  @Override
+  public void configure() {
+    var routeBinder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class);
 
-		routeBinder.addBinding(HandlerRoute.post("/entity")).to(EntityHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/mempool")).to(MempoolHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/mempool/transaction")).to(MempoolTransactionHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/network/configuration")).to(NetworkConfigurationHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/network/status")).to(NetworkStatusHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/engine/configuration")).to(EngineConfigurationHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/engine/status")).to(EngineStatusHandler.class);
-		if (transactionsEnable) {
-			bind(BerkeleyRecoverableProcessedTxnStore.class).in(Scopes.SINGLETON);
-			Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-				.addBinding().to(BerkeleyRecoverableProcessedTxnStore.class);
-			routeBinder.addBinding(HandlerRoute.post("/transactions")).to(TransactionsHandler.class);
-		}
-		routeBinder.addBinding(HandlerRoute.post("/construction/derive")).to(ConstructionDeriveHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/construction/build")).to(ConstructionBuildHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/construction/parse")).to(ConstructionParseHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/construction/finalize")).to(ConstructionFinalizeHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/construction/hash")).to(ConstructionHashHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/construction/submit")).to(ConstructionSubmitHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/key/list")).to(KeyListHandler.class);
-		if (signEnable) {
-			routeBinder.addBinding(HandlerRoute.post("/key/sign")).to(KeySignHandler.class);
-		}
-	}
+    routeBinder.addBinding(HandlerRoute.post("/entity")).to(EntityHandler.class);
+    routeBinder.addBinding(HandlerRoute.post("/mempool")).to(MempoolHandler.class);
+    routeBinder
+        .addBinding(HandlerRoute.post("/mempool/transaction"))
+        .to(MempoolTransactionHandler.class);
+    routeBinder
+        .addBinding(HandlerRoute.post("/network/configuration"))
+        .to(NetworkConfigurationHandler.class);
+    routeBinder.addBinding(HandlerRoute.post("/network/status")).to(NetworkStatusHandler.class);
+    routeBinder
+        .addBinding(HandlerRoute.post("/engine/configuration"))
+        .to(EngineConfigurationHandler.class);
+    routeBinder.addBinding(HandlerRoute.post("/engine/status")).to(EngineStatusHandler.class);
+    if (transactionsEnable) {
+      bind(BerkeleyRecoverableProcessedTxnStore.class).in(Scopes.SINGLETON);
+      Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
+          .addBinding()
+          .to(BerkeleyRecoverableProcessedTxnStore.class);
+      routeBinder.addBinding(HandlerRoute.post("/transactions")).to(TransactionsHandler.class);
+    }
+    routeBinder
+        .addBinding(HandlerRoute.post("/construction/derive"))
+        .to(ConstructionDeriveHandler.class);
+    routeBinder
+        .addBinding(HandlerRoute.post("/construction/build"))
+        .to(ConstructionBuildHandler.class);
+    routeBinder
+        .addBinding(HandlerRoute.post("/construction/parse"))
+        .to(ConstructionParseHandler.class);
+    routeBinder
+        .addBinding(HandlerRoute.post("/construction/finalize"))
+        .to(ConstructionFinalizeHandler.class);
+    routeBinder
+        .addBinding(HandlerRoute.post("/construction/hash"))
+        .to(ConstructionHashHandler.class);
+    routeBinder
+        .addBinding(HandlerRoute.post("/construction/submit"))
+        .to(ConstructionSubmitHandler.class);
+    routeBinder.addBinding(HandlerRoute.post("/key/list")).to(KeyListHandler.class);
+    if (signEnable) {
+      routeBinder.addBinding(HandlerRoute.post("/key/sign")).to(KeySignHandler.class);
+    }
+  }
 }

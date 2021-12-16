@@ -66,16 +66,15 @@ package com.radixdlt.integration.distributed.simulation.network;
 
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
 
-/**
- * The latency configuration for a network
- */
+/** The latency configuration for a network */
 public interface LatencyProvider {
 
-	/**
-	 * If >= 0, returns the latency in milliseconds of the next message. If < 0, signifies to drop the next message.
-	 *
-	 * @param msg the next message
-	 * @return the latency in milliseconds if >= 0, otherwise a negative number signifies a drop
-	 */
-	int nextLatency(MessageInTransit msg);
+  /**
+   * If >= 0, returns the latency in milliseconds of the next message. If < 0, signifies to drop the
+   * next message.
+   *
+   * @param msg the next message
+   * @return the latency in milliseconds if >= 0, otherwise a negative number signifies a drop
+   */
+  int nextLatency(MessageInTransit msg);
 }

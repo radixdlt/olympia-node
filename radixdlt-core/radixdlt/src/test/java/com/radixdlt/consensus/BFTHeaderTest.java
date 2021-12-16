@@ -64,6 +64,9 @@
 
 package com.radixdlt.consensus;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
@@ -71,54 +74,51 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
 public class BFTHeaderTest {
-	private BFTHeader testObject;
-	private HashCode id;
-	private LedgerHeader ledgerHeader;
+  private BFTHeader testObject;
+  private HashCode id;
+  private LedgerHeader ledgerHeader;
 
-	@Before
-	public void setUp() {
-		View view = View.of(1234567890L);
-		this.id = HashUtils.random256();
-		this.ledgerHeader = mock(LedgerHeader.class);
-		this.testObject = new BFTHeader(view, id, ledgerHeader);
-	}
+  @Before
+  public void setUp() {
+    View view = View.of(1234567890L);
+    this.id = HashUtils.random256();
+    this.ledgerHeader = mock(LedgerHeader.class);
+    this.testObject = new BFTHeader(view, id, ledgerHeader);
+  }
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(BFTHeader.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(BFTHeader.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 
-	@Test
-	public void testGetters() {
-		assertThat(View.of(1234567890L)).isEqualTo(this.testObject.getView());
+  @Test
+  public void testGetters() {
+    assertThat(View.of(1234567890L)).isEqualTo(this.testObject.getView());
 
-		assertThat(id).isEqualTo(this.testObject.getVertexId());
-		assertThat(ledgerHeader).isEqualTo(this.testObject.getLedgerHeader());
-	}
+    assertThat(id).isEqualTo(this.testObject.getVertexId());
+    assertThat(ledgerHeader).isEqualTo(this.testObject.getLedgerHeader());
+  }
 
-	@Test
-	public void testToString() {
-		assertThat(this.testObject.toString()).contains(BFTHeader.class.getSimpleName());
-	}
+  @Test
+  public void testToString() {
+    assertThat(this.testObject.toString()).contains(BFTHeader.class.getSimpleName());
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializationWithNullThrowsException1() {
-		BFTHeader.create(1L, null, mock(LedgerHeader.class));
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException1() {
+    BFTHeader.create(1L, null, mock(LedgerHeader.class));
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializationWithNullThrowsException2() {
-		BFTHeader.create(1L, mock(HashCode.class), null);
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException2() {
+    BFTHeader.create(1L, mock(HashCode.class), null);
+  }
 
-	@Test(expected = IllegalArgumentException.class)
-	public void deserializationWithInvalidViewThrowsException() {
-		BFTHeader.create(-1L, mock(HashCode.class), mock(LedgerHeader.class));
-	}
+  @Test(expected = IllegalArgumentException.class)
+  public void deserializationWithInvalidViewThrowsException() {
+    BFTHeader.create(-1L, mock(HashCode.class), mock(LedgerHeader.class));
+  }
 }

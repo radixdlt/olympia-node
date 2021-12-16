@@ -67,58 +67,57 @@ package com.radixdlt.environment.deterministic.network;
 import java.util.Comparator;
 
 /**
- * Message rank.  Used to implement a sense of time in a deterministic model.
- * Messages with a particular rank are processed in arrival order, but
- * timeouts in particular will be put into the next rank to ensure
- * that they are processed after the current rank.
+ * Message rank. Used to implement a sense of time in a deterministic model. Messages with a
+ * particular rank are processed in arrival order, but timeouts in particular will be put into the
+ * next rank to ensure that they are processed after the current rank.
  */
 public final class MessageRank implements Comparable<MessageRank> {
-	static final MessageRank EARLIEST_POSSIBLE = new MessageRank(0L, 0L);
+  static final MessageRank EARLIEST_POSSIBLE = new MessageRank(0L, 0L);
 
-	private static final Comparator<MessageRank> COMPARATOR =
-		Comparator.comparingLong((MessageRank mr) -> mr.major).thenComparingLong(mr -> mr.minor);
+  private static final Comparator<MessageRank> COMPARATOR =
+      Comparator.comparingLong((MessageRank mr) -> mr.major).thenComparingLong(mr -> mr.minor);
 
-	private final long major;
-	private final long minor;
+  private final long major;
+  private final long minor;
 
-	private MessageRank(long major, long minor) {
-		this.major = major;
-		this.minor = minor;
-	}
+  private MessageRank(long major, long minor) {
+    this.major = major;
+    this.minor = minor;
+  }
 
-	public static MessageRank of(long major, long minor) {
-		return new MessageRank(major, minor);
-	}
+  public static MessageRank of(long major, long minor) {
+    return new MessageRank(major, minor);
+  }
 
-	public long major() {
-		return this.major;
-	}
+  public long major() {
+    return this.major;
+  }
 
-	public long minor() {
-		return this.minor;
-	}
+  public long minor() {
+    return this.minor;
+  }
 
-	@Override
-	public int hashCode() {
-		return Long.hashCode(this.major) * 31 + Long.hashCode(this.minor);
-	}
+  @Override
+  public int hashCode() {
+    return Long.hashCode(this.major) * 31 + Long.hashCode(this.minor);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof MessageRank)) {
-			return false;
-		}
-		MessageRank that = (MessageRank) o;
-		return this.major == that.major && this.minor == that.minor;
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof MessageRank)) {
+      return false;
+    }
+    MessageRank that = (MessageRank) o;
+    return this.major == that.major && this.minor == that.minor;
+  }
 
-	@Override
-	public int compareTo(MessageRank that) {
-		return COMPARATOR.compare(this, that);
-	}
+  @Override
+  public int compareTo(MessageRank that) {
+    return COMPARATOR.compare(this, that);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("[%s:%s]", this.major, this.minor);
-	}
+  @Override
+  public String toString() {
+    return String.format("[%s:%s]", this.major, this.minor);
+  }
 }

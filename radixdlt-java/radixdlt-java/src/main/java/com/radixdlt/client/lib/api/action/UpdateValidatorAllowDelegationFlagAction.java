@@ -70,12 +70,13 @@ import com.radixdlt.client.lib.api.ValidatorAddress;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class UpdateValidatorAllowDelegationFlagAction implements Action {
-	private final ActionType type = ActionType.UPDATE_VALIDATOR_DELEGATION_FLAG;
-	private final ValidatorAddress validator;
-	private final boolean allowDelegation;
+  private final ActionType type = ActionType.UPDATE_VALIDATOR_DELEGATION_FLAG;
+  private final ValidatorAddress validator;
+  private final boolean allowDelegation;
 
-	public UpdateValidatorAllowDelegationFlagAction(ValidatorAddress validator, boolean allowDelegation) {
-		this.validator = validator;
-		this.allowDelegation = allowDelegation;
-	}
+  public UpdateValidatorAllowDelegationFlagAction(
+      ValidatorAddress validator, boolean allowDelegation) {
+    this.validator = validator;
+    this.allowDelegation = allowDelegation;
+  }
 }

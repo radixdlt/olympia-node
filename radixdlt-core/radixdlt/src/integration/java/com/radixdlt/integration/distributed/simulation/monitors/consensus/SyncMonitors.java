@@ -71,22 +71,20 @@ import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.MonitorKey;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 
-/**
- * Monitors which checks things in the sync module
- */
+/** Monitors which checks things in the sync module */
 public final class SyncMonitors {
 
-	public static Module maxLedgerSyncLag(long maxLag) {
-		return new AbstractModule() {
-			@ProvidesIntoMap
-			@MonitorKey(Monitor.SYNC_MAX_LAG)
-			TestInvariant maxSyncLagInvariant() {
-				return new MaxLedgerSyncLagInvariant(maxLag);
-			}
-		};
-	}
+  public static Module maxLedgerSyncLag(long maxLag) {
+    return new AbstractModule() {
+      @ProvidesIntoMap
+      @MonitorKey(Monitor.SYNC_MAX_LAG)
+      TestInvariant maxSyncLagInvariant() {
+        return new MaxLedgerSyncLagInvariant(maxLag);
+      }
+    };
+  }
 
-	private SyncMonitors() {
-		throw new IllegalStateException("Cannot instantiate.");
-	}
+  private SyncMonitors() {
+    throw new IllegalStateException("Cannot instantiate.");
+  }
 }

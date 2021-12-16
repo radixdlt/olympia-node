@@ -78,36 +78,41 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Ledger-side safety check. Checks that commands and the order getting persisted are
- * the same across all nodes.
+ * Ledger-side safety check. Checks that commands and the order getting persisted are the same
+ * across all nodes.
  */
 public class LedgerInOrderInvariant implements TestInvariant {
 
-	@Override
-	public Observable<TestInvariantError> check(RunningNetwork network) {
-		Map<BFTNode, List<Txn>> commandsPerNode = new HashMap<>();
-		network.getNodes().forEach(n -> commandsPerNode.put(n, new ArrayList<>()));
+  @Override
+  public Observable<TestInvariantError> check(RunningNetwork network) {
+    Map<BFTNode, List<Txn>> commandsPerNode = new HashMap<>();
+    network.getNodes().forEach(n -> commandsPerNode.put(n, new ArrayList<>()));
 
-		return network.ledgerUpdates().flatMap(nodeAndCommand -> {
-			BFTNode node = nodeAndCommand.getFirst();
-			LedgerUpdate ledgerUpdate = nodeAndCommand.getSecond();
-			List<Txn> nodeTxns = commandsPerNode.get(node);
-			nodeTxns.addAll(ledgerUpdate.getNewTxns());
+    return network
+        .ledgerUpdates()
+        .flatMap(
+            nodeAndCommand -> {
+              BFTNode node = nodeAndCommand.getFirst();
+              LedgerUpdate ledgerUpdate = nodeAndCommand.getSecond();
+              List<Txn> nodeTxns = commandsPerNode.get(node);
+              nodeTxns.addAll(ledgerUpdate.getNewTxns());
 
-			return commandsPerNode.values().stream()
-				.filter(list -> nodeTxns != list)
-				.filter(list -> list.size() >= nodeTxns.size())
-				.findFirst() // Only need to check one node, if passes, guaranteed to pass the others
-				.flatMap(list -> {
-					if (Collections.indexOfSubList(list, nodeTxns) != 0) {
-						TestInvariantError err = new TestInvariantError(
-							"Two nodes don't agree on commands: " + list + " " + nodeTxns
-						);
-						return Optional.of(Observable.just(err));
-					}
-					return Optional.empty();
-				})
-				.orElse(Observable.empty());
-		});
-	}
+              return commandsPerNode.values().stream()
+                  .filter(list -> nodeTxns != list)
+                  .filter(list -> list.size() >= nodeTxns.size())
+                  .findFirst() // Only need to check one node, if passes, guaranteed to pass the
+                  // others
+                  .flatMap(
+                      list -> {
+                        if (Collections.indexOfSubList(list, nodeTxns) != 0) {
+                          TestInvariantError err =
+                              new TestInvariantError(
+                                  "Two nodes don't agree on commands: " + list + " " + nodeTxns);
+                          return Optional.of(Observable.just(err));
+                        }
+                        return Optional.empty();
+                      })
+                  .orElse(Observable.empty());
+            });
+  }
 }

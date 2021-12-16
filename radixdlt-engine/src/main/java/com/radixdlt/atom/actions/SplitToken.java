@@ -69,25 +69,25 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 public final class SplitToken implements TxAction {
-	private final REAddr userAcct;
-	private final REAddr rri;
-	private final UInt256 minSize;
+  private final REAddr userAcct;
+  private final REAddr rri;
+  private final UInt256 minSize;
 
-	public SplitToken(REAddr rri, REAddr userAcct, UInt256 minSize) {
-		this.rri = rri;
-		this.userAcct = userAcct;
-		this.minSize = minSize;
-	}
+  public SplitToken(REAddr rri, REAddr userAcct, UInt256 minSize) {
+    this.rri = rri;
+    this.userAcct = userAcct;
+    this.minSize = minSize;
+  }
 
-	public REAddr userAcct() {
-		return userAcct;
-	}
+  public REAddr userAcct() {
+    return userAcct;
+  }
 
-	public REAddr rri() {
-		return rri;
-	}
+  public REAddr rri() {
+    return rri;
+  }
 
-	public UInt256 minSize() {
-		return minSize;
-	}
+  public UInt256 minSize() {
+    return minSize;
+  }
 }

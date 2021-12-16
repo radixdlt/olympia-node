@@ -77,31 +77,33 @@ import com.radixdlt.serialization.SerializerIds;
 
 public class RadixObjectMapperConfigurator {
 
-	private RadixObjectMapperConfigurator() {
-		throw new IllegalStateException("Class instance creation is not allowed");
-	}
+  private RadixObjectMapperConfigurator() {
+    throw new IllegalStateException("Class instance creation is not allowed");
+  }
 
-	public static void configure(
-			ObjectMapper objectMapper,
-			SerializerIds idLookup,
-			FilterProvider filterProvider,
-			boolean sortProperties
-	) {
-		objectMapper.registerModule(new JsonOrgModule());
-		objectMapper.registerModule(new GuavaModule());
+  public static void configure(
+      ObjectMapper objectMapper,
+      SerializerIds idLookup,
+      FilterProvider filterProvider,
+      boolean sortProperties) {
+    objectMapper.registerModule(new JsonOrgModule());
+    objectMapper.registerModule(new GuavaModule());
 
-		objectMapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, sortProperties);
-		objectMapper.configure(MapperFeature.SORT_CREATOR_PROPERTIES_FIRST, !sortProperties);
-		objectMapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, sortProperties);
-		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		objectMapper.setVisibility(objectMapper.getSerializationConfig().getDefaultVisibilityChecker()
-				.withFieldVisibility(JsonAutoDetect.Visibility.NONE)
-				.withGetterVisibility(JsonAutoDetect.Visibility.NONE)
-				.withSetterVisibility(JsonAutoDetect.Visibility.NONE)
-				.withCreatorVisibility(JsonAutoDetect.Visibility.PUBLIC_ONLY));
-		objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-		objectMapper.setFilterProvider(filterProvider);
-		objectMapper.setAnnotationIntrospector(new DsonFilteringIntrospector());
-		objectMapper.setDefaultTyping(new DsonTypeResolverBuilder(idLookup));
-	}
+    objectMapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, sortProperties);
+    objectMapper.configure(MapperFeature.SORT_CREATOR_PROPERTIES_FIRST, !sortProperties);
+    objectMapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, sortProperties);
+    objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    objectMapper.setVisibility(
+        objectMapper
+            .getSerializationConfig()
+            .getDefaultVisibilityChecker()
+            .withFieldVisibility(JsonAutoDetect.Visibility.NONE)
+            .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+            .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+            .withCreatorVisibility(JsonAutoDetect.Visibility.PUBLIC_ONLY));
+    objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+    objectMapper.setFilterProvider(filterProvider);
+    objectMapper.setAnnotationIntrospector(new DsonFilteringIntrospector());
+    objectMapper.setDefaultTyping(new DsonTypeResolverBuilder(idLookup));
+  }
 }

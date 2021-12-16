@@ -64,11 +64,9 @@
 
 package com.radixdlt.engine;
 
-/**
- * Error codes that describe exceptions thrown by Radix Engine
- */
+/** Error codes that describe exceptions thrown by Radix Engine */
 public enum RadixEngineErrorCode {
-	TXN_ERROR,
-	CM_ERROR,
-	HOOK_ERROR
+  TXN_ERROR,
+  CM_ERROR,
+  HOOK_ERROR
 }

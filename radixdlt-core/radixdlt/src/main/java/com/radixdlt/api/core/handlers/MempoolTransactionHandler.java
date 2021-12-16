@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -79,50 +80,50 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineMempool;
 
-public class MempoolTransactionHandler extends CoreJsonRpcHandler<MempoolTransactionRequest, MempoolTransactionResponse> {
-	private final RadixEngineMempool mempool;
-	private final CoreModelMapper modelMapper;
-	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
+public class MempoolTransactionHandler
+    extends CoreJsonRpcHandler<MempoolTransactionRequest, MempoolTransactionResponse> {
+  private final RadixEngineMempool mempool;
+  private final CoreModelMapper modelMapper;
+  private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 
-	@Inject
-	private MempoolTransactionHandler(
-		RadixEngineMempool mempool,
-		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
-		CoreModelMapper modelMapper
-	) {
-		super(MempoolTransactionRequest.class);
+  @Inject
+  private MempoolTransactionHandler(
+      RadixEngineMempool mempool,
+      Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
+      CoreModelMapper modelMapper) {
+    super(MempoolTransactionRequest.class);
 
-		this.mempool = mempool;
-		this.modelMapper = modelMapper;
-		this.radixEngineProvider = radixEngineProvider;
-	}
+    this.mempool = mempool;
+    this.modelMapper = modelMapper;
+    this.radixEngineProvider = radixEngineProvider;
+  }
 
-	private String symbol(REAddr tokenAddress) {
-		var mapKey = SystemMapKey.ofResourceData(tokenAddress, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-		var substate = radixEngineProvider.get().read(reader -> reader.get(mapKey).orElseThrow());
-		// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
-		var tokenResourceMetadata = (TokenResourceMetadata) substate;
-		return tokenResourceMetadata.getSymbol();
-	}
+  private String symbol(REAddr tokenAddress) {
+    var mapKey =
+        SystemMapKey.ofResourceData(tokenAddress, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+    var substate = radixEngineProvider.get().read(reader -> reader.get(mapKey).orElseThrow());
+    // TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+    var tokenResourceMetadata = (TokenResourceMetadata) substate;
+    return tokenResourceMetadata.getSymbol();
+  }
 
-	@Override
-	public MempoolTransactionResponse handleRequest(MempoolTransactionRequest request) throws CoreApiException {
-		modelMapper.verifyNetwork(request.getNetworkIdentifier());
+  @Override
+  public MempoolTransactionResponse handleRequest(MempoolTransactionRequest request)
+      throws CoreApiException {
+    modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var transactionIdentifier = request.getTransactionIdentifier();
-		var txnId = modelMapper.txnId(transactionIdentifier);
-		var transaction = mempool.getData(map -> map.get(txnId));
-		if (transaction == null) {
-			throw CoreApiException.notFound(
-				new TransactionNotFoundError()
-					.transactionIdentifier(transactionIdentifier)
-					.type(TransactionNotFoundError.class.getSimpleName())
-			);
-		}
+    var transactionIdentifier = request.getTransactionIdentifier();
+    var txnId = modelMapper.txnId(transactionIdentifier);
+    var transaction = mempool.getData(map -> map.get(txnId));
+    if (transaction == null) {
+      throw CoreApiException.notFound(
+          new TransactionNotFoundError()
+              .transactionIdentifier(transactionIdentifier)
+              .type(TransactionNotFoundError.class.getSimpleName()));
+    }
 
-		var processed = transaction.getFirst();
-		var transactionModel = modelMapper.transaction(processed, this::symbol);
-		return new MempoolTransactionResponse()
-			.transaction(transactionModel);
-	}
+    var processed = transaction.getFirst();
+    var transactionModel = modelMapper.transaction(processed, this::symbol);
+    return new MempoolTransactionResponse().transaction(transactionModel);
+  }
 }

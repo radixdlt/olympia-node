@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -72,24 +73,24 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 public final class RecoverableSubstateVirtualShutdown implements RecoverableSubstate {
-	private final byte typeByte;
-	private final SubstateId substateId;
+  private final byte typeByte;
+  private final SubstateId substateId;
 
-	public RecoverableSubstateVirtualShutdown(byte typeByte, SubstateId substateId) {
-		this.typeByte = typeByte;
-		this.substateId = substateId;
-	}
+  public RecoverableSubstateVirtualShutdown(byte typeByte, SubstateId substateId) {
+    this.typeByte = typeByte;
+    this.substateId = substateId;
+  }
 
-	@Override
-	public SubstateOperation recover(Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider) {
-		var radixEngine = radixEngineProvider.get();
-		var keyBuf = substateId.getVirtualKey().orElseThrow();
-		Particle substate;
-		try {
-			substate = radixEngine.getVirtualSubstateDeserialization().keyToSubstate(typeByte, keyBuf);
-		} catch (DeserializeException e) {
-			throw new IllegalStateException("Could not deserialize virtual substate.");
-		}
-		return new SubstateOperation(substate, substateId, false);
-	}
+  @Override
+  public SubstateOperation recover(Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider) {
+    var radixEngine = radixEngineProvider.get();
+    var keyBuf = substateId.getVirtualKey().orElseThrow();
+    Particle substate;
+    try {
+      substate = radixEngine.getVirtualSubstateDeserialization().keyToSubstate(typeByte, keyBuf);
+    } catch (DeserializeException e) {
+      throw new IllegalStateException("Could not deserialize virtual substate.");
+    }
+    return new SubstateOperation(substate, substateId, false);
+  }
 }

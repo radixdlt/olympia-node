@@ -74,76 +74,72 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
-import javax.annotation.concurrent.Immutable;
 import java.util.Objects;
+import javax.annotation.concurrent.Immutable;
 
-/**
- * A ledger header and proof which has not been verified
- */
+/** A ledger header and proof which has not been verified */
 @Immutable
 @SerializerId2("ledger.dto_proof")
 public final class DtoLedgerProof {
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-	SerializerDummy serializer = SerializerDummy.DUMMY;
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+  SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	// proposed
-	@JsonProperty("opaque")
-	@DsonOutput(Output.ALL)
-	private final HashCode opaque;
+  // proposed
+  @JsonProperty("opaque")
+  @DsonOutput(Output.ALL)
+  private final HashCode opaque;
 
-	// committed ledgerState
-	@JsonProperty("ledgerState")
-	@DsonOutput(Output.ALL)
-	private final LedgerHeader ledgerHeader;
+  // committed ledgerState
+  @JsonProperty("ledgerState")
+  @DsonOutput(Output.ALL)
+  private final LedgerHeader ledgerHeader;
 
-	@JsonProperty("signatures")
-	@DsonOutput(Output.ALL)
-	private final TimestampedECDSASignatures signatures;
+  @JsonProperty("signatures")
+  @DsonOutput(Output.ALL)
+  private final TimestampedECDSASignatures signatures;
 
-	@JsonCreator
-	public DtoLedgerProof(
-		@JsonProperty(value = "opaque", required = true) HashCode opaque,
-		@JsonProperty(value = "ledgerState", required = true) LedgerHeader ledgerHeader,
-		@JsonProperty(value = "signatures", required = true) TimestampedECDSASignatures signatures
-	) {
-		this.opaque = Objects.requireNonNull(opaque);
-		this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
-		this.signatures = Objects.requireNonNull(signatures);
-	}
+  @JsonCreator
+  public DtoLedgerProof(
+      @JsonProperty(value = "opaque", required = true) HashCode opaque,
+      @JsonProperty(value = "ledgerState", required = true) LedgerHeader ledgerHeader,
+      @JsonProperty(value = "signatures", required = true) TimestampedECDSASignatures signatures) {
+    this.opaque = Objects.requireNonNull(opaque);
+    this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
+    this.signatures = Objects.requireNonNull(signatures);
+  }
 
-	public HashCode getOpaque() {
-		return opaque;
-	}
+  public HashCode getOpaque() {
+    return opaque;
+  }
 
-	public TimestampedECDSASignatures getSignatures() {
-		return signatures;
-	}
+  public TimestampedECDSASignatures getSignatures() {
+    return signatures;
+  }
 
-	public LedgerHeader getLedgerHeader() {
-		return ledgerHeader;
-	}
+  public LedgerHeader getLedgerHeader() {
+    return ledgerHeader;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.ledgerHeader);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.ledgerHeader);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof DtoLedgerProof that)
-			   && Objects.equals(opaque, that.opaque)
-			   && Objects.equals(ledgerHeader, that.ledgerHeader)
-			   && Objects.equals(signatures, that.signatures);
-	}
+    return (o instanceof DtoLedgerProof that)
+        && Objects.equals(opaque, that.opaque)
+        && Objects.equals(ledgerHeader, that.ledgerHeader)
+        && Objects.equals(signatures, that.signatures);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(opaque, ledgerHeader, signatures);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(opaque, ledgerHeader, signatures);
+  }
 }

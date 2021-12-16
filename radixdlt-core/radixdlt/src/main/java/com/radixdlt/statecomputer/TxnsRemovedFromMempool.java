@@ -65,17 +65,13 @@
 package com.radixdlt.statecomputer;
 
 import com.radixdlt.atom.Txn;
-
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Event describing atoms which have been removed from the mempool
- * after a commit.
- */
+/** Event describing atoms which have been removed from the mempool after a commit. */
 public record TxnsRemovedFromMempool(List<Txn> removed) {
-    public static TxnsRemovedFromMempool create(List<Txn> removed) {
-        Objects.requireNonNull(removed);
-        return new TxnsRemovedFromMempool(removed);
-    }
+  public static TxnsRemovedFromMempool create(List<Txn> removed) {
+    Objects.requireNonNull(removed);
+    return new TxnsRemovedFromMempool(removed);
+  }
 }

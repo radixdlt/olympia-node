@@ -68,23 +68,24 @@ import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.crypto.ECPublicKey;
 
 public final class ValidatorMissedProposalsEvent implements REEvent {
-	private final ECPublicKey validatorKey;
-	private final long missedProposals;
+  private final ECPublicKey validatorKey;
+  private final long missedProposals;
 
-	private ValidatorMissedProposalsEvent(ECPublicKey validatorKey, long missedProposals) {
-		this.validatorKey = validatorKey;
-		this.missedProposals = missedProposals;
-	}
+  private ValidatorMissedProposalsEvent(ECPublicKey validatorKey, long missedProposals) {
+    this.validatorKey = validatorKey;
+    this.missedProposals = missedProposals;
+  }
 
-	public static ValidatorMissedProposalsEvent create(ECPublicKey validatorKey, long missedProposals) {
-		return new ValidatorMissedProposalsEvent(validatorKey, missedProposals);
-	}
+  public static ValidatorMissedProposalsEvent create(
+      ECPublicKey validatorKey, long missedProposals) {
+    return new ValidatorMissedProposalsEvent(validatorKey, missedProposals);
+  }
 
-	public ECPublicKey getValidatorKey() {
-		return validatorKey;
-	}
+  public ECPublicKey getValidatorKey() {
+    return validatorKey;
+  }
 
-	public long getMissedProposals() {
-		return missedProposals;
-	}
+  public long getMissedProposals() {
+    return missedProposals;
+  }
 }

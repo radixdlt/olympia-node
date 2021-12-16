@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -76,46 +77,44 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Bytes;
 
-public final class ConstructionBuildHandler extends CoreJsonRpcHandler<ConstructionBuildRequest, ConstructionBuildResponse> {
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final CoreModelMapper modelMapper;
+public final class ConstructionBuildHandler
+    extends CoreJsonRpcHandler<ConstructionBuildRequest, ConstructionBuildResponse> {
+  private final RadixEngine<LedgerAndBFTProof> radixEngine;
+  private final CoreModelMapper modelMapper;
 
-	@Inject
-	ConstructionBuildHandler(
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		CoreModelMapper modelMapper
-	) {
-		super(ConstructionBuildRequest.class);
-		this.radixEngine = radixEngine;
-		this.modelMapper = modelMapper;
-	}
+  @Inject
+  ConstructionBuildHandler(
+      RadixEngine<LedgerAndBFTProof> radixEngine, CoreModelMapper modelMapper) {
+    super(ConstructionBuildRequest.class);
+    this.radixEngine = radixEngine;
+    this.modelMapper = modelMapper;
+  }
 
-	@Override
-	public ConstructionBuildResponse handleRequest(ConstructionBuildRequest request) throws CoreApiException {
-		modelMapper.verifyNetwork(request.getNetworkIdentifier());
+  @Override
+  public ConstructionBuildResponse handleRequest(ConstructionBuildRequest request)
+      throws CoreApiException {
+    modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var operationTxBuilder = modelMapper.operationTxBuilder(
-			request.getMessage(),
-			request.getOperationGroups()
-		);
-		var feePayer = modelMapper.feePayerEntity(request.getFeePayer());
-		var disableAllocAndDestroy = request.getDisableResourceAllocateAndDestroy();
-		var disable = disableAllocAndDestroy != null && disableAllocAndDestroy;
-		TxBuilder builder;
-		try {
-			builder = radixEngine.constructWithFees(
-				operationTxBuilder,
-				disable,
-				feePayer.accountAddress(),
-				NotEnoughNativeTokensForFeesException::new
-			);
-		} catch (TxBuilderException e) {
-			throw CoreApiException.badRequest(modelMapper.builderErrorDetails(e));
-		}
+    var operationTxBuilder =
+        modelMapper.operationTxBuilder(request.getMessage(), request.getOperationGroups());
+    var feePayer = modelMapper.feePayerEntity(request.getFeePayer());
+    var disableAllocAndDestroy = request.getDisableResourceAllocateAndDestroy();
+    var disable = disableAllocAndDestroy != null && disableAllocAndDestroy;
+    TxBuilder builder;
+    try {
+      builder =
+          radixEngine.constructWithFees(
+              operationTxBuilder,
+              disable,
+              feePayer.accountAddress(),
+              NotEnoughNativeTokensForFeesException::new);
+    } catch (TxBuilderException e) {
+      throw CoreApiException.badRequest(modelMapper.builderErrorDetails(e));
+    }
 
-		var unsignedTransaction = builder.buildForExternalSign();
-		return new ConstructionBuildResponse()
-			.unsignedTransaction(Bytes.toHexString(unsignedTransaction.blob()))
-			.payloadToSign(Bytes.toHexString(unsignedTransaction.hashToSign().asBytes()));
-	}
+    var unsignedTransaction = builder.buildForExternalSign();
+    return new ConstructionBuildResponse()
+        .unsignedTransaction(Bytes.toHexString(unsignedTransaction.blob()))
+        .payloadToSign(Bytes.toHexString(unsignedTransaction.hashToSign().asBytes()));
+  }
 }

@@ -68,53 +68,52 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
-
 import java.util.Objects;
 
 public final class NodeId {
-	private final ECPublicKey publicKey;
+  private final ECPublicKey publicKey;
 
-	@JsonCreator
-	public static NodeId deserialize(byte[] pubKey) throws PublicKeyException {
-		return fromPublicKey(ECPublicKey.fromBytes(pubKey));
-	}
+  @JsonCreator
+  public static NodeId deserialize(byte[] pubKey) throws PublicKeyException {
+    return fromPublicKey(ECPublicKey.fromBytes(pubKey));
+  }
 
-	public static NodeId fromPublicKey(ECPublicKey publicKey) {
-		return new NodeId(publicKey);
-	}
+  public static NodeId fromPublicKey(ECPublicKey publicKey) {
+    return new NodeId(publicKey);
+  }
 
-	private NodeId(ECPublicKey publicKey) {
-		this.publicKey = Objects.requireNonNull(publicKey);
-	}
+  private NodeId(ECPublicKey publicKey) {
+    this.publicKey = Objects.requireNonNull(publicKey);
+  }
 
-	public ECPublicKey getPublicKey() {
-		return publicKey;
-	}
+  public ECPublicKey getPublicKey() {
+    return publicKey;
+  }
 
-	@JsonValue
-	public byte[] getPubKey() {
-		return publicKey.getCompressedBytes();
-	}
+  @JsonValue
+  public byte[] getPubKey() {
+    return publicKey.getCompressedBytes();
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		final var other = (NodeId) o;
-		return Objects.equals(publicKey, other.publicKey);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final var other = (NodeId) o;
+    return Objects.equals(publicKey, other.publicKey);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(publicKey);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(publicKey);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), publicKey.toHex());
-	}
+  @Override
+  public String toString() {
+    return String.format("%s[%s]", getClass().getSimpleName(), publicKey.toHex());
+  }
 }

@@ -74,30 +74,29 @@ import org.junit.Test;
 
 public class EpochViewTest {
 
-	@Test
-	public void testBadArgument() {
-		assertThatThrownBy(() -> EpochView.of(-1, View.of(1)))
-			.isInstanceOf(IllegalArgumentException.class);
-	}
+  @Test
+  public void testBadArgument() {
+    assertThatThrownBy(() -> EpochView.of(-1, View.of(1)))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
 
-	@Test
-	public void testGetters() {
-		View view = mock(View.class);
-		EpochView epochView = EpochView.of(12345L, view);
-		assertThat(epochView.getEpoch()).isEqualTo(12345L);
-		assertThat(epochView.getView()).isEqualTo(view);
-	}
+  @Test
+  public void testGetters() {
+    View view = mock(View.class);
+    EpochView epochView = EpochView.of(12345L, view);
+    assertThat(epochView.getEpoch()).isEqualTo(12345L);
+    assertThat(epochView.getView()).isEqualTo(view);
+  }
 
-	@Test
-	public void testToString() {
-		View view = mock(View.class);
-		EpochView epochView = EpochView.of(12345L, view);
-		assertThat(epochView.toString()).isNotNull();
-	}
+  @Test
+  public void testToString() {
+    View view = mock(View.class);
+    EpochView epochView = EpochView.of(12345L, view);
+    assertThat(epochView.toString()).isNotNull();
+  }
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(EpochView.class)
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(EpochView.class).verify();
+  }
 }

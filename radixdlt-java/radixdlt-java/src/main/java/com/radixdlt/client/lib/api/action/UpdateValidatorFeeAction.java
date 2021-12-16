@@ -70,12 +70,12 @@ import com.radixdlt.client.lib.api.ValidatorAddress;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class UpdateValidatorFeeAction implements Action {
-	private final ActionType type = ActionType.UPDATE_VALIDATOR_FEE;
-	private final ValidatorAddress validator;
-	private final double validatorFee;
+  private final ActionType type = ActionType.UPDATE_VALIDATOR_FEE;
+  private final ValidatorAddress validator;
+  private final double validatorFee;
 
-	public UpdateValidatorFeeAction(ValidatorAddress validator, double validatorFee) {
-		this.validator = validator;
-		this.validatorFee = validatorFee;
-	}
+  public UpdateValidatorFeeAction(ValidatorAddress validator, double validatorFee) {
+    this.validator = validator;
+    this.validatorFee = validatorFee;
+  }
 }

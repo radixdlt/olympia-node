@@ -76,8 +76,8 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
@@ -92,123 +92,120 @@ import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
-
 import java.util.Comparator;
 import java.util.Optional;
-
 import org.junit.Before;
 import org.junit.Test;
 
 public class RemoteSyncServiceTest {
 
-	private RemoteSyncService processor;
-	private PeersView peersView;
-	private LocalSyncService localSyncService;
-	private CommittedReader reader;
-	private RemoteEventDispatcher<StatusResponse> statusResponseDispatcher;
-	private RemoteEventDispatcher<SyncResponse> syncResponseDispatcher;
-	private RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher;
+  private RemoteSyncService processor;
+  private PeersView peersView;
+  private LocalSyncService localSyncService;
+  private CommittedReader reader;
+  private RemoteEventDispatcher<StatusResponse> statusResponseDispatcher;
+  private RemoteEventDispatcher<SyncResponse> syncResponseDispatcher;
+  private RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher;
 
-	@Before
-	public void setUp() {
-		this.peersView = mock(PeersView.class);
-		this.localSyncService = mock(LocalSyncService.class);
-		this.reader = mock(CommittedReader.class);
-		this.statusResponseDispatcher =  rmock(RemoteEventDispatcher.class);
-		this.syncResponseDispatcher =  rmock(RemoteEventDispatcher.class);
-		this.statusUpdateDispatcher =  rmock(RemoteEventDispatcher.class);
+  @Before
+  public void setUp() {
+    this.peersView = mock(PeersView.class);
+    this.localSyncService = mock(LocalSyncService.class);
+    this.reader = mock(CommittedReader.class);
+    this.statusResponseDispatcher = rmock(RemoteEventDispatcher.class);
+    this.syncResponseDispatcher = rmock(RemoteEventDispatcher.class);
+    this.statusUpdateDispatcher = rmock(RemoteEventDispatcher.class);
 
-		final var initialHeader = mock(LedgerProof.class);
-		final var initialAccumulatorState = mock(AccumulatorState.class);
-		when(initialHeader.getAccumulatorState()).thenReturn(initialAccumulatorState);
-		when(initialAccumulatorState.getStateVersion()).thenReturn(1L);
+    final var initialHeader = mock(LedgerProof.class);
+    final var initialAccumulatorState = mock(AccumulatorState.class);
+    when(initialHeader.getAccumulatorState()).thenReturn(initialAccumulatorState);
+    when(initialAccumulatorState.getStateVersion()).thenReturn(1L);
 
-		this.processor = new RemoteSyncService(
-			peersView,
-			localSyncService,
-			reader,
-			statusResponseDispatcher,
-			syncResponseDispatcher,
-			statusUpdateDispatcher,
-			SyncConfig.of(5000L, 10, 5000L, 10, 50),
-			mock(SystemCounters.class),
-			Comparator.comparingLong(AccumulatorState::getStateVersion),
-			initialHeader);
-	}
+    this.processor =
+        new RemoteSyncService(
+            peersView,
+            localSyncService,
+            reader,
+            statusResponseDispatcher,
+            syncResponseDispatcher,
+            statusUpdateDispatcher,
+            SyncConfig.of(5000L, 10, 5000L, 10, 50),
+            mock(SystemCounters.class),
+            Comparator.comparingLong(AccumulatorState::getStateVersion),
+            initialHeader);
+  }
 
-	@Test
-	public void when_remote_sync_request__then_process_it() {
-		SyncRequest request = mock(SyncRequest.class);
-		DtoLedgerProof header = mock(DtoLedgerProof.class);
-		when(header.getOpaque()).thenReturn(HashUtils.zero256());
-		when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
-		when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
-		when(request.getHeader()).thenReturn(header);
-		BFTNode node = mock(BFTNode.class);
-		VerifiedTxnsAndProof verifiedTxnsAndProof = mock(VerifiedTxnsAndProof.class);
-		LedgerProof verifiedHeader = mock(LedgerProof.class);
-		when(verifiedHeader.toDto()).thenReturn(header);
-		when(verifiedTxnsAndProof.getProof()).thenReturn(verifiedHeader);
-		when(reader.getNextCommittedTxns(any())).thenReturn(verifiedTxnsAndProof);
-		processor.syncRequestEventProcessor().process(node, SyncRequest.create(header));
-		verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());
-	}
+  @Test
+  public void when_remote_sync_request__then_process_it() {
+    SyncRequest request = mock(SyncRequest.class);
+    DtoLedgerProof header = mock(DtoLedgerProof.class);
+    when(header.getOpaque()).thenReturn(HashUtils.zero256());
+    when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
+    when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
+    when(request.getHeader()).thenReturn(header);
+    BFTNode node = mock(BFTNode.class);
+    VerifiedTxnsAndProof verifiedTxnsAndProof = mock(VerifiedTxnsAndProof.class);
+    LedgerProof verifiedHeader = mock(LedgerProof.class);
+    when(verifiedHeader.toDto()).thenReturn(header);
+    when(verifiedTxnsAndProof.getProof()).thenReturn(verifiedHeader);
+    when(reader.getNextCommittedTxns(any())).thenReturn(verifiedTxnsAndProof);
+    processor.syncRequestEventProcessor().process(node, SyncRequest.create(header));
+    verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void when_bad_remote_sync_request__then_throw_NPE() {
-		var node = mock(BFTNode.class);
-		var verifiedTxnsAndProof = mock(VerifiedTxnsAndProof.class);
-		var verifiedHeader = mock(LedgerProof.class);
-		when(verifiedTxnsAndProof.getProof()).thenReturn(verifiedHeader);
-		when(reader.getNextCommittedTxns(any())).thenReturn(verifiedTxnsAndProof);
+  @Test(expected = NullPointerException.class)
+  public void when_bad_remote_sync_request__then_throw_NPE() {
+    var node = mock(BFTNode.class);
+    var verifiedTxnsAndProof = mock(VerifiedTxnsAndProof.class);
+    var verifiedHeader = mock(LedgerProof.class);
+    when(verifiedTxnsAndProof.getProof()).thenReturn(verifiedHeader);
+    when(reader.getNextCommittedTxns(any())).thenReturn(verifiedTxnsAndProof);
 
-		processor.syncRequestEventProcessor().process(node, SyncRequest.create(null));
-		verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());
-	}
+    processor.syncRequestEventProcessor().process(node, SyncRequest.create(null));
+    verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());
+  }
 
-	@Test
-	public void when_remote_sync_request_and_unable__then_dont_do_anything() {
-		SyncRequest request = mock(SyncRequest.class);
-		DtoLedgerProof header = mock(DtoLedgerProof.class);
-		when(header.getOpaque()).thenReturn(HashUtils.zero256());
-		when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
-		when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
-		when(request.getHeader()).thenReturn(header);
-		processor.syncRequestEventProcessor().process(BFTNode.random(), SyncRequest.create(header));
-		verify(syncResponseDispatcher, never()).dispatch(any(BFTNode.class), any());
-	}
+  @Test
+  public void when_remote_sync_request_and_unable__then_dont_do_anything() {
+    SyncRequest request = mock(SyncRequest.class);
+    DtoLedgerProof header = mock(DtoLedgerProof.class);
+    when(header.getOpaque()).thenReturn(HashUtils.zero256());
+    when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
+    when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
+    when(request.getHeader()).thenReturn(header);
+    processor.syncRequestEventProcessor().process(BFTNode.random(), SyncRequest.create(header));
+    verify(syncResponseDispatcher, never()).dispatch(any(BFTNode.class), any());
+  }
 
-	@Test
-	public void when_remote_sync_request_and_null_return__then_dont_do_anything() {
-		DtoLedgerProof header = mock(DtoLedgerProof.class);
-		when(header.getOpaque()).thenReturn(HashUtils.zero256());
-		when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
-		when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
-		processor.syncRequestEventProcessor().process(BFTNode.random(), SyncRequest.create(header));
-		when(reader.getNextCommittedTxns(any())).thenReturn(null);
-		verify(syncResponseDispatcher, never()).dispatch(any(BFTNode.class), any());
-	}
+  @Test
+  public void when_remote_sync_request_and_null_return__then_dont_do_anything() {
+    DtoLedgerProof header = mock(DtoLedgerProof.class);
+    when(header.getOpaque()).thenReturn(HashUtils.zero256());
+    when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
+    when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
+    processor.syncRequestEventProcessor().process(BFTNode.random(), SyncRequest.create(header));
+    when(reader.getNextCommittedTxns(any())).thenReturn(null);
+    verify(syncResponseDispatcher, never()).dispatch(any(BFTNode.class), any());
+  }
 
-	@Test
-	public void when_ledger_update_but_syncing__then_dont_send_status_update() {
-		final var tail = mock(LedgerProof.class);
-		final var ledgerUpdate = mock(LedgerUpdate.class);
-		final var accumulatorState = mock(AccumulatorState.class);
-		when(accumulatorState.getStateVersion()).thenReturn(2L);
-		when(tail.getAccumulatorState()).thenReturn(accumulatorState);
-		when(ledgerUpdate.getTail()).thenReturn(tail);
+  @Test
+  public void when_ledger_update_but_syncing__then_dont_send_status_update() {
+    final var tail = mock(LedgerProof.class);
+    final var ledgerUpdate = mock(LedgerUpdate.class);
+    final var accumulatorState = mock(AccumulatorState.class);
+    when(accumulatorState.getStateVersion()).thenReturn(2L);
+    when(tail.getAccumulatorState()).thenReturn(accumulatorState);
+    when(ledgerUpdate.getTail()).thenReturn(tail);
 
-		final var validatorSet = mock(BFTValidatorSet.class);
-		when(ledgerUpdate.getNextValidatorSet()).thenReturn(Optional.of(validatorSet));
+    final var validatorSet = mock(BFTValidatorSet.class);
+    when(ledgerUpdate.getNextValidatorSet()).thenReturn(Optional.of(validatorSet));
 
-		when(this.localSyncService.getSyncState())
-			.thenReturn(SyncState.SyncingState.init(
-				mock(LedgerProof.class),
-				ImmutableList.of(),
-				mock(LedgerProof.class))
-			);
+    when(this.localSyncService.getSyncState())
+        .thenReturn(
+            SyncState.SyncingState.init(
+                mock(LedgerProof.class), ImmutableList.of(), mock(LedgerProof.class)));
 
-		verifyNoMoreInteractions(peersView);
-		verifyNoMoreInteractions(statusUpdateDispatcher);
-	}
+    verifyNoMoreInteractions(peersView);
+    verifyNoMoreInteractions(statusUpdateDispatcher);
+  }
 }

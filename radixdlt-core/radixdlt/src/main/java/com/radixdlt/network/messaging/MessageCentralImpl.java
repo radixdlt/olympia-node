@@ -64,18 +64,23 @@
 
 package com.radixdlt.network.messaging;
 
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-
 import com.google.common.base.Stopwatch;
+import com.google.common.util.concurrent.RateLimiter;
+import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.api.system.health.MovingAverage;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -83,160 +88,152 @@ import org.radix.network.messaging.Message;
 import org.radix.time.Time;
 import org.radix.utils.SimpleThreadPool;
 
-import com.google.common.util.concurrent.RateLimiter;
-import com.google.inject.Inject;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.serialization.Serialization;
-
 public final class MessageCentralImpl implements MessageCentral {
-	private static final Logger log = LogManager.getLogger();
+  private static final Logger log = LogManager.getLogger();
 
-	// Dependencies
-	private final SystemCounters counters;
+  // Dependencies
+  private final SystemCounters counters;
 
-	// Message dispatching
-	private final MessageDispatcher messageDispatcher;
-	private final MessagePreprocessor messagePreprocessor;
+  // Message dispatching
+  private final MessageDispatcher messageDispatcher;
+  private final MessagePreprocessor messagePreprocessor;
 
-	// Our time base for System.nanoTime() differences.  Per documentation can only compare deltas
-	private final long timeBase = System.nanoTime();
+  // Our time base for System.nanoTime() differences.  Per documentation can only compare deltas
+  private final long timeBase = System.nanoTime();
 
-	private final RateLimiter outboundLogRateLimiter = RateLimiter.create(1.0);
-	private final RateLimiter discardedInboundMessagesLogRateLimiter = RateLimiter.create(1.0);
+  private final RateLimiter outboundLogRateLimiter = RateLimiter.create(1.0);
+  private final RateLimiter discardedInboundMessagesLogRateLimiter = RateLimiter.create(1.0);
 
-	private final MovingAverage avgMessageQueuedTime = MovingAverage.create(5L);
-	private final MovingAverage avgMessageProcessingTime = MovingAverage.create(5L);
-	private long totalMessageQueuedTime = 0L;
-	private long totalMessageProcessingTime = 0L;
+  private final MovingAverage avgMessageQueuedTime = MovingAverage.create(5L);
+  private final MovingAverage avgMessageProcessingTime = MovingAverage.create(5L);
+  private long totalMessageQueuedTime = 0L;
+  private long totalMessageProcessingTime = 0L;
 
-	private final Observable<MessageFromPeer<Message>> peerMessages;
+  private final Observable<MessageFromPeer<Message>> peerMessages;
 
-	// Outbound message handling
-	private final SimpleBlockingQueue<OutboundMessageEvent> outboundQueue;
-	private final SimpleThreadPool<OutboundMessageEvent> outboundThreadPool;
+  // Outbound message handling
+  private final SimpleBlockingQueue<OutboundMessageEvent> outboundQueue;
+  private final SimpleThreadPool<OutboundMessageEvent> outboundThreadPool;
 
-	@Inject
-	public MessageCentralImpl(
-		MessageCentralConfiguration config,
-		Serialization serialization,
-		PeerManager peerManager,
-		TimeSupplier timeSource,
-		EventQueueFactory<OutboundMessageEvent> outboundEventQueueFactory,
-		SystemCounters counters,
-		Provider<PeerControl> peerControl
-	) {
-		this.counters = Objects.requireNonNull(counters);
-		this.outboundQueue = outboundEventQueueFactory.createEventQueue(
-			config.messagingOutboundQueueMax(16384),
-			OutboundMessageEvent.comparator()
-		);
+  @Inject
+  public MessageCentralImpl(
+      MessageCentralConfiguration config,
+      Serialization serialization,
+      PeerManager peerManager,
+      TimeSupplier timeSource,
+      EventQueueFactory<OutboundMessageEvent> outboundEventQueueFactory,
+      SystemCounters counters,
+      Provider<PeerControl> peerControl) {
+    this.counters = Objects.requireNonNull(counters);
+    this.outboundQueue =
+        outboundEventQueueFactory.createEventQueue(
+            config.messagingOutboundQueueMax(16384), OutboundMessageEvent.comparator());
 
-		Objects.requireNonNull(timeSource);
-		Objects.requireNonNull(serialization);
+    Objects.requireNonNull(timeSource);
+    Objects.requireNonNull(serialization);
 
-		this.messageDispatcher = new MessageDispatcher(
-			counters,
-			config,
-			serialization,
-			timeSource,
-			peerManager
-		);
+    this.messageDispatcher =
+        new MessageDispatcher(counters, config, serialization, timeSource, peerManager);
 
-		this.messagePreprocessor = new MessagePreprocessor(
-			counters,
-			config,
-			timeSource,
-			serialization,
-			peerControl
-		);
+    this.messagePreprocessor =
+        new MessagePreprocessor(counters, config, timeSource, serialization, peerControl);
 
-		// Start outbound processing thread
-		this.outboundThreadPool = new SimpleThreadPool<>(
-			"Outbound message processing",
-			1, // Ensure messages sent in-order
-			outboundQueue::take,
-			this::outboundMessageProcessor,
-			log
-		);
-		this.outboundThreadPool.start();
+    // Start outbound processing thread
+    this.outboundThreadPool =
+        new SimpleThreadPool<>(
+            "Outbound message processing",
+            1, // Ensure messages sent in-order
+            outboundQueue::take,
+            this::outboundMessageProcessor,
+            log);
+    this.outboundThreadPool.start();
 
-		this.peerMessages = peerManager.messages()
-			.observeOn(Schedulers.computation())
-			.map(this::processInboundMessage)
-			.filter(Optional::isPresent)
-			.map(Optional::get)
-			.publish()
-			.autoConnect();
-	}
+    this.peerMessages =
+        peerManager
+            .messages()
+            .observeOn(Schedulers.computation())
+            .map(this::processInboundMessage)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .publish()
+            .autoConnect();
+  }
 
-	private Optional<MessageFromPeer<Message>> processInboundMessage(InboundMessage inboundMessage) {
-		final var messageQueuedTime = Time.currentTimestamp() - inboundMessage.receiveTime();
-		avgMessageQueuedTime.update(messageQueuedTime);
-		totalMessageQueuedTime = Math.max(totalMessageQueuedTime + messageQueuedTime, 0L);
-		updateCounters();
-		final var processingStopwatch = Stopwatch.createStarted();
-		try {
-			return this.messagePreprocessor.process(inboundMessage).fold(
-				error -> {
-					final var logLevel =
-						discardedInboundMessagesLogRateLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
-					log.log(logLevel, "Dropping inbound message from {} because of {}", inboundMessage.source(), error);
-					return Optional.empty();
-				},
-				messageFromPeer -> {
-					logPreprocessedMessageAndUpdateCounters(messageFromPeer, processingStopwatch);
-					return Optional.of(messageFromPeer);
-				}
-			);
-		} catch (Exception ex) {
-			final var msg = String.format("Message preprocessing from %s failed", inboundMessage.source());
-			log.error(msg, ex);
-			return Optional.empty();
-		}
-	}
+  private Optional<MessageFromPeer<Message>> processInboundMessage(InboundMessage inboundMessage) {
+    final var messageQueuedTime = Time.currentTimestamp() - inboundMessage.receiveTime();
+    avgMessageQueuedTime.update(messageQueuedTime);
+    totalMessageQueuedTime = Math.max(totalMessageQueuedTime + messageQueuedTime, 0L);
+    updateCounters();
+    final var processingStopwatch = Stopwatch.createStarted();
+    try {
+      return this.messagePreprocessor
+          .process(inboundMessage)
+          .fold(
+              error -> {
+                final var logLevel =
+                    discardedInboundMessagesLogRateLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
+                log.log(
+                    logLevel,
+                    "Dropping inbound message from {} because of {}",
+                    inboundMessage.source(),
+                    error);
+                return Optional.empty();
+              },
+              messageFromPeer -> {
+                logPreprocessedMessageAndUpdateCounters(messageFromPeer, processingStopwatch);
+                return Optional.of(messageFromPeer);
+              });
+    } catch (Exception ex) {
+      final var msg =
+          String.format("Message preprocessing from %s failed", inboundMessage.source());
+      log.error(msg, ex);
+      return Optional.empty();
+    }
+  }
 
-	private <T> void logPreprocessedMessageAndUpdateCounters(MessageFromPeer<T> message, Stopwatch processingStopwatch) {
-		final var messageProcessingTime = processingStopwatch.elapsed(TimeUnit.MILLISECONDS);
-		avgMessageProcessingTime.update(messageProcessingTime);
-		totalMessageProcessingTime = Math.max(totalMessageProcessingTime + messageProcessingTime, 0L);
-		updateCounters();
-		if (log.isTraceEnabled()) {
-			log.trace("Received from {}: {}", message.getSource(), message.getMessage());
-		}
-	}
+  private <T> void logPreprocessedMessageAndUpdateCounters(
+      MessageFromPeer<T> message, Stopwatch processingStopwatch) {
+    final var messageProcessingTime = processingStopwatch.elapsed(TimeUnit.MILLISECONDS);
+    avgMessageProcessingTime.update(messageProcessingTime);
+    totalMessageProcessingTime = Math.max(totalMessageProcessingTime + messageProcessingTime, 0L);
+    updateCounters();
+    if (log.isTraceEnabled()) {
+      log.trace("Received from {}: {}", message.getSource(), message.getMessage());
+    }
+  }
 
-	private void updateCounters() {
-		this.counters.set(CounterType.MESSAGES_INBOUND_AVG_QUEUED_TIME, avgMessageQueuedTime.asLong());
-		this.counters.set(CounterType.MESSAGES_INBOUND_TOTAL_QUEUED_TIME, totalMessageQueuedTime);
-		this.counters.set(CounterType.MESSAGES_INBOUND_AVG_PROCESSING_TIME, avgMessageProcessingTime.asLong());
-		this.counters.set(CounterType.MESSAGES_INBOUND_TOTAL_PROCESSING_TIME, totalMessageProcessingTime);
-	}
+  private void updateCounters() {
+    this.counters.set(CounterType.MESSAGES_INBOUND_AVG_QUEUED_TIME, avgMessageQueuedTime.asLong());
+    this.counters.set(CounterType.MESSAGES_INBOUND_TOTAL_QUEUED_TIME, totalMessageQueuedTime);
+    this.counters.set(
+        CounterType.MESSAGES_INBOUND_AVG_PROCESSING_TIME, avgMessageProcessingTime.asLong());
+    this.counters.set(
+        CounterType.MESSAGES_INBOUND_TOTAL_PROCESSING_TIME, totalMessageProcessingTime);
+  }
 
-	@Override
-	@SuppressWarnings("unchecked")
-	public <T extends Message> Observable<MessageFromPeer<T>> messagesOf(Class<T> messageType) {
-		return this.peerMessages
-			.filter(p -> messageType.isInstance(p.getMessage()))
-			.map(p -> (MessageFromPeer<T>) p);
-	}
+  @Override
+  @SuppressWarnings("unchecked")
+  public <T extends Message> Observable<MessageFromPeer<T>> messagesOf(Class<T> messageType) {
+    return this.peerMessages
+        .filter(p -> messageType.isInstance(p.getMessage()))
+        .map(p -> (MessageFromPeer<T>) p);
+  }
 
-	@Override
-	public void close() {
-		this.outboundThreadPool.stop();
-	}
+  @Override
+  public void close() {
+    this.outboundThreadPool.stop();
+  }
 
-	@Override
-	public void send(NodeId receiver, Message message) {
-		final var event = new OutboundMessageEvent(receiver, message, System.nanoTime() - timeBase);
-		if (!outboundQueue.offer(event) && outboundLogRateLimiter.tryAcquire()) {
-			log.error("Outbound message to {} dropped", receiver);
-		}
-	}
+  @Override
+  public void send(NodeId receiver, Message message) {
+    final var event = new OutboundMessageEvent(receiver, message, System.nanoTime() - timeBase);
+    if (!outboundQueue.offer(event) && outboundLogRateLimiter.tryAcquire()) {
+      log.error("Outbound message to {} dropped", receiver);
+    }
+  }
 
-	private void outboundMessageProcessor(OutboundMessageEvent outbound) {
-		this.counters.set(CounterType.MESSAGES_OUTBOUND_PENDING, outboundQueue.size());
-		messageDispatcher.send(outbound);
-	}
+  private void outboundMessageProcessor(OutboundMessageEvent outbound) {
+    this.counters.set(CounterType.MESSAGES_OUTBOUND_PENDING, outboundQueue.size());
+    messageDispatcher.send(outbound);
+  }
 }

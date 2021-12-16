@@ -69,17 +69,18 @@ import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.engine.RadixEngineException;
 
 public interface EngineStore<M> extends SubstateStore {
-	/**
-	 * For verification
-	 */
-	interface EngineStoreInTransaction<M> extends CMStore {
-		void storeTxn(REProcessedTxn txn);
-		void storeMetadata(M metadata);
-	}
-	interface TransactionEngineStoreConsumer<M, R> {
-		R start(EngineStoreInTransaction<M> store) throws RadixEngineException;
-	}
-	<R> R transaction(TransactionEngineStoreConsumer<M, R> consumer) throws RadixEngineException;
+  /** For verification */
+  interface EngineStoreInTransaction<M> extends CMStore {
+    void storeTxn(REProcessedTxn txn);
 
-	M getMetadata();
+    void storeMetadata(M metadata);
+  }
+
+  interface TransactionEngineStoreConsumer<M, R> {
+    R start(EngineStoreInTransaction<M> store) throws RadixEngineException;
+  }
+
+  <R> R transaction(TransactionEngineStoreConsumer<M, R> consumer) throws RadixEngineException;
+
+  M getMetadata();
 }

@@ -84,125 +84,134 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.utils.Bytes;
+import java.util.function.Function;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.function.Function;
-
-//TODO: extract lambdas into dedicated methods
-//TODO: suppress unstable API usage warnings
+// TODO: extract lambdas into dedicated methods
+// TODO: suppress unstable API usage warnings
 public final class EventLoggerModule extends AbstractModule {
-	private static final Logger logger = LogManager.getLogger();
+  private static final Logger logger = LogManager.getLogger();
 
-	@Provides
-	Function<BFTNode, String> stringForValidators1(Function<ECPublicKey, String> stringForValidators) {
-		return n -> stringForValidators.apply(n.getKey());
-	}
+  @Provides
+  Function<BFTNode, String> stringForValidators1(
+      Function<ECPublicKey, String> stringForValidators) {
+    return n -> stringForValidators.apply(n.getKey());
+  }
 
-	@Provides
-	Function<ECPublicKey, String> stringForValidators2(Addressing addressing) {
-		return k -> {
-			var addr = addressing.forValidators().of(k);
-			var len = addr.length();
-			return addr.substring(0, 2) + "..." + addr.substring(len - 9);
-		};
-	}
+  @Provides
+  Function<ECPublicKey, String> stringForValidators2(Addressing addressing) {
+    return k -> {
+      var addr = addressing.forValidators().of(k);
+      var len = addr.length();
+      return addr.substring(0, 2) + "..." + addr.substring(len - 9);
+    };
+  }
 
-	@ProvidesIntoSet
-	EventProcessorOnDispatch<?> invalidProposedTxn(Function<ECPublicKey, String> nodeString) {
-		return new EventProcessorOnDispatch<>(
-			InvalidProposedTxn.class,
-			i -> logger.warn("eng_badprp{proposer={}}", nodeString.apply(i.getProposer()))
-		);
-	}
+  @ProvidesIntoSet
+  EventProcessorOnDispatch<?> invalidProposedTxn(Function<ECPublicKey, String> nodeString) {
+    return new EventProcessorOnDispatch<>(
+        InvalidProposedTxn.class,
+        i -> logger.warn("eng_badprp{proposer={}}", nodeString.apply(i.getProposer())));
+  }
 
-	@ProvidesIntoSet
-	EventProcessorOnDispatch<?> logTimeouts(Function<BFTNode, String> nodeString) {
-		return new EventProcessorOnDispatch<>(
-			EpochLocalTimeoutOccurrence.class,
-			t -> logger.warn("bft_timout{epoch={} round={} leader={} nextLeader={} count={}}",
-				t.getEpochView().getEpoch(),
-				t.getEpochView().getView().number(),
-				nodeString.apply(t.getLeader()),
-				nodeString.apply(t.getNextLeader()),
-				t.getBase().timeout().count()
-			)
-		);
-	}
+  @ProvidesIntoSet
+  EventProcessorOnDispatch<?> logTimeouts(Function<BFTNode, String> nodeString) {
+    return new EventProcessorOnDispatch<>(
+        EpochLocalTimeoutOccurrence.class,
+        t ->
+            logger.warn(
+                "bft_timout{epoch={} round={} leader={} nextLeader={} count={}}",
+                t.getEpochView().getEpoch(),
+                t.getEpochView().getView().number(),
+                nodeString.apply(t.getLeader()),
+                nodeString.apply(t.getNextLeader()),
+                t.getBase().timeout().count()));
+  }
 
-	@ProvidesIntoSet
-	EventProcessorOnDispatch<?> logRounds(Function<BFTNode, String> nodeString) {
-		final RateLimiter logLimiter = RateLimiter.create(1.0);
-		return new EventProcessorOnDispatch<>(
-			EpochViewUpdate.class,
-			u -> {
-				Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
-				logger.log(logLevel, "bft_nxtrnd{epoch={} round={} leader={} nextLeader={}}",
-					u.getEpoch(),
-					u.getEpochView().getView().number(),
-					nodeString.apply(u.getViewUpdate().getLeader()),
-					nodeString.apply(u.getViewUpdate().getNextLeader())
-				);
-			}
-		);
-	}
+  @ProvidesIntoSet
+  EventProcessorOnDispatch<?> logRounds(Function<BFTNode, String> nodeString) {
+    final RateLimiter logLimiter = RateLimiter.create(1.0);
+    return new EventProcessorOnDispatch<>(
+        EpochViewUpdate.class,
+        u -> {
+          Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
+          logger.log(
+              logLevel,
+              "bft_nxtrnd{epoch={} round={} leader={} nextLeader={}}",
+              u.getEpoch(),
+              u.getEpochView().getView().number(),
+              nodeString.apply(u.getViewUpdate().getLeader()),
+              nodeString.apply(u.getViewUpdate().getNextLeader()));
+        });
+  }
 
-	@ProvidesIntoSet
-	@Singleton
-	EventProcessorOnDispatch<?> ledgerUpdate(@Self BFTNode self, Function<ECPublicKey, String> nodeString) {
-		final RateLimiter logLimiter = RateLimiter.create(1.0);
-		return new EventProcessorOnDispatch<>(
-			LedgerUpdate.class,
-			u -> {
-				var output = u.getStateComputerOutput().getInstance(REOutput.class);
-				var epochChange = u.getStateComputerOutput().getInstance(EpochChange.class);
-				long userTxns = output != null ? output.getProcessedTxns().stream().filter(t -> !t.isSystemOnly()).count() : 0;
-				var logLevel = (epochChange != null || logLimiter.tryAcquire()) ? Level.INFO : Level.TRACE;
-				logger.log(logLevel, "lgr_commit{epoch={} round={} version={} hash={} user_txns={}}",
-					u.getTail().getEpoch(),
-					u.getTail().getView().number(),
-					u.getTail().getStateVersion(),
-					Bytes.toHexString(u.getTail().getAccumulatorState().getAccumulatorHash().asBytes()).substring(0, 16),
-					userTxns
-				);
+  @ProvidesIntoSet
+  @Singleton
+  EventProcessorOnDispatch<?> ledgerUpdate(
+      @Self BFTNode self, Function<ECPublicKey, String> nodeString) {
+    final RateLimiter logLimiter = RateLimiter.create(1.0);
+    return new EventProcessorOnDispatch<>(
+        LedgerUpdate.class,
+        u -> {
+          var output = u.getStateComputerOutput().getInstance(REOutput.class);
+          var epochChange = u.getStateComputerOutput().getInstance(EpochChange.class);
+          long userTxns =
+              output != null
+                  ? output.getProcessedTxns().stream().filter(t -> !t.isSystemOnly()).count()
+                  : 0;
+          var logLevel =
+              (epochChange != null || logLimiter.tryAcquire()) ? Level.INFO : Level.TRACE;
+          logger.log(
+              logLevel,
+              "lgr_commit{epoch={} round={} version={} hash={} user_txns={}}",
+              u.getTail().getEpoch(),
+              u.getTail().getView().number(),
+              u.getTail().getStateVersion(),
+              Bytes.toHexString(u.getTail().getAccumulatorState().getAccumulatorHash().asBytes())
+                  .substring(0, 16),
+              userTxns);
 
-				if (epochChange != null) {
-					var validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
-					logger.info("lgr_nepoch{epoch={} included={} num_validators={} total_stake={}}",
-						epochChange.getEpoch(),
-						validatorSet.containsNode(self),
-						validatorSet.getValidators().size(),
-						Amount.ofSubunits(validatorSet.getTotalPower())
-					);
-				}
+          if (epochChange != null) {
+            var validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
+            logger.info(
+                "lgr_nepoch{epoch={} included={} num_validators={} total_stake={}}",
+                epochChange.getEpoch(),
+                validatorSet.containsNode(self),
+                validatorSet.getValidators().size(),
+                Amount.ofSubunits(validatorSet.getTotalPower()));
+          }
 
-				if (output == null) {
-					return;
-				}
+          if (output == null) {
+            return;
+          }
 
-				output.getProcessedTxns().stream().flatMap(t -> t.getEvents().stream())
-					.forEach(e -> {
-						if (e instanceof ValidatorBFTDataEvent) {
-							var event = (ValidatorBFTDataEvent) e;
-							Level level = event.getMissedProposals() > 0 ? Level.WARN : Level.INFO;
-							logger.log(level, "vdr_epochr{validator={} completed_proposals={} missed_proposals={}}",
-								nodeString.apply(event.getValidatorKey()),
-								event.getCompletedProposals(),
-								event.getMissedProposals()
-							);
-						} else if (e instanceof ValidatorMissedProposalsEvent) {
-							var event = (ValidatorMissedProposalsEvent) e;
-							var you = event.getValidatorKey().equals(self.getKey());
-							Level level = you ? Level.ERROR : Level.WARN;
-							logger.log(level, "{}_failed{validator={} missed_proposals={}}",
-								you ? "you" : "vdr",
-								nodeString.apply(event.getValidatorKey()),
-								event.getMissedProposals()
-							);
-						}
-					});
-			}
-		);
-	}
+          output.getProcessedTxns().stream()
+              .flatMap(t -> t.getEvents().stream())
+              .forEach(
+                  e -> {
+                    if (e instanceof ValidatorBFTDataEvent) {
+                      var event = (ValidatorBFTDataEvent) e;
+                      Level level = event.getMissedProposals() > 0 ? Level.WARN : Level.INFO;
+                      logger.log(
+                          level,
+                          "vdr_epochr{validator={} completed_proposals={} missed_proposals={}}",
+                          nodeString.apply(event.getValidatorKey()),
+                          event.getCompletedProposals(),
+                          event.getMissedProposals());
+                    } else if (e instanceof ValidatorMissedProposalsEvent) {
+                      var event = (ValidatorMissedProposalsEvent) e;
+                      var you = event.getValidatorKey().equals(self.getKey());
+                      Level level = you ? Level.ERROR : Level.WARN;
+                      logger.log(
+                          level,
+                          "{}_failed{validator={} missed_proposals={}}",
+                          you ? "you" : "vdr",
+                          nodeString.apply(event.getValidatorKey()),
+                          event.getMissedProposals());
+                    }
+                  });
+        });
+  }
 }

@@ -67,59 +67,54 @@ package com.radixdlt.client.lib.dto;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.lib.api.NodeAddress;
-
 import java.util.List;
 import java.util.Objects;
 
 public final class NetworkPeer {
-	private final NodeAddress address;
-	private final List<NetworkChannel> channels;
+  private final NodeAddress address;
+  private final List<NetworkChannel> channels;
 
-	private NetworkPeer(NodeAddress address, List<NetworkChannel> channels) {
-		this.address = address;
-		this.channels = channels;
-	}
+  private NetworkPeer(NodeAddress address, List<NetworkChannel> channels) {
+    this.address = address;
+    this.channels = channels;
+  }
 
-	@JsonCreator
-	public static NetworkPeer create(
-		@JsonProperty(value = "address", required = true) NodeAddress address,
-		@JsonProperty(value = "channels", required = true) List<NetworkChannel> channels
-	) {
-		return new NetworkPeer(address, channels);
-	}
+  @JsonCreator
+  public static NetworkPeer create(
+      @JsonProperty(value = "address", required = true) NodeAddress address,
+      @JsonProperty(value = "channels", required = true) List<NetworkChannel> channels) {
+    return new NetworkPeer(address, channels);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof NetworkPeer)) {
-			return false;
-		}
+    if (!(o instanceof NetworkPeer)) {
+      return false;
+    }
 
-		var that = (NetworkPeer) o;
-		return address.equals(that.address) && channels.equals(that.channels);
-	}
+    var that = (NetworkPeer) o;
+    return address.equals(that.address) && channels.equals(that.channels);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(address, channels);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(address, channels);
+  }
 
-	@Override
-	public String toString() {
-		return "{"
-			+ "address=" + address
-			+ ", channels=" + channels
-			+ '}';
-	}
+  @Override
+  public String toString() {
+    return "{" + "address=" + address + ", channels=" + channels + '}';
+  }
 
-	public NodeAddress getAddress() {
-		return address;
-	}
+  public NodeAddress getAddress() {
+    return address;
+  }
 
-	public List<NetworkChannel> getChannels() {
-		return channels;
-	}
+  public List<NetworkChannel> getChannels() {
+    return channels;
+  }
 }

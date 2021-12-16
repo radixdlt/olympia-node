@@ -68,16 +68,16 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.radixdlt.crypto.ECPublicKey;
-
 import java.io.IOException;
 
 public class ECPublicKeySerializer extends StdSerializer<ECPublicKey> {
-	public ECPublicKeySerializer() {
-		super(ECPublicKey.class);
-	}
+  public ECPublicKeySerializer() {
+    super(ECPublicKey.class);
+  }
 
-	@Override
-	public void serialize(ECPublicKey value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-		gen.writeString(value.toHex());
-	}
+  @Override
+  public void serialize(ECPublicKey value, JsonGenerator gen, SerializerProvider provider)
+      throws IOException {
+    gen.writeString(value.toHex());
+  }
 }

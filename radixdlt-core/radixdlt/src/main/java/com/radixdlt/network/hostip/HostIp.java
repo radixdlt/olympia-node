@@ -66,33 +66,30 @@ package com.radixdlt.network.hostip;
 
 import java.util.Optional;
 
-/**
- * Interface for obtaining a hosts IP.
- */
+/** Interface for obtaining a hosts IP. */
 public interface HostIp {
-	/**
-	 * Return a host IP, if possible.
-	 * The underlying query mechanism is used to determine a IP address for
-	 * the host.
-	 * @return An optional host IP address, if one can be determined
-	 */
-	Optional<String> hostIp();
+  /**
+   * Return a host IP, if possible. The underlying query mechanism is used to determine a IP address
+   * for the host.
+   *
+   * @return An optional host IP address, if one can be determined
+   */
+  Optional<String> hostIp();
 
-	/**
-	 * Chain two {@link HostIp} methods together.
-	 * If this object returns a non-empty host IP, then supply that,
-	 * otherwise supply the result of the specified host IP.
-	 *
-	 * @param other The other {@link HostIp} to use if this returns empty.
-	 * @return Either this if non-empty, otherwise other.
-	 */
-	default HostIp or(HostIp other) {
-		return () -> {
-			Optional<String> hap = hostIp();
-			if (hap.isPresent()) {
-				return hap;
-			}
-			return other.hostIp();
-		};
-	}
+  /**
+   * Chain two {@link HostIp} methods together. If this object returns a non-empty host IP, then
+   * supply that, otherwise supply the result of the specified host IP.
+   *
+   * @param other The other {@link HostIp} to use if this returns empty.
+   * @return Either this if non-empty, otherwise other.
+   */
+  default HostIp or(HostIp other) {
+    return () -> {
+      Optional<String> hap = hostIp();
+      if (hap.isPresent()) {
+        return hap;
+      }
+      return other.hostIp();
+    };
+  }
 }

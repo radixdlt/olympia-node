@@ -65,20 +65,17 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.constraintmachine.REProcessedTxn;
-
 import java.util.List;
 
 /**
- * Verifies that batched atoms executed on Radix Engine follow some
- * specified rules.
+ * Verifies that batched atoms executed on Radix Engine follow some specified rules.
  *
  * @param <M> class of metadata
  */
 public interface BatchVerifier<M> {
-	default void testMetadata(M metadata, List<REProcessedTxn> txns) throws MetadataException {
-	}
+  default void testMetadata(M metadata, List<REProcessedTxn> txns) throws MetadataException {}
 
-	static <M> BatchVerifier<M> empty() {
-		return new BatchVerifier<>() {};
-	}
+  static <M> BatchVerifier<M> empty() {
+    return new BatchVerifier<>() {};
+  }
 }

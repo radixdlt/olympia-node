@@ -71,7 +71,6 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
-
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.Objects;
@@ -80,252 +79,255 @@ import java.util.OptionalLong;
 import java.util.regex.Pattern;
 
 public final class REFieldSerialization {
-	private static final Pattern OWASP_URL_REGEX = Pattern.compile(
-		"^((((https?|ftps?|gopher|telnet|nntp)://)|(mailto:|news:))"
-			+ "(%[0-9A-Fa-f]{2}|[-()_.!~*';/?:@&=+$,A-Za-z0-9])+)([).!';/?:,][[:blank:]])?$"
-	);
+  private static final Pattern OWASP_URL_REGEX =
+      Pattern.compile(
+          "^((((https?|ftps?|gopher|telnet|nntp)://)|(mailto:|news:))"
+              + "(%[0-9A-Fa-f]{2}|[-()_.!~*';/?:@&=+$,A-Za-z0-9])+)([).!';/?:,][[:blank:]])?$");
 
-	private REFieldSerialization() {
-		throw new IllegalStateException("Cannot instantiate.");
-	}
+  private REFieldSerialization() {
+    throw new IllegalStateException("Cannot instantiate.");
+  }
 
-	public static byte[] serializeSignature(ECDSASignature signature) {
-		var buf = ByteBuffer.allocate(32 * 2 + 1);
-		buf.put(signature.getV());
-		var rArray = signature.getR().toByteArray();
-		var r = rArray.length > 32 ? UInt256.from(rArray, 1) : UInt256.from(rArray);
-		buf.put(r.toByteArray());
-		var sArray = signature.getS().toByteArray();
-		var s = sArray.length > 32 ? UInt256.from(sArray, 1) : UInt256.from(sArray);
-		buf.put(s.toByteArray());
+  public static byte[] serializeSignature(ECDSASignature signature) {
+    var buf = ByteBuffer.allocate(32 * 2 + 1);
+    buf.put(signature.getV());
+    var rArray = signature.getR().toByteArray();
+    var r = rArray.length > 32 ? UInt256.from(rArray, 1) : UInt256.from(rArray);
+    buf.put(r.toByteArray());
+    var sArray = signature.getS().toByteArray();
+    var s = sArray.length > 32 ? UInt256.from(sArray, 1) : UInt256.from(sArray);
+    buf.put(s.toByteArray());
 
-		return buf.array();
-	}
+    return buf.array();
+  }
 
-	public static ECDSASignature deserializeSignature(ByteBuffer buf) throws DeserializeException {
-		var v = buf.get();
-		if (v < 0 || v > 3) {
-			throw new DeserializeException("Invalid V byte " + v);
-		}
-		var rArray = new byte[32];
-		buf.get(rArray);
-		var sArray = new byte[32];
-		buf.get(sArray);
-		return ECDSASignature.deserialize(rArray, sArray, v);
-	}
+  public static ECDSASignature deserializeSignature(ByteBuffer buf) throws DeserializeException {
+    var v = buf.get();
+    if (v < 0 || v > 3) {
+      throw new DeserializeException("Invalid V byte " + v);
+    }
+    var rArray = new byte[32];
+    buf.get(rArray);
+    var sArray = new byte[32];
+    buf.get(sArray);
+    return ECDSASignature.deserialize(rArray, sArray, v);
+  }
 
-	public static void serializeBoolean(ByteBuffer buf, boolean bool) {
-		buf.put((byte) (bool ? 1 : 0));
-	}
+  public static void serializeBoolean(ByteBuffer buf, boolean bool) {
+    buf.put((byte) (bool ? 1 : 0));
+  }
 
-	public static boolean deserializeBoolean(ByteBuffer buf) throws DeserializeException {
-		var flag = buf.get();
-		if (!(flag == 0 || flag == 1)) {
-			throw new DeserializeException("Invalid flag");
-		}
-		return flag == 1;
-	}
+  public static boolean deserializeBoolean(ByteBuffer buf) throws DeserializeException {
+    var flag = buf.get();
+    if (!(flag == 0 || flag == 1)) {
+      throw new DeserializeException("Invalid flag");
+    }
+    return flag == 1;
+  }
 
-	public static void serializeOptionalKey(ByteBuffer buf, Optional<ECPublicKey> addr) {
-		addr.ifPresentOrElse(
-			o -> {
-				buf.put((byte) 0x1);
-				REFieldSerialization.serializeKey(buf, o);
-			},
-			() -> {
-				buf.put((byte) 0x0);
-				buf.put(new byte[ECPublicKey.COMPRESSED_BYTES]);
-			}
-		);
-	}
+  public static void serializeOptionalKey(ByteBuffer buf, Optional<ECPublicKey> addr) {
+    addr.ifPresentOrElse(
+        o -> {
+          buf.put((byte) 0x1);
+          REFieldSerialization.serializeKey(buf, o);
+        },
+        () -> {
+          buf.put((byte) 0x0);
+          buf.put(new byte[ECPublicKey.COMPRESSED_BYTES]);
+        });
+  }
 
-	public static Optional<ECPublicKey> deserializeOptionalKey(ByteBuffer buf) throws DeserializeException {
-		var type = buf.get();
-		if (type == 0) {
-			for (int i = 0; i < ECPublicKey.COMPRESSED_BYTES; i++) {
-				if (buf.get() != 0) {
-					throw new DeserializeException("Empty key must have 0 value.");
-				}
-			}
-			return Optional.empty();
-		} else if (type == 1) {
-			return Optional.of(REFieldSerialization.deserializeKey(buf));
-		} else {
-			throw new DeserializeException("Unknown optionalAccountREAddr: " + type);
-		}
-	}
+  public static Optional<ECPublicKey> deserializeOptionalKey(ByteBuffer buf)
+      throws DeserializeException {
+    var type = buf.get();
+    if (type == 0) {
+      for (int i = 0; i < ECPublicKey.COMPRESSED_BYTES; i++) {
+        if (buf.get() != 0) {
+          throw new DeserializeException("Empty key must have 0 value.");
+        }
+      }
+      return Optional.empty();
+    } else if (type == 1) {
+      return Optional.of(REFieldSerialization.deserializeKey(buf));
+    } else {
+      throw new DeserializeException("Unknown optionalAccountREAddr: " + type);
+    }
+  }
 
+  public static void serializeREAddr(ByteBuffer buf, REAddr rri) {
+    buf.put(rri.getBytes());
+  }
 
-	public static void serializeREAddr(ByteBuffer buf, REAddr rri) {
-		buf.put(rri.getBytes());
-	}
+  public static REAddr deserializeREAddr(ByteBuffer buf, EnumSet<REAddr.REAddrType> allowed)
+      throws DeserializeException {
+    var v = buf.get(); // version
+    var type = REAddr.REAddrType.parse(v);
+    if (type.isEmpty()) {
+      throw new DeserializeException("Unknown address type " + v);
+    }
+    if (!allowed.contains(type.get())) {
+      throw new DeserializeException(
+          "Expected address type: " + allowed + " but was: " + type.get());
+    }
+    return type.get().parse(buf);
+  }
 
-	public static REAddr deserializeREAddr(ByteBuffer buf, EnumSet<REAddr.REAddrType> allowed) throws DeserializeException {
-		var v = buf.get(); // version
-		var type = REAddr.REAddrType.parse(v);
-		if (type.isEmpty()) {
-			throw new DeserializeException("Unknown address type " + v);
-		}
-		if (!allowed.contains(type.get())) {
-			throw new DeserializeException("Expected address type: " + allowed + " but was: " + type.get());
-		}
-		return type.get().parse(buf);
-	}
+  public static REAddr deserializeResourceAddr(ByteBuffer buf) throws DeserializeException {
+    return deserializeREAddr(
+        buf, EnumSet.of(REAddr.REAddrType.NATIVE_TOKEN, REAddr.REAddrType.HASHED_KEY));
+  }
 
-	public static REAddr deserializeResourceAddr(ByteBuffer buf) throws DeserializeException {
-		return deserializeREAddr(buf, EnumSet.of(REAddr.REAddrType.NATIVE_TOKEN, REAddr.REAddrType.HASHED_KEY));
-	}
+  public static REAddr deserializeAccountREAddr(ByteBuffer buf) throws DeserializeException {
+    return deserializeREAddr(buf, EnumSet.of(REAddr.REAddrType.PUB_KEY));
+  }
 
-	public static REAddr deserializeAccountREAddr(ByteBuffer buf) throws DeserializeException {
-		return deserializeREAddr(buf, EnumSet.of(REAddr.REAddrType.PUB_KEY));
-	}
+  public static int deserializeInt(ByteBuffer buf) throws DeserializeException {
+    return buf.getInt();
+  }
 
-	public static int deserializeInt(ByteBuffer buf) throws DeserializeException {
-		return buf.getInt();
-	}
+  public static void deserializeReservedByte(ByteBuffer buf) throws DeserializeException {
+    var b = buf.get();
+    if (b != 0) {
+      throw new DeserializeException("Reserved byte must be 0");
+    }
+  }
 
-	public static void deserializeReservedByte(ByteBuffer buf) throws DeserializeException {
-		var b = buf.get();
-		if (b != 0) {
-			throw new DeserializeException("Reserved byte must be 0");
-		}
-	}
+  public static int deserializeUnsignedShort(ByteBuffer buf, int min, int max)
+      throws DeserializeException {
+    var s = buf.getShort();
+    var i = Short.toUnsignedInt(s);
 
-	public static int deserializeUnsignedShort(ByteBuffer buf, int min, int max) throws DeserializeException {
-		var s = buf.getShort();
-		var i = Short.toUnsignedInt(s);
+    if (i < min) {
+      throw new DeserializeException("Min of short value is " + min + " but value is: " + i);
+    }
 
-		if (i < min) {
-			throw new DeserializeException("Min of short value is " + min + " but value is: " + i);
-		}
+    if (i > max) {
+      throw new DeserializeException("Max of short value is " + max + " but value is: " + i);
+    }
 
-		if (i > max) {
-			throw new DeserializeException("Max of short value is " + max + " but value is: " + i);
-		}
+    return i;
+  }
 
-		return i;
-	}
+  public static void serializeReservedByte(ByteBuffer buf) {
+    buf.put((byte) 0);
+  }
 
-	public static void serializeReservedByte(ByteBuffer buf) {
-		buf.put((byte) 0);
-	}
+  public static void serializeOptionalLong(ByteBuffer buf, OptionalLong optionalLong) {
+    optionalLong.ifPresentOrElse(
+        e -> {
+          buf.put((byte) 0x1);
+          buf.putLong(e);
+        },
+        () -> {
+          buf.put((byte) 0x0);
+          buf.putLong(0);
+        });
+  }
 
-	public static void serializeOptionalLong(ByteBuffer buf, OptionalLong optionalLong) {
-		optionalLong.ifPresentOrElse(
-			e -> {
-				buf.put((byte) 0x1);
-				buf.putLong(e);
-			},
-			() -> {
-				buf.put((byte) 0x0);
-				buf.putLong(0);
-			}
-		);
-	}
+  public static OptionalLong deserializeOptionalNonNegativeLong(ByteBuffer buf)
+      throws DeserializeException {
+    var type = buf.get();
+    if (type == 0) {
+      var value = REFieldSerialization.deserializeNonNegativeLong(buf);
+      if (value != 0) {
+        throw new DeserializeException("Empty long must be 0 value.");
+      }
+      return OptionalLong.empty();
+    } else if (type == 1) {
+      return OptionalLong.of(REFieldSerialization.deserializeNonNegativeLong(buf));
+    } else {
+      throw new DeserializeException("Unknown optionalLongType: " + type);
+    }
+  }
 
-	public static OptionalLong deserializeOptionalNonNegativeLong(ByteBuffer buf) throws DeserializeException {
-		var type = buf.get();
-		if (type == 0) {
-			var value = REFieldSerialization.deserializeNonNegativeLong(buf);
-			if (value != 0) {
-				throw new DeserializeException("Empty long must be 0 value.");
-			}
-			return OptionalLong.empty();
-		} else if (type == 1) {
-			return OptionalLong.of(REFieldSerialization.deserializeNonNegativeLong(buf));
-		} else {
-			throw new DeserializeException("Unknown optionalLongType: " + type);
-		}
-	}
+  public static Long deserializeNonNegativeLong(ByteBuffer buf) throws DeserializeException {
+    var l = buf.getLong();
+    if (l < 0) {
+      throw new DeserializeException("Long must be positive");
+    }
+    return l;
+  }
 
-	public static Long deserializeNonNegativeLong(ByteBuffer buf) throws DeserializeException {
-		var l = buf.getLong();
-		if (l < 0) {
-			throw new DeserializeException("Long must be positive");
-		}
-		return l;
-	}
+  public static UInt256 deserializeUInt256(ByteBuffer buf) {
+    var amountDest = new byte[UInt256.BYTES]; // amount
+    buf.get(amountDest);
+    return UInt256.from(amountDest);
+  }
 
-	public static UInt256 deserializeUInt256(ByteBuffer buf) {
-		var amountDest = new byte[UInt256.BYTES]; // amount
-		buf.get(amountDest);
-		return UInt256.from(amountDest);
-	}
+  public static void serializeUInt256(ByteBuffer buf, UInt256 u) {
+    buf.put(u.toByteArray());
+  }
 
-	public static void serializeUInt256(ByteBuffer buf, UInt256 u) {
-		buf.put(u.toByteArray());
-	}
+  public static UInt256 deserializeNonZeroUInt256(ByteBuffer buf) throws DeserializeException {
+    var amountDest = new byte[UInt256.BYTES]; // amount
+    buf.get(amountDest);
+    var uint256 = UInt256.from(amountDest);
+    if (uint256.isZero()) {
+      throw new DeserializeException("Cannot be zero.");
+    }
+    return uint256;
+  }
 
-	public static UInt256 deserializeNonZeroUInt256(ByteBuffer buf) throws DeserializeException {
-		var amountDest = new byte[UInt256.BYTES]; // amount
-		buf.get(amountDest);
-		var uint256 = UInt256.from(amountDest);
-		if (uint256.isZero()) {
-			throw new DeserializeException("Cannot be zero.");
-		}
-		return uint256;
-	}
+  public static void serializeKey(ByteBuffer buf, ECPublicKey key) {
+    buf.put(key.getCompressedBytes()); // address
+  }
 
-	public static void serializeKey(ByteBuffer buf, ECPublicKey key) {
-		buf.put(key.getCompressedBytes()); // address
-	}
+  public static ECPublicKey deserializeKey(ByteBuffer buf) throws DeserializeException {
+    try {
+      var keyBytes = new byte[33];
+      buf.get(keyBytes);
+      return ECPublicKey.fromBytes(keyBytes);
+    } catch (PublicKeyException | IllegalArgumentException e) {
+      throw new DeserializeException("Could not deserialize key");
+    }
+  }
 
-	public static ECPublicKey deserializeKey(ByteBuffer buf) throws DeserializeException {
-		try {
-			var keyBytes = new byte[33];
-			buf.get(keyBytes);
-			return ECPublicKey.fromBytes(keyBytes);
-		} catch (PublicKeyException | IllegalArgumentException e) {
-			throw new DeserializeException("Could not deserialize key");
-		}
-	}
+  public static void serializeFixedLengthBytes(ByteBuffer buf, byte[] bytes) {
+    buf.put(bytes);
+  }
 
-	public static void serializeFixedLengthBytes(ByteBuffer buf, byte[] bytes) {
-		buf.put(bytes);
-	}
+  public static byte[] deserializeFixedLengthBytes(ByteBuffer buf, int length) {
+    final var dest = new byte[length];
+    buf.get(dest);
+    return dest;
+  }
 
-	public static byte[] deserializeFixedLengthBytes(ByteBuffer buf, int length) {
-		final var dest = new byte[length];
-		buf.get(dest);
-		return dest;
-	}
+  public static void serializeString(ByteBuffer buf, String s) {
+    var sBytes = s.getBytes(RadixConstants.STANDARD_CHARSET);
+    if (sBytes.length > 255) {
+      throw new IllegalArgumentException("string cannot be greater than 255 chars");
+    }
+    var len = (short) sBytes.length;
+    buf.putShort(len); // url length
+    buf.put(sBytes); // url
+  }
 
-	public static void serializeString(ByteBuffer buf, String s) {
-		var sBytes = s.getBytes(RadixConstants.STANDARD_CHARSET);
-		if (sBytes.length > 255) {
-			throw new IllegalArgumentException("string cannot be greater than 255 chars");
-		}
-		var len = (short) sBytes.length;
-		buf.putShort(len); // url length
-		buf.put(sBytes); // url
-	}
+  public static String deserializeString(ByteBuffer buf) throws DeserializeException {
+    var len = REFieldSerialization.deserializeUnsignedShort(buf, 0, 255);
+    var dest = new byte[len];
+    buf.get(dest);
+    return new String(dest, RadixConstants.STANDARD_CHARSET);
+  }
 
-	public static String deserializeString(ByteBuffer buf) throws DeserializeException {
-		var len = REFieldSerialization.deserializeUnsignedShort(buf, 0, 255);
-		var dest = new byte[len];
-		buf.get(dest);
-		return new String(dest, RadixConstants.STANDARD_CHARSET);
-	}
+  public static String deserializeUrl(ByteBuffer buf) throws DeserializeException {
+    var url = deserializeString(buf);
+    if (!isUrlValid(url)) {
+      throw new DeserializeException("URL: not a valid URL: " + url);
+    }
+    return url;
+  }
 
-	public static String deserializeUrl(ByteBuffer buf) throws DeserializeException {
-		var url = deserializeString(buf);
-		if (!isUrlValid(url)) {
-			throw new DeserializeException("URL: not a valid URL: " + url);
-		}
-		return url;
-	}
+  public static boolean isUrlValid(String url) {
+    return url.isEmpty() || OWASP_URL_REGEX.matcher(url).matches();
+  }
 
-	public static boolean isUrlValid(String url) {
-		return url.isEmpty() || OWASP_URL_REGEX.matcher(url).matches();
-	}
+  public static String requireValidUrl(String url) {
+    Objects.requireNonNull(url);
 
-	public static String requireValidUrl(String url) {
-		Objects.requireNonNull(url);
+    if (isUrlValid(url)) {
+      return url;
+    }
 
-		if (isUrlValid(url)) {
-			return url;
-		}
-
-		throw new IllegalArgumentException("URL: not a valid URL: " + url);
-	}
+    throw new IllegalArgumentException("URL: not a valid URL: " + url);
+  }
 }

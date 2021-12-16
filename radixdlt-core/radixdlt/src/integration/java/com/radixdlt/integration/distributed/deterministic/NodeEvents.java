@@ -68,46 +68,43 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnDispatch;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-/**
- * Manages events from a network of nodes. Used for processing events for tests.
- */
+/** Manages events from a network of nodes. Used for processing events for tests. */
 public final class NodeEvents {
-	public static class NodeEventProcessor<T> {
-		private final Class<T> eventClass;
-		private final BiConsumer<BFTNode, T> processor;
+  public static class NodeEventProcessor<T> {
+    private final Class<T> eventClass;
+    private final BiConsumer<BFTNode, T> processor;
 
-		public NodeEventProcessor(Class<T> eventClass, BiConsumer<BFTNode, T> processor) {
-			this.eventClass = eventClass;
-			this.processor = processor;
-		}
+    public NodeEventProcessor(Class<T> eventClass, BiConsumer<BFTNode, T> processor) {
+      this.eventClass = eventClass;
+      this.processor = processor;
+    }
 
-		public Class<T> getEventClass() {
-			return eventClass;
-		}
+    public Class<T> getEventClass() {
+      return eventClass;
+    }
 
-		private void process(BFTNode node, Object event) {
-			this.processor.accept(node, eventClass.cast(event));
-		}
-	}
+    private void process(BFTNode node, Object event) {
+      this.processor.accept(node, eventClass.cast(event));
+    }
+  }
 
-	private final Map<Class<?>, Set<NodeEventProcessor<?>>> processors;
+  private final Map<Class<?>, Set<NodeEventProcessor<?>>> processors;
 
-	@Inject
-	public NodeEvents(Map<Class<?>, Set<NodeEventProcessor<?>>> processors) {
-		this.processors = Objects.requireNonNull(processors);
-	}
+  @Inject
+  public NodeEvents(Map<Class<?>, Set<NodeEventProcessor<?>>> processors) {
+    this.processors = Objects.requireNonNull(processors);
+  }
 
-	public <T> EventProcessor<T> processor(BFTNode node, Class<T> eventClass) {
-		return t -> processors.get(eventClass).forEach(c -> c.process(node, t));
-	}
+  public <T> EventProcessor<T> processor(BFTNode node, Class<T> eventClass) {
+    return t -> processors.get(eventClass).forEach(c -> c.process(node, t));
+  }
 
-	public <T> EventProcessorOnDispatch<T> processorOnDispatch(BFTNode node, Class<T> eventClass) {
-		return new EventProcessorOnDispatch<>(eventClass, processor(node, eventClass));
-	}
+  public <T> EventProcessorOnDispatch<T> processorOnDispatch(BFTNode node, Class<T> eventClass) {
+    return new EventProcessorOnDispatch<>(eventClass, processor(node, eventClass));
+  }
 }

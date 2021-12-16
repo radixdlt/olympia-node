@@ -69,101 +69,83 @@ import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
-
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public final class ExitingStake implements ResourceInBucket {
-	private final UInt256 amount;
+  private final UInt256 amount;
 
-	// Bucket keys
-	private final REAddr owner;
-	private final ECPublicKey delegateKey;
-	private final long epochUnlocked;
+  // Bucket keys
+  private final REAddr owner;
+  private final ECPublicKey delegateKey;
+  private final long epochUnlocked;
 
-	public ExitingStake(
-		long epochUnlocked,
-		ECPublicKey delegateKey,
-		REAddr owner,
-		UInt256 amount
-	) {
-		this.delegateKey = Objects.requireNonNull(delegateKey);
-		this.owner = Objects.requireNonNull(owner);
-		this.amount = Objects.requireNonNull(amount);
-		this.epochUnlocked = epochUnlocked;
-	}
+  public ExitingStake(long epochUnlocked, ECPublicKey delegateKey, REAddr owner, UInt256 amount) {
+    this.delegateKey = Objects.requireNonNull(delegateKey);
+    this.owner = Objects.requireNonNull(owner);
+    this.amount = Objects.requireNonNull(amount);
+    this.epochUnlocked = epochUnlocked;
+  }
 
-	public byte[] dataKey() {
-		var dataSize = ECPublicKey.COMPRESSED_BYTES + (ECPublicKey.COMPRESSED_BYTES + 1) + Long.BYTES;
-		var bytes = new byte[dataSize];
-		var byteBuffer = ByteBuffer.wrap(bytes);
-		byteBuffer.putLong(epochUnlocked);
-		byteBuffer.put(delegateKey.getCompressedBytes());
-		byteBuffer.put(owner.getBytes());
-		return bytes;
-	}
+  public byte[] dataKey() {
+    var dataSize = ECPublicKey.COMPRESSED_BYTES + (ECPublicKey.COMPRESSED_BYTES + 1) + Long.BYTES;
+    var bytes = new byte[dataSize];
+    var byteBuffer = ByteBuffer.wrap(bytes);
+    byteBuffer.putLong(epochUnlocked);
+    byteBuffer.put(delegateKey.getCompressedBytes());
+    byteBuffer.put(owner.getBytes());
+    return bytes;
+  }
 
-	public long getEpochUnlocked() {
-		return epochUnlocked;
-	}
+  public long getEpochUnlocked() {
+    return epochUnlocked;
+  }
 
-	public TokensInAccount unlock() {
-		return new TokensInAccount(
-			owner, REAddr.ofNativeToken(), amount
-		);
-	}
+  public TokensInAccount unlock() {
+    return new TokensInAccount(owner, REAddr.ofNativeToken(), amount);
+  }
 
-	@Override
-	public UInt256 getAmount() {
-		return this.amount;
-	}
+  @Override
+  public UInt256 getAmount() {
+    return this.amount;
+  }
 
-	@Override
-	public Bucket bucket() {
-		return new ExittingStakeBucket(owner, delegateKey, epochUnlocked);
-	}
+  @Override
+  public Bucket bucket() {
+    return new ExittingStakeBucket(owner, delegateKey, epochUnlocked);
+  }
 
-	public ECPublicKey getDelegateKey() {
-		return delegateKey;
-	}
+  public ECPublicKey getDelegateKey() {
+    return delegateKey;
+  }
 
-	public REAddr getOwner() {
-		return this.owner;
-	}
+  public REAddr getOwner() {
+    return this.owner;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s[%s:%s:%s:%s]",
-			getClass().getSimpleName(),
-			amount,
-			owner,
-			delegateKey,
-			epochUnlocked
-		);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s[%s:%s:%s:%s]", getClass().getSimpleName(), amount, owner, delegateKey, epochUnlocked);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof ExitingStake)) {
-			return false;
-		}
-		var that = (ExitingStake) o;
-		return Objects.equals(delegateKey, that.delegateKey)
-			&& Objects.equals(owner, that.owner)
-			&& Objects.equals(amount, that.amount)
-			&& this.epochUnlocked == that.epochUnlocked;
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof ExitingStake)) {
+      return false;
+    }
+    var that = (ExitingStake) o;
+    return Objects.equals(delegateKey, that.delegateKey)
+        && Objects.equals(owner, that.owner)
+        && Objects.equals(amount, that.amount)
+        && this.epochUnlocked == that.epochUnlocked;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(
-			delegateKey,
-			owner,
-			amount,
-			epochUnlocked
-		);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(delegateKey, owner, amount, epochUnlocked);
+  }
 }

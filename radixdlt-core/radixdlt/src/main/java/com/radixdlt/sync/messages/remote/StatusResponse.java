@@ -65,47 +65,44 @@
 package com.radixdlt.sync.messages.remote;
 
 import com.radixdlt.consensus.LedgerProof;
-
 import java.util.Objects;
 
-/**
- * Node status response message.
- */
+/** Node status response message. */
 public final class StatusResponse {
 
-	private final LedgerProof header;
+  private final LedgerProof header;
 
-	public static StatusResponse create(LedgerProof header) {
-		return new StatusResponse(header);
-	}
+  public static StatusResponse create(LedgerProof header) {
+    return new StatusResponse(header);
+  }
 
-	private StatusResponse(LedgerProof header) {
-		this.header = header;
-	}
+  private StatusResponse(LedgerProof header) {
+    this.header = header;
+  }
 
-	public LedgerProof getHeader() {
-		return header;
-	}
+  public LedgerProof getHeader() {
+    return header;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.header);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.header);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof StatusResponse)) {
-			return false;
-		}
-		StatusResponse that = (StatusResponse) o;
-		return Objects.equals(header, that.header);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof StatusResponse)) {
+      return false;
+    }
+    StatusResponse that = (StatusResponse) o;
+    return Objects.equals(header, that.header);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(header);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(header);
+  }
 }

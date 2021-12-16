@@ -64,53 +64,52 @@
 
 package com.radixdlt.client.lib.dto;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.identifiers.AID;
-
 import java.util.Objects;
 
-import static java.util.Objects.requireNonNull;
-
 public final class TxDTO {
-	private final AID txId;
+  private final AID txId;
 
-	private TxDTO(AID txId) {
-		this.txId = txId;
-	}
+  private TxDTO(AID txId) {
+    this.txId = txId;
+  }
 
-	@JsonCreator
-	public static TxDTO create(@JsonProperty(value = "txID", required = true) AID txId) {
-		requireNonNull(txId);
+  @JsonCreator
+  public static TxDTO create(@JsonProperty(value = "txID", required = true) AID txId) {
+    requireNonNull(txId);
 
-		return new TxDTO(txId);
-	}
+    return new TxDTO(txId);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof TxDTO)) {
-			return false;
-		}
+    if (!(o instanceof TxDTO)) {
+      return false;
+    }
 
-		var txDTO = (TxDTO) o;
-		return txId.equals(txDTO.txId);
-	}
+    var txDTO = (TxDTO) o;
+    return txId.equals(txDTO.txId);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(txId);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(txId);
+  }
 
-	@Override
-	public String toString() {
-		return "{" + txId.toJson() + '}';
-	}
+  @Override
+  public String toString() {
+    return "{" + txId.toJson() + '}';
+  }
 
-	public AID getTxId() {
-		return txId;
-	}
+  public AID getTxId() {
+    return txId;
+  }
 }

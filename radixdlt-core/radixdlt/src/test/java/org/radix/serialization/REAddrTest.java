@@ -68,11 +68,11 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.REAddr;
 
 public class REAddrTest extends SerializeValue<REAddr> {
-	public REAddrTest() {
-		super(REAddr.class, REAddrTest::get);
-	}
+  public REAddrTest() {
+    super(REAddr.class, REAddrTest::get);
+  }
 
-	private static REAddr get() {
-		return REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "jsh");
-	}
+  private static REAddr get() {
+    return REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "jsh");
+  }
 }

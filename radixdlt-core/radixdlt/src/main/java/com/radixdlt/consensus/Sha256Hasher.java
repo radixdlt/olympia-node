@@ -71,33 +71,31 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 
-/**
- * A Hasher implementation that uses sha256 hashing algorithm.
- */
+/** A Hasher implementation that uses sha256 hashing algorithm. */
 public class Sha256Hasher implements Hasher {
 
-	private final Serialization serialization;
+  private final Serialization serialization;
 
-	public static Sha256Hasher withDefaultSerialization() {
-		return new Sha256Hasher(DefaultSerialization.getInstance());
-	}
+  public static Sha256Hasher withDefaultSerialization() {
+    return new Sha256Hasher(DefaultSerialization.getInstance());
+  }
 
-	public Sha256Hasher(Serialization serialization) {
-		this.serialization = serialization;
-	}
+  public Sha256Hasher(Serialization serialization) {
+    this.serialization = serialization;
+  }
 
-	@Override
-	public int bytes() {
-		return 32;
-	}
+  @Override
+  public int bytes() {
+    return 32;
+  }
 
-	@Override
-	public HashCode hash(Object o) {
-		return HashUtils.sha256(serialization.toDson(o, DsonOutput.Output.HASH));
-	}
+  @Override
+  public HashCode hash(Object o) {
+    return HashUtils.sha256(serialization.toDson(o, DsonOutput.Output.HASH));
+  }
 
-	@Override
-	public HashCode hashBytes(byte[] bytes) {
-		return HashUtils.sha256(bytes);
-	}
+  @Override
+  public HashCode hashBytes(byte[] bytes) {
+    return HashUtils.sha256(bytes);
+  }
 }

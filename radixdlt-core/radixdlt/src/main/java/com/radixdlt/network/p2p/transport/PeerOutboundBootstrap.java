@@ -67,5 +67,5 @@ package com.radixdlt.network.p2p.transport;
 import com.radixdlt.network.p2p.RadixNodeUri;
 
 public interface PeerOutboundBootstrap {
-	void initOutboundConnection(RadixNodeUri uri);
+  void initOutboundConnection(RadixNodeUri uri);
 }

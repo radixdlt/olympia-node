@@ -64,46 +64,45 @@
 
 package com.radixdlt.client.lib.api;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-
-import java.util.Objects;
-
 import static java.util.Objects.requireNonNull;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import java.util.Objects;
+
 public class NavigationCursor {
-	private final String content;
+  private final String content;
 
-	private NavigationCursor(String content) {
-		this.content = content;
-	}
+  private NavigationCursor(String content) {
+    this.content = content;
+  }
 
-	@JsonCreator
-	public static NavigationCursor create(String content) {
-		requireNonNull(content);
+  @JsonCreator
+  public static NavigationCursor create(String content) {
+    requireNonNull(content);
 
-		return new NavigationCursor(content);
-	}
+    return new NavigationCursor(content);
+  }
 
-	public String value() {
-		return content;
-	}
+  public String value() {
+    return content;
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return o instanceof NavigationCursor && content.equals(((NavigationCursor) o).content);
-	}
+    return o instanceof NavigationCursor && content.equals(((NavigationCursor) o).content);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(content);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(content);
+  }
 
-	@Override
-	public String toString() {
-		return "NavigationCursor('" + content + "')";
-	}
+  @Override
+  public String toString() {
+    return "NavigationCursor('" + content + "')";
+  }
 }

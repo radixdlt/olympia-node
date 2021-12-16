@@ -71,131 +71,134 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.LocalSyncService;
-import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
-import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
-import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
-import javax.annotation.concurrent.NotThreadSafe;
-
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
+import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/**
- * Manages the syncing service across epochs
- */
+/** Manages the syncing service across epochs */
 @NotThreadSafe
 public class EpochsLocalSyncService {
-	private static final Logger log = LogManager.getLogger();
+  private static final Logger log = LogManager.getLogger();
 
-	private final LocalSyncServiceFactory localSyncServiceFactory;
+  private final LocalSyncServiceFactory localSyncServiceFactory;
 
-	private EpochChange currentEpoch;
-	private LocalSyncService localSyncService;
+  private EpochChange currentEpoch;
+  private LocalSyncService localSyncService;
 
-	@Inject
-	public EpochsLocalSyncService(
-		LocalSyncService initialLocalSyncService,
-		EpochChange initialEpoch,
-		LocalSyncServiceFactory localSyncServiceFactory
-	) {
-		this.currentEpoch = initialEpoch;
-		this.localSyncService = initialLocalSyncService;
+  @Inject
+  public EpochsLocalSyncService(
+      LocalSyncService initialLocalSyncService,
+      EpochChange initialEpoch,
+      LocalSyncServiceFactory localSyncServiceFactory) {
+    this.currentEpoch = initialEpoch;
+    this.localSyncService = initialLocalSyncService;
 
-		this.localSyncServiceFactory = localSyncServiceFactory;
-	}
+    this.localSyncServiceFactory = localSyncServiceFactory;
+  }
 
-	public EventProcessor<LedgerUpdate> epochsLedgerUpdateEventProcessor() {
-		return this::processLedgerUpdate;
-	}
+  public EventProcessor<LedgerUpdate> epochsLedgerUpdateEventProcessor() {
+    return this::processLedgerUpdate;
+  }
 
-	private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-		var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
-		if (epochChange != null) {
-			this.currentEpoch = epochChange;
+  private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
+    var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
+    if (epochChange != null) {
+      this.currentEpoch = epochChange;
 
-			this.localSyncService = localSyncServiceFactory.create(
-				new RemoteSyncResponseValidatorSetVerifier(
-					epochChange.getBFTConfiguration().getValidatorSet()
-				),
-				this.localSyncService.getSyncState()
-			);
-		}
-		this.localSyncService.ledgerUpdateEventProcessor().process(ledgerUpdate);
-	}
+      this.localSyncService =
+          localSyncServiceFactory.create(
+              new RemoteSyncResponseValidatorSetVerifier(
+                  epochChange.getBFTConfiguration().getValidatorSet()),
+              this.localSyncService.getSyncState());
+    }
+    this.localSyncService.ledgerUpdateEventProcessor().process(ledgerUpdate);
+  }
 
-	public EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor() {
-		return this::processLocalSyncRequest;
-	}
+  public EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor() {
+    return this::processLocalSyncRequest;
+  }
 
-	private void processLocalSyncRequest(LocalSyncRequest request) {
-		final long targetEpoch = request.getTarget().getEpoch();
+  private void processLocalSyncRequest(LocalSyncRequest request) {
+    final long targetEpoch = request.getTarget().getEpoch();
 
-		if (targetEpoch < currentEpoch.getEpoch()) {
-			log.trace("Request epoch {} is lower from current {} ignoring: {}", targetEpoch, currentEpoch.getEpoch(), request);
-			return;
-		}
+    if (targetEpoch < currentEpoch.getEpoch()) {
+      log.trace(
+          "Request epoch {} is lower from current {} ignoring: {}",
+          targetEpoch,
+          currentEpoch.getEpoch(),
+          request);
+      return;
+    }
 
-		localSyncService.localSyncRequestEventProcessor().process(request);
-	}
+    localSyncService.localSyncRequestEventProcessor().process(request);
+  }
 
-	public EventProcessor<SyncCheckTrigger> syncCheckTriggerEventProcessor() {
-		return this::processSyncCheckTrigger;
-	}
+  public EventProcessor<SyncCheckTrigger> syncCheckTriggerEventProcessor() {
+    return this::processSyncCheckTrigger;
+  }
 
-	private void processSyncCheckTrigger(SyncCheckTrigger syncCheckTrigger) {
-		this.localSyncService.syncCheckTriggerEventProcessor().process(syncCheckTrigger);
-	}
+  private void processSyncCheckTrigger(SyncCheckTrigger syncCheckTrigger) {
+    this.localSyncService.syncCheckTriggerEventProcessor().process(syncCheckTrigger);
+  }
 
-	public EventProcessor<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutEventProcessor() {
-		return this::processSyncCheckReceiveStatusTimeout;
-	}
+  public EventProcessor<SyncCheckReceiveStatusTimeout>
+      syncCheckReceiveStatusTimeoutEventProcessor() {
+    return this::processSyncCheckReceiveStatusTimeout;
+  }
 
-	public EventProcessor<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutProcessor() {
-		return this::processSyncLedgerUpdateTimeout;
-	}
+  public EventProcessor<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutProcessor() {
+    return this::processSyncLedgerUpdateTimeout;
+  }
 
-	private void processSyncLedgerUpdateTimeout(SyncLedgerUpdateTimeout syncLedgerUpdateTimeout) {
-		this.localSyncService.syncLedgerUpdateTimeoutProcessor().process(syncLedgerUpdateTimeout);
-	}
+  private void processSyncLedgerUpdateTimeout(SyncLedgerUpdateTimeout syncLedgerUpdateTimeout) {
+    this.localSyncService.syncLedgerUpdateTimeoutProcessor().process(syncLedgerUpdateTimeout);
+  }
 
-	private void processSyncCheckReceiveStatusTimeout(SyncCheckReceiveStatusTimeout syncCheckReceiveStatusTimeout) {
-		this.localSyncService.syncCheckReceiveStatusTimeoutEventProcessor().process(syncCheckReceiveStatusTimeout);
-	}
+  private void processSyncCheckReceiveStatusTimeout(
+      SyncCheckReceiveStatusTimeout syncCheckReceiveStatusTimeout) {
+    this.localSyncService
+        .syncCheckReceiveStatusTimeoutEventProcessor()
+        .process(syncCheckReceiveStatusTimeout);
+  }
 
-	public EventProcessor<SyncRequestTimeout> syncRequestTimeoutEventProcessor() {
-		return this::processSyncRequestTimeout;
-	}
+  public EventProcessor<SyncRequestTimeout> syncRequestTimeoutEventProcessor() {
+    return this::processSyncRequestTimeout;
+  }
 
-	private void processSyncRequestTimeout(SyncRequestTimeout syncRequestTimeout) {
-		this.localSyncService.syncRequestTimeoutEventProcessor().process(syncRequestTimeout);
-	}
+  private void processSyncRequestTimeout(SyncRequestTimeout syncRequestTimeout) {
+    this.localSyncService.syncRequestTimeoutEventProcessor().process(syncRequestTimeout);
+  }
 
-	public RemoteEventProcessor<StatusResponse> statusResponseEventProcessor() {
-		return this::processStatusResponse;
-	}
+  public RemoteEventProcessor<StatusResponse> statusResponseEventProcessor() {
+    return this::processStatusResponse;
+  }
 
-	private void processStatusResponse(BFTNode sender, StatusResponse statusResponse) {
-		this.localSyncService.statusResponseEventProcessor().process(sender, statusResponse);
-	}
+  private void processStatusResponse(BFTNode sender, StatusResponse statusResponse) {
+    this.localSyncService.statusResponseEventProcessor().process(sender, statusResponse);
+  }
 
-	public RemoteEventProcessor<SyncResponse> syncResponseEventProcessor() {
-		return this::processSyncResponse;
-	}
+  public RemoteEventProcessor<SyncResponse> syncResponseEventProcessor() {
+    return this::processSyncResponse;
+  }
 
-	private void processSyncResponse(BFTNode sender, SyncResponse syncResponse) {
-		this.localSyncService.syncResponseEventProcessor().process(sender, syncResponse);
-	}
+  private void processSyncResponse(BFTNode sender, SyncResponse syncResponse) {
+    this.localSyncService.syncResponseEventProcessor().process(sender, syncResponse);
+  }
 
-	public RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateEventProcessor() {
-		return this::processLedgerStatusUpdate;
-	}
+  public RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateEventProcessor() {
+    return this::processLedgerStatusUpdate;
+  }
 
-	private void processLedgerStatusUpdate(BFTNode sender, LedgerStatusUpdate ledgerStatusUpdate) {
-		this.localSyncService.ledgerStatusUpdateEventProcessor().process(sender, ledgerStatusUpdate);
-	}
+  private void processLedgerStatusUpdate(BFTNode sender, LedgerStatusUpdate ledgerStatusUpdate) {
+    this.localSyncService.ledgerStatusUpdateEventProcessor().process(sender, ledgerStatusUpdate);
+  }
 }

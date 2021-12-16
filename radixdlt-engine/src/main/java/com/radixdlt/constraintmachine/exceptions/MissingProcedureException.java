@@ -67,9 +67,7 @@ package com.radixdlt.constraintmachine.exceptions;
 import com.radixdlt.constraintmachine.ProcedureKey;
 
 public class MissingProcedureException extends Exception {
-	public MissingProcedureException(
-		ProcedureKey key
-	) {
-		super("Missing: " + key);
-	}
+  public MissingProcedureException(ProcedureKey key) {
+    super("Missing: " + key);
+  }
 }

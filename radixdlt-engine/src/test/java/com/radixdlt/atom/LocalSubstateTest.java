@@ -71,10 +71,10 @@ import org.junit.Test;
 
 public class LocalSubstateTest {
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(LocalSubstate.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(LocalSubstate.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 }

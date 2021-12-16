@@ -1,5 +1,4 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -69,30 +68,30 @@ import com.radixdlt.utils.functional.Failure;
 
 /**
  * Errors defined by JSON-RPC specification.
- * <p>
- * <b>WARNING: New errors should be added to the end of the list to preserve error codes.</b>
+ *
+ * <p><b>WARNING: New errors should be added to the end of the list to preserve error codes.</b>
  */
 public enum ProtocolErrors implements Failure {
-	INVALID_REQUEST(600, "Invalid request: {0}"),
-	INVALID_PARAMETERS(602, "Invalid parameters: {0} {1}"),
-	PARSE_ERROR(700, "Parse error: {0}"),
-	METHOD_NOT_FOUND(601, "Method {0} not found");
+  INVALID_REQUEST(600, "Invalid request: {0}"),
+  INVALID_PARAMETERS(602, "Invalid parameters: {0} {1}"),
+  PARSE_ERROR(700, "Parse error: {0}"),
+  METHOD_NOT_FOUND(601, "Method {0} not found");
 
-	private final int code;
-	private final String message;
+  private final int code;
+  private final String message;
 
-	ProtocolErrors(int code, String message) {
-		this.code = code;
-		this.message = message;
-	}
+  ProtocolErrors(int code, String message) {
+    this.code = code;
+    this.message = message;
+  }
 
-	@Override
-	public String message() {
-		return message;
-	}
+  @Override
+  public String message() {
+    return message;
+  }
 
-	@Override
-	public int code() {
-		return Category.PROTOCOL.forId(code);
-	}
+  @Override
+  public int code() {
+    return Category.PROTOCOL.forId(code);
+  }
 }

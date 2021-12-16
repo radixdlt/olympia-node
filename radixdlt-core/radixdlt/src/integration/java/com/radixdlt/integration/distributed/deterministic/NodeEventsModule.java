@@ -72,18 +72,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Manages events for a node network
- */
+/** Manages events for a node network */
 public class NodeEventsModule extends AbstractModule {
-	@Override
-	public void configure() {
-		bind(NodeEvents.class).in(Scopes.SINGLETON);
-	}
+  @Override
+  public void configure() {
+    bind(NodeEvents.class).in(Scopes.SINGLETON);
+  }
 
-	@Provides
-	public Map<Class<?>, Set<NodeEventProcessor<?>>> safetyCheckProcessor(Set<NodeEventProcessor<?>> processors) {
-		return processors.stream()
-			.collect(Collectors.groupingBy(NodeEventProcessor::getEventClass, Collectors.toSet()));
-	}
+  @Provides
+  public Map<Class<?>, Set<NodeEventProcessor<?>>> safetyCheckProcessor(
+      Set<NodeEventProcessor<?>> processors) {
+    return processors.stream()
+        .collect(Collectors.groupingBy(NodeEventProcessor::getEventClass, Collectors.toSet()));
+  }
 }

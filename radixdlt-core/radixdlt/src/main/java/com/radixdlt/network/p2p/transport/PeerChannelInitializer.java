@@ -68,9 +68,9 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.network.p2p.RadixNodeUri;
-import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.network.p2p.PeerEvent;
+import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.transport.logging.LogSink;
 import com.radixdlt.network.p2p.transport.logging.LoggingHandler;
 import com.radixdlt.networks.Addressing;
@@ -84,145 +84,148 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.bytes.ByteArrayDecoder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class PeerChannelInitializer extends ChannelInitializer<SocketChannel> {
-	private static final Logger log = LogManager.getLogger();
+  private static final Logger log = LogManager.getLogger();
 
-	private static final int MAX_PACKET_LENGTH = 1024 * 1024;
-	private static final int FRAME_HEADER_LENGTH = Integer.BYTES;
-	private static final int RECEIVE_BUFFER_SIZE = 1024 * 1024;
-	private static final int SOCKET_BACKLOG_SIZE = 1024;
+  private static final int MAX_PACKET_LENGTH = 1024 * 1024;
+  private static final int FRAME_HEADER_LENGTH = Integer.BYTES;
+  private static final int RECEIVE_BUFFER_SIZE = 1024 * 1024;
+  private static final int SOCKET_BACKLOG_SIZE = 1024;
 
-	private final P2PConfig config;
-	private final Addressing addressing;
-	private final int networkId;
-	private final SystemCounters counters;
-	private final Serialization serialization;
-	private final SecureRandom secureRandom;
-	private final ECKeyOps ecKeyOps;
-	private final EventDispatcher<PeerEvent> peerEventDispatcher;
-	private final Optional<RadixNodeUri> uri;
+  private final P2PConfig config;
+  private final Addressing addressing;
+  private final int networkId;
+  private final SystemCounters counters;
+  private final Serialization serialization;
+  private final SecureRandom secureRandom;
+  private final ECKeyOps ecKeyOps;
+  private final EventDispatcher<PeerEvent> peerEventDispatcher;
+  private final Optional<RadixNodeUri> uri;
 
-	public PeerChannelInitializer(
-		P2PConfig config,
-		Addressing addressing,
-		int networkId,
-		SystemCounters counters,
-		Serialization serialization,
-		SecureRandom secureRandom,
-		ECKeyOps ecKeyOps,
-		EventDispatcher<PeerEvent> peerEventDispatcher,
-		Optional<RadixNodeUri> uri
-	) {
-		this.config = Objects.requireNonNull(config);
-		this.addressing = Objects.requireNonNull(addressing);
-		this.networkId = networkId;
-		this.counters = Objects.requireNonNull(counters);
-		this.serialization = Objects.requireNonNull(serialization);
-		this.secureRandom = Objects.requireNonNull(secureRandom);
-		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
-		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
-		this.uri = Objects.requireNonNull(uri);
-	}
+  public PeerChannelInitializer(
+      P2PConfig config,
+      Addressing addressing,
+      int networkId,
+      SystemCounters counters,
+      Serialization serialization,
+      SecureRandom secureRandom,
+      ECKeyOps ecKeyOps,
+      EventDispatcher<PeerEvent> peerEventDispatcher,
+      Optional<RadixNodeUri> uri) {
+    this.config = Objects.requireNonNull(config);
+    this.addressing = Objects.requireNonNull(addressing);
+    this.networkId = networkId;
+    this.counters = Objects.requireNonNull(counters);
+    this.serialization = Objects.requireNonNull(serialization);
+    this.secureRandom = Objects.requireNonNull(secureRandom);
+    this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
+    this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
+    this.uri = Objects.requireNonNull(uri);
+  }
 
-	@Override
-	protected void initChannel(SocketChannel socketChannel) {
-		counters.increment(CounterType.NETWORKING_P2P_CHANNELS_INITIALIZED);
+  @Override
+  protected void initChannel(SocketChannel socketChannel) {
+    counters.increment(CounterType.NETWORKING_P2P_CHANNELS_INITIALIZED);
 
-		final var socketChannelConfig = socketChannel.config();
-		socketChannelConfig.setReceiveBufferSize(MAX_PACKET_LENGTH);
-		socketChannelConfig.setSendBufferSize(MAX_PACKET_LENGTH);
-		socketChannelConfig.setOption(ChannelOption.SO_RCVBUF, RECEIVE_BUFFER_SIZE);
-		socketChannelConfig.setOption(ChannelOption.SO_BACKLOG, SOCKET_BACKLOG_SIZE);
+    final var socketChannelConfig = socketChannel.config();
+    socketChannelConfig.setReceiveBufferSize(MAX_PACKET_LENGTH);
+    socketChannelConfig.setSendBufferSize(MAX_PACKET_LENGTH);
+    socketChannelConfig.setOption(ChannelOption.SO_RCVBUF, RECEIVE_BUFFER_SIZE);
+    socketChannelConfig.setOption(ChannelOption.SO_BACKLOG, SOCKET_BACKLOG_SIZE);
 
-		if (log.isDebugEnabled()) {
-			socketChannel.pipeline().addLast(new LoggingHandler(LogSink.using(log), false));
-		}
+    if (log.isDebugEnabled()) {
+      socketChannel.pipeline().addLast(new LoggingHandler(LogSink.using(log), false));
+    }
 
-		uri.ifPresent(u -> log.trace("Initializing peer channel to {}", u));
+    uri.ifPresent(u -> log.trace("Initializing peer channel to {}", u));
 
-		if (uri.isEmpty() && this.config.useProxyProtocol()) {
-			/* If the node is configured to support the PROXY protocol, we add a dedicated
-			   pipeline that decodes a single header packet (with host's real ip address and port), and then
-			   replaces this one-time pipeline with the main one (which forwards to PeerChannel). */
-			createProxyProtocolPipeline(socketChannel);
-		} else {
-			createPeerChannelPipeline(socketChannel, socketChannel.remoteAddress());
-		}
-	}
+    if (uri.isEmpty() && this.config.useProxyProtocol()) {
+      /* If the node is configured to support the PROXY protocol, we add a dedicated
+      pipeline that decodes a single header packet (with host's real ip address and port), and then
+      replaces this one-time pipeline with the main one (which forwards to PeerChannel). */
+      createProxyProtocolPipeline(socketChannel);
+    } else {
+      createPeerChannelPipeline(socketChannel, socketChannel.remoteAddress());
+    }
+  }
 
-	private void createProxyProtocolPipeline(SocketChannel socketChannel) {
-		socketChannel.pipeline()
-			.addLast("decode_proxy_header_line", new LineBasedFrameDecoder(255, true, true))
-			.addLast("decode_proxy_header_bytes", new ByteArrayDecoder())
-			.addLast("handle_proxy_header", new ProxyHeaderHandler(socketChannel));
-	}
+  private void createProxyProtocolPipeline(SocketChannel socketChannel) {
+    socketChannel
+        .pipeline()
+        .addLast("decode_proxy_header_line", new LineBasedFrameDecoder(255, true, true))
+        .addLast("decode_proxy_header_bytes", new ByteArrayDecoder())
+        .addLast("handle_proxy_header", new ProxyHeaderHandler(socketChannel));
+  }
 
-	private final class ProxyHeaderHandler extends SimpleChannelInboundHandler<byte[]> {
-		private final SocketChannel socketChannel;
+  private final class ProxyHeaderHandler extends SimpleChannelInboundHandler<byte[]> {
+    private final SocketChannel socketChannel;
 
-		ProxyHeaderHandler(SocketChannel socketChannel) {
-			this.socketChannel = socketChannel;
-		}
+    ProxyHeaderHandler(SocketChannel socketChannel) {
+      this.socketChannel = socketChannel;
+    }
 
-		@Override
-		protected void channelRead0(ChannelHandlerContext ctx, byte[] msg) throws IOException {
-			final var clientAddress = parseProxyHeader(new String(msg));
+    @Override
+    protected void channelRead0(ChannelHandlerContext ctx, byte[] msg) throws IOException {
+      final var clientAddress = parseProxyHeader(new String(msg));
 
-			// remove the proxy pipeline
-			ctx.pipeline().remove(LineBasedFrameDecoder.class);
-			ctx.pipeline().remove(ByteArrayDecoder.class);
-			ctx.pipeline().remove(ProxyHeaderHandler.class);
+      // remove the proxy pipeline
+      ctx.pipeline().remove(LineBasedFrameDecoder.class);
+      ctx.pipeline().remove(ByteArrayDecoder.class);
+      ctx.pipeline().remove(ProxyHeaderHandler.class);
 
-			// and create a regular peer channel pipeline
-			createPeerChannelPipeline(socketChannel, clientAddress);
-		}
+      // and create a regular peer channel pipeline
+      createPeerChannelPipeline(socketChannel, clientAddress);
+    }
 
-		private InetSocketAddress parseProxyHeader(String line) throws IOException {
-			/* The proxy protocol line is a single line that ends with a carriage return
-			   and line feed ("\r\n"), and has the following form:
-			   PROXY_STRING + single space + INET_PROTOCOL + single space + CLIENT_IP + single space
-			   + PROXY_IP + single space + CLIENT_PORT + single space + PROXY_PORT + "\r\n" */
-			final var components = line.split(" ");
+    private InetSocketAddress parseProxyHeader(String line) throws IOException {
+      /* The proxy protocol line is a single line that ends with a carriage return
+      and line feed ("\r\n"), and has the following form:
+      PROXY_STRING + single space + INET_PROTOCOL + single space + CLIENT_IP + single space
+      + PROXY_IP + single space + CLIENT_PORT + single space + PROXY_PORT + "\r\n" */
+      final var components = line.split(" ");
 
-			if (!components[0].equals("PROXY") || !components[1].startsWith("TCP")) {
-				log.warn("Received invalid PROXY protocol header line: {}", line);
-				socketChannel.close();
-				throw new IOException("Invalid PROXY header");
-			}
+      if (!components[0].equals("PROXY") || !components[1].startsWith("TCP")) {
+        log.warn("Received invalid PROXY protocol header line: {}", line);
+        socketChannel.close();
+        throw new IOException("Invalid PROXY header");
+      }
 
-			return InetSocketAddress.createUnresolved(components[2], Integer.parseInt(components[4]));
-		}
-	}
+      return InetSocketAddress.createUnresolved(components[2], Integer.parseInt(components[4]));
+    }
+  }
 
-	private void createPeerChannelPipeline(SocketChannel socketChannel, InetSocketAddress remoteAddress) {
-		final var peerChannel = new PeerChannel(
-			config,
-			addressing,
-			networkId,
-			counters,
-			serialization,
-			secureRandom,
-			ecKeyOps,
-			peerEventDispatcher,
-			uri,
-			socketChannel,
-			Optional.ofNullable(remoteAddress)
-		);
+  private void createPeerChannelPipeline(
+      SocketChannel socketChannel, InetSocketAddress remoteAddress) {
+    final var peerChannel =
+        new PeerChannel(
+            config,
+            addressing,
+            networkId,
+            counters,
+            serialization,
+            secureRandom,
+            ecKeyOps,
+            peerEventDispatcher,
+            uri,
+            socketChannel,
+            Optional.ofNullable(remoteAddress));
 
-		final int packetLength = MAX_PACKET_LENGTH + FRAME_HEADER_LENGTH;
-		final int headerLength = FRAME_HEADER_LENGTH;
-		socketChannel.pipeline()
-			.addLast("unpack", new LengthFieldBasedFrameDecoder(packetLength, 0, headerLength, 0, headerLength))
-			.addLast("handler", peerChannel)
-			.addLast("pack", new LengthFieldPrepender(headerLength));
-	}
+    final int packetLength = MAX_PACKET_LENGTH + FRAME_HEADER_LENGTH;
+    final int headerLength = FRAME_HEADER_LENGTH;
+    socketChannel
+        .pipeline()
+        .addLast(
+            "unpack",
+            new LengthFieldBasedFrameDecoder(packetLength, 0, headerLength, 0, headerLength))
+        .addLast("handler", peerChannel)
+        .addLast("pack", new LengthFieldPrepender(headerLength));
+  }
 }

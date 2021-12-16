@@ -65,5 +65,5 @@
 package com.radixdlt.constraintmachine;
 
 public interface VirtualMapper<T extends Particle> {
-	T map(Object key);
+  T map(Object key);
 }

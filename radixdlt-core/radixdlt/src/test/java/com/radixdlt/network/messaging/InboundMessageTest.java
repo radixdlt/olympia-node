@@ -64,33 +64,31 @@
 
 package com.radixdlt.network.messaging;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.p2p.NodeId;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class InboundMessageTest {
 
-	private final NodeId nodeId = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
-	private final byte[] message = new byte[] {
-		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
-	};
-	private InboundMessage inboundMessage;
+  private final NodeId nodeId = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
+  private final byte[] message = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+  private InboundMessage inboundMessage;
 
-	@Before
-	public void setUp() {
-		this.inboundMessage = new InboundMessage(0L, nodeId, this.message);
-	}
+  @Before
+  public void setUp() {
+    this.inboundMessage = new InboundMessage(0L, nodeId, this.message);
+  }
 
-	@Test
-	public void testSource() {
-		assertThat(inboundMessage.source()).isEqualTo(nodeId);
-	}
+  @Test
+  public void testSource() {
+    assertThat(inboundMessage.source()).isEqualTo(nodeId);
+  }
 
-	@Test
-	public void testMessage() {
-		assertThat(inboundMessage.message()).isEqualTo(message);
-	}
+  @Test
+  public void testMessage() {
+    assertThat(inboundMessage.message()).isEqualTo(message);
+  }
 }

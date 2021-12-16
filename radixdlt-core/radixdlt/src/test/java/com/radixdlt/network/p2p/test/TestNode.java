@@ -69,13 +69,13 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.p2p.RadixNodeUri;
 
 final class TestNode {
-	Injector injector;
-	RadixNodeUri uri;
-	ECKeyPair keyPair;
+  Injector injector;
+  RadixNodeUri uri;
+  ECKeyPair keyPair;
 
-	TestNode(Injector injector, RadixNodeUri uri, ECKeyPair keyPair) {
-		this.injector = injector;
-		this.uri = uri;
-		this.keyPair = keyPair;
-	}
+  TestNode(Injector injector, RadixNodeUri uri, ECKeyPair keyPair) {
+    this.injector = injector;
+    this.uri = uri;
+    this.keyPair = keyPair;
+  }
 }

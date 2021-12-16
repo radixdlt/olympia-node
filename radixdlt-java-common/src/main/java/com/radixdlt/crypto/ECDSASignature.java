@@ -64,6 +64,8 @@
 
 package com.radixdlt.crypto;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
@@ -72,137 +74,135 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.Objects;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.DLSequence;
 import org.bouncycastle.util.encoders.Hex;
 
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
-
 /**
- * An <a href="https://en.wikipedia.org/wiki/
- * Elliptic_Curve_Digital_Signature_Algorithm">ECDSA</a> signature represented as
- * a tuple of {@link BigInteger}s {@code (R, S)}/
+ * An <a href="https://en.wikipedia.org/wiki/ Elliptic_Curve_Digital_Signature_Algorithm">ECDSA</a>
+ * signature represented as a tuple of {@link BigInteger}s {@code (R, S)}/
  */
 @SerializerId2("sig")
 public final class ECDSASignature {
-	// Placeholder for the serializer ID
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(Output.ALL)
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
+  // Placeholder for the serializer ID
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(Output.ALL)
+  private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	/* The two components of the signature. */
-	private final BigInteger r;
-	private final BigInteger s;
-	private final byte v;
+  /* The two components of the signature. */
+  private final BigInteger r;
+  private final BigInteger s;
+  private final byte v;
 
-	private static final ECDSASignature ZERO_SIGNATURE = new ECDSASignature(BigInteger.ZERO, BigInteger.ZERO, 0);
+  private static final ECDSASignature ZERO_SIGNATURE =
+      new ECDSASignature(BigInteger.ZERO, BigInteger.ZERO, 0);
 
-	private ECDSASignature(BigInteger r, BigInteger s, int v) {
-		this.r = requireNonNull(r);
-		this.s = requireNonNull(s);
-		this.v = ((v & 1) == 0 ? (byte) 0x00 : (byte) 0x01);
-	}
+  private ECDSASignature(BigInteger r, BigInteger s, int v) {
+    this.r = requireNonNull(r);
+    this.s = requireNonNull(s);
+    this.v = ((v & 1) == 0 ? (byte) 0x00 : (byte) 0x01);
+  }
 
-	@JsonCreator
-	public static ECDSASignature deserialize(
-		@JsonProperty(value = "r", required = true) byte[] r,
-		@JsonProperty(value = "s", required = true) byte[] s,
-		@JsonProperty(value = "v", required = true) int v
-	) {
-		return create(new BigInteger(1, requireNonNull(r)), new BigInteger(1, requireNonNull(s)), v);
-	}
+  @JsonCreator
+  public static ECDSASignature deserialize(
+      @JsonProperty(value = "r", required = true) byte[] r,
+      @JsonProperty(value = "s", required = true) byte[] s,
+      @JsonProperty(value = "v", required = true) int v) {
+    return create(new BigInteger(1, requireNonNull(r)), new BigInteger(1, requireNonNull(s)), v);
+  }
 
-	/**
-	 * Constructs a signature with the given components. Does NOT automatically canonicalise the signature.
-	 */
-	public static ECDSASignature create(BigInteger r, BigInteger s, int v) {
-		requireNonNull(r);
-		requireNonNull(s);
+  /**
+   * Constructs a signature with the given components. Does NOT automatically canonicalise the
+   * signature.
+   */
+  public static ECDSASignature create(BigInteger r, BigInteger s, int v) {
+    requireNonNull(r);
+    requireNonNull(s);
 
-		return new ECDSASignature(r, s, v);
-	}
+    return new ECDSASignature(r, s, v);
+  }
 
-	public static ECDSASignature zeroSignature() {
-		return ZERO_SIGNATURE;
-	}
+  public static ECDSASignature zeroSignature() {
+    return ZERO_SIGNATURE;
+  }
 
-	public BigInteger getR() {
-		return r;
-	}
+  public BigInteger getR() {
+    return r;
+  }
 
-	public BigInteger getS() {
-		return s;
-	}
+  public BigInteger getS() {
+    return s;
+  }
 
-	public byte getV() {
-		return v;
-	}
+  public byte getV() {
+    return v;
+  }
 
-	@JsonProperty("r")
-	@DsonOutput(Output.ALL)
-	private byte[] getJsonR() {
-		return Bytes.trimLeadingZeros(r.toByteArray());
-	}
+  @JsonProperty("r")
+  @DsonOutput(Output.ALL)
+  private byte[] getJsonR() {
+    return Bytes.trimLeadingZeros(r.toByteArray());
+  }
 
-	@JsonProperty("s")
-	@DsonOutput(Output.ALL)
-	private byte[] getJsonS() {
-		return Bytes.trimLeadingZeros(s.toByteArray());
-	}
+  @JsonProperty("s")
+  @DsonOutput(Output.ALL)
+  private byte[] getJsonS() {
+    return Bytes.trimLeadingZeros(s.toByteArray());
+  }
 
-	@JsonProperty("v")
-	@DsonOutput(Output.ALL)
-	private int getJsonV() {
-		return v;
-	}
+  @JsonProperty("v")
+  @DsonOutput(Output.ALL)
+  private int getJsonV() {
+    return v;
+  }
 
-	@Override
-	public String toString() {
-		return toHexString();
-	}
+  @Override
+  public String toString() {
+    return toHexString();
+  }
 
-	public String toHexString() {
-		return Bytes.toHexString(getJsonR()) + Bytes.toHexString(getJsonS());
-	}
+  public String toHexString() {
+    return Bytes.toHexString(getJsonR()) + Bytes.toHexString(getJsonS());
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (o == this) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) {
+      return true;
+    }
 
-		return (o instanceof ECDSASignature signature)
-			   && Objects.equals(r, signature.r)
-			   && Objects.equals(s, signature.s)
-			   && Objects.equals(v, signature.v);
-	}
+    return (o instanceof ECDSASignature signature)
+        && Objects.equals(r, signature.r)
+        && Objects.equals(s, signature.s)
+        && Objects.equals(v, signature.v);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(r, s, v);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(r, s, v);
+  }
 
-	//WARNING: Never ever use this method to restore recoverable signature! It misses 'v' bit necessary for recovery.
-	public static ECDSASignature decodeFromHexDer(String input) {
-		return decodeFromDER(Hex.decode(input));
-	}
+  // WARNING: Never ever use this method to restore recoverable signature! It misses 'v' bit
+  // necessary for recovery.
+  public static ECDSASignature decodeFromHexDer(String input) {
+    return decodeFromDER(Hex.decode(input));
+  }
 
-	public static ECDSASignature decodeFromDER(byte[] bytes) {
-		try (ASN1InputStream decoder = new ASN1InputStream(bytes)) {
-			var seq = (DLSequence) decoder.readObject();
-			var r = (ASN1Integer) seq.getObjectAt(0);
-			var s = (ASN1Integer) seq.getObjectAt(1);
+  public static ECDSASignature decodeFromDER(byte[] bytes) {
+    try (ASN1InputStream decoder = new ASN1InputStream(bytes)) {
+      var seq = (DLSequence) decoder.readObject();
+      var r = (ASN1Integer) seq.getObjectAt(0);
+      var s = (ASN1Integer) seq.getObjectAt(1);
 
-			return new ECDSASignature(r.getPositiveValue(), s.getPositiveValue(), 0);
-		} catch (IOException e) {
-			throw new IllegalArgumentException("Failed to read bytes as ASN1 decode bytes", e);
-		} catch (ClassCastException e) {
-			throw new IllegalArgumentException("Failed to cast to ASN1Integer", e);
-		}
-	}
+      return new ECDSASignature(r.getPositiveValue(), s.getPositiveValue(), 0);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Failed to read bytes as ASN1 decode bytes", e);
+    } catch (ClassCastException e) {
+      throw new IllegalArgumentException("Failed to cast to ASN1Integer", e);
+    }
+  }
 }

@@ -67,7 +67,7 @@ package com.radixdlt.constraintmachine.exceptions;
 import com.radixdlt.constraintmachine.Particle;
 
 public class InvalidVirtualSubstateException extends Exception {
-	public InvalidVirtualSubstateException(Particle particle) {
-		super(particle + " is not a valid virtual substate.");
-	}
+  public InvalidVirtualSubstateException(Particle particle) {
+    super(particle + " is not a valid virtual substate.");
+  }
 }

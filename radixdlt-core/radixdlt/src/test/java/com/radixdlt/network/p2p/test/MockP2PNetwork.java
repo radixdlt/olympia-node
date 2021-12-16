@@ -64,6 +64,10 @@
 
 package com.radixdlt.network.p2p.test;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Key;
 import com.radixdlt.counters.SystemCounters;
@@ -76,93 +80,100 @@ import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.Serialization;
-
-import java.security.SecureRandom;
-import java.util.Optional;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.SocketChannel;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import java.security.SecureRandom;
+import java.util.Optional;
 
 final class MockP2PNetwork {
-	private ImmutableList<TestNode> nodes;
+  private ImmutableList<TestNode> nodes;
 
-	// this needs to be mutable due to circular dependency in runner
-	void setNodes(ImmutableList<TestNode> nodes) {
-		this.nodes = nodes;
-	}
+  // this needs to be mutable due to circular dependency in runner
+  void setNodes(ImmutableList<TestNode> nodes) {
+    this.nodes = nodes;
+  }
 
-	void createChannel(int clientPeerIndex, RadixNodeUri serverPeerUri) {
-		final var clientPeer = nodes.get(clientPeerIndex);
-		final var serverPeer = nodes.stream()
-			.filter(p -> p.uri.getHost().equals(serverPeerUri.getHost()) && p.uri.getPort() == serverPeerUri.getPort())
-			.findAny().get();
+  void createChannel(int clientPeerIndex, RadixNodeUri serverPeerUri) {
+    final var clientPeer = nodes.get(clientPeerIndex);
+    final var serverPeer =
+        nodes.stream()
+            .filter(
+                p ->
+                    p.uri.getHost().equals(serverPeerUri.getHost())
+                        && p.uri.getPort() == serverPeerUri.getPort())
+            .findAny()
+            .get();
 
-		final var clientSocketChannel = mock(SocketChannel.class);
-		final var serverSocketChannel = mock(SocketChannel.class);
+    final var clientSocketChannel = mock(SocketChannel.class);
+    final var serverSocketChannel = mock(SocketChannel.class);
 
-		final var clientChannel = new PeerChannel(
-			clientPeer.injector.getInstance(P2PConfig.class),
-			Addressing.ofNetwork(Network.LOCALNET),
-			1,
-			clientPeer.injector.getInstance(SystemCounters.class),
-			clientPeer.injector.getInstance(Serialization.class),
-			new SecureRandom(),
-			ECKeyOps.fromKeyPair(clientPeer.keyPair),
-			clientPeer.injector.getInstance(new Key<EventDispatcher<PeerEvent>>() { }),
-			Optional.of(serverPeerUri),
-			clientSocketChannel,
-			Optional.empty()
-		);
+    final var clientChannel =
+        new PeerChannel(
+            clientPeer.injector.getInstance(P2PConfig.class),
+            Addressing.ofNetwork(Network.LOCALNET),
+            1,
+            clientPeer.injector.getInstance(SystemCounters.class),
+            clientPeer.injector.getInstance(Serialization.class),
+            new SecureRandom(),
+            ECKeyOps.fromKeyPair(clientPeer.keyPair),
+            clientPeer.injector.getInstance(new Key<EventDispatcher<PeerEvent>>() {}),
+            Optional.of(serverPeerUri),
+            clientSocketChannel,
+            Optional.empty());
 
-		final var serverChannel = new PeerChannel(
-			serverPeer.injector.getInstance(P2PConfig.class),
-			Addressing.ofNetwork(Network.LOCALNET),
-			1,
-			serverPeer.injector.getInstance(SystemCounters.class),
-			serverPeer.injector.getInstance(Serialization.class),
-			new SecureRandom(),
-			ECKeyOps.fromKeyPair(serverPeer.keyPair),
-			serverPeer.injector.getInstance(new Key<EventDispatcher<PeerEvent>>() { }),
-			Optional.empty(),
-			serverSocketChannel,
-			Optional.empty()
-		);
+    final var serverChannel =
+        new PeerChannel(
+            serverPeer.injector.getInstance(P2PConfig.class),
+            Addressing.ofNetwork(Network.LOCALNET),
+            1,
+            serverPeer.injector.getInstance(SystemCounters.class),
+            serverPeer.injector.getInstance(Serialization.class),
+            new SecureRandom(),
+            ECKeyOps.fromKeyPair(serverPeer.keyPair),
+            serverPeer.injector.getInstance(new Key<EventDispatcher<PeerEvent>>() {}),
+            Optional.empty(),
+            serverSocketChannel,
+            Optional.empty());
 
-		when(clientSocketChannel.writeAndFlush(any())).thenAnswer(inv -> {
-			final var rawData = inv.getArgument(0);
-			serverChannel.channelRead0(null, (ByteBuf) rawData);
-			return null;
-		});
+    when(clientSocketChannel.writeAndFlush(any()))
+        .thenAnswer(
+            inv -> {
+              final var rawData = inv.getArgument(0);
+              serverChannel.channelRead0(null, (ByteBuf) rawData);
+              return null;
+            });
 
-		when(serverSocketChannel.writeAndFlush(any())).thenAnswer(inv -> {
-			final var rawData = inv.getArgument(0);
-			clientChannel.channelRead0(null, (ByteBuf) rawData);
-			return null;
-		});
+    when(serverSocketChannel.writeAndFlush(any()))
+        .thenAnswer(
+            inv -> {
+              final var rawData = inv.getArgument(0);
+              clientChannel.channelRead0(null, (ByteBuf) rawData);
+              return null;
+            });
 
-		when(clientSocketChannel.close()).thenAnswer(inv -> {
-			final var mockChannel = mock(ChannelHandlerContext.class);
-			when(mockChannel.channel()).thenReturn(mock(Channel.class));
-			clientChannel.channelInactive(mockChannel);
-			serverChannel.channelInactive(mockChannel);
-			return null;
-		});
+    when(clientSocketChannel.close())
+        .thenAnswer(
+            inv -> {
+              final var mockChannel = mock(ChannelHandlerContext.class);
+              when(mockChannel.channel()).thenReturn(mock(Channel.class));
+              clientChannel.channelInactive(mockChannel);
+              serverChannel.channelInactive(mockChannel);
+              return null;
+            });
 
-		when(serverSocketChannel.close()).thenAnswer(inv -> {
-			final var mockChannel = mock(ChannelHandlerContext.class);
-			when(mockChannel.channel()).thenReturn(mock(Channel.class));
-			serverChannel.channelInactive(mockChannel);
-			clientChannel.channelInactive(mockChannel);
-			return null;
-		});
+    when(serverSocketChannel.close())
+        .thenAnswer(
+            inv -> {
+              final var mockChannel = mock(ChannelHandlerContext.class);
+              when(mockChannel.channel()).thenReturn(mock(Channel.class));
+              serverChannel.channelInactive(mockChannel);
+              clientChannel.channelInactive(mockChannel);
+              return null;
+            });
 
-		serverChannel.channelActive(null);
-		clientChannel.channelActive(null);
-	}
+    serverChannel.channelActive(null);
+    clientChannel.channelActive(null);
+  }
 }

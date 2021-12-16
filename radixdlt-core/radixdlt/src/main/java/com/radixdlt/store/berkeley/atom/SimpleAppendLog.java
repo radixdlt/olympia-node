@@ -64,10 +64,12 @@
 
 package com.radixdlt.store.berkeley.atom;
 
-import com.radixdlt.utils.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import static java.nio.ByteBuffer.allocate;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 
+import com.radixdlt.utils.Pair;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -75,142 +77,153 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.function.BiConsumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import static java.nio.ByteBuffer.allocate;
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
-
-/**
- * Implementation of simple append-only log
- */
+/** Implementation of simple append-only log */
 public class SimpleAppendLog implements AppendLog {
-	private static final Logger logger = LogManager.getLogger();
-	private final FileChannel channel;
-	private final ByteBuffer sizeBufferW;
-	private final ByteBuffer sizeBufferR;
+  private static final Logger logger = LogManager.getLogger();
+  private final FileChannel channel;
+  private final ByteBuffer sizeBufferW;
+  private final ByteBuffer sizeBufferR;
 
-	private SimpleAppendLog(final FileChannel channel) {
-		this.channel = channel;
-		this.sizeBufferW = allocate(Integer.BYTES).order(ByteOrder.BIG_ENDIAN);
-		this.sizeBufferR = allocate(Integer.BYTES).order(ByteOrder.BIG_ENDIAN);
-	}
+  private SimpleAppendLog(final FileChannel channel) {
+    this.channel = channel;
+    this.sizeBufferW = allocate(Integer.BYTES).order(ByteOrder.BIG_ENDIAN);
+    this.sizeBufferR = allocate(Integer.BYTES).order(ByteOrder.BIG_ENDIAN);
+  }
 
-	static AppendLog open(String path) throws IOException {
-		var channel = FileChannel.open(Path.of(path), EnumSet.of(READ, WRITE, CREATE));
+  static AppendLog open(String path) throws IOException {
+    var channel = FileChannel.open(Path.of(path), EnumSet.of(READ, WRITE, CREATE));
 
-		channel.position(channel.size());
-		return new SimpleAppendLog(channel);
-	}
+    channel.position(channel.size());
+    return new SimpleAppendLog(channel);
+  }
 
-	@Override
-	public long write(byte[] data, long expectedOffset) throws IOException {
-		synchronized (channel) {
-			var position = channel.position();
-			if (position > expectedOffset) {
-				logger.warn("Expected position to be " + expectedOffset + " but is " + position
-					+ ". Resetting position to " + expectedOffset);
-				channel.position(expectedOffset);
-			} else if (position < expectedOffset) {
-				throw new IOException("Expected position to be " + expectedOffset + " but is " + position
-					+ ". Cannot recover as there is missing data.");
-			}
+  @Override
+  public long write(byte[] data, long expectedOffset) throws IOException {
+    synchronized (channel) {
+      var position = channel.position();
+      if (position > expectedOffset) {
+        logger.warn(
+            "Expected position to be "
+                + expectedOffset
+                + " but is "
+                + position
+                + ". Resetting position to "
+                + expectedOffset);
+        channel.position(expectedOffset);
+      } else if (position < expectedOffset) {
+        throw new IOException(
+            "Expected position to be "
+                + expectedOffset
+                + " but is "
+                + position
+                + ". Cannot recover as there is missing data.");
+      }
 
-			sizeBufferW.clear().putInt(data.length).clear();
-			checkedWrite(Integer.BYTES, sizeBufferW);
-			checkedWrite(data.length, ByteBuffer.wrap(data));
-			return (long) Integer.BYTES + data.length;
-		}
-	}
+      sizeBufferW.clear().putInt(data.length).clear();
+      checkedWrite(Integer.BYTES, sizeBufferW);
+      checkedWrite(data.length, ByteBuffer.wrap(data));
+      return (long) Integer.BYTES + data.length;
+    }
+  }
 
-	@Override
-	public Pair<byte[], Integer> readChunk(long offset) throws IOException {
-		synchronized (channel) {
-			checkedRead(offset, sizeBufferR.clear());
-			var readLength = sizeBufferR.clear().getInt();
-			return Pair.of(checkedRead(offset + Integer.BYTES, allocate(readLength)).array(), readLength);
-		}
-	}
+  @Override
+  public Pair<byte[], Integer> readChunk(long offset) throws IOException {
+    synchronized (channel) {
+      checkedRead(offset, sizeBufferR.clear());
+      var readLength = sizeBufferR.clear().getInt();
+      return Pair.of(checkedRead(offset + Integer.BYTES, allocate(readLength)).array(), readLength);
+    }
+  }
 
-	@Override
-	public void flush() throws IOException {
-		synchronized (channel) {
-			channel.force(true);
-		}
-	}
+  @Override
+  public void flush() throws IOException {
+    synchronized (channel) {
+      channel.force(true);
+    }
+  }
 
-	@Override
-	public long position() {
-		try {
-			synchronized (channel) {
-				return channel.position();
-			}
-		} catch (IOException e) {
-			throw new IllegalStateException("Unable to obtain current position in log", e);
-		}
-	}
+  @Override
+  public long position() {
+    try {
+      synchronized (channel) {
+        return channel.position();
+      }
+    } catch (IOException e) {
+      throw new IllegalStateException("Unable to obtain current position in log", e);
+    }
+  }
 
-	@Override
-	public void truncate(long position) {
-		try {
-			synchronized (channel) {
-				channel.truncate(position);
-			}
-		} catch (IOException e) {
-			throw new IllegalStateException("Unable to truncate log", e);
-		}
-	}
+  @Override
+  public void truncate(long position) {
+    try {
+      synchronized (channel) {
+        channel.truncate(position);
+      }
+    } catch (IOException e) {
+      throw new IllegalStateException("Unable to truncate log", e);
+    }
+  }
 
-	@Override
-	public void close() {
-		try {
-			synchronized (channel) {
-				channel.close();
-			}
-		} catch (IOException e) {
-			throw new RuntimeException("Error while closing log", e);
-		}
-	}
+  @Override
+  public void close() {
+    try {
+      synchronized (channel) {
+        channel.close();
+      }
+    } catch (IOException e) {
+      throw new RuntimeException("Error while closing log", e);
+    }
+  }
 
-	@Override
-	public void forEach(BiConsumer<byte[], Long> chunkConsumer) {
-		var offset = 0L;
+  @Override
+  public void forEach(BiConsumer<byte[], Long> chunkConsumer) {
+    var offset = 0L;
 
-		synchronized (channel) {
-			var end = false;
-			while (!end) {
-				try {
-					var chunk = readChunk(offset);
-					chunkConsumer.accept(chunk.getFirst(), offset);
-					offset += chunk.getSecond() + Integer.BYTES;
-				} catch (IOException exception) {
-					end = true;
-				}
-			}
-		}
-	}
+    synchronized (channel) {
+      var end = false;
+      while (!end) {
+        try {
+          var chunk = readChunk(offset);
+          chunkConsumer.accept(chunk.getFirst(), offset);
+          offset += chunk.getSecond() + Integer.BYTES;
+        } catch (IOException exception) {
+          end = true;
+        }
+      }
+    }
+  }
 
-	private void checkedWrite(int length, ByteBuffer buffer) throws IOException {
-		int len = channel.write(buffer);
+  private void checkedWrite(int length, ByteBuffer buffer) throws IOException {
+    int len = channel.write(buffer);
 
-		if (len != length) {
-			throw new IOException("Written less bytes than requested: " + len + " vs " + length);
-		}
-	}
+    if (len != length) {
+      throw new IOException("Written less bytes than requested: " + len + " vs " + length);
+    }
+  }
 
-	private ByteBuffer checkedRead(long offset, ByteBuffer buffer) throws IOException {
-		int len = channel.read(buffer.clear(), offset);
+  private ByteBuffer checkedRead(long offset, ByteBuffer buffer) throws IOException {
+    int len = channel.read(buffer.clear(), offset);
 
-		if (len != buffer.capacity()) {
-			// Force flush and try again
-			channel.force(true);
-			len = channel.read(buffer.clear(), offset);
-		}
+    if (len != buffer.capacity()) {
+      // Force flush and try again
+      channel.force(true);
+      len = channel.read(buffer.clear(), offset);
+    }
 
-		if (len != buffer.capacity()) {
-			throw new IOException("Got less bytes than requested: " + len + " vs " + buffer.capacity()
-									  + " at " + offset + ", size " + channel.size());
-		}
-		return buffer;
-	}
+    if (len != buffer.capacity()) {
+      throw new IOException(
+          "Got less bytes than requested: "
+              + len
+              + " vs "
+              + buffer.capacity()
+              + " at "
+              + offset
+              + ", size "
+              + channel.size());
+    }
+    return buffer;
+  }
 }

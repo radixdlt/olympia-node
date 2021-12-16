@@ -89,70 +89,66 @@ import com.radixdlt.store.berkeley.BerkeleyAddressBookPersistence;
 
 public final class P2PModule extends AbstractModule {
 
-	private final RuntimeProperties properties;
+  private final RuntimeProperties properties;
 
-	public P2PModule(RuntimeProperties properties) {
-		this.properties = properties;
-	}
+  public P2PModule(RuntimeProperties properties) {
+    this.properties = properties;
+  }
 
-	@Override
-	protected void configure() {
-		final var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
-			.permitDuplicates();
-		eventBinder.addBinding().toInstance(PeerEvent.class);
-		eventBinder.addBinding().toInstance(PeerOutboundConnectionTimeout.class);
+  @Override
+  protected void configure() {
+    final var eventBinder =
+        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
+            .permitDuplicates();
+    eventBinder.addBinding().toInstance(PeerEvent.class);
+    eventBinder.addBinding().toInstance(PeerOutboundConnectionTimeout.class);
 
-		bind(AddressBook.class).in(Scopes.SINGLETON);
-		bind(PeersView.class).to(PeerManagerPeersView.class).in(Scopes.SINGLETON);
-		bind(PeerControl.class).to(AddressBookPeerControl.class).in(Scopes.SINGLETON);
-		bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class).in(Scopes.SINGLETON);
-		bind(AddressBookPersistence.class).to(BerkeleyAddressBookPersistence.class).in(Scopes.SINGLETON);
-		bind(PeerServerBootstrap.class).in(Scopes.SINGLETON);
-		bind(PendingOutboundChannelsManager.class).in(Scopes.SINGLETON);
-		bind(PeerManager.class).in(Scopes.SINGLETON);
-	}
+    bind(AddressBook.class).in(Scopes.SINGLETON);
+    bind(PeersView.class).to(PeerManagerPeersView.class).in(Scopes.SINGLETON);
+    bind(PeerControl.class).to(AddressBookPeerControl.class).in(Scopes.SINGLETON);
+    bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class).in(Scopes.SINGLETON);
+    bind(AddressBookPersistence.class)
+        .to(BerkeleyAddressBookPersistence.class)
+        .in(Scopes.SINGLETON);
+    bind(PeerServerBootstrap.class).in(Scopes.SINGLETON);
+    bind(PendingOutboundChannelsManager.class).in(Scopes.SINGLETON);
+    bind(PeerManager.class).in(Scopes.SINGLETON);
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> peerManagerPeerEventProcessor(PeerManager peerManager) {
-		return new EventProcessorOnRunner<>(
-			Runners.P2P_NETWORK,
-			PeerEvent.class,
-			peerManager.peerEventProcessor()
-		);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> peerManagerPeerEventProcessor(PeerManager peerManager) {
+    return new EventProcessorOnRunner<>(
+        Runners.P2P_NETWORK, PeerEvent.class, peerManager.peerEventProcessor());
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> pendingOutboundChannelsManagerPeerEventProcessor(
-		PendingOutboundChannelsManager pendingOutboundChannelsManager
-	) {
-		return new EventProcessorOnRunner<>(
-			Runners.P2P_NETWORK,
-			PeerEvent.class,
-			pendingOutboundChannelsManager.peerEventProcessor()
-		);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> pendingOutboundChannelsManagerPeerEventProcessor(
+      PendingOutboundChannelsManager pendingOutboundChannelsManager) {
+    return new EventProcessorOnRunner<>(
+        Runners.P2P_NETWORK, PeerEvent.class, pendingOutboundChannelsManager.peerEventProcessor());
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> peerOutboundConnectionTimeoutEventProcessor(
-		PendingOutboundChannelsManager pendingOutboundChannelsManager
-	) {
-		return new EventProcessorOnRunner<>(
-			Runners.P2P_NETWORK,
-			PeerOutboundConnectionTimeout.class,
-			pendingOutboundChannelsManager.peerOutboundConnectionTimeoutEventProcessor()
-		);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> peerOutboundConnectionTimeoutEventProcessor(
+      PendingOutboundChannelsManager pendingOutboundChannelsManager) {
+    return new EventProcessorOnRunner<>(
+        Runners.P2P_NETWORK,
+        PeerOutboundConnectionTimeout.class,
+        pendingOutboundChannelsManager.peerOutboundConnectionTimeoutEventProcessor());
+  }
 
-	@Provides
-	public P2PConfig p2pConfig() {
-		return P2PConfig.fromRuntimeProperties(this.properties);
-	}
+  @Provides
+  public P2PConfig p2pConfig() {
+    return P2PConfig.fromRuntimeProperties(this.properties);
+  }
 
-	@Provides
-	@Self
-	public RadixNodeUri selfUri(@NetworkId int networkId, @Self ECPublicKey selfKey, HostIp hostIp, P2PConfig p2pConfig) {
-		final var host = hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
-		final var port = p2pConfig.broadcastPort();
-		return RadixNodeUri.fromPubKeyAndAddress(networkId, selfKey, host, port);
-	}
+  @Provides
+  @Self
+  public RadixNodeUri selfUri(
+      @NetworkId int networkId, @Self ECPublicKey selfKey, HostIp hostIp, P2PConfig p2pConfig) {
+    final var host =
+        hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
+    final var port = p2pConfig.broadcastPort();
+    return RadixNodeUri.fromPubKeyAndAddress(networkId, selfKey, host, port);
+  }
 }

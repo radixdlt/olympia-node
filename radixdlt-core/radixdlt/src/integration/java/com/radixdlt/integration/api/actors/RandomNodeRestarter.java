@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -65,17 +66,14 @@ package com.radixdlt.integration.api.actors;
 
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 import com.radixdlt.integration.api.DeterministicActor;
-
 import java.util.Random;
 
-/**
- * Randomly restarts a node in a deterministic test
- */
+/** Randomly restarts a node in a deterministic test */
 public final class RandomNodeRestarter implements DeterministicActor {
-	@Override
-	public String execute(MultiNodeDeterministicRunner runner, Random random) {
-		var nodeIndex = random.nextInt(runner.getSize());
-		runner.restartNode(nodeIndex);
-		return String.format("Restarted{node_index=%s}", nodeIndex);
-	}
+  @Override
+  public String execute(MultiNodeDeterministicRunner runner, Random random) {
+    var nodeIndex = random.nextInt(runner.getSize());
+    runner.restartNode(nodeIndex);
+    return String.format("Restarted{node_index=%s}", nodeIndex);
+  }
 }

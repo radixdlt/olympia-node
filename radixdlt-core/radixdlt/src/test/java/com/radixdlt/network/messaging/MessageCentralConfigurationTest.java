@@ -64,10 +64,6 @@
 
 package com.radixdlt.network.messaging;
 
-import org.junit.Test;
-
-import com.radixdlt.properties.RuntimeProperties;
-
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -75,20 +71,24 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.properties.RuntimeProperties;
+import org.junit.Test;
+
 public class MessageCentralConfigurationTest {
 
-    @Test
-    public void fromRuntimeProperties() {
-        RuntimeProperties properties = mock(RuntimeProperties.class);
+  @Test
+  public void fromRuntimeProperties() {
+    RuntimeProperties properties = mock(RuntimeProperties.class);
 
-        when(properties.get(eq("messaging.inbound.queue_max"), anyInt())).thenReturn(100);
-        when(properties.get(eq("messaging.outbound.queue_max"), anyInt())).thenReturn(102);
-        when(properties.get(eq("messaging.time_to_live"), anyLong())).thenReturn(104L);
+    when(properties.get(eq("messaging.inbound.queue_max"), anyInt())).thenReturn(100);
+    when(properties.get(eq("messaging.outbound.queue_max"), anyInt())).thenReturn(102);
+    when(properties.get(eq("messaging.time_to_live"), anyLong())).thenReturn(104L);
 
-        MessageCentralConfiguration config = MessageCentralConfiguration.fromRuntimeProperties(properties);
+    MessageCentralConfiguration config =
+        MessageCentralConfiguration.fromRuntimeProperties(properties);
 
-        assertEquals(100, config.messagingInboundQueueMax(-1));
-        assertEquals(102, config.messagingOutboundQueueMax(-1));
-        assertEquals(104, config.messagingTimeToLive(-1));
-    }
+    assertEquals(100, config.messagingInboundQueueMax(-1));
+    assertEquals(102, config.messagingOutboundQueueMax(-1));
+    assertEquals(104, config.messagingTimeToLive(-1));
+  }
 }

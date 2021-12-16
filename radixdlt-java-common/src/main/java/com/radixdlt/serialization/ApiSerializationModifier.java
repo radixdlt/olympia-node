@@ -73,50 +73,51 @@ import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.mapper.JacksonCborMapper;
-
 import java.io.IOException;
 
 /**
- * A Jackson bean serialization modifier that handles adding the "hid" property to output data
- * for classes annotated with @SerializeWithHid annotation.
+ * A Jackson bean serialization modifier that handles adding the "hid" property to output data for
+ * classes annotated with @SerializeWithHid annotation.
  */
 public class ApiSerializationModifier extends BeanSerializerModifier {
 
-    private final JacksonCborMapper hashDsonMapper;
+  private final JacksonCborMapper hashDsonMapper;
 
-    public ApiSerializationModifier(JacksonCborMapper hashDsonMapper) {
-        this.hashDsonMapper = hashDsonMapper;
+  public ApiSerializationModifier(JacksonCborMapper hashDsonMapper) {
+    this.hashDsonMapper = hashDsonMapper;
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public JsonSerializer<?> modifySerializer(
+      final SerializationConfig serializationConfig,
+      final BeanDescription beanDescription,
+      final JsonSerializer<?> jsonSerializer) {
+    return new SerializerWithHid((JsonSerializer<Object>) jsonSerializer);
+  }
+
+  private class SerializerWithHid extends JsonSerializer<Object> {
+
+    private final JsonSerializer<Object> serializer;
+
+    SerializerWithHid(JsonSerializer<Object> jsonSerializer) {
+      this.serializer = jsonSerializer;
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public JsonSerializer<?> modifySerializer(
-            final SerializationConfig serializationConfig,
-            final BeanDescription beanDescription,
-            final JsonSerializer<?> jsonSerializer) {
-        return new SerializerWithHid((JsonSerializer<Object>) jsonSerializer);
+    public void serialize(
+        Object o, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
+        throws IOException {
+      if (o.getClass().isAnnotationPresent(SerializeWithHid.class)) {
+        jsonGenerator.writeStartObject();
+        serializer.unwrappingSerializer(null).serialize(o, jsonGenerator, serializerProvider);
+        byte[] bytesToHash = hashDsonMapper.writeValueAsBytes(o);
+        HashCode hash = HashUtils.sha256(bytesToHash);
+        jsonGenerator.writeObjectField("hid", hash);
+        jsonGenerator.writeEndObject();
+      } else {
+        serializer.serialize(o, jsonGenerator, serializerProvider);
+      }
     }
-
-    private class SerializerWithHid extends JsonSerializer<Object> {
-
-        private final JsonSerializer<Object> serializer;
-
-        SerializerWithHid(JsonSerializer<Object> jsonSerializer) {
-            this.serializer = jsonSerializer;
-        }
-
-        @Override
-        public void serialize(Object o, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
-            if (o.getClass().isAnnotationPresent(SerializeWithHid.class)) {
-                jsonGenerator.writeStartObject();
-                serializer.unwrappingSerializer(null).serialize(o, jsonGenerator, serializerProvider);
-                byte[] bytesToHash = hashDsonMapper.writeValueAsBytes(o);
-                HashCode hash = HashUtils.sha256(bytesToHash);
-                jsonGenerator.writeObjectField("hid", hash);
-                jsonGenerator.writeEndObject();
-            } else {
-                serializer.serialize(o, jsonGenerator, serializerProvider);
-            }
-        }
-    }
+  }
 }

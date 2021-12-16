@@ -68,19 +68,21 @@ import com.radixdlt.properties.RuntimeProperties;
 
 public final class Time {
 
-	private static NtpService ntpServiceInstance;
+  private static NtpService ntpServiceInstance;
 
-	private Time() {
-		throw new IllegalStateException("Can't construct");
-	}
+  private Time() {
+    throw new IllegalStateException("Can't construct");
+  }
 
-	public static void start(RuntimeProperties properties) {
-		if (properties.get("ntp", false)) {
-			ntpServiceInstance = new NtpService(properties.get("ntp.pool"));
-		}
-	}
+  public static void start(RuntimeProperties properties) {
+    if (properties.get("ntp", false)) {
+      ntpServiceInstance = new NtpService(properties.get("ntp.pool"));
+    }
+  }
 
-	public static long currentTimestamp() {
-		return ntpServiceInstance != null ? ntpServiceInstance.getUTCTimeMS() : System.currentTimeMillis();
-	}
+  public static long currentTimestamp() {
+    return ntpServiceInstance != null
+        ? ntpServiceInstance.getUTCTimeMS()
+        : System.currentTimeMillis();
+  }
 }

@@ -69,10 +69,8 @@ import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
 public class SubstateIndexTest {
-	@Test
-	public void equalsVerifier() {
-		EqualsVerifier.forClass(SubstateIndex.class)
-			.suppress(Warning.NONFINAL_FIELDS)
-			.verify();
-	}
+  @Test
+  public void equalsVerifier() {
+    EqualsVerifier.forClass(SubstateIndex.class).suppress(Warning.NONFINAL_FIELDS).verify();
+  }
 }

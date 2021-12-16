@@ -68,9 +68,8 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 public final class PeersLivenessCheckTriggerTest {
-	@Test
-	public void equalsTest() {
-		EqualsVerifier.forClass(PeersLivenessCheckTrigger.class)
-			.verify();
-	}
+  @Test
+  public void equalsTest() {
+    EqualsVerifier.forClass(PeersLivenessCheckTrigger.class).verify();
+  }
 }

@@ -64,79 +64,78 @@
 
 package com.radixdlt.store.berkeley.atom;
 
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.utils.Compress;
-import com.radixdlt.utils.Pair;
-
-import java.io.IOException;
-import java.util.function.BiConsumer;
-
 import static com.radixdlt.counters.SystemCounters.CounterType.PERSISTENCE_ATOM_LOG_WRITE_BYTES;
 import static com.radixdlt.counters.SystemCounters.CounterType.PERSISTENCE_ATOM_LOG_WRITE_COMPRESSED;
 
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.utils.Compress;
+import com.radixdlt.utils.Pair;
+import java.io.IOException;
+import java.util.function.BiConsumer;
+
 public class CompressedAppendLog implements AppendLog {
-	private final AppendLog delegate;
-	private final SystemCounters counters;
+  private final AppendLog delegate;
+  private final SystemCounters counters;
 
-	private CompressedAppendLog(final AppendLog delegate, final SystemCounters counters) {
-		this.delegate = delegate;
-		this.counters = counters;
-	}
+  private CompressedAppendLog(final AppendLog delegate, final SystemCounters counters) {
+    this.delegate = delegate;
+    this.counters = counters;
+  }
 
-	static CompressedAppendLog open(AppendLog delegate, SystemCounters counters) {
-		return new CompressedAppendLog(delegate, counters);
-	}
+  static CompressedAppendLog open(AppendLog delegate, SystemCounters counters) {
+    return new CompressedAppendLog(delegate, counters);
+  }
 
-	@Override
-	public long position() {
-		return delegate.position();
-	}
+  @Override
+  public long position() {
+    return delegate.position();
+  }
 
-	@Override
-	public void truncate(final long position) {
-		delegate.truncate(position);
-	}
+  @Override
+  public void truncate(final long position) {
+    delegate.truncate(position);
+  }
 
-	@Override
-	public long write(final byte[] data, long expectedOffset) throws IOException {
-		byte[] compressedData = Compress.compress(data);
+  @Override
+  public long write(final byte[] data, long expectedOffset) throws IOException {
+    byte[] compressedData = Compress.compress(data);
 
-		counters.add(PERSISTENCE_ATOM_LOG_WRITE_BYTES, data.length);
-		counters.add(PERSISTENCE_ATOM_LOG_WRITE_COMPRESSED, compressedData.length);
+    counters.add(PERSISTENCE_ATOM_LOG_WRITE_BYTES, data.length);
+    counters.add(PERSISTENCE_ATOM_LOG_WRITE_COMPRESSED, compressedData.length);
 
-		return delegate.write(compressedData, expectedOffset);
-	}
+    return delegate.write(compressedData, expectedOffset);
+  }
 
-	@Override
-	public Pair<byte[], Integer> readChunk(final long offset) throws IOException {
-		var result = delegate.readChunk(offset);
-		return Pair.of(Compress.uncompress(result.getFirst()), result.getSecond());
-	}
+  @Override
+  public Pair<byte[], Integer> readChunk(final long offset) throws IOException {
+    var result = delegate.readChunk(offset);
+    return Pair.of(Compress.uncompress(result.getFirst()), result.getSecond());
+  }
 
-	@Override
-	public void flush() throws IOException {
-		delegate.flush();
-	}
+  @Override
+  public void flush() throws IOException {
+    delegate.flush();
+  }
 
-	@Override
-	public void close() {
-		delegate.close();
-	}
+  @Override
+  public void close() {
+    delegate.close();
+  }
 
-	@Override
-	public void forEach(BiConsumer<byte[], Long> chunkConsumer) {
-		var offset = 0L;
-		synchronized (delegate) {
-			var end = false;
-			while (!end) {
-				try {
-					var chunk = readChunk(offset);
-					chunkConsumer.accept(chunk.getFirst(), offset);
-					offset += chunk.getSecond() + Integer.BYTES;
-				} catch (IOException exception) {
-					end = true;
-				}
-			}
-		}
-	}
+  @Override
+  public void forEach(BiConsumer<byte[], Long> chunkConsumer) {
+    var offset = 0L;
+    synchronized (delegate) {
+      var end = false;
+      while (!end) {
+        try {
+          var chunk = readChunk(offset);
+          chunkConsumer.accept(chunk.getFirst(), offset);
+          offset += chunk.getSecond() + Integer.BYTES;
+        } catch (IOException exception) {
+          end = true;
+        }
+      }
+    }
+  }
 }

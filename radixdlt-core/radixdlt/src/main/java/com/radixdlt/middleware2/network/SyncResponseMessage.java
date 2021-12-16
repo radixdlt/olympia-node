@@ -70,48 +70,44 @@ import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
+import java.util.Objects;
 import org.radix.network.messaging.Message;
 
-import java.util.Objects;
-
-/**
- * Message with sync atoms as a response to sync request
- */
+/** Message with sync atoms as a response to sync request */
 @SerializerId2("message.sync.sync_response")
 public final class SyncResponseMessage extends Message {
-	@JsonProperty("commands")
-	@DsonOutput(Output.ALL)
-	private final DtoTxnsAndProof commands;
+  @JsonProperty("commands")
+  @DsonOutput(Output.ALL)
+  private final DtoTxnsAndProof commands;
 
-	@JsonCreator
-	public SyncResponseMessage(
-		@JsonProperty(value = "commands", required = true) DtoTxnsAndProof commands
-	) {
-		this.commands = Objects.requireNonNull(commands);
-	}
+  @JsonCreator
+  public SyncResponseMessage(
+      @JsonProperty(value = "commands", required = true) DtoTxnsAndProof commands) {
+    this.commands = Objects.requireNonNull(commands);
+  }
 
-	public DtoTxnsAndProof getCommands() {
-		return commands;
-	}
+  public DtoTxnsAndProof getCommands() {
+    return commands;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{commands=%s}", getClass().getSimpleName(), commands);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{commands=%s}", getClass().getSimpleName(), commands);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof SyncResponseMessage that)
-			   && Objects.equals(commands, that.commands)
-			   && Objects.equals(getTimestamp(), that.getTimestamp());
-	}
+    return (o instanceof SyncResponseMessage that)
+        && Objects.equals(commands, that.commands)
+        && Objects.equals(getTimestamp(), that.getTimestamp());
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(commands, getTimestamp());
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(commands, getTimestamp());
+  }
 }

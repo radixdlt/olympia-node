@@ -70,56 +70,54 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import org.radix.network.messaging.Message;
-
 import java.util.Objects;
+import org.radix.network.messaging.Message;
 
 @SerializerId2("message.consensus.vertices_error_response")
 public final class GetVerticesErrorResponseMessage extends Message {
-	@JsonProperty("high_qc")
-	@DsonOutput(Output.ALL)
-	private final HighQC highQC;
+  @JsonProperty("high_qc")
+  @DsonOutput(Output.ALL)
+  private final HighQC highQC;
 
-	@JsonProperty("request")
-	@DsonOutput(Output.ALL)
-	private final GetVerticesRequestMessage request;
+  @JsonProperty("request")
+  @DsonOutput(Output.ALL)
+  private final GetVerticesRequestMessage request;
 
-	@JsonCreator
-	public GetVerticesErrorResponseMessage(
-		@JsonProperty(value = "high_qc", required = true) HighQC highQC,
-		@JsonProperty(value = "request", required = true) GetVerticesRequestMessage request
-	) {
-		this.highQC = Objects.requireNonNull(highQC);
-		this.request = Objects.requireNonNull(request);
-	}
+  @JsonCreator
+  public GetVerticesErrorResponseMessage(
+      @JsonProperty(value = "high_qc", required = true) HighQC highQC,
+      @JsonProperty(value = "request", required = true) GetVerticesRequestMessage request) {
+    this.highQC = Objects.requireNonNull(highQC);
+    this.request = Objects.requireNonNull(request);
+  }
 
-	public HighQC highQC() {
-		return this.highQC;
-	}
+  public HighQC highQC() {
+    return this.highQC;
+  }
 
-	public GetVerticesRequestMessage request() {
-		return this.request;
-	}
+  public GetVerticesRequestMessage request() {
+    return this.request;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{%s}", getClass().getSimpleName(), this.highQC);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{%s}", getClass().getSimpleName(), this.highQC);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof GetVerticesErrorResponseMessage that)
-			   && Objects.equals(this.highQC, that.highQC)
-			   && Objects.equals(this.request, that.request)
-			   && Objects.equals(getTimestamp(), that.getTimestamp());
-	}
+    return (o instanceof GetVerticesErrorResponseMessage that)
+        && Objects.equals(this.highQC, that.highQC)
+        && Objects.equals(this.request, that.request)
+        && Objects.equals(getTimestamp(), that.getTimestamp());
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.highQC, this.request, getTimestamp());
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.highQC, this.request, getTimestamp());
+  }
 }

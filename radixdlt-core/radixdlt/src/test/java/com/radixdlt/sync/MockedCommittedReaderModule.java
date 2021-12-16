@@ -72,18 +72,15 @@ import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.ledger.LedgerUpdate;
 
 public class MockedCommittedReaderModule extends AbstractModule {
-	@Override
-	public void configure() {
-		bind(CommittedReader.class).to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
-		bind(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
-	}
+  @Override
+  public void configure() {
+    bind(CommittedReader.class).to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
+    bind(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
+  }
 
-	@Singleton
-	@ProvidesIntoSet
-	public EventProcessorOnDispatch<?> eventProcessor(InMemoryCommittedReader reader) {
-		return new EventProcessorOnDispatch<>(
-			LedgerUpdate.class,
-			reader.updateProcessor()
-		);
-	}
+  @Singleton
+  @ProvidesIntoSet
+  public EventProcessorOnDispatch<?> eventProcessor(InMemoryCommittedReader reader) {
+    return new EventProcessorOnDispatch<>(LedgerUpdate.class, reader.updateProcessor());
+  }
 }

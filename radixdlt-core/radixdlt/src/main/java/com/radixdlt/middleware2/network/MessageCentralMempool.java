@@ -72,43 +72,38 @@ import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.p2p.NodeId;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
+import java.util.Objects;
+import javax.inject.Inject;
 import org.radix.network.messaging.Message;
 
-import javax.inject.Inject;
-import java.util.Objects;
-
-/**
- * Network layer for the mempool
- */
+/** Network layer for the mempool */
 public final class MessageCentralMempool {
-	private final MessageCentral messageCentral;
+  private final MessageCentral messageCentral;
 
-	@Inject
-	public MessageCentralMempool(MessageCentral messageCentral) {
-		this.messageCentral = Objects.requireNonNull(messageCentral);
-	}
+  @Inject
+  public MessageCentralMempool(MessageCentral messageCentral) {
+    this.messageCentral = Objects.requireNonNull(messageCentral);
+  }
 
-	public RemoteEventDispatcher<MempoolAdd> mempoolAddRemoteEventDispatcher() {
-		return (receiver, msg) -> {
-			MempoolAddMessage message = MempoolAddMessage.from(msg.txns());
-			this.send(message, receiver);
-		};
-	}
+  public RemoteEventDispatcher<MempoolAdd> mempoolAddRemoteEventDispatcher() {
+    return (receiver, msg) -> {
+      MempoolAddMessage message = MempoolAddMessage.from(msg.txns());
+      this.send(message, receiver);
+    };
+  }
 
-	private void send(Message message, BFTNode recipient) {
-		this.messageCentral.send(NodeId.fromPublicKey(recipient.getKey()), message);
-	}
+  private void send(Message message, BFTNode recipient) {
+    this.messageCentral.send(NodeId.fromPublicKey(recipient.getKey()), message);
+  }
 
-	public Flowable<RemoteEvent<MempoolAdd>> mempoolComands() {
-		return messageCentral
-			.messagesOf(MempoolAddMessage.class)
-			.map(msg -> {
-				final BFTNode node = BFTNode.create(msg.getSource().getPublicKey());
-				return RemoteEvent.create(
-					node,
-					MempoolAdd.create(msg.getMessage().getTxns())
-				);
-			})
-			.toFlowable(BackpressureStrategy.BUFFER);
-	}
+  public Flowable<RemoteEvent<MempoolAdd>> mempoolComands() {
+    return messageCentral
+        .messagesOf(MempoolAddMessage.class)
+        .map(
+            msg -> {
+              final BFTNode node = BFTNode.create(msg.getSource().getPublicKey());
+              return RemoteEvent.create(node, MempoolAdd.create(msg.getMessage().getTxns()));
+            })
+        .toFlowable(BackpressureStrategy.BUFFER);
+  }
 }

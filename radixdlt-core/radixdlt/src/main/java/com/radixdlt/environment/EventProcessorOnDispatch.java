@@ -69,26 +69,27 @@ import java.util.Optional;
 
 /**
  * A processor which is to process an event synchronously at time of dispatch
+ *
  * @param <T> the class of the event
  */
 public final class EventProcessorOnDispatch<T> {
-	private final Class<T> eventClass;
-	private final EventProcessor<T> processor;
+  private final Class<T> eventClass;
+  private final EventProcessor<T> processor;
 
-	public EventProcessorOnDispatch(Class<T> eventClass, EventProcessor<T> processor) {
-		this.eventClass = Objects.requireNonNull(eventClass);
-		this.processor = Objects.requireNonNull(processor);
-	}
+  public EventProcessorOnDispatch(Class<T> eventClass, EventProcessor<T> processor) {
+    this.eventClass = Objects.requireNonNull(eventClass);
+    this.processor = Objects.requireNonNull(processor);
+  }
 
-	public <U> Optional<EventProcessor<U>> getProcessor(Class<U> c) {
-		if (c.equals(eventClass)) {
-			return Optional.of((EventProcessor<U>) processor);
-		}
+  public <U> Optional<EventProcessor<U>> getProcessor(Class<U> c) {
+    if (c.equals(eventClass)) {
+      return Optional.of((EventProcessor<U>) processor);
+    }
 
-		return Optional.empty();
-	}
+    return Optional.empty();
+  }
 
-	public Class<T> getEventClass() {
-		return eventClass;
-	}
+  public Class<T> getEventClass() {
+    return eventClass;
+  }
 }

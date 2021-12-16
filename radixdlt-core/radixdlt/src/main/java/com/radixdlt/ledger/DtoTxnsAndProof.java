@@ -64,6 +64,8 @@
 
 package com.radixdlt.ledger;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
@@ -73,79 +75,73 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
-import javax.annotation.concurrent.Immutable;
 import java.util.List;
 import java.util.Objects;
+import javax.annotation.concurrent.Immutable;
 
-import static java.util.Objects.requireNonNull;
-
-/**
- * A commands and proof which has not been verified
- */
+/** A commands and proof which has not been verified */
 @Immutable
 @SerializerId2("ledger.commands_and_proof")
 public final class DtoTxnsAndProof {
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-	SerializerDummy serializer = SerializerDummy.DUMMY;
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+  SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("txns")
-	@DsonOutput(Output.ALL)
-	private final List<Txn> txns;
+  @JsonProperty("txns")
+  @DsonOutput(Output.ALL)
+  private final List<Txn> txns;
 
-	@JsonProperty("head")
-	@DsonOutput(Output.ALL)
-	private final DtoLedgerProof head;
+  @JsonProperty("head")
+  @DsonOutput(Output.ALL)
+  private final DtoLedgerProof head;
 
-	@JsonProperty("tail")
-	@DsonOutput(Output.ALL)
-	private final DtoLedgerProof tail;
+  @JsonProperty("tail")
+  @DsonOutput(Output.ALL)
+  private final DtoLedgerProof tail;
 
-	@JsonCreator
-	public DtoTxnsAndProof(
-		@JsonProperty("txns") List<Txn> txns,
-		@JsonProperty(value = "head", required = true) DtoLedgerProof head,
-		@JsonProperty(value = "tail", required = true) DtoLedgerProof tail
-	) {
-		this.txns = txns == null ? ImmutableList.of() : txns;
-		this.head = requireNonNull(head);
-		this.tail = requireNonNull(tail);
+  @JsonCreator
+  public DtoTxnsAndProof(
+      @JsonProperty("txns") List<Txn> txns,
+      @JsonProperty(value = "head", required = true) DtoLedgerProof head,
+      @JsonProperty(value = "tail", required = true) DtoLedgerProof tail) {
+    this.txns = txns == null ? ImmutableList.of() : txns;
+    this.head = requireNonNull(head);
+    this.tail = requireNonNull(tail);
 
-		this.txns.forEach(Objects::requireNonNull);
-	}
+    this.txns.forEach(Objects::requireNonNull);
+  }
 
-	public List<Txn> getTxns() {
-		return txns;
-	}
+  public List<Txn> getTxns() {
+    return txns;
+  }
 
-	public DtoLedgerProof getHead() {
-		return head;
-	}
+  public DtoLedgerProof getHead() {
+    return head;
+  }
 
-	public DtoLedgerProof getTail() {
-		return tail;
-	}
+  public DtoLedgerProof getTail() {
+    return tail;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{head=%s tail=%s}", this.getClass().getSimpleName(), head, tail);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{head=%s tail=%s}", this.getClass().getSimpleName(), head, tail);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof DtoTxnsAndProof that)
-			   && Objects.equals(txns, that.txns)
-			   && Objects.equals(head, that.head)
-			   && Objects.equals(tail, that.tail);
-	}
+    return (o instanceof DtoTxnsAndProof that)
+        && Objects.equals(txns, that.txns)
+        && Objects.equals(head, that.head)
+        && Objects.equals(tail, that.tail);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(txns, head, tail);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(txns, head, tail);
+  }
 }

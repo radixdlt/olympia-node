@@ -73,22 +73,28 @@ import com.radixdlt.integration.invariants.SafetyChecker;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 
-/**
- * Checks that validator nodes do not commit on conflicting vertices
- */
+/** Checks that validator nodes do not commit on conflicting vertices */
 public class SafetyInvariant implements TestInvariant {
-	private final NodeEvents nodeEvents;
+  private final NodeEvents nodeEvents;
 
-	public SafetyInvariant(NodeEvents nodeEvents) {
-		this.nodeEvents = nodeEvents;
-	}
+  public SafetyInvariant(NodeEvents nodeEvents) {
+    this.nodeEvents = nodeEvents;
+  }
 
-	@Override
-	public Observable<TestInvariantError> check(RunningNetwork network) {
-		final SafetyChecker safetyChecker = new SafetyChecker(network.getNodes());
-		return Observable.<Pair<BFTNode, BFTCommittedUpdate>>create(emitter ->
-			nodeEvents.addListener((node, update) -> emitter.onNext(Pair.of(node, update)), BFTCommittedUpdate.class)
-		).serialize()
-			.flatMap(e -> safetyChecker.process(e.getFirst(), e.getSecond()).map(Observable::just).orElse(Observable.empty()));
-	}
+  @Override
+  public Observable<TestInvariantError> check(RunningNetwork network) {
+    final SafetyChecker safetyChecker = new SafetyChecker(network.getNodes());
+    return Observable.<Pair<BFTNode, BFTCommittedUpdate>>create(
+            emitter ->
+                nodeEvents.addListener(
+                    (node, update) -> emitter.onNext(Pair.of(node, update)),
+                    BFTCommittedUpdate.class))
+        .serialize()
+        .flatMap(
+            e ->
+                safetyChecker
+                    .process(e.getFirst(), e.getSecond())
+                    .map(Observable::just)
+                    .orElse(Observable.empty()));
+  }
 }

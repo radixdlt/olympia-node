@@ -70,14 +70,14 @@ import com.radixdlt.client.lib.api.ValidatorAddress;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class UpdateValidatorMetadataAction implements Action {
-	private final ActionType type = ActionType.UPDATE_VALIDATOR_METADATA;
-	private final ValidatorAddress delegate;
-	private final String name;
-	private final String url;
+  private final ActionType type = ActionType.UPDATE_VALIDATOR_METADATA;
+  private final ValidatorAddress delegate;
+  private final String name;
+  private final String url;
 
-	public UpdateValidatorMetadataAction(ValidatorAddress delegate, String name, String url) {
-		this.delegate = delegate;
-		this.name = name;
-		this.url = url;
-	}
+  public UpdateValidatorMetadataAction(ValidatorAddress delegate, String name, String url) {
+    this.delegate = delegate;
+    this.name = name;
+    this.url = url;
+  }
 }

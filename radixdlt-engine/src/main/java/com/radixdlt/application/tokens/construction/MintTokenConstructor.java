@@ -64,16 +64,16 @@
 
 package com.radixdlt.application.tokens.construction;
 
+import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.application.tokens.state.TokensInAccount;
 
 public final class MintTokenConstructor implements ActionConstructor<MintToken> {
-	@Override
-	public void construct(MintToken action, TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.up(new TokensInAccount(action.to(), action.resourceAddr(), action.amount()));
-		txBuilder.end();
-	}
+  @Override
+  public void construct(MintToken action, TxBuilder txBuilder) throws TxBuilderException {
+    txBuilder.up(new TokensInAccount(action.to(), action.resourceAddr(), action.amount()));
+    txBuilder.end();
+  }
 }

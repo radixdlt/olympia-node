@@ -66,46 +66,45 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class Size {
-	private final long size;
+  private final long size;
 
-	private Size(long size) {
-		this.size = size;
-	}
+  private Size(long size) {
+    this.size = size;
+  }
 
-	@JsonCreator
-	public static Size create(@JsonProperty(value = "size", required = true) long size) {
-		return new Size(size);
-	}
+  @JsonCreator
+  public static Size create(@JsonProperty(value = "size", required = true) long size) {
+    return new Size(size);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof Size)) {
-			return false;
-		}
+    if (!(o instanceof Size)) {
+      return false;
+    }
 
-		var sizeDTO = (Size) o;
-		return size == sizeDTO.size;
-	}
+    var sizeDTO = (Size) o;
+    return size == sizeDTO.size;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(size);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(size);
+  }
 
-	@Override
-	public String toString() {
-		return "{size:" + size + '}';
-	}
+  @Override
+  public String toString() {
+    return "{size:" + size + '}';
+  }
 
-	public long getSize() {
-		return size;
-	}
+  public long getSize() {
+    return size;
+  }
 }

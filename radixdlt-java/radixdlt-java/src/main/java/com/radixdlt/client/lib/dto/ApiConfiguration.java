@@ -66,44 +66,42 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.List;
 import java.util.Objects;
 
 public final class ApiConfiguration {
-	private final List<String> endpoints;
+  private final List<String> endpoints;
 
-	private ApiConfiguration(List<String> endpoints) {
-		this.endpoints = endpoints;
-	}
+  private ApiConfiguration(List<String> endpoints) {
+    this.endpoints = endpoints;
+  }
 
-	@JsonCreator
-	public static ApiConfiguration create(
-		@JsonProperty(value = "endpoints", required = true) List<String> endpoints
-	) {
-		return new ApiConfiguration(endpoints);
-	}
+  @JsonCreator
+  public static ApiConfiguration create(
+      @JsonProperty(value = "endpoints", required = true) List<String> endpoints) {
+    return new ApiConfiguration(endpoints);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof ApiConfiguration)) {
-			return false;
-		}
+    if (!(o instanceof ApiConfiguration)) {
+      return false;
+    }
 
-		var that = (ApiConfiguration) o;
-		return endpoints.equals(that.endpoints);
-	}
+    var that = (ApiConfiguration) o;
+    return endpoints.equals(that.endpoints);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(endpoints);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(endpoints);
+  }
 
-	public List<String> getEndpoints() {
-		return endpoints;
-	}
+  public List<String> getEndpoints() {
+    return endpoints;
+  }
 }

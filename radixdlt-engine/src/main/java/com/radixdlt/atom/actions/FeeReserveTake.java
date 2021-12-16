@@ -69,19 +69,19 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 public class FeeReserveTake implements TxAction {
-	private final REAddr accountAddr;
-	private final UInt256 amount;
+  private final REAddr accountAddr;
+  private final UInt256 amount;
 
-	public FeeReserveTake(REAddr accountAddr, UInt256 amount) {
-		this.accountAddr = accountAddr;
-		this.amount = amount;
-	}
+  public FeeReserveTake(REAddr accountAddr, UInt256 amount) {
+    this.accountAddr = accountAddr;
+    this.amount = amount;
+  }
 
-	public REAddr to() {
-		return accountAddr;
-	}
+  public REAddr to() {
+    return accountAddr;
+  }
 
-	public UInt256 amount() {
-		return amount;
-	}
+  public UInt256 amount() {
+    return amount;
+  }
 }

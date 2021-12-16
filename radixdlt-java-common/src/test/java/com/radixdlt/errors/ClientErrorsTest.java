@@ -64,19 +64,16 @@
 
 package com.radixdlt.errors;
 
-import org.junit.Test;
-
 import com.radixdlt.utils.functional.Functions;
-
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.Test;
 
 public class ClientErrorsTest {
-	@Test
-	public void ensureUniqueCodes() {
-		//noinspection ResultOfMethodCallIgnored
-		Stream.of(ClientErrors.values())
-			.collect(Collectors.toMap(ClientErrors::code, Functions::identity));
-	}
-
+  @Test
+  public void ensureUniqueCodes() {
+    //noinspection ResultOfMethodCallIgnored
+    Stream.of(ClientErrors.values())
+        .collect(Collectors.toMap(ClientErrors::code, Functions::identity));
+  }
 }

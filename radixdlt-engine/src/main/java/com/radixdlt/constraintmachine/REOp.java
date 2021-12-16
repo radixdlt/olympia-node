@@ -65,29 +65,29 @@
 package com.radixdlt.constraintmachine;
 
 public enum REOp {
-	END(false),
-	SYSCALL(false),
-	UP(true),
-	READ(false),
-	DOWN(true),
-	DOWNINDEX(true),
-	READINDEX(false),
-	SIG(false),
-	MSG(false),
-	HEADER(false);
+  END(false),
+  SYSCALL(false),
+  UP(true),
+  READ(false),
+  DOWN(true),
+  DOWNINDEX(true),
+  READINDEX(false),
+  SIG(false),
+  MSG(false),
+  HEADER(false);
 
-	private final boolean isSubstateUpdate;
+  private final boolean isSubstateUpdate;
 
-	REOp(boolean isSubstateUpdate) {
-		this.isSubstateUpdate = isSubstateUpdate;
-	}
+  REOp(boolean isSubstateUpdate) {
+    this.isSubstateUpdate = isSubstateUpdate;
+  }
 
-	public boolean isSubstateUpdate() {
-		return isSubstateUpdate;
-	}
+  public boolean isSubstateUpdate() {
+    return isSubstateUpdate;
+  }
 
-	@Override
-	public String toString() {
-		return this.name();
-	}
+  @Override
+  public String toString() {
+    return this.name();
+  }
 }

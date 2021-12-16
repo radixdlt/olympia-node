@@ -64,6 +64,8 @@
 
 package com.radixdlt.network.p2p.addressbook;
 
+import static java.util.function.Predicate.not;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
@@ -74,309 +76,315 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
-import static java.util.function.Predicate.not;
-
 @SerializerId2("network.p2p.addressbook.address_book_entry")
 public final class AddressBookEntry {
-	// Placeholder for the serializer ID
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(DsonOutput.Output.ALL)
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
+  // Placeholder for the serializer ID
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(DsonOutput.Output.ALL)
+  private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("nodeId")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final NodeId nodeId;
+  @JsonProperty("nodeId")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final NodeId nodeId;
 
-	private final Optional<Instant> bannedUntil;
+  private final Optional<Instant> bannedUntil;
 
-	@JsonProperty("knownAddresses")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final ImmutableSet<PeerAddressEntry> knownAddresses;
+  @JsonProperty("knownAddresses")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final ImmutableSet<PeerAddressEntry> knownAddresses;
 
-	@JsonCreator
-	private static AddressBookEntry deserialize(
-		@JsonProperty(value = "nodeId", required = true) NodeId nodeId,
-		@JsonProperty("bannedUntil") long rawBannedUntil,
-		@JsonProperty("knownAddresses") ImmutableSet<PeerAddressEntry> knownAddresses
-	) {
-		final var bannedUntil = rawBannedUntil > 0
-			? Optional.of(Instant.ofEpochMilli(rawBannedUntil))
-			: Optional.<Instant>empty();
-		return new AddressBookEntry(
-			nodeId,
-			bannedUntil,
-			knownAddresses != null ? knownAddresses : ImmutableSet.of()
-		);
-	}
+  @JsonCreator
+  private static AddressBookEntry deserialize(
+      @JsonProperty(value = "nodeId", required = true) NodeId nodeId,
+      @JsonProperty("bannedUntil") long rawBannedUntil,
+      @JsonProperty("knownAddresses") ImmutableSet<PeerAddressEntry> knownAddresses) {
+    final var bannedUntil =
+        rawBannedUntil > 0
+            ? Optional.of(Instant.ofEpochMilli(rawBannedUntil))
+            : Optional.<Instant>empty();
+    return new AddressBookEntry(
+        nodeId, bannedUntil, knownAddresses != null ? knownAddresses : ImmutableSet.of());
+  }
 
-	public static AddressBookEntry create(RadixNodeUri uri) {
-		return create(uri, Optional.empty());
-	}
+  public static AddressBookEntry create(RadixNodeUri uri) {
+    return create(uri, Optional.empty());
+  }
 
-	public static AddressBookEntry createBanned(NodeId nodeId, Instant bannedUntil) {
-		return new AddressBookEntry(nodeId, Optional.of(bannedUntil), ImmutableSet.of());
-	}
+  public static AddressBookEntry createBanned(NodeId nodeId, Instant bannedUntil) {
+    return new AddressBookEntry(nodeId, Optional.of(bannedUntil), ImmutableSet.of());
+  }
 
-	public static AddressBookEntry createWithLatestConnectionStatus(RadixNodeUri uri, LatestConnectionStatus latestConnectionStatus) {
-		return create(uri, Optional.of(latestConnectionStatus));
-	}
+  public static AddressBookEntry createWithLatestConnectionStatus(
+      RadixNodeUri uri, LatestConnectionStatus latestConnectionStatus) {
+    return create(uri, Optional.of(latestConnectionStatus));
+  }
 
-	public static AddressBookEntry createBlacklisted(RadixNodeUri uri, Instant blacklistedUntil) {
-		return new AddressBookEntry(
-			uri.getNodeId(),
-			Optional.empty(),
-			ImmutableSet.of(new PeerAddressEntry(uri, Optional.empty(), Optional.of(blacklistedUntil)))
-		);
-	}
+  public static AddressBookEntry createBlacklisted(RadixNodeUri uri, Instant blacklistedUntil) {
+    return new AddressBookEntry(
+        uri.getNodeId(),
+        Optional.empty(),
+        ImmutableSet.of(
+            new PeerAddressEntry(uri, Optional.empty(), Optional.of(blacklistedUntil))));
+  }
 
-	public static AddressBookEntry create(RadixNodeUri uri, Optional<LatestConnectionStatus> latestConnectionStatus) {
-		return new AddressBookEntry(
-			uri.getNodeId(),
-			Optional.empty(),
-			ImmutableSet.of(new AddressBookEntry.PeerAddressEntry(uri, latestConnectionStatus, Optional.empty()))
-		);
-	}
+  public static AddressBookEntry create(
+      RadixNodeUri uri, Optional<LatestConnectionStatus> latestConnectionStatus) {
+    return new AddressBookEntry(
+        uri.getNodeId(),
+        Optional.empty(),
+        ImmutableSet.of(
+            new AddressBookEntry.PeerAddressEntry(uri, latestConnectionStatus, Optional.empty())));
+  }
 
-	AddressBookEntry(NodeId nodeId, Optional<Instant> bannedUntil, ImmutableSet<PeerAddressEntry> knownAddresses) {
-		this.nodeId = Objects.requireNonNull(nodeId);
-		this.bannedUntil = bannedUntil;
-		this.knownAddresses = Objects.requireNonNull(knownAddresses);
-	}
+  AddressBookEntry(
+      NodeId nodeId, Optional<Instant> bannedUntil, ImmutableSet<PeerAddressEntry> knownAddresses) {
+    this.nodeId = Objects.requireNonNull(nodeId);
+    this.bannedUntil = bannedUntil;
+    this.knownAddresses = Objects.requireNonNull(knownAddresses);
+  }
 
-	@JsonProperty("bannedUntil")
-	@DsonOutput(DsonOutput.Output.ALL)
-	public long rawBannedUntilForSerializer() {
-		return this.bannedUntil.map(Instant::toEpochMilli).orElse(0L);
-	}
+  @JsonProperty("bannedUntil")
+  @DsonOutput(DsonOutput.Output.ALL)
+  public long rawBannedUntilForSerializer() {
+    return this.bannedUntil.map(Instant::toEpochMilli).orElse(0L);
+  }
 
-	public NodeId getNodeId() {
-		return nodeId;
-	}
+  public NodeId getNodeId() {
+    return nodeId;
+  }
 
-	public boolean isBanned() {
-		return bannedUntil.filter(v -> v.isAfter(Instant.now())).isPresent();
-	}
+  public boolean isBanned() {
+    return bannedUntil.filter(v -> v.isAfter(Instant.now())).isPresent();
+  }
 
-	public Optional<Instant> bannedUntil() {
-		return this.bannedUntil;
-	}
+  public Optional<Instant> bannedUntil() {
+    return this.bannedUntil;
+  }
 
-	public ImmutableSet<PeerAddressEntry> getKnownAddresses() {
-		return knownAddresses;
-	}
+  public ImmutableSet<PeerAddressEntry> getKnownAddresses() {
+    return knownAddresses;
+  }
 
-	public AddressBookEntry withBanUntil(Instant banUntil) {
-		return new AddressBookEntry(nodeId, Optional.of(banUntil), knownAddresses);
-	}
+  public AddressBookEntry withBanUntil(Instant banUntil) {
+    return new AddressBookEntry(nodeId, Optional.of(banUntil), knownAddresses);
+  }
 
-	public AddressBookEntry addUriIfNotExists(RadixNodeUri uri) {
-		if (entryFor(uri).isPresent()) {
-			return this;
-		} else {
-			final var newAddressEntry = new PeerAddressEntry(uri, Optional.empty(), Optional.empty());
-			final var newKnownAddresses = ImmutableSet.<PeerAddressEntry>builder()
-				.addAll(this.knownAddresses)
-				.add(newAddressEntry)
-				.build();
-			return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
-		}
-	}
+  public AddressBookEntry addUriIfNotExists(RadixNodeUri uri) {
+    if (entryFor(uri).isPresent()) {
+      return this;
+    } else {
+      final var newAddressEntry = new PeerAddressEntry(uri, Optional.empty(), Optional.empty());
+      final var newKnownAddresses =
+          ImmutableSet.<PeerAddressEntry>builder()
+              .addAll(this.knownAddresses)
+              .add(newAddressEntry)
+              .build();
+      return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
+    }
+  }
 
-	public Optional<PeerAddressEntry> entryFor(RadixNodeUri uri) {
-		return knownAddresses.stream()
-			.filter(e -> e.getUri().equals(uri))
-			.findAny();
-	}
+  public Optional<PeerAddressEntry> entryFor(RadixNodeUri uri) {
+    return knownAddresses.stream().filter(e -> e.getUri().equals(uri)).findAny();
+  }
 
-	public AddressBookEntry withLatestConnectionStatusForUri(RadixNodeUri uri, LatestConnectionStatus latestConnectionStatus) {
-		Objects.requireNonNull(latestConnectionStatus);
+  public AddressBookEntry withLatestConnectionStatusForUri(
+      RadixNodeUri uri, LatestConnectionStatus latestConnectionStatus) {
+    Objects.requireNonNull(latestConnectionStatus);
 
-		final var maybeExistingAddress = this.knownAddresses.stream()
-			.filter(e -> e.getUri().equals(uri))
-			.findAny();
+    final var maybeExistingAddress =
+        this.knownAddresses.stream().filter(e -> e.getUri().equals(uri)).findAny();
 
-		if (maybeExistingAddress.isPresent()) {
-			final var updatedAddressEntry = maybeExistingAddress.get()
-				.withLatestConnectionStatus(latestConnectionStatus);
-			final var knownAddressesWithoutTheOldOne =
-				this.knownAddresses.stream()
-					.filter(not(e -> e.getUri().equals(uri)))
-					.collect(ImmutableSet.toImmutableSet());
-			final var newKnownAddresses = ImmutableSet.<PeerAddressEntry>builder()
-				.addAll(knownAddressesWithoutTheOldOne)
-				.add(updatedAddressEntry)
-				.build();
-			return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
-		} else {
-			final var newAddressEntry = new PeerAddressEntry(uri, Optional.of(latestConnectionStatus), Optional.empty());
-			final var newKnownAddresses = ImmutableSet.<PeerAddressEntry>builder()
-				.addAll(this.knownAddresses)
-				.add(newAddressEntry)
-				.build();
-			return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
-		}
-	}
+    if (maybeExistingAddress.isPresent()) {
+      final var updatedAddressEntry =
+          maybeExistingAddress.get().withLatestConnectionStatus(latestConnectionStatus);
+      final var knownAddressesWithoutTheOldOne =
+          this.knownAddresses.stream()
+              .filter(not(e -> e.getUri().equals(uri)))
+              .collect(ImmutableSet.toImmutableSet());
+      final var newKnownAddresses =
+          ImmutableSet.<PeerAddressEntry>builder()
+              .addAll(knownAddressesWithoutTheOldOne)
+              .add(updatedAddressEntry)
+              .build();
+      return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
+    } else {
+      final var newAddressEntry =
+          new PeerAddressEntry(uri, Optional.of(latestConnectionStatus), Optional.empty());
+      final var newKnownAddresses =
+          ImmutableSet.<PeerAddressEntry>builder()
+              .addAll(this.knownAddresses)
+              .add(newAddressEntry)
+              .build();
+      return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
+    }
+  }
 
-	public AddressBookEntry withBlacklistedUri(RadixNodeUri uri, Instant blacklistedUntil) {
-		final var maybeExistingAddress = this.knownAddresses.stream()
-			.filter(e -> e.getUri().equals(uri))
-			.findAny();
+  public AddressBookEntry withBlacklistedUri(RadixNodeUri uri, Instant blacklistedUntil) {
+    final var maybeExistingAddress =
+        this.knownAddresses.stream().filter(e -> e.getUri().equals(uri)).findAny();
 
-		if (maybeExistingAddress.isPresent()) {
-			final var updatedAddressEntry = maybeExistingAddress.get().blacklistUntil(blacklistedUntil);
-			final var knownAddressesWithoutTheOldOne =
-				this.knownAddresses.stream()
-					.filter(not(e -> e.getUri().equals(uri)))
-					.collect(ImmutableSet.toImmutableSet());
-			final var newKnownAddresses = ImmutableSet.<PeerAddressEntry>builder()
-				.addAll(knownAddressesWithoutTheOldOne)
-				.add(updatedAddressEntry)
-				.build();
-			return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
-		} else {
-			final var newAddressEntry = new PeerAddressEntry(uri, Optional.empty(), Optional.of(blacklistedUntil));
-			final var newKnownAddresses = ImmutableSet.<PeerAddressEntry>builder()
-				.addAll(this.knownAddresses)
-				.add(newAddressEntry)
-				.build();
-			return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
-		}
-	}
+    if (maybeExistingAddress.isPresent()) {
+      final var updatedAddressEntry = maybeExistingAddress.get().blacklistUntil(blacklistedUntil);
+      final var knownAddressesWithoutTheOldOne =
+          this.knownAddresses.stream()
+              .filter(not(e -> e.getUri().equals(uri)))
+              .collect(ImmutableSet.toImmutableSet());
+      final var newKnownAddresses =
+          ImmutableSet.<PeerAddressEntry>builder()
+              .addAll(knownAddressesWithoutTheOldOne)
+              .add(updatedAddressEntry)
+              .build();
+      return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
+    } else {
+      final var newAddressEntry =
+          new PeerAddressEntry(uri, Optional.empty(), Optional.of(blacklistedUntil));
+      final var newKnownAddresses =
+          ImmutableSet.<PeerAddressEntry>builder()
+              .addAll(this.knownAddresses)
+              .add(newAddressEntry)
+              .build();
+      return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
+    }
+  }
 
-	public AddressBookEntry cleanupExpiredBlacklsitedUris() {
-		final var newKnownAddresses = knownAddresses.stream()
-			.filter(not(PeerAddressEntry::blacklistExpired))
-			.collect(ImmutableSet.toImmutableSet());
-		return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
-	}
+  public AddressBookEntry cleanupExpiredBlacklsitedUris() {
+    final var newKnownAddresses =
+        knownAddresses.stream()
+            .filter(not(PeerAddressEntry::blacklistExpired))
+            .collect(ImmutableSet.toImmutableSet());
+    return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
+  }
 
-	@Override
-	public String toString() {
-		return String.format(
-			"%s[nodeId=%s, bannedUntil=%s, knownAddresses=%s]", getClass().getSimpleName(),
-			nodeId, bannedUntil, knownAddresses
-		);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s[nodeId=%s, bannedUntil=%s, knownAddresses=%s]",
+        getClass().getSimpleName(), nodeId, bannedUntil, knownAddresses);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof AddressBookEntry that)
-			&& Objects.equals(bannedUntil, that.bannedUntil)
-			&& Objects.equals(nodeId, that.nodeId)
-			&& Objects.equals(knownAddresses, that.knownAddresses);
-	}
+    return (o instanceof AddressBookEntry that)
+        && Objects.equals(bannedUntil, that.bannedUntil)
+        && Objects.equals(nodeId, that.nodeId)
+        && Objects.equals(knownAddresses, that.knownAddresses);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(nodeId, bannedUntil, knownAddresses);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(nodeId, bannedUntil, knownAddresses);
+  }
 
-	@SerializerId2("network.p2p.addressbook.peer_address_entry")
-	public static final class PeerAddressEntry {
-		public enum LatestConnectionStatus {
-			SUCCESS, FAILURE
-		}
+  @SerializerId2("network.p2p.addressbook.peer_address_entry")
+  public static final class PeerAddressEntry {
+    public enum LatestConnectionStatus {
+      SUCCESS,
+      FAILURE
+    }
 
-		// Placeholder for the serializer ID
-		@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-		@DsonOutput(DsonOutput.Output.ALL)
-		private SerializerDummy serializer = SerializerDummy.DUMMY;
+    // Placeholder for the serializer ID
+    @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+    @DsonOutput(DsonOutput.Output.ALL)
+    private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-		@JsonProperty("uri")
-		@DsonOutput(DsonOutput.Output.ALL)
-		private final RadixNodeUri uri;
+    @JsonProperty("uri")
+    @DsonOutput(DsonOutput.Output.ALL)
+    private final RadixNodeUri uri;
 
-		private final Optional<LatestConnectionStatus> latestConnectionStatus;
+    private final Optional<LatestConnectionStatus> latestConnectionStatus;
 
-		private final Optional<Instant> blacklistedUntil;
+    private final Optional<Instant> blacklistedUntil;
 
-		@JsonCreator
-		private static PeerAddressEntry deserialize(
-			@JsonProperty("uri") RadixNodeUri uri,
-			@JsonProperty("latestConnectionStatus") String rawLatestConnectionStatus,
-			@JsonProperty("blacklistedUntil") Long rawBlacklistedUntil
-		) {
-			final var latestConnectionStatus = Optional.ofNullable(rawLatestConnectionStatus).map(LatestConnectionStatus::valueOf);
-			final var blacklistedUntil = Optional.ofNullable(rawBlacklistedUntil).map(Instant::ofEpochMilli);
-			return new PeerAddressEntry(uri, latestConnectionStatus, blacklistedUntil);
-		}
+    @JsonCreator
+    private static PeerAddressEntry deserialize(
+        @JsonProperty("uri") RadixNodeUri uri,
+        @JsonProperty("latestConnectionStatus") String rawLatestConnectionStatus,
+        @JsonProperty("blacklistedUntil") Long rawBlacklistedUntil) {
+      final var latestConnectionStatus =
+          Optional.ofNullable(rawLatestConnectionStatus).map(LatestConnectionStatus::valueOf);
+      final var blacklistedUntil =
+          Optional.ofNullable(rawBlacklistedUntil).map(Instant::ofEpochMilli);
+      return new PeerAddressEntry(uri, latestConnectionStatus, blacklistedUntil);
+    }
 
-		PeerAddressEntry(RadixNodeUri uri, Optional<LatestConnectionStatus> latestConnectionStatus, Optional<Instant> blacklistedUntil) {
-			this.uri = Objects.requireNonNull(uri);
-			this.latestConnectionStatus = Objects.requireNonNull(latestConnectionStatus);
-			this.blacklistedUntil = Objects.requireNonNull(blacklistedUntil);
-		}
+    PeerAddressEntry(
+        RadixNodeUri uri,
+        Optional<LatestConnectionStatus> latestConnectionStatus,
+        Optional<Instant> blacklistedUntil) {
+      this.uri = Objects.requireNonNull(uri);
+      this.latestConnectionStatus = Objects.requireNonNull(latestConnectionStatus);
+      this.blacklistedUntil = Objects.requireNonNull(blacklistedUntil);
+    }
 
-		public RadixNodeUri getUri() {
-			return uri;
-		}
+    public RadixNodeUri getUri() {
+      return uri;
+    }
 
-		public Optional<LatestConnectionStatus> getLatestConnectionStatus() {
-			return latestConnectionStatus;
-		}
+    public Optional<LatestConnectionStatus> getLatestConnectionStatus() {
+      return latestConnectionStatus;
+    }
 
-		public boolean blacklisted() {
-			return blacklistedUntil.filter(v -> v.isAfter(Instant.now())).isPresent();
-		}
+    public boolean blacklisted() {
+      return blacklistedUntil.filter(v -> v.isAfter(Instant.now())).isPresent();
+    }
 
-		public boolean blacklistExpired() {
-			return blacklistedUntil.isPresent() && !blacklisted();
-		}
+    public boolean blacklistExpired() {
+      return blacklistedUntil.isPresent() && !blacklisted();
+    }
 
-		@JsonProperty("latestConnectionStatus")
-		@DsonOutput(DsonOutput.Output.ALL)
-		private String getLatestConnectionStatusForSerializer() {
-			return latestConnectionStatus.map(LatestConnectionStatus::toString).orElse(null);
-		}
+    @JsonProperty("latestConnectionStatus")
+    @DsonOutput(DsonOutput.Output.ALL)
+    private String getLatestConnectionStatusForSerializer() {
+      return latestConnectionStatus.map(LatestConnectionStatus::toString).orElse(null);
+    }
 
-		@JsonProperty("blacklistedUntil")
-		@DsonOutput(DsonOutput.Output.ALL)
-		public Long rawBlacklistedUntilForSerializer() {
-			return this.blacklistedUntil.map(Instant::toEpochMilli).orElse(null);
-		}
+    @JsonProperty("blacklistedUntil")
+    @DsonOutput(DsonOutput.Output.ALL)
+    public Long rawBlacklistedUntilForSerializer() {
+      return this.blacklistedUntil.map(Instant::toEpochMilli).orElse(null);
+    }
 
-		public PeerAddressEntry withLatestConnectionStatus(LatestConnectionStatus latestConnectionStatus) {
-			return new PeerAddressEntry(uri, Optional.of(latestConnectionStatus), blacklistedUntil);
-		}
+    public PeerAddressEntry withLatestConnectionStatus(
+        LatestConnectionStatus latestConnectionStatus) {
+      return new PeerAddressEntry(uri, Optional.of(latestConnectionStatus), blacklistedUntil);
+    }
 
-		public PeerAddressEntry blacklistUntil(Instant blacklistedUntil) {
-			return new PeerAddressEntry(uri, latestConnectionStatus, Optional.of(blacklistedUntil));
-		}
+    public PeerAddressEntry blacklistUntil(Instant blacklistedUntil) {
+      return new PeerAddressEntry(uri, latestConnectionStatus, Optional.of(blacklistedUntil));
+    }
 
-		@Override
-		public String toString() {
-			return String.format(
-				"%s[uri=%s, latestConnectionStatus=%s, blacklistedUntil=%s]", getClass().getSimpleName(),
-				uri, latestConnectionStatus, blacklistedUntil
-			);
-		}
+    @Override
+    public String toString() {
+      return String.format(
+          "%s[uri=%s, latestConnectionStatus=%s, blacklistedUntil=%s]",
+          getClass().getSimpleName(), uri, latestConnectionStatus, blacklistedUntil);
+    }
 
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) {
-				return true;
-			}
-			if (o == null || getClass() != o.getClass()) {
-				return false;
-			}
-			PeerAddressEntry that = (PeerAddressEntry) o;
-			return Objects.equals(uri, that.uri)
-				&& Objects.equals(latestConnectionStatus, that.latestConnectionStatus)
-				&& Objects.equals(blacklistedUntil, that.blacklistedUntil);
-		}
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      PeerAddressEntry that = (PeerAddressEntry) o;
+      return Objects.equals(uri, that.uri)
+          && Objects.equals(latestConnectionStatus, that.latestConnectionStatus)
+          && Objects.equals(blacklistedUntil, that.blacklistedUntil);
+    }
 
-		@Override
-		public int hashCode() {
-			return Objects.hash(uri, latestConnectionStatus, blacklistedUntil);
-		}
-	}
+    @Override
+    public int hashCode() {
+      return Objects.hash(uri, latestConnectionStatus, blacklistedUntil);
+    }
+  }
 }

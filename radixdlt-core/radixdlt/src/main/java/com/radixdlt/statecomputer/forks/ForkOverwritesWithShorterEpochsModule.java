@@ -67,7 +67,6 @@ package com.radixdlt.statecomputer.forks;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
-
 import java.util.Comparator;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -75,27 +74,24 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
-	private final RERulesConfig config;
+  private final RERulesConfig config;
 
-	public ForkOverwritesWithShorterEpochsModule(RERulesConfig config) {
-		this.config = config;
-	}
+  public ForkOverwritesWithShorterEpochsModule(RERulesConfig config) {
+    this.config = config;
+  }
 
-	@Override
-	protected void configure() {
-		var epoch = new AtomicLong(0);
-		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkConfig>>>() { })
-			.setBinding()
-			.toInstance(s ->
-				s.stream()
-					.sorted(Comparator.comparingLong(ForkConfig::getEpoch))
-					.map(c -> new ForkConfig(
-						epoch.getAndAdd(5),
-						c.getName(),
-						c.getVersion(),
-						config
-					))
-					.collect(Collectors.toSet())
-			);
-	}
+  @Override
+  protected void configure() {
+    var epoch = new AtomicLong(0);
+    OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkConfig>>>() {})
+        .setBinding()
+        .toInstance(
+            s ->
+                s.stream()
+                    .sorted(Comparator.comparingLong(ForkConfig::getEpoch))
+                    .map(
+                        c ->
+                            new ForkConfig(epoch.getAndAdd(5), c.getName(), c.getVersion(), config))
+                    .collect(Collectors.toSet()));
+  }
 }

@@ -66,9 +66,7 @@ package com.radixdlt.atom;
 
 import com.radixdlt.crypto.ECPublicKey;
 
-/**
- * Marker interface for actions containing validator key.
- */
+/** Marker interface for actions containing validator key. */
 public interface TxValidatorAction extends TxAction {
-	ECPublicKey validatorKey();
+  ECPublicKey validatorKey();
 }

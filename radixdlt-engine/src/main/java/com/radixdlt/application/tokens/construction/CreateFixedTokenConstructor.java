@@ -65,40 +65,42 @@
 package com.radixdlt.application.tokens.construction;
 
 import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.CreateFixedToken;
-import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.application.tokens.state.TokensInAccount;
-
 import java.nio.charset.StandardCharsets;
 
 public final class CreateFixedTokenConstructor implements ActionConstructor<CreateFixedToken> {
-	private final int maxSymbolLength;
+  private final int maxSymbolLength;
 
-	public CreateFixedTokenConstructor(int maxSymbolLength) {
-		this.maxSymbolLength = maxSymbolLength;
-	}
+  public CreateFixedTokenConstructor(int maxSymbolLength) {
+    this.maxSymbolLength = maxSymbolLength;
+  }
 
-	@Override
-	public void construct(CreateFixedToken action, TxBuilder txBuilder) throws TxBuilderException {
-		if (action.getSymbol().length() > maxSymbolLength) {
-			throw new SymbolLengthException(maxSymbolLength, action.getSymbol().length());
-		}
-		txBuilder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, action.getSymbol().getBytes(StandardCharsets.UTF_8));
-		txBuilder.downREAddr(action.getResourceAddr());
-		txBuilder.up(TokenResource.createFixedSupplyResource(action.getResourceAddr()));
-		txBuilder.up(new TokensInAccount(action.getAccountAddr(), action.getResourceAddr(), action.getSupply()));
-		txBuilder.up(new TokenResourceMetadata(
-			action.getResourceAddr(),
-			action.getSymbol(),
-			action.getName(),
-			action.getDescription(),
-			action.getIconUrl(),
-			action.getTokenUrl()
-		));
-		txBuilder.end();
-	}
+  @Override
+  public void construct(CreateFixedToken action, TxBuilder txBuilder) throws TxBuilderException {
+    if (action.getSymbol().length() > maxSymbolLength) {
+      throw new SymbolLengthException(maxSymbolLength, action.getSymbol().length());
+    }
+    txBuilder
+        .toLowLevelBuilder()
+        .syscall(Syscall.READDR_CLAIM, action.getSymbol().getBytes(StandardCharsets.UTF_8));
+    txBuilder.downREAddr(action.getResourceAddr());
+    txBuilder.up(TokenResource.createFixedSupplyResource(action.getResourceAddr()));
+    txBuilder.up(
+        new TokensInAccount(action.getAccountAddr(), action.getResourceAddr(), action.getSupply()));
+    txBuilder.up(
+        new TokenResourceMetadata(
+            action.getResourceAddr(),
+            action.getSymbol(),
+            action.getName(),
+            action.getDescription(),
+            action.getIconUrl(),
+            action.getTokenUrl()));
+    txBuilder.end();
+  }
 }

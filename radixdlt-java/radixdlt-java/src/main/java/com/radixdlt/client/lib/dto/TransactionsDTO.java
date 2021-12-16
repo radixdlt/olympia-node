@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,76 +64,78 @@
 
 package com.radixdlt.client.lib.dto;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.OptionalLong;
 
-import static java.util.Objects.requireNonNull;
-
 public final class TransactionsDTO {
-	private final Long nextOffset;
-	private final List<TransactionDTO> transactions;
-	private final long totalCount;
+  private final Long nextOffset;
+  private final List<TransactionDTO> transactions;
+  private final long totalCount;
 
-	private TransactionsDTO(Long nextOffset, List<TransactionDTO> transactions, long totalCount) {
-		this.nextOffset = nextOffset;
-		this.transactions = transactions;
-		this.totalCount = totalCount;
-	}
+  private TransactionsDTO(Long nextOffset, List<TransactionDTO> transactions, long totalCount) {
+    this.nextOffset = nextOffset;
+    this.transactions = transactions;
+    this.totalCount = totalCount;
+  }
 
-	@JsonCreator
-	public static TransactionsDTO create(
-		@JsonProperty("nextOffset") Long nextOffset,
-		@JsonProperty(value = "transactions", required = true) List<TransactionDTO> transactions,
-		@JsonProperty(value = "count", required = true) long count,
-		@JsonProperty(value = "totalCount", required = true) long totalCount
-	) {
-		requireNonNull(transactions);
+  @JsonCreator
+  public static TransactionsDTO create(
+      @JsonProperty("nextOffset") Long nextOffset,
+      @JsonProperty(value = "transactions", required = true) List<TransactionDTO> transactions,
+      @JsonProperty(value = "count", required = true) long count,
+      @JsonProperty(value = "totalCount", required = true) long totalCount) {
+    requireNonNull(transactions);
 
-		return new TransactionsDTO(nextOffset, transactions, totalCount);
-	}
+    return new TransactionsDTO(nextOffset, transactions, totalCount);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof TransactionsDTO)) {
-			return false;
-		}
+    if (!(o instanceof TransactionsDTO)) {
+      return false;
+    }
 
-		var that = (TransactionsDTO) o;
-		return totalCount == that.totalCount
-			&& Objects.equals(nextOffset, that.nextOffset)
-			&& transactions.equals(that.transactions);
-	}
+    var that = (TransactionsDTO) o;
+    return totalCount == that.totalCount
+        && Objects.equals(nextOffset, that.nextOffset)
+        && transactions.equals(that.transactions);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(nextOffset, transactions, totalCount);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(nextOffset, transactions, totalCount);
+  }
 
-	@Override
-	public String toString() {
-		return "TransactionsDTO("
-			+ "nextOffset=" + nextOffset
-			+ ", transactions=" + transactions
-			+ ", totalCount=" + totalCount + ')';
-	}
+  @Override
+  public String toString() {
+    return "TransactionsDTO("
+        + "nextOffset="
+        + nextOffset
+        + ", transactions="
+        + transactions
+        + ", totalCount="
+        + totalCount
+        + ')';
+  }
 
-	public OptionalLong getNextOffset() {
-		return nextOffset == null ? OptionalLong.empty() : OptionalLong.of(nextOffset);
-	}
+  public OptionalLong getNextOffset() {
+    return nextOffset == null ? OptionalLong.empty() : OptionalLong.of(nextOffset);
+  }
 
-	public List<TransactionDTO> getTransactions() {
-		return transactions;
-	}
+  public List<TransactionDTO> getTransactions() {
+    return transactions;
+  }
 
-	public long getTotalCount() {
-		return totalCount;
-	}
+  public long getTotalCount() {
+    return totalCount;
+  }
 }

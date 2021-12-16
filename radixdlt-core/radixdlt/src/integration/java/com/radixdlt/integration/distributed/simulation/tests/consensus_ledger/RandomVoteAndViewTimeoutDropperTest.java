@@ -67,56 +67,56 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
 /**
- * Dropping random vote and view-timeout messages should cause consensus to fork quite a bit.
- * This is to test that safety should always be preserved even in multiple forking situations.
+ * Dropping random vote and view-timeout messages should cause consensus to fork quite a bit. This
+ * is to test that safety should always be preserved even in multiple forking situations.
  */
 public class RandomVoteAndViewTimeoutDropperTest {
-	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(4)
-		.networkModules(
-			NetworkOrdering.inOrder(),
-			NetworkLatencies.fixed(),
-			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.4)
-		)
-		.ledger()
-		.addTestModules(
-			ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(20, TimeUnit.SECONDS),
-			LedgerMonitors.consensusToLedger(),
-			LedgerMonitors.ordered()
-		);
+  private final Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(4)
+          .networkModules(
+              NetworkOrdering.inOrder(),
+              NetworkLatencies.fixed(),
+              NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.4))
+          .ledger()
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(20, TimeUnit.SECONDS),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered());
 
-	/**
-	 * Tests a configuration of 4 nodes with a dropping proposal adversary
-	 * Test should fail with GetVertices RPC disabled
-	 */
-	@Test
-	public void sanity_test() {
-		SimulationTest test = bftTestBuilder.build();
-		final var runningTest = test.run();
-		final var checkResults = runningTest.awaitCompletion();
+  /**
+   * Tests a configuration of 4 nodes with a dropping proposal adversary Test should fail with
+   * GetVertices RPC disabled
+   */
+  @Test
+  public void sanity_test() {
+    SimulationTest test = bftTestBuilder.build();
+    final var runningTest = test.run();
+    final var checkResults = runningTest.awaitCompletion();
 
+    LongSummaryStatistics statistics =
+        runningTest.getNetwork().getSystemCounters().values().stream()
+            .map(s -> s.get(CounterType.BFT_VERTEX_STORE_FORKS))
+            .mapToLong(l -> l)
+            .summaryStatistics();
 
-		LongSummaryStatistics statistics = runningTest.getNetwork().getSystemCounters().values().stream()
-			.map(s -> s.get(CounterType.BFT_VERTEX_STORE_FORKS))
-			.mapToLong(l -> l)
-			.summaryStatistics();
+    System.out.println(statistics);
 
-		System.out.println(statistics);
-
-		assertThat(checkResults).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
-	}
+    assertThat(checkResults)
+        .allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
+  }
 }

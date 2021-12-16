@@ -67,12 +67,12 @@ package com.radixdlt.statecomputer.checkpoint;
 import com.google.inject.AbstractModule;
 
 /**
- * Configures the module in charge of "weak-subjectivity" or checkpoints
- * which the node will always align with
+ * Configures the module in charge of "weak-subjectivity" or checkpoints which the node will always
+ * align with
  */
 public class RadixEngineCheckpointModule extends AbstractModule {
 
-	public RadixEngineCheckpointModule() {
-		// Nothing to do here
-	}
+  public RadixEngineCheckpointModule() {
+    // Nothing to do here
+  }
 }

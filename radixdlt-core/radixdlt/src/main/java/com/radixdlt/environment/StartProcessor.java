@@ -65,5 +65,5 @@
 package com.radixdlt.environment;
 
 public interface StartProcessor {
-	void start();
+  void start();
 }

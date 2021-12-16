@@ -65,21 +65,18 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.atom.Txn;
-
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Message to attempt to add commands to the mempool
- */
+/** Message to attempt to add commands to the mempool */
 public record MempoolAdd(List<Txn> txns) {
-	public static MempoolAdd create(Txn txn) {
-		Objects.requireNonNull(txn);
-		return new MempoolAdd(List.of(txn));
-	}
+  public static MempoolAdd create(Txn txn) {
+    Objects.requireNonNull(txn);
+    return new MempoolAdd(List.of(txn));
+  }
 
-	public static MempoolAdd create(List<Txn> txns) {
-		Objects.requireNonNull(txns);
-		return new MempoolAdd(txns);
-	}
+  public static MempoolAdd create(List<Txn> txns) {
+    Objects.requireNonNull(txns);
+    return new MempoolAdd(txns);
+  }
 }

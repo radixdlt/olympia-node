@@ -65,7 +65,7 @@
 package com.radixdlt.crypto.exception;
 
 public class PrivateKeyException extends CryptoException {
-    public PrivateKeyException(String errorMessage) {
-        super(errorMessage);
-    }
+  public PrivateKeyException(String errorMessage) {
+    super(errorMessage);
+  }
 }

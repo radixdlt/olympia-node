@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,18 +64,16 @@
 
 package com.radixdlt.client.lib.api.async;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import static org.junit.Assert.fail;
 
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionsDTO;
-
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-
-import static org.junit.Assert.fail;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /*
  * Before running this test, launch in separate console local network (cd radixdlt-core/docker && ./scripts/rundocker.sh 2).
@@ -85,42 +84,46 @@ import static org.junit.Assert.fail;
  *
  * Then run testTransactionHistoryInPages(). It should print list of transactions split into batches of 50 (see parameters)
  */
-//TODO: move to acceptance tests
+// TODO: move to acceptance tests
 public class AsyncRadixApiTransactionPaginationTest {
-	private static final String BASE_URL = "http://localhost/";
+  private static final String BASE_URL = "http://localhost/";
 
-	@Test
-	@Ignore("Online test")
-	public void testTransactionHistoryInPages() {
-		RadixApi.connect(BASE_URL)
-			.map(RadixApi::withTrace)
-			.join()
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(
-				client -> {
-					var cursorHolder = new AtomicReference<>(OptionalLong.empty());
-					do {
-						client.transaction().list(100, cursorHolder.get()).join()
-							.onFailure(failure -> fail(failure.toString()))
-							.onSuccess(v -> cursorHolder.set(v.getNextOffset()))
-							.map(TransactionsDTO::getTransactions)
-							.map(this::formatTxns)
-							.onSuccess(System.out::println);
-					} while (cursorHolder.get().isPresent());
-				});
-	}
+  @Test
+  @Ignore("Online test")
+  public void testTransactionHistoryInPages() {
+    RadixApi.connect(BASE_URL)
+        .map(RadixApi::withTrace)
+        .join()
+        .onFailure(failure -> fail(failure.toString()))
+        .onSuccess(
+            client -> {
+              var cursorHolder = new AtomicReference<>(OptionalLong.empty());
+              do {
+                client
+                    .transaction()
+                    .list(100, cursorHolder.get())
+                    .join()
+                    .onFailure(failure -> fail(failure.toString()))
+                    .onSuccess(v -> cursorHolder.set(v.getNextOffset()))
+                    .map(TransactionsDTO::getTransactions)
+                    .map(this::formatTxns)
+                    .onSuccess(System.out::println);
+              } while (cursorHolder.get().isPresent());
+            });
+  }
 
-	private List<String> formatTxns(List<TransactionDTO> t) {
-		return t.stream()
-			.map(v -> String.format(
-				"%s (%s) - %s (%d:%d), Fee: %s%n",
-				v.getTxID(),
-				v.getMessage().orElse("<none>"),
-				v.getSentAt().getInstant(),
-				v.getSentAt().getInstant().getEpochSecond(),
-				v.getSentAt().getInstant().getNano(),
-				v.getFee()
-			))
-			.collect(Collectors.toList());
-	}
+  private List<String> formatTxns(List<TransactionDTO> t) {
+    return t.stream()
+        .map(
+            v ->
+                String.format(
+                    "%s (%s) - %s (%d:%d), Fee: %s%n",
+                    v.getTxID(),
+                    v.getMessage().orElse("<none>"),
+                    v.getSentAt().getInstant(),
+                    v.getSentAt().getInstant().getEpochSecond(),
+                    v.getSentAt().getInstant().getNano(),
+                    v.getFee()))
+        .collect(Collectors.toList());
+  }
 }

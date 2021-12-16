@@ -67,67 +67,64 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.consensus.BFTHeader;
 import java.util.Objects;
 
-/**
- * An update emitted when the BFT has inserted a new vertex
- */
+/** An update emitted when the BFT has inserted a new vertex */
 public final class BFTInsertUpdate {
-	private final VerifiedVertexStoreState vertexStoreState;
-	private final PreparedVertex insertedVertex;
-	private final int siblingsCount;
+  private final VerifiedVertexStoreState vertexStoreState;
+  private final PreparedVertex insertedVertex;
+  private final int siblingsCount;
 
-	private BFTInsertUpdate(PreparedVertex insertedVertex, int siblingsCount, VerifiedVertexStoreState vertexStoreState) {
-		this.insertedVertex = Objects.requireNonNull(insertedVertex);
-		this.siblingsCount = siblingsCount;
-		this.vertexStoreState = Objects.requireNonNull(vertexStoreState);
-	}
+  private BFTInsertUpdate(
+      PreparedVertex insertedVertex, int siblingsCount, VerifiedVertexStoreState vertexStoreState) {
+    this.insertedVertex = Objects.requireNonNull(insertedVertex);
+    this.siblingsCount = siblingsCount;
+    this.vertexStoreState = Objects.requireNonNull(vertexStoreState);
+  }
 
-	public static BFTInsertUpdate insertedVertex(PreparedVertex insertedVertex, int siblingsCount, VerifiedVertexStoreState vertexStoreState) {
-		return new BFTInsertUpdate(
-			insertedVertex,
-			siblingsCount,
-			vertexStoreState
-		);
-	}
+  public static BFTInsertUpdate insertedVertex(
+      PreparedVertex insertedVertex, int siblingsCount, VerifiedVertexStoreState vertexStoreState) {
+    return new BFTInsertUpdate(insertedVertex, siblingsCount, vertexStoreState);
+  }
 
-	public VerifiedVertexStoreState getVertexStoreState() {
-		return vertexStoreState;
-	}
+  public VerifiedVertexStoreState getVertexStoreState() {
+    return vertexStoreState;
+  }
 
-	public int getSiblingsCount() {
-		return siblingsCount;
-	}
+  public int getSiblingsCount() {
+    return siblingsCount;
+  }
 
-	public int getVertexStoreSize() {
-		return vertexStoreState.getVertices().size();
-	}
+  public int getVertexStoreSize() {
+    return vertexStoreState.getVertices().size();
+  }
 
-	public BFTHeader getHeader() {
-		return new BFTHeader(insertedVertex.getView(), insertedVertex.getId(), insertedVertex.getLedgerHeader());
-	}
+  public BFTHeader getHeader() {
+    return new BFTHeader(
+        insertedVertex.getView(), insertedVertex.getId(), insertedVertex.getLedgerHeader());
+  }
 
-	public PreparedVertex getInserted() {
-		return insertedVertex;
-	}
+  public PreparedVertex getInserted() {
+    return insertedVertex;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(vertexStoreState, insertedVertex, siblingsCount);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(vertexStoreState, insertedVertex, siblingsCount);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof BFTInsertUpdate)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof BFTInsertUpdate)) {
+      return false;
+    }
 
-		BFTInsertUpdate other = (BFTInsertUpdate) o;
-		return Objects.equals(this.vertexStoreState, other.vertexStoreState)
-			&& Objects.equals(this.insertedVertex, other.insertedVertex)
-			&& this.siblingsCount == other.siblingsCount;
-	}
+    BFTInsertUpdate other = (BFTInsertUpdate) o;
+    return Objects.equals(this.vertexStoreState, other.vertexStoreState)
+        && Objects.equals(this.insertedVertex, other.insertedVertex)
+        && this.siblingsCount == other.siblingsCount;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{inserted=%s}", getClass().getSimpleName(), insertedVertex);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{inserted=%s}", getClass().getSimpleName(), insertedVertex);
+  }
 }

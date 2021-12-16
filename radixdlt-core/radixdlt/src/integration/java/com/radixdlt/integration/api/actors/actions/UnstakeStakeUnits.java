@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -73,51 +74,48 @@ import com.radixdlt.api.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.openapitools.model.ResourceAmount;
 import com.radixdlt.api.core.openapitools.model.StakeUnitResourceIdentifier;
 import com.radixdlt.application.tokens.Amount;
-
 import java.util.List;
 import java.util.function.Function;
 
 public final class UnstakeStakeUnits implements NodeTransactionAction {
-	private final Amount amount;
-	private final String validatorAddress;
+  private final Amount amount;
+  private final String validatorAddress;
 
-	public UnstakeStakeUnits(Amount amount, String validatorAddress) {
-		this.amount = amount;
-		this.validatorAddress = validatorAddress;
-	}
+  public UnstakeStakeUnits(Amount amount, String validatorAddress) {
+    this.amount = amount;
+    this.validatorAddress = validatorAddress;
+  }
 
-	@Override
-	public List<OperationGroup> toOperationGroups(
-		EngineConfiguration configuration,
-		Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction
-	) {
-		var from = identifierFunction.apply(new ConstructionDeriveRequestMetadataAccount()
-			.type("Account")
-		);
-		var to = identifierFunction.apply(new ConstructionDeriveRequestMetadataPreparedUnstakes()
-			.type("PreparedUnstakes")
-		);
-		var resourceIdentifier = new StakeUnitResourceIdentifier().validatorAddress(validatorAddress).type("StakeUnits");
-		var operationGroup = new OperationGroup()
-			.addOperationsItem(
-				new Operation()
-					.type("Resource")
-					.amount(new ResourceAmount()
-						.resourceIdentifier(resourceIdentifier)
-						.value("-" + amount.toSubunits().toString())
-					)
-					.entityIdentifier(from)
-			)
-			.addOperationsItem(
-				new Operation()
-					.type("Resource")
-					.amount(new ResourceAmount()
-						.resourceIdentifier(resourceIdentifier)
-						.value(amount.toSubunits().toString())
-					)
-					.entityIdentifier(to)
-			);
+  @Override
+  public List<OperationGroup> toOperationGroups(
+      EngineConfiguration configuration,
+      Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction) {
+    var from =
+        identifierFunction.apply(new ConstructionDeriveRequestMetadataAccount().type("Account"));
+    var to =
+        identifierFunction.apply(
+            new ConstructionDeriveRequestMetadataPreparedUnstakes().type("PreparedUnstakes"));
+    var resourceIdentifier =
+        new StakeUnitResourceIdentifier().validatorAddress(validatorAddress).type("StakeUnits");
+    var operationGroup =
+        new OperationGroup()
+            .addOperationsItem(
+                new Operation()
+                    .type("Resource")
+                    .amount(
+                        new ResourceAmount()
+                            .resourceIdentifier(resourceIdentifier)
+                            .value("-" + amount.toSubunits().toString()))
+                    .entityIdentifier(from))
+            .addOperationsItem(
+                new Operation()
+                    .type("Resource")
+                    .amount(
+                        new ResourceAmount()
+                            .resourceIdentifier(resourceIdentifier)
+                            .value(amount.toSubunits().toString()))
+                    .entityIdentifier(to));
 
-		return List.of(operationGroup);
-	}
+    return List.of(operationGroup);
+  }
 }

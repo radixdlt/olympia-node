@@ -72,9 +72,8 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
-import javax.annotation.concurrent.Immutable;
 import java.util.Objects;
+import javax.annotation.concurrent.Immutable;
 
 /**
  * An <a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">ECDSA</a>
@@ -83,76 +82,76 @@ import java.util.Objects;
 @Immutable
 @SerializerId2("consensus.timestamped_ecdsa_signature")
 public final class TimestampedECDSASignature {
-	// Placeholder for the serializer ID
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(Output.ALL)
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
+  // Placeholder for the serializer ID
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(Output.ALL)
+  private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("timestamp")
-	@DsonOutput(Output.ALL)
-	private final long timestamp;
+  @JsonProperty("timestamp")
+  @DsonOutput(Output.ALL)
+  private final long timestamp;
 
-	@JsonProperty("signature")
-	@DsonOutput(Output.ALL)
-	private final ECDSASignature signature;
+  @JsonProperty("signature")
+  @DsonOutput(Output.ALL)
+  private final ECDSASignature signature;
 
-	/**
-	 * Create a timestamped signature from a timestamp, weight and signature.
-	 *
-	 * @param timestamp the timestamp
-	 * @param signature the signature
-	 * @return a timestamped signature with the specified properties
-	 */
-	@JsonCreator
-	public static TimestampedECDSASignature from(
-		@JsonProperty("timestamp") long timestamp,
-		@JsonProperty(value = "signature", required = true) ECDSASignature signature
-	) {
-		return new TimestampedECDSASignature(timestamp, signature);
-	}
+  /**
+   * Create a timestamped signature from a timestamp, weight and signature.
+   *
+   * @param timestamp the timestamp
+   * @param signature the signature
+   * @return a timestamped signature with the specified properties
+   */
+  @JsonCreator
+  public static TimestampedECDSASignature from(
+      @JsonProperty("timestamp") long timestamp,
+      @JsonProperty(value = "signature", required = true) ECDSASignature signature) {
+    return new TimestampedECDSASignature(timestamp, signature);
+  }
 
-	private TimestampedECDSASignature(long timestamp, ECDSASignature signature) {
-		if (timestamp <= 0) {	//we don't expect timestamps before epoch or at the start of the epoch
-			throw new IllegalArgumentException("Timestamp before epoch: " + timestamp);
-		}
+  private TimestampedECDSASignature(long timestamp, ECDSASignature signature) {
+    if (timestamp <= 0) { // we don't expect timestamps before epoch or at the start of the epoch
+      throw new IllegalArgumentException("Timestamp before epoch: " + timestamp);
+    }
 
-		this.timestamp = timestamp;
-		this.signature = Objects.requireNonNull(signature);
-	}
+    this.timestamp = timestamp;
+    this.signature = Objects.requireNonNull(signature);
+  }
 
-	/**
-	 * Returns the timestamp of the signature in milliseconds since epoch.
-	 * @return The timestamp of the signature in milliseconds since epoch
-	 */
-	public long timestamp() {
-		return this.timestamp;
-	}
+  /**
+   * Returns the timestamp of the signature in milliseconds since epoch.
+   *
+   * @return The timestamp of the signature in milliseconds since epoch
+   */
+  public long timestamp() {
+    return this.timestamp;
+  }
 
-	/**
-	 * Returns the signature.
-	 * @return the signature
-	 */
-	public ECDSASignature signature() {
-		return this.signature;
-	}
+  /**
+   * Returns the signature.
+   *
+   * @return the signature
+   */
+  public ECDSASignature signature() {
+    return this.signature;
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (o instanceof TimestampedECDSASignature) {
-			TimestampedECDSASignature that = (TimestampedECDSASignature) o;
-			return this.timestamp == that.timestamp
-				&& Objects.equals(this.signature, that.signature);
-		}
-		return false;
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (o instanceof TimestampedECDSASignature) {
+      TimestampedECDSASignature that = (TimestampedECDSASignature) o;
+      return this.timestamp == that.timestamp && Objects.equals(this.signature, that.signature);
+    }
+    return false;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.timestamp, this.signature);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.timestamp, this.signature);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s[%s:%s]", getClass().getSimpleName(), this.timestamp, this.signature);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s[%s:%s]", getClass().getSimpleName(), this.timestamp, this.signature);
+  }
 }

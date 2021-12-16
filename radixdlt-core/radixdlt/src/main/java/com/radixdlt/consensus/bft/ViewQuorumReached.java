@@ -66,44 +66,42 @@ package com.radixdlt.consensus.bft;
 
 import java.util.Objects;
 
-/**
- * A local event message indicating that a view quorum (either QC or TC) has been reached.
- */
+/** A local event message indicating that a view quorum (either QC or TC) has been reached. */
 public final class ViewQuorumReached {
 
-	private final ViewVotingResult votingResult;
+  private final ViewVotingResult votingResult;
 
-	// the author of the last received message that lead to forming a quorum
-	private final BFTNode lastAuthor;
+  // the author of the last received message that lead to forming a quorum
+  private final BFTNode lastAuthor;
 
-	public ViewQuorumReached(ViewVotingResult votingResult, BFTNode lastAuthor) {
-		this.votingResult = Objects.requireNonNull(votingResult);
-		this.lastAuthor = Objects.requireNonNull(lastAuthor);
-	}
+  public ViewQuorumReached(ViewVotingResult votingResult, BFTNode lastAuthor) {
+    this.votingResult = Objects.requireNonNull(votingResult);
+    this.lastAuthor = Objects.requireNonNull(lastAuthor);
+  }
 
-	public BFTNode lastAuthor() {
-		return lastAuthor;
-	}
+  public BFTNode lastAuthor() {
+    return lastAuthor;
+  }
 
-	public ViewVotingResult votingResult() {
-		return votingResult;
-	}
+  public ViewVotingResult votingResult() {
+    return votingResult;
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		ViewQuorumReached that = (ViewQuorumReached) o;
-		return Objects.equals(votingResult, that.votingResult)
-				&& Objects.equals(lastAuthor, that.lastAuthor);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    ViewQuorumReached that = (ViewQuorumReached) o;
+    return Objects.equals(votingResult, that.votingResult)
+        && Objects.equals(lastAuthor, that.lastAuthor);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(votingResult, lastAuthor);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(votingResult, lastAuthor);
+  }
 }

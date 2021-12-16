@@ -68,9 +68,8 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 public class AddressBookEntryTest {
-	@Test
-	public void equalsTest() {
-		EqualsVerifier.forClass(AddressBookEntry.class)
-			.verify();
-	}
+  @Test
+  public void equalsTest() {
+    EqualsVerifier.forClass(AddressBookEntry.class).verify();
+  }
 }

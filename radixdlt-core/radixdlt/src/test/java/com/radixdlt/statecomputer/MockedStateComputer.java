@@ -87,73 +87,69 @@ import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
-
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 public final class MockedStateComputer implements StateComputer {
-	private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
-	private final Hasher hasher;
+  private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
+  private final Hasher hasher;
 
-	@Inject
-	public MockedStateComputer(
-		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
-		Hasher hasher
-	) {
-		this.ledgerUpdateDispatcher = ledgerUpdateDispatcher;
-		this.hasher = hasher;
-	}
+  @Inject
+  public MockedStateComputer(EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher, Hasher hasher) {
+    this.ledgerUpdateDispatcher = ledgerUpdateDispatcher;
+    this.hasher = hasher;
+  }
 
-	@Override
-	public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
-	}
+  @Override
+  public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
 
-	@Override
-	public List<Txn> getNextTxnsFromMempool(List<StateComputerLedger.PreparedTxn> prepared) {
-		return List.of();
-	}
+  @Override
+  public List<Txn> getNextTxnsFromMempool(List<StateComputerLedger.PreparedTxn> prepared) {
+    return List.of();
+  }
 
-	@Override
-	public StateComputerLedger.StateComputerResult prepare(
-		List<StateComputerLedger.PreparedTxn> previous,
-		VerifiedVertex vertex,
-		long timestamp
-	) {
-		return new StateComputerLedger.StateComputerResult(
-			vertex.getTxns().stream().map(MockPrepared::new).collect(Collectors.toList()),
-			Map.of()
-		);
-	}
+  @Override
+  public StateComputerLedger.StateComputerResult prepare(
+      List<StateComputerLedger.PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
+    return new StateComputerLedger.StateComputerResult(
+        vertex.getTxns().stream().map(MockPrepared::new).collect(Collectors.toList()), Map.of());
+  }
 
-	@Override
-	public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-		var output = txnsAndProof.getProof().getNextValidatorSet().map(validatorSet -> {
-			LedgerProof header = txnsAndProof.getProof();
-			UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(header.getRaw());
-			VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
-			LedgerHeader nextLedgerHeader = LedgerHeader.create(
-				header.getEpoch() + 1,
-				View.genesis(),
-				header.getAccumulatorState(),
-				header.timestamp()
-			);
-			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-			final var initialState =
-				VerifiedVertexStoreState.create(
-					HighQC.from(genesisQC),
-					verifiedGenesisVertex,
-					Optional.empty(),
-					hasher
-				);
-			var proposerElection = new WeightedRotatingLeaders(validatorSet);
-			var bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, initialState);
-			return new EpochChange(header, bftConfiguration);
-		}).map(e -> ImmutableClassToInstanceMap.<Object, EpochChange>of(EpochChange.class, e)).orElse(ImmutableClassToInstanceMap.of());
+  @Override
+  public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+    var output =
+        txnsAndProof
+            .getProof()
+            .getNextValidatorSet()
+            .map(
+                validatorSet -> {
+                  LedgerProof header = txnsAndProof.getProof();
+                  UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(header.getRaw());
+                  VerifiedVertex verifiedGenesisVertex =
+                      new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
+                  LedgerHeader nextLedgerHeader =
+                      LedgerHeader.create(
+                          header.getEpoch() + 1,
+                          View.genesis(),
+                          header.getAccumulatorState(),
+                          header.timestamp());
+                  QuorumCertificate genesisQC =
+                      QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
+                  final var initialState =
+                      VerifiedVertexStoreState.create(
+                          HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty(), hasher);
+                  var proposerElection = new WeightedRotatingLeaders(validatorSet);
+                  var bftConfiguration =
+                      new BFTConfiguration(proposerElection, validatorSet, initialState);
+                  return new EpochChange(header, bftConfiguration);
+                })
+            .map(e -> ImmutableClassToInstanceMap.<Object, EpochChange>of(EpochChange.class, e))
+            .orElse(ImmutableClassToInstanceMap.of());
 
-		var ledgerUpdate = new LedgerUpdate(txnsAndProof, output);
-		ledgerUpdateDispatcher.dispatch(ledgerUpdate);
-	}
+    var ledgerUpdate = new LedgerUpdate(txnsAndProof, output);
+    ledgerUpdateDispatcher.dispatch(ledgerUpdate);
+  }
 }

@@ -78,59 +78,45 @@ import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
 
-/**
- * Module which manages node testing events for simulation
- */
+/** Module which manages node testing events for simulation */
 public final class SimulationNodeEventsModule extends AbstractModule {
-	@ProvidesIntoSet
-	private EventProcessorOnDispatch<?> epochTimeoutProcessor(
-		@Self BFTNode node,
-		NodeEvents nodeEvents
-	) {
-		return nodeEvents.processorOnDispatch(node, EpochLocalTimeoutOccurrence.class);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnDispatch<?> epochTimeoutProcessor(
+      @Self BFTNode node, NodeEvents nodeEvents) {
+    return nodeEvents.processorOnDispatch(node, EpochLocalTimeoutOccurrence.class);
+  }
 
-	@ProcessOnDispatch
-	@ProvidesIntoSet
-	private EventProcessor<LocalTimeoutOccurrence> timeoutEventProcessor(
-		@Self BFTNode node,
-		NodeEvents nodeEvents
-	) {
-		return nodeEvents.processor(node, LocalTimeoutOccurrence.class);
-	}
+  @ProcessOnDispatch
+  @ProvidesIntoSet
+  private EventProcessor<LocalTimeoutOccurrence> timeoutEventProcessor(
+      @Self BFTNode node, NodeEvents nodeEvents) {
+    return nodeEvents.processor(node, LocalTimeoutOccurrence.class);
+  }
 
-	@ProvidesIntoSet
-	@ProcessOnDispatch
-	private EventProcessor<GetVerticesRequest> requestProcessor(
-		@Self BFTNode node,
-		NodeEvents nodeEvents
-	) {
-		return nodeEvents.processor(node, GetVerticesRequest.class);
-	}
+  @ProvidesIntoSet
+  @ProcessOnDispatch
+  private EventProcessor<GetVerticesRequest> requestProcessor(
+      @Self BFTNode node, NodeEvents nodeEvents) {
+    return nodeEvents.processor(node, GetVerticesRequest.class);
+  }
 
-	@ProvidesIntoSet
-	@ProcessOnDispatch
-	private EventProcessor<BFTCommittedUpdate> committedProcessor(
-		@Self BFTNode node,
-		NodeEvents nodeEvents
-	) {
-		return nodeEvents.processor(node, BFTCommittedUpdate.class);
-	}
+  @ProvidesIntoSet
+  @ProcessOnDispatch
+  private EventProcessor<BFTCommittedUpdate> committedProcessor(
+      @Self BFTNode node, NodeEvents nodeEvents) {
+    return nodeEvents.processor(node, BFTCommittedUpdate.class);
+  }
 
-	@ProvidesIntoSet
-	@ProcessOnDispatch
-	private EventProcessor<BFTHighQCUpdate> highQCProcessor(
-		@Self BFTNode node,
-		NodeEvents nodeEvents
-	) {
-		return nodeEvents.processor(node, BFTHighQCUpdate.class);
-	}
+  @ProvidesIntoSet
+  @ProcessOnDispatch
+  private EventProcessor<BFTHighQCUpdate> highQCProcessor(
+      @Self BFTNode node, NodeEvents nodeEvents) {
+    return nodeEvents.processor(node, BFTHighQCUpdate.class);
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnDispatch<?> invalidCommandsProcessor(
-		@Self BFTNode node,
-		NodeEvents nodeEvents
-	) {
-		return nodeEvents.processorOnDispatch(node, InvalidProposedTxn.class);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnDispatch<?> invalidCommandsProcessor(
+      @Self BFTNode node, NodeEvents nodeEvents) {
+    return nodeEvents.processorOnDispatch(node, InvalidProposedTxn.class);
+  }
 }

@@ -66,55 +66,53 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class ConsensusDataSync {
-	private final long requestTimeouts;
-	private final long requestsSent;
+  private final long requestTimeouts;
+  private final long requestsSent;
 
-	private ConsensusDataSync(long requestTimeouts, long requestsSent) {
-		this.requestTimeouts = requestTimeouts;
-		this.requestsSent = requestsSent;
-	}
+  private ConsensusDataSync(long requestTimeouts, long requestsSent) {
+    this.requestTimeouts = requestTimeouts;
+    this.requestsSent = requestsSent;
+  }
 
-	@JsonCreator
-	public static ConsensusDataSync create(
-		@JsonProperty("request_timeouts") long requestTimeouts,
-		@JsonProperty("requests_sent") long requestsSent
-	) {
-		return new ConsensusDataSync(requestTimeouts, requestsSent);
-	}
+  @JsonCreator
+  public static ConsensusDataSync create(
+      @JsonProperty("request_timeouts") long requestTimeouts,
+      @JsonProperty("requests_sent") long requestsSent) {
+    return new ConsensusDataSync(requestTimeouts, requestsSent);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof ConsensusDataSync)) {
-			return false;
-		}
+    if (!(o instanceof ConsensusDataSync)) {
+      return false;
+    }
 
-		var that = (ConsensusDataSync) o;
-		return requestTimeouts == that.requestTimeouts && requestsSent == that.requestsSent;
-	}
+    var that = (ConsensusDataSync) o;
+    return requestTimeouts == that.requestTimeouts && requestsSent == that.requestsSent;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(requestTimeouts, requestsSent);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(requestTimeouts, requestsSent);
+  }
 
-	@Override
-	public String toString() {
-		return "{requestTimeouts:" + requestTimeouts + ", requestsSent:" + requestsSent + '}';
-	}
+  @Override
+  public String toString() {
+    return "{requestTimeouts:" + requestTimeouts + ", requestsSent:" + requestsSent + '}';
+  }
 
-	public long getRequestTimeouts() {
-		return requestTimeouts;
-	}
+  public long getRequestTimeouts() {
+    return requestTimeouts;
+  }
 
-	public long getRequestsSent() {
-		return requestsSent;
-	}
+  public long getRequestsSent() {
+    return requestsSent;
+  }
 }

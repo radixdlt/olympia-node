@@ -66,49 +66,48 @@ package com.radixdlt.client.lib.api;
 
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.networks.Addressing;
-
 import java.util.Objects;
 
 public class NodeAddress {
-	private final ECPublicKey address;
+  private final ECPublicKey address;
 
-	private NodeAddress(ECPublicKey address) {
-		this.address = address;
-	}
+  private NodeAddress(ECPublicKey address) {
+    this.address = address;
+  }
 
-	public static NodeAddress of(ECPublicKey publicKey) {
-		return new NodeAddress(publicKey);
-	}
+  public static NodeAddress of(ECPublicKey publicKey) {
+    return new NodeAddress(publicKey);
+  }
 
-	public ECPublicKey getAddress() {
-		return address;
-	}
+  public ECPublicKey getAddress() {
+    return address;
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof NodeAddress)) {
-			return false;
-		}
+    if (!(o instanceof NodeAddress)) {
+      return false;
+    }
 
-		var that = (NodeAddress) o;
-		return address.equals(that.address);
-	}
+    var that = (NodeAddress) o;
+    return address.equals(that.address);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(address);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(address);
+  }
 
-	@Override
-	public String toString() {
-		return "{" + address.toHex() + '}';
-	}
+  @Override
+  public String toString() {
+    return "{" + address.toHex() + '}';
+  }
 
-	public String toString(int networkId) {
-		return Addressing.ofNetworkId(networkId).forNodes().of(address);
-	}
+  public String toString(int networkId) {
+    return Addressing.ofNetworkId(networkId).forNodes().of(address);
+  }
 }

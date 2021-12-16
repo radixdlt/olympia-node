@@ -69,10 +69,8 @@ import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
 public class OpSignatureTest {
-	@Test
-	public void equalsVerifier() {
-		EqualsVerifier.forClass(OpSignature.class)
-			.suppress(Warning.NONFINAL_FIELDS)
-			.verify();
-	}
+  @Test
+  public void equalsVerifier() {
+    EqualsVerifier.forClass(OpSignature.class).suppress(Warning.NONFINAL_FIELDS).verify();
+  }
 }

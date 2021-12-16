@@ -61,15 +61,8 @@
  * Work. You assume all risks associated with Your use of the Work and the exercise of
  * permissions under this License.
  */
+
 package com.radixdlt.client.lib.api.sync;
-
-import org.junit.Test;
-
-import com.radixdlt.utils.functional.Result;
-
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
-import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -78,54 +71,75 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.utils.functional.Result;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
+import java.util.Optional;
+import org.junit.Test;
+
 public class SyncRadixApiApiTest {
-	private static final String BASE_URL = "http://localhost/";
+  private static final String BASE_URL = "http://localhost/";
 
-	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
-	private static final String CONFIGURATION = "{\"result\":{\"endpoints\":[\"/metrics\",\"/system\","
-		+ "\"/account\",\"/validation\",\"/universe\",\"/faucet\",\"/chaos\",\"/health\",\"/version\","
-		+ "\"/developer\",\"/archive\",\"/construction\"]},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
-	private static final String DATA = "{\"result\":{\"elapsed\":{\"apidb\":{\"balance\":{\"read\":1672,\""
-		+ "write\":4790},\"flush\":{\"time\":630722},\"transaction\":{\"read\":0,\"write\":1453},\"token\":"
-		+ "{\"read\":134,\"write\":842}}},\"count\":{\"apidb\":{\"flush\":{\"count\":1627},\"balance\":{\"t"
-		+ "otal\":50,\"read\":26,\"bytes\":{\"read\":1532,\"write\":4263},\"write\":24},\"queue\":{\"size\""
-		+ ":6},\"transaction\":{\"total\":7,\"read\":0,\"bytes\":{\"read\":0,\"write\":13923},\"write\":7},"
-		+ "\"token\":{\"total\":2,\"read\":1,\"bytes\":{\"read\":245,\"write\":245},\"write\":1}}}},\"id\":"
-		+ "\"2\",\"jsonrpc\":\"2.0\"}\n";
+  private static final String NETWORK_ID =
+      "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
+  private static final String CONFIGURATION =
+      "{\"result\":{\"endpoints\":[\"/metrics\",\"/system\",\"/account\",\"/validation\",\"/universe\",\"/faucet\",\"/chaos\",\"/health\",\"/version\",\"/developer\",\"/archive\",\"/construction\"]},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+  private static final String DATA =
+      "{\"result\":{\"elapsed\":{\"apidb\":{\"balance\":{\"read\":1672,\"write\":4790},\"flush\":{\"time\":630722},\"transaction\":{\"read\":0,\"write\":1453},\"token\":{\"read\":134,\"write\":842}}},\"count\":{\"apidb\":{\"flush\":{\"count\":1627},\"balance\":{\"total\":50,\"read\":26,\"bytes\":{\"read\":1532,\"write\":4263},\"write\":24},\"queue\":{\"size\":6},\"transaction\":{\"total\":7,\"read\":0,\"bytes\":{\"read\":0,\"write\":13923},\"write\":7},\"token\":{\"total\":2,\"read\":1,\"bytes\":{\"read\":245,\"write\":245},\"write\":1}}}},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
-	private final HttpClient client = mock(HttpClient.class);
+  private final HttpClient client = mock(HttpClient.class);
 
-	@Test
-	public void testConfiguration() throws Exception {
-		prepareClient(CONFIGURATION)
-			.map(RadixApi::withTrace)
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.api().configuration()
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(configurationDTO -> assertEquals(12, configurationDTO.getEndpoints().size())));
-	}
+  @Test
+  public void testConfiguration() throws Exception {
+    prepareClient(CONFIGURATION)
+        .map(RadixApi::withTrace)
+        .onFailure(failure -> fail(failure.toString()))
+        .onSuccess(
+            client ->
+                client
+                    .api()
+                    .configuration()
+                    .onFailure(failure -> fail(failure.toString()))
+                    .onSuccess(
+                        configurationDTO ->
+                            assertEquals(12, configurationDTO.getEndpoints().size())));
+  }
 
-	@Test
-	public void testData() throws Exception {
-		prepareClient(DATA)
-			.map(RadixApi::withTrace)
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.api().data()
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(data -> assertNotNull(data.getCount()))
-				.onSuccess(data -> assertNotNull(data.getElapsed()))
-				.onSuccess(data -> assertEquals(630722, data.getElapsed().getApiDb().getFlush().getTime()))
-				.onSuccess(data -> assertEquals(1672, data.getElapsed().getApiDb().getBalance().getRead()))
-				.onSuccess(data -> assertEquals(6, data.getCount().getApiDb().getQueue().getSize())));
-	}
+  @Test
+  public void testData() throws Exception {
+    prepareClient(DATA)
+        .map(RadixApi::withTrace)
+        .onFailure(failure -> fail(failure.toString()))
+        .onSuccess(
+            client ->
+                client
+                    .api()
+                    .data()
+                    .onFailure(failure -> fail(failure.toString()))
+                    .onSuccess(data -> assertNotNull(data.getCount()))
+                    .onSuccess(data -> assertNotNull(data.getElapsed()))
+                    .onSuccess(
+                        data ->
+                            assertEquals(630722, data.getElapsed().getApiDb().getFlush().getTime()))
+                    .onSuccess(
+                        data ->
+                            assertEquals(1672, data.getElapsed().getApiDb().getBalance().getRead()))
+                    .onSuccess(
+                        data -> assertEquals(6, data.getCount().getApiDb().getQueue().getSize())));
+  }
 
-	private Result<RadixApi> prepareClient(String responseBody) throws Exception {
-		@SuppressWarnings("unchecked")
-		var response = (HttpResponse<String>) mock(HttpResponse.class);
+  private Result<RadixApi> prepareClient(String responseBody) throws Exception {
+    @SuppressWarnings("unchecked")
+    var response = (HttpResponse<String>) mock(HttpResponse.class);
 
-		when(response.body()).thenReturn(NETWORK_ID, responseBody);
-		when(client.<String>send(any(), any())).thenReturn(response);
+    when(response.body()).thenReturn(NETWORK_ID, responseBody);
+    when(client.<String>send(any(), any())).thenReturn(response);
 
-		return SyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client, Optional.empty());
-	}
+    return SyncRadixApi.connect(
+        BASE_URL,
+        RadixApi.DEFAULT_PRIMARY_PORT,
+        RadixApi.DEFAULT_SECONDARY_PORT,
+        client,
+        Optional.empty());
+  }
 }

@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -69,40 +70,37 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.api.HandlerRoute;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.api.system.health.ScheduledStatsCollecting;
 import com.radixdlt.api.system.prometheus.PrometheusApiModule;
-import com.radixdlt.api.HandlerRoute;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
 import io.undertow.server.HttpHandler;
 
 public class SystemApiModule extends AbstractModule {
-	@Override
-	protected void configure() {
-		var eventBinder = Multibinder
-			.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
-			.permitDuplicates();
-		eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
-		bind(HealthInfoService.class).in(Scopes.SINGLETON);
+  @Override
+  protected void configure() {
+    var eventBinder =
+        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
+            .permitDuplicates();
+    eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
+    bind(HealthInfoService.class).in(Scopes.SINGLETON);
 
-		var binder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class);
-		binder.addBinding(HandlerRoute.get("/system/configuration")).to(ConfigurationHandler.class);
-		binder.addBinding(HandlerRoute.get("/system/metrics")).to(MetricsHandler.class);
-		binder.addBinding(HandlerRoute.get("/system/health")).to(HealthHandler.class);
-		binder.addBinding(HandlerRoute.get("/system/version")).to(VersionHandler.class);
-		binder.addBinding(HandlerRoute.get("/system/peers")).to(PeersHandler.class);
-		binder.addBinding(HandlerRoute.get("/system/addressbook")).to(AddressBookHandler.class);
-		install(new PrometheusApiModule("/prometheus/metrics"));
-	}
+    var binder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class);
+    binder.addBinding(HandlerRoute.get("/system/configuration")).to(ConfigurationHandler.class);
+    binder.addBinding(HandlerRoute.get("/system/metrics")).to(MetricsHandler.class);
+    binder.addBinding(HandlerRoute.get("/system/health")).to(HealthHandler.class);
+    binder.addBinding(HandlerRoute.get("/system/version")).to(VersionHandler.class);
+    binder.addBinding(HandlerRoute.get("/system/peers")).to(PeersHandler.class);
+    binder.addBinding(HandlerRoute.get("/system/addressbook")).to(AddressBookHandler.class);
+    install(new PrometheusApiModule("/prometheus/metrics"));
+  }
 
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> healthInfoService(HealthInfoService healthInfoService) {
-		return new EventProcessorOnRunner<>(
-			Runners.SYSTEM_INFO,
-			ScheduledStatsCollecting.class,
-			healthInfoService.updateStats()
-		);
-	}
+  @ProvidesIntoSet
+  public EventProcessorOnRunner<?> healthInfoService(HealthInfoService healthInfoService) {
+    return new EventProcessorOnRunner<>(
+        Runners.SYSTEM_INFO, ScheduledStatsCollecting.class, healthInfoService.updateStats());
+  }
 }

@@ -74,34 +74,39 @@ import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-/**
- * Checks that vertex request explosions don't occur
- */
+/** Checks that vertex request explosions don't occur */
 public final class VertexRequestRateInvariant implements TestInvariant {
-	private final NodeEvents nodeEvents;
-	private final int permitsPerSecond;
+  private final NodeEvents nodeEvents;
+  private final int permitsPerSecond;
 
-	public VertexRequestRateInvariant(NodeEvents nodeEvents, int permitsPerSecond) {
-		this.nodeEvents = nodeEvents;
-		this.permitsPerSecond = permitsPerSecond;
-	}
+  public VertexRequestRateInvariant(NodeEvents nodeEvents, int permitsPerSecond) {
+    this.nodeEvents = nodeEvents;
+    this.permitsPerSecond = permitsPerSecond;
+  }
 
-	@Override
-	public Observable<TestInvariantError> check(RunningNetwork network) {
-		return Observable.<Pair<BFTNode, GetVerticesRequest>>create(emitter ->
-			nodeEvents.addListener((node, req) -> emitter.onNext(Pair.of(node, req)), GetVerticesRequest.class))
-			.serialize()
-			.groupBy(Pair::getFirst)
-			.flatMap(o -> o.buffer(1, TimeUnit.SECONDS)
-				.filter(l -> l.size() > permitsPerSecond)
-				.map(l -> new TestInvariantError(
-					String.format("Get Vertices over the rate limit (%s/sec) for node: %s buffer: %s",
-						permitsPerSecond,
-						o.getKey(),
-						l.stream().collect(Collectors.groupingBy(Pair::getSecond, Collectors.counting())
-					))
-				))
-			);
-	}
-
+  @Override
+  public Observable<TestInvariantError> check(RunningNetwork network) {
+    return Observable.<Pair<BFTNode, GetVerticesRequest>>create(
+            emitter ->
+                nodeEvents.addListener(
+                    (node, req) -> emitter.onNext(Pair.of(node, req)), GetVerticesRequest.class))
+        .serialize()
+        .groupBy(Pair::getFirst)
+        .flatMap(
+            o ->
+                o.buffer(1, TimeUnit.SECONDS)
+                    .filter(l -> l.size() > permitsPerSecond)
+                    .map(
+                        l ->
+                            new TestInvariantError(
+                                String.format(
+                                    "Get Vertices over the rate limit (%s/sec) for node: %s buffer:"
+                                        + " %s",
+                                    permitsPerSecond,
+                                    o.getKey(),
+                                    l.stream()
+                                        .collect(
+                                            Collectors.groupingBy(
+                                                Pair::getSecond, Collectors.counting()))))));
+  }
 }

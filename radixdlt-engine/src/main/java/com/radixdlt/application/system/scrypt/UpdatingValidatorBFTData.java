@@ -67,64 +67,70 @@ package com.radixdlt.application.system.scrypt;
 import com.radixdlt.application.system.ValidatorMissedProposalsEvent;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.constraintmachine.ExecutionContext;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
-
 import java.util.TreeMap;
 
 public class UpdatingValidatorBFTData implements ReducerState {
-	private final long maxRounds;
-	private final TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate;
-	private long expectedNextView;
+  private final long maxRounds;
+  private final TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate;
+  private long expectedNextView;
 
-	UpdatingValidatorBFTData(long maxRounds, long view, TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate) {
-		this.maxRounds = maxRounds;
-		this.expectedNextView = view;
-		this.validatorsToUpdate = validatorsToUpdate;
-	}
+  UpdatingValidatorBFTData(
+      long maxRounds, long view, TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate) {
+    this.maxRounds = maxRounds;
+    this.expectedNextView = view;
+    this.validatorsToUpdate = validatorsToUpdate;
+  }
 
-	private void incrementViews(long count) throws ProcedureException {
-		if (this.expectedNextView + count < this.expectedNextView) {
-			throw new ProcedureException("View overflow");
-		}
+  private void incrementViews(long count) throws ProcedureException {
+    if (this.expectedNextView + count < this.expectedNextView) {
+      throw new ProcedureException("View overflow");
+    }
 
-		if (this.expectedNextView + count > maxRounds) {
-			throw new ProcedureException("Max rounds is " + maxRounds + " but attempting to execute "
-				+ (this.expectedNextView + count));
-		}
+    if (this.expectedNextView + count > maxRounds) {
+      throw new ProcedureException(
+          "Max rounds is "
+              + maxRounds
+              + " but attempting to execute "
+              + (this.expectedNextView + count));
+    }
 
-		this.expectedNextView += count;
-	}
+    this.expectedNextView += count;
+  }
 
-	public ReducerState update(ValidatorBFTData next, ExecutionContext context) throws ProcedureException {
-		var first = validatorsToUpdate.firstKey();
-		if (!next.getValidatorKey().equals(first)) {
-			throw new ProcedureException("Invalid key for validator bft data update");
-		}
-		var old = validatorsToUpdate.remove(first);
-		if (old.proposalsCompleted() > next.proposalsCompleted()
-			|| old.proposalsMissed() > next.proposalsMissed()) {
-			throw new ProcedureException("Invalid data for validator bft data update");
-		}
+  public ReducerState update(ValidatorBFTData next, ExecutionContext context)
+      throws ProcedureException {
+    var first = validatorsToUpdate.firstKey();
+    if (!next.getValidatorKey().equals(first)) {
+      throw new ProcedureException("Invalid key for validator bft data update");
+    }
+    var old = validatorsToUpdate.remove(first);
+    if (old.proposalsCompleted() > next.proposalsCompleted()
+        || old.proposalsMissed() > next.proposalsMissed()) {
+      throw new ProcedureException("Invalid data for validator bft data update");
+    }
 
-		if (old.proposalsCompleted() == next.proposalsCompleted() && old.proposalsMissed() == next.proposalsMissed()) {
-			throw new ProcedureException("No update to Validator BFT data");
-		}
+    if (old.proposalsCompleted() == next.proposalsCompleted()
+        && old.proposalsMissed() == next.proposalsMissed()) {
+      throw new ProcedureException("No update to Validator BFT data");
+    }
 
-		var additionalProposalsCompleted = next.proposalsCompleted() - old.proposalsCompleted();
-		var additionalProposalsMissed = next.proposalsMissed() - old.proposalsMissed();
-		if (additionalProposalsMissed > 0) {
-			context.emitEvent(ValidatorMissedProposalsEvent.create(next.getValidatorKey(), additionalProposalsMissed));
-		}
+    var additionalProposalsCompleted = next.proposalsCompleted() - old.proposalsCompleted();
+    var additionalProposalsMissed = next.proposalsMissed() - old.proposalsMissed();
+    if (additionalProposalsMissed > 0) {
+      context.emitEvent(
+          ValidatorMissedProposalsEvent.create(next.getValidatorKey(), additionalProposalsMissed));
+    }
 
-		incrementViews(additionalProposalsCompleted);
-		incrementViews(additionalProposalsMissed);
+    incrementViews(additionalProposalsCompleted);
+    incrementViews(additionalProposalsMissed);
 
-		if (!validatorsToUpdate.isEmpty()) {
-			return this;
-		}
+    if (!validatorsToUpdate.isEmpty()) {
+      return this;
+    }
 
-		return new StartNextRound(this.expectedNextView);
-	}
+    return new StartNextRound(this.expectedNextView);
+  }
 }

@@ -67,36 +67,35 @@ package com.radixdlt.consensus.liveness;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochView;
 
-/**
- * A timeout which has occurred in the bft node
- */
+/** A timeout which has occurred in the bft node */
 public final class EpochLocalTimeoutOccurrence {
-	private final long epoch;
-	private final LocalTimeoutOccurrence localTimeoutOccurrence;
+  private final long epoch;
+  private final LocalTimeoutOccurrence localTimeoutOccurrence;
 
-	public EpochLocalTimeoutOccurrence(long epoch, LocalTimeoutOccurrence localTimeoutOccurrence) {
-		this.epoch = epoch;
-		this.localTimeoutOccurrence = localTimeoutOccurrence;
-	}
+  public EpochLocalTimeoutOccurrence(long epoch, LocalTimeoutOccurrence localTimeoutOccurrence) {
+    this.epoch = epoch;
+    this.localTimeoutOccurrence = localTimeoutOccurrence;
+  }
 
-	public EpochView getEpochView() {
-		return new EpochView(epoch, localTimeoutOccurrence.getView());
-	}
+  public EpochView getEpochView() {
+    return new EpochView(epoch, localTimeoutOccurrence.getView());
+  }
 
-	public LocalTimeoutOccurrence getBase() {
-		return localTimeoutOccurrence;
-	}
+  public LocalTimeoutOccurrence getBase() {
+    return localTimeoutOccurrence;
+  }
 
-	public BFTNode getLeader() {
-		return localTimeoutOccurrence.getLeader();
-	}
+  public BFTNode getLeader() {
+    return localTimeoutOccurrence.getLeader();
+  }
 
-	public BFTNode getNextLeader() {
-		return localTimeoutOccurrence.getNextLeader();
-	}
+  public BFTNode getNextLeader() {
+    return localTimeoutOccurrence.getNextLeader();
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{epoch=%s event=%s}", this.getClass().getSimpleName(), epoch, localTimeoutOccurrence);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{epoch=%s event=%s}", this.getClass().getSimpleName(), epoch, localTimeoutOccurrence);
+  }
 }

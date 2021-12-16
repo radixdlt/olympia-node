@@ -70,34 +70,34 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 public class UnstakeOwnership implements TxAction {
-	private final REAddr accountAddr;
-	private final ECPublicKey delegateAddress;
-	private final UInt256 amount;
+  private final REAddr accountAddr;
+  private final ECPublicKey delegateAddress;
+  private final UInt256 amount;
 
-	public UnstakeOwnership(REAddr accountAddr, ECPublicKey delegateAddress, UInt256 amount) {
-		if (amount.isZero()) {
-			throw new IllegalArgumentException("Amount must be > 0.");
-		}
+  public UnstakeOwnership(REAddr accountAddr, ECPublicKey delegateAddress, UInt256 amount) {
+    if (amount.isZero()) {
+      throw new IllegalArgumentException("Amount must be > 0.");
+    }
 
-		this.accountAddr = accountAddr;
-		this.delegateAddress = delegateAddress;
-		this.amount = amount;
-	}
+    this.accountAddr = accountAddr;
+    this.delegateAddress = delegateAddress;
+    this.amount = amount;
+  }
 
-	public REAddr accountAddr() {
-		return accountAddr;
-	}
+  public REAddr accountAddr() {
+    return accountAddr;
+  }
 
-	public ECPublicKey from() {
-		return delegateAddress;
-	}
+  public ECPublicKey from() {
+    return delegateAddress;
+  }
 
-	public UInt256 amount() {
-		return amount;
-	}
+  public UInt256 amount() {
+    return amount;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{amt=%s}", this.getClass().getSimpleName(), amount);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{amt=%s}", this.getClass().getSimpleName(), amount);
+  }
 }

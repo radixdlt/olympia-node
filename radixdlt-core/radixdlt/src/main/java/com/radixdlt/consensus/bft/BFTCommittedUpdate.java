@@ -69,41 +69,38 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import java.util.Objects;
 
-/**
- * Vertex Store update of committed vertices
- */
+/** Vertex Store update of committed vertices */
 public final class BFTCommittedUpdate {
-	private final ImmutableSet<HashCode> pruned;	//TODO: remove unused https://radixdlt.atlassian.net/browse/NT-5
-	private final ImmutableList<PreparedVertex> committed;
-	private final VerifiedVertexStoreState vertexStoreState;
+  private final ImmutableSet<HashCode>
+      pruned; // TODO: remove unused https://radixdlt.atlassian.net/browse/NT-5
+  private final ImmutableList<PreparedVertex> committed;
+  private final VerifiedVertexStoreState vertexStoreState;
 
-	private BFTCommittedUpdate(
-		ImmutableSet<HashCode> pruned,
-		ImmutableList<PreparedVertex> committed,
-		VerifiedVertexStoreState vertexStoreState
-	) {
-		this.pruned = Objects.requireNonNull(pruned);
-		this.committed = Objects.requireNonNull(committed);
-		this.vertexStoreState = Objects.requireNonNull(vertexStoreState);
-	}
+  private BFTCommittedUpdate(
+      ImmutableSet<HashCode> pruned,
+      ImmutableList<PreparedVertex> committed,
+      VerifiedVertexStoreState vertexStoreState) {
+    this.pruned = Objects.requireNonNull(pruned);
+    this.committed = Objects.requireNonNull(committed);
+    this.vertexStoreState = Objects.requireNonNull(vertexStoreState);
+  }
 
-	public static BFTCommittedUpdate create(
-		ImmutableSet<HashCode> pruned,
-		ImmutableList<PreparedVertex> committed,
-		VerifiedVertexStoreState vertexStoreState
-	) {
-		return new BFTCommittedUpdate(pruned, committed, vertexStoreState);
-	}
+  public static BFTCommittedUpdate create(
+      ImmutableSet<HashCode> pruned,
+      ImmutableList<PreparedVertex> committed,
+      VerifiedVertexStoreState vertexStoreState) {
+    return new BFTCommittedUpdate(pruned, committed, vertexStoreState);
+  }
 
-	public int getVertexStoreSize() {
-		return vertexStoreState.getVertices().size();
-	}
+  public int getVertexStoreSize() {
+    return vertexStoreState.getVertices().size();
+  }
 
-	public ImmutableList<PreparedVertex> getCommitted() {
-		return committed;
-	}
+  public ImmutableList<PreparedVertex> getCommitted() {
+    return committed;
+  }
 
-	public VerifiedVertexStoreState getVertexStoreState() {
-		return vertexStoreState;
-	}
+  public VerifiedVertexStoreState getVertexStoreState() {
+    return vertexStoreState;
+  }
 }

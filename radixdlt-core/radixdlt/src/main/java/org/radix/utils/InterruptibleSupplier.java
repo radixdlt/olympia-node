@@ -66,5 +66,5 @@ package org.radix.utils;
 
 @FunctionalInterface
 public interface InterruptibleSupplier<T> {
-	T get() throws InterruptedException;
+  T get() throws InterruptedException;
 }

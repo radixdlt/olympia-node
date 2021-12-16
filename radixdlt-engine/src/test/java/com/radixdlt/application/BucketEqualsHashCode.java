@@ -64,32 +64,27 @@
 
 package com.radixdlt.application;
 
+import com.radixdlt.application.tokens.Bucket;
+import java.lang.reflect.Modifier;
+import java.util.Set;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 import org.reflections.Reflections;
 
-import com.radixdlt.application.tokens.Bucket;
-
-import java.lang.reflect.Modifier;
-import java.util.Set;
-
-import nl.jqno.equalsverifier.EqualsVerifier;
-import nl.jqno.equalsverifier.Warning;
-
 public class BucketEqualsHashCode {
-	@Test
-	public void verify_all_buckets_correctly_override_equals_and_hash_code() {
-		findSubTypesInPkg("com.radixdlt").stream()
-			.filter(cls -> !Modifier.isAbstract(cls.getModifiers()))
-			.forEachOrdered(this::testEquals);
-	}
+  @Test
+  public void verify_all_buckets_correctly_override_equals_and_hash_code() {
+    findSubTypesInPkg("com.radixdlt").stream()
+        .filter(cls -> !Modifier.isAbstract(cls.getModifiers()))
+        .forEachOrdered(this::testEquals);
+  }
 
-	private void testEquals(Class<? extends Bucket> cls) {
-		EqualsVerifier.forClass(cls)
-			.suppress(Warning.NONFINAL_FIELDS)
-			.verify();
-	}
+  private void testEquals(Class<? extends Bucket> cls) {
+    EqualsVerifier.forClass(cls).suppress(Warning.NONFINAL_FIELDS).verify();
+  }
 
-	private Set<Class<? extends Bucket>> findSubTypesInPkg(String packagePrefix) {
-		return new Reflections(packagePrefix).getSubTypesOf(Bucket.class);
-	}
+  private Set<Class<? extends Bucket>> findSubTypesInPkg(String packagePrefix) {
+    return new Reflections(packagePrefix).getSubTypesOf(Bucket.class);
+  }
 }

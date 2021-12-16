@@ -69,55 +69,53 @@ import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-
 import java.util.Objects;
 
 public final class ExittingOwnershipBucket implements Bucket {
-	private final REAddr owner;
-	private final ECPublicKey delegate;
+  private final REAddr owner;
+  private final ECPublicKey delegate;
 
-	public ExittingOwnershipBucket(REAddr owner, ECPublicKey delegate) {
-		this.owner = owner;
-		this.delegate = delegate;
-	}
+  public ExittingOwnershipBucket(REAddr owner, ECPublicKey delegate) {
+    this.owner = owner;
+    this.delegate = delegate;
+  }
 
-	@Override
-	public Authorization withdrawAuthorization() {
-		return new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { });
-	}
+  @Override
+  public Authorization withdrawAuthorization() {
+    return new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {});
+  }
 
-	@Override
-	public REAddr resourceAddr() {
-		return null;
-	}
+  @Override
+  public REAddr resourceAddr() {
+    return null;
+  }
 
-	@Override
-	public REAddr getOwner() {
-		return owner;
-	}
+  @Override
+  public REAddr getOwner() {
+    return owner;
+  }
 
-	@Override
-	public ECPublicKey getValidatorKey() {
-		return delegate;
-	}
+  @Override
+  public ECPublicKey getValidatorKey() {
+    return delegate;
+  }
 
-	@Override
-	public Long getEpochUnlock() {
-		return 0L;
-	}
+  @Override
+  public Long getEpochUnlock() {
+    return 0L;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(owner, delegate);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(owner, delegate);
+  }
 
-	public boolean equals(Object o) {
-		if (!(o instanceof ExittingOwnershipBucket)) {
-			return false;
-		}
+  public boolean equals(Object o) {
+    if (!(o instanceof ExittingOwnershipBucket)) {
+      return false;
+    }
 
-		var other = (ExittingOwnershipBucket) o;
-		return Objects.equals(this.owner, other.owner)
-			&& Objects.equals(this.delegate, other.delegate);
-	}
+    var other = (ExittingOwnershipBucket) o;
+    return Objects.equals(this.owner, other.owner) && Objects.equals(this.delegate, other.delegate);
+  }
 }

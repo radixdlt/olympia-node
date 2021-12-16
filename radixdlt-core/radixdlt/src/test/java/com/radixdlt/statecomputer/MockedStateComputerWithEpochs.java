@@ -76,66 +76,60 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.MockPrepared;
-import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
-
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 public final class MockedStateComputerWithEpochs implements StateComputer {
-	private final Function<Long, BFTValidatorSet> validatorSetMapping;
-	private final View epochHighView;
-	private final MockedStateComputer stateComputer;
+  private final Function<Long, BFTValidatorSet> validatorSetMapping;
+  private final View epochHighView;
+  private final MockedStateComputer stateComputer;
 
-	@Inject
-	public MockedStateComputerWithEpochs(
-		@EpochCeilingView View epochHighView,
-		Function<Long, BFTValidatorSet> validatorSetMapping,
-		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
-		Hasher hasher
-	) {
-		this.validatorSetMapping = Objects.requireNonNull(validatorSetMapping);
-		this.epochHighView = Objects.requireNonNull(epochHighView);
-		this.stateComputer = new MockedStateComputer(ledgerUpdateDispatcher, hasher);
-	}
+  @Inject
+  public MockedStateComputerWithEpochs(
+      @EpochCeilingView View epochHighView,
+      Function<Long, BFTValidatorSet> validatorSetMapping,
+      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+      Hasher hasher) {
+    this.validatorSetMapping = Objects.requireNonNull(validatorSetMapping);
+    this.epochHighView = Objects.requireNonNull(epochHighView);
+    this.stateComputer = new MockedStateComputer(ledgerUpdateDispatcher, hasher);
+  }
 
-	@Override
-	public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
-	}
+  @Override
+  public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
 
-	@Override
-	public List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
-		return List.of();
-	}
+  @Override
+  public List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
+    return List.of();
+  }
 
-	@Override
-	public StateComputerResult prepare(
-		List<PreparedTxn> previous,
-		VerifiedVertex vertex,
-		long timestamp
-	) {
-		var view = vertex.getView();
-		var epoch = vertex.getParentHeader().getLedgerHeader().getEpoch();
-		var next = vertex.getTxns();
-		if (view.compareTo(epochHighView) >= 0) {
-			return new StateComputerResult(
-				next.stream().map(MockPrepared::new).collect(Collectors.toList()),
-				ImmutableMap.of(),
-				validatorSetMapping.apply(epoch + 1)
-			);
-		} else {
-			return stateComputer.prepare(previous, vertex, timestamp);
-		}
-	}
+  @Override
+  public StateComputerResult prepare(
+      List<PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
+    var view = vertex.getView();
+    var epoch = vertex.getParentHeader().getLedgerHeader().getEpoch();
+    var next = vertex.getTxns();
+    if (view.compareTo(epochHighView) >= 0) {
+      return new StateComputerResult(
+          next.stream().map(MockPrepared::new).collect(Collectors.toList()),
+          ImmutableMap.of(),
+          validatorSetMapping.apply(epoch + 1));
+    } else {
+      return stateComputer.prepare(previous, vertex, timestamp);
+    }
+  }
 
-	@Override
-	public void commit(VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-		this.stateComputer.commit(verifiedTxnsAndProof, vertexStoreState);
-	}
+  @Override
+  public void commit(
+      VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+    this.stateComputer.commit(verifiedTxnsAndProof, vertexStoreState);
+  }
 }

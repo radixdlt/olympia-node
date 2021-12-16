@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,25 +64,25 @@
 
 package com.radixdlt.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.core.openapitools.model.InternalServerError;
 import com.radixdlt.api.core.openapitools.model.UnexpectedError;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class UnhandledExceptionHandlerTest extends ApiTest {
-	@Inject
-	private UnhandledExceptionHandler sut;
+  @Inject private UnhandledExceptionHandler sut;
 
-	@Test
-	public void unhandled_exception_should_return_error() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void unhandled_exception_should_return_error() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var response = handleExceptionWithExpectedResponse(sut, new NullPointerException(), UnexpectedError.class);
+    // Act
+    var response =
+        handleExceptionWithExpectedResponse(sut, new NullPointerException(), UnexpectedError.class);
 
-		assertThat(response.getDetails()).isInstanceOf(InternalServerError.class);
-	}
+    assertThat(response.getDetails()).isInstanceOf(InternalServerError.class);
+  }
 }

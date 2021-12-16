@@ -67,33 +67,32 @@ package com.radixdlt.sync;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-
 import java.util.Optional;
 
-/**
- * Reader of committed commands
- */
+/** Reader of committed commands */
 public interface CommittedReader {
-	VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start);
-	Optional<LedgerProof> getEpochProof(long epoch);
-	Optional<LedgerProof> getLastProof();
+  VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start);
 
-	static CommittedReader mocked() {
-		return new CommittedReader() {
-			@Override
-			public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
-				return null;
-			}
+  Optional<LedgerProof> getEpochProof(long epoch);
 
-			@Override
-			public Optional<LedgerProof> getEpochProof(long epoch) {
-				return Optional.empty();
-			}
+  Optional<LedgerProof> getLastProof();
 
-			@Override
-			public Optional<LedgerProof> getLastProof() {
-				return Optional.empty();
-			}
-		};
-	}
+  static CommittedReader mocked() {
+    return new CommittedReader() {
+      @Override
+      public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
+        return null;
+      }
+
+      @Override
+      public Optional<LedgerProof> getEpochProof(long epoch) {
+        return Optional.empty();
+      }
+
+      @Override
+      public Optional<LedgerProof> getLastProof() {
+        return Optional.empty();
+      }
+    };
+  }
 }

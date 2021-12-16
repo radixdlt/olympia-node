@@ -70,37 +70,36 @@ import com.radixdlt.constraintmachine.Procedures;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.VirtualSubstateDeserialization;
-
 import java.util.HashMap;
 import java.util.Map;
 
 public final class CMAtomOS {
-	private final Map<Class<? extends Particle>, SubstateDefinition<? extends Particle>> substateDefinitions = new HashMap<>();
-	private Procedures procedures = Procedures.empty();
+  private final Map<Class<? extends Particle>, SubstateDefinition<? extends Particle>>
+      substateDefinitions = new HashMap<>();
+  private Procedures procedures = Procedures.empty();
 
-	public CMAtomOS() {
-	}
+  public CMAtomOS() {}
 
-	public void load(ConstraintScrypt constraintScrypt) {
-		var constraintScryptEnv = new ConstraintScryptEnv(ImmutableMap.copyOf(substateDefinitions));
-		constraintScrypt.main(constraintScryptEnv);
-		substateDefinitions.putAll(constraintScryptEnv.getScryptParticleDefinitions());
-		procedures = procedures.combine(constraintScryptEnv.getProcedures());
-	}
+  public void load(ConstraintScrypt constraintScrypt) {
+    var constraintScryptEnv = new ConstraintScryptEnv(ImmutableMap.copyOf(substateDefinitions));
+    constraintScrypt.main(constraintScryptEnv);
+    substateDefinitions.putAll(constraintScryptEnv.getScryptParticleDefinitions());
+    procedures = procedures.combine(constraintScryptEnv.getProcedures());
+  }
 
-	public Procedures getProcedures() {
-		return procedures;
-	}
+  public Procedures getProcedures() {
+    return procedures;
+  }
 
-	public SubstateDeserialization buildSubstateDeserialization() {
-		return new SubstateDeserialization(substateDefinitions.values());
-	}
+  public SubstateDeserialization buildSubstateDeserialization() {
+    return new SubstateDeserialization(substateDefinitions.values());
+  }
 
-	public SubstateSerialization buildSubstateSerialization() {
-		return new SubstateSerialization(substateDefinitions.values());
-	}
+  public SubstateSerialization buildSubstateSerialization() {
+    return new SubstateSerialization(substateDefinitions.values());
+  }
 
-	public VirtualSubstateDeserialization buildVirtualSubstateDeserialization() {
-		return new VirtualSubstateDeserialization(substateDefinitions.values());
-	}
+  public VirtualSubstateDeserialization buildVirtualSubstateDeserialization() {
+    return new VirtualSubstateDeserialization(substateDefinitions.values());
+  }
 }

@@ -66,27 +66,23 @@ package com.radixdlt.atom.actions;
 
 import com.radixdlt.atom.TxValidatorAction;
 import com.radixdlt.crypto.ECPublicKey;
-
 import java.util.Objects;
 
 public class UpdateValidatorSystemMetadata implements TxValidatorAction {
-	private final ECPublicKey validatorKey;
-	private final byte[] bytes;
+  private final ECPublicKey validatorKey;
+  private final byte[] bytes;
 
-	public UpdateValidatorSystemMetadata(
-		ECPublicKey validatorKey,
-		byte[] bytes
-	) {
-		this.validatorKey = Objects.requireNonNull(validatorKey);
-		this.bytes = bytes;
-	}
+  public UpdateValidatorSystemMetadata(ECPublicKey validatorKey, byte[] bytes) {
+    this.validatorKey = Objects.requireNonNull(validatorKey);
+    this.bytes = bytes;
+  }
 
-	@Override
-	public ECPublicKey validatorKey() {
-		return validatorKey;
-	}
+  @Override
+  public ECPublicKey validatorKey() {
+    return validatorKey;
+  }
 
-	public byte[] bytes() {
-		return bytes;
-	}
+  public byte[] bytes() {
+    return bytes;
+  }
 }

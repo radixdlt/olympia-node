@@ -65,64 +65,63 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.identifiers.REAddr;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public final class SystemMapKey {
-	private final byte[] key;
+  private final byte[] key;
 
-	private SystemMapKey(byte[] key) {
-		this.key = key;
-	}
+  private SystemMapKey(byte[] key) {
+    this.key = key;
+  }
 
-	private static SystemMapKey of(REAddr addr, byte key) {
-		var buf = ByteBuffer.allocate(addr.getBytes().length + 1);
-		buf.put(addr.getBytes());
-		buf.put(key);
-		return new SystemMapKey(buf.array());
-	}
+  private static SystemMapKey of(REAddr addr, byte key) {
+    var buf = ByteBuffer.allocate(addr.getBytes().length + 1);
+    buf.put(addr.getBytes());
+    buf.put(key);
+    return new SystemMapKey(buf.array());
+  }
 
-	private static SystemMapKey of(REAddr addr, byte key0, byte[] key1) {
-		var buf = ByteBuffer.allocate(addr.getBytes().length + 1 + key1.length);
-		buf.put(addr.getBytes());
-		buf.put(key0);
-		buf.put(key1);
-		return new SystemMapKey(buf.array());
-	}
+  private static SystemMapKey of(REAddr addr, byte key0, byte[] key1) {
+    var buf = ByteBuffer.allocate(addr.getBytes().length + 1 + key1.length);
+    buf.put(addr.getBytes());
+    buf.put(key0);
+    buf.put(key1);
+    return new SystemMapKey(buf.array());
+  }
 
-	public static SystemMapKey create(byte[] key) {
-		return new SystemMapKey(key);
-	}
+  public static SystemMapKey create(byte[] key) {
+    return new SystemMapKey(key);
+  }
 
-	public static SystemMapKey ofSystem(byte key) {
-		return of(REAddr.ofSystem(), key);
-	}
+  public static SystemMapKey ofSystem(byte key) {
+    return of(REAddr.ofSystem(), key);
+  }
 
-	public static SystemMapKey ofSystem(byte typeId, byte[] mapKey) {
-		return of(REAddr.ofSystem(), typeId, mapKey);
-	}
+  public static SystemMapKey ofSystem(byte typeId, byte[] mapKey) {
+    return of(REAddr.ofSystem(), typeId, mapKey);
+  }
 
-	public static SystemMapKey ofResourceData(REAddr addr, byte typeId) {
-		return of(addr, typeId);
-	}
+  public static SystemMapKey ofResourceData(REAddr addr, byte typeId) {
+    return of(addr, typeId);
+  }
 
-	public byte[] array() {
-		return key;
-	}
+  public byte[] array() {
+    return key;
+  }
 
-	@Override
-	public int hashCode() {
-		return Arrays.hashCode(key);
-	}
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(key);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof SystemMapKey)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof SystemMapKey)) {
+      return false;
+    }
 
-		var other = (SystemMapKey) o;
-		return Arrays.equals(this.key, other.key);
-	}
+    var other = (SystemMapKey) o;
+    return Arrays.equals(this.key, other.key);
+  }
 }

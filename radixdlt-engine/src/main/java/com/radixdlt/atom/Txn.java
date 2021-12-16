@@ -68,49 +68,48 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
-
 import java.util.Objects;
 
 public final class Txn {
-	private final byte[] payload;
-	private final AID id;
+  private final byte[] payload;
+  private final AID id;
 
-	private Txn(byte[] payload) {
-		this.payload = Objects.requireNonNull(payload);
-		this.id = AID.from(HashUtils.transactionIdHash(payload).asBytes());
-	}
+  private Txn(byte[] payload) {
+    this.payload = Objects.requireNonNull(payload);
+    this.id = AID.from(HashUtils.transactionIdHash(payload).asBytes());
+  }
 
-	@JsonCreator
-	public static Txn create(byte[] payload) {
-		return new Txn(payload);
-	}
+  @JsonCreator
+  public static Txn create(byte[] payload) {
+    return new Txn(payload);
+  }
 
-	public AID getId() {
-		return id;
-	}
+  public AID getId() {
+    return id;
+  }
 
-	@JsonValue
-	public byte[] getPayload() {
-		return payload;
-	}
+  @JsonValue
+  public byte[] getPayload() {
+    return payload;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(id);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(id);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof Txn)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof Txn)) {
+      return false;
+    }
 
-		Txn other = (Txn) o;
-		return Objects.equals(this.id, other.id);
-	}
+    Txn other = (Txn) o;
+    return Objects.equals(this.id, other.id);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{id=%s}", this.getClass().getSimpleName(), this.id);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{id=%s}", this.getClass().getSimpleName(), this.id);
+  }
 }

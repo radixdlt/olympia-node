@@ -69,13 +69,8 @@ import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.sync.BFTSync;
 
-/**
- * Creates a new bft sync given a vertex store and pacemaker
- */
+/** Creates a new bft sync given a vertex store and pacemaker */
 public interface BFTSyncFactory {
-	BFTSync create(
-		VertexStore vertexStore,
-		PacemakerState pacemakerState,
-		BFTConfiguration configuration
-	);
+  BFTSync create(
+      VertexStore vertexStore, PacemakerState pacemakerState, BFTConfiguration configuration);
 }

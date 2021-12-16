@@ -66,42 +66,40 @@ package com.radixdlt.consensus.bft;
 
 import java.util.Objects;
 
-/**
- * An update emitted when the BFT has been rebuilt
- */
+/** An update emitted when the BFT has been rebuilt */
 public final class BFTRebuildUpdate {
-	private final VerifiedVertexStoreState vertexStoreState;
+  private final VerifiedVertexStoreState vertexStoreState;
 
-	private BFTRebuildUpdate(VerifiedVertexStoreState vertexStoreState) {
-		this.vertexStoreState = vertexStoreState;
-	}
+  private BFTRebuildUpdate(VerifiedVertexStoreState vertexStoreState) {
+    this.vertexStoreState = vertexStoreState;
+  }
 
-	public static BFTRebuildUpdate create(VerifiedVertexStoreState vertexStoreState) {
-		return new BFTRebuildUpdate(vertexStoreState);
-	}
+  public static BFTRebuildUpdate create(VerifiedVertexStoreState vertexStoreState) {
+    return new BFTRebuildUpdate(vertexStoreState);
+  }
 
-	public VerifiedVertexStoreState getVertexStoreState() {
-		return vertexStoreState;
-	}
+  public VerifiedVertexStoreState getVertexStoreState() {
+    return vertexStoreState;
+  }
 
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{root=%s}", this.getClass().getSimpleName(), vertexStoreState.getRoot());
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{root=%s}", this.getClass().getSimpleName(), vertexStoreState.getRoot());
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(vertexStoreState);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(vertexStoreState);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof BFTRebuildUpdate)) {
+      return false;
+    }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof BFTRebuildUpdate)) {
-			return false;
-		}
-
-		BFTRebuildUpdate other = (BFTRebuildUpdate) o;
-		return Objects.equals(other.vertexStoreState, this.vertexStoreState);
-	}
+    BFTRebuildUpdate other = (BFTRebuildUpdate) o;
+    return Objects.equals(other.vertexStoreState, this.vertexStoreState);
+  }
 }

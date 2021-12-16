@@ -67,73 +67,72 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
+import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import org.junit.Test;
 
 public class StaticValidatorsTest {
-	private final Builder bftTestBuilder = SimulationTest.builder()
-		.networkModules(
-			NetworkOrdering.inOrder(),
-			NetworkLatencies.fixed()
-		)
-		.numNodes(4, 2)
-		.addTestModules(
-			ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-			ConsensusMonitors.noTimeouts(),
-			ConsensusMonitors.directParents(),
-			LedgerMonitors.consensusToLedger(),
-			LedgerMonitors.ordered()
-		);
+  private final Builder bftTestBuilder =
+      SimulationTest.builder()
+          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .numNodes(4, 2)
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+              ConsensusMonitors.noTimeouts(),
+              ConsensusMonitors.directParents(),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered());
 
-	@Test
-	public void given_correct_bft_with_changing_epochs_every_view__then_should_pass_bft_and_epoch_invariants() {
-		SimulationTest bftTest = bftTestBuilder
-			.pacemakerTimeout(1000)
-			.ledgerAndEpochs(View.of(1), e -> IntStream.range(0, 4))
-			.addTestModules(ConsensusMonitors.epochCeilingView(View.of(1)))
-			.build();
+  @Test
+  public void
+      given_correct_bft_with_changing_epochs_every_view__then_should_pass_bft_and_epoch_invariants() {
+    SimulationTest bftTest =
+        bftTestBuilder
+            .pacemakerTimeout(1000)
+            .ledgerAndEpochs(View.of(1), e -> IntStream.range(0, 4))
+            .addTestModules(ConsensusMonitors.epochCeilingView(View.of(1)))
+            .build();
 
-		final var checkResults = bftTest.run().awaitCompletion();
-		assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
-	}
+    final var checkResults = bftTest.run().awaitCompletion();
+    assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
+  }
 
-	@Test
-	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_fail_incorrect_epoch_invariant() {
-		SimulationTest bftTest = bftTestBuilder
-			.ledgerAndEpochs(View.of(100), e -> IntStream.range(0, 4))
-			.addTestModules(
-				ConsensusMonitors.epochCeilingView(View.of(99)),
-				ConsensusMonitors.timestampChecker()
-			)
-			.build();
+  @Test
+  public void
+      given_correct_bft_with_changing_epochs_per_100_views__then_should_fail_incorrect_epoch_invariant() {
+    SimulationTest bftTest =
+        bftTestBuilder
+            .ledgerAndEpochs(View.of(100), e -> IntStream.range(0, 4))
+            .addTestModules(
+                ConsensusMonitors.epochCeilingView(View.of(99)),
+                ConsensusMonitors.timestampChecker())
+            .build();
 
-		final var checkResults = bftTest.run().awaitCompletion();
-		assertThat(checkResults).hasEntrySatisfying(
-			Monitor.EPOCH_CEILING_VIEW,
-			error -> assertThat(error).isPresent()
-		);
-	}
+    final var checkResults = bftTest.run().awaitCompletion();
+    assertThat(checkResults)
+        .hasEntrySatisfying(Monitor.EPOCH_CEILING_VIEW, error -> assertThat(error).isPresent());
+  }
 
-	@Test
-	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
-		SimulationTest bftTest = bftTestBuilder
-			.ledgerAndEpochs(View.of(100), e -> IntStream.range(0, 4))
-			.addTestModules(
-				ConsensusMonitors.epochCeilingView(View.of(100)),
-				ConsensusMonitors.timestampChecker()
-			)
-			.build();
+  @Test
+  public void
+      given_correct_bft_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
+    SimulationTest bftTest =
+        bftTestBuilder
+            .ledgerAndEpochs(View.of(100), e -> IntStream.range(0, 4))
+            .addTestModules(
+                ConsensusMonitors.epochCeilingView(View.of(100)),
+                ConsensusMonitors.timestampChecker())
+            .build();
 
-		final var checkResults = bftTest.run().awaitCompletion();
-		assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
-	}
+    final var checkResults = bftTest.run().awaitCompletion();
+    assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
+  }
 }

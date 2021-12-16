@@ -64,18 +64,15 @@
 
 package com.radixdlt.mempool;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
 import static java.lang.annotation.ElementType.*;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/**
- * Maximum number of txns a mempool should store
- */
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
+
+/** Maximum number of txns a mempool should store */
 @Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
+@Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface MempoolMaxSize {
-}
+public @interface MempoolMaxSize {}

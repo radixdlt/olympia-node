@@ -64,25 +64,22 @@
 
 package com.radixdlt.network.hostip;
 
-import java.util.Objects;
-
 import com.google.inject.AbstractModule;
 import com.radixdlt.properties.RuntimeProperties;
+import java.util.Objects;
 
-/**
- * Guice configuration for {@link HostIp}.
- */
+/** Guice configuration for {@link HostIp}. */
 public final class HostIpModule extends AbstractModule {
 
-	private final RuntimeProperties properties;
+  private final RuntimeProperties properties;
 
-	public HostIpModule(RuntimeProperties properties) {
-		this.properties = Objects.requireNonNull(properties);
-	}
+  public HostIpModule(RuntimeProperties properties) {
+    this.properties = Objects.requireNonNull(properties);
+  }
 
-	@Override
-	protected void configure() {
-		// The main target
-		bind(HostIp.class).toInstance(StandardHostIp.defaultHostIp(properties));
-	}
+  @Override
+  protected void configure() {
+    // The main target
+    bind(HostIp.class).toInstance(StandardHostIp.defaultHostIp(properties));
+  }
 }

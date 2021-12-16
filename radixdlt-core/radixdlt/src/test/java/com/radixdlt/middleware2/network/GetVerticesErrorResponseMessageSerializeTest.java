@@ -64,29 +64,30 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
+import java.util.Optional;
 import org.radix.serialization.SerializeMessageObject;
 
-import java.util.Optional;
+public class GetVerticesErrorResponseMessageSerializeTest
+    extends SerializeMessageObject<GetVerticesErrorResponseMessage> {
+  public GetVerticesErrorResponseMessageSerializeTest() {
+    super(GetVerticesErrorResponseMessage.class, GetVerticesErrorResponseMessageSerializeTest::get);
+  }
 
-public class GetVerticesErrorResponseMessageSerializeTest extends SerializeMessageObject<GetVerticesErrorResponseMessage> {
-	public GetVerticesErrorResponseMessageSerializeTest() {
-		super(GetVerticesErrorResponseMessage.class, GetVerticesErrorResponseMessageSerializeTest::get);
-	}
-
-	private static GetVerticesErrorResponseMessage get() {
-		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-		LedgerHeader ledgerHeader = LedgerHeader.mocked();
-		VerifiedVertex verifiedVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(ledgerHeader), HashUtils.zero256());
-		QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, ledgerHeader);
-		HighQC highQC = HighQC.from(qc, qc, Optional.empty());
-		final var request = new GetVerticesRequestMessage(HashUtils.random256(), 3);
-		return new GetVerticesErrorResponseMessage(highQC, request);
-	}
+  private static GetVerticesErrorResponseMessage get() {
+    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    LedgerHeader ledgerHeader = LedgerHeader.mocked();
+    VerifiedVertex verifiedVertex =
+        new VerifiedVertex(UnverifiedVertex.createGenesis(ledgerHeader), HashUtils.zero256());
+    QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, ledgerHeader);
+    HighQC highQC = HighQC.from(qc, qc, Optional.empty());
+    final var request = new GetVerticesRequestMessage(HashUtils.random256(), 3);
+    return new GetVerticesErrorResponseMessage(highQC, request);
+  }
 }

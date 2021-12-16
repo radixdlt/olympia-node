@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.integration.api.actors;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.openapitools.model.ResourceAmount;
 import com.radixdlt.crypto.ECKeyPair;
@@ -70,53 +73,60 @@ import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.integration.api.DeterministicActor;
 import com.radixdlt.utils.PrivateKeys;
-
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
- * Reads the balances from the api of all accounts and verifies that it matches
- * the state in the Radix Engine.
+ * Reads the balances from the api of all accounts and verifies that it matches the state in the
+ * Radix Engine.
  */
 public final class ApiBalanceToRadixEngineChecker implements DeterministicActor {
-	public List<ResourceAmount> getAccountUnstakes(REAddr addr, NodeApiClient nodeClient) {
-		return PrivateKeys.numeric(1).limit(20)
-			.map(ECKeyPair::getPublicKey)
-			.flatMap(validatorKey -> nodeClient.getUnstakes(addr, validatorKey).stream())
-			.collect(Collectors.toList());
-	}
+  public List<ResourceAmount> getAccountUnstakes(REAddr addr, NodeApiClient nodeClient) {
+    return PrivateKeys.numeric(1)
+        .limit(20)
+        .map(ECKeyPair::getPublicKey)
+        .flatMap(validatorKey -> nodeClient.getUnstakes(addr, validatorKey).stream())
+        .collect(Collectors.toList());
+  }
 
-	@Override
-	public String execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
-		var injector = runner.getNode(0);
-		var nodeClient = injector.getInstance(NodeApiClient.class);
-		var coreModelMapper = injector.getInstance(CoreModelMapper.class);
-		var radixEngineReader = injector.getInstance(RadixEngineReader.class);
+  @Override
+  public String execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
+    var injector = runner.getNode(0);
+    var nodeClient = injector.getInstance(NodeApiClient.class);
+    var coreModelMapper = injector.getInstance(CoreModelMapper.class);
+    var radixEngineReader = injector.getInstance(RadixEngineReader.class);
 
-		// Check that sum of api balances matches radixEngine numbers
-		var totalTokenBalance = PrivateKeys.numeric(1).limit(20)
-			.map(ECKeyPair::getPublicKey)
-			.map(REAddr::ofPubKeyAccount)
-			.flatMap(addr -> nodeClient.getEntity(coreModelMapper.entityIdentifier(addr)).getBalances().stream())
-			.filter(r -> r.getResourceIdentifier().equals(nodeClient.nativeToken()))
-			.map(r -> new BigInteger(r.getValue()))
-			.reduce(BigInteger.ZERO, BigInteger::add);
-		assertThat(totalTokenBalance).isEqualTo(radixEngineReader.getTotalNativeTokensInAccounts());
+    // Check that sum of api balances matches radixEngine numbers
+    var totalTokenBalance =
+        PrivateKeys.numeric(1)
+            .limit(20)
+            .map(ECKeyPair::getPublicKey)
+            .map(REAddr::ofPubKeyAccount)
+            .flatMap(
+                addr ->
+                    nodeClient
+                        .getEntity(coreModelMapper.entityIdentifier(addr))
+                        .getBalances()
+                        .stream())
+            .filter(r -> r.getResourceIdentifier().equals(nodeClient.nativeToken()))
+            .map(r -> new BigInteger(r.getValue()))
+            .reduce(BigInteger.ZERO, BigInteger::add);
+    assertThat(totalTokenBalance).isEqualTo(radixEngineReader.getTotalNativeTokensInAccounts());
 
-		// Check that sum of api exiting stake balances matches radixEngine numbers
-		var totalUnstakingBalance = PrivateKeys.numeric(1).limit(20)
-			.map(ECKeyPair::getPublicKey)
-			.map(REAddr::ofPubKeyAccount)
-			.flatMap(addr -> getAccountUnstakes(addr, nodeClient).stream())
-			.filter(r -> r.getResourceIdentifier().equals(nodeClient.nativeToken()))
-			.map(r -> new BigInteger(r.getValue()))
-			.reduce(BigInteger.ZERO, BigInteger::add);
-		assertThat(totalUnstakingBalance).isEqualTo(radixEngineReader.getTotalExittingStake());
+    // Check that sum of api exiting stake balances matches radixEngine numbers
+    var totalUnstakingBalance =
+        PrivateKeys.numeric(1)
+            .limit(20)
+            .map(ECKeyPair::getPublicKey)
+            .map(REAddr::ofPubKeyAccount)
+            .flatMap(addr -> getAccountUnstakes(addr, nodeClient).stream())
+            .filter(r -> r.getResourceIdentifier().equals(nodeClient.nativeToken()))
+            .map(r -> new BigInteger(r.getValue()))
+            .reduce(BigInteger.ZERO, BigInteger::add);
+    assertThat(totalUnstakingBalance).isEqualTo(radixEngineReader.getTotalExittingStake());
 
-		return String.format("Okay{total_token_balance=%s}", totalTokenBalance);
-	}
+    return String.format("Okay{total_token_balance=%s}", totalTokenBalance);
+  }
 }

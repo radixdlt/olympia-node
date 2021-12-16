@@ -66,55 +66,53 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class MempoolConfiguration {
-	private final long throttleMs;
-	private final long maxSize;
+  private final long throttleMs;
+  private final long maxSize;
 
-	private MempoolConfiguration(long throttleMs, long maxSize) {
-		this.throttleMs = throttleMs;
-		this.maxSize = maxSize;
-	}
+  private MempoolConfiguration(long throttleMs, long maxSize) {
+    this.throttleMs = throttleMs;
+    this.maxSize = maxSize;
+  }
 
-	@JsonCreator
-	public static MempoolConfiguration create(
-		@JsonProperty(value = "throttleMs", required = true) long throttleMs,
-		@JsonProperty(value = "maxSize", required = true) long maxSize
-	) {
-		return new MempoolConfiguration(throttleMs, maxSize);
-	}
+  @JsonCreator
+  public static MempoolConfiguration create(
+      @JsonProperty(value = "throttleMs", required = true) long throttleMs,
+      @JsonProperty(value = "maxSize", required = true) long maxSize) {
+    return new MempoolConfiguration(throttleMs, maxSize);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof MempoolConfiguration)) {
-			return false;
-		}
+    if (!(o instanceof MempoolConfiguration)) {
+      return false;
+    }
 
-		var that = (MempoolConfiguration) o;
-		return throttleMs == that.throttleMs && maxSize == that.maxSize;
-	}
+    var that = (MempoolConfiguration) o;
+    return throttleMs == that.throttleMs && maxSize == that.maxSize;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(throttleMs, maxSize);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(throttleMs, maxSize);
+  }
 
-	@Override
-	public String toString() {
-		return "{throttleMs:" + throttleMs + ", maxSize:" + maxSize + '}';
-	}
+  @Override
+  public String toString() {
+    return "{throttleMs:" + throttleMs + ", maxSize:" + maxSize + '}';
+  }
 
-	public long getThrottleMs() {
-		return throttleMs;
-	}
+  public long getThrottleMs() {
+    return throttleMs;
+  }
 
-	public long getMaxSize() {
-		return maxSize;
-	}
+  public long getMaxSize() {
+    return maxSize;
+  }
 }

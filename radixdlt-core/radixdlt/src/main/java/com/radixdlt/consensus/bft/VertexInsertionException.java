@@ -64,15 +64,13 @@
 
 package com.radixdlt.consensus.bft;
 
-/**
- * An exception indicating a failure in inserting a vertex into a VertexStore
- */
+/** An exception indicating a failure in inserting a vertex into a VertexStore */
 public class VertexInsertionException extends Exception {
-	VertexInsertionException(String message) {
-		super(message);
-	}
+  VertexInsertionException(String message) {
+    super(message);
+  }
 
-	VertexInsertionException(String message, Exception cause) {
-		super(message, cause);
-	}
+  VertexInsertionException(String message, Exception cause) {
+    super(message, cause);
+  }
 }

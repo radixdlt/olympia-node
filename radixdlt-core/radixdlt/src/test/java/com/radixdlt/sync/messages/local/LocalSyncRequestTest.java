@@ -64,9 +64,9 @@
 
 package com.radixdlt.sync.messages.local;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static com.radixdlt.utils.TypedMocks.rmock;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
@@ -78,32 +78,32 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class LocalSyncRequestTest {
-	private LocalSyncRequest request;
-	private ImmutableList<BFTNode> targetNodes;
-	private LedgerProof target;
+  private LocalSyncRequest request;
+  private ImmutableList<BFTNode> targetNodes;
+  private LedgerProof target;
 
-	@Before
-	public void setup() {
-		this.targetNodes = rmock(ImmutableList.class);
-		this.target = mock(LedgerProof.class);
-		request = new LocalSyncRequest(target, targetNodes);
-	}
+  @Before
+  public void setup() {
+    this.targetNodes = rmock(ImmutableList.class);
+    this.target = mock(LedgerProof.class);
+    request = new LocalSyncRequest(target, targetNodes);
+  }
 
-	@Test
-	public void testGetters() {
-		assertThat(request.getTarget()).isEqualTo(target);
-		assertThat(request.getTargetNodes()).isEqualTo(targetNodes);
-	}
+  @Test
+  public void testGetters() {
+    assertThat(request.getTarget()).isEqualTo(target);
+    assertThat(request.getTargetNodes()).isEqualTo(targetNodes);
+  }
 
-	@Test
-	public void sensibleToString() {
-		assertThat(request.toString()).contains(LocalSyncRequest.class.getSimpleName());
-	}
+  @Test
+  public void sensibleToString() {
+    assertThat(request.toString()).contains(LocalSyncRequest.class.getSimpleName());
+  }
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(LocalSyncRequest.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(LocalSyncRequest.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 }

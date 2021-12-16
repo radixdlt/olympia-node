@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.api.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.ConstructionBuildHandler;
@@ -96,227 +99,218 @@ import com.radixdlt.utils.UInt128;
 import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 public final class ConstructionBuildTransferStakeUnstakeTest extends ApiTest {
-	@Inject
-	private ConstructionBuildHandler sut;
-	@Inject
-	private CoreModelMapper coreModelMapper;
-	@Inject
-	private Forks forks;
-	@Inject
-	@Self
-	private ECPublicKey self;
-	@Inject
-	private RadixEngine<LedgerAndBFTProof> radixEngine;
+  @Inject private ConstructionBuildHandler sut;
+  @Inject private CoreModelMapper coreModelMapper;
+  @Inject private Forks forks;
+  @Inject @Self private ECPublicKey self;
+  @Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
 
-	private ConstructionBuildRequest buildTransfer(
-		ResourceIdentifier resourceIdentifier,
-		UInt256 amount,
-		EntityIdentifier from,
-		EntityIdentifier to
-	) {
-		var accountAddress = REAddr.ofPubKeyAccount(self);
-		return new ConstructionBuildRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.feePayer(coreModelMapper.entityIdentifier(accountAddress))
-			.addOperationGroupsItem(new OperationGroup()
-				.addOperationsItem(new Operation()
-					.entityIdentifier(from)
-					.amount(new ResourceAmount()
-						.resourceIdentifier(resourceIdentifier)
-						.value("-" + amount.toString())
-					)
-				)
-				.addOperationsItem(new Operation()
-					.entityIdentifier(to)
-					.amount(new ResourceAmount()
-						.resourceIdentifier(resourceIdentifier)
-						.value(amount.toString())
-					)
-				)
-			);
-	}
+  private ConstructionBuildRequest buildTransfer(
+      ResourceIdentifier resourceIdentifier,
+      UInt256 amount,
+      EntityIdentifier from,
+      EntityIdentifier to) {
+    var accountAddress = REAddr.ofPubKeyAccount(self);
+    return new ConstructionBuildRequest()
+        .networkIdentifier(new NetworkIdentifier().network("localnet"))
+        .feePayer(coreModelMapper.entityIdentifier(accountAddress))
+        .addOperationGroupsItem(
+            new OperationGroup()
+                .addOperationsItem(
+                    new Operation()
+                        .entityIdentifier(from)
+                        .amount(
+                            new ResourceAmount()
+                                .resourceIdentifier(resourceIdentifier)
+                                .value("-" + amount.toString())))
+                .addOperationsItem(
+                    new Operation()
+                        .entityIdentifier(to)
+                        .amount(
+                            new ResourceAmount()
+                                .resourceIdentifier(resourceIdentifier)
+                                .value(amount.toString()))));
+  }
 
-	@Test
-	public void transferring_tokens_should_work() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void transferring_tokens_should_work() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
-		var request = buildTransfer(
-			coreModelMapper.nativeToken(),
-			UInt256.ONE,
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
-			coreModelMapper.entityIdentifier(otherAddress)
-		);
-		var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
+    // Act
+    var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+    var request =
+        buildTransfer(
+            coreModelMapper.nativeToken(),
+            UInt256.ONE,
+            coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
+            coreModelMapper.entityIdentifier(otherAddress));
+    var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
 
-		// Assert
-		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
-		assertThat(Bytes.fromHexString(response.getUnsignedTransaction())).isNotNull();
-	}
+    // Assert
+    assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
+    assertThat(Bytes.fromHexString(response.getUnsignedTransaction())).isNotNull();
+  }
 
-	@Test
-	public void setting_disable_mint_and_burn_should_set_correct_header() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void setting_disable_mint_and_burn_should_set_correct_header() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
-		var request = buildTransfer(
-			coreModelMapper.nativeToken(),
-			UInt256.ONE,
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
-			coreModelMapper.entityIdentifier(otherAddress)
-		);
-		request.setDisableResourceAllocateAndDestroy(true);
-		var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
+    // Act
+    var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+    var request =
+        buildTransfer(
+            coreModelMapper.nativeToken(),
+            UInt256.ONE,
+            coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
+            coreModelMapper.entityIdentifier(otherAddress));
+    request.setDisableResourceAllocateAndDestroy(true);
+    var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
 
-		// Assert
-		var bytes = Bytes.fromHexString(response.getUnsignedTransaction());
-		assertThat(bytes).isNotNull();
-		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
-		var parsed = radixEngine.getParser().parse(Txn.create(bytes));
-		assertThat(parsed.disableResourceAllocAndDestroy()).isTrue();
-	}
+    // Assert
+    var bytes = Bytes.fromHexString(response.getUnsignedTransaction());
+    assertThat(bytes).isNotNull();
+    assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
+    var parsed = radixEngine.getParser().parse(Txn.create(bytes));
+    assertThat(parsed.disableResourceAllocAndDestroy()).isTrue();
+  }
 
+  @Test
+  public void staking_tokens_directly_to_validator_should_fail() throws Exception {
+    // Arrange
+    start();
 
-	@Test
-	public void staking_tokens_directly_to_validator_should_fail() throws Exception {
-		// Arrange
-		start();
+    // Act
+    var request =
+        buildTransfer(
+            coreModelMapper.nativeToken(),
+            getLiquidAmount().toSubunits().subtract(Amount.ofTokens(1).toSubunits()),
+            coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
+            coreModelMapper.entityIdentifier(self));
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Act
-		var request = buildTransfer(
-			coreModelMapper.nativeToken(),
-			getLiquidAmount().toSubunits().subtract(Amount.ofTokens(1).toSubunits()),
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
-			coreModelMapper.entityIdentifier(self)
-		);
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+    // Assert
+    assertThat(response.getDetails())
+        .isInstanceOf(ResourceDepositOperationNotSupportedByEntityError.class);
+  }
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(ResourceDepositOperationNotSupportedByEntityError.class);
-	}
+  @Test
+  public void transferring_too_many_tokens_should_fail() throws Exception {
+    // Arrange
+    start();
 
-	@Test
-	public void transferring_too_many_tokens_should_fail() throws Exception {
-		// Arrange
-		start();
+    // Act
+    var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+    var tooLargeAmount = getLiquidAmount().toSubunits().add(UInt256.ONE);
+    var request =
+        buildTransfer(
+            coreModelMapper.nativeToken(),
+            tooLargeAmount,
+            coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
+            coreModelMapper.entityIdentifier(otherAddress));
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Act
-		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
-		var tooLargeAmount = getLiquidAmount().toSubunits().add(UInt256.ONE);
-		var request = buildTransfer(
-			coreModelMapper.nativeToken(),
-			tooLargeAmount,
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
-			coreModelMapper.entityIdentifier(otherAddress)
-		);
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+    // Assert
+    assertThat(response.getDetails()).isInstanceOf(NotEnoughResourcesError.class);
+  }
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(NotEnoughResourcesError.class);
-	}
+  @Test
+  public void staking_tokens_to_self_should_succeed() throws Exception {
+    // Arrange
+    start();
 
-	@Test
-	public void staking_tokens_to_self_should_succeed() throws Exception {
-		// Arrange
-		start();
+    // Act
+    var selfAddress = REAddr.ofPubKeyAccount(self);
+    var request =
+        buildTransfer(
+            coreModelMapper.nativeToken(),
+            getLiquidAmount().toSubunits().subtract(Amount.ofTokens(1).toSubunits()),
+            coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
+            coreModelMapper.entityIdentifierPreparedStake(selfAddress, self));
+    var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
 
-		// Act
-		var selfAddress = REAddr.ofPubKeyAccount(self);
-		var request = buildTransfer(
-			coreModelMapper.nativeToken(),
-			getLiquidAmount().toSubunits().subtract(Amount.ofTokens(1).toSubunits()),
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
-			coreModelMapper.entityIdentifierPreparedStake(selfAddress, self)
-		);
-		var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
+    // Assert
+    assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
+    assertThat(Bytes.fromHexString(response.getUnsignedTransaction())).isNotNull();
+  }
 
-		// Assert
-		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
-		assertThat(Bytes.fromHexString(response.getUnsignedTransaction())).isNotNull();
-	}
+  @Test
+  public void staking_too_little_tokens_should_fail() throws Exception {
+    // Arrange
+    start();
 
-	@Test
-	public void staking_too_little_tokens_should_fail() throws Exception {
-		// Arrange
-		start();
+    // Act
+    var selfAddress = REAddr.ofPubKeyAccount(self);
+    var request =
+        buildTransfer(
+            coreModelMapper.nativeToken(),
+            forks.get(1).getConfig().getMinimumStake().toSubunits().subtract(UInt128.ONE),
+            coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
+            coreModelMapper.entityIdentifierPreparedStake(selfAddress, self));
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Act
-		var selfAddress = REAddr.ofPubKeyAccount(self);
-		var request = buildTransfer(
-			coreModelMapper.nativeToken(),
-			forks.get(1).getConfig().getMinimumStake().toSubunits().subtract(UInt128.ONE),
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
-			coreModelMapper.entityIdentifierPreparedStake(selfAddress, self)
-		);
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+    // Assert
+    assertThat(response.getDetails()).isInstanceOf(BelowMinimumStakeError.class);
+  }
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(BelowMinimumStakeError.class);
-	}
+  @Test
+  public void staking_tokens_to_non_owned_validator_should_fail() throws Exception {
+    // Arrange
+    start();
 
-	@Test
-	public void staking_tokens_to_non_owned_validator_should_fail() throws Exception {
-		// Arrange
-		start();
+    // Act
+    var selfAddress = REAddr.ofPubKeyAccount(self);
+    var otherKey = PrivateKeys.ofNumeric(2).getPublicKey();
+    var request =
+        buildTransfer(
+            coreModelMapper.nativeToken(),
+            getLiquidAmount().toSubunits().subtract(Amount.ofTokens(1).toSubunits()),
+            coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
+            coreModelMapper.entityIdentifierPreparedStake(selfAddress, otherKey));
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Act
-		var selfAddress = REAddr.ofPubKeyAccount(self);
-		var otherKey = PrivateKeys.ofNumeric(2).getPublicKey();
-		var request = buildTransfer(
-			coreModelMapper.nativeToken(),
-			getLiquidAmount().toSubunits().subtract(Amount.ofTokens(1).toSubunits()),
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
-			coreModelMapper.entityIdentifierPreparedStake(selfAddress, otherKey)
-		);
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+    // Assert
+    assertThat(response.getDetails()).isInstanceOf(NotValidatorOwnerError.class);
+  }
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(NotValidatorOwnerError.class);
-	}
+  @Test
+  public void withdrawing_staked_tokens_should_fail() throws Exception {
+    // Arrange
+    start();
 
-	@Test
-	public void withdrawing_staked_tokens_should_fail() throws Exception {
-		// Arrange
-		start();
+    // Act
+    var request =
+        buildTransfer(
+            coreModelMapper.nativeToken(),
+            getStakeAmount().toSubunits(),
+            coreModelMapper.entityIdentifier(self).subEntity(new SubEntity().address("system")),
+            coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)));
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Act
-		var request = buildTransfer(
-			coreModelMapper.nativeToken(),
-			getStakeAmount().toSubunits(),
-			coreModelMapper.entityIdentifier(self).subEntity(new SubEntity().address("system")),
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self))
-		);
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+    // Assert
+    assertThat(response.getDetails())
+        .isInstanceOf(ResourceWithdrawOperationNotSupportedByEntityError.class);
+  }
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(ResourceWithdrawOperationNotSupportedByEntityError.class);
-	}
+  @Test
+  public void unstaking_tokens_should_work() throws Exception {
+    // Arrange
+    start();
 
+    // Act
+    var selfAddress = REAddr.ofPubKeyAccount(self);
+    var request =
+        buildTransfer(
+            coreModelMapper.stakeUnit(self),
+            getStakeAmount().toSubunits(),
+            coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
+            coreModelMapper.entityIdentifierPreparedUnstake(selfAddress));
+    var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
 
-	@Test
-	public void unstaking_tokens_should_work() throws Exception {
-		// Arrange
-		start();
-
-		// Act
-		var selfAddress = REAddr.ofPubKeyAccount(self);
-		var request = buildTransfer(
-			coreModelMapper.stakeUnit(self),
-			getStakeAmount().toSubunits(),
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
-			coreModelMapper.entityIdentifierPreparedUnstake(selfAddress)
-		);
-		var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
-
-		// Assert
-		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
-		assertThat(Bytes.fromHexString(response.getUnsignedTransaction())).isNotNull();
-	}
+    // Assert
+    assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
+    assertThat(Bytes.fromHexString(response.getUnsignedTransaction())).isNotNull();
+  }
 }

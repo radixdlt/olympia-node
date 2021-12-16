@@ -117,10 +117,6 @@ acceptanceTest {
     }
 }
 
-checkstyleAcceptanceTest {
-    configFile rootProject.file('config/checkstyle/checkstyle_test.xml')
-}
-
 dependencies {
     api project(':radixdlt-java')
     api project(':radixdlt')

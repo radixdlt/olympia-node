@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -75,40 +76,40 @@ import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 
-public final class ConstructionSubmitHandler extends CoreJsonRpcHandler<ConstructionSubmitRequest, ConstructionSubmitResponse> {
-	private final RadixEngineStateComputer radixEngineStateComputer;
-	private final CoreModelMapper modelMapper;
+public final class ConstructionSubmitHandler
+    extends CoreJsonRpcHandler<ConstructionSubmitRequest, ConstructionSubmitResponse> {
+  private final RadixEngineStateComputer radixEngineStateComputer;
+  private final CoreModelMapper modelMapper;
 
-	@Inject
-	ConstructionSubmitHandler(
-		RadixEngineStateComputer radixEngineStateComputer,
-		CoreModelMapper modelMapper
-	) {
-		super(ConstructionSubmitRequest.class);
+  @Inject
+  ConstructionSubmitHandler(
+      RadixEngineStateComputer radixEngineStateComputer, CoreModelMapper modelMapper) {
+    super(ConstructionSubmitRequest.class);
 
-		this.radixEngineStateComputer = radixEngineStateComputer;
-		this.modelMapper = modelMapper;
-	}
+    this.radixEngineStateComputer = radixEngineStateComputer;
+    this.modelMapper = modelMapper;
+  }
 
-	@Override
-	public ConstructionSubmitResponse handleRequest(ConstructionSubmitRequest request) throws CoreApiException {
-		modelMapper.verifyNetwork(request.getNetworkIdentifier());
+  @Override
+  public ConstructionSubmitResponse handleRequest(ConstructionSubmitRequest request)
+      throws CoreApiException {
+    modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var txn = modelMapper.txn(request.getSignedTransaction());
-		try {
-			radixEngineStateComputer.addToMempool(txn);
-			return new ConstructionSubmitResponse()
-				.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
-				.duplicate(false);
-		} catch (MempoolDuplicateException e) {
-			return new ConstructionSubmitResponse()
-				.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
-				.duplicate(true);
-		} catch (MempoolFullException e) {
-			throw modelMapper.mempoolFullException(e);
-		} catch (MempoolRejectedException e) {
-			var reException = (RadixEngineException) e.getCause();
-			throw modelMapper.radixEngineException(reException);
-		}
-	}
+    var txn = modelMapper.txn(request.getSignedTransaction());
+    try {
+      radixEngineStateComputer.addToMempool(txn);
+      return new ConstructionSubmitResponse()
+          .transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
+          .duplicate(false);
+    } catch (MempoolDuplicateException e) {
+      return new ConstructionSubmitResponse()
+          .transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
+          .duplicate(true);
+    } catch (MempoolFullException e) {
+      throw modelMapper.mempoolFullException(e);
+    } catch (MempoolRejectedException e) {
+      var reException = (RadixEngineException) e.getCause();
+      throw modelMapper.radixEngineException(reException);
+    }
+  }
 }

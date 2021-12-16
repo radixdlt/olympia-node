@@ -73,81 +73,73 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
 import java.util.Objects;
 
-/**
- * Represents a vote timeout; data to sign for a timeout signature.
- */
+/** Represents a vote timeout; data to sign for a timeout signature. */
 @Immutable
 @SerializerId2("consensus.vote_timeout")
 public final class VoteTimeout {
-    @JsonProperty(SerializerConstants.SERIALIZER_NAME)
-    @DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
-    SerializerDummy serializer = SerializerDummy.DUMMY;
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
+  SerializerDummy serializer = SerializerDummy.DUMMY;
 
-    private final View view;
+  private final View view;
 
-    @JsonProperty("epoch")
-    @DsonOutput(DsonOutput.Output.ALL)
-    private final long epoch;
+  @JsonProperty("epoch")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final long epoch;
 
-    @JsonCreator
-    public VoteTimeout(
-        @JsonProperty("view") long view,
-        @JsonProperty("epoch") long epoch
-    ) {
-        this(View.of(view), epoch);
+  @JsonCreator
+  public VoteTimeout(@JsonProperty("view") long view, @JsonProperty("epoch") long epoch) {
+    this(View.of(view), epoch);
+  }
+
+  public VoteTimeout(View view, long epoch) {
+    if (epoch < 0) {
+      throw new IllegalArgumentException("Epoch can't be < 0");
     }
 
-    public VoteTimeout(View view, long epoch) {
-        if (epoch < 0) {
-            throw new IllegalArgumentException("Epoch can't be < 0");
-        }
+    this.view = Objects.requireNonNull(view);
+    this.epoch = epoch;
+  }
 
-        this.view = Objects.requireNonNull(view);
-        this.epoch = epoch;
-    }
+  public static VoteTimeout of(Vote vote) {
+    return new VoteTimeout(vote.getView(), vote.getEpoch());
+  }
 
-    public static VoteTimeout of(Vote vote) {
-        return new VoteTimeout(vote.getView(), vote.getEpoch());
-    }
+  public View getView() {
+    return view;
+  }
 
-    public View getView() {
-        return view;
-    }
+  public long getEpoch() {
+    return epoch;
+  }
 
-    public long getEpoch() {
-        return epoch;
-    }
+  @JsonProperty("view")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private Long getSerializerView() {
+    return this.view.number();
+  }
 
-    @JsonProperty("view")
-    @DsonOutput(DsonOutput.Output.ALL)
-    private Long getSerializerView() {
-        return this.view.number();
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
     }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    VoteTimeout that = (VoteTimeout) o;
+    return epoch == that.epoch && Objects.equals(view, that.view);
+  }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        VoteTimeout that = (VoteTimeout) o;
-        return epoch == that.epoch
-                && Objects.equals(view, that.view);
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hash(view, epoch);
+  }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(view, epoch);
-    }
-
-    @Override
-    public String toString() {
-        return String.format("%s{epoch=%s view=%s}",
-            getClass().getSimpleName(), getEpoch(), getView());
-    }
+  @Override
+  public String toString() {
+    return String.format("%s{epoch=%s view=%s}", getClass().getSimpleName(), getEpoch(), getView());
+  }
 }

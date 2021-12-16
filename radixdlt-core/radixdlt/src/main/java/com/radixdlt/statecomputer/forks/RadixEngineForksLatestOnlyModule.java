@@ -67,34 +67,32 @@ package com.radixdlt.statecomputer.forks;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
-
 import java.util.Comparator;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 
-/**
- * For testing only, only tests the latest state computer configuration
- */
+/** For testing only, only tests the latest state computer configuration */
 public class RadixEngineForksLatestOnlyModule extends AbstractModule {
-	private final RERulesConfig config;
+  private final RERulesConfig config;
 
-	public RadixEngineForksLatestOnlyModule(RERulesConfig config) {
-		this.config = config;
-	}
+  public RadixEngineForksLatestOnlyModule(RERulesConfig config) {
+    this.config = config;
+  }
 
-	public RadixEngineForksLatestOnlyModule() {
-		this(RERulesConfig.testingDefault());
-	}
+  public RadixEngineForksLatestOnlyModule() {
+    this(RERulesConfig.testingDefault());
+  }
 
-	@Override
-	protected void configure() {
-		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkConfig>>>() { })
-			.setBinding()
-			.toInstance(m ->
-				Set.of(m.stream()
-					.max(Comparator.comparingLong(ForkConfig::getEpoch))
-					.map(f -> new ForkConfig(0L, f.getName(), f.getVersion(), config))
-					.orElseThrow())
-			);
-	}
+  @Override
+  protected void configure() {
+    OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkConfig>>>() {})
+        .setBinding()
+        .toInstance(
+            m ->
+                Set.of(
+                    m.stream()
+                        .max(Comparator.comparingLong(ForkConfig::getEpoch))
+                        .map(f -> new ForkConfig(0L, f.getName(), f.getVersion(), config))
+                        .orElseThrow()));
+  }
 }

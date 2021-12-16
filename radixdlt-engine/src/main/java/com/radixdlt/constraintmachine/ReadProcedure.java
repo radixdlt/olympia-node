@@ -65,43 +65,39 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-
 import java.util.function.Function;
 
-public final class ReadProcedure<D extends Particle, S extends ReducerState> implements Procedure  {
-	private final Class<D> readClass;
-	private final Class<S> reducerStateClass;
-	private final ReadReducer<D, S> readReducer;
-	private final Function<D, Authorization> authorization;
+public final class ReadProcedure<D extends Particle, S extends ReducerState> implements Procedure {
+  private final Class<D> readClass;
+  private final Class<S> reducerStateClass;
+  private final ReadReducer<D, S> readReducer;
+  private final Function<D, Authorization> authorization;
 
-	public ReadProcedure(
-		Class<S> reducerStateClass, Class<D> readClass,
-		Function<D, Authorization> authorization,
-		ReadReducer<D, S> readReducer
-	) {
-		this.readClass = readClass;
-		this.reducerStateClass = reducerStateClass;
-		this.readReducer = readReducer;
-		this.authorization = authorization;
-	}
+  public ReadProcedure(
+      Class<S> reducerStateClass,
+      Class<D> readClass,
+      Function<D, Authorization> authorization,
+      ReadReducer<D, S> readReducer) {
+    this.readClass = readClass;
+    this.reducerStateClass = reducerStateClass;
+    this.readReducer = readReducer;
+    this.authorization = authorization;
+  }
 
-	@Override
-	public ProcedureKey key() {
-		return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.READ, readClass));
-	}
+  @Override
+  public ProcedureKey key() {
+    return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.READ, readClass));
+  }
 
-	@Override
-	public Authorization authorization(Object o) {
-		return authorization.apply((D) o);
-	}
+  @Override
+  public Authorization authorization(Object o) {
+    return authorization.apply((D) o);
+  }
 
-	@Override
-	public ReducerResult call(
-		Object o,
-		ReducerState reducerState,
-		Resources immutableAddrs,
-		ExecutionContext context
-	) throws ProcedureException {
-		return readReducer.reduce((S) reducerState, (D) o, immutableAddrs);
-	}
+  @Override
+  public ReducerResult call(
+      Object o, ReducerState reducerState, Resources immutableAddrs, ExecutionContext context)
+      throws ProcedureException {
+    return readReducer.reduce((S) reducerState, (D) o, immutableAddrs);
+  }
 }

@@ -68,9 +68,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import io.reactivex.rxjava3.core.Single;
 
-/**
- * Node generator for a given network
- */
+/** Node generator for a given network */
 public interface NodeSelector {
-	Single<BFTNode> nextNode(RunningNetwork network);
+  Single<BFTNode> nextNode(RunningNetwork network);
 }

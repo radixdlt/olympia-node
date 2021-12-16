@@ -74,21 +74,19 @@ import com.radixdlt.integration.distributed.simulation.monitors.EventNeverOccurs
 import com.radixdlt.integration.distributed.simulation.monitors.NodeEvents;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
 
-/**
- * Monitors which check for radix engine related functionality
- */
+/** Monitors which check for radix engine related functionality */
 public final class RadixEngineMonitors {
-	private RadixEngineMonitors() {
-		throw new IllegalStateException("Cannot instantiate.");
-	}
+  private RadixEngineMonitors() {
+    throw new IllegalStateException("Cannot instantiate.");
+  }
 
-	public static Module noInvalidProposedCommands() {
-		return new AbstractModule() {
-			@ProvidesIntoMap
-			@MonitorKey(Monitor.RADIX_ENGINE_NO_INVALID_PROPOSED_COMMANDS)
-			TestInvariant registeredValidator(NodeEvents nodeEvents) {
-				return new EventNeverOccursInvariant<>(nodeEvents, InvalidProposedTxn.class);
-			}
-		};
-	}
+  public static Module noInvalidProposedCommands() {
+    return new AbstractModule() {
+      @ProvidesIntoMap
+      @MonitorKey(Monitor.RADIX_ENGINE_NO_INVALID_PROPOSED_COMMANDS)
+      TestInvariant registeredValidator(NodeEvents nodeEvents) {
+        return new EventNeverOccursInvariant<>(nodeEvents, InvalidProposedTxn.class);
+      }
+    };
+  }
 }

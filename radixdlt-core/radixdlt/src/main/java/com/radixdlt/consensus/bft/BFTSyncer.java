@@ -65,29 +65,27 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.HighQC;
-
 import javax.annotation.Nullable;
 
 /**
- * Synchronizes the state in order for consensus preparation
- * TODO: Fix interfaces as it seems like a still rather awkward interface
+ * Synchronizes the state in order for consensus preparation TODO: Fix interfaces as it seems like a
+ * still rather awkward interface
  */
 public interface BFTSyncer {
-	enum SyncResult {
-		SYNCED,
-		IN_PROGRESS,
-		INVALID
-	}
+  enum SyncResult {
+    SYNCED,
+    IN_PROGRESS,
+    INVALID
+  }
 
-	/**
-	 * Initiate a sync to a given QC and a committedQC. Returns true if already synced
-	 * otherwise will initiate a syncing process.
-	 * An author is used because the author will most likely have the corresponding vertices
-	 * still in memory.
-	 *
-	 * @param highQC the {@link HighQC} to sync to
-	 * @param author the original author of the qc
-	 * @return {@code SyncResult.SYNCED} if already synced
-	 */
-	SyncResult syncToQC(HighQC highQC, @Nullable BFTNode author);
+  /**
+   * Initiate a sync to a given QC and a committedQC. Returns true if already synced otherwise will
+   * initiate a syncing process. An author is used because the author will most likely have the
+   * corresponding vertices still in memory.
+   *
+   * @param highQC the {@link HighQC} to sync to
+   * @param author the original author of the qc
+   * @return {@code SyncResult.SYNCED} if already synced
+   */
+  SyncResult syncToQC(HighQC highQC, @Nullable BFTNode author);
 }

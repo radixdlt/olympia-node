@@ -72,36 +72,37 @@ import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.R
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Objects;
 
-/**
- * Invariant which checks that a committed vertex never goes above some view
- */
+/** Invariant which checks that a committed vertex never goes above some view */
 public class EpochViewInvariant implements TestInvariant {
-	private final NodeEvents commits;
-	private final View epochHighView;
+  private final NodeEvents commits;
+  private final View epochHighView;
 
-	public EpochViewInvariant(View epochHighView, NodeEvents commits) {
-		this.commits = commits;
-		this.epochHighView = Objects.requireNonNull(epochHighView);
-	}
+  public EpochViewInvariant(View epochHighView, NodeEvents commits) {
+    this.commits = commits;
+    this.epochHighView = Objects.requireNonNull(epochHighView);
+  }
 
-	@Override
-	public Observable<TestInvariantError> check(RunningNetwork network) {
-		return Observable.<BFTCommittedUpdate>create(
-			emitter -> this.commits.addListener((node, commit) -> emitter.onNext(commit), BFTCommittedUpdate.class)
-		).serialize()
-			.concatMap(committedUpdate -> Observable.fromStream(committedUpdate.getCommitted().stream()))
-			.flatMap(vertex -> {
-				final View view = vertex.getView();
-				if (view.compareTo(epochHighView) > 0) {
-					return Observable.just(
-						new TestInvariantError(
-							String.format("Vertex committed with view %s but epochHighView is %s", view, epochHighView)
-						)
-					);
-				}
+  @Override
+  public Observable<TestInvariantError> check(RunningNetwork network) {
+    return Observable.<BFTCommittedUpdate>create(
+            emitter ->
+                this.commits.addListener(
+                    (node, commit) -> emitter.onNext(commit), BFTCommittedUpdate.class))
+        .serialize()
+        .concatMap(
+            committedUpdate -> Observable.fromStream(committedUpdate.getCommitted().stream()))
+        .flatMap(
+            vertex -> {
+              final View view = vertex.getView();
+              if (view.compareTo(epochHighView) > 0) {
+                return Observable.just(
+                    new TestInvariantError(
+                        String.format(
+                            "Vertex committed with view %s but epochHighView is %s",
+                            view, epochHighView)));
+              }
 
-				return Observable.empty();
-			});
-	}
-
+              return Observable.empty();
+            });
+  }
 }

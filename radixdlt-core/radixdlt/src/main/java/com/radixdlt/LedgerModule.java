@@ -83,33 +83,35 @@ import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import java.util.Comparator;
 
-/**
- * Module which manages ledger state and synchronization of updates to ledger state
- */
+/** Module which manages ledger state and synchronization of updates to ledger state */
 public class LedgerModule extends AbstractModule {
-	@Override
-	protected void configure() {
-		bind(Ledger.class).to(StateComputerLedger.class);
-		bind(new TypeLiteral<Comparator<LedgerProof>>() { }).to(OrderByEpochAndVersionComparator.class).in(Scopes.SINGLETON);
-		bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-		bind(LedgerAccumulatorVerifier.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-		bind(StateComputerLedger.class).in(Scopes.SINGLETON);
-	}
+  @Override
+  protected void configure() {
+    bind(Ledger.class).to(StateComputerLedger.class);
+    bind(new TypeLiteral<Comparator<LedgerProof>>() {})
+        .to(OrderByEpochAndVersionComparator.class)
+        .in(Scopes.SINGLETON);
+    bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
+    bind(LedgerAccumulatorVerifier.class).to(SimpleLedgerAccumulatorAndVerifier.class);
+    bind(StateComputerLedger.class).in(Scopes.SINGLETON);
+  }
 
-	@Provides
-	private Comparator<AccumulatorState> accumulatorStateComparator() {
-		return Comparator.comparingLong(AccumulatorState::getStateVersion);
-	}
+  @Provides
+  private Comparator<AccumulatorState> accumulatorStateComparator() {
+    return Comparator.comparingLong(AccumulatorState::getStateVersion);
+  }
 
-	@ProvidesIntoSet
-	@ProcessOnDispatch
-	private EventProcessor<VerifiedTxnsAndProof> syncToLedgerCommittor(StateComputerLedger stateComputerLedger) {
-		return stateComputerLedger.syncEventProcessor();
-	}
+  @ProvidesIntoSet
+  @ProcessOnDispatch
+  private EventProcessor<VerifiedTxnsAndProof> syncToLedgerCommittor(
+      StateComputerLedger stateComputerLedger) {
+    return stateComputerLedger.syncEventProcessor();
+  }
 
-	@ProvidesIntoSet
-	@ProcessOnDispatch
-	private EventProcessor<BFTCommittedUpdate> bftToLedgerCommittor(StateComputerLedger stateComputerLedger) {
-		return stateComputerLedger.bftCommittedUpdateEventProcessor();
-	}
+  @ProvidesIntoSet
+  @ProcessOnDispatch
+  private EventProcessor<BFTCommittedUpdate> bftToLedgerCommittor(
+      StateComputerLedger stateComputerLedger) {
+    return stateComputerLedger.bftCommittedUpdateEventProcessor();
+  }
 }

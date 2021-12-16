@@ -64,71 +64,68 @@
 
 package com.radixdlt.application.validators.state;
 
-import com.radixdlt.crypto.ECPublicKey;
+import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
 
+import com.radixdlt.crypto.ECPublicKey;
 import java.util.Objects;
 import java.util.OptionalLong;
 
-import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
-
 public final class ValidatorFeeCopy implements ValidatorUpdatingData {
-	private final ECPublicKey validatorKey;
-	private final int curRakePercentage;
-	private final OptionalLong epochUpdate;
+  private final ECPublicKey validatorKey;
+  private final int curRakePercentage;
+  private final OptionalLong epochUpdate;
 
-	public ValidatorFeeCopy(OptionalLong epochUpdate, ECPublicKey validatorKey, int curRakePercentage) {
-		this.epochUpdate = epochUpdate;
-		this.validatorKey = Objects.requireNonNull(validatorKey);
-		this.curRakePercentage = curRakePercentage;
-	}
+  public ValidatorFeeCopy(
+      OptionalLong epochUpdate, ECPublicKey validatorKey, int curRakePercentage) {
+    this.epochUpdate = epochUpdate;
+    this.validatorKey = Objects.requireNonNull(validatorKey);
+    this.curRakePercentage = curRakePercentage;
+  }
 
-	public ValidatorFeeCopy(ECPublicKey validatorKey, int curRakePercentage) {
-		this.epochUpdate = OptionalLong.empty();
-		this.validatorKey = Objects.requireNonNull(validatorKey);
-		this.curRakePercentage = curRakePercentage;
-	}
+  public ValidatorFeeCopy(ECPublicKey validatorKey, int curRakePercentage) {
+    this.epochUpdate = OptionalLong.empty();
+    this.validatorKey = Objects.requireNonNull(validatorKey);
+    this.curRakePercentage = curRakePercentage;
+  }
 
-	public static ValidatorFeeCopy createVirtual(ECPublicKey validatorKey) {
-		return new ValidatorFeeCopy(validatorKey, RAKE_MAX);
-	}
+  public static ValidatorFeeCopy createVirtual(ECPublicKey validatorKey) {
+    return new ValidatorFeeCopy(validatorKey, RAKE_MAX);
+  }
 
-	@Override
-	public OptionalLong getEpochUpdate() {
-		return epochUpdate;
-	}
+  @Override
+  public OptionalLong getEpochUpdate() {
+    return epochUpdate;
+  }
 
-	@Override
-	public ECPublicKey getValidatorKey() {
-		return validatorKey;
-	}
+  @Override
+  public ECPublicKey getValidatorKey() {
+    return validatorKey;
+  }
 
-	public int getRakePercentage() {
-		return curRakePercentage;
-	}
+  public int getRakePercentage() {
+    return curRakePercentage;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(epochUpdate, validatorKey, curRakePercentage);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(epochUpdate, validatorKey, curRakePercentage);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof ValidatorFeeCopy)) {
-			return false;
-		}
-		var other = (ValidatorFeeCopy) o;
-		return Objects.equals(this.epochUpdate, other.epochUpdate)
-			&& Objects.equals(this.validatorKey, other.validatorKey)
-			&& this.curRakePercentage == other.curRakePercentage;
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof ValidatorFeeCopy)) {
+      return false;
+    }
+    var other = (ValidatorFeeCopy) o;
+    return Objects.equals(this.epochUpdate, other.epochUpdate)
+        && Objects.equals(this.validatorKey, other.validatorKey)
+        && this.curRakePercentage == other.curRakePercentage;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{epoch=%s validator=%s feePercentage=%s}",
-			this.getClass().getSimpleName(),
-			epochUpdate,
-			validatorKey.toHex(),
-			curRakePercentage
-		);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{epoch=%s validator=%s feePercentage=%s}",
+        this.getClass().getSimpleName(), epochUpdate, validatorKey.toHex(), curRakePercentage);
+  }
 }

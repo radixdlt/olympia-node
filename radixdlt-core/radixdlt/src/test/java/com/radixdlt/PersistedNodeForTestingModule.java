@@ -67,53 +67,53 @@ package com.radixdlt;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-import com.radixdlt.keys.InMemoryBFTKeyModule;
-import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
-import com.radixdlt.network.p2p.NoOpPeerControl;
-import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.keys.InMemoryBFTKeyModule;
+import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
+import com.radixdlt.network.p2p.NoOpPeerControl;
+import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.utils.TimeSupplier;
 
-/**
- * Helper class for modules to be used for recovery tests.
- */
+/** Helper class for modules to be used for recovery tests. */
 public final class PersistedNodeForTestingModule extends AbstractModule {
-	@Override
-	public void configure() {
-		bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
-		bind(SyncConfig.class).toInstance(SyncConfig.of(500, 10, 3000, 10, Long.MAX_VALUE));
-		bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
-		bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(1000L);
-		bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
-		bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
-		bind(RateLimiter.class).annotatedWith(GetVerticesRequestRateLimit.class)
-			.toInstance(RateLimiter.create(Double.MAX_VALUE));
-		bindConstant().annotatedWith(DatabaseCacheSize.class)
-			.to((long) (Runtime.getRuntime().maxMemory() * 0.125));
+  @Override
+  public void configure() {
+    bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
+    bind(SyncConfig.class).toInstance(SyncConfig.of(500, 10, 3000, 10, Long.MAX_VALUE));
+    bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
+    bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(1000L);
+    bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
+    bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
+    bind(RateLimiter.class)
+        .annotatedWith(GetVerticesRequestRateLimit.class)
+        .toInstance(RateLimiter.create(Double.MAX_VALUE));
+    bindConstant()
+        .annotatedWith(DatabaseCacheSize.class)
+        .to((long) (Runtime.getRuntime().maxMemory() * 0.125));
 
-		// System
-		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-		bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+    // System
+    bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+    bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 
-		// P2P
-		bind(PeerControl.class).toInstance(new NoOpPeerControl());
+    // P2P
+    bind(PeerControl.class).toInstance(new NoOpPeerControl());
 
-		install(new InMemoryBFTKeyModule());
-		install(new CryptoModule());
-		install(new FunctionalNodeModule());
-		install(new RadixEngineStoreModule());
-		install(new PersistenceModule());
-		install(new ConsensusRecoveryModule());
-		install(new LedgerRecoveryModule());
-	}
+    install(new InMemoryBFTKeyModule());
+    install(new CryptoModule());
+    install(new FunctionalNodeModule());
+    install(new RadixEngineStoreModule());
+    install(new PersistenceModule());
+    install(new ConsensusRecoveryModule());
+    install(new LedgerRecoveryModule());
+  }
 }

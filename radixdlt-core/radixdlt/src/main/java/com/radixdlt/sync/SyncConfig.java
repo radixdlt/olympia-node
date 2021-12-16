@@ -64,81 +64,66 @@
 
 package com.radixdlt.sync;
 
-/**
- * Configuration parameters for ledger sync.
- */
+/** Configuration parameters for ledger sync. */
 public interface SyncConfig {
-	static SyncConfig of(long requestTimeout, int syncCheckMaxPeers, long syncCheckInterval) {
-		return of(requestTimeout, syncCheckMaxPeers, syncCheckInterval, 10, 50);
-	}
+  static SyncConfig of(long requestTimeout, int syncCheckMaxPeers, long syncCheckInterval) {
+    return of(requestTimeout, syncCheckMaxPeers, syncCheckInterval, 10, 50);
+  }
 
-	static SyncConfig of(
-		long requestTimeout,
-		int syncCheckMaxPeers,
-		long syncCheckInterval,
-		int ledgerStatusUpdateMaxPeersToNotify,
-		double maxLedgerUpdatesRate
-	) {
-		return new SyncConfig() {
-			@Override
-			public long syncCheckReceiveStatusTimeout() {
-				return requestTimeout;
-			}
+  static SyncConfig of(
+      long requestTimeout,
+      int syncCheckMaxPeers,
+      long syncCheckInterval,
+      int ledgerStatusUpdateMaxPeersToNotify,
+      double maxLedgerUpdatesRate) {
+    return new SyncConfig() {
+      @Override
+      public long syncCheckReceiveStatusTimeout() {
+        return requestTimeout;
+      }
 
-			@Override
-			public long syncCheckInterval() {
-				return syncCheckInterval;
-			}
+      @Override
+      public long syncCheckInterval() {
+        return syncCheckInterval;
+      }
 
-			@Override
-			public int syncCheckMaxPeers() {
-				return syncCheckMaxPeers;
-			}
+      @Override
+      public int syncCheckMaxPeers() {
+        return syncCheckMaxPeers;
+      }
 
-			@Override
-			public long syncRequestTimeout() {
-				return requestTimeout;
-			}
+      @Override
+      public long syncRequestTimeout() {
+        return requestTimeout;
+      }
 
-			@Override
-			public int ledgerStatusUpdateMaxPeersToNotify() {
-				return ledgerStatusUpdateMaxPeersToNotify;
-			}
+      @Override
+      public int ledgerStatusUpdateMaxPeersToNotify() {
+        return ledgerStatusUpdateMaxPeersToNotify;
+      }
 
-			@Override
-			public double maxLedgerUpdatesRate() {
-				return maxLedgerUpdatesRate;
-			}
-		};
-	}
+      @Override
+      public double maxLedgerUpdatesRate() {
+        return maxLedgerUpdatesRate;
+      }
+    };
+  }
 
-	/**
-	 * A timeout for receiving sync check response messages (StatusResponse).
-	 */
-	long syncCheckReceiveStatusTimeout();
+  /** A timeout for receiving sync check response messages (StatusResponse). */
+  long syncCheckReceiveStatusTimeout();
 
-	/**
-	 * An interval for executing periodic sync checks with peers.
-	 */
-	long syncCheckInterval();
+  /** An interval for executing periodic sync checks with peers. */
+  long syncCheckInterval();
 
-	/**
-	 * Maximum number of peers to use for sync check.
-	 */
-	int syncCheckMaxPeers();
+  /** Maximum number of peers to use for sync check. */
+  int syncCheckMaxPeers();
 
-	/**
-	 * A timeout for peer sync request.
-	 */
-	long syncRequestTimeout();
+  /** A timeout for peer sync request. */
+  long syncRequestTimeout();
 
-	/**
-	 * Maximum number of peers to send the LedgerStatusUpdate message to.
-	 */
-	int ledgerStatusUpdateMaxPeersToNotify();
+  /** Maximum number of peers to send the LedgerStatusUpdate message to. */
+  int ledgerStatusUpdateMaxPeersToNotify();
 
-	/**
-	 * Maximum number of LedgerStatusUpdate messages send by this node per second.
-	 */
-	double maxLedgerUpdatesRate();
+  /** Maximum number of LedgerStatusUpdate messages send by this node per second. */
+  double maxLedgerUpdatesRate();
 }

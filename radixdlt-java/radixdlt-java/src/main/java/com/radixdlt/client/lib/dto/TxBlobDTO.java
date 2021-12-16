@@ -64,68 +64,65 @@
 
 package com.radixdlt.client.lib.dto;
 
-import org.bouncycastle.util.encoders.Hex;
+import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.identifiers.AID;
-
 import java.util.Arrays;
 import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
+import org.bouncycastle.util.encoders.Hex;
 
 public final class TxBlobDTO {
-	private final AID txId;
-	private final byte[] blob;
+  private final AID txId;
+  private final byte[] blob;
 
-	private TxBlobDTO(AID txId, byte[] blob) {
-		this.txId = txId;
-		this.blob = blob;
-	}
+  private TxBlobDTO(AID txId, byte[] blob) {
+    this.txId = txId;
+    this.blob = blob;
+  }
 
-	@JsonCreator
-	public static TxBlobDTO create(
-		@JsonProperty(value = "txID", required = true) AID txId,
-		@JsonProperty(value = "blob", required = true) String blob
-	) {
-		requireNonNull(txId);
-		requireNonNull(blob);
+  @JsonCreator
+  public static TxBlobDTO create(
+      @JsonProperty(value = "txID", required = true) AID txId,
+      @JsonProperty(value = "blob", required = true) String blob) {
+    requireNonNull(txId);
+    requireNonNull(blob);
 
-		return new TxBlobDTO(txId, Hex.decode(blob));
-	}
+    return new TxBlobDTO(txId, Hex.decode(blob));
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof TxBlobDTO)) {
-			return false;
-		}
+    if (!(o instanceof TxBlobDTO)) {
+      return false;
+    }
 
-		var txBlobDTO = (TxBlobDTO) o;
-		return txId.equals(txBlobDTO.txId) && Arrays.equals(blob, txBlobDTO.blob);
-	}
+    var txBlobDTO = (TxBlobDTO) o;
+    return txId.equals(txBlobDTO.txId) && Arrays.equals(blob, txBlobDTO.blob);
+  }
 
-	@Override
-	public int hashCode() {
-		int result = Objects.hash(txId);
-		result = 31 * result + Arrays.hashCode(blob);
-		return result;
-	}
+  @Override
+  public int hashCode() {
+    int result = Objects.hash(txId);
+    result = 31 * result + Arrays.hashCode(blob);
+    return result;
+  }
 
-	@Override
-	public String toString() {
-		return "{" + txId.toJson() + ", " + Hex.toHexString(blob) + '}';
-	}
+  @Override
+  public String toString() {
+    return "{" + txId.toJson() + ", " + Hex.toHexString(blob) + '}';
+  }
 
-	public AID getTxId() {
-		return txId;
-	}
+  public AID getTxId() {
+    return txId;
+  }
 
-	public byte[] getBlob() {
-		return blob;
-	}
+  public byte[] getBlob() {
+    return blob;
+  }
 }

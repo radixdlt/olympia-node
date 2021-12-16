@@ -64,92 +64,89 @@
 
 package com.radixdlt.consensus.bft;
 
-/**
- * Represents a BFT view used by the Pacemaker of a BFT instance
- */
+/** Represents a BFT view used by the Pacemaker of a BFT instance */
 public final class View implements Comparable<View> {
-	private static final View GENESIS_VIEW = View.of(0L);
-	private final long view;
+  private static final View GENESIS_VIEW = View.of(0L);
+  private final long view;
 
-	private View(long view) {
-		if (view < 0) {
-			throw new IllegalArgumentException("view must be >= 0 but was " + view);
-		}
+  private View(long view) {
+    if (view < 0) {
+      throw new IllegalArgumentException("view must be >= 0 but was " + view);
+    }
 
-		this.view = view;
-	}
+    this.view = view;
+  }
 
-	public boolean gte(View other) {
-		return this.view >= other.view;
-	}
+  public boolean gte(View other) {
+    return this.view >= other.view;
+  }
 
-	public boolean gt(View other) {
-		return this.view > other.view;
-	}
+  public boolean gt(View other) {
+    return this.view > other.view;
+  }
 
-	public boolean lt(View other) {
-		return this.view < other.view;
-	}
+  public boolean lt(View other) {
+    return this.view < other.view;
+  }
 
-	public boolean lte(View other) {
-		return this.view <= other.view;
-	}
+  public boolean lte(View other) {
+    return this.view <= other.view;
+  }
 
-	public View previous() {
-		if (this.view == 0) {
-			throw new IllegalStateException("View Underflow");
-		}
+  public View previous() {
+    if (this.view == 0) {
+      throw new IllegalStateException("View Underflow");
+    }
 
-		return new View(view - 1);
-	}
+    return new View(view - 1);
+  }
 
-	public View next() {
-		if (this.view == Long.MAX_VALUE) {
-			throw new IllegalStateException("View Overflow");
-		}
+  public View next() {
+    if (this.view == Long.MAX_VALUE) {
+      throw new IllegalStateException("View Overflow");
+    }
 
-		return new View(view + 1);
-	}
+    return new View(view + 1);
+  }
 
-	public long number() {
-		return this.view;
-	}
+  public long number() {
+    return this.view;
+  }
 
-	@Override
-	public int compareTo(View otherView) {
-		return Long.compare(this.view, otherView.view);
-	}
+  @Override
+  public int compareTo(View otherView) {
+    return Long.compare(this.view, otherView.view);
+  }
 
-	@Override
-	public int hashCode() {
-		return Long.hashCode(view);
-	}
+  @Override
+  public int hashCode() {
+    return Long.hashCode(view);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof View)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof View)) {
+      return false;
+    }
 
-		View other = (View) o;
-		return other.view == this.view;
-	}
+    View other = (View) o;
+    return other.view == this.view;
+  }
 
+  @Override
+  public String toString() {
+    return Long.toString(this.view);
+  }
 
-	@Override
-	public String toString() {
-		return Long.toString(this.view);
-	}
+  public boolean isGenesis() {
+    return GENESIS_VIEW.equals(this);
+  }
 
-	public boolean isGenesis() {
-		return GENESIS_VIEW.equals(this);
-	}
+  public static View genesis() {
+    return GENESIS_VIEW;
+  }
 
-	public static View genesis() {
-		return GENESIS_VIEW;
-	}
-
-	public static View of(long view) {
-		return new View(view);
-	}
+  public static View of(long view) {
+    return new View(view);
+  }
 }

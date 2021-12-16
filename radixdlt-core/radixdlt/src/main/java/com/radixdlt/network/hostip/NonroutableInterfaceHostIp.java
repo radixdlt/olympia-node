@@ -64,6 +64,12 @@
 
 package com.radixdlt.network.hostip;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Streams;
+import com.google.common.net.HostAndPort;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -74,87 +80,77 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Streams;
-import com.google.common.net.HostAndPort;
 
-/**
- * Query for a IP address from local interfaces.
- * Non-routable IP addresses are included.
- */
+/** Query for a IP address from local interfaces. Non-routable IP addresses are included. */
 final class NonroutableInterfaceHostIp implements HostIp {
-	private static final Logger log = LogManager.getLogger();
+  private static final Logger log = LogManager.getLogger();
 
-	static HostIp create() {
-		return new NonroutableInterfaceHostIp();
-	}
+  static HostIp create() {
+    return new NonroutableInterfaceHostIp();
+  }
 
-	private final Supplier<Optional<String>> result = Suppliers.memoize(this::get);
+  private final Supplier<Optional<String>> result = Suppliers.memoize(this::get);
 
-	@Override
-	public Optional<String> hostIp() {
-		return result.get();
-	}
+  @Override
+  public Optional<String> hostIp() {
+    return result.get();
+  }
 
-	private Optional<String> get() {
-		try {
-			return hostIp(Iterators.forEnumeration(NetworkInterface.getNetworkInterfaces()));
-		} catch (SocketException e) {
-			log.warn("Exception while retrieving network interfaces", e);
-		}
-		return Optional.empty();
-	}
+  private Optional<String> get() {
+    try {
+      return hostIp(Iterators.forEnumeration(NetworkInterface.getNetworkInterfaces()));
+    } catch (SocketException e) {
+      log.warn("Exception while retrieving network interfaces", e);
+    }
+    return Optional.empty();
+  }
 
-	@VisibleForTesting
-	Optional<String> hostIp(Iterator<NetworkInterface> interfaces) {
-		try {
-			ImmutableList<HostAndPort> addresses = addresses(interfaces)
-				.map(addr -> HostAndPort.fromHost(addr.getHostAddress()))
-				.collect(ImmutableList.toImmutableList());
-			if (addresses.isEmpty()) {
-				log.debug("No addresses found");
-			} else if (addresses.size() > 1) {
-				log.warn("Too many addresses {}", addresses);
-			} else {
-				HostAndPort hap = addresses.get(0);
-				log.debug("Found address {}", hap);
-				return Optional.of(hap.getHost());
-			}
-		} catch (IllegalArgumentException e) {
-			log.warn("Exception while retrieving interface address: {}", e.getMessage());
-		}
-		return Optional.empty();
-	}
+  @VisibleForTesting
+  Optional<String> hostIp(Iterator<NetworkInterface> interfaces) {
+    try {
+      ImmutableList<HostAndPort> addresses =
+          addresses(interfaces)
+              .map(addr -> HostAndPort.fromHost(addr.getHostAddress()))
+              .collect(ImmutableList.toImmutableList());
+      if (addresses.isEmpty()) {
+        log.debug("No addresses found");
+      } else if (addresses.size() > 1) {
+        log.warn("Too many addresses {}", addresses);
+      } else {
+        HostAndPort hap = addresses.get(0);
+        log.debug("Found address {}", hap);
+        return Optional.of(hap.getHost());
+      }
+    } catch (IllegalArgumentException e) {
+      log.warn("Exception while retrieving interface address: {}", e.getMessage());
+    }
+    return Optional.empty();
+  }
 
-	private Stream<InetAddress> addresses(Iterator<NetworkInterface> networkInterfaces) {
-		return Streams.stream(networkInterfaces)
-			.flatMap(this::interfaceAddresses)
-			.filter(NonroutableInterfaceHostIp::filter);
-	}
+  private Stream<InetAddress> addresses(Iterator<NetworkInterface> networkInterfaces) {
+    return Streams.stream(networkInterfaces)
+        .flatMap(this::interfaceAddresses)
+        .filter(NonroutableInterfaceHostIp::filter);
+  }
 
-	private Stream<InetAddress> interfaceAddresses(NetworkInterface ni) {
-		Enumeration<InetAddress> inetAddresses = ni.getInetAddresses();
-		List<InetAddress> addrList = Collections.list(inetAddresses);
-		if (log.isDebugEnabled()) {
-			for (InetAddress addr : addrList) {
-				log.debug("Interface {}/{} IP {}", ni.getName(), ni.getDisplayName(), addr.getHostAddress());
-			}
-		}
-		return addrList.stream();
-	}
+  private Stream<InetAddress> interfaceAddresses(NetworkInterface ni) {
+    Enumeration<InetAddress> inetAddresses = ni.getInetAddresses();
+    List<InetAddress> addrList = Collections.list(inetAddresses);
+    if (log.isDebugEnabled()) {
+      for (InetAddress addr : addrList) {
+        log.debug(
+            "Interface {}/{} IP {}", ni.getName(), ni.getDisplayName(), addr.getHostAddress());
+      }
+    }
+    return addrList.stream();
+  }
 
-	@VisibleForTesting
-	static boolean filter(InetAddress address) {
-		return !(
-			   address.isLinkLocalAddress()
-			|| address.isLoopbackAddress()
-			|| address.isMulticastAddress()
-		);
-	}
+  @VisibleForTesting
+  static boolean filter(InetAddress address) {
+    return !(address.isLinkLocalAddress()
+        || address.isLoopbackAddress()
+        || address.isMulticastAddress());
+  }
 }

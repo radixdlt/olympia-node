@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -70,26 +71,26 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 
 abstract class SystemGetJsonHandler<T> implements HttpHandler {
-	private static final String CONTENT_TYPE_JSON = "application/json";
-	private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
+  private static final String CONTENT_TYPE_JSON = "application/json";
+  private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
 
-	public abstract T handleRequest();
+  public abstract T handleRequest();
 
-	@Override
-	public final void handleRequest(HttpServerExchange exchange) throws Exception {
-		if (exchange.isInIoThread()) {
-			exchange.dispatch(this);
-			return;
-		}
+  @Override
+  public final void handleRequest(HttpServerExchange exchange) throws Exception {
+    if (exchange.isInIoThread()) {
+      exchange.dispatch(this);
+      return;
+    }
 
-		exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
-		exchange.startBlocking();
+    exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
+    exchange.startBlocking();
 
-		var mapper = JSON.getDefault().getMapper();
-		var response = handleRequest();
-		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
-		exchange.setStatusCode(200);
-		mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-		exchange.getResponseSender().send(mapper.writeValueAsString(response));
-	}
+    var mapper = JSON.getDefault().getMapper();
+    var response = handleRequest();
+    exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
+    exchange.setStatusCode(200);
+    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    exchange.getResponseSender().send(mapper.writeValueAsString(response));
+  }
 }

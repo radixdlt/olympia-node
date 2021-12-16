@@ -64,19 +64,15 @@
 
 package com.radixdlt.mempool;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
 import static java.lang.annotation.ElementType.*;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/**
- * Specifies how long a txn needs to stay in a mempool in
- * order to be relayed to other peers.
- */
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
+
+/** Specifies how long a txn needs to stay in a mempool in order to be relayed to other peers. */
 @Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
+@Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface MempoolRelayInitialDelay {
-}
+public @interface MempoolRelayInitialDelay {}

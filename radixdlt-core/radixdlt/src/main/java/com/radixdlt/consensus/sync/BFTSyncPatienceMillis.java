@@ -73,12 +73,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
-/**
- * The amount of milliseconds to wait until a retry for another sync
- * request is made
- */
+/** The amount of milliseconds to wait until a retry for another sync request is made */
 @Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
+@Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface BFTSyncPatienceMillis {
-}
+public @interface BFTSyncPatienceMillis {}

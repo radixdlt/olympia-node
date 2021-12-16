@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.api.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.ConstructionBuildHandler;
@@ -83,74 +86,64 @@ import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 public final class ConstructionBuildMintBurnTest extends ApiTest {
-	@Inject
-	private ConstructionBuildHandler sut;
-	@Inject
-	private CoreModelMapper coreModelMapper;
-	@Inject
-	@Self
-	private ECPublicKey self;
+  @Inject private ConstructionBuildHandler sut;
+  @Inject private CoreModelMapper coreModelMapper;
+  @Inject @Self private ECPublicKey self;
 
-	private ConstructionBuildRequest buildMintOrBurn(
-		ResourceIdentifier resourceIdentifier,
-		UInt256 amount,
-		boolean isMint,
-		EntityIdentifier to
-	) {
-		var accountAddress = REAddr.ofPubKeyAccount(self);
-		return new ConstructionBuildRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.feePayer(coreModelMapper.entityIdentifier(accountAddress))
-			.addOperationGroupsItem(new OperationGroup()
-				.addOperationsItem(new Operation()
-					.entityIdentifier(to)
-					.amount(new ResourceAmount()
-						.resourceIdentifier(resourceIdentifier)
-						.value(isMint ? amount.toString() : "-" + amount.toString())
-					)
-				)
-			);
-	}
+  private ConstructionBuildRequest buildMintOrBurn(
+      ResourceIdentifier resourceIdentifier, UInt256 amount, boolean isMint, EntityIdentifier to) {
+    var accountAddress = REAddr.ofPubKeyAccount(self);
+    return new ConstructionBuildRequest()
+        .networkIdentifier(new NetworkIdentifier().network("localnet"))
+        .feePayer(coreModelMapper.entityIdentifier(accountAddress))
+        .addOperationGroupsItem(
+            new OperationGroup()
+                .addOperationsItem(
+                    new Operation()
+                        .entityIdentifier(to)
+                        .amount(
+                            new ResourceAmount()
+                                .resourceIdentifier(resourceIdentifier)
+                                .value(isMint ? amount.toString() : "-" + amount.toString()))));
+  }
 
-	@Test
-	public void building_token_mints_should_work() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void building_token_mints_should_work() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
-		var request = buildMintOrBurn(
-			coreModelMapper.nativeToken(),
-			UInt256.ONE,
-			true,
-			coreModelMapper.entityIdentifier(otherAddress)
-		);
-		var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
+    // Act
+    var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+    var request =
+        buildMintOrBurn(
+            coreModelMapper.nativeToken(),
+            UInt256.ONE,
+            true,
+            coreModelMapper.entityIdentifier(otherAddress));
+    var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
 
-		// Assert
-		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
-		assertThat(Bytes.fromHexString(response.getUnsignedTransaction())).isNotNull();
-	}
+    // Assert
+    assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
+    assertThat(Bytes.fromHexString(response.getUnsignedTransaction())).isNotNull();
+  }
 
-	@Test
-	public void building_token_burns_should_work() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void building_token_burns_should_work() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var request = buildMintOrBurn(
-			coreModelMapper.nativeToken(),
-			UInt256.ONE,
-			false,
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self))
-		);
-		var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
+    // Act
+    var request =
+        buildMintOrBurn(
+            coreModelMapper.nativeToken(),
+            UInt256.ONE,
+            false,
+            coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)));
+    var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
 
-		// Assert
-		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
-		assertThat(Bytes.fromHexString(response.getUnsignedTransaction())).isNotNull();
-	}
+    // Assert
+    assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
+    assertThat(Bytes.fromHexString(response.getUnsignedTransaction())).isNotNull();
+  }
 }

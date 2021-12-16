@@ -66,62 +66,60 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class MempoolDataErrors {
-	private final long other;
-	private final long hook;
-	private final long conflict;
+  private final long other;
+  private final long hook;
+  private final long conflict;
 
-	private MempoolDataErrors(long other, long hook, long conflict) {
-		this.other = other;
-		this.hook = hook;
-		this.conflict = conflict;
-	}
+  private MempoolDataErrors(long other, long hook, long conflict) {
+    this.other = other;
+    this.hook = hook;
+    this.conflict = conflict;
+  }
 
-	@JsonCreator
-	public static MempoolDataErrors create(
-		@JsonProperty(value = "other", required = true) long other,
-		@JsonProperty(value = "hook", required = true) long hook,
-		@JsonProperty(value = "conflict", required = true) long conflict
-	) {
-		return new MempoolDataErrors(other, hook, conflict);
-	}
+  @JsonCreator
+  public static MempoolDataErrors create(
+      @JsonProperty(value = "other", required = true) long other,
+      @JsonProperty(value = "hook", required = true) long hook,
+      @JsonProperty(value = "conflict", required = true) long conflict) {
+    return new MempoolDataErrors(other, hook, conflict);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof MempoolDataErrors)) {
-			return false;
-		}
+    if (!(o instanceof MempoolDataErrors)) {
+      return false;
+    }
 
-		var that = (MempoolDataErrors) o;
-		return other == that.other && hook == that.hook && conflict == that.conflict;
-	}
+    var that = (MempoolDataErrors) o;
+    return other == that.other && hook == that.hook && conflict == that.conflict;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(other, hook, conflict);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(other, hook, conflict);
+  }
 
-	@Override
-	public String toString() {
-		return "{other:" + other + ", hook:" + hook + ", conflict:" + conflict + '}';
-	}
+  @Override
+  public String toString() {
+    return "{other:" + other + ", hook:" + hook + ", conflict:" + conflict + '}';
+  }
 
-	public long getOther() {
-		return other;
-	}
+  public long getOther() {
+    return other;
+  }
 
-	public long getHook() {
-		return hook;
-	}
+  public long getHook() {
+    return hook;
+  }
 
-	public long getConflict() {
-		return conflict;
-	}
+  public long getConflict() {
+    return conflict;
+  }
 }

@@ -64,40 +64,37 @@
 
 package com.radixdlt.ledger;
 
-import org.junit.Test;
-
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-
-import java.util.List;
-
-import nl.jqno.equalsverifier.EqualsVerifier;
-
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import java.util.List;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
+
 public class DtoTxnsAndProofTest {
-    @Test
-    public void equalsContract() {
-        EqualsVerifier.forClass(DtoTxnsAndProof.class)
-                .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-                .verify();
-    }
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(DtoTxnsAndProof.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 
-    @Test(expected = NullPointerException.class)
-    public void deserializationWithNullHeadThrowsException() {
-        new DtoTxnsAndProof(List.of(), null, mock(DtoLedgerProof.class));
-    }
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullHeadThrowsException() {
+    new DtoTxnsAndProof(List.of(), null, mock(DtoLedgerProof.class));
+  }
 
-    @Test(expected = NullPointerException.class)
-    public void deserializationWithNullTailThrowsException() {
-        new DtoTxnsAndProof(List.of(), mock(DtoLedgerProof.class), null);
-    }
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullTailThrowsException() {
+    new DtoTxnsAndProof(List.of(), mock(DtoLedgerProof.class), null);
+  }
 
-    @Test
-    public void deserializationWithNullTxnListIsSafe() {
-        var dto = new DtoTxnsAndProof(null, mock(DtoLedgerProof.class), mock(DtoLedgerProof.class));
+  @Test
+  public void deserializationWithNullTxnListIsSafe() {
+    var dto = new DtoTxnsAndProof(null, mock(DtoLedgerProof.class), mock(DtoLedgerProof.class));
 
-        assertNotNull(dto.getTxns());
-    }
+    assertNotNull(dto.getTxns());
+  }
 }

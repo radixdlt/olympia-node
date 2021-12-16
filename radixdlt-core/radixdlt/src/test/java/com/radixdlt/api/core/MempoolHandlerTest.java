@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.api.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.MempoolHandler;
@@ -88,74 +91,55 @@ import com.radixdlt.statecomputer.RadixEngineMempool;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
+import java.util.List;
 import org.junit.Test;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 public final class MempoolHandlerTest extends ApiTest {
-	@Inject
-	private MempoolHandler sut;
-	@Inject
-	private CoreModelMapper coreModelMapper;
-	@Inject
-	@LocalSigner
-	private HashSigner hashSigner;
-	@Inject
-	@Self
-	private ECPublicKey self;
-	@Inject
-	private RadixEngine<LedgerAndBFTProof> radixEngine;
-	@Inject
-	private Forks forks;
-	@Inject
-	private RadixEngineMempool mempool;
+  @Inject private MempoolHandler sut;
+  @Inject private CoreModelMapper coreModelMapper;
+  @Inject @LocalSigner private HashSigner hashSigner;
+  @Inject @Self private ECPublicKey self;
+  @Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
+  @Inject private Forks forks;
+  @Inject private RadixEngineMempool mempool;
 
-	private Txn buildSignedTxn(REAddr from, REAddr to) throws Exception {
-		final UInt256 toTransfer = getLiquidAmount().toSubunits().subtract(Amount.ofTokens(1).toSubunits());
+  private Txn buildSignedTxn(REAddr from, REAddr to) throws Exception {
+    final UInt256 toTransfer =
+        getLiquidAmount().toSubunits().subtract(Amount.ofTokens(1).toSubunits());
 
-		var entityOperationGroups =
-			List.of(List.of(
-				EntityOperation.from(
-					new AccountVaultEntity(from),
-					ResourceOperation.withdraw(
-						new TokenResource("xrd", REAddr.ofNativeToken()),
-						toTransfer
-					)
-				),
-				EntityOperation.from(
-					new AccountVaultEntity(to),
-					ResourceOperation.deposit(
-						new TokenResource("xrd", REAddr.ofNativeToken()),
-						toTransfer
-					)
-				)
-			));
-		var operationTxBuilder = new OperationTxBuilder(null, entityOperationGroups, forks);
-		var builder = radixEngine.constructWithFees(
-			operationTxBuilder, false, from, NotEnoughNativeTokensForFeesException::new
-		);
-		return builder.signAndBuild(hashSigner::sign);
-	}
+    var entityOperationGroups =
+        List.of(
+            List.of(
+                EntityOperation.from(
+                    new AccountVaultEntity(from),
+                    ResourceOperation.withdraw(
+                        new TokenResource("xrd", REAddr.ofNativeToken()), toTransfer)),
+                EntityOperation.from(
+                    new AccountVaultEntity(to),
+                    ResourceOperation.deposit(
+                        new TokenResource("xrd", REAddr.ofNativeToken()), toTransfer))));
+    var operationTxBuilder = new OperationTxBuilder(null, entityOperationGroups, forks);
+    var builder =
+        radixEngine.constructWithFees(
+            operationTxBuilder, false, from, NotEnoughNativeTokensForFeesException::new);
+    return builder.signAndBuild(hashSigner::sign);
+  }
 
-	@Test
-	public void transaction_in_mempool_should_be_seen() throws Exception {
-		// Arrange
-		start();
-		var accountAddress = REAddr.ofPubKeyAccount(self);
-		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
-		var signedTxn = buildSignedTxn(accountAddress, otherAddress);
-		mempool.add(signedTxn);
+  @Test
+  public void transaction_in_mempool_should_be_seen() throws Exception {
+    // Arrange
+    start();
+    var accountAddress = REAddr.ofPubKeyAccount(self);
+    var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+    var signedTxn = buildSignedTxn(accountAddress, otherAddress);
+    mempool.add(signedTxn);
 
-		// Act
-		var request = new MempoolRequest().networkIdentifier(networkIdentifier());
-		var response = handleRequestWithExpectedResponse(
-			sut, request, MempoolResponse.class
-		);
+    // Act
+    var request = new MempoolRequest().networkIdentifier(networkIdentifier());
+    var response = handleRequestWithExpectedResponse(sut, request, MempoolResponse.class);
 
-		// Assert
-		assertThat(response.getTransactionIdentifiers())
-			.containsExactly(coreModelMapper.transactionIdentifier(signedTxn.getId()));
-	}
+    // Assert
+    assertThat(response.getTransactionIdentifiers())
+        .containsExactly(coreModelMapper.transactionIdentifier(signedTxn.getId()));
+  }
 }
