@@ -3,11 +3,13 @@ on:
  push:
    # branches to consider in the event; optional, defaults to all
    branches:
-     - develop
+     - run-drafter
 jobs:
  update_release_draft:
    runs-on: ubuntu-latest
    steps:
      - uses: release-drafter/release-drafter@v5
+       whith:
+         - version: 1.0.1
        env:
          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
