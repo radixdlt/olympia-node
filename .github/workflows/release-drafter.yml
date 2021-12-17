@@ -10,6 +10,6 @@ jobs:
    steps:
      - uses: release-drafter/release-drafter@v5
        whith:
-         - version: 1.0.1
+         version: 1.0.1
        env:
          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
