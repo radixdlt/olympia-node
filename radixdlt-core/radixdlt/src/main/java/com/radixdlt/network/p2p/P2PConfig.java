@@ -175,6 +175,12 @@ public interface P2PConfig {
 	Duration issuedProxyCertificateValidityDuration();
 
 	/**
+	 * Specifies a list of peers that this node can connect to.
+	 * If empty, no restrictions are applied.
+	 */
+	ImmutableSet<NodeId> allowedPeers();
+
+	/**
 	 * Create a configuration from specified {@link RuntimeProperties}.
 	 *
 	 * @param properties the properties to read the configuration from

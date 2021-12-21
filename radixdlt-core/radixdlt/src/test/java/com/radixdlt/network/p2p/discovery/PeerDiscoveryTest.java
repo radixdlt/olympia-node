@@ -69,15 +69,29 @@ import com.google.inject.Key;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.network.p2p.PeerControl;
+import com.radixdlt.network.p2p.PeerManager;
 import com.radixdlt.network.p2p.RadixNodeUri;
+import com.radixdlt.network.p2p.addressbook.AddressBook;
+import com.radixdlt.network.p2p.discovery.util.SeedNodesConfigParser;
 import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
 import org.junit.Test;
 
 import java.util.Set;
+import java.util.stream.Stream;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
 
@@ -117,5 +131,53 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
 		processAll();
 
 		assertTrue(testNetworkRunner.addressBook(0).findById(NodeId.fromPublicKey(unexpectedSender.getKey())).get().isBanned());
+	}
+
+	@Test
+	public void when_get_peers_then_shouldnt_return_proxied_peers() {
+		final var selfKey = ECKeyPair.generateNew();
+		final var selfUri = RadixNodeUri.fromPubKeyAndAddress(1, selfKey.getPublicKey(), "127.0.0.1", 3000);
+
+		final var config = mock(P2PConfig.class);
+		final var addressBook = mock(AddressBook.class);
+		final RemoteEventDispatcher<PeersResponse> peersResponseDispatcher = rmock(RemoteEventDispatcher.class);
+
+		final var sut = new PeerDiscovery(
+			selfUri,
+			config,
+			mock(PeerManager.class),
+			addressBook,
+			mock(PeerControl.class),
+			mock(SeedNodesConfigParser.class),
+			rmock(RemoteEventDispatcher.class),
+			peersResponseDispatcher
+		);
+
+		final var peer1 = randomNodeUri();
+		final var peer2 = randomNodeUri();
+		final var peer3 = randomNodeUri();
+		final var peer4 = randomNodeUri();
+		final var peer5 = randomNodeUri();
+		final var peer6 = randomNodeUri();
+
+		// peer3 is included in the address book
+		when(addressBook.bestCandidatesToConnect()).thenReturn(
+			Stream.of(peer1, peer2, peer3, peer4, peer5, peer6)
+		);
+
+		// peer3 shouldn't be returned in discovery response
+		when(config.authorizedProxiedPeers()).thenReturn(ImmutableSet.of(peer3.getNodeId()));
+
+		sut.getPeersRemoteEventProcessor().process(BFTNode.random(), GetPeers.create());
+
+		verify(peersResponseDispatcher, times(1)).dispatch((BFTNode) any(), argThat(
+			response ->
+				response.getPeers().containsAll(Set.of(peer1, peer2, peer4, peer5, peer6))
+					&& !response.getPeers().contains(peer3)
+		));
+	}
+
+	private RadixNodeUri randomNodeUri() {
+		return RadixNodeUri.fromPubKeyAndAddress(0, ECKeyPair.generateNew().getPublicKey(), "127.0.0.1", 1);
 	}
 }
