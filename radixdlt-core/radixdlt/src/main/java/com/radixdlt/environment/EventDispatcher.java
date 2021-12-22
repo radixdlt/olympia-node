@@ -70,5 +70,5 @@ package com.radixdlt.environment;
  * @param <T> the event class
  */
 public interface EventDispatcher<T> {
-	void dispatch(T t);
+  void dispatch(T t);
 }

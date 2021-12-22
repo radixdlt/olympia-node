@@ -67,66 +67,62 @@ package com.radixdlt.middleware2.network;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
+import com.radixdlt.network.messaging.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.network.messaging.Message;
-
 import java.util.Objects;
 
-/**
- * RPC Message to get request for a vertex
- */
+/** RPC Message to get request for a vertex */
 @SerializerId2("message.consensus.vertices_request")
 public final class GetVerticesRequestMessage extends Message {
-	@JsonProperty("vertexId")
-	@DsonOutput(Output.ALL)
-	private final HashCode vertexId;
+  @JsonProperty("vertexId")
+  @DsonOutput(Output.ALL)
+  private final HashCode vertexId;
 
-	@JsonProperty("count")
-	@DsonOutput(Output.ALL)
-	private final int count;
+  @JsonProperty("count")
+  @DsonOutput(Output.ALL)
+  private final int count;
 
-	@JsonCreator
-	public GetVerticesRequestMessage(
-		@JsonProperty(value = "vertexId", required = true) HashCode vertexId,
-		@JsonProperty("count") int count
-	) {
-		if (count <= 0) {
-			throw new IllegalArgumentException("Request contains negative count of vertices: " + count);
-		}
+  @JsonCreator
+  public GetVerticesRequestMessage(
+      @JsonProperty(value = "vertexId", required = true) HashCode vertexId,
+      @JsonProperty("count") int count) {
+    if (count <= 0) {
+      throw new IllegalArgumentException("Request contains negative count of vertices: " + count);
+    }
 
-		this.vertexId = Objects.requireNonNull(vertexId);
-		this.count = count;
-	}
+    this.vertexId = Objects.requireNonNull(vertexId);
+    this.count = count;
+  }
 
-	public HashCode getVertexId() {
-		return vertexId;
-	}
+  public HashCode getVertexId() {
+    return vertexId;
+  }
 
-	public int getCount() {
-		return count;
-	}
+  public int getCount() {
+    return count;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), vertexId);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s[%s]", getClass().getSimpleName(), vertexId);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof GetVerticesRequestMessage that)
-			   && count == that.count
-			   && Objects.equals(vertexId, that.vertexId)
-			   && Objects.equals(getTimestamp(), that.getTimestamp());
-	}
+    return (o instanceof GetVerticesRequestMessage that)
+        && count == that.count
+        && Objects.equals(vertexId, that.vertexId)
+        && Objects.equals(getTimestamp(), that.getTimestamp());
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(vertexId, count, getTimestamp());
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(vertexId, count, getTimestamp());
+  }
 }

@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,10 +64,12 @@
 
 package com.radixdlt.api.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.handlers.KeySignHandler;
+import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.model.EntityOperation;
 import com.radixdlt.api.core.model.NotEnoughNativeTokensForFeesException;
 import com.radixdlt.api.core.model.OperationTxBuilder;
@@ -74,9 +77,9 @@ import com.radixdlt.api.core.model.ResourceOperation;
 import com.radixdlt.api.core.model.TokenResource;
 import com.radixdlt.api.core.model.entities.AccountVaultEntity;
 import com.radixdlt.api.core.openapitools.model.InvalidTransactionError;
+import com.radixdlt.api.core.openapitools.model.KeySignRequest;
 import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.openapitools.model.PublicKeyNotSupportedError;
-import com.radixdlt.api.core.openapitools.model.KeySignRequest;
 import com.radixdlt.api.core.openapitools.model.UnexpectedError;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
@@ -85,100 +88,90 @@ import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
+import java.util.List;
 import org.junit.Test;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class KeySignHandlerTest extends ApiTest {
-	@Inject
-	private KeySignHandler sut;
-	@Inject
-	private Forks forks;
-	@Inject
-	private CoreModelMapper mapper;
-	@Inject
-	private RadixEngine<LedgerAndBFTProof> radixEngine;
+  @Inject private KeySignHandler sut;
+  @Inject private Forks forks;
+  @Inject private CoreModelMapper mapper;
+  @Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
 
-	private byte[] buildUnsignedTxn(REAddr from, REAddr to) throws Exception {
-		var entityOperationGroups =
-			List.of(List.of(
-				EntityOperation.from(
-					new AccountVaultEntity(from),
-					ResourceOperation.withdraw(
-						new TokenResource("xrd", REAddr.ofNativeToken()),
-						UInt256.ONE
-					)
-				),
-				EntityOperation.from(
-					new AccountVaultEntity(to),
-					ResourceOperation.deposit(
-						new TokenResource("xrd", REAddr.ofNativeToken()),
-						UInt256.ONE
-					)
-				)
-			));
-		var operationTxBuilder = new OperationTxBuilder(null, entityOperationGroups, forks);
-		var builder = radixEngine.constructWithFees(
-			operationTxBuilder, false, from, NotEnoughNativeTokensForFeesException::new
-		);
-		return builder.buildForExternalSign().blob();
-	}
+  private byte[] buildUnsignedTxn(REAddr from, REAddr to) throws Exception {
+    var entityOperationGroups =
+        List.of(
+            List.of(
+                EntityOperation.from(
+                    new AccountVaultEntity(from),
+                    ResourceOperation.withdraw(
+                        new TokenResource("xrd", REAddr.ofNativeToken()), UInt256.ONE)),
+                EntityOperation.from(
+                    new AccountVaultEntity(to),
+                    ResourceOperation.deposit(
+                        new TokenResource("xrd", REAddr.ofNativeToken()), UInt256.ONE))));
+    var operationTxBuilder = new OperationTxBuilder(null, entityOperationGroups, forks);
+    var builder =
+        radixEngine.constructWithFees(
+            operationTxBuilder, false, from, NotEnoughNativeTokensForFeesException::new);
+    return builder.buildForExternalSign().blob();
+  }
 
-	@Test
-	public void sign_should_work_on_correct_transaction() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void sign_should_work_on_correct_transaction() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var from = REAddr.ofPubKeyAccount(selfKey());
-		var other = PrivateKeys.ofNumeric(2);
-		var to = REAddr.ofPubKeyAccount(other.getPublicKey());
-		var unsignedTxn = buildUnsignedTxn(from, to);
-		var request = new KeySignRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.publicKey(mapper.publicKey(selfKey()))
-			.unsignedTransaction(Bytes.toHexString(unsignedTxn));
-		var response = sut.handleRequest(request);
+    // Act
+    var from = REAddr.ofPubKeyAccount(selfKey());
+    var other = PrivateKeys.ofNumeric(2);
+    var to = REAddr.ofPubKeyAccount(other.getPublicKey());
+    var unsignedTxn = buildUnsignedTxn(from, to);
+    var request =
+        new KeySignRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .publicKey(mapper.publicKey(selfKey()))
+            .unsignedTransaction(Bytes.toHexString(unsignedTxn));
+    var response = sut.handleRequest(request);
 
-		// Assert
-		assertThat(Bytes.fromHexString(response.getSignedTransaction())).isNotNull();
-	}
+    // Assert
+    assertThat(Bytes.fromHexString(response.getSignedTransaction())).isNotNull();
+  }
 
-	@Test
-	public void sign_given_an_unsupported_public_key_should_fail() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void sign_given_an_unsupported_public_key_should_fail() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var from = REAddr.ofPubKeyAccount(selfKey());
-		var other = PrivateKeys.ofNumeric(2);
-		var to = REAddr.ofPubKeyAccount(other.getPublicKey());
-		var unsignedTxn = buildUnsignedTxn(from, to);
-		var request = new KeySignRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.publicKey(mapper.publicKey(other.getPublicKey()))
-			.unsignedTransaction(Bytes.toHexString(unsignedTxn));
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+    // Act
+    var from = REAddr.ofPubKeyAccount(selfKey());
+    var other = PrivateKeys.ofNumeric(2);
+    var to = REAddr.ofPubKeyAccount(other.getPublicKey());
+    var unsignedTxn = buildUnsignedTxn(from, to);
+    var request =
+        new KeySignRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .publicKey(mapper.publicKey(other.getPublicKey()))
+            .unsignedTransaction(Bytes.toHexString(unsignedTxn));
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(PublicKeyNotSupportedError.class);
-	}
+    // Assert
+    assertThat(response.getDetails()).isInstanceOf(PublicKeyNotSupportedError.class);
+  }
 
-	@Test
-	public void sign_should_fail_given_an_invalid_transaction() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void sign_should_fail_given_an_invalid_transaction() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var request = new KeySignRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.publicKey(mapper.publicKey(selfKey()))
-			.unsignedTransaction("badbadbadbad");
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+    // Act
+    var request =
+        new KeySignRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .publicKey(mapper.publicKey(selfKey()))
+            .unsignedTransaction("badbadbadbad");
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(InvalidTransactionError.class);
-	}
+    // Assert
+    assertThat(response.getDetails()).isInstanceOf(InvalidTransactionError.class);
+  }
 }

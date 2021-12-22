@@ -64,47 +64,47 @@
 
 package com.radixdlt.middleware2.network;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.crypto.HashUtils;
+import java.util.ArrayList;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
-import java.util.ArrayList;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
 public class GetVerticesResponseMessageTest {
-	@Test
-	public void sensibleToString() {
-		UnverifiedVertex genesisVertex = mock(UnverifiedVertex.class);
-		GetVerticesResponseMessage msg1 = new GetVerticesResponseMessage(ImmutableList.of(genesisVertex));
-		String s1 = msg1.toString();
-		assertThat(s1)
-			.contains(GetVerticesResponseMessage.class.getSimpleName())
-			.contains(genesisVertex.toString());
-	}
+  @Test
+  public void sensibleToString() {
+    UnverifiedVertex genesisVertex = mock(UnverifiedVertex.class);
+    GetVerticesResponseMessage msg1 =
+        new GetVerticesResponseMessage(ImmutableList.of(genesisVertex));
+    String s1 = msg1.toString();
+    assertThat(s1)
+        .contains(GetVerticesResponseMessage.class.getSimpleName())
+        .contains(genesisVertex.toString());
+  }
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(GetVerticesResponseMessage.class)
-			.suppress(Warning.NONFINAL_FIELDS)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(GetVerticesResponseMessage.class)
+        .suppress(Warning.NONFINAL_FIELDS)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializationWithNullThrowsException() {
-		new GetVerticesResponseMessage(null);
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException() {
+    new GetVerticesResponseMessage(null);
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializationWithNullListThrowsException() {
-		var list = new ArrayList<UnverifiedVertex>();
-		list.add(null);
-		new GetVerticesResponseMessage(list);
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullListThrowsException() {
+    var list = new ArrayList<UnverifiedVertex>();
+    list.add(null);
+    new GetVerticesResponseMessage(list);
+  }
 }

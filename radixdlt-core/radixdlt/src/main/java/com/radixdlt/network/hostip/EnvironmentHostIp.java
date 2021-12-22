@@ -64,52 +64,48 @@
 
 package com.radixdlt.network.hostip;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Suppliers;
+import com.google.common.net.HostAndPort;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Optional;
 import java.util.function.Supplier;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Suppliers;
-import com.google.common.net.HostAndPort;
-
-/**
- * Query for a public IP address from environment variable.
- */
+/** Query for a public IP address from environment variable. */
 final class EnvironmentHostIp implements HostIp {
-	private static final Logger log = LogManager.getLogger();
+  private static final Logger log = LogManager.getLogger();
 
-	@VisibleForTesting
-	static final String ENV_VAR = "RADIXDLT_HOST_IP_ADDRESS";
+  @VisibleForTesting static final String ENV_VAR = "RADIXDLT_HOST_IP_ADDRESS";
 
-	private final Supplier<Optional<String>> result = Suppliers.memoize(() -> hostIp(System.getenv(ENV_VAR)));
+  private final Supplier<Optional<String>> result =
+      Suppliers.memoize(() -> hostIp(System.getenv(ENV_VAR)));
 
-	static HostIp create() {
-		return new EnvironmentHostIp();
-	}
+  static HostIp create() {
+    return new EnvironmentHostIp();
+  }
 
-	@Override
-	public Optional<String> hostIp() {
-		return result.get();
-	}
+  @Override
+  public Optional<String> hostIp() {
+    return result.get();
+  }
 
-	// Broken out for testing as environment is immutable from Java runtime
-	@VisibleForTesting
-	Optional<String> hostIp(String value) {
-		if (value != null && !value.trim().isEmpty()) {
-			try {
-				InetAddress address = InetAddress.getByName(value);
-				HostAndPort hap = HostAndPort.fromHost(address.getHostAddress());
-				log.info("Found address {}", hap);
-				return Optional.of(hap.getHost());
-			} catch (UnknownHostException | IllegalArgumentException e) {
-				log.warn("Environment variable {} is invalid: '{}'", ENV_VAR, value);
-			}
-		}
-		log.info("No suitable address found");
-		return Optional.empty();
-	}
+  // Broken out for testing as environment is immutable from Java runtime
+  @VisibleForTesting
+  Optional<String> hostIp(String value) {
+    if (value != null && !value.trim().isEmpty()) {
+      try {
+        InetAddress address = InetAddress.getByName(value);
+        HostAndPort hap = HostAndPort.fromHost(address.getHostAddress());
+        log.info("Found address {}", hap);
+        return Optional.of(hap.getHost());
+      } catch (UnknownHostException | IllegalArgumentException e) {
+        log.warn("Environment variable {} is invalid: '{}'", ENV_VAR, value);
+      }
+    }
+    log.info("No suitable address found");
+    return Optional.empty();
+  }
 }

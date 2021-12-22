@@ -69,10 +69,11 @@ import com.radixdlt.utils.TimeSupplier;
 import java.util.Random;
 
 public class MockedSystemModule extends AbstractModule {
-	final Random sharedRandom = new Random();
-	@Override
-	public void configure() {
-		bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-		bind(Random.class).toInstance(sharedRandom);
-	}
+  final Random sharedRandom = new Random();
+
+  @Override
+  public void configure() {
+    bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+    bind(Random.class).toInstance(sharedRandom);
+  }
 }

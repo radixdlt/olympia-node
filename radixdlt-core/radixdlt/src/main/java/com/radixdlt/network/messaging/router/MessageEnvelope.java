@@ -70,68 +70,66 @@ import com.radixdlt.network.messaging.Message;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
-
 import java.util.Objects;
 
 @SerializerId2("network.p2p.message_envelope")
 public final class MessageEnvelope extends Message {
-	@JsonProperty("author")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final NodeId author;
+  @JsonProperty("author")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final NodeId author;
 
-	@JsonProperty("recipient")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final NodeId recipient;
+  @JsonProperty("recipient")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final NodeId recipient;
 
-	@JsonProperty("message")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final Message message;
+  @JsonProperty("message")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final Message message;
 
-	@JsonCreator
-	private static MessageEnvelope deserialize(
-		@JsonProperty("author") NodeId author,
-		@JsonProperty("recipient") NodeId recipient,
-		@JsonProperty("message") Message message
-	) {
-		return new MessageEnvelope(author, recipient, message);
-	}
+  @JsonCreator
+  private static MessageEnvelope deserialize(
+      @JsonProperty("author") NodeId author,
+      @JsonProperty("recipient") NodeId recipient,
+      @JsonProperty("message") Message message) {
+    return new MessageEnvelope(author, recipient, message);
+  }
 
-	public static MessageEnvelope create(NodeId author, NodeId recipient, Message message) {
-		return new MessageEnvelope(author, recipient, message);
-	}
+  public static MessageEnvelope create(NodeId author, NodeId recipient, Message message) {
+    return new MessageEnvelope(author, recipient, message);
+  }
 
-	private MessageEnvelope(NodeId author, NodeId recipient, Message message) {
-		this.author = author;
-		this.recipient = recipient;
-		this.message = message;
-	}
+  private MessageEnvelope(NodeId author, NodeId recipient, Message message) {
+    this.author = author;
+    this.recipient = recipient;
+    this.message = message;
+  }
 
-	public NodeId getAuthor() {
-		return author;
-	}
+  public NodeId getAuthor() {
+    return author;
+  }
 
-	public NodeId getRecipient() {
-		return recipient;
-	}
+  public NodeId getRecipient() {
+    return recipient;
+  }
 
-	public Message getMessage() {
-		return message;
-	}
+  public Message getMessage() {
+    return message;
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		return o instanceof MessageEnvelope that
-			&& getTimestamp() == that.getTimestamp()
-			&& Objects.equals(author, that.author)
-			&& Objects.equals(recipient, that.recipient)
-			&& Objects.equals(message, that.message);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    return o instanceof MessageEnvelope that
+        && getTimestamp() == that.getTimestamp()
+        && Objects.equals(author, that.author)
+        && Objects.equals(recipient, that.recipient)
+        && Objects.equals(message, that.message);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(getTimestamp(), author, recipient, message);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(getTimestamp(), author, recipient, message);
+  }
 }

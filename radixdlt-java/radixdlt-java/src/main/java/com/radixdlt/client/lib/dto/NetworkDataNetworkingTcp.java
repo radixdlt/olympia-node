@@ -66,73 +66,80 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class NetworkDataNetworkingTcp {
-	private final long outOpened;
-	private final long droppedMessages;
-	private final long closed;
-	private final long inOpened;
+  private final long outOpened;
+  private final long droppedMessages;
+  private final long closed;
+  private final long inOpened;
 
-	private NetworkDataNetworkingTcp(long outOpened, long droppedMessages, long closed, long inOpened) {
-		this.outOpened = outOpened;
-		this.droppedMessages = droppedMessages;
-		this.closed = closed;
-		this.inOpened = inOpened;
-	}
+  private NetworkDataNetworkingTcp(
+      long outOpened, long droppedMessages, long closed, long inOpened) {
+    this.outOpened = outOpened;
+    this.droppedMessages = droppedMessages;
+    this.closed = closed;
+    this.inOpened = inOpened;
+  }
 
-	@JsonCreator
-	public static NetworkDataNetworkingTcp create(
-		@JsonProperty(value = "outOpened", required = true) long outOpened,
-		@JsonProperty(value = "droppedMessages", required = true) long droppedMessages,
-		@JsonProperty(value = "closed", required = true) long closed,
-		@JsonProperty(value = "inOpened", required = true) long inOpened
-	) {
-		return new NetworkDataNetworkingTcp(outOpened, droppedMessages, closed, inOpened);
-	}
+  @JsonCreator
+  public static NetworkDataNetworkingTcp create(
+      @JsonProperty(value = "outOpened", required = true) long outOpened,
+      @JsonProperty(value = "droppedMessages", required = true) long droppedMessages,
+      @JsonProperty(value = "closed", required = true) long closed,
+      @JsonProperty(value = "inOpened", required = true) long inOpened) {
+    return new NetworkDataNetworkingTcp(outOpened, droppedMessages, closed, inOpened);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof NetworkDataNetworkingTcp)) {
-			return false;
-		}
+    if (!(o instanceof NetworkDataNetworkingTcp)) {
+      return false;
+    }
 
-		var that = (NetworkDataNetworkingTcp) o;
-		return outOpened == that.outOpened
-			&& droppedMessages == that.droppedMessages
-			&& closed == that.closed
-			&& inOpened == that.inOpened;
-	}
+    var that = (NetworkDataNetworkingTcp) o;
+    return outOpened == that.outOpened
+        && droppedMessages == that.droppedMessages
+        && closed == that.closed
+        && inOpened == that.inOpened;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(outOpened, droppedMessages, closed, inOpened);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(outOpened, droppedMessages, closed, inOpened);
+  }
 
-	@Override
-	public String toString() {
-		return "{" + "outOpened=" + outOpened + ", droppedMessages=" + droppedMessages + ", closed=" + closed
-			+ ", inOpened=" + inOpened + '}';
-	}
+  @Override
+  public String toString() {
+    return "{"
+        + "outOpened="
+        + outOpened
+        + ", droppedMessages="
+        + droppedMessages
+        + ", closed="
+        + closed
+        + ", inOpened="
+        + inOpened
+        + '}';
+  }
 
-	public long getOutOpened() {
-		return outOpened;
-	}
+  public long getOutOpened() {
+    return outOpened;
+  }
 
-	public long getDroppedMessages() {
-		return droppedMessages;
-	}
+  public long getDroppedMessages() {
+    return droppedMessages;
+  }
 
-	public long getClosed() {
-		return closed;
-	}
+  public long getClosed() {
+    return closed;
+  }
 
-	public long getInOpened() {
-		return inOpened;
-	}
+  public long getInOpened() {
+    return inOpened;
+  }
 }

@@ -67,7 +67,7 @@ package com.radixdlt.client.lib.api.sync;
 import com.radixdlt.utils.functional.Failure;
 
 public class RadixApiException extends RuntimeException {
-	public RadixApiException(Failure failure) {
-		super(failure.message());
-	}
+  public RadixApiException(Failure failure) {
+    super(failure.message());
+  }
 }

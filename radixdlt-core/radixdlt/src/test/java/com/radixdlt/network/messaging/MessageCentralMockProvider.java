@@ -64,32 +64,37 @@
 
 package com.radixdlt.network.messaging;
 
-import io.reactivex.rxjava3.subjects.PublishSubject;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+import io.reactivex.rxjava3.subjects.PublishSubject;
+
 public class MessageCentralMockProvider {
 
-	private MessageCentralMockProvider() {
-	}
+  private MessageCentralMockProvider() {}
 
-	public static MessageCentral get() {
-		final PublishSubject<MessageFromPeer<?>> messageProcessor = PublishSubject.create();
-		final MessageCentral messageCentral = mock(MessageCentral.class);
+  public static MessageCentral get() {
+    final PublishSubject<MessageFromPeer<?>> messageProcessor = PublishSubject.create();
+    final MessageCentral messageCentral = mock(MessageCentral.class);
 
-		doAnswer(invocation -> {
-			messageProcessor.onNext(new MessageFromPeer<Message>(invocation.getArgument(0), invocation.getArgument(1)));
-			return null;
-		}).when(messageCentral).send(any(), any());
+    doAnswer(
+            invocation -> {
+              messageProcessor.onNext(
+                  new MessageFromPeer<Message>(
+                      invocation.getArgument(0), invocation.getArgument(1)));
+              return null;
+            })
+        .when(messageCentral)
+        .send(any(), any());
 
-		doAnswer(invocation ->
-			messageProcessor
-				.filter(p -> ((Class<?>) invocation.getArgument(0)).isInstance(p.getMessage()))
-		).when(messageCentral).messagesOf(any());
+    doAnswer(
+            invocation ->
+                messageProcessor.filter(
+                    p -> ((Class<?>) invocation.getArgument(0)).isInstance(p.getMessage())))
+        .when(messageCentral)
+        .messagesOf(any());
 
-		return messageCentral;
-	}
-
+    return messageCentral;
+  }
 }

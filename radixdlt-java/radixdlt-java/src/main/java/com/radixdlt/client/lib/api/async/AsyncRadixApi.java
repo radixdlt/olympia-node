@@ -64,16 +64,15 @@
 
 package com.radixdlt.client.lib.api.async;
 
-import com.radixdlt.client.lib.dto.TransactionDTO;
-import com.radixdlt.client.lib.dto.TransactionHistory;
-import org.bouncycastle.util.encoders.Hex;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.*;
+import static com.radixdlt.errors.ClientErrors.MISSING_BASE_URL;
+import static java.util.Optional.ofNullable;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
-
 import com.radixdlt.client.lib.api.rpc.BasicAuth;
 import com.radixdlt.client.lib.api.rpc.JsonRpcRequest;
 import com.radixdlt.client.lib.api.rpc.JsonRpcResponse;
@@ -104,6 +103,8 @@ import com.radixdlt.client.lib.dto.SyncConfiguration;
 import com.radixdlt.client.lib.dto.SyncData;
 import com.radixdlt.client.lib.dto.TokenBalances;
 import com.radixdlt.client.lib.dto.TokenInfo;
+import com.radixdlt.client.lib.dto.TransactionDTO;
+import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
 import com.radixdlt.client.lib.dto.TransactionsDTO;
 import com.radixdlt.client.lib.dto.TxBlobDTO;
@@ -115,391 +116,413 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Promise;
 import com.radixdlt.utils.functional.Result;
-
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
-
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.*;
-import static com.radixdlt.errors.ClientErrors.MISSING_BASE_URL;
-
-import static java.util.Optional.ofNullable;
+import org.bouncycastle.util.encoders.Hex;
 
 public class AsyncRadixApi extends RadixApiBase implements RadixApi {
-	private final Network network = new Network() {
-		@Override
-		public Promise<NetworkId> id() {
-			return call(request(NETWORK_ID), new TypeReference<>() {});
-		}
+  private final Network network =
+      new Network() {
+        @Override
+        public Promise<NetworkId> id() {
+          return call(request(NETWORK_ID), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<NetworkStats> throughput() {
-			return call(request(NETWORK_THROUGHPUT), new TypeReference<>() {});
-		}
+        @Override
+        public Promise<NetworkStats> throughput() {
+          return call(request(NETWORK_THROUGHPUT), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<NetworkStats> demand() {
-			return call(request(NETWORK_DEMAND), new TypeReference<>() {});
-		}
+        @Override
+        public Promise<NetworkStats> demand() {
+          return call(request(NETWORK_DEMAND), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<NetworkConfiguration> configuration() {
-			return call(request(NETWORK_CONFIG), new TypeReference<>() {});
-		}
+        @Override
+        public Promise<NetworkConfiguration> configuration() {
+          return call(request(NETWORK_CONFIG), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<NetworkData> data() {
-			return call(request(NETWORK_DATA), new TypeReference<>() {});
-		}
+        @Override
+        public Promise<NetworkData> data() {
+          return call(request(NETWORK_DATA), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<List<NetworkPeer>> peers() {
-			return call(request(NETWORK_PEERS), new TypeReference<>() {});
-		}
+        @Override
+        public Promise<List<NetworkPeer>> peers() {
+          return call(request(NETWORK_PEERS), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<List<AddressBookEntry>> addressBook() {
-			return call(request(NETWORK_ADDRESS_BOOK), new TypeReference<>() {});
-		}
-	};
+        @Override
+        public Promise<List<AddressBookEntry>> addressBook() {
+          return call(request(NETWORK_ADDRESS_BOOK), new TypeReference<>() {});
+        }
+      };
 
-	private final Token token = new Token() {
-		@Override
-		public Promise<TokenInfo> describeNative() {
-			return call(request(TOKEN_NATIVE), new TypeReference<>() {});
-		}
+  private final Token token =
+      new Token() {
+        @Override
+        public Promise<TokenInfo> describeNative() {
+          return call(request(TOKEN_NATIVE), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<TokenInfo> describe(String rri) {
-			return call(request(TOKEN_INFO, rri), new TypeReference<>() {});
-		}
-	};
+        @Override
+        public Promise<TokenInfo> describe(String rri) {
+          return call(request(TOKEN_INFO, rri), new TypeReference<>() {});
+        }
+      };
 
-	private final Transaction transaction = new Transaction() {
-		@Override
-		public Promise<BuiltTransaction> build(TransactionRequest request) {
-			return call(
-				request(
-					CONSTRUCTION_BUILD, request.getActions(), request.getFeePayer(),
-					request.getMessage(), request.disableResourceAllocationAndDestroy()
-				),
-				new TypeReference<>() {}
-			);
-		}
+  private final Transaction transaction =
+      new Transaction() {
+        @Override
+        public Promise<BuiltTransaction> build(TransactionRequest request) {
+          return call(
+              request(
+                  CONSTRUCTION_BUILD,
+                  request.getActions(),
+                  request.getFeePayer(),
+                  request.getMessage(),
+                  request.disableResourceAllocationAndDestroy()),
+              new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<TxBlobDTO> finalize(FinalizedTransaction request, boolean immediateSubmit) {
-			return call(
-				request(
-					CONSTRUCTION_FINALIZE,
-					Hex.toHexString(request.getRawBlob()), request.getSignature(), request.getPublicKey(), Boolean.toString(immediateSubmit)
-				),
-				new TypeReference<>() {}
-			);
-		}
+        @Override
+        public Promise<TxBlobDTO> finalize(FinalizedTransaction request, boolean immediateSubmit) {
+          return call(
+              request(
+                  CONSTRUCTION_FINALIZE,
+                  Hex.toHexString(request.getRawBlob()),
+                  request.getSignature(),
+                  request.getPublicKey(),
+                  Boolean.toString(immediateSubmit)),
+              new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<TxDTO> submit(TxBlobDTO request) {
-			return call(
-				request(CONSTRUCTION_SUBMIT, Hex.toHexString(request.getBlob()), request.getTxId()),
-				new TypeReference<>() {}
-			);
-		}
+        @Override
+        public Promise<TxDTO> submit(TxBlobDTO request) {
+          return call(
+              request(CONSTRUCTION_SUBMIT, Hex.toHexString(request.getBlob()), request.getTxId()),
+              new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<TransactionDTO> lookup(AID txId) {
-			return call(request(TRANSACTION_LOOKUP, txId.toString()), new TypeReference<>() {});
-		}
+        @Override
+        public Promise<TransactionDTO> lookup(AID txId) {
+          return call(request(TRANSACTION_LOOKUP, txId.toString()), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<TransactionStatusDTO> status(AID txId) {
-			return call(request(TRANSACTION_STATUS, txId.toString()), new TypeReference<>() {});
-		}
+        @Override
+        public Promise<TransactionStatusDTO> status(AID txId) {
+          return call(request(TRANSACTION_STATUS, txId.toString()), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<TransactionsDTO> list(long limit, OptionalLong offset) {
-			var request = request(TRANSACTION_LIST, limit);
-			offset.ifPresent(request::addParameters);
-			return call(request, new TypeReference<>() {});
-		}
-	};
+        @Override
+        public Promise<TransactionsDTO> list(long limit, OptionalLong offset) {
+          var request = request(TRANSACTION_LIST, limit);
+          offset.ifPresent(request::addParameters);
+          return call(request, new TypeReference<>() {});
+        }
+      };
 
-	private final SingleAccount account = new SingleAccount() {
-		@Override
-		public Promise<TokenBalances> balances(AccountAddress address) {
-			return call(request(ACCOUNT_BALANCES, address.toString(networkId())), new TypeReference<>() {});
-		}
+  private final SingleAccount account =
+      new SingleAccount() {
+        @Override
+        public Promise<TokenBalances> balances(AccountAddress address) {
+          return call(
+              request(ACCOUNT_BALANCES, address.toString(networkId())), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<TransactionHistory> history(
-			AccountAddress address, int size, OptionalLong nextOffset
-		) {
-			var request = request(ACCOUNT_HISTORY, address.toString(networkId()), size);
-			nextOffset.ifPresent(request::addParameters);
+        @Override
+        public Promise<TransactionHistory> history(
+            AccountAddress address, int size, OptionalLong nextOffset) {
+          var request = request(ACCOUNT_HISTORY, address.toString(networkId()), size);
+          nextOffset.ifPresent(request::addParameters);
 
-			return call(request, new TypeReference<>() {});
-		}
+          return call(request, new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<List<StakePositions>> stakes(AccountAddress address) {
-			return call(request(ACCOUNT_STAKES, address.toString(networkId())), new TypeReference<>() {});
-		}
+        @Override
+        public Promise<List<StakePositions>> stakes(AccountAddress address) {
+          return call(
+              request(ACCOUNT_STAKES, address.toString(networkId())), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<List<UnstakePositions>> unstakes(AccountAddress address) {
-			return call(request(ACCOUNT_UNSTAKES, address.toString(networkId())), new TypeReference<>() {});
-		}
-	};
+        @Override
+        public Promise<List<UnstakePositions>> unstakes(AccountAddress address) {
+          return call(
+              request(ACCOUNT_UNSTAKES, address.toString(networkId())), new TypeReference<>() {});
+        }
+      };
 
-	private final Validator validator = new Validator() {
-		@Override
-		public Promise<ValidatorsResponse> list(int size, Optional<NavigationCursor> cursor) {
-			var request = request(VALIDATORS_LIST, size);
-			cursor.ifPresent(cursorValue -> request.addParameters(cursorValue.value()));
+  private final Validator validator =
+      new Validator() {
+        @Override
+        public Promise<ValidatorsResponse> list(int size, Optional<NavigationCursor> cursor) {
+          var request = request(VALIDATORS_LIST, size);
+          cursor.ifPresent(cursorValue -> request.addParameters(cursorValue.value()));
 
-			return call(request, new TypeReference<>() {});
-		}
+          return call(request, new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<ValidatorDTO> lookup(ValidatorAddress validatorAddress) {
-			return call(request(VALIDATORS_LOOKUP, validatorAddress.toString(networkId())), new TypeReference<>() {});
-		}
-	};
+        @Override
+        public Promise<ValidatorDTO> lookup(ValidatorAddress validatorAddress) {
+          return call(
+              request(VALIDATORS_LOOKUP, validatorAddress.toString(networkId())),
+              new TypeReference<>() {});
+        }
+      };
 
-	private final Local local = new Local() {
-		@Override
-		public Promise<LocalAccount> accountInfo() {
-			return call(request(ACCOUNT_INFO), new TypeReference<>() {});
-		}
+  private final Local local =
+      new Local() {
+        @Override
+        public Promise<LocalAccount> accountInfo() {
+          return call(request(ACCOUNT_INFO), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<TxDTO> submitTxSingleStep(TransactionRequest request) {
-			return call(
-				request(ACCOUNT_SUBMIT_SINGLE_STEP, request.getActions(), request.getMessage()),
-				new TypeReference<>() {}
-			);
-		}
+        @Override
+        public Promise<TxDTO> submitTxSingleStep(TransactionRequest request) {
+          return call(
+              request(ACCOUNT_SUBMIT_SINGLE_STEP, request.getActions(), request.getMessage()),
+              new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<LocalValidatorInfo> validatorInfo() {
-			return call(request(VALIDATION_NODE_INFO), new TypeReference<>() {});
-		}
+        @Override
+        public Promise<LocalValidatorInfo> validatorInfo() {
+          return call(request(VALIDATION_NODE_INFO), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<EpochData> currentEpoch() {
-			return call(request(VALIDATION_CURRENT_EPOCH), new TypeReference<>() {});
-		}
-	};
+        @Override
+        public Promise<EpochData> currentEpoch() {
+          return call(request(VALIDATION_CURRENT_EPOCH), new TypeReference<>() {});
+        }
+      };
 
-	private final Api api = new Api() {
-		@Override
-		public Promise<ApiConfiguration> configuration() {
-			return call(request(API_CONFIGURATION), new TypeReference<>() {});
-		}
+  private final Api api =
+      new Api() {
+        @Override
+        public Promise<ApiConfiguration> configuration() {
+          return call(request(API_CONFIGURATION), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<ApiData> data() {
-			return call(request(API_DATA), new TypeReference<>() {});
-		}
-	};
+        @Override
+        public Promise<ApiData> data() {
+          return call(request(API_DATA), new TypeReference<>() {});
+        }
+      };
 
-	private final Consensus consensus = new Consensus() {
-		@Override
-		public Promise<ConsensusConfiguration> configuration() {
-			return call(request(BFT_CONFIGURATION), new TypeReference<>() {});
-		}
+  private final Consensus consensus =
+      new Consensus() {
+        @Override
+        public Promise<ConsensusConfiguration> configuration() {
+          return call(request(BFT_CONFIGURATION), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<ConsensusData> data() {
-			return call(request(BFT_DATA), new TypeReference<>() {});
-		}
-	};
+        @Override
+        public Promise<ConsensusData> data() {
+          return call(request(BFT_DATA), new TypeReference<>() {});
+        }
+      };
 
-	private final Mempool mempool = new Mempool() {
-		@Override
-		public Promise<MempoolConfiguration> configuration() {
-			return call(request(MEMPOOL_CONFIGURATION), new TypeReference<>() {});
-		}
+  private final Mempool mempool =
+      new Mempool() {
+        @Override
+        public Promise<MempoolConfiguration> configuration() {
+          return call(request(MEMPOOL_CONFIGURATION), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<MempoolData> data() {
-			return call(request(MEMPOOL_DATA), new TypeReference<>() {});
-		}
-	};
+        @Override
+        public Promise<MempoolData> data() {
+          return call(request(MEMPOOL_DATA), new TypeReference<>() {});
+        }
+      };
 
-	private final RadixEngine radixEngine = new RadixEngine() {
-		@Override
-		public Promise<List<ForkDetails>> configuration() {
-			return call(request(RADIX_ENGINE_CONFIGURATION), new TypeReference<>() {});
-		}
+  private final RadixEngine radixEngine =
+      new RadixEngine() {
+        @Override
+        public Promise<List<ForkDetails>> configuration() {
+          return call(request(RADIX_ENGINE_CONFIGURATION), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<RadixEngineData> data() {
-			return call(request(RADIX_ENGINE_DATA), new TypeReference<>() {});
-		}
-	};
+        @Override
+        public Promise<RadixEngineData> data() {
+          return call(request(RADIX_ENGINE_DATA), new TypeReference<>() {});
+        }
+      };
 
-	private final Sync sync = new Sync() {
-		@Override
-		public Promise<SyncConfiguration> configuration() {
-			return call(request(SYNC_CONFIGURATION), new TypeReference<>() {});
-		}
+  private final Sync sync =
+      new Sync() {
+        @Override
+        public Promise<SyncConfiguration> configuration() {
+          return call(request(SYNC_CONFIGURATION), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<SyncData> data() {
-			return call(request(SYNC_DATA), new TypeReference<>() {});
-		}
-	};
+        @Override
+        public Promise<SyncData> data() {
+          return call(request(SYNC_DATA), new TypeReference<>() {});
+        }
+      };
 
-	private final Ledger ledger = new Ledger() {
-		@Override
-		public Promise<Proof> latest() {
-			return call(request(LEDGER_PROOF), new TypeReference<>() {});
-		}
+  private final Ledger ledger =
+      new Ledger() {
+        @Override
+        public Promise<Proof> latest() {
+          return call(request(LEDGER_PROOF), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<Proof> epoch() {
-			return call(request(LEDGER_EPOCH_PROOF), new TypeReference<>() {});
-		}
+        @Override
+        public Promise<Proof> epoch() {
+          return call(request(LEDGER_EPOCH_PROOF), new TypeReference<>() {});
+        }
 
-		@Override
-		public Promise<Checkpoint> checkpoints() {
-			return call(request(LEDGER_CHECKPOINTS), new TypeReference<>() {});
-		}
-	};
+        @Override
+        public Promise<Checkpoint> checkpoints() {
+          return call(request(LEDGER_CHECKPOINTS), new TypeReference<>() {});
+        }
+      };
 
-	@Override
-	public Network network() {
-		return network;
-	}
+  @Override
+  public Network network() {
+    return network;
+  }
 
-	@Override
-	public Transaction transaction() {
-		return transaction;
-	}
+  @Override
+  public Transaction transaction() {
+    return transaction;
+  }
 
-	@Override
-	public Token token() {
-		return token;
-	}
+  @Override
+  public Token token() {
+    return token;
+  }
 
-	@Override
-	public Local local() {
-		return local;
-	}
+  @Override
+  public Local local() {
+    return local;
+  }
 
-	@Override
-	public SingleAccount account() {
-		return account;
-	}
+  @Override
+  public SingleAccount account() {
+    return account;
+  }
 
-	@Override
-	public Validator validator() {
-		return validator;
-	}
+  @Override
+  public Validator validator() {
+    return validator;
+  }
 
-	@Override
-	public Api api() {
-		return api;
-	}
+  @Override
+  public Api api() {
+    return api;
+  }
 
-	@Override
-	public Consensus consensus() {
-		return consensus;
-	}
+  @Override
+  public Consensus consensus() {
+    return consensus;
+  }
 
-	@Override
-	public Mempool mempool() {
-		return mempool;
-	}
+  @Override
+  public Mempool mempool() {
+    return mempool;
+  }
 
-	@Override
-	public RadixEngine radixEngine() {
-		return radixEngine;
-	}
+  @Override
+  public RadixEngine radixEngine() {
+    return radixEngine;
+  }
 
-	@Override
-	public Sync sync() {
-		return sync;
-	}
+  @Override
+  public Sync sync() {
+    return sync;
+  }
 
-	@Override
-	public Ledger ledger() {
-		return ledger;
-	}
+  @Override
+  public Ledger ledger() {
+    return ledger;
+  }
 
-	@Override
-	public AsyncRadixApi withTrace() {
-		enableTrace();
-		return this;
-	}
+  @Override
+  public AsyncRadixApi withTrace() {
+    enableTrace();
+    return this;
+  }
 
-	@Override
-	public Addressing addressing() {
-		return networkAddressing();
-	}
+  @Override
+  public Addressing addressing() {
+    return networkAddressing();
+  }
 
-	@Override
-	public AsyncRadixApi withTimeout(Duration timeout) {
-		setTimeout(timeout);
-		return this;
-	}
+  @Override
+  public AsyncRadixApi withTimeout(Duration timeout) {
+    setTimeout(timeout);
+    return this;
+  }
 
-	private AsyncRadixApi(
-		String baseUrl,
-		int primaryPort,
-		int secondaryPort,
-		HttpClient client,
-		Optional<BasicAuth> authentication
-	) {
-		super(baseUrl, primaryPort, secondaryPort, client, authentication);
-	}
+  private AsyncRadixApi(
+      String baseUrl,
+      int primaryPort,
+      int secondaryPort,
+      HttpClient client,
+      Optional<BasicAuth> authentication) {
+    super(baseUrl, primaryPort, secondaryPort, client, authentication);
+  }
 
-	static Promise<RadixApi> connect(
-		String url,
-		int primaryPort,
-		int secondaryPort,
-		Optional<BasicAuth> authentication
-	) {
-		return buildHttpClient().fold(Promise::failure, client -> connect(url, primaryPort, secondaryPort, client, authentication));
-	}
+  static Promise<RadixApi> connect(
+      String url, int primaryPort, int secondaryPort, Optional<BasicAuth> authentication) {
+    return buildHttpClient()
+        .fold(
+            Promise::failure,
+            client -> connect(url, primaryPort, secondaryPort, client, authentication));
+  }
 
-	static Promise<RadixApi> connect(
-		String url,
-		int primaryPort,
-		int secondaryPort,
-		HttpClient client,
-		Optional<BasicAuth> authentication
-	) {
-		return ofNullable(url)
-			.map(baseUrl -> Result.ok(new AsyncRadixApi(baseUrl, primaryPort, secondaryPort, client, authentication)))
-			.orElseGet(MISSING_BASE_URL::result)
-			.flatMap(asyncRadixApi -> asyncRadixApi.network().id().join()
-				.onSuccess(networkId -> asyncRadixApi.configureSerialization(networkId.getNetworkId()))
-				.map(__ -> asyncRadixApi))
-			.fold(Promise::failure, Promise::ok);
-	}
+  static Promise<RadixApi> connect(
+      String url,
+      int primaryPort,
+      int secondaryPort,
+      HttpClient client,
+      Optional<BasicAuth> authentication) {
+    return ofNullable(url)
+        .map(
+            baseUrl ->
+                Result.ok(
+                    new AsyncRadixApi(baseUrl, primaryPort, secondaryPort, client, authentication)))
+        .orElseGet(MISSING_BASE_URL::result)
+        .flatMap(
+            asyncRadixApi ->
+                asyncRadixApi
+                    .network()
+                    .id()
+                    .join()
+                    .onSuccess(
+                        networkId -> asyncRadixApi.configureSerialization(networkId.getNetworkId()))
+                    .map(__ -> asyncRadixApi))
+        .fold(Promise::failure, Promise::ok);
+  }
 
-	private <T> Promise<T> call(JsonRpcRequest request, TypeReference<JsonRpcResponse<T>> typeReference) {
-		return serialize(request)
-			.onSuccess(this::trace)
-			.map(value -> buildRequest(request, value))
-			.map(httpRequest -> client().sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString()))
-			.map(future -> Promise.<T>promise(promise -> future.thenAccept(body -> bodyHandler(body, promise, typeReference))))
-			.fold(Promise::failure, promise -> promise);
-	}
+  private <T> Promise<T> call(
+      JsonRpcRequest request, TypeReference<JsonRpcResponse<T>> typeReference) {
+    return serialize(request)
+        .onSuccess(this::trace)
+        .map(value -> buildRequest(request, value))
+        .map(httpRequest -> client().sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString()))
+        .map(
+            future ->
+                Promise.<T>promise(
+                    promise ->
+                        future.thenAccept(body -> bodyHandler(body, promise, typeReference))))
+        .fold(Promise::failure, promise -> promise);
+  }
 
-	private <T> void bodyHandler(
-		HttpResponse<String> body,
-		Promise<T> promise,
-		TypeReference<JsonRpcResponse<T>> reference
-	) {
-		promise.resolve(deserialize(trace(body.body()), reference)
-							.flatMap(response -> response.rawError() == null
-												 ? Result.ok(response.rawResult())
-												 : Result.fail(response.rawError().toFailure())));
-	}
+  private <T> void bodyHandler(
+      HttpResponse<String> body, Promise<T> promise, TypeReference<JsonRpcResponse<T>> reference) {
+    promise.resolve(
+        deserialize(trace(body.body()), reference)
+            .flatMap(
+                response ->
+                    response.rawError() == null
+                        ? Result.ok(response.rawResult())
+                        : Result.fail(response.rawError().toFailure())));
+  }
 }

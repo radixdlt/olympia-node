@@ -67,51 +67,50 @@ package com.radixdlt.application.validators.state;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
-
 import java.util.Arrays;
 import java.util.Objects;
 
 public final class ValidatorSystemMetadata implements ValidatorData {
-	private final ECPublicKey validatorKey;
-	private final byte[] data;
+  private final ECPublicKey validatorKey;
+  private final byte[] data;
 
-	public ValidatorSystemMetadata(ECPublicKey validatorKey, byte[] data) {
-		if (data.length != 32) {
-			throw new IllegalArgumentException("Invalid number of bytes in data");
-		}
-		this.validatorKey = validatorKey;
-		this.data = data;
-	}
+  public ValidatorSystemMetadata(ECPublicKey validatorKey, byte[] data) {
+    if (data.length != 32) {
+      throw new IllegalArgumentException("Invalid number of bytes in data");
+    }
+    this.validatorKey = validatorKey;
+    this.data = data;
+  }
 
-	public static ValidatorSystemMetadata createVirtual(ECPublicKey validatorKey) {
-		return new ValidatorSystemMetadata(validatorKey, HashUtils.zero256().asBytes());
-	}
+  public static ValidatorSystemMetadata createVirtual(ECPublicKey validatorKey) {
+    return new ValidatorSystemMetadata(validatorKey, HashUtils.zero256().asBytes());
+  }
 
-	public byte[] getData() {
-		return data;
-	}
+  public byte[] getData() {
+    return data;
+  }
 
-	public HashCode getAsHash() {
-		return HashCode.fromBytes(data);
-	}
+  public HashCode getAsHash() {
+    return HashCode.fromBytes(data);
+  }
 
-	@Override
-	public ECPublicKey getValidatorKey() {
-		return validatorKey;
-	}
+  @Override
+  public ECPublicKey getValidatorKey() {
+    return validatorKey;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(validatorKey, Arrays.hashCode(data));
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(validatorKey, Arrays.hashCode(data));
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof ValidatorSystemMetadata)) {
-			return false;
-		}
-		var other = (ValidatorSystemMetadata) o;
-		return Objects.equals(this.validatorKey, other.validatorKey)
-			&& Arrays.equals(this.data, other.data);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof ValidatorSystemMetadata)) {
+      return false;
+    }
+    var other = (ValidatorSystemMetadata) o;
+    return Objects.equals(this.validatorKey, other.validatorKey)
+        && Arrays.equals(this.data, other.data);
+  }
 }

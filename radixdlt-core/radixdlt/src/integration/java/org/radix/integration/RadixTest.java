@@ -67,7 +67,7 @@ package org.radix.integration;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
-
+import java.util.Objects;
 import org.json.JSONObject;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -77,49 +77,48 @@ import org.radix.Radix;
 import org.radix.serialization.TestSetupUtils;
 import org.radix.utils.IOUtils;
 
-import java.util.Objects;
-
 public class RadixTest {
-	private static Serialization serialization;
-	private static String dbLocation = null;
-	private static RuntimeProperties properties;
-	@ClassRule
-	public static TemporaryFolder folder = new TemporaryFolder();
+  private static Serialization serialization;
+  private static String dbLocation = null;
+  private static RuntimeProperties properties;
+  @ClassRule public static TemporaryFolder folder = new TemporaryFolder();
 
-	@BeforeClass
-	public static void startRadixTest() throws Exception {
-		TestSetupUtils.installBouncyCastleProvider();
+  @BeforeClass
+  public static void startRadixTest() throws Exception {
+    TestSetupUtils.installBouncyCastleProvider();
 
-		serialization = DefaultSerialization.getInstance();
+    serialization = DefaultSerialization.getInstance();
 
-		JSONObject runtimeConfigurationJSON = new JSONObject();
-		if (Radix.class.getResourceAsStream("/runtime_options.json") != null) {
-			runtimeConfigurationJSON = new JSONObject(IOUtils.toString(Radix.class.getResourceAsStream("/runtime_options.json")));
-		}
+    JSONObject runtimeConfigurationJSON = new JSONObject();
+    if (Radix.class.getResourceAsStream("/runtime_options.json") != null) {
+      runtimeConfigurationJSON =
+          new JSONObject(
+              IOUtils.toString(Radix.class.getResourceAsStream("/runtime_options.json")));
+    }
 
-		properties = new RuntimeProperties(runtimeConfigurationJSON, null);
+    properties = new RuntimeProperties(runtimeConfigurationJSON, null);
 
-		// Tests need this
-		properties.set("network.host_ip", "127.0.0.1");
+    // Tests need this
+    properties.set("network.host_ip", "127.0.0.1");
 
-		if (dbLocation == null) {
-			dbLocation = folder.getRoot().getAbsolutePath();
-		}
-		properties.set("db.location", dbLocation);
-	}
+    if (dbLocation == null) {
+      dbLocation = folder.getRoot().getAbsolutePath();
+    }
+    properties.set("db.location", dbLocation);
+  }
 
-	@AfterClass
-	public static void stopRadixTest() {
-		serialization = null;
-		dbLocation = null;
-		properties = null;
-	}
+  @AfterClass
+  public static void stopRadixTest() {
+    serialization = null;
+    dbLocation = null;
+    properties = null;
+  }
 
-	protected Serialization getSerialization() {
-		return Objects.requireNonNull(serialization, "serialization was not initialized");
-	}
+  protected Serialization getSerialization() {
+    return Objects.requireNonNull(serialization, "serialization was not initialized");
+  }
 
-	protected RuntimeProperties getProperties() {
-		return Objects.requireNonNull(properties, "properties was not initialized");
-	}
+  protected RuntimeProperties getProperties() {
+    return Objects.requireNonNull(properties, "properties was not initialized");
+  }
 }

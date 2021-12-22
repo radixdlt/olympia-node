@@ -71,49 +71,51 @@ import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.utils.UInt256;
 
 public final class FixedFeeMeter implements Meter {
-	private final UInt256 fixedFee;
+  private final UInt256 fixedFee;
 
-	private FixedFeeMeter(UInt256 fixedFee) {
-		this.fixedFee = fixedFee;
-	}
+  private FixedFeeMeter(UInt256 fixedFee) {
+    this.fixedFee = fixedFee;
+  }
 
-	public static FixedFeeMeter create(UInt256 fixedFee) {
-		return new FixedFeeMeter(fixedFee);
-	}
+  public static FixedFeeMeter create(UInt256 fixedFee) {
+    return new FixedFeeMeter(fixedFee);
+  }
 
-	@Override
-	public void onStart(ExecutionContext context) {
-		context.addSystemLoan(fixedFee);
-	}
+  @Override
+  public void onStart(ExecutionContext context) {
+    context.addSystemLoan(fixedFee);
+  }
 
-	@Override
-	public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
-		context.chargeOneTimeTransactionFee(txn -> fixedFee);
+  @Override
+  public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context)
+      throws Exception {
+    context.chargeOneTimeTransactionFee(txn -> fixedFee);
 
-		if (procedureKey.opSignature().op() == REOp.SYSCALL) {
-			return;
-		}
+    if (procedureKey.opSignature().op() == REOp.SYSCALL) {
+      return;
+    }
 
-		// TODO: Clean this up
-		if (procedureKey.opSignature().op() == REOp.DOWN) {
-			if (param instanceof TokensInAccount) {
-				var tokensInAccount = (TokensInAccount) param;
-				if (tokensInAccount.getResourceAddr().isNativeToken()) {
-					return;
-				}
-			}
-		}
+    // TODO: Clean this up
+    if (procedureKey.opSignature().op() == REOp.DOWN) {
+      if (param instanceof TokensInAccount) {
+        var tokensInAccount = (TokensInAccount) param;
+        if (tokensInAccount.getResourceAddr().isNativeToken()) {
+          return;
+        }
+      }
+    }
 
-		context.payOffLoan();
-	}
+    context.payOffLoan();
+  }
 
-	@Override
-	public void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
-		context.payOffLoan();
-	}
+  @Override
+  public void onSuperUserProcedure(
+      ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
+    context.payOffLoan();
+  }
 
-	@Override
-	public void onSigInstruction(ExecutionContext context) {
-		// No-op
-	}
+  @Override
+  public void onSigInstruction(ExecutionContext context) {
+    // No-op
+  }
 }

@@ -67,51 +67,47 @@ package com.radixdlt.middleware2.network;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.network.messaging.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.network.messaging.Message;
-
 import java.util.Objects;
 
-/**
- * A push message with the latest ledger status update.
- */
+/** A push message with the latest ledger status update. */
 @SerializerId2("message.sync.ledger_status_update")
 public final class LedgerStatusUpdateMessage extends Message {
-	@JsonProperty("header")
-	@DsonOutput(Output.ALL)
-	private final LedgerProof header;
+  @JsonProperty("header")
+  @DsonOutput(Output.ALL)
+  private final LedgerProof header;
 
-	@JsonCreator
-	public LedgerStatusUpdateMessage(
-		@JsonProperty(value = "header", required = true) LedgerProof header
-	) {
-		this.header = Objects.requireNonNull(header);
-	}
+  @JsonCreator
+  public LedgerStatusUpdateMessage(
+      @JsonProperty(value = "header", required = true) LedgerProof header) {
+    this.header = Objects.requireNonNull(header);
+  }
 
-	public LedgerProof getHeader() {
-		return header;
-	}
+  public LedgerProof getHeader() {
+    return header;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{header=%s}", getClass().getSimpleName(), header);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{header=%s}", getClass().getSimpleName(), header);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof LedgerStatusUpdateMessage that)
-			   && Objects.equals(header, that.header)
-			   && Objects.equals(getTimestamp(), that.getTimestamp());
-	}
+    return (o instanceof LedgerStatusUpdateMessage that)
+        && Objects.equals(header, that.header)
+        && Objects.equals(getTimestamp(), that.getTimestamp());
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(header, getTimestamp());
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(header, getTimestamp());
+  }
 }

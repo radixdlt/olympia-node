@@ -73,45 +73,45 @@ import com.radixdlt.serialization.SerializerIds;
 import java.io.IOException;
 
 /**
- * {@link com.fasterxml.jackson.databind.jsontype.TypeIdResolver} implementation
- * that converts between fully-qualified Java class names and (JSON) Strings.
+ * {@link com.fasterxml.jackson.databind.jsontype.TypeIdResolver} implementation that converts
+ * between fully-qualified Java class names and (JSON) Strings.
  */
 public class DsonTypeIdResolver extends TypeIdResolverBase {
-	private final SerializerIds idLookup;
+  private final SerializerIds idLookup;
 
-	public DsonTypeIdResolver(JavaType baseType, TypeFactory typeFactory, SerializerIds idLookup) {
-		super(baseType, typeFactory);
-		this.idLookup = idLookup;
-	}
+  public DsonTypeIdResolver(JavaType baseType, TypeFactory typeFactory, SerializerIds idLookup) {
+    super(baseType, typeFactory);
+    this.idLookup = idLookup;
+  }
 
-	@Override
-	public JsonTypeInfo.Id getMechanism() {
-		return JsonTypeInfo.Id.CUSTOM;
-	}
+  @Override
+  public JsonTypeInfo.Id getMechanism() {
+    return JsonTypeInfo.Id.CUSTOM;
+  }
 
-	@Override
-	public String idFromValue(Object value) {
-		return this.idLookup.getIdForClass(value.getClass());
-	}
+  @Override
+  public String idFromValue(Object value) {
+    return this.idLookup.getIdForClass(value.getClass());
+  }
 
-	@Override
-	public String idFromValueAndType(Object value, Class<?> type) {
-		return this.idLookup.getIdForClass(type);
-	}
+  @Override
+  public String idFromValueAndType(Object value, Class<?> type) {
+    return this.idLookup.getIdForClass(type);
+  }
 
-	@Override
-	public JavaType typeFromId(DatabindContext context, String id) throws IOException {
-		var clazz = idLookup.getClassForId(id);
+  @Override
+  public JavaType typeFromId(DatabindContext context, String id) throws IOException {
+    var clazz = idLookup.getClassForId(id);
 
-		if (clazz == null) {
-			throw new IOException("Unknown type ID: " + id);
-		}
+    if (clazz == null) {
+      throw new IOException("Unknown type ID: " + id);
+    }
 
-		return _typeFactory.constructType(clazz);
-	}
+    return _typeFactory.constructType(clazz);
+  }
 
-	@Override
-	public String getDescForKnownTypeIds() {
-		return "DSON serializer id used as type id";
-	}
+  @Override
+  public String getDescForKnownTypeIds() {
+    return "DSON serializer id used as type id";
+  }
 }

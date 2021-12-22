@@ -64,26 +64,26 @@
 
 package com.radixdlt.sanitytestsuite.scenario.hashing;
 
+import static org.junit.Assert.assertEquals;
+
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
 import com.radixdlt.utils.Bytes;
 
-import static org.junit.Assert.assertEquals;
-
 public final class HashingTestScenarioRunner extends SanityTestScenarioRunner<HashingTestVector> {
-	@Override
-	public String testScenarioIdentifier() {
-		return "hashing";
-	}
+  @Override
+  public String testScenarioIdentifier() {
+    return "hashing";
+  }
 
-	@Override
-	public Class<HashingTestVector> testVectorType() {
-		return HashingTestVector.class;
-	}
+  @Override
+  public Class<HashingTestVector> testVectorType() {
+    return HashingTestVector.class;
+  }
 
-	@Override
-	public void doRunTestVector(HashingTestVector testVector) throws AssertionError {
-		var hashHex = Bytes.toHexString(sha256Hash(testVector.input.bytesToHash()));
+  @Override
+  public void doRunTestVector(HashingTestVector testVector) throws AssertionError {
+    var hashHex = Bytes.toHexString(sha256Hash(testVector.input.bytesToHash()));
 
-		assertEquals(testVector.expected.hash, hashHex);
-	}
+    assertEquals(testVector.expected.hash, hashHex);
+  }
 }

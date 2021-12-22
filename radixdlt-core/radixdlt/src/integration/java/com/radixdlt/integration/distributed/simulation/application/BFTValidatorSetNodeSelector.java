@@ -71,18 +71,16 @@ import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.R
 import io.reactivex.rxjava3.core.Single;
 import java.util.Random;
 
-/**
- * Selects nodes from an initial bft configuration (no epochs)
- */
+/** Selects nodes from an initial bft configuration (no epochs) */
 public class BFTValidatorSetNodeSelector implements NodeSelector {
-	private final Random random = new Random();
+  private final Random random = new Random();
 
-	@Override
-	public Single<BFTNode> nextNode(RunningNetwork network) {
-		BFTConfiguration config = network.bftConfiguration();
-		ImmutableList<BFTNode> validators = config.getValidatorSet().nodes().asList();
-		int validatorSetSize = validators.size();
-		BFTNode node = validators.get(random.nextInt(validatorSetSize));
-		return Single.just(node);
-	}
+  @Override
+  public Single<BFTNode> nextNode(RunningNetwork network) {
+    BFTConfiguration config = network.bftConfiguration();
+    ImmutableList<BFTNode> validators = config.getValidatorSet().nodes().asList();
+    int validatorSetSize = validators.size();
+    BFTNode node = validators.get(random.nextInt(validatorSetSize));
+    return Single.just(node);
+  }
 }

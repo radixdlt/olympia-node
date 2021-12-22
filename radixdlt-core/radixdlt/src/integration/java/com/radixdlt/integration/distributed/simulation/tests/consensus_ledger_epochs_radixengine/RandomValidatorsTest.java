@@ -66,77 +66,67 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-
-import java.util.OptionalInt;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
-
 import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRandomRegistrator;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
-import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
+import java.util.OptionalInt;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-/**
- * Randomly registers and unregisters nodes as validators
- */
+/** Randomly registers and unregisters nodes as validators */
 public class RandomValidatorsTest {
-	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(10, 2)
-		.networkModules(
-			NetworkOrdering.inOrder(),
-			NetworkLatencies.fixed()
-		)
-		.addRadixEngineConfigModules(
-			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(
-				new RERulesConfig(
-					Set.of("xrd"),
-					Pattern.compile("[a-z0-9]+"),
-					FeeTable.noFees(),
-					1024 * 1024,
-					OptionalInt.of(5),
-					100,
-					2,
-					Amount.ofTokens(10),
-					1,
-					Amount.ofTokens(10),
-					9800,
-					50
-				)),
-			new ForksModule()
-		)
-		.ledgerAndRadixEngineWithEpochHighView()
-		.addTestModules(
-			ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-			ConsensusMonitors.noTimeouts(),
-			ConsensusMonitors.directParents(),
-			LedgerMonitors.consensusToLedger(),
-			LedgerMonitors.ordered(),
-			RadixEngineMonitors.noInvalidProposedCommands()
-		)
-		.addActor(NodeValidatorRandomRegistrator.class);
+  private final Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(10, 2)
+          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .addRadixEngineConfigModules(
+              new MainnetForkConfigsModule(),
+              new RadixEngineForksLatestOnlyModule(
+                  new RERulesConfig(
+                      Set.of("xrd"),
+                      Pattern.compile("[a-z0-9]+"),
+                      FeeTable.noFees(),
+                      1024 * 1024,
+                      OptionalInt.of(5),
+                      100,
+                      2,
+                      Amount.ofTokens(10),
+                      1,
+                      Amount.ofTokens(10),
+                      9800,
+                      50)),
+              new ForksModule())
+          .ledgerAndRadixEngineWithEpochHighView()
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+              ConsensusMonitors.noTimeouts(),
+              ConsensusMonitors.directParents(),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered(),
+              RadixEngineMonitors.noInvalidProposedCommands())
+          .addActor(NodeValidatorRandomRegistrator.class);
 
-	@Test
-	public void when_random_validators__then_sanity_checks_should_pass() {
-		SimulationTest simulationTest = bftTestBuilder
-			.build();
+  @Test
+  public void when_random_validators__then_sanity_checks_should_pass() {
+    SimulationTest simulationTest = bftTestBuilder.build();
 
-		final var checkResults = simulationTest.run().awaitCompletion();
-		assertThat(checkResults).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-	}
-
+    final var checkResults = simulationTest.run().awaitCompletion();
+    assertThat(checkResults)
+        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+  }
 }

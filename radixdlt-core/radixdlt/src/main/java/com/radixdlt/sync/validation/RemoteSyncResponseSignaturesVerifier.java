@@ -65,47 +65,44 @@
 package com.radixdlt.sync.validation;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.ConsensusHasher;
+import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.sync.messages.remote.SyncResponse;
-
 import java.util.Map.Entry;
 import java.util.Objects;
 
-/**
- * Verifies the signatures in a sync response
- */
+/** Verifies the signatures in a sync response */
 public final class RemoteSyncResponseSignaturesVerifier {
 
-	private final Hasher hasher;
-	private final HashVerifier hashVerifier;
+  private final Hasher hasher;
+  private final HashVerifier hashVerifier;
 
-	@Inject
-	public RemoteSyncResponseSignaturesVerifier(Hasher hasher, HashVerifier hashVerifier) {
-		this.hasher = Objects.requireNonNull(hasher);
-		this.hashVerifier = Objects.requireNonNull(hashVerifier);
-	}
+  @Inject
+  public RemoteSyncResponseSignaturesVerifier(Hasher hasher, HashVerifier hashVerifier) {
+    this.hasher = Objects.requireNonNull(hasher);
+    this.hashVerifier = Objects.requireNonNull(hashVerifier);
+  }
 
-	public boolean verifyResponseSignatures(SyncResponse syncResponse) {
-		var commandsAndProof = syncResponse.getTxnsAndProof();
-		var endHeader = commandsAndProof.getTail();
+  public boolean verifyResponseSignatures(SyncResponse syncResponse) {
+    var commandsAndProof = syncResponse.getTxnsAndProof();
+    var endHeader = commandsAndProof.getTail();
 
-		var opaque = endHeader.getOpaque();
-		var header = endHeader.getLedgerHeader();
-		var signatures = endHeader.getSignatures().getSignatures();
-		for (Entry<BFTNode, TimestampedECDSASignature> nodeAndSignature : signatures.entrySet()) {
-			var node = nodeAndSignature.getKey();
-			var signature = nodeAndSignature.getValue();
-			final var voteDataHash = ConsensusHasher.toHash(opaque, header, signature.timestamp(), hasher);
-			if (!hashVerifier.verify(node.getKey(), voteDataHash, signature.signature())) {
-				return false;
-			}
-		}
+    var opaque = endHeader.getOpaque();
+    var header = endHeader.getLedgerHeader();
+    var signatures = endHeader.getSignatures().getSignatures();
+    for (Entry<BFTNode, TimestampedECDSASignature> nodeAndSignature : signatures.entrySet()) {
+      var node = nodeAndSignature.getKey();
+      var signature = nodeAndSignature.getValue();
+      final var voteDataHash =
+          ConsensusHasher.toHash(opaque, header, signature.timestamp(), hasher);
+      if (!hashVerifier.verify(node.getKey(), voteDataHash, signature.signature())) {
+        return false;
+      }
+    }
 
-		return true;
-	}
-
+    return true;
+  }
 }

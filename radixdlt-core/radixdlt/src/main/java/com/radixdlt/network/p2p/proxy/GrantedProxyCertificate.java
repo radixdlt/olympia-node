@@ -67,4 +67,4 @@ package com.radixdlt.network.p2p.proxy;
 /**
  * A remote event indicating that this node has been granted a proxy certificate (from the sender).
  */
-public final record GrantedProxyCertificate(ProxyCertificate proxyCertificate) { }
+public final record GrantedProxyCertificate(ProxyCertificate proxyCertificate) {}

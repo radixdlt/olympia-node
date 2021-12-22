@@ -74,146 +74,145 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.Hasher;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Optional;
-
 public class BFTEventVerifierTest {
 
-	private BFTValidatorSet validatorSet;
-	private BFTEventProcessor forwardTo;
-	private Hasher hasher;
-	private HashVerifier verifier;
-	private BFTEventVerifier eventVerifier;
+  private BFTValidatorSet validatorSet;
+  private BFTEventProcessor forwardTo;
+  private Hasher hasher;
+  private HashVerifier verifier;
+  private BFTEventVerifier eventVerifier;
 
-	@Before
-	public void setup() {
-		this.validatorSet = mock(BFTValidatorSet.class);
-		this.forwardTo = mock(BFTEventProcessor.class);
-		this.hasher = mock(Hasher.class);
-		this.verifier = mock(HashVerifier.class);
-		this.eventVerifier = new BFTEventVerifier(validatorSet, forwardTo, hasher, verifier);
-	}
+  @Before
+  public void setup() {
+    this.validatorSet = mock(BFTValidatorSet.class);
+    this.forwardTo = mock(BFTEventProcessor.class);
+    this.hasher = mock(Hasher.class);
+    this.verifier = mock(HashVerifier.class);
+    this.eventVerifier = new BFTEventVerifier(validatorSet, forwardTo, hasher, verifier);
+  }
 
-	@Test
-	public void when_start__then_should_be_forwarded() {
-		eventVerifier.start();
-		verify(forwardTo, times(1)).start();
-	}
+  @Test
+  public void when_start__then_should_be_forwarded() {
+    eventVerifier.start();
+    verify(forwardTo, times(1)).start();
+  }
 
-	@Test
-	public void when_process_local_timeout__then_should_be_forwarded() {
-		ScheduledLocalTimeout timeout = mock(ScheduledLocalTimeout.class);
-		eventVerifier.processLocalTimeout(timeout);
-		verify(forwardTo, times(1)).processLocalTimeout(eq(timeout));
-	}
+  @Test
+  public void when_process_local_timeout__then_should_be_forwarded() {
+    ScheduledLocalTimeout timeout = mock(ScheduledLocalTimeout.class);
+    eventVerifier.processLocalTimeout(timeout);
+    verify(forwardTo, times(1)).processLocalTimeout(eq(timeout));
+  }
 
-	@Test
-	public void when_process_local_sync__then_should_be_forwarded() {
-		BFTInsertUpdate update = mock(BFTInsertUpdate.class);
-		eventVerifier.processBFTUpdate(update);
-		verify(forwardTo, times(1)).processBFTUpdate(update);
-	}
+  @Test
+  public void when_process_local_sync__then_should_be_forwarded() {
+    BFTInsertUpdate update = mock(BFTInsertUpdate.class);
+    eventVerifier.processBFTUpdate(update);
+    verify(forwardTo, times(1)).processBFTUpdate(update);
+  }
 
-	@Test
-	public void when_process_correct_proposal_then_should_be_forwarded() {
-		Proposal proposal = mock(Proposal.class);
-		BFTNode author = mock(BFTNode.class);
-		when(proposal.getAuthor()).thenReturn(author);
-		when(proposal.getSignature()).thenReturn(mock(ECDSASignature.class));
-		when(validatorSet.containsNode(eq(author))).thenReturn(true);
-		when(verifier.verify(any(), any(), any())).thenReturn(true);
-		eventVerifier.processProposal(proposal);
-		verify(forwardTo, times(1)).processProposal(eq(proposal));
-	}
+  @Test
+  public void when_process_correct_proposal_then_should_be_forwarded() {
+    Proposal proposal = mock(Proposal.class);
+    BFTNode author = mock(BFTNode.class);
+    when(proposal.getAuthor()).thenReturn(author);
+    when(proposal.getSignature()).thenReturn(mock(ECDSASignature.class));
+    when(validatorSet.containsNode(eq(author))).thenReturn(true);
+    when(verifier.verify(any(), any(), any())).thenReturn(true);
+    eventVerifier.processProposal(proposal);
+    verify(forwardTo, times(1)).processProposal(eq(proposal));
+  }
 
-	@Test
-	public void when_process_bad_author_proposal_then_should_not_be_forwarded() {
-		Proposal proposal = mock(Proposal.class);
-		BFTNode author = mock(BFTNode.class);
-		when(proposal.getAuthor()).thenReturn(author);
-		when(proposal.getSignature()).thenReturn(mock(ECDSASignature.class));
-		when(validatorSet.containsNode(eq(author))).thenReturn(false);
-		when(verifier.verify(any(), any(), any())).thenReturn(true);
-		eventVerifier.processProposal(proposal);
-		verify(forwardTo, never()).processProposal(any());
-	}
+  @Test
+  public void when_process_bad_author_proposal_then_should_not_be_forwarded() {
+    Proposal proposal = mock(Proposal.class);
+    BFTNode author = mock(BFTNode.class);
+    when(proposal.getAuthor()).thenReturn(author);
+    when(proposal.getSignature()).thenReturn(mock(ECDSASignature.class));
+    when(validatorSet.containsNode(eq(author))).thenReturn(false);
+    when(verifier.verify(any(), any(), any())).thenReturn(true);
+    eventVerifier.processProposal(proposal);
+    verify(forwardTo, never()).processProposal(any());
+  }
 
-	@Test
-	public void when_process_bad_signature_proposal_then_should_not_be_forwarded() {
-		Proposal proposal = mock(Proposal.class);
-		BFTNode author = mock(BFTNode.class);
-		when(proposal.getAuthor()).thenReturn(author);
-		when(proposal.getSignature()).thenReturn(mock(ECDSASignature.class));
-		when(validatorSet.containsNode(eq(author))).thenReturn(true);
-		when(verifier.verify(any(), any(), any())).thenReturn(false);
-		eventVerifier.processProposal(proposal);
-		verify(forwardTo, never()).processProposal(any());
-	}
+  @Test
+  public void when_process_bad_signature_proposal_then_should_not_be_forwarded() {
+    Proposal proposal = mock(Proposal.class);
+    BFTNode author = mock(BFTNode.class);
+    when(proposal.getAuthor()).thenReturn(author);
+    when(proposal.getSignature()).thenReturn(mock(ECDSASignature.class));
+    when(validatorSet.containsNode(eq(author))).thenReturn(true);
+    when(verifier.verify(any(), any(), any())).thenReturn(false);
+    eventVerifier.processProposal(proposal);
+    verify(forwardTo, never()).processProposal(any());
+  }
 
-	@Test
-	public void when_process_correct_vote_then_should_be_forwarded() {
-		Vote vote = mock(Vote.class);
-		when(vote.getView()).thenReturn(View.of(1));
-		when(vote.getEpoch()).thenReturn(0L);
-		BFTNode author = mock(BFTNode.class);
-		when(vote.getAuthor()).thenReturn(author);
-		ECDSASignature voteSignature = mock(ECDSASignature.class);
-		ECDSASignature timeoutSignature = mock(ECDSASignature.class);
-		when(vote.getSignature()).thenReturn(voteSignature);
-		when(vote.getTimeoutSignature()).thenReturn(Optional.of(timeoutSignature));
-		when(validatorSet.containsNode(eq(author))).thenReturn(true);
-		when(verifier.verify(any(), any(), eq(voteSignature))).thenReturn(true);
-		when(verifier.verify(any(), any(), eq(timeoutSignature))).thenReturn(true);
-		eventVerifier.processVote(vote);
-		verify(forwardTo, times(1)).processVote(eq(vote));
-	}
+  @Test
+  public void when_process_correct_vote_then_should_be_forwarded() {
+    Vote vote = mock(Vote.class);
+    when(vote.getView()).thenReturn(View.of(1));
+    when(vote.getEpoch()).thenReturn(0L);
+    BFTNode author = mock(BFTNode.class);
+    when(vote.getAuthor()).thenReturn(author);
+    ECDSASignature voteSignature = mock(ECDSASignature.class);
+    ECDSASignature timeoutSignature = mock(ECDSASignature.class);
+    when(vote.getSignature()).thenReturn(voteSignature);
+    when(vote.getTimeoutSignature()).thenReturn(Optional.of(timeoutSignature));
+    when(validatorSet.containsNode(eq(author))).thenReturn(true);
+    when(verifier.verify(any(), any(), eq(voteSignature))).thenReturn(true);
+    when(verifier.verify(any(), any(), eq(timeoutSignature))).thenReturn(true);
+    eventVerifier.processVote(vote);
+    verify(forwardTo, times(1)).processVote(eq(vote));
+  }
 
-	@Test
-	public void when_process_bad_author_vote_then_should_not_be_forwarded() {
-		Vote vote = mock(Vote.class);
-		BFTNode author = mock(BFTNode.class);
-		when(vote.getAuthor()).thenReturn(author);
-		when(vote.getSignature()).thenReturn(mock(ECDSASignature.class));
-		when(validatorSet.containsNode(eq(author))).thenReturn(false);
-		when(verifier.verify(any(), any(), any())).thenReturn(true);
-		eventVerifier.processVote(vote);
-		verify(forwardTo, never()).processVote(any());
-	}
+  @Test
+  public void when_process_bad_author_vote_then_should_not_be_forwarded() {
+    Vote vote = mock(Vote.class);
+    BFTNode author = mock(BFTNode.class);
+    when(vote.getAuthor()).thenReturn(author);
+    when(vote.getSignature()).thenReturn(mock(ECDSASignature.class));
+    when(validatorSet.containsNode(eq(author))).thenReturn(false);
+    when(verifier.verify(any(), any(), any())).thenReturn(true);
+    eventVerifier.processVote(vote);
+    verify(forwardTo, never()).processVote(any());
+  }
 
-	@Test
-	public void when_process_bad_signature_vote_then_should_not_be_forwarded() {
-		Vote vote = mock(Vote.class);
-		BFTNode author = mock(BFTNode.class);
-		when(vote.getAuthor()).thenReturn(author);
-		when(vote.getSignature()).thenReturn(mock(ECDSASignature.class));
-		when(validatorSet.containsNode(eq(author))).thenReturn(true);
-		when(verifier.verify(any(), any(), any())).thenReturn(false);
-		eventVerifier.processVote(vote);
-		verify(forwardTo, never()).processVote(any());
-	}
+  @Test
+  public void when_process_bad_signature_vote_then_should_not_be_forwarded() {
+    Vote vote = mock(Vote.class);
+    BFTNode author = mock(BFTNode.class);
+    when(vote.getAuthor()).thenReturn(author);
+    when(vote.getSignature()).thenReturn(mock(ECDSASignature.class));
+    when(validatorSet.containsNode(eq(author))).thenReturn(true);
+    when(verifier.verify(any(), any(), any())).thenReturn(false);
+    eventVerifier.processVote(vote);
+    verify(forwardTo, never()).processVote(any());
+  }
 
-	@Test
-	public void when_process_bad_timeout_signature_vote_then_should_not_be_forwarded() {
-		Vote vote = mock(Vote.class);
-		when(vote.getView()).thenReturn(View.of(1));
-		when(vote.getEpoch()).thenReturn(0L);
-		BFTNode author = mock(BFTNode.class);
-		when(vote.getAuthor()).thenReturn(author);
-		ECDSASignature voteSignature = mock(ECDSASignature.class);
-		ECDSASignature timeoutSignature = mock(ECDSASignature.class);
-		when(vote.getSignature()).thenReturn(voteSignature);
-		when(vote.getTimeoutSignature()).thenReturn(Optional.of(timeoutSignature));
-		when(validatorSet.containsNode(eq(author))).thenReturn(true);
-		when(verifier.verify(any(), any(), eq(voteSignature))).thenReturn(true);
-		when(verifier.verify(any(), any(), eq(timeoutSignature))).thenReturn(false);
-		eventVerifier.processVote(vote);
-		verify(forwardTo, never()).processVote(any());
-	}
+  @Test
+  public void when_process_bad_timeout_signature_vote_then_should_not_be_forwarded() {
+    Vote vote = mock(Vote.class);
+    when(vote.getView()).thenReturn(View.of(1));
+    when(vote.getEpoch()).thenReturn(0L);
+    BFTNode author = mock(BFTNode.class);
+    when(vote.getAuthor()).thenReturn(author);
+    ECDSASignature voteSignature = mock(ECDSASignature.class);
+    ECDSASignature timeoutSignature = mock(ECDSASignature.class);
+    when(vote.getSignature()).thenReturn(voteSignature);
+    when(vote.getTimeoutSignature()).thenReturn(Optional.of(timeoutSignature));
+    when(validatorSet.containsNode(eq(author))).thenReturn(true);
+    when(verifier.verify(any(), any(), eq(voteSignature))).thenReturn(true);
+    when(verifier.verify(any(), any(), eq(timeoutSignature))).thenReturn(false);
+    eventVerifier.processVote(vote);
+    verify(forwardTo, never()).processVote(any());
+  }
 }

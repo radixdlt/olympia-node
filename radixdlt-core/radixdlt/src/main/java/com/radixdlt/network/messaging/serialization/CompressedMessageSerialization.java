@@ -64,42 +64,41 @@
 
 package com.radixdlt.network.messaging.serialization;
 
+import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
+
 import com.radixdlt.network.messaging.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.functional.Result;
-
 import java.io.IOException;
 import java.util.Objects;
 
-import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
-
 public final class CompressedMessageSerialization implements MessageSerialization {
 
-	private final Serialization underlyingSerialization;
+  private final Serialization underlyingSerialization;
 
-	public CompressedMessageSerialization(Serialization underlyingSerialization) {
-		this.underlyingSerialization = Objects.requireNonNull(underlyingSerialization);
-	}
+  public CompressedMessageSerialization(Serialization underlyingSerialization) {
+    this.underlyingSerialization = Objects.requireNonNull(underlyingSerialization);
+  }
 
-	@Override
-	public Result<byte[]> serialize(Message message) {
-		try {
-			byte[] uncompressed = underlyingSerialization.toDson(message, DsonOutput.Output.WIRE);
-			return Result.ok(Compress.compress(uncompressed));
-		} catch (IOException e) {
-			return IO_ERROR.result();
-		}
-	}
+  @Override
+  public Result<byte[]> serialize(Message message) {
+    try {
+      byte[] uncompressed = underlyingSerialization.toDson(message, DsonOutput.Output.WIRE);
+      return Result.ok(Compress.compress(uncompressed));
+    } catch (IOException e) {
+      return IO_ERROR.result();
+    }
+  }
 
-	@Override
-	public Result<Message> deserialize(byte[] input) {
-		try {
-			final var uncompressed = Compress.uncompress(input);
-			return Result.ok(underlyingSerialization.fromDson(uncompressed, Message.class));
-		} catch (IOException e) {
-			return IO_ERROR.result();
-		}
-	}
+  @Override
+  public Result<Message> deserialize(byte[] input) {
+    try {
+      final var uncompressed = Compress.uncompress(input);
+      return Result.ok(underlyingSerialization.fromDson(uncompressed, Message.class));
+    } catch (IOException e) {
+      return IO_ERROR.result();
+    }
+  }
 }

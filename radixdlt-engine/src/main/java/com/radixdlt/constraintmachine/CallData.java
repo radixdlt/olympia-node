@@ -68,44 +68,44 @@ import com.radixdlt.constraintmachine.exceptions.CallDataAccessException;
 import com.radixdlt.engine.parser.exceptions.TrailingBytesException;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Arrays;
 import java.util.Objects;
 
 public final class CallData {
-	private final byte[] data;
-	public CallData(byte[] data) {
-		this.data = Objects.requireNonNull(data);
-	}
+  private final byte[] data;
 
-	public byte get(int offset) throws CallDataAccessException {
-		if (offset < 0 || (offset + Byte.BYTES) > data.length) {
-			throw new CallDataAccessException(data.length, offset, Byte.BYTES);
-		}
-		return data[offset];
-	}
+  public CallData(byte[] data) {
+    this.data = Objects.requireNonNull(data);
+  }
 
-	public UInt256 getUInt256(int offset) throws CallDataAccessException, TrailingBytesException {
-		if (offset < 0 || (offset + UInt256.BYTES) > data.length) {
-			throw new CallDataAccessException(data.length, offset, UInt256.BYTES);
-		}
+  public byte get(int offset) throws CallDataAccessException {
+    if (offset < 0 || (offset + Byte.BYTES) > data.length) {
+      throw new CallDataAccessException(data.length, offset, Byte.BYTES);
+    }
+    return data[offset];
+  }
 
-		if (data.length > offset + UInt256.BYTES) {
-			throw new TrailingBytesException("Call data has " + data.length + " bytes.");
-		}
+  public UInt256 getUInt256(int offset) throws CallDataAccessException, TrailingBytesException {
+    if (offset < 0 || (offset + UInt256.BYTES) > data.length) {
+      throw new CallDataAccessException(data.length, offset, UInt256.BYTES);
+    }
 
-		return UInt256.from(data, offset);
-	}
+    if (data.length > offset + UInt256.BYTES) {
+      throw new TrailingBytesException("Call data has " + data.length + " bytes.");
+    }
 
-	public byte[] getRemainingBytes(int offset) throws CallDataAccessException {
-		if (offset < 0 || offset >= data.length) {
-			throw new CallDataAccessException(data.length, offset, 0);
-		}
-		return Arrays.copyOfRange(data, offset, data.length);
-	}
+    return UInt256.from(data, offset);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{data=%s}", this.getClass().getSimpleName(), Bytes.toHexString(data));
-	}
+  public byte[] getRemainingBytes(int offset) throws CallDataAccessException {
+    if (offset < 0 || offset >= data.length) {
+      throw new CallDataAccessException(data.length, offset, 0);
+    }
+    return Arrays.copyOfRange(data, offset, data.length);
+  }
+
+  @Override
+  public String toString() {
+    return String.format("%s{data=%s}", this.getClass().getSimpleName(), Bytes.toHexString(data));
+  }
 }

@@ -65,13 +65,10 @@
 package com.radixdlt.store;
 
 import com.radixdlt.identifiers.REAddr;
-
 import java.nio.ByteBuffer;
 import java.util.Optional;
 
-/**
- * Index into immutable substates
- */
+/** Index into immutable substates */
 public interface ResourceStore {
-	Optional<ByteBuffer> loadResource(REAddr addr);
+  Optional<ByteBuffer> loadResource(REAddr addr);
 }

@@ -64,9 +64,6 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.radixdlt.network.p2p.liveness.messages.PeerPingMessage;
-import com.radixdlt.network.p2p.liveness.messages.PeerPongMessage;
-
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
@@ -74,57 +71,59 @@ import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.liveness.Ping;
 import com.radixdlt.network.p2p.liveness.Pong;
-
-import java.util.Objects;
-
+import com.radixdlt.network.p2p.liveness.messages.PeerPingMessage;
+import com.radixdlt.network.p2p.liveness.messages.PeerPongMessage;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
+import java.util.Objects;
 import javax.inject.Inject;
 
-/**
- * Network interface for peer liveness messages using the MessageCentral
- */
+/** Network interface for peer liveness messages using the MessageCentral */
 public final class MessageCentralPeerLiveness {
-	private final MessageCentral messageCentral;
+  private final MessageCentral messageCentral;
 
-	@Inject
-	public MessageCentralPeerLiveness(MessageCentral messageCentral) {
-		this.messageCentral = Objects.requireNonNull(messageCentral);
-	}
+  @Inject
+  public MessageCentralPeerLiveness(MessageCentral messageCentral) {
+    this.messageCentral = Objects.requireNonNull(messageCentral);
+  }
 
-	public Flowable<RemoteEvent<Ping>> pings() {
-		return this.messageCentral.messagesOf(PeerPingMessage.class)
-			.toFlowable(BackpressureStrategy.BUFFER)
-			.map(m -> {
-				final var node = BFTNode.create(m.getSource().getPublicKey());
-				return RemoteEvent.create(node, Ping.create());
-			});
-	}
+  public Flowable<RemoteEvent<Ping>> pings() {
+    return this.messageCentral
+        .messagesOf(PeerPingMessage.class)
+        .toFlowable(BackpressureStrategy.BUFFER)
+        .map(
+            m -> {
+              final var node = BFTNode.create(m.getSource().getPublicKey());
+              return RemoteEvent.create(node, Ping.create());
+            });
+  }
 
-	public Flowable<RemoteEvent<Pong>> pongs() {
-		return this.messageCentral.messagesOf(PeerPongMessage.class)
-			.toFlowable(BackpressureStrategy.BUFFER)
-			.map(m -> {
-				final var node = BFTNode.create(m.getSource().getPublicKey());
-				return RemoteEvent.create(node, Pong.create());
-			});
-	}
+  public Flowable<RemoteEvent<Pong>> pongs() {
+    return this.messageCentral
+        .messagesOf(PeerPongMessage.class)
+        .toFlowable(BackpressureStrategy.BUFFER)
+        .map(
+            m -> {
+              final var node = BFTNode.create(m.getSource().getPublicKey());
+              return RemoteEvent.create(node, Pong.create());
+            });
+  }
 
-	public RemoteEventDispatcher<Ping> pingDispatcher() {
-		return this::sendPing;
-	}
+  public RemoteEventDispatcher<Ping> pingDispatcher() {
+    return this::sendPing;
+  }
 
-	private void sendPing(BFTNode node, Ping ping) {
-		final var msg = new PeerPingMessage();
-		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
-	}
+  private void sendPing(BFTNode node, Ping ping) {
+    final var msg = new PeerPingMessage();
+    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+  }
 
-	public RemoteEventDispatcher<Pong> pongDispatcher() {
-		return this::sendPong;
-	}
+  public RemoteEventDispatcher<Pong> pongDispatcher() {
+    return this::sendPong;
+  }
 
-	private void sendPong(BFTNode node, Pong pong) {
-		final var msg = new PeerPongMessage();
-		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
-	}
+  private void sendPong(BFTNode node, Pong pong) {
+    final var msg = new PeerPongMessage();
+    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+  }
 }

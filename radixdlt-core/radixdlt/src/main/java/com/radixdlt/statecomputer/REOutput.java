@@ -65,26 +65,23 @@
 package com.radixdlt.statecomputer;
 
 import com.radixdlt.constraintmachine.REProcessedTxn;
-
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Event signifying that an atom was committed to ledger successfully
- */
+/** Event signifying that an atom was committed to ledger successfully */
 public final class REOutput {
-    private final List<REProcessedTxn> processed;
+  private final List<REProcessedTxn> processed;
 
-    private REOutput(List<REProcessedTxn> processed) {
-        this.processed = processed;
-    }
+  private REOutput(List<REProcessedTxn> processed) {
+    this.processed = processed;
+  }
 
-    public static REOutput create(List<REProcessedTxn> processed) {
-        Objects.requireNonNull(processed);
-        return new REOutput(processed);
-    }
+  public static REOutput create(List<REProcessedTxn> processed) {
+    Objects.requireNonNull(processed);
+    return new REOutput(processed);
+  }
 
-    public List<REProcessedTxn> getProcessedTxns() {
-        return processed;
-    }
+  public List<REProcessedTxn> getProcessedTxns() {
+    return processed;
+  }
 }

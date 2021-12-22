@@ -68,24 +68,25 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public final class ExecutorUtils {
-	private ExecutorUtils() { }
+  private ExecutorUtils() {}
 
-	public static void shutdownAndAwaitTermination(ExecutorService executorService) {
-		executorService.shutdown(); // Disable new tasks from being submitted
-		try {
-			// Wait a while for existing tasks to terminate
-			if (!executorService.awaitTermination(2, TimeUnit.SECONDS)) {
-				executorService.shutdownNow(); // Cancel currently executing tasks
-				// Wait a while for tasks to respond to being cancelled
-				if (!executorService.awaitTermination(2, TimeUnit.SECONDS)) {
-					System.err.println("ExecutorService " + executorService.toString() + " did not terminate");
-				}
-			}
-		} catch (InterruptedException ie) {
-			// (Re-)Cancel if current thread also interrupted
-			executorService.shutdownNow();
-			// Preserve interrupt status
-			Thread.currentThread().interrupt();
-		}
-	}
+  public static void shutdownAndAwaitTermination(ExecutorService executorService) {
+    executorService.shutdown(); // Disable new tasks from being submitted
+    try {
+      // Wait a while for existing tasks to terminate
+      if (!executorService.awaitTermination(2, TimeUnit.SECONDS)) {
+        executorService.shutdownNow(); // Cancel currently executing tasks
+        // Wait a while for tasks to respond to being cancelled
+        if (!executorService.awaitTermination(2, TimeUnit.SECONDS)) {
+          System.err.println(
+              "ExecutorService " + executorService.toString() + " did not terminate");
+        }
+      }
+    } catch (InterruptedException ie) {
+      // (Re-)Cancel if current thread also interrupted
+      executorService.shutdownNow();
+      // Preserve interrupt status
+      Thread.currentThread().interrupt();
+    }
+  }
 }

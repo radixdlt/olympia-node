@@ -64,40 +64,39 @@
 
 package com.radixdlt.sanitytestsuite.scenario.keyverify;
 
+import static com.radixdlt.utils.Bytes.fromHexString;
+import static org.junit.Assert.assertEquals;
+
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
 
-import static com.radixdlt.utils.Bytes.fromHexString;
-import static org.junit.Assert.assertEquals;
+public final class KeyVerifyTestScenarioRunner
+    extends SanityTestScenarioRunner<KeyVerifyTestVector> {
+  @Override
+  public String testScenarioIdentifier() {
+    return "ecdsa_verification";
+  }
 
-public final class KeyVerifyTestScenarioRunner extends SanityTestScenarioRunner<KeyVerifyTestVector> {
-	@Override
-	public String testScenarioIdentifier() {
-		return "ecdsa_verification";
-	}
+  @Override
+  public Class<KeyVerifyTestVector> testVectorType() {
+    return KeyVerifyTestVector.class;
+  }
 
-	@Override
-	public Class<KeyVerifyTestVector> testVectorType() {
-		return KeyVerifyTestVector.class;
-	}
+  @Override
+  public void doRunTestVector(KeyVerifyTestVector testVector) throws AssertionError {
 
-	@Override
-	public void doRunTestVector(KeyVerifyTestVector testVector) throws AssertionError {
+    ECPublicKey publicKey = null;
+    try {
+      publicKey = ECPublicKey.fromBytes(fromHexString(testVector.input.publicKeyUncompressed));
+    } catch (Exception e) {
+      throw new AssertionError("Failed to construct public key from hex", e);
+    }
+    ECDSASignature signature =
+        ECDSASignature.decodeFromDER(fromHexString(testVector.input.signatureDerEncoded));
 
-		ECPublicKey publicKey = null;
-		try {
-			publicKey = ECPublicKey.fromBytes(fromHexString(testVector.input.publicKeyUncompressed));
-		} catch (Exception e) {
-			throw new AssertionError("Failed to construct public key from hex", e);
-		}
-		ECDSASignature signature = ECDSASignature.decodeFromDER(fromHexString(testVector.input.signatureDerEncoded));
+    byte[] hashedMessageToVerify = sha256Hash(fromHexString(testVector.input.msg));
 
-		byte[] hashedMessageToVerify = sha256Hash(fromHexString(testVector.input.msg));
-
-		assertEquals(
-			testVector.expected.isValid,
-			publicKey.verify(hashedMessageToVerify, signature)
-		);
-	}
+    assertEquals(testVector.expected.isValid, publicKey.verify(hashedMessageToVerify, signature));
+  }
 }

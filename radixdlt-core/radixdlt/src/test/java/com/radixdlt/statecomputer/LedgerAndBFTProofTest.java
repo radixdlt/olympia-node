@@ -64,17 +64,16 @@
 
 package com.radixdlt.statecomputer;
 
-
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 public class LedgerAndBFTProofTest {
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(LedgerAndBFTProof.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(LedgerAndBFTProof.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 }

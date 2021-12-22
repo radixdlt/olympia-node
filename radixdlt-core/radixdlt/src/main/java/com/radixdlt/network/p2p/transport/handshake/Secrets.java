@@ -66,41 +66,40 @@ package com.radixdlt.network.p2p.transport.handshake;
 
 import org.bouncycastle.crypto.digests.KeccakDigest;
 
-/**
- * Secrets agreed upon during the auth handshake. Used for encrypted communication (FrameCodec).
- */
+/** Secrets agreed upon during the auth handshake. Used for encrypted communication (FrameCodec). */
 public final class Secrets {
-	final byte[] aes;
-	final byte[] mac;
-	final byte[] token;
-	final KeccakDigest egressMac;
-	final KeccakDigest ingressMac;
+  final byte[] aes;
+  final byte[] mac;
+  final byte[] token;
+  final KeccakDigest egressMac;
+  final KeccakDigest ingressMac;
 
-	public Secrets(byte[] aes, byte[] mac, byte[] token, KeccakDigest egressMac, KeccakDigest ingressMac) {
-		this.aes = aes;
-		this.mac = mac;
-		this.token = token;
-		this.egressMac = egressMac;
-		this.ingressMac = ingressMac;
-	}
+  public Secrets(
+      byte[] aes, byte[] mac, byte[] token, KeccakDigest egressMac, KeccakDigest ingressMac) {
+    this.aes = aes;
+    this.mac = mac;
+    this.token = token;
+    this.egressMac = egressMac;
+    this.ingressMac = ingressMac;
+  }
 
-	public byte[] getAes() {
-		return aes;
-	}
+  public byte[] getAes() {
+    return aes;
+  }
 
-	public byte[] getMac() {
-		return mac;
-	}
+  public byte[] getMac() {
+    return mac;
+  }
 
-	public byte[] getToken() {
-		return token;
-	}
+  public byte[] getToken() {
+    return token;
+  }
 
-	public KeccakDigest getEgressMac() {
-		return egressMac;
-	}
+  public KeccakDigest getEgressMac() {
+    return egressMac;
+  }
 
-	public KeccakDigest getIngressMac() {
-		return ingressMac;
-	}
+  public KeccakDigest getIngressMac() {
+    return ingressMac;
+  }
 }

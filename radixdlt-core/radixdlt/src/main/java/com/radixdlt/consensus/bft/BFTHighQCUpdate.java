@@ -67,45 +67,44 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.consensus.HighQC;
 import java.util.Objects;
 
-/**
- * An event emitted when the high qc has been updated
- */
+/** An event emitted when the high qc has been updated */
 public final class BFTHighQCUpdate {
-	private final VerifiedVertexStoreState vertexStoreState;
+  private final VerifiedVertexStoreState vertexStoreState;
 
-	private BFTHighQCUpdate(VerifiedVertexStoreState vertexStoreState) {
-		this.vertexStoreState = vertexStoreState;
-	}
+  private BFTHighQCUpdate(VerifiedVertexStoreState vertexStoreState) {
+    this.vertexStoreState = vertexStoreState;
+  }
 
-	public static BFTHighQCUpdate create(VerifiedVertexStoreState vertexStoreState) {
-		return new BFTHighQCUpdate(vertexStoreState);
-	}
+  public static BFTHighQCUpdate create(VerifiedVertexStoreState vertexStoreState) {
+    return new BFTHighQCUpdate(vertexStoreState);
+  }
 
-	public HighQC getHighQC() {
-		return vertexStoreState.getHighQC();
-	}
+  public HighQC getHighQC() {
+    return vertexStoreState.getHighQC();
+  }
 
-	public VerifiedVertexStoreState getVertexStoreState() {
-		return vertexStoreState;
-	}
+  public VerifiedVertexStoreState getVertexStoreState() {
+    return vertexStoreState;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{highQC=%s}", this.getClass().getSimpleName(), vertexStoreState.getHighQC());
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{highQC=%s}", this.getClass().getSimpleName(), vertexStoreState.getHighQC());
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(vertexStoreState);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(vertexStoreState);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof BFTHighQCUpdate)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof BFTHighQCUpdate)) {
+      return false;
+    }
 
-		BFTHighQCUpdate other = (BFTHighQCUpdate) o;
-		return Objects.equals(other.vertexStoreState, this.vertexStoreState);
-	}
+    BFTHighQCUpdate other = (BFTHighQCUpdate) o;
+    return Objects.equals(other.vertexStoreState, this.vertexStoreState);
+  }
 }

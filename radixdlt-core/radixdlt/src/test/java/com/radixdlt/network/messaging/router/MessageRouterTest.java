@@ -64,6 +64,10 @@
 
 package com.radixdlt.network.messaging.router;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.messaging.Message;
@@ -73,164 +77,144 @@ import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.liveness.messages.PeerPingMessage;
 import com.radixdlt.network.p2p.proxy.ProxyCertificateManager;
 import io.reactivex.rxjava3.subjects.PublishSubject;
+import java.util.concurrent.ExecutionException;
 import org.apache.commons.cli.ParseException;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.concurrent.ExecutionException;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 public final class MessageRouterTest {
-	private ECKeyPair self;
-	private P2PConfig config;
-	private PublishSubject<MessageFromPeer<Message>> messages;
-	private ProxyCertificateManager proxyCertificateManager;
-	private MessageRouter sut;
+  private ECKeyPair self;
+  private P2PConfig config;
+  private PublishSubject<MessageFromPeer<Message>> messages;
+  private ProxyCertificateManager proxyCertificateManager;
+  private MessageRouter sut;
 
-	@Before
-	public void setup() throws ParseException {
-		self = ECKeyPair.generateNew();
-		config = mock(P2PConfig.class);
+  @Before
+  public void setup() throws ParseException {
+    self = ECKeyPair.generateNew();
+    config = mock(P2PConfig.class);
 
-		messages = PublishSubject.create();
-		proxyCertificateManager = mock(ProxyCertificateManager.class);
+    messages = PublishSubject.create();
+    proxyCertificateManager = mock(ProxyCertificateManager.class);
 
-		sut = new MessageRouter(
-			NodeId.fromPublicKey(self.getPublicKey()),
-			config,
-			proxyCertificateManager,
-			messages
-		);
-	}
+    sut =
+        new MessageRouter(
+            NodeId.fromPublicKey(self.getPublicKey()), config, proxyCertificateManager, messages);
+  }
 
-	@Test
-	public void test_process_non_envelop_message() throws InterruptedException, ExecutionException {
-		final var cntMessagesToProcessF = sut.messagesToProcess().count().toFuture();
+  @Test
+  public void test_process_non_envelop_message() throws InterruptedException, ExecutionException {
+    final var cntMessagesToProcessF = sut.messagesToProcess().count().toFuture();
 
-		final var sender = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
-		messages.onNext(new MessageFromPeer<>(sender, new PeerPingMessage()));
-		messages.onComplete();
+    final var sender = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
+    messages.onNext(new MessageFromPeer<>(sender, new PeerPingMessage()));
+    messages.onComplete();
 
-		assertEquals(1L, cntMessagesToProcessF.get().longValue());
-	}
+    assertEquals(1L, cntMessagesToProcessF.get().longValue());
+  }
 
-	@Test
-	public void test_invalid_sender() throws ExecutionException, InterruptedException {
-		final var cntMessagesToProcessF = sut.messagesToProcess().count().toFuture();
-		final var cntMessagesToDropF = sut.messagesToDrop().count().toFuture();
+  @Test
+  public void test_invalid_sender() throws ExecutionException, InterruptedException {
+    final var cntMessagesToProcessF = sut.messagesToProcess().count().toFuture();
+    final var cntMessagesToDropF = sut.messagesToDrop().count().toFuture();
 
-		final var sender = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
-		final var author = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
+    final var sender = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
+    final var author = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
 
-		when(proxyCertificateManager.getVerifiedProxiesForNode(author)).thenReturn(ImmutableSet.of());
-		when(config.authorizedProxies()).thenReturn(ImmutableSet.of());
+    when(proxyCertificateManager.getVerifiedProxiesForNode(author)).thenReturn(ImmutableSet.of());
+    when(config.authorizedProxies()).thenReturn(ImmutableSet.of());
 
-		final var envelope = MessageEnvelope.create(
-			author,
-			NodeId.fromPublicKey(self.getPublicKey()),
-			new PeerPingMessage()
-		);
-		messages.onNext(new MessageFromPeer<>(sender, envelope));
-		messages.onComplete();
+    final var envelope =
+        MessageEnvelope.create(
+            author, NodeId.fromPublicKey(self.getPublicKey()), new PeerPingMessage());
+    messages.onNext(new MessageFromPeer<>(sender, envelope));
+    messages.onComplete();
 
-		assertEquals(0L, cntMessagesToProcessF.get().longValue());
-		assertEquals(1L, cntMessagesToDropF.get().longValue());
-	}
+    assertEquals(0L, cntMessagesToProcessF.get().longValue());
+    assertEquals(1L, cntMessagesToDropF.get().longValue());
+  }
 
-	@Test
-	public void test_verified_proxy_sender() throws ExecutionException, InterruptedException {
-		final var cntMessagesToProcessF = sut.messagesToProcess().count().toFuture();
+  @Test
+  public void test_verified_proxy_sender() throws ExecutionException, InterruptedException {
+    final var cntMessagesToProcessF = sut.messagesToProcess().count().toFuture();
 
-		final var sender = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
-		final var author = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
+    final var sender = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
+    final var author = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
 
-		// sender is a verified proxy for author
-		when(proxyCertificateManager.getVerifiedProxiesForNode(author))
-			.thenReturn(ImmutableSet.of(sender));
-		when(config.authorizedProxies()).thenReturn(ImmutableSet.of());
+    // sender is a verified proxy for author
+    when(proxyCertificateManager.getVerifiedProxiesForNode(author))
+        .thenReturn(ImmutableSet.of(sender));
+    when(config.authorizedProxies()).thenReturn(ImmutableSet.of());
 
-		final var envelope = MessageEnvelope.create(
-			author,
-			NodeId.fromPublicKey(self.getPublicKey()),
-			new PeerPingMessage()
-		);
-		messages.onNext(new MessageFromPeer<>(sender, envelope));
-		messages.onComplete();
+    final var envelope =
+        MessageEnvelope.create(
+            author, NodeId.fromPublicKey(self.getPublicKey()), new PeerPingMessage());
+    messages.onNext(new MessageFromPeer<>(sender, envelope));
+    messages.onComplete();
 
-		assertEquals(1L, cntMessagesToProcessF.get().longValue());
-	}
+    assertEquals(1L, cntMessagesToProcessF.get().longValue());
+  }
 
-	@Test
-	public void test_configured_proxy_sender() throws ExecutionException, InterruptedException {
-		final var cntMessagesToProcessF = sut.messagesToProcess().count().toFuture();
+  @Test
+  public void test_configured_proxy_sender() throws ExecutionException, InterruptedException {
+    final var cntMessagesToProcessF = sut.messagesToProcess().count().toFuture();
 
-		final var sender = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
-		final var author = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
+    final var sender = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
+    final var author = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
 
-		// sender is an authorized proxy
-		when(config.authorizedProxies()).thenReturn(ImmutableSet.of(sender));
-		when(proxyCertificateManager.getVerifiedProxiesForNode(author)).thenReturn(ImmutableSet.of());
+    // sender is an authorized proxy
+    when(config.authorizedProxies()).thenReturn(ImmutableSet.of(sender));
+    when(proxyCertificateManager.getVerifiedProxiesForNode(author)).thenReturn(ImmutableSet.of());
 
-		final var envelope = MessageEnvelope.create(
-			author,
-			NodeId.fromPublicKey(self.getPublicKey()),
-			new PeerPingMessage()
-		);
-		messages.onNext(new MessageFromPeer<>(sender, envelope));
-		messages.onComplete();
+    final var envelope =
+        MessageEnvelope.create(
+            author, NodeId.fromPublicKey(self.getPublicKey()), new PeerPingMessage());
+    messages.onNext(new MessageFromPeer<>(sender, envelope));
+    messages.onComplete();
 
-		assertEquals(1L, cntMessagesToProcessF.get().longValue());
-	}
+    assertEquals(1L, cntMessagesToProcessF.get().longValue());
+  }
 
-	@Test
-	public void test_route_to_other_recipient_proxy_disabled() throws ExecutionException, InterruptedException {
-		final var cntMessagesToProcessF = sut.messagesToProcess().count().toFuture();
-		final var cntMessagesToDropF = sut.messagesToDrop().count().toFuture();
-		final var cntMessagesToForwardF = sut.messagesToForward().count().toFuture();
+  @Test
+  public void test_route_to_other_recipient_proxy_disabled()
+      throws ExecutionException, InterruptedException {
+    final var cntMessagesToProcessF = sut.messagesToProcess().count().toFuture();
+    final var cntMessagesToDropF = sut.messagesToDrop().count().toFuture();
+    final var cntMessagesToForwardF = sut.messagesToForward().count().toFuture();
 
-		final var sender = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
-		final var recipient = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
+    final var sender = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
+    final var recipient = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
 
-		when(config.proxyEnabled()).thenReturn(false);
+    when(config.proxyEnabled()).thenReturn(false);
 
-		final var envelope = MessageEnvelope.create(
-			sender,
-			recipient,
-			new PeerPingMessage()
-		);
-		messages.onNext(new MessageFromPeer<>(sender, envelope));
-		messages.onComplete();
+    final var envelope = MessageEnvelope.create(sender, recipient, new PeerPingMessage());
+    messages.onNext(new MessageFromPeer<>(sender, envelope));
+    messages.onComplete();
 
-		assertEquals(0L, cntMessagesToProcessF.get().longValue());
-		assertEquals(1L, cntMessagesToDropF.get().longValue());
-		assertEquals(0L, cntMessagesToForwardF.get().longValue());
-	}
+    assertEquals(0L, cntMessagesToProcessF.get().longValue());
+    assertEquals(1L, cntMessagesToDropF.get().longValue());
+    assertEquals(0L, cntMessagesToForwardF.get().longValue());
+  }
 
-	@Test
-	public void test_forward_a_message_from_configured_proxied_node() throws ExecutionException, InterruptedException {
-		final var cntMessagesToProcessF = sut.messagesToProcess().count().toFuture();
-		final var cntMessagesToDropF = sut.messagesToDrop().count().toFuture();
-		final var cntMessagesToForwardF = sut.messagesToForward().count().toFuture();
+  @Test
+  public void test_forward_a_message_from_configured_proxied_node()
+      throws ExecutionException, InterruptedException {
+    final var cntMessagesToProcessF = sut.messagesToProcess().count().toFuture();
+    final var cntMessagesToDropF = sut.messagesToDrop().count().toFuture();
+    final var cntMessagesToForwardF = sut.messagesToForward().count().toFuture();
 
-		final var sender = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
-		final var recipient = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
+    final var sender = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
+    final var recipient = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
 
-		when(config.proxyEnabled()).thenReturn(true);
-		when(config.authorizedProxiedPeers()).thenReturn(ImmutableSet.of(sender));
+    when(config.proxyEnabled()).thenReturn(true);
+    when(config.authorizedProxiedPeers()).thenReturn(ImmutableSet.of(sender));
 
-		final var envelope = MessageEnvelope.create(
-			sender,
-			recipient,
-			new PeerPingMessage()
-		);
-		messages.onNext(new MessageFromPeer<>(sender, envelope));
-		messages.onComplete();
+    final var envelope = MessageEnvelope.create(sender, recipient, new PeerPingMessage());
+    messages.onNext(new MessageFromPeer<>(sender, envelope));
+    messages.onComplete();
 
-		assertEquals(0L, cntMessagesToProcessF.get().longValue());
-		assertEquals(0L, cntMessagesToDropF.get().longValue());
-		assertEquals(1L, cntMessagesToForwardF.get().longValue());
-	}
+    assertEquals(0L, cntMessagesToProcessF.get().longValue());
+    assertEquals(0L, cntMessagesToDropF.get().longValue());
+    assertEquals(1L, cntMessagesToForwardF.get().longValue());
+  }
 }

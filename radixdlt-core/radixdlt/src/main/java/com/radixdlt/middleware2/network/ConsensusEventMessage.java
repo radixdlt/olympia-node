@@ -69,92 +69,91 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.network.messaging.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.network.messaging.Message;
-
 import java.util.Objects;
 
 /**
- * The Data Transfer Object for Consensus messages. Each type of consensus message currently needs to be
- * a parameter in this class due to lack of interface serialization.
+ * The Data Transfer Object for Consensus messages. Each type of consensus message currently needs
+ * to be a parameter in this class due to lack of interface serialization.
  */
 @SerializerId2("message.consensus.event")
-//TODO: requires rework
+// TODO: requires rework
 public final class ConsensusEventMessage extends Message {
-	@JsonProperty("proposal")
-	@DsonOutput(Output.ALL)
-	private final Proposal proposal;
+  @JsonProperty("proposal")
+  @DsonOutput(Output.ALL)
+  private final Proposal proposal;
 
-	@JsonProperty("vote")
-	@DsonOutput(Output.ALL)
-	private final Vote vote;
+  @JsonProperty("vote")
+  @DsonOutput(Output.ALL)
+  private final Vote vote;
 
-	@JsonCreator
-	public ConsensusEventMessage(
-		@JsonProperty("proposal") Proposal proposal,
-		@JsonProperty("vote") Vote vote
-	) {
-		if (proposal == null && vote == null) {
-			throw new IllegalStateException("No vote nor proposal are provided for ConsensusEventMessage");
-		}
+  @JsonCreator
+  public ConsensusEventMessage(
+      @JsonProperty("proposal") Proposal proposal, @JsonProperty("vote") Vote vote) {
+    if (proposal == null && vote == null) {
+      throw new IllegalStateException(
+          "No vote nor proposal are provided for ConsensusEventMessage");
+    }
 
-		if (proposal != null && vote != null) {
-			throw new IllegalArgumentException("Both, vote and proposal are provided for ConsensusEventMessage");
-		}
+    if (proposal != null && vote != null) {
+      throw new IllegalArgumentException(
+          "Both, vote and proposal are provided for ConsensusEventMessage");
+    }
 
-		this.proposal = proposal;
-		this.vote = vote;
-	}
+    this.proposal = proposal;
+    this.vote = vote;
+  }
 
-	public ConsensusEventMessage(Proposal proposal) {
-		this(proposal, null);
-	}
+  public ConsensusEventMessage(Proposal proposal) {
+    this(proposal, null);
+  }
 
-	public ConsensusEventMessage(Vote vote) {
-		this(null, vote);
-	}
+  public ConsensusEventMessage(Vote vote) {
+    this(null, vote);
+  }
 
-	public ConsensusEvent getConsensusMessage() {
-		var event = consensusMessageInternal();
-		if (event == null) {
-			throw new IllegalStateException("No consensus message.");
-		}
-		return event;
-	}
+  public ConsensusEvent getConsensusMessage() {
+    var event = consensusMessageInternal();
+    if (event == null) {
+      throw new IllegalStateException("No consensus message.");
+    }
+    return event;
+  }
 
-	private ConsensusEvent consensusMessageInternal() {
-		if (this.proposal != null) {
-			return this.proposal;
-		}
+  private ConsensusEvent consensusMessageInternal() {
+    if (this.proposal != null) {
+      return this.proposal;
+    }
 
-		if (this.vote != null) {
-			return this.vote;
-		}
+    if (this.vote != null) {
+      return this.vote;
+    }
 
-		return null;
-	}
+    return null;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), consensusMessageInternal());
-	}
+  @Override
+  public String toString() {
+    return String.format("%s[%s]", getClass().getSimpleName(), consensusMessageInternal());
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof ConsensusEventMessage that)
-			   && Objects.equals(proposal, that.proposal)
-			   && Objects.equals(vote, that.vote)
-			   && Objects.equals(getTimestamp(), that.getTimestamp());
-	}
+    return (o instanceof ConsensusEventMessage that)
+        && Objects.equals(proposal, that.proposal)
+        && Objects.equals(vote, that.vote)
+        && Objects.equals(getTimestamp(), that.getTimestamp());
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(proposal, vote, getTimestamp());
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(proposal, vote, getTimestamp());
+  }
 }

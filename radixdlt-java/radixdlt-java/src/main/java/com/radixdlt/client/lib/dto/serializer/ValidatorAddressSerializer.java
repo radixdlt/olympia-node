@@ -70,19 +70,19 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.networks.Addressing;
-
 import java.io.IOException;
 
 public class ValidatorAddressSerializer extends StdSerializer<ValidatorAddress> {
-	private final ValidatorAddressing addressing;
+  private final ValidatorAddressing addressing;
 
-	public ValidatorAddressSerializer(Addressing networkAddressing) {
-		super(ValidatorAddress.class);
-		addressing = networkAddressing.forValidators();
-	}
+  public ValidatorAddressSerializer(Addressing networkAddressing) {
+    super(ValidatorAddress.class);
+    addressing = networkAddressing.forValidators();
+  }
 
-	@Override
-	public void serialize(ValidatorAddress value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-		gen.writeString(addressing.of(value.getAddress()));
-	}
+  @Override
+  public void serialize(ValidatorAddress value, JsonGenerator gen, SerializerProvider provider)
+      throws IOException {
+    gen.writeString(addressing.of(value.getAddress()));
+  }
 }

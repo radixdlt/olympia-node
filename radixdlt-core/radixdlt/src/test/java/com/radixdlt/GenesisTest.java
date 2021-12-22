@@ -83,61 +83,60 @@ import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.utils.Bytes;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.stream.Collectors;
-
 @RunWith(Parameterized.class)
 public class GenesisTest {
-	@Parameterized.Parameters
-	public static Collection<Object[]> parameters() {
-		return Arrays.stream(Network.values())
-			.flatMap(n -> n.genesisTxn().stream())
-			.map(Bytes::fromHexString)
-			.map(Txn::create)
-			.map(txn -> new Object[] {txn})
-			.collect(Collectors.toList());
-	}
+  @Parameterized.Parameters
+  public static Collection<Object[]> parameters() {
+    return Arrays.stream(Network.values())
+        .flatMap(n -> n.genesisTxn().stream())
+        .map(Bytes::fromHexString)
+        .map(Txn::create)
+        .map(txn -> new Object[] {txn})
+        .collect(Collectors.toList());
+  }
 
-	private static final Logger logger = LogManager.getLogger();
-	private final Txn genesis;
+  private static final Logger logger = LogManager.getLogger();
+  private final Txn genesis;
 
-	@Inject
-	private GenesisBuilder genesisBuilder;
+  @Inject private GenesisBuilder genesisBuilder;
 
-	public GenesisTest(Txn genesis) {
-		this.genesis = genesis;
-	}
+  public GenesisTest(Txn genesis) {
+    this.genesis = genesis;
+  }
 
-	@Test
-	public void genesis_should_be_a_valid_transaction() throws RadixEngineException {
-		Guice.createInjector(
-			new MainnetForkConfigsModule(),
-			new ForksModule(),
-			new CryptoModule(),
-			new AbstractModule() {
-				@Override
-				public void configure() {
-					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-				}
-				@Provides
-				RERules rules(Forks forks) {
-					return forks.get(0);
-				}
-			}
-		).injectMembers(this);
-		var proof = genesisBuilder.generateGenesisProof(genesis);
-		var validatorSet = proof.getNextValidatorSet().orElseThrow();
-		logger.info("validator_set{size={} stake={}}",
-			validatorSet.getValidators().size(),
-			Amount.ofSubunits(validatorSet.getTotalPower())
-		);
-	}
+  @Test
+  public void genesis_should_be_a_valid_transaction() throws RadixEngineException {
+    Guice.createInjector(
+            new MainnetForkConfigsModule(),
+            new ForksModule(),
+            new CryptoModule(),
+            new AbstractModule() {
+              @Override
+              public void configure() {
+                bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+                bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
+              }
+
+              @Provides
+              RERules rules(Forks forks) {
+                return forks.get(0);
+              }
+            })
+        .injectMembers(this);
+    var proof = genesisBuilder.generateGenesisProof(genesis);
+    var validatorSet = proof.getNextValidatorSet().orElseThrow();
+    logger.info(
+        "validator_set{size={} stake={}}",
+        validatorSet.getValidators().size(),
+        Amount.ofSubunits(validatorSet.getTotalPower()));
+  }
 }

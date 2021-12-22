@@ -66,14 +66,15 @@ package com.radixdlt.crypto;
 
 public enum SignatureScheme {
 
-    /**
-     *  Elliptic Curve Digital Signature Algorithm, or ECDSA for short. A good introduction is to be found
-     *  <a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">here on wikipedia</a>.
-     */
-    ECDSA;
+  /**
+   * Elliptic Curve Digital Signature Algorithm, or ECDSA for short. A good introduction is to be
+   * found <a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">here
+   * on wikipedia</a>.
+   */
+  ECDSA;
 
-    @Override
-    public String toString() {
-        return this.name().toLowerCase();
-    }
+  @Override
+  public String toString() {
+    return this.name().toLowerCase();
+  }
 }

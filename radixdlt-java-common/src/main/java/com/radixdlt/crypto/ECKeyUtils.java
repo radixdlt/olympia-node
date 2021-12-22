@@ -64,6 +64,22 @@
 
 package com.radixdlt.crypto;
 
+import static com.radixdlt.errors.ApiErrors.UNABLE_TO_MAKE_SIGNATURE_RECOVERABLE;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.primitives.UnsignedBytes;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.RuntimeUtils;
+import com.radixdlt.utils.functional.Result;
+import java.math.BigInteger;
+import java.security.Provider;
+import java.security.SecureRandom;
+import java.security.Security;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.function.Predicate;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.asn1.x9.X9IntegerConverter;
 import org.bouncycastle.crypto.ec.CustomNamedCurves;
@@ -76,314 +92,286 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.math.ec.FixedPointUtil;
 import org.bouncycastle.math.ec.custom.sec.SecP256K1Curve;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.RuntimeUtils;
-import com.radixdlt.utils.functional.Result;
-
-import java.math.BigInteger;
-import java.security.Provider;
-import java.security.SecureRandom;
-import java.security.Security;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.function.Predicate;
-
-import static com.radixdlt.errors.ApiErrors.UNABLE_TO_MAKE_SIGNATURE_RECOVERABLE;
-
-/**
- * Utilities used by both {@link ECPublicKey} and {@link ECKeyPair}.
- */
+/** Utilities used by both {@link ECPublicKey} and {@link ECKeyPair}. */
 public class ECKeyUtils {
 
-	private ECKeyUtils() {
-		throw new IllegalStateException("Can't construct");
-	}
+  private ECKeyUtils() {
+    throw new IllegalStateException("Can't construct");
+  }
 
-	private static final String CURVE_NAME = "secp256k1";
-	private static SecureRandom secureRandom;
-	private static X9ECParameters curve;
-	private static ECDomainParameters domain;
-	private static ECParameterSpec spec;
-	private static byte[] order;
+  private static final String CURVE_NAME = "secp256k1";
+  private static SecureRandom secureRandom;
+  private static X9ECParameters curve;
+  private static ECDomainParameters domain;
+  private static ECParameterSpec spec;
+  private static byte[] order;
 
-	public static SecureRandom secureRandom() {
-		return secureRandom;
-	}
+  public static SecureRandom secureRandom() {
+    return secureRandom;
+  }
 
-	public static X9ECParameters curve() {
-		return curve;
-	}
+  public static X9ECParameters curve() {
+    return curve;
+  }
 
-	public static ECParameterSpec spec() {
-		return spec;
-	}
+  public static ECParameterSpec spec() {
+    return spec;
+  }
 
-	public static ECDomainParameters domain() {
-		return domain;
-	}
+  public static ECDomainParameters domain() {
+    return domain;
+  }
 
-	private static BigInteger getPrime() {
-		return ((SecP256K1Curve) curve.getCurve()).getQ();
-	}
+  private static BigInteger getPrime() {
+    return ((SecP256K1Curve) curve.getCurve()).getQ();
+  }
 
-	static {
-		install();
-	}
+  static {
+    install();
+  }
 
-	static synchronized void install() {
-		if (RuntimeUtils.isAndroidRuntime()) {
-			// Reference class so static initializer is called.
-			LinuxSecureRandom.class.getName();
-			// Ensure the library version of BouncyCastle is used for Android
-			Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
-		}
-		Provider requiredBouncyCastleProvider = new BouncyCastleProvider();
-		Provider currentBouncyCastleProvider = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME);
+  static synchronized void install() {
+    if (RuntimeUtils.isAndroidRuntime()) {
+      // Reference class so static initializer is called.
+      LinuxSecureRandom.class.getName();
+      // Ensure the library version of BouncyCastle is used for Android
+      Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+    }
+    Provider requiredBouncyCastleProvider = new BouncyCastleProvider();
+    Provider currentBouncyCastleProvider = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME);
 
-		// Check if the currently installed version of BouncyCastle is the version
-		// we want. NOTE! That Android has a stripped down version of BouncyCastle
-		// by default.
-		if (isOfRequiredVersion(currentBouncyCastleProvider, requiredBouncyCastleProvider)) {
-			Security.insertProviderAt(requiredBouncyCastleProvider, 1);
-		}
+    // Check if the currently installed version of BouncyCastle is the version
+    // we want. NOTE! That Android has a stripped down version of BouncyCastle
+    // by default.
+    if (isOfRequiredVersion(currentBouncyCastleProvider, requiredBouncyCastleProvider)) {
+      Security.insertProviderAt(requiredBouncyCastleProvider, 1);
+    }
 
-		secureRandom = new SecureRandom();
+    secureRandom = new SecureRandom();
 
-		curve = CustomNamedCurves.getByName(CURVE_NAME);
-		domain = new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
-		spec = new ECParameterSpec(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
-		order = adjustArray(domain.getN().toByteArray(), ECKeyPair.BYTES);
-		FixedPointUtil.precompute(curve.getG());
-	}
+    curve = CustomNamedCurves.getByName(CURVE_NAME);
+    domain = new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
+    spec = new ECParameterSpec(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
+    order = adjustArray(domain.getN().toByteArray(), ECKeyPair.BYTES);
+    FixedPointUtil.precompute(curve.getG());
+  }
 
-	private static boolean isOfRequiredVersion(Provider currentBouncyCastleProvider, Provider requiredBouncyCastleProvider) {
-		return currentBouncyCastleProvider == null
-			|| !currentBouncyCastleProvider.getVersionStr().equals(requiredBouncyCastleProvider.getVersionStr());
-	}
+  private static boolean isOfRequiredVersion(
+      Provider currentBouncyCastleProvider, Provider requiredBouncyCastleProvider) {
+    return currentBouncyCastleProvider == null
+        || !currentBouncyCastleProvider
+            .getVersionStr()
+            .equals(requiredBouncyCastleProvider.getVersionStr());
+  }
 
-	// Must be after secureRandom init
-	static final KeyHandler keyHandler = new BouncyCastleKeyHandler(curve);
+  // Must be after secureRandom init
+  static final KeyHandler keyHandler = new BouncyCastleKeyHandler(curve);
 
-	static void validatePrivate(byte[] privateKey) throws PrivateKeyException {
-		if (privateKey == null) {
-			throw new PrivateKeyException("Private key is null");
-		}
+  static void validatePrivate(byte[] privateKey) throws PrivateKeyException {
+    if (privateKey == null) {
+      throw new PrivateKeyException("Private key is null");
+    }
 
-		if (privateKey.length != ECKeyPair.BYTES) {
-			throw new PrivateKeyException("Private key is invalid length: " + privateKey.length);
-		}
+    if (privateKey.length != ECKeyPair.BYTES) {
+      throw new PrivateKeyException("Private key is invalid length: " + privateKey.length);
+    }
 
-		if (greaterOrEqualOrder(privateKey)) {
-			throw new PrivateKeyException("Private key is greater than or equal to curve order");
-		}
+    if (greaterOrEqualOrder(privateKey)) {
+      throw new PrivateKeyException("Private key is greater than or equal to curve order");
+    }
 
-		int pklen = privateKey.length;
-		if (allZero(privateKey, 0, pklen - 1)) {
-			byte lastByte = privateKey[pklen - 1];
-			if (lastByte == 0) {
-				throw new PrivateKeyException("Private key is " + lastByte);
-			}
-		}
-	}
+    int pklen = privateKey.length;
+    if (allZero(privateKey, 0, pklen - 1)) {
+      byte lastByte = privateKey[pklen - 1];
+      if (lastByte == 0) {
+        throw new PrivateKeyException("Private key is " + lastByte);
+      }
+    }
+  }
 
-	static void validatePublic(byte[] publicKey) throws PublicKeyException {
-		if (publicKey == null || publicKey.length == 0) {
-			throw new PublicKeyException("Public key is empty");
-		}
+  static void validatePublic(byte[] publicKey) throws PublicKeyException {
+    if (publicKey == null || publicKey.length == 0) {
+      throw new PublicKeyException("Public key is empty");
+    }
 
-		int pubkey0 = publicKey[0] & 0xFF;
-		switch (pubkey0) {
-			case 2:
-			case 3:
-				if (publicKey.length != ECPublicKey.COMPRESSED_BYTES) {
-					throw new PublicKeyException("Public key has invalid compressed size");
-				}
-				break;
-			case 4:
-				if (publicKey.length != ECPublicKey.UNCOMPRESSED_BYTES) {
-					throw new PublicKeyException("Public key has invalid uncompressed size");
-				}
-				break;
-			default:
-				throw new PublicKeyException("Public key has invalid format");
-		}
-	}
+    int pubkey0 = publicKey[0] & 0xFF;
+    switch (pubkey0) {
+      case 2:
+      case 3:
+        if (publicKey.length != ECPublicKey.COMPRESSED_BYTES) {
+          throw new PublicKeyException("Public key has invalid compressed size");
+        }
+        break;
+      case 4:
+        if (publicKey.length != ECPublicKey.UNCOMPRESSED_BYTES) {
+          throw new PublicKeyException("Public key has invalid uncompressed size");
+        }
+        break;
+      default:
+        throw new PublicKeyException("Public key has invalid format");
+    }
+  }
 
-	private static final X9IntegerConverter CONVERTER = new X9IntegerConverter();
+  private static final X9IntegerConverter CONVERTER = new X9IntegerConverter();
 
-	private static ECCurve ecCurve() {
-		return curve.getCurve();
-	}
+  private static ECCurve ecCurve() {
+    return curve.getCurve();
+  }
 
-	private static ECPoint decompressKey(BigInteger xBN, boolean yBit) {
-		byte[] compEnc = CONVERTER.integerToBytes(xBN, 1 + CONVERTER.getByteLength(ecCurve()));
+  private static ECPoint decompressKey(BigInteger xBN, boolean yBit) {
+    byte[] compEnc = CONVERTER.integerToBytes(xBN, 1 + CONVERTER.getByteLength(ecCurve()));
 
-		compEnc[0] = (byte) (yBit ? 0x03 : 0x02);
+    compEnc[0] = (byte) (yBit ? 0x03 : 0x02);
 
-		try {
-			return ecCurve().decodePoint(compEnc);
-		} catch (IllegalArgumentException e) {
-			// the compressed key was invalid
-			return null;
-		}
-	}
+    try {
+      return ecCurve().decodePoint(compEnc);
+    } catch (IllegalArgumentException e) {
+      // the compressed key was invalid
+      return null;
+    }
+  }
 
-	static int calculateV(BigInteger r, BigInteger s, byte[] publicKey, byte[] hash) {
-		return tryV(0, r, s, publicKey, hash)
-			.or(() -> tryV(1, r, s, publicKey, hash))
-			.or(() -> tryV(2, r, s, publicKey, hash))
-			.or(() -> tryV(3, r, s, publicKey, hash))
-			.orElseThrow(() -> new IllegalStateException("Unable to calculate V byte for public key"));
-	}
+  static int calculateV(BigInteger r, BigInteger s, byte[] publicKey, byte[] hash) {
+    return tryV(0, r, s, publicKey, hash)
+        .or(() -> tryV(1, r, s, publicKey, hash))
+        .or(() -> tryV(2, r, s, publicKey, hash))
+        .or(() -> tryV(3, r, s, publicKey, hash))
+        .orElseThrow(() -> new IllegalStateException("Unable to calculate V byte for public key"));
+  }
 
-	private static Optional<Integer> tryV(int v, BigInteger r, BigInteger s, byte[] publicKey, byte[] hash) {
-		return ECKeyUtils.recoverFromSignature(v, r, s, hash)
-			.filter(q -> Arrays.equals(q.getEncoded(false), publicKey))
-			.map(__ -> v);
-	}
+  private static Optional<Integer> tryV(
+      int v, BigInteger r, BigInteger s, byte[] publicKey, byte[] hash) {
+    return ECKeyUtils.recoverFromSignature(v, r, s, hash)
+        .filter(q -> Arrays.equals(q.getEncoded(false), publicKey))
+        .map(__ -> v);
+  }
 
-	/**
-	 * Restore public key from recoverable signature.
-	 *
-	 * @param signature recoverable signature (with correct bit 'v')
-	 * @param hash hash from which signature was created
-	 *
-	 * @return recovered public key
-	 */
-	static Optional<ECPoint> recoverFromSignature(ECDSASignature signature, byte[] hash) {
-		return recoverFromSignature(signature.getV(), signature.getR(), signature.getS(), hash);
-	}
+  /**
+   * Restore public key from recoverable signature.
+   *
+   * @param signature recoverable signature (with correct bit 'v')
+   * @param hash hash from which signature was created
+   * @return recovered public key
+   */
+  static Optional<ECPoint> recoverFromSignature(ECDSASignature signature, byte[] hash) {
+    return recoverFromSignature(signature.getV(), signature.getR(), signature.getS(), hash);
+  }
 
-	/**
-	 * Restore recoverable signature from non-recoverable signature and public key.
-	 *
-	 * @param signature original non-recoverable signature
-	 * @param hash hash from which signature was created
-	 * @param publicKey corresponding public key from the private key used to sign hash.
-	 *
-	 * @return recoverable signature
-	 */
-	public static Result<ECDSASignature> toRecoverable(ECDSASignature signature, byte[] hash, ECPublicKey publicKey) {
-		return Result.wrap(
-			UNABLE_TO_MAKE_SIGNATURE_RECOVERABLE,
-			() -> {
-				var v = calculateV(signature.getR(), signature.getS(), publicKey.getBytes(), hash);
-				return ECDSASignature.create(signature.getR(), signature.getS(), v);
-			}
-		);
-	}
+  /**
+   * Restore recoverable signature from non-recoverable signature and public key.
+   *
+   * @param signature original non-recoverable signature
+   * @param hash hash from which signature was created
+   * @param publicKey corresponding public key from the private key used to sign hash.
+   * @return recoverable signature
+   */
+  public static Result<ECDSASignature> toRecoverable(
+      ECDSASignature signature, byte[] hash, ECPublicKey publicKey) {
+    return Result.wrap(
+        UNABLE_TO_MAKE_SIGNATURE_RECOVERABLE,
+        () -> {
+          var v = calculateV(signature.getR(), signature.getS(), publicKey.getBytes(), hash);
+          return ECDSASignature.create(signature.getR(), signature.getS(), v);
+        });
+  }
 
-	public static ECDSASignature toRecoverableSig(ECDSASignature signature, byte[] hash, ECPublicKey publicKey) {
-		var v = calculateV(signature.getR(), signature.getS(), publicKey.getBytes(), hash);
-		return ECDSASignature.create(signature.getR(), signature.getS(), v);
-	}
+  public static ECDSASignature toRecoverableSig(
+      ECDSASignature signature, byte[] hash, ECPublicKey publicKey) {
+    var v = calculateV(signature.getR(), signature.getS(), publicKey.getBytes(), hash);
+    return ECDSASignature.create(signature.getR(), signature.getS(), v);
+  }
 
-	static Optional<ECPoint> recoverFromSignature(int v, BigInteger r, BigInteger s, byte[] hash) {
-		var curveN = curve().getN();
-		var point = r.add(BigInteger.valueOf((long) v / 2).multiply(curveN));
+  static Optional<ECPoint> recoverFromSignature(int v, BigInteger r, BigInteger s, byte[] hash) {
+    var curveN = curve().getN();
+    var point = r.add(BigInteger.valueOf((long) v / 2).multiply(curveN));
 
-		if (point.compareTo(getPrime()) >= 0) {
-			return Optional.empty();
-		}
+    if (point.compareTo(getPrime()) >= 0) {
+      return Optional.empty();
+    }
 
-		var decompressedPoint = decompressKey(point, (v & 1) == 1);
+    var decompressedPoint = decompressKey(point, (v & 1) == 1);
 
-		if (decompressedPoint == null || !decompressedPoint.multiply(curveN).isInfinity()) {
-			return Optional.empty();
-		}
+    if (decompressedPoint == null || !decompressedPoint.multiply(curveN).isInfinity()) {
+      return Optional.empty();
+    }
 
-		var negModCandidate = BigInteger.ZERO.subtract(new BigInteger(1, hash)).mod(curveN);
-		var modInverseCurve = r.modInverse(curveN);
+    var negModCandidate = BigInteger.ZERO.subtract(new BigInteger(1, hash)).mod(curveN);
+    var modInverseCurve = r.modInverse(curveN);
 
-		return Optional.of(
-			ECAlgorithms.sumOfTwoMultiplies(
-				curve().getG(),
-				modInverseCurve.multiply(negModCandidate).mod(curveN),
-				decompressedPoint,
-				modInverseCurve.multiply(s).mod(curveN)
-			))
-			.filter(Predicate.not(ECPoint::isInfinity));
-	}
+    return Optional.of(
+            ECAlgorithms.sumOfTwoMultiplies(
+                curve().getG(),
+                modInverseCurve.multiply(negModCandidate).mod(curveN),
+                decompressedPoint,
+                modInverseCurve.multiply(s).mod(curveN)))
+        .filter(Predicate.not(ECPoint::isInfinity));
+  }
 
-	/**
-	 * Adjusts the specified array so that is is equal to the specified length.
-	 * <ul>
-	 *   <li>
-	 *     If the array is equal to the specified length, it is returned
-	 *     without change.
-	 *   </li>
-	 *   <li>
-	 *     If array is shorter than the specified length, a new array that
-	 *     is zero padded at the front is returned.  The specified array is
-	 *     filled with zeros to prevent information leakage.
-	 *   </li>
-	 *   <li>
-	 *     If the array is longer than the specified length, a new array
-	 *     with sufficient leading zeros removed is returned.  The specified
-	 *     array is filled with zeros to prevent information leakage.
-	 *     An {@code IllegalArgumentException} is thrown if the specified
-	 *     array does not have sufficient leading zeros to allow it to be
-	 *     truncated to the specified length.
-	 *   </li>
-	 * </ul>
-	 *
-	 * @param array The specified array
-	 * @param length The specified length
-	 *
-	 * @return An array of the specified length as described above
-	 *
-	 * @throws IllegalArgumentException if the specified array is longer than
-	 * 	the specified length, and does not have sufficient leading zeros
-	 * 	to allow truncation to the specified length.
-	 * @throws NullPointerException if the specified array is {@code null}
-	 */
-	static byte[] adjustArray(byte[] array, int length) {
-		if (length == array.length) {
-			// Length is fine
-			return array;
-		}
-		final byte[] result;
-		if (length > array.length) {
-			// Needs zero padding at front
-			result = new byte[length];
-			System.arraycopy(array, 0, result, length - array.length, array.length);
-		} else {
-			// Must be longer, need to drop zeros at front -> error if dropped bytes are not zero
-			int offset = 0;
-			while (array.length - offset > length) {
-				if (array[offset] != 0) {
-					throw new IllegalArgumentException(String.format(
-						"Array is greater than %s bytes: %s", length, Bytes.toHexString(array)
-					));
-				}
-				offset += 1;
-			}
-			// Now copy length bytes from offset within array
-			result = Arrays.copyOfRange(array, offset, offset + length);
-		}
-		// Zero out original array so as to avoid information leaks
-		Arrays.fill(array, (byte) 0);
-		return result;
-	}
+  /**
+   * Adjusts the specified array so that is is equal to the specified length.
+   *
+   * <ul>
+   *   <li>If the array is equal to the specified length, it is returned without change.
+   *   <li>If array is shorter than the specified length, a new array that is zero padded at the
+   *       front is returned. The specified array is filled with zeros to prevent information
+   *       leakage.
+   *   <li>If the array is longer than the specified length, a new array with sufficient leading
+   *       zeros removed is returned. The specified array is filled with zeros to prevent
+   *       information leakage. An {@code IllegalArgumentException} is thrown if the specified array
+   *       does not have sufficient leading zeros to allow it to be truncated to the specified
+   *       length.
+   * </ul>
+   *
+   * @param array The specified array
+   * @param length The specified length
+   * @return An array of the specified length as described above
+   * @throws IllegalArgumentException if the specified array is longer than the specified length,
+   *     and does not have sufficient leading zeros to allow truncation to the specified length.
+   * @throws NullPointerException if the specified array is {@code null}
+   */
+  static byte[] adjustArray(byte[] array, int length) {
+    if (length == array.length) {
+      // Length is fine
+      return array;
+    }
+    final byte[] result;
+    if (length > array.length) {
+      // Needs zero padding at front
+      result = new byte[length];
+      System.arraycopy(array, 0, result, length - array.length, array.length);
+    } else {
+      // Must be longer, need to drop zeros at front -> error if dropped bytes are not zero
+      int offset = 0;
+      while (array.length - offset > length) {
+        if (array[offset] != 0) {
+          throw new IllegalArgumentException(
+              String.format(
+                  "Array is greater than %s bytes: %s", length, Bytes.toHexString(array)));
+        }
+        offset += 1;
+      }
+      // Now copy length bytes from offset within array
+      result = Arrays.copyOfRange(array, offset, offset + length);
+    }
+    // Zero out original array so as to avoid information leaks
+    Arrays.fill(array, (byte) 0);
+    return result;
+  }
 
-	@VisibleForTesting
-	static boolean greaterOrEqualOrder(byte[] privateKey) {
-		if (privateKey.length != order.length) {
-			throw new IllegalArgumentException("Invalid private key");
-		}
-		return UnsignedBytes.lexicographicalComparator().compare(order, privateKey) <= 0;
-	}
+  @VisibleForTesting
+  static boolean greaterOrEqualOrder(byte[] privateKey) {
+    if (privateKey.length != order.length) {
+      throw new IllegalArgumentException("Invalid private key");
+    }
+    return UnsignedBytes.lexicographicalComparator().compare(order, privateKey) <= 0;
+  }
 
-	private static boolean allZero(byte[] bytes, int offset, int len) {
-		for (int i = 0; i < len; ++i) {
-			if (bytes[offset + i] != 0) {
-				return false;
-			}
-		}
-		return true;
-	}
+  private static boolean allZero(byte[] bytes, int offset, int len) {
+    for (int i = 0; i < len; ++i) {
+      if (bytes[offset + i] != 0) {
+        return false;
+      }
+    }
+    return true;
+  }
 }

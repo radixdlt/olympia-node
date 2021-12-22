@@ -64,8 +64,7 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_epochs_radixengine;
 
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Test;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
@@ -81,7 +80,6 @@ import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -90,63 +88,66 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.Test;
 
 public class RandomVoteAndViewTimeoutDropperTest {
-	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(8, 4)
-		.networkModules(
-			NetworkOrdering.inOrder(),
-			NetworkLatencies.fixed(),
-			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.2)
-		)
-		.addRadixEngineConfigModules(
-			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
-			new ForksModule()
-		)
-		.ledgerAndRadixEngineWithEpochHighView()
-		.addTestModules(
-			ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(20, TimeUnit.SECONDS),
-			LedgerMonitors.consensusToLedger(),
-			LedgerMonitors.ordered(),
-			RadixEngineMonitors.noInvalidProposedCommands()
-		)
-		.addActor(NodeValidatorRandomRegistrator.class);
+  private final Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(8, 4)
+          .networkModules(
+              NetworkOrdering.inOrder(),
+              NetworkLatencies.fixed(),
+              NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.2))
+          .addRadixEngineConfigModules(
+              new MainnetForkConfigsModule(),
+              new RadixEngineForksLatestOnlyModule(
+                  RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
+              new ForksModule())
+          .ledgerAndRadixEngineWithEpochHighView()
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(20, TimeUnit.SECONDS),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered(),
+              RadixEngineMonitors.noInvalidProposedCommands())
+          .addActor(NodeValidatorRandomRegistrator.class);
 
-	@Test
-	public void when_random_validators__then_sanity_checks_should_pass() {
-		SimulationTest simulationTest = bftTestBuilder.build();
-		final var runningTest = simulationTest.run(Duration.of(2, ChronoUnit.MINUTES));
-		final var checkResults = runningTest.awaitCompletion();
+  @Test
+  public void when_random_validators__then_sanity_checks_should_pass() {
+    SimulationTest simulationTest = bftTestBuilder.build();
+    final var runningTest = simulationTest.run(Duration.of(2, ChronoUnit.MINUTES));
+    final var checkResults = runningTest.awaitCompletion();
 
-		List<CounterType> counterTypes = List.of(
-			CounterType.BFT_VERTEX_STORE_FORKS,
-			CounterType.BFT_COMMITTED_VERTICES,
-			CounterType.BFT_PACEMAKER_TIMEOUTS_SENT,
-			CounterType.LEDGER_STATE_VERSION
-		);
+    List<CounterType> counterTypes =
+        List.of(
+            CounterType.BFT_VERTEX_STORE_FORKS,
+            CounterType.BFT_COMMITTED_VERTICES,
+            CounterType.BFT_PACEMAKER_TIMEOUTS_SENT,
+            CounterType.LEDGER_STATE_VERSION);
 
-		Map<CounterType, LongSummaryStatistics> statistics = counterTypes.stream()
-			.collect(Collectors.toMap(
-				counterType -> counterType,
-				counterType -> runningTest.getNetwork().getSystemCounters().values()
-					.stream()
-					.mapToLong(s -> s.get(counterType)).summaryStatistics())
-			);
+    Map<CounterType, LongSummaryStatistics> statistics =
+        counterTypes.stream()
+            .collect(
+                Collectors.toMap(
+                    counterType -> counterType,
+                    counterType ->
+                        runningTest.getNetwork().getSystemCounters().values().stream()
+                            .mapToLong(s -> s.get(counterType))
+                            .summaryStatistics()));
 
-		System.out.println("statistics:\n" + print(statistics.entrySet()));
+    System.out.println("statistics:\n" + print(statistics.entrySet()));
 
-		assertThat(checkResults).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
-	}
+    assertThat(checkResults)
+        .allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
+  }
 
-	private String print(Set<Map.Entry<CounterType, LongSummaryStatistics>> entrySet) {
-		var builder = new StringBuilder();
+  private String print(Set<Map.Entry<CounterType, LongSummaryStatistics>> entrySet) {
+    var builder = new StringBuilder();
 
-		entrySet.forEach(e -> builder.append(e.getKey()).append(" = ").append(e.getValue().toString()).append('\n'));
+    entrySet.forEach(
+        e -> builder.append(e.getKey()).append(" = ").append(e.getValue().toString()).append('\n'));
 
-		return builder.toString();
-	}
+    return builder.toString();
+  }
 }

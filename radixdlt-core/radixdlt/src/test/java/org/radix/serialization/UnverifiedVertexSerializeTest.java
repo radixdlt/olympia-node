@@ -65,34 +65,33 @@
 package org.radix.serialization;
 
 import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
-
 import java.util.List;
 
 public class UnverifiedVertexSerializeTest extends SerializeObject<UnverifiedVertex> {
-	public UnverifiedVertexSerializeTest() {
-		super(UnverifiedVertex.class, UnverifiedVertexSerializeTest::get);
-	}
+  public UnverifiedVertexSerializeTest() {
+    super(UnverifiedVertex.class, UnverifiedVertexSerializeTest::get);
+  }
 
-	private static UnverifiedVertex get() {
-		View view = View.of(1234567891L);
-		LedgerHeader ledgerHeader = LedgerHeader.mocked();
-		BFTHeader header = new BFTHeader(view, HashUtils.random256(), ledgerHeader);
-		BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
-		VoteData voteData = new VoteData(header, parent, null);
+  private static UnverifiedVertex get() {
+    View view = View.of(1234567891L);
+    LedgerHeader ledgerHeader = LedgerHeader.mocked();
+    BFTHeader header = new BFTHeader(view, HashUtils.random256(), ledgerHeader);
+    BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
+    VoteData voteData = new VoteData(header, parent, null);
 
-		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
+    QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 
-		var txn = Txn.create(new byte[]{0, 1, 2, 3});
+    var txn = Txn.create(new byte[] {0, 1, 2, 3});
 
-		return UnverifiedVertex.create(qc, view, List.of(txn), BFTNode.random());
-	}
+    return UnverifiedVertex.create(qc, view, List.of(txn), BFTNode.random());
+  }
 }

@@ -70,97 +70,103 @@ import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.proxy.ProxyCertificateManager;
 import io.reactivex.rxjava3.core.Observable;
-
 import java.util.Objects;
 
 public final class MessageRouter {
-	private final NodeId self;
-	private final P2PConfig config;
-	private final ProxyCertificateManager proxyCertificateManager;
+  private final NodeId self;
+  private final P2PConfig config;
+  private final ProxyCertificateManager proxyCertificateManager;
 
-	private final Observable<RoutingResult> routedMessages;
+  private final Observable<RoutingResult> routedMessages;
 
-	public MessageRouter(
-		NodeId self,
-		P2PConfig config,
-		ProxyCertificateManager proxyCertificateManager,
-		Observable<MessageFromPeer<Message>> messages
-	) {
-		this.self = Objects.requireNonNull(self);
-		this.config = Objects.requireNonNull(config);
-		this.proxyCertificateManager = Objects.requireNonNull(proxyCertificateManager);
+  public MessageRouter(
+      NodeId self,
+      P2PConfig config,
+      ProxyCertificateManager proxyCertificateManager,
+      Observable<MessageFromPeer<Message>> messages) {
+    this.self = Objects.requireNonNull(self);
+    this.config = Objects.requireNonNull(config);
+    this.proxyCertificateManager = Objects.requireNonNull(proxyCertificateManager);
 
-		this.routedMessages = messages
-			.map(msg -> route(msg.getSource(), getOrCreateEnvelope(msg)))
-			.share();
-	}
+    this.routedMessages =
+        messages.map(msg -> route(msg.getSource(), getOrCreateEnvelope(msg))).share();
+  }
 
-	/* for backwards compatibility we support both envelope and non-envelope messages */
-	private <T extends Message> MessageEnvelope getOrCreateEnvelope(MessageFromPeer<T> messageFromPeer) {
-		if (messageFromPeer.getMessage() instanceof MessageEnvelope messageEnvelope) {
-			return messageEnvelope;
-		} else {
-			return MessageEnvelope.create(messageFromPeer.getSource(), self, messageFromPeer.getMessage());
-		}
-	}
+  /* for backwards compatibility we support both envelope and non-envelope messages */
+  private <T extends Message> MessageEnvelope getOrCreateEnvelope(
+      MessageFromPeer<T> messageFromPeer) {
+    if (messageFromPeer.getMessage() instanceof MessageEnvelope messageEnvelope) {
+      return messageEnvelope;
+    } else {
+      return MessageEnvelope.create(
+          messageFromPeer.getSource(), self, messageFromPeer.getMessage());
+    }
+  }
 
-	public Observable<RoutingResult.Process> messagesToProcess() {
-		return messagesOfResult(RoutingResult.Process.class);
-	}
+  public Observable<RoutingResult.Process> messagesToProcess() {
+    return messagesOfResult(RoutingResult.Process.class);
+  }
 
-	public Observable<RoutingResult.Forward> messagesToForward() {
-		return messagesOfResult(RoutingResult.Forward.class);
-	}
+  public Observable<RoutingResult.Forward> messagesToForward() {
+    return messagesOfResult(RoutingResult.Forward.class);
+  }
 
-	public Observable<RoutingResult.Drop> messagesToDrop() {
-		return messagesOfResult(RoutingResult.Drop.class);
-	}
+  public Observable<RoutingResult.Drop> messagesToDrop() {
+    return messagesOfResult(RoutingResult.Drop.class);
+  }
 
-	private <T extends RoutingResult> Observable<T> messagesOfResult(Class<T> clazz) {
-		return routedMessages.filter(clazz::isInstance).map(clazz::cast);
-	}
+  private <T extends RoutingResult> Observable<T> messagesOfResult(Class<T> clazz) {
+    return routedMessages.filter(clazz::isInstance).map(clazz::cast);
+  }
 
-	private RoutingResult route(NodeId sender, MessageEnvelope messageEnvelope) {
-		if (!verifySender(sender, messageEnvelope)) {
-			return new RoutingResult.Drop(messageEnvelope);
-		}
+  private RoutingResult route(NodeId sender, MessageEnvelope messageEnvelope) {
+    if (!verifySender(sender, messageEnvelope)) {
+      return new RoutingResult.Drop(messageEnvelope);
+    }
 
-		if (messageEnvelope.getRecipient().equals(self)) {
-			return new RoutingResult.Process(new MessageFromPeer<>(messageEnvelope.getAuthor(), messageEnvelope.getMessage()));
-		} else {
-			return handleMessageToOtherRecipient(sender, messageEnvelope);
-		}
-	}
+    if (messageEnvelope.getRecipient().equals(self)) {
+      return new RoutingResult.Process(
+          new MessageFromPeer<>(messageEnvelope.getAuthor(), messageEnvelope.getMessage()));
+    } else {
+      return handleMessageToOtherRecipient(sender, messageEnvelope);
+    }
+  }
 
-	private boolean verifySender(NodeId sender, MessageEnvelope messageEnvelope) {
-		return sender.equals(messageEnvelope.getAuthor()) // message received directly from the author
-			|| this.config.authorizedProxies().contains(sender) // message received from "our" authorized proxy
-			|| this.proxyCertificateManager.getVerifiedProxiesForNode(messageEnvelope.getAuthor())
-				.contains(sender);  // message received from author's authorized proxy
-	}
+  private boolean verifySender(NodeId sender, MessageEnvelope messageEnvelope) {
+    return sender.equals(messageEnvelope.getAuthor()) // message received directly from the author
+        || this.config
+            .authorizedProxies()
+            .contains(sender) // message received from "our" authorized proxy
+        || this.proxyCertificateManager
+            .getVerifiedProxiesForNode(messageEnvelope.getAuthor())
+            .contains(sender); // message received from author's authorized proxy
+  }
 
-	private RoutingResult handleMessageToOtherRecipient(NodeId sender, MessageEnvelope messageEnvelope) {
-		if (!config.proxyEnabled()) {
-			// not going to forward a message if proxy is disabled
-			return new RoutingResult.Drop(messageEnvelope);
-		}
+  private RoutingResult handleMessageToOtherRecipient(
+      NodeId sender, MessageEnvelope messageEnvelope) {
+    if (!config.proxyEnabled()) {
+      // not going to forward a message if proxy is disabled
+      return new RoutingResult.Drop(messageEnvelope);
+    }
 
-		// a message from an authorized peer
-		if (config.authorizedProxiedPeers().contains(sender)) {
-			return new RoutingResult.Forward(messageEnvelope.getRecipient(), messageEnvelope);
-		}
+    // a message from an authorized peer
+    if (config.authorizedProxiedPeers().contains(sender)) {
+      return new RoutingResult.Forward(messageEnvelope.getRecipient(), messageEnvelope);
+    }
 
-		// or a message to an authorized peer
-		if (config.authorizedProxiedPeers().contains(messageEnvelope.getRecipient())) {
-			return new RoutingResult.Forward(messageEnvelope.getRecipient(), messageEnvelope);
-		}
+    // or a message to an authorized peer
+    if (config.authorizedProxiedPeers().contains(messageEnvelope.getRecipient())) {
+      return new RoutingResult.Forward(messageEnvelope.getRecipient(), messageEnvelope);
+    }
 
-		return new RoutingResult.Drop(messageEnvelope);
-	}
+    return new RoutingResult.Drop(messageEnvelope);
+  }
 
-	public interface RoutingResult {
-		record Process(MessageFromPeer<Message> messageFromPeer) implements RoutingResult { }
-		record Forward(NodeId forwardTo, MessageEnvelope messageEnvelope) implements RoutingResult { }
-		record Drop(MessageEnvelope messageEnvelope) implements RoutingResult { }
-	}
+  public interface RoutingResult {
+    record Process(MessageFromPeer<Message> messageFromPeer) implements RoutingResult {}
+
+    record Forward(NodeId forwardTo, MessageEnvelope messageEnvelope) implements RoutingResult {}
+
+    record Drop(MessageEnvelope messageEnvelope) implements RoutingResult {}
+  }
 }

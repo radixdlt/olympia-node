@@ -64,41 +64,40 @@
 
 package com.radixdlt.consensus;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+
 import com.radixdlt.crypto.ECDSASignature;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 import org.radix.serialization.SerializeObject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
 public class TimestampedECDSASignatureTest extends SerializeObject<TimestampedECDSASignature> {
-	public TimestampedECDSASignatureTest() {
-		super(TimestampedECDSASignature.class, TimestampedECDSASignatureTest::create);
-	}
+  public TimestampedECDSASignatureTest() {
+    super(TimestampedECDSASignature.class, TimestampedECDSASignatureTest::create);
+  }
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(TimestampedECDSASignature.class)
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(TimestampedECDSASignature.class).verify();
+  }
 
-	@Test
-	public void sensibleToString() {
-		assertThat(create().toString()).contains(TimestampedECDSASignature.class.getSimpleName());
-	}
+  @Test
+  public void sensibleToString() {
+    assertThat(create().toString()).contains(TimestampedECDSASignature.class.getSimpleName());
+  }
 
-	private static TimestampedECDSASignature create() {
-		return TimestampedECDSASignature.from(1L, ECDSASignature.zeroSignature());
-	}
+  private static TimestampedECDSASignature create() {
+    return TimestampedECDSASignature.from(1L, ECDSASignature.zeroSignature());
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializationWithNullThrowsException() {
-		TimestampedECDSASignature.from(1, null);
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException() {
+    TimestampedECDSASignature.from(1, null);
+  }
 
-	@Test(expected = IllegalArgumentException.class)
-	public void deserializationWithInvalidTimestampThrowsException() {
-		TimestampedECDSASignature.from(0, mock(ECDSASignature.class));
-	}
+  @Test(expected = IllegalArgumentException.class)
+  public void deserializationWithInvalidTimestampThrowsException() {
+    TimestampedECDSASignature.from(0, mock(ECDSASignature.class));
+  }
 }

@@ -65,48 +65,43 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-
 import java.util.function.Function;
 
 public final class UpProcedure<S extends ReducerState, U extends Particle> implements Procedure {
-	private final Class<S> reducerStateClass;
-	private final Class<U> upClass;
-	private final UpReducer<S, U> upReducer;
-	private final Function<U, Authorization> authorization;
+  private final Class<S> reducerStateClass;
+  private final Class<U> upClass;
+  private final UpReducer<S, U> upReducer;
+  private final Function<U, Authorization> authorization;
 
-	public UpProcedure(
-		Class<S> reducerStateClass,
-		Class<U> upClass,
-		Function<U, Authorization> authorization,
-		UpReducer<S, U> upReducer
-	) {
-		this.reducerStateClass = reducerStateClass;
-		this.upClass = upClass;
-		this.upReducer = upReducer;
-		this.authorization = authorization;
-	}
+  public UpProcedure(
+      Class<S> reducerStateClass,
+      Class<U> upClass,
+      Function<U, Authorization> authorization,
+      UpReducer<S, U> upReducer) {
+    this.reducerStateClass = reducerStateClass;
+    this.upClass = upClass;
+    this.upReducer = upReducer;
+    this.authorization = authorization;
+  }
 
-	@Override
-	public ProcedureKey key() {
-		return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.UP, upClass));
-	}
+  @Override
+  public ProcedureKey key() {
+    return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.UP, upClass));
+  }
 
-	@Override
-	public Authorization authorization(Object o) {
-		return authorization.apply((U) o);
-	}
+  @Override
+  public Authorization authorization(Object o) {
+    return authorization.apply((U) o);
+  }
 
-	@Override
-	public ReducerResult call(
-		Object o,
-		ReducerState reducerState,
-		Resources immutableAddrs,
-		ExecutionContext context
-	) throws ProcedureException {
-		try {
-			return upReducer.reduce((S) reducerState, (U) o, context, immutableAddrs);
-		} catch (Exception e) {
-			throw new ProcedureException(e);
-		}
-	}
+  @Override
+  public ReducerResult call(
+      Object o, ReducerState reducerState, Resources immutableAddrs, ExecutionContext context)
+      throws ProcedureException {
+    try {
+      return upReducer.reduce((S) reducerState, (U) o, context, immutableAddrs);
+    } catch (Exception e) {
+      throw new ProcedureException(e);
+    }
+  }
 }

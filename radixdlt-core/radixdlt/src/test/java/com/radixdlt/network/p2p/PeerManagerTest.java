@@ -64,142 +64,153 @@
 
 package com.radixdlt.network.p2p;
 
-import com.radixdlt.network.messaging.serialization.MessageSerialization;
-import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
-import org.junit.After;
-import org.junit.Test;
-import com.radixdlt.network.p2p.liveness.messages.PeerPingMessage;
-
-import java.time.Duration;
-import java.util.Set;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.radixdlt.network.messaging.serialization.MessageSerialization;
+import com.radixdlt.network.p2p.liveness.messages.PeerPingMessage;
+import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
+import java.time.Duration;
+import java.util.Set;
+import org.junit.After;
+import org.junit.Test;
+
 public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 
-	@After
-	public void cleanup() {
-		testNetworkRunner.cleanup();
-	}
+  @After
+  public void cleanup() {
+    testNetworkRunner.cleanup();
+  }
 
-	@Test
-	public void when_findOrCreateChannel_then_should_create_if_not_exists() throws Exception {
-		setupTestRunner(3, defaultProperties());
+  @Test
+  public void when_findOrCreateChannel_then_should_create_if_not_exists() throws Exception {
+    setupTestRunner(3, defaultProperties());
 
-		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(uriOfNode(1)));
-		final var channelFuture = testNetworkRunner.peerManager(0)
-			.findOrCreateDirectChannel(uriOfNode(1).getNodeId());
+    testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(uriOfNode(1)));
+    final var channelFuture =
+        testNetworkRunner.peerManager(0).findOrCreateDirectChannel(uriOfNode(1).getNodeId());
 
-		processForCount(3);
+    processForCount(3);
 
-		assertEquals(uriOfNode(1), channelFuture.get().getUri().get());
+    assertEquals(uriOfNode(1), channelFuture.get().getUri().get());
 
-		assertEquals(1L, testNetworkRunner.peerManager(0).activeChannels().size());
-		assertEquals(1L, testNetworkRunner.peerManager(1).activeChannels().size());
-	}
+    assertEquals(1L, testNetworkRunner.peerManager(0).activeChannels().size());
+    assertEquals(1L, testNetworkRunner.peerManager(1).activeChannels().size());
+  }
 
-	@Test
-	public void should_disconnect_the_least_used_channels_when_over_limit() throws Exception {
-		final var props = defaultProperties();
-		props.set("network.p2p.max_outbound_channels", 3); // 3 outbound channels allowed
-		setupTestRunner(5, props);
+  @Test
+  public void should_disconnect_the_least_used_channels_when_over_limit() throws Exception {
+    final var props = defaultProperties();
+    props.set("network.p2p.max_outbound_channels", 3); // 3 outbound channels allowed
+    setupTestRunner(5, props);
 
-		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(uriOfNode(1), uriOfNode(2), uriOfNode(3), uriOfNode(4)));
-		final var channel1Future = testNetworkRunner.peerManager(0)
-			.findOrCreateDirectChannel(nodeIdOf(1));
+    testNetworkRunner
+        .addressBook(0)
+        .addUncheckedPeers(Set.of(uriOfNode(1), uriOfNode(2), uriOfNode(3), uriOfNode(4)));
+    final var channel1Future =
+        testNetworkRunner.peerManager(0).findOrCreateDirectChannel(nodeIdOf(1));
 
-		final var channel2Future = testNetworkRunner.peerManager(0)
-			.findOrCreateDirectChannel(nodeIdOf(2));
+    final var channel2Future =
+        testNetworkRunner.peerManager(0).findOrCreateDirectChannel(nodeIdOf(2));
 
-		final var channel3Future = testNetworkRunner.peerManager(0)
-			.findOrCreateDirectChannel(nodeIdOf(3));
+    final var channel3Future =
+        testNetworkRunner.peerManager(0).findOrCreateDirectChannel(nodeIdOf(3));
 
-		processAll();
+    processAll();
 
-		final var messageSer = testNetworkRunner.getInstance(0, MessageSerialization.class);
+    final var messageSer = testNetworkRunner.getInstance(0, MessageSerialization.class);
 
-		// two messages sent over node1 channel
-		channel1Future.get().send(messageSer.serialize(new PeerPingMessage()).toOptional().get());
-		channel1Future.get().send(messageSer.serialize(new PeerPingMessage()).toOptional().get());
+    // two messages sent over node1 channel
+    channel1Future.get().send(messageSer.serialize(new PeerPingMessage()).toOptional().get());
+    channel1Future.get().send(messageSer.serialize(new PeerPingMessage()).toOptional().get());
 
-		// one messages sent over node2 channel
-		channel2Future.get().send(messageSer.serialize(new PeerPingMessage()).toOptional().get());
+    // one messages sent over node2 channel
+    channel2Future.get().send(messageSer.serialize(new PeerPingMessage()).toOptional().get());
 
-		// three messages sent over node3 channel
-		channel3Future.get().send(messageSer.serialize(new PeerPingMessage()).toOptional().get());
-		channel3Future.get().send(messageSer.serialize(new PeerPingMessage()).toOptional().get());
-		channel3Future.get().send(messageSer.serialize(new PeerPingMessage()).toOptional().get());
+    // three messages sent over node3 channel
+    channel3Future.get().send(messageSer.serialize(new PeerPingMessage()).toOptional().get());
+    channel3Future.get().send(messageSer.serialize(new PeerPingMessage()).toOptional().get());
+    channel3Future.get().send(messageSer.serialize(new PeerPingMessage()).toOptional().get());
 
-		final var channel4Future = testNetworkRunner.peerManager(0)
-			.findOrCreateDirectChannel(uriOfNode(4).getNodeId());
+    final var channel4Future =
+        testNetworkRunner.peerManager(0).findOrCreateDirectChannel(uriOfNode(4).getNodeId());
 
-		processAll();
+    processAll();
 
-		assertEquals(3L, testNetworkRunner.peerManager(0).activeChannels().size());
-		assertEquals(1L, testNetworkRunner.peerManager(1).activeChannels().size());
-		assertEquals(0L, testNetworkRunner.peerManager(2).activeChannels().size()); // node2 should be disconnected
-		assertEquals(1L, testNetworkRunner.peerManager(3).activeChannels().size());
-		assertEquals(1L, testNetworkRunner.peerManager(4).activeChannels().size());
-	}
+    assertEquals(3L, testNetworkRunner.peerManager(0).activeChannels().size());
+    assertEquals(1L, testNetworkRunner.peerManager(1).activeChannels().size());
+    assertEquals(
+        0L,
+        testNetworkRunner.peerManager(2).activeChannels().size()); // node2 should be disconnected
+    assertEquals(1L, testNetworkRunner.peerManager(3).activeChannels().size());
+    assertEquals(1L, testNetworkRunner.peerManager(4).activeChannels().size());
+  }
 
-	@Test
-	public void should_not_connect_to_banned_peers() throws Exception {
-		final var props = defaultProperties();
-		setupTestRunner(5, props);
+  @Test
+  public void should_not_connect_to_banned_peers() throws Exception {
+    final var props = defaultProperties();
+    setupTestRunner(5, props);
 
-		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(uriOfNode(1), uriOfNode(2), uriOfNode(3), uriOfNode(4)));
-		testNetworkRunner.addressBook(1).addUncheckedPeers(Set.of(uriOfNode(0)));
+    testNetworkRunner
+        .addressBook(0)
+        .addUncheckedPeers(Set.of(uriOfNode(1), uriOfNode(2), uriOfNode(3), uriOfNode(4)));
+    testNetworkRunner.addressBook(1).addUncheckedPeers(Set.of(uriOfNode(0)));
 
-		// ban node1 and node3 on node0
-		testNetworkRunner.getInstance(0, PeerControl.class).banPeer(uriOfNode(1).getNodeId(), Duration.ofHours(1), "");
-		testNetworkRunner.getInstance(0, PeerControl.class).banPeer(uriOfNode(3).getNodeId(), Duration.ofHours(1), "");
+    // ban node1 and node3 on node0
+    testNetworkRunner
+        .getInstance(0, PeerControl.class)
+        .banPeer(uriOfNode(1).getNodeId(), Duration.ofHours(1), "");
+    testNetworkRunner
+        .getInstance(0, PeerControl.class)
+        .banPeer(uriOfNode(3).getNodeId(), Duration.ofHours(1), "");
 
-		// try outbound connection (to node3)
-		final var channel1Future = testNetworkRunner.peerManager(0)
-			.findOrCreateDirectChannel(uriOfNode(3).getNodeId());
+    // try outbound connection (to node3)
+    final var channel1Future =
+        testNetworkRunner.peerManager(0).findOrCreateDirectChannel(uriOfNode(3).getNodeId());
 
-		processAll();
+    processAll();
 
-		assertTrue(channel1Future.isCompletedExceptionally());
-		assertEquals(0L, testNetworkRunner.peerManager(0).activeChannels().size());
-		assertEquals(0L, testNetworkRunner.peerManager(3).activeChannels().size());
+    assertTrue(channel1Future.isCompletedExceptionally());
+    assertEquals(0L, testNetworkRunner.peerManager(0).activeChannels().size());
+    assertEquals(0L, testNetworkRunner.peerManager(3).activeChannels().size());
 
-		// try inbound connection (from node1)
+    // try inbound connection (from node1)
 
-		final var channel2Future = testNetworkRunner.peerManager(1)
-			.findOrCreateDirectChannel(uriOfNode(0).getNodeId());
+    final var channel2Future =
+        testNetworkRunner.peerManager(1).findOrCreateDirectChannel(uriOfNode(0).getNodeId());
 
-		processAll();
+    processAll();
 
-		assertEquals(0L, testNetworkRunner.peerManager(0).activeChannels().size());
-		assertEquals(0L, testNetworkRunner.peerManager(1).activeChannels().size());
-	}
+    assertEquals(0L, testNetworkRunner.peerManager(0).activeChannels().size());
+    assertEquals(0L, testNetworkRunner.peerManager(1).activeChannels().size());
+  }
 
-	@Test
-	public void should_disconnect_just_banned_peer() throws Exception {
-		final var props = defaultProperties();
-		setupTestRunner(2, props);
+  @Test
+  public void should_disconnect_just_banned_peer() throws Exception {
+    final var props = defaultProperties();
+    setupTestRunner(2, props);
 
-		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(uriOfNode(1)));
+    testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(uriOfNode(1)));
 
-		final var channel1Future = testNetworkRunner.peerManager(0)
-		.findOrCreateDirectChannel(uriOfNode(1).getNodeId());
+    final var channel1Future =
+        testNetworkRunner.peerManager(0).findOrCreateDirectChannel(uriOfNode(1).getNodeId());
 
-		processAll();
+    processAll();
 
-		// assert the connections is successful
-		assertTrue(channel1Future.isDone());
-		assertEquals(1L, testNetworkRunner.peerManager(0).activeChannels().size());
-		assertEquals(1L, testNetworkRunner.peerManager(1).activeChannels().size());
+    // assert the connections is successful
+    assertTrue(channel1Future.isDone());
+    assertEquals(1L, testNetworkRunner.peerManager(0).activeChannels().size());
+    assertEquals(1L, testNetworkRunner.peerManager(1).activeChannels().size());
 
-		// ban node0 on node1
-		testNetworkRunner.getInstance(1, PeerControl.class).banPeer(uriOfNode(0).getNodeId(), Duration.ofHours(1), "");
+    // ban node0 on node1
+    testNetworkRunner
+        .getInstance(1, PeerControl.class)
+        .banPeer(uriOfNode(0).getNodeId(), Duration.ofHours(1), "");
 
-		processAll();
+    processAll();
 
-		// assert connection closed
-		assertEquals(0L, testNetworkRunner.peerManager(0).activeChannels().size());
-		assertEquals(0L, testNetworkRunner.peerManager(1).activeChannels().size());
-	}
+    // assert connection closed
+    assertEquals(0L, testNetworkRunner.peerManager(0).activeChannels().size());
+    assertEquals(0L, testNetworkRunner.peerManager(1).activeChannels().size());
+  }
 }

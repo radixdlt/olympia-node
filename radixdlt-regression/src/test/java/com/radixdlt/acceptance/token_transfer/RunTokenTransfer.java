@@ -70,7 +70,10 @@ import io.cucumber.junit.CucumberOptions.SnippetType;
 import org.junit.runner.RunWith;
 
 @RunWith(Cucumber.class)
-@CucumberOptions(snippets = SnippetType.UNDERSCORE, monochrome = true, plugin = { "pretty" })
+@CucumberOptions(
+    snippets = SnippetType.UNDERSCORE,
+    monochrome = true,
+    plugin = {"pretty"})
 public class RunTokenTransfer {
-	// Stub for running cucumber tests
+  // Stub for running cucumber tests
 }

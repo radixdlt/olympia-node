@@ -64,25 +64,27 @@
 
 package com.radixdlt.sanitytestsuite.scenario.keysign;
 
-import com.radixdlt.sanitytestsuite.model.SanityTestVector;
-
 import static com.radixdlt.sanitytestsuite.scenario.keysign.KeySignTestVector.Expected;
 import static com.radixdlt.sanitytestsuite.scenario.keysign.KeySignTestVector.Input;
 
+import com.radixdlt.sanitytestsuite.model.SanityTestVector;
+
 // CHECKSTYLE:OFF checkstyle:VisibilityModifier
 public final class KeySignTestVector extends SanityTestVector<Input, Expected> {
-	public static final class Input {
-		public String privateKey;
-		public String messageToSign;
-	}
-	public static final class Expected {
-		public static final class Signature {
-			public String r;
-			public String s;
-			public String der;
-		}
-		public String k;
-		public Signature signature;
-	}
+  public static final class Input {
+    public String privateKey;
+    public String messageToSign;
+  }
+
+  public static final class Expected {
+    public static final class Signature {
+      public String r;
+      public String s;
+      public String der;
+    }
+
+    public String k;
+    public Signature signature;
+  }
 }
 // CHECKSTYLE:ON checkstyle:VisibilityModifier

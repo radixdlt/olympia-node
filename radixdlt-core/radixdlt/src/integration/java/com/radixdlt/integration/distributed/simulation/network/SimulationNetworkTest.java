@@ -76,34 +76,32 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class SimulationNetworkTest {
-	private BFTNode node1;
-	private BFTNode node2;
-	private ChannelCommunication channelCommunication;
-	private SimulationNetwork network;
+  private BFTNode node1;
+  private BFTNode node2;
+  private ChannelCommunication channelCommunication;
+  private SimulationNetwork network;
 
-	@Before
-	public void setup() {
-		node1 = mock(BFTNode.class);
-		node2 = mock(BFTNode.class);
-		this.channelCommunication = new InOrderChannels(msg -> 50);
-		this.network = new SimulationNetwork(channelCommunication);
-	}
+  @Before
+  public void setup() {
+    node1 = mock(BFTNode.class);
+    node2 = mock(BFTNode.class);
+    this.channelCommunication = new InOrderChannels(msg -> 50);
+    this.network = new SimulationNetwork(channelCommunication);
+  }
 
-	@Test
-	public void when_send_get_vertex_request_to_another_node__then_should_receive_it() {
-		HashCode vertexId = mock(HashCode.class);
+  @Test
+  public void when_send_get_vertex_request_to_another_node__then_should_receive_it() {
+    HashCode vertexId = mock(HashCode.class);
 
-		TestObserver<RemoteEvent<GetVerticesRequest>> rpcRequestListener =
-			network.getNetwork(node2).remoteEvents(GetVerticesRequest.class)
-				.toObservable().test();
+    TestObserver<RemoteEvent<GetVerticesRequest>> rpcRequestListener =
+        network.getNetwork(node2).remoteEvents(GetVerticesRequest.class).toObservable().test();
 
-		network
-			.getNetwork(node1)
-			.remoteEventDispatcher(GetVerticesRequest.class)
-			.dispatch(node2, new GetVerticesRequest(vertexId, 1));
+    network
+        .getNetwork(node1)
+        .remoteEventDispatcher(GetVerticesRequest.class)
+        .dispatch(node2, new GetVerticesRequest(vertexId, 1));
 
-		rpcRequestListener.awaitCount(1);
-		rpcRequestListener.assertValueAt(0, r -> r.getEvent().getVertexId().equals(vertexId));
-	}
-
+    rpcRequestListener.awaitCount(1);
+    rpcRequestListener.assertValueAt(0, r -> r.getEvent().getVertexId().equals(vertexId));
+  }
 }

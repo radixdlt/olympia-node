@@ -69,20 +69,17 @@ import com.radixdlt.network.p2p.NodeId;
 import org.radix.serialization.SerializeMessageObject;
 
 public final class ProxyCertificateSerializeTest extends SerializeMessageObject<ProxyCertificate> {
-	public ProxyCertificateSerializeTest() {
-		super(ProxyCertificate.class, ProxyCertificateSerializeTest::get);
-	}
+  public ProxyCertificateSerializeTest() {
+    super(ProxyCertificate.class, ProxyCertificateSerializeTest::get);
+  }
 
-	private static ProxyCertificate get() {
-		final var proxyCertData =
-			ProxyCertificateData.create(
-				NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey()),
-				System.currentTimeMillis(),
-				1
-			);
-		return ProxyCertificate.create(
-			proxyCertData,
-			ECKeyPair.generateNew().sign(proxyCertData.hashToSign())
-		);
-	}
+  private static ProxyCertificate get() {
+    final var proxyCertData =
+        ProxyCertificateData.create(
+            NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey()),
+            System.currentTimeMillis(),
+            1);
+    return ProxyCertificate.create(
+        proxyCertData, ECKeyPair.generateNew().sign(proxyCertData.hashToSign()));
+  }
 }

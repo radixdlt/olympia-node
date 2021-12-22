@@ -66,41 +66,41 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class NetworkId {
-	private final int networkId;
+  private final int networkId;
 
-	private NetworkId(int networkId) {
-		this.networkId = networkId;
-	}
+  private NetworkId(int networkId) {
+    this.networkId = networkId;
+  }
 
-	@JsonCreator
-	public static NetworkId create(@JsonProperty(value = "networkId", required = true) int networkId) {
-		return new NetworkId(networkId);
-	}
+  @JsonCreator
+  public static NetworkId create(
+      @JsonProperty(value = "networkId", required = true) int networkId) {
+    return new NetworkId(networkId);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return o instanceof NetworkId && networkId == ((NetworkId) o).networkId;
-	}
+    return o instanceof NetworkId && networkId == ((NetworkId) o).networkId;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(networkId);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(networkId);
+  }
 
-	@Override
-	public String toString() {
-		return "NetworkId(" + networkId + ')';
-	}
+  @Override
+  public String toString() {
+    return "NetworkId(" + networkId + ')';
+  }
 
-	public int getNetworkId() {
-		return networkId;
-	}
+  public int getNetworkId() {
+    return networkId;
+  }
 }

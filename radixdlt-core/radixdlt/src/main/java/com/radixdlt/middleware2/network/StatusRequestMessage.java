@@ -65,37 +65,33 @@
 package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.network.messaging.Message;
-
+import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 
-/**
- * A status request message.
- */
+/** A status request message. */
 @SerializerId2("message.sync.status_request")
 public final class StatusRequestMessage extends Message {
-	@JsonCreator
-	public StatusRequestMessage() {
-	}
+  @JsonCreator
+  public StatusRequestMessage() {}
 
-	@Override
-	public String toString() {
-		return String.format("%s", getClass().getSimpleName());
-	}
+  @Override
+  public String toString() {
+    return String.format("%s", getClass().getSimpleName());
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof StatusRequestMessage that)
-			   && Objects.equals(getTimestamp(), that.getTimestamp());
-	}
+    return (o instanceof StatusRequestMessage that)
+        && Objects.equals(getTimestamp(), that.getTimestamp());
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(getTimestamp());
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(getTimestamp());
+  }
 }

@@ -64,37 +64,39 @@
 
 package com.radixdlt.network.p2p;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.network.p2p.transport.PeerChannel;
-
-import javax.inject.Inject;
-import java.util.stream.Stream;
-
 import static java.util.stream.Collectors.groupingBy;
 
-/**
- * A Peers view using PeersManager
- */
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.network.p2p.transport.PeerChannel;
+import java.util.stream.Stream;
+import javax.inject.Inject;
+
+/** A Peers view using PeersManager */
 public final class PeerManagerPeersView implements PeersView {
-	private final PeerManager peerManager;
+  private final PeerManager peerManager;
 
-	@Inject
-	public PeerManagerPeersView(PeerManager peerManager) {
-		this.peerManager = peerManager;
-	}
+  @Inject
+  public PeerManagerPeersView(PeerManager peerManager) {
+    this.peerManager = peerManager;
+  }
 
-	@Override
-	public Stream<PeerInfo> peers() {
-		final var grouppedByNodeId = this.peerManager.activeChannels()
-			.stream()
-			.collect(groupingBy(PeerChannel::getRemoteNodeId));
+  @Override
+  public Stream<PeerInfo> peers() {
+    final var grouppedByNodeId =
+        this.peerManager.activeChannels().stream()
+            .collect(groupingBy(PeerChannel::getRemoteNodeId));
 
-		return grouppedByNodeId.entrySet().stream()
-			.map(e -> {
-				final var channelsInfo = e.getValue().stream()
-					.map(c -> PeerChannelInfo.create(c.getUri(), c.getHost(), c.getPort(), c.isOutbound()))
-					.collect(ImmutableList.toImmutableList());
-				return PeerInfo.create(e.getKey(), channelsInfo);
-			});
-	}
+    return grouppedByNodeId.entrySet().stream()
+        .map(
+            e -> {
+              final var channelsInfo =
+                  e.getValue().stream()
+                      .map(
+                          c ->
+                              PeerChannelInfo.create(
+                                  c.getUri(), c.getHost(), c.getPort(), c.isOutbound()))
+                      .collect(ImmutableList.toImmutableList());
+              return PeerInfo.create(e.getKey(), channelsInfo);
+            });
+  }
 }

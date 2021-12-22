@@ -65,80 +65,81 @@
 package com.radixdlt.client.lib.api.rpc;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 import java.util.Optional;
 
 public class JsonRpcResponse<T> {
-	@JsonProperty(value = "jsonrpc", required = true)
-	private final String version;
-	@JsonProperty(value = "id", required = true)
-	private final String id;
-	@JsonProperty("result")
-	private final T result;
-	@JsonProperty("error")
-	private final ErrorInfo error;
+  @JsonProperty(value = "jsonrpc", required = true)
+  private final String version;
 
-	public JsonRpcResponse(
-		@JsonProperty("jsonrpc") String version,
-		@JsonProperty("id") String id,
-		@JsonProperty("result") T result,
-		@JsonProperty("error") ErrorInfo error
-	) {
-		this.version = version;
-		this.id = id;
-		this.result = result;
-		this.error = error;
-	}
+  @JsonProperty(value = "id", required = true)
+  private final String id;
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @JsonProperty("result")
+  private final T result;
 
-		if (!(o instanceof JsonRpcResponse)) {
-			return false;
-		}
+  @JsonProperty("error")
+  private final ErrorInfo error;
 
-		var that = (JsonRpcResponse<?>) o;
-		return version.equals(that.version)
-			&& id.equals(that.id)
-			&& Objects.equals(result, that.result)
-			&& Objects.equals(error, that.error);
-	}
+  public JsonRpcResponse(
+      @JsonProperty("jsonrpc") String version,
+      @JsonProperty("id") String id,
+      @JsonProperty("result") T result,
+      @JsonProperty("error") ErrorInfo error) {
+    this.version = version;
+    this.id = id;
+    this.result = result;
+    this.error = error;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(version, id, result, error);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-	@Override
-	public String toString() {
-		return "JsonRpcResponse(" + version + ", " + id + ", " + result + ", " + error + ')';
-	}
+    if (!(o instanceof JsonRpcResponse)) {
+      return false;
+    }
 
-	public Optional<ErrorInfo> error() {
-		return Optional.ofNullable(error);
-	}
+    var that = (JsonRpcResponse<?>) o;
+    return version.equals(that.version)
+        && id.equals(that.id)
+        && Objects.equals(result, that.result)
+        && Objects.equals(error, that.error);
+  }
 
-	public Optional<T> result() {
-		return Optional.ofNullable(result);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(version, id, result, error);
+  }
 
-	public T rawResult() {
-		return result;
-	}
+  @Override
+  public String toString() {
+    return "JsonRpcResponse(" + version + ", " + id + ", " + result + ", " + error + ')';
+  }
 
-	public ErrorInfo rawError() {
-		return error;
-	}
+  public Optional<ErrorInfo> error() {
+    return Optional.ofNullable(error);
+  }
 
-	public String getVersion() {
-		return version;
-	}
+  public Optional<T> result() {
+    return Optional.ofNullable(result);
+  }
 
-	public String getId() {
-		return id;
-	}
+  public T rawResult() {
+    return result;
+  }
+
+  public ErrorInfo rawError() {
+    return error;
+  }
+
+  public String getVersion() {
+    return version;
+  }
+
+  public String getId() {
+    return id;
+  }
 }

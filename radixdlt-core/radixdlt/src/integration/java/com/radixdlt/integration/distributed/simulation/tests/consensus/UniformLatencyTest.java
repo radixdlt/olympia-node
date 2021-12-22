@@ -66,43 +66,38 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import org.junit.Test;
 
-/**
- * Simulation test which has the same latency for every message
- */
+/** Simulation test which has the same latency for every message */
 public class UniformLatencyTest {
-	/**
-	 * Sanity test check for a perfect network. 4 is the size used because it is
-	 * the smallest network size where quorum size (3) != network size. The sanity checks
-	 * done are:
-	 * <ol>
-	 *   <li>Committed vertices are the same across nodes
-	 *   <li>The size of vertex store does not increase for any node
-	 *   <li>A timeout never occurs for any node
-	 *   <li>Every proposal has a direct parent
-	 * </ol>
-	 */
-	@Test
-	public void given_4_correct_bfts__then_should_pass_sanity_tests_over_1_minute() {
-		SimulationTest bftTest = SimulationTest.builder()
-			.networkModules(
-				NetworkOrdering.inOrder(),
-				NetworkLatencies.fixed()
-			)
-			.numNodes(4)
-			.addTestModules(
-				ConsensusMonitors.safety(),
-				ConsensusMonitors.liveness(),
-				ConsensusMonitors.noTimeouts(),
-				ConsensusMonitors.directParents()
-			)
-			.build();
-		final var checkResults = bftTest.run().awaitCompletion();
-		assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
-	}
+  /**
+   * Sanity test check for a perfect network. 4 is the size used because it is the smallest network
+   * size where quorum size (3) != network size. The sanity checks done are:
+   *
+   * <ol>
+   *   <li>Committed vertices are the same across nodes
+   *   <li>The size of vertex store does not increase for any node
+   *   <li>A timeout never occurs for any node
+   *   <li>Every proposal has a direct parent
+   * </ol>
+   */
+  @Test
+  public void given_4_correct_bfts__then_should_pass_sanity_tests_over_1_minute() {
+    SimulationTest bftTest =
+        SimulationTest.builder()
+            .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+            .numNodes(4)
+            .addTestModules(
+                ConsensusMonitors.safety(),
+                ConsensusMonitors.liveness(),
+                ConsensusMonitors.noTimeouts(),
+                ConsensusMonitors.directParents())
+            .build();
+    final var checkResults = bftTest.run().awaitCompletion();
+    assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
+  }
 }

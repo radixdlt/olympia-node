@@ -83,9 +83,9 @@ import com.radixdlt.network.p2p.PendingOutboundChannelsManager.PeerOutboundConne
 import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.addressbook.AddressBookPeerControl;
 import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
-import com.radixdlt.network.p2p.proxy.ProxyCertificatesAnnouncement;
 import com.radixdlt.network.p2p.proxy.GrantedProxyCertificate;
 import com.radixdlt.network.p2p.proxy.ProxyCertificateManager;
+import com.radixdlt.network.p2p.proxy.ProxyCertificatesAnnouncement;
 import com.radixdlt.network.p2p.proxy.RenewIssuedProxyCertificatesTrigger;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrapImpl;
@@ -94,118 +94,110 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.store.berkeley.BerkeleyAddressBookPersistence;
-
 import java.time.Duration;
 
 public final class P2PModule extends AbstractModule {
 
-	private final RuntimeProperties properties;
+  private final RuntimeProperties properties;
 
-	public P2PModule(RuntimeProperties properties) {
-		this.properties = properties;
-	}
+  public P2PModule(RuntimeProperties properties) {
+    this.properties = properties;
+  }
 
-	@Override
-	protected void configure() {
-		final var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
-			.permitDuplicates();
-		eventBinder.addBinding().toInstance(PeerEvent.class);
-		eventBinder.addBinding().toInstance(PeerOutboundConnectionTimeout.class);
-		eventBinder.addBinding().toInstance(RenewIssuedProxyCertificatesTrigger.class);
+  @Override
+  protected void configure() {
+    final var eventBinder =
+        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
+            .permitDuplicates();
+    eventBinder.addBinding().toInstance(PeerEvent.class);
+    eventBinder.addBinding().toInstance(PeerOutboundConnectionTimeout.class);
+    eventBinder.addBinding().toInstance(RenewIssuedProxyCertificatesTrigger.class);
 
-		bind(AddressBook.class).in(Scopes.SINGLETON);
-		bind(PeersView.class).to(PeerManagerPeersView.class).in(Scopes.SINGLETON);
-		bind(PeerControl.class).to(AddressBookPeerControl.class).in(Scopes.SINGLETON);
-		bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class).in(Scopes.SINGLETON);
-		bind(AddressBookPersistence.class).to(BerkeleyAddressBookPersistence.class).in(Scopes.SINGLETON);
-		bind(PeerServerBootstrap.class).in(Scopes.SINGLETON);
-		bind(PendingOutboundChannelsManager.class).in(Scopes.SINGLETON);
-		bind(PeerManager.class).in(Scopes.SINGLETON);
-		bind(ProxyCertificateManager.class).in(Scopes.SINGLETON);
-	}
+    bind(AddressBook.class).in(Scopes.SINGLETON);
+    bind(PeersView.class).to(PeerManagerPeersView.class).in(Scopes.SINGLETON);
+    bind(PeerControl.class).to(AddressBookPeerControl.class).in(Scopes.SINGLETON);
+    bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class).in(Scopes.SINGLETON);
+    bind(AddressBookPersistence.class)
+        .to(BerkeleyAddressBookPersistence.class)
+        .in(Scopes.SINGLETON);
+    bind(PeerServerBootstrap.class).in(Scopes.SINGLETON);
+    bind(PendingOutboundChannelsManager.class).in(Scopes.SINGLETON);
+    bind(PeerManager.class).in(Scopes.SINGLETON);
+    bind(ProxyCertificateManager.class).in(Scopes.SINGLETON);
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> peerEventProcessor(PeerManager peerManager) {
-		return new EventProcessorOnRunner<>(
-			Runners.P2P_NETWORK,
-			PeerEvent.class,
-			peerManager.peerEventProcessor()
-		);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> peerEventProcessor(PeerManager peerManager) {
+    return new EventProcessorOnRunner<>(
+        Runners.P2P_NETWORK, PeerEvent.class, peerManager.peerEventProcessor());
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> peerOutboundConnectionTimeoutEventProcessor(
-		PendingOutboundChannelsManager pendingOutboundChannelsManager
-	) {
-		return new EventProcessorOnRunner<>(
-			Runners.P2P_NETWORK,
-			PeerOutboundConnectionTimeout.class,
-			pendingOutboundChannelsManager.peerOutboundConnectionTimeoutEventProcessor()
-		);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> peerOutboundConnectionTimeoutEventProcessor(
+      PendingOutboundChannelsManager pendingOutboundChannelsManager) {
+    return new EventProcessorOnRunner<>(
+        Runners.P2P_NETWORK,
+        PeerOutboundConnectionTimeout.class,
+        pendingOutboundChannelsManager.peerOutboundConnectionTimeoutEventProcessor());
+  }
 
-	@ProvidesIntoSet
-	private RemoteEventProcessorOnRunner<?> grantedProxyCertificateEventProcessor(
-		ProxyCertificateManager proxyCertificateManager
-	) {
-		return new RemoteEventProcessorOnRunner<>(
-			Runners.P2P_NETWORK,
-			GrantedProxyCertificate.class,
-			proxyCertificateManager.grantedProxyCertificateEventProcessor()
-		);
-	}
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?> grantedProxyCertificateEventProcessor(
+      ProxyCertificateManager proxyCertificateManager) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.P2P_NETWORK,
+        GrantedProxyCertificate.class,
+        proxyCertificateManager.grantedProxyCertificateEventProcessor());
+  }
 
-	@ProvidesIntoSet
-	private RemoteEventProcessorOnRunner<?> proxyCertificatesAnnouncementEventProcessor(
-		ProxyCertificateManager proxyCertificateManager
-	) {
-		return new RemoteEventProcessorOnRunner<>(
-			Runners.P2P_NETWORK,
-			ProxyCertificatesAnnouncement.class,
-			proxyCertificateManager.proxyCertificatesAnnouncementEventProcessor()
-		);
-	}
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?> proxyCertificatesAnnouncementEventProcessor(
+      ProxyCertificateManager proxyCertificateManager) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.P2P_NETWORK,
+        ProxyCertificatesAnnouncement.class,
+        proxyCertificateManager.proxyCertificatesAnnouncementEventProcessor());
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> renewIssuedProxyCertificatesTriggerEventProcessor(
-		ProxyCertificateManager proxyCertificateManager
-	) {
-		return new EventProcessorOnRunner<>(
-			Runners.P2P_NETWORK,
-			RenewIssuedProxyCertificatesTrigger.class,
-			proxyCertificateManager.renewIssuedProxyCertificatesTriggerProcessor()
-		);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> renewIssuedProxyCertificatesTriggerEventProcessor(
+      ProxyCertificateManager proxyCertificateManager) {
+    return new EventProcessorOnRunner<>(
+        Runners.P2P_NETWORK,
+        RenewIssuedProxyCertificatesTrigger.class,
+        proxyCertificateManager.renewIssuedProxyCertificatesTriggerProcessor());
+  }
 
-	@ProvidesIntoSet
-	public ScheduledEventProducerOnRunner<?> renewIssuedProxyCertificatesTriggerEventProducer(
-		EventDispatcher<RenewIssuedProxyCertificatesTrigger> renewIssuedProxyCertificatesTriggerDispatcher
-	) {
-		return new ScheduledEventProducerOnRunner<>(
-			Runners.P2P_NETWORK,
-			renewIssuedProxyCertificatesTriggerDispatcher,
-			RenewIssuedProxyCertificatesTrigger::create,
-			Duration.ofSeconds(10),
-			Duration.ofSeconds(10)
-		);
-	}
+  @ProvidesIntoSet
+  public ScheduledEventProducerOnRunner<?> renewIssuedProxyCertificatesTriggerEventProducer(
+      EventDispatcher<RenewIssuedProxyCertificatesTrigger>
+          renewIssuedProxyCertificatesTriggerDispatcher) {
+    return new ScheduledEventProducerOnRunner<>(
+        Runners.P2P_NETWORK,
+        renewIssuedProxyCertificatesTriggerDispatcher,
+        RenewIssuedProxyCertificatesTrigger::create,
+        Duration.ofSeconds(10),
+        Duration.ofSeconds(10));
+  }
 
-	@Provides
-	public P2PConfig p2pConfig(Addressing addressing) {
-		return P2PConfig.fromRuntimeProperties(addressing, this.properties);
-	}
+  @Provides
+  public P2PConfig p2pConfig(Addressing addressing) {
+    return P2PConfig.fromRuntimeProperties(addressing, this.properties);
+  }
 
-	@Provides
-	@Self
-	public NodeId selfNodeId(@Self ECPublicKey selfKey) {
-		return NodeId.fromPublicKey(selfKey);
-	}
+  @Provides
+  @Self
+  public NodeId selfNodeId(@Self ECPublicKey selfKey) {
+    return NodeId.fromPublicKey(selfKey);
+  }
 
-	@Provides
-	@Self
-	public RadixNodeUri selfUri(@NetworkId int networkId, @Self ECPublicKey selfKey, HostIp hostIp, P2PConfig p2pConfig) {
-		final var host = hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
-		final var port = p2pConfig.broadcastPort();
-		return RadixNodeUri.fromPubKeyAndAddress(networkId, selfKey, host, port);
-	}
+  @Provides
+  @Self
+  public RadixNodeUri selfUri(
+      @NetworkId int networkId, @Self ECPublicKey selfKey, HostIp hostIp, P2PConfig p2pConfig) {
+    final var host =
+        hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
+    final var port = p2pConfig.broadcastPort();
+    return RadixNodeUri.fromPubKeyAndAddress(networkId, selfKey, host, port);
+  }
 }

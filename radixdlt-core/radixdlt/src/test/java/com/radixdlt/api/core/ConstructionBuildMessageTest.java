@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.api.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.ConstructionBuildHandler;
@@ -82,72 +85,63 @@ import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class ConstructionBuildMessageTest extends ApiTest {
-	@Inject
-	private ConstructionBuildHandler sut;
-	@Inject
-	private CoreModelMapper coreModelMapper;
-	@Inject
-	@Self
-	private ECPublicKey self;
+  @Inject private ConstructionBuildHandler sut;
+  @Inject private CoreModelMapper coreModelMapper;
+  @Inject @Self private ECPublicKey self;
 
-	private ConstructionBuildRequest buildRequestWithMessage(String message) {
-		var transferAmount = UInt256.ONE;
-		var accountAddress = REAddr.ofPubKeyAccount(self);
-		var otherKey = PrivateKeys.ofNumeric(2).getPublicKey();
-		var otherAddress = REAddr.ofPubKeyAccount(otherKey);
-		return new ConstructionBuildRequest()
-			.message(message)
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.feePayer(coreModelMapper.entityIdentifier(accountAddress))
-			.addOperationGroupsItem(new OperationGroup()
-				.addOperationsItem(new Operation()
-					.entityIdentifier(coreModelMapper.entityIdentifier(accountAddress))
-					.amount(coreModelMapper.nativeTokenAmount(false, transferAmount))
-				)
-				.addOperationsItem(new Operation()
-					.entityIdentifier(coreModelMapper.entityIdentifier(otherAddress))
-					.amount(coreModelMapper.nativeTokenAmount(true, transferAmount))
-				)
-			);
-	}
+  private ConstructionBuildRequest buildRequestWithMessage(String message) {
+    var transferAmount = UInt256.ONE;
+    var accountAddress = REAddr.ofPubKeyAccount(self);
+    var otherKey = PrivateKeys.ofNumeric(2).getPublicKey();
+    var otherAddress = REAddr.ofPubKeyAccount(otherKey);
+    return new ConstructionBuildRequest()
+        .message(message)
+        .networkIdentifier(new NetworkIdentifier().network("localnet"))
+        .feePayer(coreModelMapper.entityIdentifier(accountAddress))
+        .addOperationGroupsItem(
+            new OperationGroup()
+                .addOperationsItem(
+                    new Operation()
+                        .entityIdentifier(coreModelMapper.entityIdentifier(accountAddress))
+                        .amount(coreModelMapper.nativeTokenAmount(false, transferAmount)))
+                .addOperationsItem(
+                    new Operation()
+                        .entityIdentifier(coreModelMapper.entityIdentifier(otherAddress))
+                        .amount(coreModelMapper.nativeTokenAmount(true, transferAmount))));
+  }
 
-	@Test
-	public void building_with_message_should_be_in_transaction() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void building_with_message_should_be_in_transaction() throws Exception {
+    // Arrange
+    start();
 
+    // Act
+    var hex = "deadbeefdeadbeef";
+    var messageBytes = Bytes.fromHexString(hex);
+    var request = buildRequestWithMessage(hex);
+    var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
 
-		// Act
-		var hex = "deadbeefdeadbeef";
-		var messageBytes = Bytes.fromHexString(hex);
-		var request = buildRequestWithMessage(hex);
-		var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
+    // Assert
+    assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
+    var unsignedTransactionBytes = Bytes.fromHexString(response.getUnsignedTransaction());
+    assertThat(unsignedTransactionBytes).isNotNull();
+    var indexOfMessageBytes =
+        com.google.common.primitives.Bytes.indexOf(unsignedTransactionBytes, messageBytes);
+    assertThat(indexOfMessageBytes).isNotNegative();
+  }
 
-		// Assert
-		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
-		var unsignedTransactionBytes = Bytes.fromHexString(response.getUnsignedTransaction());
-		assertThat(unsignedTransactionBytes).isNotNull();
-		var indexOfMessageBytes = com.google.common.primitives.Bytes.indexOf(unsignedTransactionBytes, messageBytes);
-		assertThat(indexOfMessageBytes).isNotNegative();
-	}
+  @Test
+  public void building_with_message_too_large_should_fail() throws Exception {
+    // Arrange
+    start();
 
+    // Act
+    var hex = "aa".repeat(256);
+    var request = buildRequestWithMessage(hex);
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-	@Test
-	public void building_with_message_too_large_should_fail() throws Exception {
-		// Arrange
-		start();
-
-
-		// Act
-		var hex = "aa".repeat(256);
-		var request = buildRequestWithMessage(hex);
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
-
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(MessageTooLongError.class);
-	}
+    // Assert
+    assertThat(response.getDetails()).isInstanceOf(MessageTooLongError.class);
+  }
 }

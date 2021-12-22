@@ -66,46 +66,44 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
 /**
- * Simulation which tests for bft correctness if one node is significantly slower than
- * the others but is still within bounds of synchrony. Correctness depends on whether syncing is
- * enabled or not. Both cases are verified in this test.
+ * Simulation which tests for bft correctness if one node is significantly slower than the others
+ * but is still within bounds of synchrony. Correctness depends on whether syncing is enabled or
+ * not. Both cases are verified in this test.
  */
 public class OneSlowNodeTest {
-	private final int minLatency = 10;
-	private final int maxLatency = 200;
-	private final int trips = 8;
-	private final int synchronousTimeout = maxLatency * trips;
-	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(4)
-		.networkModules(
-			NetworkOrdering.inOrder(),
-			NetworkLatencies.oneSlowProposalSender(minLatency, maxLatency)
-		)
-		.pacemakerTimeout(synchronousTimeout)
-		.addTestModules(
-			ConsensusMonitors.safety(),
-			ConsensusMonitors.directParents()
-		);
+  private final int minLatency = 10;
+  private final int maxLatency = 200;
+  private final int trips = 8;
+  private final int synchronousTimeout = maxLatency * trips;
+  private final Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(4)
+          .networkModules(
+              NetworkOrdering.inOrder(),
+              NetworkLatencies.oneSlowProposalSender(minLatency, maxLatency))
+          .pacemakerTimeout(synchronousTimeout)
+          .addTestModules(ConsensusMonitors.safety(), ConsensusMonitors.directParents());
 
-	/**
-	 * Tests a static configuration of 3 fast, equal nodes and 1 slow node.
-	 * Test should pass even with GetVertices RPC disabled
-	 */
-	@Test
-	public void given_4_nodes_3_fast_and_1_slow_node_and_sync_disabled__then_a_timeout_wont_occur() {
-		SimulationTest test = bftTestBuilder.build();
-		final var runningTest = test.run();
-		final var checkResults = runningTest.awaitCompletion();
+  /**
+   * Tests a static configuration of 3 fast, equal nodes and 1 slow node. Test should pass even with
+   * GetVertices RPC disabled
+   */
+  @Test
+  public void given_4_nodes_3_fast_and_1_slow_node_and_sync_disabled__then_a_timeout_wont_occur() {
+    SimulationTest test = bftTestBuilder.build();
+    final var runningTest = test.run();
+    final var checkResults = runningTest.awaitCompletion();
 
-		assertThat(checkResults).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
-	}
+    assertThat(checkResults)
+        .allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
+  }
 }

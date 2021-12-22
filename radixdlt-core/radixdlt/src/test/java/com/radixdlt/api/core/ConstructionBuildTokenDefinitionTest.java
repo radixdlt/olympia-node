@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.api.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.ConstructionBuildHandler;
@@ -85,176 +88,164 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Bytes;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 public final class ConstructionBuildTokenDefinitionTest extends ApiTest {
-	@Inject
-	private ConstructionBuildHandler sut;
-	@Inject
-	private CoreModelMapper coreModelMapper;
-	@Inject
-	@Self
-	private ECPublicKey self;
+  @Inject private ConstructionBuildHandler sut;
+  @Inject private CoreModelMapper coreModelMapper;
+  @Inject @Self private ECPublicKey self;
 
-	private ConstructionBuildRequest buildTokenDefinition(
-		EntityIdentifier tokenEntityIdentifier,
-		String symbol,
-		REAddr owner,
-		int granularity,
-		boolean isMutable
-	) {
-		var accountAddress = REAddr.ofPubKeyAccount(self);
-		return new ConstructionBuildRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.feePayer(coreModelMapper.entityIdentifier(accountAddress))
-			.addOperationGroupsItem(new OperationGroup()
-				.addOperationsItem(new Operation()
-					.entityIdentifier(tokenEntityIdentifier)
-					.data(new Data()
-						.action(Data.ActionEnum.CREATE)
-						.dataObject(new TokenData()
-							.owner(owner == null ? null : coreModelMapper.entityIdentifier(owner))
-							.granularity(Integer.toString(granularity))
-							.isMutable(isMutable)
-							.type("TokenData")
-						)
-					)
-				)
-				.addOperationsItem(new Operation()
-					.entityIdentifier(tokenEntityIdentifier)
-					.data(new Data()
-						.action(Data.ActionEnum.CREATE)
-						.dataObject(new TokenMetadata()
-							.symbol(symbol)
-							.name("")
-							.url("")
-							.iconUrl("")
-							.description("")
-							.type("TokenMetadata")
-						)
-					)
-				)
-			);
-	}
+  private ConstructionBuildRequest buildTokenDefinition(
+      EntityIdentifier tokenEntityIdentifier,
+      String symbol,
+      REAddr owner,
+      int granularity,
+      boolean isMutable) {
+    var accountAddress = REAddr.ofPubKeyAccount(self);
+    return new ConstructionBuildRequest()
+        .networkIdentifier(new NetworkIdentifier().network("localnet"))
+        .feePayer(coreModelMapper.entityIdentifier(accountAddress))
+        .addOperationGroupsItem(
+            new OperationGroup()
+                .addOperationsItem(
+                    new Operation()
+                        .entityIdentifier(tokenEntityIdentifier)
+                        .data(
+                            new Data()
+                                .action(Data.ActionEnum.CREATE)
+                                .dataObject(
+                                    new TokenData()
+                                        .owner(
+                                            owner == null
+                                                ? null
+                                                : coreModelMapper.entityIdentifier(owner))
+                                        .granularity(Integer.toString(granularity))
+                                        .isMutable(isMutable)
+                                        .type("TokenData"))))
+                .addOperationsItem(
+                    new Operation()
+                        .entityIdentifier(tokenEntityIdentifier)
+                        .data(
+                            new Data()
+                                .action(Data.ActionEnum.CREATE)
+                                .dataObject(
+                                    new TokenMetadata()
+                                        .symbol(symbol)
+                                        .name("")
+                                        .url("")
+                                        .iconUrl("")
+                                        .description("")
+                                        .type("TokenMetadata")))));
+  }
 
-	@Test
-	public void creating_a_new_token_definition_should_work() throws Exception {
-		// Arrange
-		start();
-		var accountAddress = REAddr.ofPubKeyAccount(self);
+  @Test
+  public void creating_a_new_token_definition_should_work() throws Exception {
+    // Arrange
+    start();
+    var accountAddress = REAddr.ofPubKeyAccount(self);
 
-		// Act
-		var request = buildTokenDefinition(
-			coreModelMapper.entityIdentifier(accountAddress, "test"),
-			"test",
-			accountAddress,
-			1,
-			true
-		);
-		var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
+    // Act
+    var request =
+        buildTokenDefinition(
+            coreModelMapper.entityIdentifier(accountAddress, "test"),
+            "test",
+            accountAddress,
+            1,
+            true);
+    var response = handleRequestWithExpectedResponse(sut, request, ConstructionBuildResponse.class);
 
-		// Assert
-		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
-		assertThat(Bytes.fromHexString(response.getUnsignedTransaction())).isNotNull();
-	}
+    // Assert
+    assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
+    assertThat(Bytes.fromHexString(response.getUnsignedTransaction())).isNotNull();
+  }
 
-	@Test
-	public void using_different_symbols_should_fail() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void using_different_symbols_should_fail() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var accountAddress = REAddr.ofPubKeyAccount(self);
-		var request = buildTokenDefinition(
-			coreModelMapper.entityIdentifier(accountAddress, "test2"),
-			"test",
-			accountAddress,
-			1,
-			true
-		);
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+    // Act
+    var accountAddress = REAddr.ofPubKeyAccount(self);
+    var request =
+        buildTokenDefinition(
+            coreModelMapper.entityIdentifier(accountAddress, "test2"),
+            "test",
+            accountAddress,
+            1,
+            true);
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(InvalidDataObjectError.class);
-	}
+    // Assert
+    assertThat(response.getDetails()).isInstanceOf(InvalidDataObjectError.class);
+  }
 
-	@Test
-	public void using_different_granularity_than_1_should_fail() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void using_different_granularity_than_1_should_fail() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var accountAddress = REAddr.ofPubKeyAccount(self);
-		var request = buildTokenDefinition(
-			coreModelMapper.entityIdentifier(accountAddress, "test"),
-			"test",
-			accountAddress,
-			2,
-			true
-		);
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+    // Act
+    var accountAddress = REAddr.ofPubKeyAccount(self);
+    var request =
+        buildTokenDefinition(
+            coreModelMapper.entityIdentifier(accountAddress, "test"),
+            "test",
+            accountAddress,
+            2,
+            true);
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(InvalidDataObjectError.class);
-	}
+    // Assert
+    assertThat(response.getDetails()).isInstanceOf(InvalidDataObjectError.class);
+  }
 
-	@Test
-	public void creating_fixed_supply_token_with_owner_should_fail() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void creating_fixed_supply_token_with_owner_should_fail() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var accountAddress = REAddr.ofPubKeyAccount(self);
-		var request = buildTokenDefinition(
-			coreModelMapper.entityIdentifier(accountAddress, "test"),
-			"test",
-			accountAddress,
-			1,
-			false
-		);
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+    // Act
+    var accountAddress = REAddr.ofPubKeyAccount(self);
+    var request =
+        buildTokenDefinition(
+            coreModelMapper.entityIdentifier(accountAddress, "test"),
+            "test",
+            accountAddress,
+            1,
+            false);
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(InvalidDataObjectError.class);
-	}
+    // Assert
+    assertThat(response.getDetails()).isInstanceOf(InvalidDataObjectError.class);
+  }
 
-	@Test
-	public void creating_mutable_supply_token_with_no_owner_should_fail() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void creating_mutable_supply_token_with_no_owner_should_fail() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var accountAddress = REAddr.ofPubKeyAccount(self);
-		var request = buildTokenDefinition(
-			coreModelMapper.entityIdentifier(accountAddress, "test"),
-			"test",
-			null,
-			1,
-			true
-		);
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+    // Act
+    var accountAddress = REAddr.ofPubKeyAccount(self);
+    var request =
+        buildTokenDefinition(
+            coreModelMapper.entityIdentifier(accountAddress, "test"), "test", null, 1, true);
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(InvalidDataObjectError.class);
-	}
+    // Assert
+    assertThat(response.getDetails()).isInstanceOf(InvalidDataObjectError.class);
+  }
 
-	@Test
-	public void creating_token_in_account_entity_should_fail() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void creating_token_in_account_entity_should_fail() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var accountAddress = REAddr.ofPubKeyAccount(self);
-		var request = buildTokenDefinition(
-			coreModelMapper.entityIdentifier(accountAddress),
-			"test",
-			null,
-			1,
-			true
-		);
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+    // Act
+    var accountAddress = REAddr.ofPubKeyAccount(self);
+    var request =
+        buildTokenDefinition(
+            coreModelMapper.entityIdentifier(accountAddress), "test", null, 1, true);
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(DataObjectNotSupportedByEntityError.class);
-	}
+    // Assert
+    assertThat(response.getDetails()).isInstanceOf(DataObjectNotSupportedByEntityError.class);
+  }
 }

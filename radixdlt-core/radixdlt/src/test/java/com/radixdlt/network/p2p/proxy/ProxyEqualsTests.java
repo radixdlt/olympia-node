@@ -68,13 +68,13 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 public final class ProxyEqualsTests {
-	@Test
-	public void test_equals() {
-		EqualsVerifier.forClass(ProxyCertificateData.class).verify();
-		EqualsVerifier.forClass(ProxyCertificate.class).verify();
-		EqualsVerifier.forClass(VerifiedProxyCertificate.class).verify();
-		EqualsVerifier.forClass(GrantedProxyCertificate.class).verify();
-		EqualsVerifier.forClass(ProxyCertificatesAnnouncement.class).verify();
-		EqualsVerifier.forClass(RenewIssuedProxyCertificatesTrigger.class).verify();
-	}
+  @Test
+  public void test_equals() {
+    EqualsVerifier.forClass(ProxyCertificateData.class).verify();
+    EqualsVerifier.forClass(ProxyCertificate.class).verify();
+    EqualsVerifier.forClass(VerifiedProxyCertificate.class).verify();
+    EqualsVerifier.forClass(GrantedProxyCertificate.class).verify();
+    EqualsVerifier.forClass(ProxyCertificatesAnnouncement.class).verify();
+    EqualsVerifier.forClass(RenewIssuedProxyCertificatesTrigger.class).verify();
+  }
 }

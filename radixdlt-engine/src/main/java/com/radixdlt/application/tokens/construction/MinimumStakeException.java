@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -67,20 +68,20 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.utils.UInt256;
 
 public class MinimumStakeException extends TxBuilderException {
-	private final UInt256 minimumStake;
-	private final UInt256 attempt;
+  private final UInt256 minimumStake;
+  private final UInt256 attempt;
 
-	public MinimumStakeException(UInt256 minimumStake, UInt256 attempt) {
-		super("Minimum to stake is " + minimumStake + " but trying to stake " + attempt);
-		this.minimumStake = minimumStake;
-		this.attempt = attempt;
-	}
+  public MinimumStakeException(UInt256 minimumStake, UInt256 attempt) {
+    super("Minimum to stake is " + minimumStake + " but trying to stake " + attempt);
+    this.minimumStake = minimumStake;
+    this.attempt = attempt;
+  }
 
-	public UInt256 getMinimumStake() {
-		return minimumStake;
-	}
+  public UInt256 getMinimumStake() {
+    return minimumStake;
+  }
 
-	public UInt256 getAttempt() {
-		return attempt;
-	}
+  public UInt256 getAttempt() {
+    return attempt;
+  }
 }

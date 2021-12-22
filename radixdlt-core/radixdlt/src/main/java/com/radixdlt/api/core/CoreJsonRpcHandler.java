@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -77,62 +78,59 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 
 public abstract class CoreJsonRpcHandler<T, U> implements HttpHandler {
-	private static final String CONTENT_TYPE_JSON = "application/json";
-	private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
+  private static final String CONTENT_TYPE_JSON = "application/json";
+  private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
 
-	private final Class<T> requestClass;
-	private final ObjectMapper objectMapper;
+  private final Class<T> requestClass;
+  private final ObjectMapper objectMapper;
 
-	protected CoreJsonRpcHandler(Class<T> requestClass) {
-		this.requestClass = requestClass;
-		this.objectMapper = JSON.getDefault().getMapper();
-	}
+  protected CoreJsonRpcHandler(Class<T> requestClass) {
+    this.requestClass = requestClass;
+    this.objectMapper = JSON.getDefault().getMapper();
+  }
 
-	public abstract U handleRequest(T request) throws CoreApiException;
+  public abstract U handleRequest(T request) throws CoreApiException;
 
-	@Override
-	public final void handleRequest(HttpServerExchange exchange) throws Exception {
-		if (exchange.isInIoThread()) {
-			exchange.dispatch(this);
-			return;
-		}
+  @Override
+  public final void handleRequest(HttpServerExchange exchange) throws Exception {
+    if (exchange.isInIoThread()) {
+      exchange.dispatch(this);
+      return;
+    }
 
-		exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
-		exchange.startBlocking();
-		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
+    exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
+    exchange.startBlocking();
+    exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
 
-		T request;
-		try {
-			request = objectMapper.readValue(exchange.getInputStream(), requestClass);
-		} catch (JsonMappingException | JsonParseException e) {
-			var errorResponse = handleParseException(e);
-			exchange.setStatusCode(500);
-			exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
-			return;
-		}
+    T request;
+    try {
+      request = objectMapper.readValue(exchange.getInputStream(), requestClass);
+    } catch (JsonMappingException | JsonParseException e) {
+      var errorResponse = handleParseException(e);
+      exchange.setStatusCode(500);
+      exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
+      return;
+    }
 
-		U response;
-		try {
-			response = handleRequest(request);
-		} catch (CoreApiException e) {
-			var errorResponse = e.toError();
-			exchange.setStatusCode(500);
-			exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
-			return;
-		}
+    U response;
+    try {
+      response = handleRequest(request);
+    } catch (CoreApiException e) {
+      var errorResponse = e.toError();
+      exchange.setStatusCode(500);
+      exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
+      return;
+    }
 
-		exchange.setStatusCode(200);
-		objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-		exchange.getResponseSender().send(objectMapper.writeValueAsString(response));
-	}
+    exchange.setStatusCode(200);
+    objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    exchange.getResponseSender().send(objectMapper.writeValueAsString(response));
+  }
 
-	public UnexpectedError handleParseException(Exception e) {
-		return new UnexpectedError()
-			.code(CoreApiErrorCode.BAD_REQUEST.getErrorCode())
-			.message(CoreApiErrorCode.BAD_REQUEST.getMessage())
-			.details(new InvalidJsonError()
-				.cause(e.getMessage())
-				.type("InvalidJsonError")
-			);
-	}
+  public UnexpectedError handleParseException(Exception e) {
+    return new UnexpectedError()
+        .code(CoreApiErrorCode.BAD_REQUEST.getErrorCode())
+        .message(CoreApiErrorCode.BAD_REQUEST.getMessage())
+        .details(new InvalidJsonError().cause(e.getMessage()).type("InvalidJsonError"));
+  }
 }

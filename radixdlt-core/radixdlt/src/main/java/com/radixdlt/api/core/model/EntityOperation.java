@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,12 +64,14 @@
 
 package com.radixdlt.api.core.model;
 
-public record EntityOperation(Entity entity, ResourceOperation resourceOperation, DataOperation dataOperation) {
-	public static EntityOperation from(Entity entity, ResourceOperation resourceOperation, DataOperation dataOperation) {
-		return new EntityOperation(entity, resourceOperation, dataOperation);
-	}
+public record EntityOperation(
+    Entity entity, ResourceOperation resourceOperation, DataOperation dataOperation) {
+  public static EntityOperation from(
+      Entity entity, ResourceOperation resourceOperation, DataOperation dataOperation) {
+    return new EntityOperation(entity, resourceOperation, dataOperation);
+  }
 
-	public static EntityOperation from(Entity entity, ResourceOperation resourceOperation) {
-		return new EntityOperation(entity, resourceOperation, null);
-	}
+  public static EntityOperation from(Entity entity, ResourceOperation resourceOperation) {
+    return new EntityOperation(entity, resourceOperation, null);
+  }
 }

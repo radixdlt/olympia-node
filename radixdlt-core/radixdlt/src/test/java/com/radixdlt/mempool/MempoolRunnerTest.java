@@ -64,7 +64,11 @@
 
 package com.radixdlt.mempool;
 
-import org.junit.Test;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -96,68 +100,60 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.utils.TimeSupplier;
-
+import io.reactivex.rxjava3.core.Flowable;
 import java.util.Comparator;
 import java.util.Map;
-
-import io.reactivex.rxjava3.core.Flowable;
-
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
+import org.junit.Test;
 
 public final class MempoolRunnerTest {
-	@Inject
-	private Map<String, ModuleRunner> moduleRunners;
-	@Inject
-	private EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
+  @Inject private Map<String, ModuleRunner> moduleRunners;
+  @Inject private EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 
-	private StateComputer stateComputer = mock(StateComputer.class);
+  private StateComputer stateComputer = mock(StateComputer.class);
 
-	@SuppressWarnings("unchecked") // The mock method doesn't support type-safe generics due to type erasure
-	public Module createModule() {
-		return new AbstractModule() {
-			@Override
-			public void configure() {
-				bind(BFTNode.class).annotatedWith(Self.class).toInstance(BFTNode.random());
-				bind(LedgerProof.class).annotatedWith(LastProof.class)
-					.toInstance(mock(LedgerProof.class));
-				bind(StateComputer.class).toInstance(stateComputer);
-				bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-				bind(RxRemoteEnvironment.class).toInstance(new RxRemoteEnvironment() {
-					@Override
-					public <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> remoteEventClass) {
-						return Flowable.never();
-					}
-				});
-				bind(LedgerAccumulator.class).toInstance(mock(LedgerAccumulator.class));
-				bind(LedgerAccumulatorVerifier.class).toInstance(mock(LedgerAccumulatorVerifier.class));
-				bind(new TypeLiteral<Comparator<LedgerProof>>() { }).toInstance(mock(Comparator.class));
-				bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
-				bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-				Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
-				install(MempoolConfig.asModule(100, 10));
-				install(new MockedKeyModule());
-				install(new MockedCryptoModule());
-				install(new RxEnvironmentModule());
-				install(new DispatcherModule());
-				install(new MempoolReceiverModule());
-				install(new EventLoggerModule());
-			}
-		};
-	}
+  @SuppressWarnings(
+      "unchecked") // The mock method doesn't support type-safe generics due to type erasure
+  public Module createModule() {
+    return new AbstractModule() {
+      @Override
+      public void configure() {
+        bind(BFTNode.class).annotatedWith(Self.class).toInstance(BFTNode.random());
+        bind(LedgerProof.class).annotatedWith(LastProof.class).toInstance(mock(LedgerProof.class));
+        bind(StateComputer.class).toInstance(stateComputer);
+        bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+        bind(RxRemoteEnvironment.class)
+            .toInstance(
+                new RxRemoteEnvironment() {
+                  @Override
+                  public <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> remoteEventClass) {
+                    return Flowable.never();
+                  }
+                });
+        bind(LedgerAccumulator.class).toInstance(mock(LedgerAccumulator.class));
+        bind(LedgerAccumulatorVerifier.class).toInstance(mock(LedgerAccumulatorVerifier.class));
+        bind(new TypeLiteral<Comparator<LedgerProof>>() {}).toInstance(mock(Comparator.class));
+        bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
+        bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+        Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
+        install(MempoolConfig.asModule(100, 10));
+        install(new MockedKeyModule());
+        install(new MockedCryptoModule());
+        install(new RxEnvironmentModule());
+        install(new DispatcherModule());
+        install(new MempoolReceiverModule());
+        install(new EventLoggerModule());
+      }
+    };
+  }
 
-	@Test
-	public void dispatched_mempool_add_arrives_at_state_computer() {
-		Guice.createInjector(createModule()).injectMembers(this);
-		moduleRunners.get(Runners.MEMPOOL).start();
+  @Test
+  public void dispatched_mempool_add_arrives_at_state_computer() {
+    Guice.createInjector(createModule()).injectMembers(this);
+    moduleRunners.get(Runners.MEMPOOL).start();
 
-		MempoolAdd mempoolAdd = MempoolAdd.create(Txn.create(new byte[0]));
-		mempoolAddEventDispatcher.dispatch(mempoolAdd);
+    MempoolAdd mempoolAdd = MempoolAdd.create(Txn.create(new byte[0]));
+    mempoolAddEventDispatcher.dispatch(mempoolAdd);
 
-		verify(stateComputer, timeout(1000).times(1))
-			.addToMempool(eq(mempoolAdd), isNull());
-	}
+    verify(stateComputer, timeout(1000).times(1)).addToMempool(eq(mempoolAdd), isNull());
+  }
 }

@@ -64,42 +64,40 @@
 
 package com.radixdlt.network.hostip;
 
-import java.util.Optional;
-
-import org.junit.Test;
-
-import com.radixdlt.properties.RuntimeProperties;
-
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
+import com.radixdlt.properties.RuntimeProperties;
+import java.util.Optional;
+import org.junit.Test;
+
 public class RuntimePropertiesHostIpTest {
 
-	@Test
-	public void testEmpty() {
-		RuntimePropertiesHostIp rphi1 = make("");
-		assertFalse(rphi1.hostIp().isPresent());
-		RuntimePropertiesHostIp rphi2 = make(null);
-		assertFalse(rphi2.hostIp().isPresent());
-	}
+  @Test
+  public void testEmpty() {
+    RuntimePropertiesHostIp rphi1 = make("");
+    assertFalse(rphi1.hostIp().isPresent());
+    RuntimePropertiesHostIp rphi2 = make(null);
+    assertFalse(rphi2.hostIp().isPresent());
+  }
 
-	@Test
-	public void testInvalid() {
-		RuntimePropertiesHostIp rphi = make("a:b");
-		assertFalse(rphi.hostIp().isPresent());
-	}
+  @Test
+  public void testInvalid() {
+    RuntimePropertiesHostIp rphi = make("a:b");
+    assertFalse(rphi.hostIp().isPresent());
+  }
 
-	@Test
-	public void testValid() {
-		RuntimePropertiesHostIp rphi = make("192.168.0.1");
-		Optional<String> host = rphi.hostIp();
-		assertTrue(host.isPresent());
-		assertEquals("192.168.0.1", host.get());
-	}
+  @Test
+  public void testValid() {
+    RuntimePropertiesHostIp rphi = make("192.168.0.1");
+    Optional<String> host = rphi.hostIp();
+    assertTrue(host.isPresent());
+    assertEquals("192.168.0.1", host.get());
+  }
 
-	private static RuntimePropertiesHostIp make(String value) {
-		RuntimeProperties properties = mock(RuntimeProperties.class);
-		when(properties.get(eq(RuntimePropertiesHostIp.HOST_IP_PROPERTY), any())).thenReturn(value);
-		return (RuntimePropertiesHostIp) RuntimePropertiesHostIp.create(properties);
-	}
+  private static RuntimePropertiesHostIp make(String value) {
+    RuntimeProperties properties = mock(RuntimeProperties.class);
+    when(properties.get(eq(RuntimePropertiesHostIp.HOST_IP_PROPERTY), any())).thenReturn(value);
+    return (RuntimePropertiesHostIp) RuntimePropertiesHostIp.create(properties);
+  }
 }

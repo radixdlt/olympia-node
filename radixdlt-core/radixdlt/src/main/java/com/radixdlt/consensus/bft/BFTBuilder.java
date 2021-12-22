@@ -68,134 +68,124 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 
-/**
- * A helper class to help in constructing a BFT validator state machine
- */
+/** A helper class to help in constructing a BFT validator state machine */
 public final class BFTBuilder {
-	// BFT Configuration objects
-	private BFTValidatorSet validatorSet;
-	private Hasher hasher;
-	private HashVerifier verifier;
+  // BFT Configuration objects
+  private BFTValidatorSet validatorSet;
+  private Hasher hasher;
+  private HashVerifier verifier;
 
-	// BFT Stateful objects
-	private Pacemaker pacemaker;
-	private VertexStore vertexStore;
-	private BFTSyncer bftSyncer;
-	private EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher;
-	private EventDispatcher<NoVote> noVoteEventDispatcher;
+  // BFT Stateful objects
+  private Pacemaker pacemaker;
+  private VertexStore vertexStore;
+  private BFTSyncer bftSyncer;
+  private EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher;
+  private EventDispatcher<NoVote> noVoteEventDispatcher;
 
-	// Instance specific objects
-	private BFTNode self;
+  // Instance specific objects
+  private BFTNode self;
 
-	private ViewUpdate viewUpdate;
-	private RemoteEventDispatcher<Vote> voteDispatcher;
-	private SafetyRules safetyRules;
+  private ViewUpdate viewUpdate;
+  private RemoteEventDispatcher<Vote> voteDispatcher;
+  private SafetyRules safetyRules;
 
-	private BFTBuilder() {
-		// Just making this inaccessible
-	}
+  private BFTBuilder() {
+    // Just making this inaccessible
+  }
 
-	public static BFTBuilder create() {
-		return new BFTBuilder();
-	}
+  public static BFTBuilder create() {
+    return new BFTBuilder();
+  }
 
-	public BFTBuilder self(BFTNode self) {
-		this.self = self;
-		return this;
-	}
+  public BFTBuilder self(BFTNode self) {
+    this.self = self;
+    return this;
+  }
 
-	public BFTBuilder viewUpdate(ViewUpdate viewUpdate) {
-		this.viewUpdate = viewUpdate;
-		return this;
-	}
+  public BFTBuilder viewUpdate(ViewUpdate viewUpdate) {
+    this.viewUpdate = viewUpdate;
+    return this;
+  }
 
-	public BFTBuilder voteDispatcher(RemoteEventDispatcher<Vote> voteDispatcher) {
-		this.voteDispatcher = voteDispatcher;
-		return this;
-	}
+  public BFTBuilder voteDispatcher(RemoteEventDispatcher<Vote> voteDispatcher) {
+    this.voteDispatcher = voteDispatcher;
+    return this;
+  }
 
-	public BFTBuilder safetyRules(SafetyRules safetyRules) {
-		this.safetyRules = safetyRules;
-		return this;
-	}
+  public BFTBuilder safetyRules(SafetyRules safetyRules) {
+    this.safetyRules = safetyRules;
+    return this;
+  }
 
-	public BFTBuilder hasher(Hasher hasher) {
-		this.hasher = hasher;
-		return this;
-	}
+  public BFTBuilder hasher(Hasher hasher) {
+    this.hasher = hasher;
+    return this;
+  }
 
-	public BFTBuilder verifier(HashVerifier verifier) {
-		this.verifier = verifier;
-		return this;
-	}
+  public BFTBuilder verifier(HashVerifier verifier) {
+    this.verifier = verifier;
+    return this;
+  }
 
-	public BFTBuilder validatorSet(BFTValidatorSet validatorSet) {
-		this.validatorSet = validatorSet;
-		return this;
-	}
+  public BFTBuilder validatorSet(BFTValidatorSet validatorSet) {
+    this.validatorSet = validatorSet;
+    return this;
+  }
 
-	public BFTBuilder pacemaker(Pacemaker pacemaker) {
-		this.pacemaker = pacemaker;
-		return this;
-	}
+  public BFTBuilder pacemaker(Pacemaker pacemaker) {
+    this.pacemaker = pacemaker;
+    return this;
+  }
 
-	public BFTBuilder vertexStore(VertexStore vertexStore) {
-		this.vertexStore = vertexStore;
-		return this;
-	}
+  public BFTBuilder vertexStore(VertexStore vertexStore) {
+    this.vertexStore = vertexStore;
+    return this;
+  }
 
-	public BFTBuilder bftSyncer(BFTSyncer bftSyncer) {
-		this.bftSyncer = bftSyncer;
-		return this;
-	}
+  public BFTBuilder bftSyncer(BFTSyncer bftSyncer) {
+    this.bftSyncer = bftSyncer;
+    return this;
+  }
 
-	public BFTBuilder viewQuorumReachedEventDispatcher(EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher) {
-		this.viewQuorumReachedEventDispatcher = viewQuorumReachedEventDispatcher;
-		return this;
-	}
+  public BFTBuilder viewQuorumReachedEventDispatcher(
+      EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher) {
+    this.viewQuorumReachedEventDispatcher = viewQuorumReachedEventDispatcher;
+    return this;
+  }
 
-	public BFTBuilder noVoteEventDispatcher(EventDispatcher<NoVote> noVoteEventDispatcher) {
-		this.noVoteEventDispatcher = noVoteEventDispatcher;
-		return this;
-	}
+  public BFTBuilder noVoteEventDispatcher(EventDispatcher<NoVote> noVoteEventDispatcher) {
+    this.noVoteEventDispatcher = noVoteEventDispatcher;
+    return this;
+  }
 
-	public BFTEventProcessor build() {
-		if (!validatorSet.containsNode(self)) {
-			return EmptyBFTEventProcessor.INSTANCE;
-		}
-		final PendingVotes pendingVotes = new PendingVotes(hasher);
+  public BFTEventProcessor build() {
+    if (!validatorSet.containsNode(self)) {
+      return EmptyBFTEventProcessor.INSTANCE;
+    }
+    final PendingVotes pendingVotes = new PendingVotes(hasher);
 
-		BFTEventReducer reducer = new BFTEventReducer(
-			self,
-			pacemaker,
-			vertexStore,
-			viewQuorumReachedEventDispatcher,
-			noVoteEventDispatcher,
-			voteDispatcher,
-			hasher,
-			safetyRules,
-			validatorSet,
-			pendingVotes,
-			viewUpdate
-		);
+    BFTEventReducer reducer =
+        new BFTEventReducer(
+            self,
+            pacemaker,
+            vertexStore,
+            viewQuorumReachedEventDispatcher,
+            noVoteEventDispatcher,
+            voteDispatcher,
+            hasher,
+            safetyRules,
+            validatorSet,
+            pendingVotes,
+            viewUpdate);
 
-		BFTEventPreprocessor preprocessor = new BFTEventPreprocessor(
-			reducer,
-			bftSyncer,
-			viewUpdate
-		);
+    BFTEventPreprocessor preprocessor = new BFTEventPreprocessor(reducer, bftSyncer, viewUpdate);
 
-		return new BFTEventVerifier(
-			validatorSet,
-			preprocessor,
-			hasher,
-			verifier
-		);
-	}
+    return new BFTEventVerifier(validatorSet, preprocessor, hasher, verifier);
+  }
 }

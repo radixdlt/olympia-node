@@ -65,19 +65,19 @@
 package com.radixdlt.constraintmachine;
 
 public final class RawSubstateBytes {
-	private final byte[] id;
-	private final byte[] data;
+  private final byte[] id;
+  private final byte[] data;
 
-	public RawSubstateBytes(byte[] id, byte[] data) {
-		this.id = id;
-		this.data = data;
-	}
+  public RawSubstateBytes(byte[] id, byte[] data) {
+    this.id = id;
+    this.data = data;
+  }
 
-	public byte[] getId() {
-		return id;
-	}
+  public byte[] getId() {
+    return id;
+  }
 
-	public byte[] getData() {
-		return data;
-	}
+  public byte[] getData() {
+    return data;
+  }
 }

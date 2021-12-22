@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -74,30 +75,29 @@ import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.utils.Bytes;
 
-public final class ConstructionFinalizeHandler extends CoreJsonRpcHandler<ConstructionFinalizeRequest, ConstructionFinalizeResponse> {
-	private final CoreModelMapper coreModelMapper;
+public final class ConstructionFinalizeHandler
+    extends CoreJsonRpcHandler<ConstructionFinalizeRequest, ConstructionFinalizeResponse> {
+  private final CoreModelMapper coreModelMapper;
 
-	@Inject
-	public ConstructionFinalizeHandler(
-		CoreModelMapper coreModelMapper
-	) {
-		super(ConstructionFinalizeRequest.class);
-		this.coreModelMapper = coreModelMapper;
-	}
+  @Inject
+  public ConstructionFinalizeHandler(CoreModelMapper coreModelMapper) {
+    super(ConstructionFinalizeRequest.class);
+    this.coreModelMapper = coreModelMapper;
+  }
 
-	@Override
-	public ConstructionFinalizeResponse handleRequest(ConstructionFinalizeRequest request) throws CoreApiException {
-		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
+  @Override
+  public ConstructionFinalizeResponse handleRequest(ConstructionFinalizeRequest request)
+      throws CoreApiException {
+    coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var keyAndSignature = coreModelMapper.keyAndSignature(request.getSignature());
-		var unsignedTransaction = coreModelMapper.bytes(request.getUnsignedTransaction());
-		var hash = HashUtils.sha256(unsignedTransaction).asBytes();
-		var recoverable = ECKeyUtils.toRecoverableSig(
-			keyAndSignature.getSecond(), hash, keyAndSignature.getFirst()
-		);
+    var keyAndSignature = coreModelMapper.keyAndSignature(request.getSignature());
+    var unsignedTransaction = coreModelMapper.bytes(request.getUnsignedTransaction());
+    var hash = HashUtils.sha256(unsignedTransaction).asBytes();
+    var recoverable =
+        ECKeyUtils.toRecoverableSig(keyAndSignature.getSecond(), hash, keyAndSignature.getFirst());
 
-		var txn = TxLowLevelBuilder.newBuilder(unsignedTransaction).sig(recoverable).build();
-		return new ConstructionFinalizeResponse()
-			.signedTransaction(Bytes.toHexString(txn.getPayload()));
-	}
+    var txn = TxLowLevelBuilder.newBuilder(unsignedTransaction).sig(recoverable).build();
+    return new ConstructionFinalizeResponse()
+        .signedTransaction(Bytes.toHexString(txn.getPayload()));
+  }
 }

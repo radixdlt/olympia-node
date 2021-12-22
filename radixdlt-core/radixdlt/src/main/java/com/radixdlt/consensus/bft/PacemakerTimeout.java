@@ -73,12 +73,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
-/**
- * The amount of time the pacemaker will wait until considering
- * the round timed out.
- */
+/** The amount of time the pacemaker will wait until considering the round timed out. */
 @Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
+@Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface PacemakerTimeout {
-}
+public @interface PacemakerTimeout {}

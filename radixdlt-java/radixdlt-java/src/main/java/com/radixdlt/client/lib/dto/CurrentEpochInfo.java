@@ -68,125 +68,144 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.utils.UInt256;
-
 import java.util.List;
 import java.util.Objects;
 
 public final class CurrentEpochInfo {
-	private final AccountAddress owner;
-	private final double uptimePercentage;
-	private final double validatorFee;
-	private final long proposalsMissed;
-	private final long proposalsCompleted;
-	private final List<DelegatedStake> stakes;
-	private final boolean registered;
-	private final UInt256 totalStake;
+  private final AccountAddress owner;
+  private final double uptimePercentage;
+  private final double validatorFee;
+  private final long proposalsMissed;
+  private final long proposalsCompleted;
+  private final List<DelegatedStake> stakes;
+  private final boolean registered;
+  private final UInt256 totalStake;
 
-	private CurrentEpochInfo(
-		AccountAddress owner,
-		double uptimePercentage,
-		double validatorFee,
-		long proposalsMissed,
-		long proposalsCompleted,
-		List<DelegatedStake> stakes,
-		boolean registered,
-		UInt256 totalStake
-	) {
-		this.owner = owner;
-		this.uptimePercentage = uptimePercentage;
-		this.validatorFee = validatorFee;
-		this.proposalsMissed = proposalsMissed;
-		this.proposalsCompleted = proposalsCompleted;
-		this.stakes = stakes;
-		this.registered = registered;
-		this.totalStake = totalStake;
-	}
+  private CurrentEpochInfo(
+      AccountAddress owner,
+      double uptimePercentage,
+      double validatorFee,
+      long proposalsMissed,
+      long proposalsCompleted,
+      List<DelegatedStake> stakes,
+      boolean registered,
+      UInt256 totalStake) {
+    this.owner = owner;
+    this.uptimePercentage = uptimePercentage;
+    this.validatorFee = validatorFee;
+    this.proposalsMissed = proposalsMissed;
+    this.proposalsCompleted = proposalsCompleted;
+    this.stakes = stakes;
+    this.registered = registered;
+    this.totalStake = totalStake;
+  }
 
-	@JsonCreator
-	public static CurrentEpochInfo create(
-		@JsonProperty(value = "owner", required = true) AccountAddress owner,
-		@JsonProperty(value = "uptimePercentage", required = true) double uptimePercentage,
-		@JsonProperty(value = "validatorFee", required = true) double validatorFee,
-		@JsonProperty(value = "proposalsMissed", required = true) long proposalsMissed,
-		@JsonProperty(value = "proposalsCompleted", required = true) long proposalsCompleted,
-		@JsonProperty(value = "stakes", required = true) List<DelegatedStake> stakes,
-		@JsonProperty(value = "registered", required = true) boolean registered,
-		@JsonProperty(value = "totalStake", required = true) UInt256 totalStake
-	) {
-		return new CurrentEpochInfo(
-			owner, uptimePercentage, validatorFee, proposalsMissed, proposalsCompleted, stakes, registered, totalStake
-		);
-	}
+  @JsonCreator
+  public static CurrentEpochInfo create(
+      @JsonProperty(value = "owner", required = true) AccountAddress owner,
+      @JsonProperty(value = "uptimePercentage", required = true) double uptimePercentage,
+      @JsonProperty(value = "validatorFee", required = true) double validatorFee,
+      @JsonProperty(value = "proposalsMissed", required = true) long proposalsMissed,
+      @JsonProperty(value = "proposalsCompleted", required = true) long proposalsCompleted,
+      @JsonProperty(value = "stakes", required = true) List<DelegatedStake> stakes,
+      @JsonProperty(value = "registered", required = true) boolean registered,
+      @JsonProperty(value = "totalStake", required = true) UInt256 totalStake) {
+    return new CurrentEpochInfo(
+        owner,
+        uptimePercentage,
+        validatorFee,
+        proposalsMissed,
+        proposalsCompleted,
+        stakes,
+        registered,
+        totalStake);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof CurrentEpochInfo)) {
-			return false;
-		}
+    if (!(o instanceof CurrentEpochInfo)) {
+      return false;
+    }
 
-		var that = (CurrentEpochInfo) o;
-		return Double.compare(that.uptimePercentage, uptimePercentage) == 0
-			&& Double.compare(that.validatorFee, validatorFee) == 0
-			&& proposalsMissed == that.proposalsMissed
-			&& proposalsCompleted == that.proposalsCompleted
-			&& registered == that.registered
-			&& owner.equals(that.owner)
-			&& stakes.equals(that.stakes)
-			&& totalStake.equals(that.totalStake);
-	}
+    var that = (CurrentEpochInfo) o;
+    return Double.compare(that.uptimePercentage, uptimePercentage) == 0
+        && Double.compare(that.validatorFee, validatorFee) == 0
+        && proposalsMissed == that.proposalsMissed
+        && proposalsCompleted == that.proposalsCompleted
+        && registered == that.registered
+        && owner.equals(that.owner)
+        && stakes.equals(that.stakes)
+        && totalStake.equals(that.totalStake);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(owner, uptimePercentage, validatorFee, proposalsMissed, proposalsCompleted, stakes, registered, totalStake);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        owner,
+        uptimePercentage,
+        validatorFee,
+        proposalsMissed,
+        proposalsCompleted,
+        stakes,
+        registered,
+        totalStake);
+  }
 
-	@Override
-	public String toString() {
-		return "{"
-			+ "owner=" + owner
-			+ ", uptimePercentage=" + uptimePercentage
-			+ ", validatorFee=" + validatorFee
-			+ ", proposalsMissed=" + proposalsMissed
-			+ ", proposalsCompleted=" + proposalsCompleted
-			+ ", stakes=" + stakes
-			+ ", registered=" + registered
-			+ ", totalStake=" + totalStake
-			+ '}';
-	}
+  @Override
+  public String toString() {
+    return "{"
+        + "owner="
+        + owner
+        + ", uptimePercentage="
+        + uptimePercentage
+        + ", validatorFee="
+        + validatorFee
+        + ", proposalsMissed="
+        + proposalsMissed
+        + ", proposalsCompleted="
+        + proposalsCompleted
+        + ", stakes="
+        + stakes
+        + ", registered="
+        + registered
+        + ", totalStake="
+        + totalStake
+        + '}';
+  }
 
-	public AccountAddress getOwner() {
-		return owner;
-	}
+  public AccountAddress getOwner() {
+    return owner;
+  }
 
-	public double getUptimePercentage() {
-		return uptimePercentage;
-	}
+  public double getUptimePercentage() {
+    return uptimePercentage;
+  }
 
-	public double getValidatorFee() {
-		return validatorFee;
-	}
+  public double getValidatorFee() {
+    return validatorFee;
+  }
 
-	public long getProposalsMissed() {
-		return proposalsMissed;
-	}
+  public long getProposalsMissed() {
+    return proposalsMissed;
+  }
 
-	public long getProposalsCompleted() {
-		return proposalsCompleted;
-	}
+  public long getProposalsCompleted() {
+    return proposalsCompleted;
+  }
 
-	public List<DelegatedStake> getStakes() {
-		return stakes;
-	}
+  public List<DelegatedStake> getStakes() {
+    return stakes;
+  }
 
-	public boolean isRegistered() {
-		return registered;
-	}
+  public boolean isRegistered() {
+    return registered;
+  }
 
-	public UInt256 getTotalStake() {
-		return totalStake;
-	}
+  public UInt256 getTotalStake() {
+    return totalStake;
+  }
 }

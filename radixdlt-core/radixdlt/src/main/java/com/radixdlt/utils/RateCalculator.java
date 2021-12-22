@@ -65,27 +65,23 @@
 package com.radixdlt.utils;
 
 import com.google.common.collect.EvictingQueue;
-
 import java.time.Duration;
 
 public final class RateCalculator {
-	private final Duration interval;
-	private final EvictingQueue<Long> ticks;
+  private final Duration interval;
+  private final EvictingQueue<Long> ticks;
 
-	public RateCalculator(Duration interval, int maxEntries) {
-		this.interval = interval;
-		this.ticks = EvictingQueue.create(maxEntries);
-	}
+  public RateCalculator(Duration interval, int maxEntries) {
+    this.interval = interval;
+    this.ticks = EvictingQueue.create(maxEntries);
+  }
 
-	public void tick() {
-		ticks.offer(System.currentTimeMillis());
-	}
+  public void tick() {
+    ticks.offer(System.currentTimeMillis());
+  }
 
-	public long currentRate() {
-		final var minTime = System.currentTimeMillis() - interval.toMillis();
-		return ticks.stream()
-			.filter(v -> v >= minTime)
-			.count();
-	}
-
+  public long currentRate() {
+    final var minTime = System.currentTimeMillis() - interval.toMillis();
+    return ticks.stream().filter(v -> v >= minTime).count();
+  }
 }

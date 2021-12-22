@@ -66,40 +66,40 @@ package com.radixdlt.atom.actions;
 
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.crypto.ECPublicKey;
-
 import java.util.function.LongFunction;
 
 public final class NextRound implements TxAction {
-	private final long view;
-	private final boolean isTimeout;
-	private final long timestamp;
-	private final LongFunction<ECPublicKey> leaderMapping;
+  private final long view;
+  private final boolean isTimeout;
+  private final long timestamp;
+  private final LongFunction<ECPublicKey> leaderMapping;
 
-	public NextRound(long view, boolean isTimeout, long timestamp, LongFunction<ECPublicKey> leaderMapping) {
-		this.view = view;
-		this.isTimeout = isTimeout;
-		this.timestamp = timestamp;
-		this.leaderMapping = leaderMapping;
-	}
+  public NextRound(
+      long view, boolean isTimeout, long timestamp, LongFunction<ECPublicKey> leaderMapping) {
+    this.view = view;
+    this.isTimeout = isTimeout;
+    this.timestamp = timestamp;
+    this.leaderMapping = leaderMapping;
+  }
 
-	public boolean isTimeout() {
-		return isTimeout;
-	}
+  public boolean isTimeout() {
+    return isTimeout;
+  }
 
-	public long view() {
-		return view;
-	}
+  public long view() {
+    return view;
+  }
 
-	public long timestamp() {
-		return timestamp;
-	}
+  public long timestamp() {
+    return timestamp;
+  }
 
-	public LongFunction<ECPublicKey> leaderMapping() {
-		return leaderMapping;
-	}
+  public LongFunction<ECPublicKey> leaderMapping() {
+    return leaderMapping;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{view=%s}", this.getClass().getSimpleName(), view);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{view=%s}", this.getClass().getSimpleName(), view);
+  }
 }

@@ -66,69 +66,79 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class NetworkDataMessagesOutbound {
-		private final long processed;
-		private final long aborted;
-		private final long pending;
-		private final long sent;
+  private final long processed;
+  private final long aborted;
+  private final long pending;
+  private final long sent;
 
-	private NetworkDataMessagesOutbound(long processed, long aborted, long pending, long sent) {
-		this.processed = processed;
-		this.aborted = aborted;
-		this.pending = pending;
-		this.sent = sent;
-	}
+  private NetworkDataMessagesOutbound(long processed, long aborted, long pending, long sent) {
+    this.processed = processed;
+    this.aborted = aborted;
+    this.pending = pending;
+    this.sent = sent;
+  }
 
-	@JsonCreator
-	public static NetworkDataMessagesOutbound create(
-		@JsonProperty(value = "processed", required = true) long processed,
-		@JsonProperty(value = "aborted", required = true) long aborted,
-		@JsonProperty(value = "pending", required = true) long pending,
-		@JsonProperty(value = "sent", required = true) long sent
-	) {
-		return new NetworkDataMessagesOutbound(processed, aborted, pending, sent);
-	}
+  @JsonCreator
+  public static NetworkDataMessagesOutbound create(
+      @JsonProperty(value = "processed", required = true) long processed,
+      @JsonProperty(value = "aborted", required = true) long aborted,
+      @JsonProperty(value = "pending", required = true) long pending,
+      @JsonProperty(value = "sent", required = true) long sent) {
+    return new NetworkDataMessagesOutbound(processed, aborted, pending, sent);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof NetworkDataMessagesOutbound)) {
-			return false;
-		}
+    if (!(o instanceof NetworkDataMessagesOutbound)) {
+      return false;
+    }
 
-		var that = (NetworkDataMessagesOutbound) o;
-		return processed == that.processed && aborted == that.aborted && pending == that.pending && sent == that.sent;
-	}
+    var that = (NetworkDataMessagesOutbound) o;
+    return processed == that.processed
+        && aborted == that.aborted
+        && pending == that.pending
+        && sent == that.sent;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(processed, aborted, pending, sent);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(processed, aborted, pending, sent);
+  }
 
-	@Override
-	public String toString() {
-		return "{" + "processed=" + processed + ", aborted=" + aborted + ", pending=" + pending + ", sent=" + sent + '}';
-	}
+  @Override
+  public String toString() {
+    return "{"
+        + "processed="
+        + processed
+        + ", aborted="
+        + aborted
+        + ", pending="
+        + pending
+        + ", sent="
+        + sent
+        + '}';
+  }
 
-	public long getProcessed() {
-		return processed;
-	}
+  public long getProcessed() {
+    return processed;
+  }
 
-	public long getAborted() {
-		return aborted;
-	}
+  public long getAborted() {
+    return aborted;
+  }
 
-	public long getPending() {
-		return pending;
-	}
+  public long getPending() {
+    return pending;
+  }
 
-	public long getSent() {
-		return sent;
-	}
+  public long getSent() {
+    return sent;
+  }
 }

@@ -73,68 +73,65 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
 import java.util.Objects;
 import java.util.Optional;
 
 @SerializerId2("network.p2p.proxy_certificate")
 public final class ProxyCertificate {
-	// Placeholder for the serializer ID
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(DsonOutput.Output.ALL)
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
+  // Placeholder for the serializer ID
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(DsonOutput.Output.ALL)
+  private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("data")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final ProxyCertificateData data;
+  @JsonProperty("data")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final ProxyCertificateData data;
 
-	@JsonProperty("signature")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final ECDSASignature signature;
+  @JsonProperty("signature")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final ECDSASignature signature;
 
-	@JsonCreator
-	private static ProxyCertificate deserialize(
-		@JsonProperty(value = "data", required = true) ProxyCertificateData data,
-		@JsonProperty(value = "signature", required = true) ECDSASignature signature
-	) {
-		return new ProxyCertificate(data, signature);
-	}
+  @JsonCreator
+  private static ProxyCertificate deserialize(
+      @JsonProperty(value = "data", required = true) ProxyCertificateData data,
+      @JsonProperty(value = "signature", required = true) ECDSASignature signature) {
+    return new ProxyCertificate(data, signature);
+  }
 
-	public static ProxyCertificate create(ProxyCertificateData data, ECDSASignature signature) {
-		return new ProxyCertificate(data, signature);
-	}
+  public static ProxyCertificate create(ProxyCertificateData data, ECDSASignature signature) {
+    return new ProxyCertificate(data, signature);
+  }
 
-	private ProxyCertificate(ProxyCertificateData data, ECDSASignature signature) {
-		this.data = Objects.requireNonNull(data);
-		this.signature = Objects.requireNonNull(signature);
-	}
+  private ProxyCertificate(ProxyCertificateData data, ECDSASignature signature) {
+    this.data = Objects.requireNonNull(data);
+    this.signature = Objects.requireNonNull(signature);
+  }
 
-	public ProxyCertificateData getData() {
-		return this.data;
-	}
+  public ProxyCertificateData getData() {
+    return this.data;
+  }
 
-	public Optional<VerifiedProxyCertificate> verify() {
-		return recoverSigner()
-			.map(signer -> new VerifiedProxyCertificate(data, signer));
-	}
+  public Optional<VerifiedProxyCertificate> verify() {
+    return recoverSigner().map(signer -> new VerifiedProxyCertificate(data, signer));
+  }
 
-	private Optional<NodeId> recoverSigner() {
-		final var recoveredKey = ECPublicKey.recoverFrom(data.hashToSign(), signature);
-		return recoveredKey.map(NodeId::fromPublicKey);
-	}
+  private Optional<NodeId> recoverSigner() {
+    final var recoveredKey = ECPublicKey.recoverFrom(data.hashToSign(), signature);
+    return recoveredKey.map(NodeId::fromPublicKey);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		return o instanceof ProxyCertificate that
-			&& Objects.equals(data, that.data)
-			&& Objects.equals(signature, that.signature);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    return o instanceof ProxyCertificate that
+        && Objects.equals(data, that.data)
+        && Objects.equals(signature, that.signature);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(data, signature);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(data, signature);
+  }
 }

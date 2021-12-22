@@ -64,20 +64,17 @@
 
 package com.radixdlt.middleware2.network;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/**
- * Identifies that the target represents a rate limit for outgoing vertex sync messages.
- */
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
+
+/** Identifies that the target represents a rate limit for outgoing vertex sync messages. */
 @Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
+@Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface GetVerticesRequestRateLimit {
-}
+public @interface GetVerticesRequestRateLimit {}

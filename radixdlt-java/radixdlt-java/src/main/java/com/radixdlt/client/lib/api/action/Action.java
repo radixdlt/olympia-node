@@ -64,5 +64,4 @@
 
 package com.radixdlt.client.lib.api.action;
 
-public interface Action {
-}
+public interface Action {}

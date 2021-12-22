@@ -67,7 +67,7 @@ package com.radixdlt.constraintmachine.exceptions;
 import com.radixdlt.utils.UInt256;
 
 public class MinimumStakeException extends Exception {
-	public MinimumStakeException(UInt256 minimum, UInt256 actual) {
-		super("Minimum amount to stake must be >= " + minimum + " but trying to stake " + actual);
-	}
+  public MinimumStakeException(UInt256 minimum, UInt256 actual) {
+    super("Minimum amount to stake must be >= " + minimum + " but trying to stake " + actual);
+  }
 }

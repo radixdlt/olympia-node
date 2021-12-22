@@ -64,218 +64,216 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Maps;
 import com.google.common.hash.HashCode;
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.View;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-
-import javax.annotation.concurrent.NotThreadSafe;
-
 import com.radixdlt.consensus.bft.VoteProcessingResult;
 import com.radixdlt.consensus.bft.VoteProcessingResult.VoteRejected.VoteRejectedReason;
 import com.radixdlt.consensus.liveness.VoteTimeout;
-import com.radixdlt.crypto.Hasher;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
-import com.radixdlt.SecurityCritical;
-import com.radixdlt.SecurityCritical.SecurityKind;
-import com.radixdlt.consensus.bft.ValidationState;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.Hasher;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import javax.annotation.concurrent.NotThreadSafe;
 
 /**
  * Manages pending votes for various vertices.
- * <p>
- * This class is NOT thread-safe.
- * <p>
- * This class is security critical (signature checks, validator set membership checks).
+ *
+ * <p>This class is NOT thread-safe.
+ *
+ * <p>This class is security critical (signature checks, validator set membership checks).
  */
 @NotThreadSafe
-@SecurityCritical({ SecurityKind.SIG_VERIFY, SecurityKind.GENERAL })
+@SecurityCritical({SecurityKind.SIG_VERIFY, SecurityKind.GENERAL})
 public final class PendingVotes {
 
-	@VisibleForTesting
-	// Make sure equals tester can access.
-	static final class PreviousVote {
-		private final View view;
-		private final long epoch;
-		private final HashCode hash;
-		private final boolean isTimeout;
+  @VisibleForTesting
+  // Make sure equals tester can access.
+  static final class PreviousVote {
+    private final View view;
+    private final long epoch;
+    private final HashCode hash;
+    private final boolean isTimeout;
 
-		PreviousVote(View view, long epoch, HashCode hash, boolean isTimeout) {
-			this.view = view;
-			this.epoch = epoch;
-			this.hash = hash;
-			this.isTimeout = isTimeout;
-		}
+    PreviousVote(View view, long epoch, HashCode hash, boolean isTimeout) {
+      this.view = view;
+      this.epoch = epoch;
+      this.hash = hash;
+      this.isTimeout = isTimeout;
+    }
 
-		@Override
-		public int hashCode() {
-			return Objects.hash(this.view, this.epoch, this.hash, this.isTimeout);
-		}
+    @Override
+    public int hashCode() {
+      return Objects.hash(this.view, this.epoch, this.hash, this.isTimeout);
+    }
 
-		@Override
-		public boolean equals(Object obj) {
-			if (obj instanceof PreviousVote) {
-				PreviousVote that = (PreviousVote) obj;
-				return Objects.equals(this.view, that.view)
-					&& Objects.equals(this.hash, that.hash)
-					&& this.epoch == that.epoch
-					&& this.isTimeout == that.isTimeout;
-			}
-			return false;
-		}
-	}
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof PreviousVote) {
+        PreviousVote that = (PreviousVote) obj;
+        return Objects.equals(this.view, that.view)
+            && Objects.equals(this.hash, that.hash)
+            && this.epoch == that.epoch
+            && this.isTimeout == that.isTimeout;
+      }
+      return false;
+    }
+  }
 
-	private final Map<HashCode, ValidationState> voteState = Maps.newHashMap();
-	private final Map<HashCode, ValidationState> timeoutVoteState = Maps.newHashMap();
-	private final Map<BFTNode, PreviousVote> previousVotes = Maps.newHashMap();
-	private final Hasher hasher;
+  private final Map<HashCode, ValidationState> voteState = Maps.newHashMap();
+  private final Map<HashCode, ValidationState> timeoutVoteState = Maps.newHashMap();
+  private final Map<BFTNode, PreviousVote> previousVotes = Maps.newHashMap();
+  private final Hasher hasher;
 
-	public PendingVotes(Hasher hasher) {
-		this.hasher = Objects.requireNonNull(hasher);
-	}
+  public PendingVotes(Hasher hasher) {
+    this.hasher = Objects.requireNonNull(hasher);
+  }
 
-	/**
-	 * Inserts a vote for a given vertex,
-	 * attempting to form either a quorum certificate for that vertex
-	 * or a timeout certificate.
-	 * A quorum will only be formed if permitted by the {@link BFTValidatorSet}.
-	 *
-	 * @param vote The vote to be inserted
-	 * @return The result of vote processing
-	 */
-	public VoteProcessingResult insertVote(Vote vote, BFTValidatorSet validatorSet) {
-		final BFTNode node = vote.getAuthor();
-		final VoteData voteData = vote.getVoteData();
-		final HashCode voteDataHash = this.hasher.hash(voteData);
+  /**
+   * Inserts a vote for a given vertex, attempting to form either a quorum certificate for that
+   * vertex or a timeout certificate. A quorum will only be formed if permitted by the {@link
+   * BFTValidatorSet}.
+   *
+   * @param vote The vote to be inserted
+   * @return The result of vote processing
+   */
+  public VoteProcessingResult insertVote(Vote vote, BFTValidatorSet validatorSet) {
+    final BFTNode node = vote.getAuthor();
+    final VoteData voteData = vote.getVoteData();
+    final HashCode voteDataHash = this.hasher.hash(voteData);
 
-		if (!validatorSet.containsNode(node)) {
-			return VoteProcessingResult.rejected(VoteRejectedReason.INVALID_AUTHOR);
-		}
+    if (!validatorSet.containsNode(node)) {
+      return VoteProcessingResult.rejected(VoteRejectedReason.INVALID_AUTHOR);
+    }
 
-		if (!replacePreviousVote(node, vote, voteDataHash)) {
-			return VoteProcessingResult.rejected(VoteRejectedReason.DUPLICATE_VOTE);
-		}
+    if (!replacePreviousVote(node, vote, voteDataHash)) {
+      return VoteProcessingResult.rejected(VoteRejectedReason.DUPLICATE_VOTE);
+    }
 
-		return processVoteForQC(vote, validatorSet).<VoteProcessingResult>map(VoteProcessingResult::qcQuorum)
-			.or(() -> processVoteForTC(vote, validatorSet).map(VoteProcessingResult::tcQuorum))
-			.orElseGet(VoteProcessingResult::accepted);
-	}
+    return processVoteForQC(vote, validatorSet)
+        .<VoteProcessingResult>map(VoteProcessingResult::qcQuorum)
+        .or(() -> processVoteForTC(vote, validatorSet).map(VoteProcessingResult::tcQuorum))
+        .orElseGet(VoteProcessingResult::accepted);
+  }
 
-	private Optional<QuorumCertificate> processVoteForQC(Vote vote, BFTValidatorSet validatorSet) {
-		final VoteData voteData = vote.getVoteData();
-		final HashCode voteDataHash = this.hasher.hash(voteData);
-		final BFTNode node = vote.getAuthor();
+  private Optional<QuorumCertificate> processVoteForQC(Vote vote, BFTValidatorSet validatorSet) {
+    final VoteData voteData = vote.getVoteData();
+    final HashCode voteDataHash = this.hasher.hash(voteData);
+    final BFTNode node = vote.getAuthor();
 
-		final ValidationState validationState =
-			this.voteState.computeIfAbsent(voteDataHash, k -> validatorSet.newValidationState());
+    final ValidationState validationState =
+        this.voteState.computeIfAbsent(voteDataHash, k -> validatorSet.newValidationState());
 
-		final boolean signatureAdded = validationState.addSignature(node, vote.getTimestamp(), vote.getSignature());
+    final boolean signatureAdded =
+        validationState.addSignature(node, vote.getTimestamp(), vote.getSignature());
 
-		if (signatureAdded && validationState.complete()) {
-			return Optional.of(new QuorumCertificate(voteData, validationState.signatures()));
-		} else {
-			return Optional.empty();
-		}
-	}
+    if (signatureAdded && validationState.complete()) {
+      return Optional.of(new QuorumCertificate(voteData, validationState.signatures()));
+    } else {
+      return Optional.empty();
+    }
+  }
 
-	private Optional<TimeoutCertificate> processVoteForTC(Vote vote, BFTValidatorSet validatorSet) {
-		if (!vote.isTimeout()) {
-			return Optional.empty(); // TC can't be formed if vote is not timed out
-		}
+  private Optional<TimeoutCertificate> processVoteForTC(Vote vote, BFTValidatorSet validatorSet) {
+    if (!vote.isTimeout()) {
+      return Optional.empty(); // TC can't be formed if vote is not timed out
+    }
 
-		final ECDSASignature timeoutSignature = vote.getTimeoutSignature().orElseThrow();
+    final ECDSASignature timeoutSignature = vote.getTimeoutSignature().orElseThrow();
 
-		final VoteTimeout voteTimeout = VoteTimeout.of(vote);
-		final HashCode voteTimeoutHash = this.hasher.hash(voteTimeout);
-		final BFTNode node = vote.getAuthor();
+    final VoteTimeout voteTimeout = VoteTimeout.of(vote);
+    final HashCode voteTimeoutHash = this.hasher.hash(voteTimeout);
+    final BFTNode node = vote.getAuthor();
 
-		final ValidationState validationState =
-			this.timeoutVoteState.computeIfAbsent(voteTimeoutHash, k -> validatorSet.newValidationState());
+    final ValidationState validationState =
+        this.timeoutVoteState.computeIfAbsent(
+            voteTimeoutHash, k -> validatorSet.newValidationState());
 
-		final boolean signatureAdded = validationState.addSignature(node, vote.getTimestamp(), timeoutSignature);
+    final boolean signatureAdded =
+        validationState.addSignature(node, vote.getTimestamp(), timeoutSignature);
 
-		if (signatureAdded && validationState.complete()) {
-			return Optional.of(new TimeoutCertificate(
-					voteTimeout.getEpoch(),
-					voteTimeout.getView(),
-					validationState.signatures()));
-		} else {
-			return Optional.empty();
-		}
-	}
+    if (signatureAdded && validationState.complete()) {
+      return Optional.of(
+          new TimeoutCertificate(
+              voteTimeout.getEpoch(), voteTimeout.getView(), validationState.signatures()));
+    } else {
+      return Optional.empty();
+    }
+  }
 
-	// TODO: Need to rethink whether we should be removing previous signature
-	// TODO: Could be causing quorum formation to slow down
-	private boolean replacePreviousVote(BFTNode author, Vote vote, HashCode voteHash) {
-		final PreviousVote thisVote = new PreviousVote(vote.getView(), vote.getEpoch(), voteHash, vote.isTimeout());
-		final PreviousVote previousVote = this.previousVotes.put(author, thisVote);
-		if (previousVote == null) {
-			// No previous vote for this author, all good here
-			return true;
-		}
+  // TODO: Need to rethink whether we should be removing previous signature
+  // TODO: Could be causing quorum formation to slow down
+  private boolean replacePreviousVote(BFTNode author, Vote vote, HashCode voteHash) {
+    final PreviousVote thisVote =
+        new PreviousVote(vote.getView(), vote.getEpoch(), voteHash, vote.isTimeout());
+    final PreviousVote previousVote = this.previousVotes.put(author, thisVote);
+    if (previousVote == null) {
+      // No previous vote for this author, all good here
+      return true;
+    }
 
-		if (thisVote.equals(previousVote)) {
-			// Just going to ignore this duplicate vote for now.
-			// However, we can't count duplicate votes multiple times.
-			return false;
-		}
+    if (thisVote.equals(previousVote)) {
+      // Just going to ignore this duplicate vote for now.
+      // However, we can't count duplicate votes multiple times.
+      return false;
+    }
 
-		// Prune last pending vote from the pending votes.
-		// This limits the number of pending vertices that are in the pipeline.
-		var validationState = this.voteState.get(previousVote.hash);
-		if (validationState != null) {
-			validationState.removeSignature(author);
-			if (validationState.isEmpty()) {
-				this.voteState.remove(previousVote.hash);
-			}
-		}
+    // Prune last pending vote from the pending votes.
+    // This limits the number of pending vertices that are in the pipeline.
+    var validationState = this.voteState.get(previousVote.hash);
+    if (validationState != null) {
+      validationState.removeSignature(author);
+      if (validationState.isEmpty()) {
+        this.voteState.remove(previousVote.hash);
+      }
+    }
 
-		if (previousVote.isTimeout) {
-			final var voteTimeout = new VoteTimeout(previousVote.view, previousVote.epoch);
-			final var voteTimeoutHash = this.hasher.hash(voteTimeout);
+    if (previousVote.isTimeout) {
+      final var voteTimeout = new VoteTimeout(previousVote.view, previousVote.epoch);
+      final var voteTimeoutHash = this.hasher.hash(voteTimeout);
 
-			var timeoutValidationState = this.timeoutVoteState.get(voteTimeoutHash);
-			if (timeoutValidationState != null) {
-				timeoutValidationState.removeSignature(author);
-				if (timeoutValidationState.isEmpty()) {
-					this.timeoutVoteState.remove(voteTimeoutHash);
-				}
-			}
-		}
+      var timeoutValidationState = this.timeoutVoteState.get(voteTimeoutHash);
+      if (timeoutValidationState != null) {
+        timeoutValidationState.removeSignature(author);
+        if (timeoutValidationState.isEmpty()) {
+          this.timeoutVoteState.remove(voteTimeoutHash);
+        }
+      }
+    }
 
-		if (vote.getView().equals(previousVote.view)) {
-			// If the validator already voted in this view for something else,
-			// then the only valid possibility is a non-timeout vote being replaced by a timeout vote
-			// on the same vote data, or a byzantine node
-			return vote.isTimeout()
-				&& !previousVote.isTimeout
-				&& thisVote.hash.equals(previousVote.hash);
-		} else {
-			// all good if vote is for a different view
-			return true;
-		}
-	}
+    if (vote.getView().equals(previousVote.view)) {
+      // If the validator already voted in this view for something else,
+      // then the only valid possibility is a non-timeout vote being replaced by a timeout vote
+      // on the same vote data, or a byzantine node
+      return vote.isTimeout() && !previousVote.isTimeout && thisVote.hash.equals(previousVote.hash);
+    } else {
+      // all good if vote is for a different view
+      return true;
+    }
+  }
 
-	@VisibleForTesting
-	// Greybox stuff for testing
-	int voteStateSize() {
-		return this.voteState.size();
-	}
+  @VisibleForTesting
+  // Greybox stuff for testing
+  int voteStateSize() {
+    return this.voteState.size();
+  }
 
-	@VisibleForTesting
-	// Greybox stuff for testing
-	int timeoutVoteStateSize() {
-		return this.timeoutVoteState.size();
-	}
+  @VisibleForTesting
+  // Greybox stuff for testing
+  int timeoutVoteStateSize() {
+    return this.timeoutVoteState.size();
+  }
 
-	@VisibleForTesting
-	// Greybox stuff for testing
-	int previousVotesSize() {
-		return this.previousVotes.size();
-	}
+  @VisibleForTesting
+  // Greybox stuff for testing
+  int previousVotesSize() {
+    return this.previousVotes.size();
+  }
 }

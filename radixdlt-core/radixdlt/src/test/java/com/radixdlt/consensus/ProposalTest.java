@@ -64,74 +64,86 @@
 
 package com.radixdlt.consensus;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.util.Optional;
-
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.HashUtils;
+import java.util.Optional;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Before;
+import org.junit.Test;
+
 public class ProposalTest {
-	private Proposal proposal;
-	private UnverifiedVertex vertex;
-	private ECDSASignature signature;
-	private QuorumCertificate qc;
-	private QuorumCertificate commitQc;
+  private Proposal proposal;
+  private UnverifiedVertex vertex;
+  private ECDSASignature signature;
+  private QuorumCertificate qc;
+  private QuorumCertificate commitQc;
 
-	@Before
-	public void setUp() {
-		this.vertex = mock(UnverifiedVertex.class);
-		this.signature = mock(ECDSASignature.class);
-		this.commitQc = mock(QuorumCertificate.class);
-		this.qc = mock(QuorumCertificate.class);
+  @Before
+  public void setUp() {
+    this.vertex = mock(UnverifiedVertex.class);
+    this.signature = mock(ECDSASignature.class);
+    this.commitQc = mock(QuorumCertificate.class);
+    this.qc = mock(QuorumCertificate.class);
 
-		when(this.vertex.getQC()).thenReturn(qc);
+    when(this.vertex.getQC()).thenReturn(qc);
 
-		this.proposal = new Proposal(vertex, commitQc, signature, Optional.empty());
-	}
+    this.proposal = new Proposal(vertex, commitQc, signature, Optional.empty());
+  }
 
-	@Test
-	public void testGetters() {
-		assertThat(this.proposal.getVertex()).isEqualTo(vertex);
-		assertThat(this.proposal.highQC()).isEqualTo(HighQC.from(this.qc, this.commitQc, Optional.empty()));
-	}
+  @Test
+  public void testGetters() {
+    assertThat(this.proposal.getVertex()).isEqualTo(vertex);
+    assertThat(this.proposal.highQC())
+        .isEqualTo(HighQC.from(this.qc, this.commitQc, Optional.empty()));
+  }
 
-	@Test
-	public void testToString() {
-		assertThat(this.proposal).isNotNull();
-	}
+  @Test
+  public void testToString() {
+    assertThat(this.proposal).isNotNull();
+  }
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(Proposal.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(Proposal.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 
-	@Test
-	public void sensibleToString() {
-		String s = this.proposal.toString();
-		assertThat(s).contains(vertex.toString());
-	}
+  @Test
+  public void sensibleToString() {
+    String s = this.proposal.toString();
+    assertThat(s).contains(vertex.toString());
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializeWithNullThrowsException1() {
-		new Proposal(null, mock(QuorumCertificate.class), mock(ECDSASignature.class), mock(TimeoutCertificate.class));
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializeWithNullThrowsException1() {
+    new Proposal(
+        null,
+        mock(QuorumCertificate.class),
+        mock(ECDSASignature.class),
+        mock(TimeoutCertificate.class));
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializeWithNullThrowsException2() {
-		new Proposal(mock(UnverifiedVertex.class), null, mock(ECDSASignature.class), mock(TimeoutCertificate.class));
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializeWithNullThrowsException2() {
+    new Proposal(
+        mock(UnverifiedVertex.class),
+        null,
+        mock(ECDSASignature.class),
+        mock(TimeoutCertificate.class));
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializeWithNullThrowsException3() {
-		new Proposal(mock(UnverifiedVertex.class), mock(QuorumCertificate.class), null, mock(TimeoutCertificate.class));
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializeWithNullThrowsException3() {
+    new Proposal(
+        mock(UnverifiedVertex.class),
+        mock(QuorumCertificate.class),
+        null,
+        mock(TimeoutCertificate.class));
+  }
 }

@@ -64,33 +64,30 @@
 
 package com.radixdlt.network.p2p.discovery;
 
-/**
- * A message acting as as trigger for PeerDiscovery to start a discovery round.
- */
+/** A message acting as as trigger for PeerDiscovery to start a discovery round. */
 public final class DiscoverPeers {
 
-	public static DiscoverPeers create() {
-		return new DiscoverPeers();
-	}
+  public static DiscoverPeers create() {
+    return new DiscoverPeers();
+  }
 
-	private DiscoverPeers() {
-	}
+  private DiscoverPeers() {}
 
-	@Override
-	public String toString() {
-		return String.format("%s{}", this.getClass().getSimpleName());
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{}", this.getClass().getSimpleName());
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		return o instanceof DiscoverPeers;
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    return o instanceof DiscoverPeers;
+  }
 
-	@Override
-	public int hashCode() {
-		return 1;
-	}
+  @Override
+  public int hashCode() {
+    return 1;
+  }
 }

@@ -66,5 +66,4 @@ package com.radixdlt.application.system.state;
 
 import com.radixdlt.constraintmachine.Particle;
 
-public interface SystemData extends Particle {
-}
+public interface SystemData extends Particle {}

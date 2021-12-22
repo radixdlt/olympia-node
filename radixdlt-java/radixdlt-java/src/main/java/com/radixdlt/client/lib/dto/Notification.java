@@ -1,5 +1,4 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -65,66 +64,64 @@
 
 package com.radixdlt.client.lib.dto;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 import java.util.Optional;
 
-import static java.util.Objects.requireNonNull;
-
 public final class Notification {
-	private final String type;
-	private final String symbol;
-	private final String rri;
+  private final String type;
+  private final String symbol;
+  private final String rri;
 
-	private Notification(String type, String symbol, String rri) {
-		this.type = type;
-		this.symbol = symbol;
-		this.rri = rri;
-	}
+  private Notification(String type, String symbol, String rri) {
+    this.type = type;
+    this.symbol = symbol;
+    this.rri = rri;
+  }
 
-	@JsonCreator
-	public static Notification create(
-		@JsonProperty(value = "type", required = true) String type,
-		@JsonProperty("symbol") String symbol,
-		@JsonProperty("rri") String rri
-	) {
-		requireNonNull(type);
+  @JsonCreator
+  public static Notification create(
+      @JsonProperty(value = "type", required = true) String type,
+      @JsonProperty("symbol") String symbol,
+      @JsonProperty("rri") String rri) {
+    requireNonNull(type);
 
-		return new Notification(type, symbol, rri);
-	}
+    return new Notification(type, symbol, rri);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof Notification)) {
-			return false;
-		}
+    if (!(o instanceof Notification)) {
+      return false;
+    }
 
-		var that = (Notification) o;
-		return type.equals(that.type)
-			&& Objects.equals(symbol, that.symbol)
-			&& Objects.equals(rri, that.rri);
-	}
+    var that = (Notification) o;
+    return type.equals(that.type)
+        && Objects.equals(symbol, that.symbol)
+        && Objects.equals(rri, that.rri);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(type, symbol, rri);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(type, symbol, rri);
+  }
 
-	public Optional<String> getSymbol() {
-		return Optional.ofNullable(symbol);
-	}
+  public Optional<String> getSymbol() {
+    return Optional.ofNullable(symbol);
+  }
 
-	public Optional<String> getRri() {
-		return Optional.ofNullable(rri);
-	}
+  public Optional<String> getRri() {
+    return Optional.ofNullable(rri);
+  }
 
-	public String getType() {
-		return type;
-	}
+  public String getType() {
+    return type;
+  }
 }

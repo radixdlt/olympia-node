@@ -64,17 +64,11 @@
 
 package com.radixdlt;
 
-/**
- * Manages a module
- */
+/** Manages a module */
 public interface ModuleRunner {
-	/**
-	 * Start running the module
-	 */
-	void start();
+  /** Start running the module */
+  void start();
 
-	/**
-	 * Stop running the module
-	 */
-	void stop();
+  /** Stop running the module */
+  void stop();
 }

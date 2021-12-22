@@ -79,64 +79,68 @@ import org.apache.logging.log4j.ThreadContext;
 import org.json.JSONObject;
 
 public class DeterministicP2PNetworkTest {
-	protected P2PTestNetworkRunner testNetworkRunner;
+  protected P2PTestNetworkRunner testNetworkRunner;
 
-	protected RuntimeProperties defaultProperties() {
-		try {
-			final var props = new RuntimeProperties(new JSONObject(), new String[] {});
-			props.set("network.p2p.max_inbound_channels", 10);
-			props.set("network.p2p.max_outbound_channels", 10);
-			return props;
-		} catch (ParseException e) {
-			throw new RuntimeException(e);
-		}
-	}
+  protected RuntimeProperties defaultProperties() {
+    try {
+      final var props = new RuntimeProperties(new JSONObject(), new String[] {});
+      props.set("network.p2p.max_inbound_channels", 10);
+      props.set("network.p2p.max_outbound_channels", 10);
+      return props;
+    } catch (ParseException e) {
+      throw new RuntimeException(e);
+    }
+  }
 
-	protected void setupTestRunner(int numNodes, RuntimeProperties properties) throws Exception {
-		this.testNetworkRunner = P2PTestNetworkRunner.create(numNodes, properties);
-	}
+  protected void setupTestRunner(int numNodes, RuntimeProperties properties) throws Exception {
+    this.testNetworkRunner = P2PTestNetworkRunner.create(numNodes, properties);
+  }
 
-	protected void setupTestRunner(ImmutableList<P2PTestNetworkRunner.NodeProps> nodes) throws Exception {
-		this.testNetworkRunner = P2PTestNetworkRunner.create(nodes);
-	}
+  protected void setupTestRunner(ImmutableList<P2PTestNetworkRunner.NodeProps> nodes)
+      throws Exception {
+    this.testNetworkRunner = P2PTestNetworkRunner.create(nodes);
+  }
 
-	protected void processForCount(int messageCount) {
-		for (int i = 0; i < messageCount; i++) {
-			processNext();
-		}
-	}
+  protected void processForCount(int messageCount) {
+    for (int i = 0; i < messageCount; i++) {
+      processNext();
+    }
+  }
 
-	protected void processAll() {
-		while (!testNetworkRunner.getDeterministicNetwork().allMessages().isEmpty()) {
-			processNext();
-		}
-	}
+  protected void processAll() {
+    while (!testNetworkRunner.getDeterministicNetwork().allMessages().isEmpty()) {
+      processNext();
+    }
+  }
 
-	protected Timed<ControlledMessage> processNext() {
-		final var msg = testNetworkRunner.getDeterministicNetwork().nextMessage();
-		final var nodeIndex = msg.value().channelId().receiverIndex();
-		final var injector = testNetworkRunner.getNode(nodeIndex).injector;
-		withThreadCtx(injector, () ->
-			injector.getInstance(DeterministicProcessor.class)
-				.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral())
-		);
-		return msg;
-	}
+  protected Timed<ControlledMessage> processNext() {
+    final var msg = testNetworkRunner.getDeterministicNetwork().nextMessage();
+    final var nodeIndex = msg.value().channelId().receiverIndex();
+    final var injector = testNetworkRunner.getNode(nodeIndex).injector;
+    withThreadCtx(
+        injector,
+        () ->
+            injector
+                .getInstance(DeterministicProcessor.class)
+                .handleMessage(
+                    msg.value().origin(), msg.value().message(), msg.value().typeLiteral()));
+    return msg;
+  }
 
-	private void withThreadCtx(Injector injector, Runnable r) {
-		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
-		try {
-			r.run();
-		} finally {
-			ThreadContext.remove("self");
-		}
-	}
+  private void withThreadCtx(Injector injector, Runnable r) {
+    ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
+    try {
+      r.run();
+    } finally {
+      ThreadContext.remove("self");
+    }
+  }
 
-	protected RadixNodeUri uriOfNode(int nodeIndex) {
-		return testNetworkRunner.getUri(nodeIndex);
-	}
+  protected RadixNodeUri uriOfNode(int nodeIndex) {
+    return testNetworkRunner.getUri(nodeIndex);
+  }
 
-	protected NodeId nodeIdOf(int nodeIndex) {
-		return uriOfNode(nodeIndex).getNodeId();
-	}
+  protected NodeId nodeIdOf(int nodeIndex) {
+    return uriOfNode(nodeIndex).getNodeId();
+  }
 }

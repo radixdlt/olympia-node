@@ -70,10 +70,10 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 public class SyncRequestTimeoutTest {
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(SyncRequestTimeout.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(SyncRequestTimeout.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 }

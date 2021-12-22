@@ -68,10 +68,9 @@ import com.radixdlt.atom.TxAction;
 
 // TODO: Remove once all actions accounted for
 public final class Unknown implements TxAction {
-	private Unknown() {
-	}
+  private Unknown() {}
 
-	public static Unknown create() {
-		return new Unknown();
-	}
+  public static Unknown create() {
+    return new Unknown();
+  }
 }

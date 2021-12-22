@@ -70,62 +70,63 @@ import org.bouncycastle.math.ec.ECPoint;
 
 /**
  * Interface for signature and public key computation functions.
- * <p>
- * The intent behind this interface is that the actual implementations can
- * easily be replaced when required.
- * <p>
- * Note that all methods must be thread safe.
+ *
+ * <p>The intent behind this interface is that the actual implementations can easily be replaced
+ * when required.
+ *
+ * <p>Note that all methods must be thread safe.
  */
 interface KeyHandler {
 
-	/**
-	 * Sign the specified hash with the specified private key.
-	 *
-	 * @param hash The hash to sign
-	 * @param privateKey The private key to sign the hash with
-	 * @param enforceLowS If signature should enforce low values of signature part {@code S}, according to
-	 * 	<a href="https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures">BIP-62</a>
-	 * @param useDeterministicSignatures If signing should use randomness or be deterministic according to
-	 * 	<a href="https://tools.ietf.org/html/rfc6979">RFC6979</a>.
-	 *
-	 * @return An {@link ECDSASignature} with {@code r} and {@code s} values included
-	 */
-	ECDSASignature sign(byte[] hash, byte[] privateKey, byte[] publicKey, boolean enforceLowS, boolean useDeterministicSignatures);
+  /**
+   * Sign the specified hash with the specified private key.
+   *
+   * @param hash The hash to sign
+   * @param privateKey The private key to sign the hash with
+   * @param enforceLowS If signature should enforce low values of signature part {@code S},
+   *     according to <a
+   *     href="https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures">BIP-62</a>
+   * @param useDeterministicSignatures If signing should use randomness or be deterministic
+   *     according to <a href="https://tools.ietf.org/html/rfc6979">RFC6979</a>.
+   * @return An {@link ECDSASignature} with {@code r} and {@code s} values included
+   */
+  ECDSASignature sign(
+      byte[] hash,
+      byte[] privateKey,
+      byte[] publicKey,
+      boolean enforceLowS,
+      boolean useDeterministicSignatures);
 
-	/**
-	 * Verify the specified signature against the specified hash with the
-	 * specified public key.
-	 *
-	 * @param hash The hash to verify against
-	 * @param signature The signature to verify
-	 * @param publicKeyPoint The public key point to verify the signature with
-	 *
-	 * @return An boolean indicating whether the signature could be successfully validated
-	 */
-	boolean verify(byte[] hash, ECDSASignature signature, ECPoint publicKeyPoint);
+  /**
+   * Verify the specified signature against the specified hash with the specified public key.
+   *
+   * @param hash The hash to verify against
+   * @param signature The signature to verify
+   * @param publicKeyPoint The public key point to verify the signature with
+   * @return An boolean indicating whether the signature could be successfully validated
+   */
+  boolean verify(byte[] hash, ECDSASignature signature, ECPoint publicKeyPoint);
 
-	/**
-	 * Compute a public key for the specified private key.
-	 *
-	 * @param privateKey The private key to compute the public key for
-	 *
-	 * @return A compressed public key
-	 *
-	 * @throws PrivateKeyException If the {@code privateKey} is invalid
-	 * @throws PublicKeyException If computed {@code publicKey} is invalid
-	 */
-	byte[] computePublicKey(byte[] privateKey) throws PrivateKeyException, PublicKeyException;
+  /**
+   * Compute a public key for the specified private key.
+   *
+   * @param privateKey The private key to compute the public key for
+   * @return A compressed public key
+   * @throws PrivateKeyException If the {@code privateKey} is invalid
+   * @throws PublicKeyException If computed {@code publicKey} is invalid
+   */
+  byte[] computePublicKey(byte[] privateKey) throws PrivateKeyException, PublicKeyException;
 
-	/**
-	 * Sign the specified hash with the specified private by using randomness and enforced low {@code S} values,
-	 * see documentation of {@link #sign(byte[], byte[], byte[], boolean, boolean)} for more details.
-	 *
-	 * @param hash The hash to sign
-	 * @param privateKey The private key to sign the hash with
-	 *
-	 * @return An {@link ECDSASignature} with {@code r} and {@code s} values included
-	 */
-	default ECDSASignature sign(byte[] hash, byte[] privateKey, byte[] publicKey) {
-		return sign(hash, privateKey, publicKey, true, false);
-	}
+  /**
+   * Sign the specified hash with the specified private by using randomness and enforced low {@code
+   * S} values, see documentation of {@link #sign(byte[], byte[], byte[], boolean, boolean)} for
+   * more details.
+   *
+   * @param hash The hash to sign
+   * @param privateKey The private key to sign the hash with
+   * @return An {@link ECDSASignature} with {@code r} and {@code s} values included
+   */
+  default ECDSASignature sign(byte[] hash, byte[] privateKey, byte[] publicKey) {
+    return sign(hash, privateKey, publicKey, true, false);
+  }
 }

@@ -66,28 +66,27 @@ package com.radixdlt.network.p2p.liveness;
 
 public final class Pong {
 
-	public static Pong create() {
-		return new Pong();
-	}
+  public static Pong create() {
+    return new Pong();
+  }
 
-	private Pong() {
-	}
+  private Pong() {}
 
-	@Override
-	public String toString() {
-		return String.format("%s{}", this.getClass().getSimpleName());
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{}", this.getClass().getSimpleName());
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		return o instanceof Pong;
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    return o instanceof Pong;
+  }
 
-	@Override
-	public int hashCode() {
-		return 1;
-	}
+  @Override
+  public int hashCode() {
+    return 1;
+  }
 }

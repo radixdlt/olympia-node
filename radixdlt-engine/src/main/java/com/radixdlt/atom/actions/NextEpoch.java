@@ -67,13 +67,13 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 
 public final class NextEpoch implements TxAction {
-	private final long timestamp;
+  private final long timestamp;
 
-	public NextEpoch(long timestamp) {
-		this.timestamp = timestamp;
-	}
+  public NextEpoch(long timestamp) {
+    this.timestamp = timestamp;
+  }
 
-	public long timestamp() {
-		return timestamp;
-	}
+  public long timestamp() {
+    return timestamp;
+  }
 }

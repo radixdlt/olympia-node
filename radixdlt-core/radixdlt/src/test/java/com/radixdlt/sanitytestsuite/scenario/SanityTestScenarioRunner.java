@@ -64,52 +64,51 @@
 
 package com.radixdlt.sanitytestsuite.scenario;
 
+import static org.junit.Assert.assertEquals;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.radixdlt.sanitytestsuite.model.SanityTestSuiteRoot.Suite.Scenario;
 import com.radixdlt.sanitytestsuite.model.SanityTestVector;
 import com.radixdlt.utils.JSONFormatter;
-
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import static org.junit.Assert.assertEquals;
-
 public abstract class SanityTestScenarioRunner<TestVector extends SanityTestVector<?, ?>> {
-	private final ObjectMapper mapper = new ObjectMapper();
+  private final ObjectMapper mapper = new ObjectMapper();
 
-	public abstract String testScenarioIdentifier();
-	public abstract Class<TestVector> testVectorType();
+  public abstract String testScenarioIdentifier();
 
-	public abstract void doRunTestVector(TestVector testVector) throws AssertionError;
+  public abstract Class<TestVector> testVectorType();
 
-	public void executeTest(final Scenario scenario) {
-		assertEquals(testScenarioIdentifier(), scenario.identifier);
-		var testVectorIndex = 0;
+  public abstract void doRunTestVector(TestVector testVector) throws AssertionError;
 
-		for (var testVectorInput : scenario.tests.vectors) {
-			var testVector = mapper.convertValue(testVectorInput, this.testVectorType());
+  public void executeTest(final Scenario scenario) {
+    assertEquals(testScenarioIdentifier(), scenario.identifier);
+    var testVectorIndex = 0;
 
-			try {
-				doRunTestVector(testVector);
-				testVectorIndex++;
-			} catch (AssertionError e) {
-				String msg = String.format(
-					"Failing test vector index: %d, vector: %s",
-					testVectorIndex,
-					JSONFormatter.sortPrettyPrintObject(testVector)
-				);
-				throw new AssertionError(msg, e);
-			}
-		}
-	}
+    for (var testVectorInput : scenario.tests.vectors) {
+      var testVector = mapper.convertValue(testVectorInput, this.testVectorType());
 
-	public static byte[] sha256Hash(final byte[] bytes) {
-		try {
-			var hasher = MessageDigest.getInstance("SHA-256");
-			hasher.update(bytes);
-			return hasher.digest();
-		} catch (NoSuchAlgorithmException e) {
-			throw new AssertionError("Failed to run test, found no hasher", e);
-		}
-	}
+      try {
+        doRunTestVector(testVector);
+        testVectorIndex++;
+      } catch (AssertionError e) {
+        String msg =
+            String.format(
+                "Failing test vector index: %d, vector: %s",
+                testVectorIndex, JSONFormatter.sortPrettyPrintObject(testVector));
+        throw new AssertionError(msg, e);
+      }
+    }
+  }
+
+  public static byte[] sha256Hash(final byte[] bytes) {
+    try {
+      var hasher = MessageDigest.getInstance("SHA-256");
+      hasher.update(bytes);
+      return hasher.digest();
+    } catch (NoSuchAlgorithmException e) {
+      throw new AssertionError("Failed to run test, found no hasher", e);
+    }
+  }
 }

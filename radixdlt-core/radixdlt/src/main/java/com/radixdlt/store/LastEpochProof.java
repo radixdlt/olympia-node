@@ -73,12 +73,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
-
-/**
- * Identifies that the target is the last epoch proof
- */
+/** Identifies that the target is the last epoch proof */
 @Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
+@Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface LastEpochProof {
-}
+public @interface LastEpochProof {}

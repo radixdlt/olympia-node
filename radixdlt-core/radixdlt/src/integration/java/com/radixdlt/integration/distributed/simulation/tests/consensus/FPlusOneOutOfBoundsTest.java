@@ -66,65 +66,57 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 public class FPlusOneOutOfBoundsTest {
-	private final int latency = 50;
-	private final int synchronousTimeout = 8 * latency;
-	private final int outOfBoundsLatency = synchronousTimeout;
-	private final Builder bftTestBuilder = SimulationTest.builder()
-		.pacemakerTimeout(synchronousTimeout)
-		.addTestModules(
-			ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(synchronousTimeout, TimeUnit.MILLISECONDS)
-		);
+  private final int latency = 50;
+  private final int synchronousTimeout = 8 * latency;
+  private final int outOfBoundsLatency = synchronousTimeout;
+  private final Builder bftTestBuilder =
+      SimulationTest.builder()
+          .pacemakerTimeout(synchronousTimeout)
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(synchronousTimeout, TimeUnit.MILLISECONDS));
 
-	/**
-	 * Tests a configuration of 0 out of 3 nodes out of synchrony bounds
-	 */
-	@Test
-	public void given_0_out_of_3_nodes_out_of_synchrony_bounds() {
-		SimulationTest test = bftTestBuilder
-			.numNodes(3)
-			.networkModules(
-				NetworkOrdering.inOrder(),
-				NetworkLatencies.fixed(latency)
-			)
-			.build();
+  /** Tests a configuration of 0 out of 3 nodes out of synchrony bounds */
+  @Test
+  public void given_0_out_of_3_nodes_out_of_synchrony_bounds() {
+    SimulationTest test =
+        bftTestBuilder
+            .numNodes(3)
+            .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed(latency))
+            .build();
 
-		final var runningTest = test.run();
-		final var checkResults = runningTest.awaitCompletion();
+    final var runningTest = test.run();
+    final var checkResults = runningTest.awaitCompletion();
 
-		assertThat(checkResults)
-			.allSatisfy((name, error) -> assertThat(error).isNotPresent());
-	}
+    assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
+  }
 
-	/**
-	 * Tests a configuration of 1 out of 3 nodes out of synchrony bounds
-	 */
-	@Test
-	public void given_1_out_of_3_nodes_out_of_synchrony_bounds() {
-		SimulationTest test = bftTestBuilder
-			.numNodes(3)
-			.networkModules(
-				NetworkOrdering.inOrder(),
-				NetworkLatencies.oneOutOfBounds(latency, outOfBoundsLatency)
-			)
-			.build();
+  /** Tests a configuration of 1 out of 3 nodes out of synchrony bounds */
+  @Test
+  public void given_1_out_of_3_nodes_out_of_synchrony_bounds() {
+    SimulationTest test =
+        bftTestBuilder
+            .numNodes(3)
+            .networkModules(
+                NetworkOrdering.inOrder(),
+                NetworkLatencies.oneOutOfBounds(latency, outOfBoundsLatency))
+            .build();
 
-		final var runningTest = test.run();
-		final var checkResults = runningTest.awaitCompletion();
+    final var runningTest = test.run();
+    final var checkResults = runningTest.awaitCompletion();
 
-		assertThat(checkResults)
-			.hasEntrySatisfying(Monitor.CONSENSUS_LIVENESS, error -> assertThat(error).isPresent())
-			.hasEntrySatisfying(Monitor.CONSENSUS_SAFETY, error -> assertThat(error).isNotPresent());
-	}
+    assertThat(checkResults)
+        .hasEntrySatisfying(Monitor.CONSENSUS_LIVENESS, error -> assertThat(error).isPresent())
+        .hasEntrySatisfying(Monitor.CONSENSUS_SAFETY, error -> assertThat(error).isNotPresent());
+  }
 }

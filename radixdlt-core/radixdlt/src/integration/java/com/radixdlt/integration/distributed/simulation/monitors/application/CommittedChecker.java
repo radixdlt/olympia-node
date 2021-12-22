@@ -71,46 +71,45 @@ import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.monitors.NodeEvents;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
-
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/**
- * Checks to make sure that commands have been committed in a certain amount
- * of time
- */
+/** Checks to make sure that commands have been committed in a certain amount of time */
 public class CommittedChecker implements TestInvariant {
-	private static final Logger log = LogManager.getLogger();
-	private final Observable<Txn> submittedTxns;
-	private final NodeEvents commits;
+  private static final Logger log = LogManager.getLogger();
+  private final Observable<Txn> submittedTxns;
+  private final NodeEvents commits;
 
-	public CommittedChecker(Observable<Txn> submittedTxns, NodeEvents commits) {
-		this.submittedTxns = Objects.requireNonNull(submittedTxns);
-		this.commits = Objects.requireNonNull(commits);
-	}
+  public CommittedChecker(Observable<Txn> submittedTxns, NodeEvents commits) {
+    this.submittedTxns = Objects.requireNonNull(submittedTxns);
+    this.commits = Objects.requireNonNull(commits);
+  }
 
-	@Override
-	public Observable<TestInvariantError> check(RunningNetwork network) {
-		return submittedTxns
-			.doOnNext(txn -> log.debug("Submitted txn: {}", txn))
-			.flatMapMaybe(txn ->
-				Observable.<BFTCommittedUpdate>create(
-					emitter -> commits.addListener((n, e) -> emitter.onNext(e), BFTCommittedUpdate.class))
-
-					.serialize()
-					.filter(e -> e.getCommitted().stream()
-						.flatMap(PreparedVertex::getTxns)
-						.anyMatch(c -> Arrays.equals(c.getPayload(), txn.getPayload())))
-					.timeout(10, TimeUnit.SECONDS)
-					.firstOrError()
-					.ignoreElement()
-					.onErrorReturn(e -> new TestInvariantError(
-						"Submitted txn has not been committed in 10 seconds: " + txn
-					))
-			);
-	}
+  @Override
+  public Observable<TestInvariantError> check(RunningNetwork network) {
+    return submittedTxns
+        .doOnNext(txn -> log.debug("Submitted txn: {}", txn))
+        .flatMapMaybe(
+            txn ->
+                Observable.<BFTCommittedUpdate>create(
+                        emitter ->
+                            commits.addListener(
+                                (n, e) -> emitter.onNext(e), BFTCommittedUpdate.class))
+                    .serialize()
+                    .filter(
+                        e ->
+                            e.getCommitted().stream()
+                                .flatMap(PreparedVertex::getTxns)
+                                .anyMatch(c -> Arrays.equals(c.getPayload(), txn.getPayload())))
+                    .timeout(10, TimeUnit.SECONDS)
+                    .firstOrError()
+                    .ignoreElement()
+                    .onErrorReturn(
+                        e ->
+                            new TestInvariantError(
+                                "Submitted txn has not been committed in 10 seconds: " + txn)));
+  }
 }

@@ -67,51 +67,47 @@ package com.radixdlt.middleware2.network;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.network.messaging.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.network.messaging.Message;
-
 import java.util.Objects;
 
-/**
- * Message to request for sync atoms
- */
+/** Message to request for sync atoms */
 @SerializerId2("message.sync.sync_request")
 public final class SyncRequestMessage extends Message {
-	@JsonProperty("currentHeader")
-	@DsonOutput(Output.ALL)
-	private final DtoLedgerProof currentHeader;
+  @JsonProperty("currentHeader")
+  @DsonOutput(Output.ALL)
+  private final DtoLedgerProof currentHeader;
 
-	@JsonCreator
-	public SyncRequestMessage(
-		@JsonProperty(value = "currentHeader", required = true) DtoLedgerProof currentHeader
-	) {
-		this.currentHeader = Objects.requireNonNull(currentHeader);
-	}
+  @JsonCreator
+  public SyncRequestMessage(
+      @JsonProperty(value = "currentHeader", required = true) DtoLedgerProof currentHeader) {
+    this.currentHeader = Objects.requireNonNull(currentHeader);
+  }
 
-	public DtoLedgerProof getCurrentHeader() {
-		return currentHeader;
-	}
+  public DtoLedgerProof getCurrentHeader() {
+    return currentHeader;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{current=%s}", getClass().getSimpleName(), currentHeader);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{current=%s}", getClass().getSimpleName(), currentHeader);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof SyncRequestMessage that)
-			   && Objects.equals(currentHeader, that.currentHeader)
-			   && Objects.equals(getTimestamp(), that.getTimestamp());
-	}
+    return (o instanceof SyncRequestMessage that)
+        && Objects.equals(currentHeader, that.currentHeader)
+        && Objects.equals(getTimestamp(), that.getTimestamp());
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(currentHeader, getTimestamp());
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(currentHeader, getTimestamp());
+  }
 }

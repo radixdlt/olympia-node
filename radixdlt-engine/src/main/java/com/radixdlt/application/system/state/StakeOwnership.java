@@ -64,81 +64,68 @@
 
 package com.radixdlt.application.system.state;
 
-import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.Bucket;
+import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Objects;
 
 public final class StakeOwnership implements ResourceInBucket {
-	private final UInt256 amount;
+  private final UInt256 amount;
 
-	// Bucket keys
-	private final REAddr owner;
-	private final ECPublicKey delegateKey;
+  // Bucket keys
+  private final REAddr owner;
+  private final ECPublicKey delegateKey;
 
-	public StakeOwnership(
-		ECPublicKey delegateKey,
-		REAddr owner,
-		UInt256 amount
-	) {
-		if (amount.isZero()) {
-			throw new IllegalArgumentException("Stake ownership should not be zero");
-		}
-		this.delegateKey = Objects.requireNonNull(delegateKey);
-		this.owner = Objects.requireNonNull(owner);
-		this.amount = Objects.requireNonNull(amount);
-	}
+  public StakeOwnership(ECPublicKey delegateKey, REAddr owner, UInt256 amount) {
+    if (amount.isZero()) {
+      throw new IllegalArgumentException("Stake ownership should not be zero");
+    }
+    this.delegateKey = Objects.requireNonNull(delegateKey);
+    this.owner = Objects.requireNonNull(owner);
+    this.amount = Objects.requireNonNull(amount);
+  }
 
-	@Override
-	public UInt256 getAmount() {
-		return this.amount;
-	}
+  @Override
+  public UInt256 getAmount() {
+    return this.amount;
+  }
 
-	public Bucket bucket() {
-		return StakeOwnershipBucket.from(delegateKey, owner);
-	}
+  public Bucket bucket() {
+    return StakeOwnershipBucket.from(delegateKey, owner);
+  }
 
-	public ECPublicKey getDelegateKey() {
-		return delegateKey;
-	}
+  public ECPublicKey getDelegateKey() {
+    return delegateKey;
+  }
 
-	public REAddr getOwner() {
-		return this.owner;
-	}
+  public REAddr getOwner() {
+    return this.owner;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{delegate=%s owner=%s amt=%s}",
-			getClass().getSimpleName(),
-			delegateKey,
-			owner,
-			amount
-		);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{delegate=%s owner=%s amt=%s}", getClass().getSimpleName(), delegateKey, owner, amount);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof StakeOwnership)) {
-			return false;
-		}
-		StakeOwnership that = (StakeOwnership) o;
-		return Objects.equals(delegateKey, that.delegateKey)
-			&& Objects.equals(owner, that.owner)
-			&& Objects.equals(amount, that.amount);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof StakeOwnership)) {
+      return false;
+    }
+    StakeOwnership that = (StakeOwnership) o;
+    return Objects.equals(delegateKey, that.delegateKey)
+        && Objects.equals(owner, that.owner)
+        && Objects.equals(amount, that.amount);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(
-			delegateKey,
-			owner,
-			amount
-		);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(delegateKey, owner, amount);
+  }
 }

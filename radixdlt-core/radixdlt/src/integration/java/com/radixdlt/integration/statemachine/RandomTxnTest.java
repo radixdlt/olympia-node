@@ -64,97 +64,89 @@
 
 package com.radixdlt.integration.statemachine;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.utils.PrivateKeys;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.LastStoredProof;
-
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
-
 public class RandomTxnTest {
-	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-	private static final Logger logger = LogManager.getLogger();
-	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
+  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+  private static final Logger logger = LogManager.getLogger();
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-	@Inject
-	private RadixEngine<LedgerAndBFTProof> engine;
+  @Inject private RadixEngine<LedgerAndBFTProof> engine;
 
-	// FIXME: Hack, need this in order to cause provider for genesis to be stored
-	@Inject
-	@LastStoredProof
-	private LedgerProof ledgerProof;
+  // FIXME: Hack, need this in order to cause provider for genesis to be stored
+  @Inject @LastStoredProof private LedgerProof ledgerProof;
 
-	private Injector createInjector() {
-		return Guice.createInjector(
-			MempoolConfig.asModule(1000, 10),
-			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(),
-			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
-			new MockedGenesisModule(
-				Set.of(TEST_KEY.getPublicKey()),
-				Amount.ofTokens(100000),
-				Amount.ofTokens(1000)
-			),
-			new AbstractModule() {
-				@Override
-				protected void configure() {
-					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-				}
-			}
-		);
-	}
+  private Injector createInjector() {
+    return Guice.createInjector(
+        MempoolConfig.asModule(1000, 10),
+        new MainnetForkConfigsModule(),
+        new RadixEngineForksLatestOnlyModule(),
+        new ForksModule(),
+        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
+        new MockedGenesisModule(
+            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(100000), Amount.ofTokens(1000)),
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            bindConstant()
+                .annotatedWith(DatabaseLocation.class)
+                .to(folder.getRoot().getAbsolutePath());
+          }
+        });
+  }
 
-	@Test
-	public void poor_mans_fuzz_test() {
-		var random = new Random(12345678);
+  @Test
+  public void poor_mans_fuzz_test() {
+    var random = new Random(12345678);
 
-		// Arrange
-		createInjector().injectMembers(this);
-		final var count = 1000000;
+    // Arrange
+    createInjector().injectMembers(this);
+    final var count = 1000000;
 
-		for (int i = 0; i < count; i++) {
-			int len = random.nextInt(512);
-			var payload = new byte[len];
-			random.nextBytes(payload);
-			for (int j = 0; j < len; j++) {
-				payload[j] = random.nextBoolean() ? (byte) random.nextInt(10) : payload[j];
-			}
-			var txns = List.of(Txn.create(payload));
-			if (i % 1000 == 0) {
-				logger.info(i + "/" + count);
-			}
-			try {
-				engine.execute(txns, null, PermissionLevel.SYSTEM);
-			} catch (RadixEngineException e) {
-				// ignore
-			}
-		}
-	}
+    for (int i = 0; i < count; i++) {
+      int len = random.nextInt(512);
+      var payload = new byte[len];
+      random.nextBytes(payload);
+      for (int j = 0; j < len; j++) {
+        payload[j] = random.nextBoolean() ? (byte) random.nextInt(10) : payload[j];
+      }
+      var txns = List.of(Txn.create(payload));
+      if (i % 1000 == 0) {
+        logger.info(i + "/" + count);
+      }
+      try {
+        engine.execute(txns, null, PermissionLevel.SYSTEM);
+      } catch (RadixEngineException e) {
+        // ignore
+      }
+    }
+  }
 }

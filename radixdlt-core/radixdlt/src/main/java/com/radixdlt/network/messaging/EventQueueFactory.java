@@ -68,5 +68,5 @@ import java.util.Comparator;
 
 @FunctionalInterface
 public interface EventQueueFactory<T> {
-	SimpleBlockingQueue<T> createEventQueue(int queueSize, Comparator<T> comparator);
+  SimpleBlockingQueue<T> createEventQueue(int queueSize, Comparator<T> comparator);
 }

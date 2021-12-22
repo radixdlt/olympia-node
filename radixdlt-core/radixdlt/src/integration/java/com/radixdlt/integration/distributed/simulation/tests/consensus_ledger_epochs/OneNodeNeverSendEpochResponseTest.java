@@ -67,13 +67,13 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Random;
@@ -85,46 +85,46 @@ import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
 /**
- * Drops all epoch responses from the first node to send the epoch response (effectively a down node).
- * Tests to make sure that epoch changes are still smooth even with an epoch dropper.
+ * Drops all epoch responses from the first node to send the epoch response (effectively a down
+ * node). Tests to make sure that epoch changes are still smooth even with an epoch dropper.
  */
 public class OneNodeNeverSendEpochResponseTest {
-	private static final int numNodes = 10;
-	private static final int minValidators = 4; // need at least f=1 for this test
+  private static final int numNodes = 10;
+  private static final int minValidators = 4; // need at least f=1 for this test
 
-	private final Builder bftTestBuilder = SimulationTest.builder()
-		.networkModules(
-			NetworkOrdering.inOrder(),
-			NetworkLatencies.fixed(),
-			NetworkDroppers.oneNodePerEpochLedgerStatusUpdateDropped()
-		)
-		.pacemakerTimeout(1000)
-		.numNodes(numNodes, 4)
-		.ledgerAndEpochs(View.of(4), randomEpochToNodesMapper())
-		.addTestModules(
-			ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
-			ConsensusMonitors.timestampChecker(Duration.ofSeconds(2)),
-			LedgerMonitors.consensusToLedger(),
-			LedgerMonitors.ordered()
-		);
+  private final Builder bftTestBuilder =
+      SimulationTest.builder()
+          .networkModules(
+              NetworkOrdering.inOrder(),
+              NetworkLatencies.fixed(),
+              NetworkDroppers.oneNodePerEpochLedgerStatusUpdateDropped())
+          .pacemakerTimeout(1000)
+          .numNodes(numNodes, 4)
+          .ledgerAndEpochs(View.of(4), randomEpochToNodesMapper())
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
+              ConsensusMonitors.timestampChecker(Duration.ofSeconds(2)),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered());
 
-	private static Function<Long, IntStream> randomEpochToNodesMapper() {
-		return epoch -> {
-			final var indices = IntStream.range(0, numNodes).boxed().collect(Collectors.toList());
-			final var random = new Random(epoch);
-			Collections.shuffle(indices, random);
-			final var numValidators = minValidators + random.nextInt(numNodes - minValidators + 1);
-			return indices.subList(0, numValidators).stream().mapToInt(Integer::intValue);
-		};
-	}
+  private static Function<Long, IntStream> randomEpochToNodesMapper() {
+    return epoch -> {
+      final var indices = IntStream.range(0, numNodes).boxed().collect(Collectors.toList());
+      final var random = new Random(epoch);
+      Collections.shuffle(indices, random);
+      final var numValidators = minValidators + random.nextInt(numNodes - minValidators + 1);
+      return indices.subList(0, numValidators).stream().mapToInt(Integer::intValue);
+    };
+  }
 
-	@Test
-	public void given_deterministic_randomized_validator_sets__then_should_pass_bft_and_epoch_invariants() {
-		SimulationTest bftTest = bftTestBuilder
-			.build();
+  @Test
+  public void
+      given_deterministic_randomized_validator_sets__then_should_pass_bft_and_epoch_invariants() {
+    SimulationTest bftTest = bftTestBuilder.build();
 
-		final var checkResults = bftTest.run().awaitCompletion();
-		assertThat(checkResults).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-	}
+    final var checkResults = bftTest.run().awaitCompletion();
+    assertThat(checkResults)
+        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+  }
 }

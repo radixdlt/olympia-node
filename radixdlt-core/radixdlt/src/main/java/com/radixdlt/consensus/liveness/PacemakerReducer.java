@@ -68,22 +68,22 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.View;
 
 /**
- * Reduces state for a pacemaker given some events
- * TODO: This is currently hack, should move to a more message based interface
+ * Reduces state for a pacemaker given some events TODO: This is currently hack, should move to a
+ * more message based interface
  */
 public interface PacemakerReducer {
-	/**
-	 * Signifies to the pacemaker that a quorum has agreed that a view has
-	 * been completed.
-	 *
-	 * @param highQC the sync info for the view
-	 */
-	void processQC(HighQC highQC);
+  /**
+   * Signifies to the pacemaker that a quorum has agreed that a view has been completed.
+   *
+   * @param highQC the sync info for the view
+   */
+  void processQC(HighQC highQC);
 
-	/**
-	 * Signifies to the pacemaker that it should move to the next view
-	 * TODO: Replace or combine with processQC on implementation of timeout quorum
-	 * @param nextView the view to move to
-	 */
-	void updateView(View nextView);
+  /**
+   * Signifies to the pacemaker that it should move to the next view TODO: Replace or combine with
+   * processQC on implementation of timeout quorum
+   *
+   * @param nextView the view to move to
+   */
+  void updateView(View nextView);
 }

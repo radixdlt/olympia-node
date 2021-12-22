@@ -66,42 +66,38 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
 /**
- * Runs a consensus and ledger module across 4 nodes and verifies the base
- * case required conditions
+ * Runs a consensus and ledger module across 4 nodes and verifies the base case required conditions
  */
 public class SanityTest {
-	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(4)
-		.networkModules(
-			NetworkOrdering.inOrder(),
-			NetworkLatencies.fixed()
-		)
-		.ledger()
-		.addTestModules(
-			ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-			ConsensusMonitors.noTimeouts(),
-			ConsensusMonitors.directParents(),
-			LedgerMonitors.consensusToLedger(),
-			LedgerMonitors.ordered()
-		);
+  private final Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(4)
+          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .ledger()
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+              ConsensusMonitors.noTimeouts(),
+              ConsensusMonitors.directParents(),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered());
 
-	@Test
-	public void sanity_tests_should_pass() {
-		SimulationTest simulationTest = bftTestBuilder
-			.build();
-		final var checkResults = simulationTest.run().awaitCompletion();
-		assertThat(checkResults).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-	}
+  @Test
+  public void sanity_tests_should_pass() {
+    SimulationTest simulationTest = bftTestBuilder.build();
+    final var checkResults = simulationTest.run().awaitCompletion();
+    assertThat(checkResults)
+        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+  }
 }

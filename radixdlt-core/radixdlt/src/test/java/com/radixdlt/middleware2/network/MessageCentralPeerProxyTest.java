@@ -64,6 +64,13 @@
 
 package com.radixdlt.middleware2.network;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
@@ -78,42 +85,43 @@ import com.radixdlt.network.p2p.proxy.messages.ProxyCertificatesAnnouncementMess
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 public final class MessageCentralPeerProxyTest {
-	private MessageCentral messageCentral;
-	private MessageCentralPeerProxy messageCentralPeerProxy;
+  private MessageCentral messageCentral;
+  private MessageCentralPeerProxy messageCentralPeerProxy;
 
-	@Before
-	public void setUp() {
-		this.messageCentral = MessageCentralMockProvider.get();
-		this.messageCentralPeerProxy = new MessageCentralPeerProxy(messageCentral);
-	}
+  @Before
+  public void setUp() {
+    this.messageCentral = MessageCentralMockProvider.get();
+    this.messageCentralPeerProxy = new MessageCentralPeerProxy(messageCentral);
+  }
 
-	@Test
-	public void when_send_granted_proxy_cert__then_message_central_should_sent_message() {
-		final var grantedProxyCert = mock(GrantedProxyCertificate.class);
-		when(grantedProxyCert.proxyCertificate()).thenReturn(mock(ProxyCertificate.class));
-		final var receiverKey = ECKeyPair.generateNew().getPublicKey();
-		final var receiver = BFTNode.create(receiverKey);
+  @Test
+  public void when_send_granted_proxy_cert__then_message_central_should_sent_message() {
+    final var grantedProxyCert = mock(GrantedProxyCertificate.class);
+    when(grantedProxyCert.proxyCertificate()).thenReturn(mock(ProxyCertificate.class));
+    final var receiverKey = ECKeyPair.generateNew().getPublicKey();
+    final var receiver = BFTNode.create(receiverKey);
 
-		messageCentralPeerProxy.grantedProxyCertificateDispatcher().dispatch(receiver, grantedProxyCert);
-		verify(messageCentral, times(1)).send(eq(NodeId.fromPublicKey(receiverKey)), any(GrantedProxyCertificateMessage.class));
-	}
+    messageCentralPeerProxy
+        .grantedProxyCertificateDispatcher()
+        .dispatch(receiver, grantedProxyCert);
+    verify(messageCentral, times(1))
+        .send(eq(NodeId.fromPublicKey(receiverKey)), any(GrantedProxyCertificateMessage.class));
+  }
 
-	@Test
-	public void when_send_proxy_cert_announcement__then_message_central_should_sent_message() {
-		final var proxyCertsAnnouncement = mock(ProxyCertificatesAnnouncement.class);
-		when(proxyCertsAnnouncement.proxyCertificates()).thenReturn(ImmutableSet.of(mock(ProxyCertificate.class)));
-		final var receiverKey = ECKeyPair.generateNew().getPublicKey();
-		final var receiver = BFTNode.create(receiverKey);
+  @Test
+  public void when_send_proxy_cert_announcement__then_message_central_should_sent_message() {
+    final var proxyCertsAnnouncement = mock(ProxyCertificatesAnnouncement.class);
+    when(proxyCertsAnnouncement.proxyCertificates())
+        .thenReturn(ImmutableSet.of(mock(ProxyCertificate.class)));
+    final var receiverKey = ECKeyPair.generateNew().getPublicKey();
+    final var receiver = BFTNode.create(receiverKey);
 
-		messageCentralPeerProxy.proxyCertificatesAnnouncementDispatcher().dispatch(receiver, proxyCertsAnnouncement);
-		verify(messageCentral, times(1)).send(eq(NodeId.fromPublicKey(receiverKey)), any(ProxyCertificatesAnnouncementMessage.class));
-	}
+    messageCentralPeerProxy
+        .proxyCertificatesAnnouncementDispatcher()
+        .dispatch(receiver, proxyCertsAnnouncement);
+    verify(messageCentral, times(1))
+        .send(
+            eq(NodeId.fromPublicKey(receiverKey)), any(ProxyCertificatesAnnouncementMessage.class));
+  }
 }

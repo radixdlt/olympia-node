@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -79,59 +80,70 @@ import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.CommittedReader;
 
+public class EngineStatusHandler
+    extends CoreJsonRpcHandler<EngineStatusRequest, EngineStatusResponse> {
+  private final Addressing addressing;
+  private final RadixEngine<LedgerAndBFTProof> radixEngine;
+  private final CommittedReader committedReader;
+  private final CoreModelMapper modelMapper;
+  private final LedgerProof lastProof;
+  private final LedgerProof lastEpochProof;
 
-public class EngineStatusHandler extends CoreJsonRpcHandler<EngineStatusRequest, EngineStatusResponse> {
-	private final Addressing addressing;
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final CommittedReader committedReader;
-	private final CoreModelMapper modelMapper;
-	private final LedgerProof lastProof;
-	private final LedgerProof lastEpochProof;
+  @Inject
+  public EngineStatusHandler(
+      RadixEngine<LedgerAndBFTProof> radixEngine,
+      CommittedReader committedReader,
+      @LastProof LedgerProof lastProof,
+      @LastEpochProof LedgerProof lastEpochProof,
+      CoreModelMapper modelMapper,
+      Addressing addressing) {
+    super(EngineStatusRequest.class);
 
-	@Inject
-	public EngineStatusHandler(
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		CommittedReader committedReader,
-		@LastProof LedgerProof lastProof,
-		@LastEpochProof LedgerProof lastEpochProof,
-		CoreModelMapper modelMapper,
-		Addressing addressing
-	) {
-		super(EngineStatusRequest.class);
+    this.radixEngine = radixEngine;
+    this.committedReader = committedReader;
+    this.lastProof = lastProof;
+    this.lastEpochProof = lastEpochProof;
+    this.modelMapper = modelMapper;
+    this.addressing = addressing;
+  }
 
-		this.radixEngine = radixEngine;
-		this.committedReader = committedReader;
-		this.lastProof = lastProof;
-		this.lastEpochProof = lastEpochProof;
-		this.modelMapper = modelMapper;
-		this.addressing = addressing;
-	}
+  private LedgerProof getEpochProof(long epoch) {
+    return committedReader.getEpochProof(epoch).orElse(lastEpochProof);
+  }
 
-	private LedgerProof getEpochProof(long epoch) {
-		return committedReader.getEpochProof(epoch).orElse(lastEpochProof);
-	}
+  private LedgerProof getCurrentProof() {
+    var ledgerAndBFTProof = radixEngine.read(RadixEngineReader::getMetadata);
+    return ledgerAndBFTProof == null ? lastProof : ledgerAndBFTProof.getProof();
+  }
 
-	private LedgerProof getCurrentProof() {
-		var ledgerAndBFTProof = radixEngine.read(RadixEngineReader::getMetadata);
-		return ledgerAndBFTProof == null ? lastProof : ledgerAndBFTProof.getProof();
-	}
+  @Override
+  public EngineStatusResponse handleRequest(EngineStatusRequest request) throws CoreApiException {
+    modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-	@Override
-	public EngineStatusResponse handleRequest(EngineStatusRequest request) throws CoreApiException {
-		modelMapper.verifyNetwork(request.getNetworkIdentifier());
+    var response = new EngineStatusResponse();
+    var currentProof = getCurrentProof();
+    var epochProof =
+        currentProof
+            .getNextValidatorSet()
+            .map(v -> currentProof)
+            .orElse(getEpochProof(currentProof.getEpoch()));
+    var validatorSet =
+        epochProof
+            .getNextValidatorSet()
+            .orElseThrow(
+                () -> new IllegalStateException("Epoch proof should have a validator set"));
+    response.engineStateIdentifier(modelMapper.engineStateIdentifier(currentProof));
+    validatorSet
+        .getValidators()
+        .forEach(
+            v -> {
+              var validator =
+                  new Validator()
+                      .validatorAddress(addressing.forValidators().of(v.getNode().getKey()))
+                      .stake(v.getPower().toString());
+              response.addValidatorSetItem(validator);
+            });
 
-		var response = new EngineStatusResponse();
-		var currentProof = getCurrentProof();
-		var epochProof = currentProof.getNextValidatorSet().map(v -> currentProof).orElse(getEpochProof(currentProof.getEpoch()));
-		var validatorSet = epochProof.getNextValidatorSet().orElseThrow(() -> new IllegalStateException("Epoch proof should have a validator set"));
-		response.engineStateIdentifier(modelMapper.engineStateIdentifier(currentProof));
-		validatorSet.getValidators().forEach(v -> {
-			var validator = new Validator()
-				.validatorAddress(addressing.forValidators().of(v.getNode().getKey()))
-				.stake(v.getPower().toString());
-			response.addValidatorSetItem(validator);
-		});
-
-		return response;
-	}
+    return response;
+  }
 }

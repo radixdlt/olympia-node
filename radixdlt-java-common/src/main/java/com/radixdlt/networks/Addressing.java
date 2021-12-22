@@ -68,99 +68,100 @@ import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.identifiers.NodeAddressing;
 import com.radixdlt.identifiers.ResourceAddressing;
 import com.radixdlt.identifiers.ValidatorAddressing;
+import java.util.Optional;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
-import java.util.Optional;
-
 public final class Addressing {
 
-	public static String accountHrp(int networkId) {
-		return Network.ofId(networkId).map(Network::getAccountHrp)
-			.orElse(Network.STOKENET.getAccountHrp() + networkId);
-	}
+  public static String accountHrp(int networkId) {
+    return Network.ofId(networkId)
+        .map(Network::getAccountHrp)
+        .orElse(Network.STOKENET.getAccountHrp() + networkId);
+  }
 
-	public static String validatorHrp(int networkId) {
-		return Network.ofId(networkId).map(Network::getValidatorHrp)
-			.orElse(Network.STOKENET.getValidatorHrp() + networkId);
-	}
+  public static String validatorHrp(int networkId) {
+    return Network.ofId(networkId)
+        .map(Network::getValidatorHrp)
+        .orElse(Network.STOKENET.getValidatorHrp() + networkId);
+  }
 
-	public static String resourceHrpSuffix(int networkId) {
-		return Network.ofId(networkId).map(Network::getResourceHrpSuffix)
-			.orElse(Network.STOKENET.getResourceHrpSuffix() + networkId);
-	}
+  public static String resourceHrpSuffix(int networkId) {
+    return Network.ofId(networkId)
+        .map(Network::getResourceHrpSuffix)
+        .orElse(Network.STOKENET.getResourceHrpSuffix() + networkId);
+  }
 
-	public static String nodeHrp(int networkId) {
-		return Network.ofId(networkId).map(Network::getNodeHrp)
-			.orElse(Network.STOKENET.getNodeHrp() + networkId);
-	}
+  public static String nodeHrp(int networkId) {
+    return Network.ofId(networkId)
+        .map(Network::getNodeHrp)
+        .orElse(Network.STOKENET.getNodeHrp() + networkId);
+  }
 
-	private final ValidatorAddressing validatorAddressing;
-	private final AccountAddressing accountAddressing;
-	private final ResourceAddressing resourceAddressing;
-	private final NodeAddressing nodeAddressing;
+  private final ValidatorAddressing validatorAddressing;
+  private final AccountAddressing accountAddressing;
+  private final ResourceAddressing resourceAddressing;
+  private final NodeAddressing nodeAddressing;
 
-	private Addressing(
-		ValidatorAddressing validatorAddressing,
-		AccountAddressing accountAddressing,
-		ResourceAddressing resourceAddressing,
-		NodeAddressing nodeAddressing
-	) {
-		this.validatorAddressing = validatorAddressing;
-		this.accountAddressing = accountAddressing;
-		this.resourceAddressing = resourceAddressing;
-		this.nodeAddressing = nodeAddressing;
-	}
+  private Addressing(
+      ValidatorAddressing validatorAddressing,
+      AccountAddressing accountAddressing,
+      ResourceAddressing resourceAddressing,
+      NodeAddressing nodeAddressing) {
+    this.validatorAddressing = validatorAddressing;
+    this.accountAddressing = accountAddressing;
+    this.resourceAddressing = resourceAddressing;
+    this.nodeAddressing = nodeAddressing;
+  }
 
-	public static Addressing ofNetwork(Network network) {
-		return ofNetworkId(network.getId());
-	}
+  public static Addressing ofNetwork(Network network) {
+    return ofNetworkId(network.getId());
+  }
 
-	public static Addressing ofNetworkId(int networkId) {
-		return new Addressing(
-			ValidatorAddressing.bech32(validatorHrp(networkId)),
-			AccountAddressing.bech32(accountHrp(networkId)),
-			ResourceAddressing.bech32(resourceHrpSuffix(networkId)),
-			NodeAddressing.bech32(nodeHrp(networkId))
-		);
-	}
+  public static Addressing ofNetworkId(int networkId) {
+    return new Addressing(
+        ValidatorAddressing.bech32(validatorHrp(networkId)),
+        AccountAddressing.bech32(accountHrp(networkId)),
+        ResourceAddressing.bech32(resourceHrpSuffix(networkId)),
+        NodeAddressing.bech32(nodeHrp(networkId)));
+  }
 
-	public Optional<AddressType> getAddressType(String address) {
-		Bech32.Bech32Data data;
-		try {
-			data = Bech32.decode(address);
-		} catch (AddressFormatException e) {
-			return Optional.empty();
-		}
+  public Optional<AddressType> getAddressType(String address) {
+    Bech32.Bech32Data data;
+    try {
+      data = Bech32.decode(address);
+    } catch (AddressFormatException e) {
+      return Optional.empty();
+    }
 
-		if (data.hrp.startsWith(validatorAddressing.getHrp())) {
-			return Optional.of(AddressType.VALIDATOR);
-		}
-		if (data.hrp.startsWith(accountAddressing.getHrp())) {
-			return Optional.of(AddressType.ACCOUNT);
-		}
-		if (data.hrp.endsWith(resourceAddressing.getHrpSuffix())) {
-			return Optional.of(AddressType.RESOURCE);
-		}
-		if (data.hrp.startsWith(nodeAddressing.getHrp())) {
-			return Optional.of(AddressType.NODE);
-		}
-		return Optional.empty();
-	}
+    if (data.hrp.startsWith(validatorAddressing.getHrp())) {
+      return Optional.of(AddressType.VALIDATOR);
+    }
+    if (data.hrp.startsWith(accountAddressing.getHrp())) {
+      return Optional.of(AddressType.ACCOUNT);
+    }
+    if (data.hrp.endsWith(resourceAddressing.getHrpSuffix())) {
+      return Optional.of(AddressType.RESOURCE);
+    }
+    if (data.hrp.startsWith(nodeAddressing.getHrp())) {
+      return Optional.of(AddressType.NODE);
+    }
+    return Optional.empty();
+  }
 
-	public ValidatorAddressing forValidators() {
-		return validatorAddressing;
-	}
+  public ValidatorAddressing forValidators() {
+    return validatorAddressing;
+  }
 
-	public AccountAddressing forAccounts() {
-		return accountAddressing;
-	}
+  public AccountAddressing forAccounts() {
+    return accountAddressing;
+  }
 
-	public ResourceAddressing forResources() {
-		return resourceAddressing;
-	}
+  public ResourceAddressing forResources() {
+    return resourceAddressing;
+  }
 
-	public NodeAddressing forNodes() {
-		return nodeAddressing;
-	}
+  public NodeAddressing forNodes() {
+    return nodeAddressing;
+  }
 }

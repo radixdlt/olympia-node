@@ -65,77 +65,72 @@
 package com.radixdlt.application.system.state;
 
 import com.radixdlt.application.tokens.Bucket;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-
 import java.util.Objects;
 
 public final class StakeOwnershipBucket implements Bucket {
-	private final REAddr owner;
-	private final ECPublicKey delegateKey;
+  private final REAddr owner;
+  private final ECPublicKey delegateKey;
 
-	private StakeOwnershipBucket(
-		ECPublicKey delegateKey,
-		REAddr owner
-	) {
-		this.delegateKey = Objects.requireNonNull(delegateKey);
-		this.owner = Objects.requireNonNull(owner);
-	}
+  private StakeOwnershipBucket(ECPublicKey delegateKey, REAddr owner) {
+    this.delegateKey = Objects.requireNonNull(delegateKey);
+    this.owner = Objects.requireNonNull(owner);
+  }
 
-	public static StakeOwnershipBucket from(ECPublicKey validator, REAddr owner) {
-		return new StakeOwnershipBucket(validator, owner);
-	}
+  public static StakeOwnershipBucket from(ECPublicKey validator, REAddr owner) {
+    return new StakeOwnershipBucket(validator, owner);
+  }
 
-	@Override
-	public Authorization withdrawAuthorization() {
-		return new Authorization(
-			PermissionLevel.USER,
-			(r, c) -> {
-				try {
-					owner.verifyWithdrawAuthorization(c.key());
-				} catch (REAddr.BucketWithdrawAuthorizationException e) {
-					throw new AuthorizationException(e.getMessage());
-				}
-			}
-		);
-	}
+  @Override
+  public Authorization withdrawAuthorization() {
+    return new Authorization(
+        PermissionLevel.USER,
+        (r, c) -> {
+          try {
+            owner.verifyWithdrawAuthorization(c.key());
+          } catch (REAddr.BucketWithdrawAuthorizationException e) {
+            throw new AuthorizationException(e.getMessage());
+          }
+        });
+  }
 
-	@Override
-	public REAddr resourceAddr() {
-		return null;
-	}
+  @Override
+  public REAddr resourceAddr() {
+    return null;
+  }
 
-	@Override
-	public REAddr getOwner() {
-		return owner;
-	}
+  @Override
+  public REAddr getOwner() {
+    return owner;
+  }
 
-	@Override
-	public ECPublicKey getValidatorKey() {
-		return delegateKey;
-	}
+  @Override
+  public ECPublicKey getValidatorKey() {
+    return delegateKey;
+  }
 
-	@Override
-	public Long getEpochUnlock() {
-		return null;
-	}
+  @Override
+  public Long getEpochUnlock() {
+    return null;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(owner, delegateKey);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(owner, delegateKey);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof StakeOwnershipBucket)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof StakeOwnershipBucket)) {
+      return false;
+    }
 
-		var other = (StakeOwnershipBucket) o;
-		return Objects.equals(this.owner, other.owner)
-			&& Objects.equals(this.delegateKey, other.delegateKey);
-	}
+    var other = (StakeOwnershipBucket) o;
+    return Objects.equals(this.owner, other.owner)
+        && Objects.equals(this.delegateKey, other.delegateKey);
+  }
 }

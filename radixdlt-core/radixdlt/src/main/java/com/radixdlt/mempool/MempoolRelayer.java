@@ -73,82 +73,77 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.network.p2p.PeersView;
-
-import javax.inject.Inject;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
 
-/**
- * Relays commands from the local mempool to node neighbors.
- */
+/** Relays commands from the local mempool to node neighbors. */
 @Singleton
 public final class MempoolRelayer {
-	private final PeersView peersView;
-	private final RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher;
-	private final SystemCounters counters;
-	private final Mempool<?> mempool;
-	private final long initialDelay;
-	private final long repeatDelay;
-	private final int maxPeers;
+  private final PeersView peersView;
+  private final RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher;
+  private final SystemCounters counters;
+  private final Mempool<?> mempool;
+  private final long initialDelay;
+  private final long repeatDelay;
+  private final int maxPeers;
 
-	@Inject
-	public MempoolRelayer(
-		Mempool<?> mempool,
-		RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher,
-		PeersView peersView,
-		@MempoolRelayInitialDelay long initialDelay,
-		@MempoolRelayRepeatDelay long repeatDelay,
-		@MempoolRelayMaxPeers int maxPeers,
-		SystemCounters counters
-	) {
-		this.mempool = mempool;
-		this.remoteEventDispatcher = Objects.requireNonNull(remoteEventDispatcher);
-		this.peersView = Objects.requireNonNull(peersView);
-		this.initialDelay = initialDelay;
-		this.repeatDelay = repeatDelay;
-		this.maxPeers = maxPeers;
-		this.counters = Objects.requireNonNull(counters);
-	}
+  @Inject
+  public MempoolRelayer(
+      Mempool<?> mempool,
+      RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher,
+      PeersView peersView,
+      @MempoolRelayInitialDelay long initialDelay,
+      @MempoolRelayRepeatDelay long repeatDelay,
+      @MempoolRelayMaxPeers int maxPeers,
+      SystemCounters counters) {
+    this.mempool = mempool;
+    this.remoteEventDispatcher = Objects.requireNonNull(remoteEventDispatcher);
+    this.peersView = Objects.requireNonNull(peersView);
+    this.initialDelay = initialDelay;
+    this.repeatDelay = repeatDelay;
+    this.maxPeers = maxPeers;
+    this.counters = Objects.requireNonNull(counters);
+  }
 
-	public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
-		return mempoolAddSuccess -> {
-			final var ignorePeers = mempoolAddSuccess.getOrigin()
-				.map(ImmutableList::of)
-				.orElse(ImmutableList.of());
-			relayCommands(ImmutableList.of(mempoolAddSuccess.getTxn()), ignorePeers);
-		};
-	}
+  public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
+    return mempoolAddSuccess -> {
+      final var ignorePeers =
+          mempoolAddSuccess.getOrigin().map(ImmutableList::of).orElse(ImmutableList.of());
+      relayCommands(ImmutableList.of(mempoolAddSuccess.getTxn()), ignorePeers);
+    };
+  }
 
-	public EventProcessor<MempoolRelayTrigger> mempoolRelayTriggerEventProcessor() {
-		return ev -> {
-			final var now = System.currentTimeMillis();
-			final var maxAddTime = now - initialDelay;
-			final var txns = mempool.scanUpdateAndGet(
-				m -> m.getInserted() <= maxAddTime
-					&& now >= m.getLastRelayed().orElse(0L)
-					+ repeatDelay,
-				m -> m.setLastRelayed(now)
-			);
-			if (!txns.isEmpty()) {
-				relayCommands(txns, ImmutableList.of());
-			}
-		};
-	}
+  public EventProcessor<MempoolRelayTrigger> mempoolRelayTriggerEventProcessor() {
+    return ev -> {
+      final var now = System.currentTimeMillis();
+      final var maxAddTime = now - initialDelay;
+      final var txns =
+          mempool.scanUpdateAndGet(
+              m ->
+                  m.getInserted() <= maxAddTime
+                      && now >= m.getLastRelayed().orElse(0L) + repeatDelay,
+              m -> m.setLastRelayed(now));
+      if (!txns.isEmpty()) {
+        relayCommands(txns, ImmutableList.of());
+      }
+    };
+  }
 
-	private void relayCommands(List<Txn> txns, ImmutableList<BFTNode> ignorePeers) {
-		final var mempoolAddMsg = MempoolAdd.create(txns);
-		final var peers = this.peersView.peers()
-			.map(PeersView.PeerInfo::bftNode)
-			.collect(Collectors.toList());
-		peers.removeAll(ignorePeers);
-		Collections.shuffle(peers);
-		peers.stream()
-			.limit(maxPeers)
-			.forEach(peer -> {
-				counters.add(CounterType.MEMPOOL_RELAYS_SENT, txns.size());
-				this.remoteEventDispatcher.dispatch(peer, mempoolAddMsg);
-			});
-	}
+  private void relayCommands(List<Txn> txns, ImmutableList<BFTNode> ignorePeers) {
+    final var mempoolAddMsg = MempoolAdd.create(txns);
+    final var peers =
+        this.peersView.peers().map(PeersView.PeerInfo::bftNode).collect(Collectors.toList());
+    peers.removeAll(ignorePeers);
+    Collections.shuffle(peers);
+    peers.stream()
+        .limit(maxPeers)
+        .forEach(
+            peer -> {
+              counters.add(CounterType.MEMPOOL_RELAYS_SENT, txns.size());
+              this.remoteEventDispatcher.dispatch(peer, mempoolAddMsg);
+            });
+  }
 }

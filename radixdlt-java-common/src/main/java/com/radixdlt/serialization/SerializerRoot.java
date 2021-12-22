@@ -70,11 +70,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Annotation for marking interfaces as a roots for serializable classes hierarchies.
- */
+/** Annotation for marking interfaces as a roots for serializable classes hierarchies. */
 @Documented
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface SerializerRoot {
-}
+public @interface SerializerRoot {}

@@ -64,30 +64,24 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.application.system.scrypt.Syscall;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RERules;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.utils.PrivateKeys;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyPair;
@@ -102,291 +96,300 @@ import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.RERules;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
-
+import com.radixdlt.utils.PrivateKeys;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class MempoolTest {
-	private static final ECKeyPair VALIDATOR_KEY = PrivateKeys.ofNumeric(1);
-	private static final int NUM_PEERS = 2;
+  private static final ECKeyPair VALIDATOR_KEY = PrivateKeys.ofNumeric(1);
+  private static final int NUM_PEERS = 2;
 
-	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-	@Inject @Self private BFTNode self;
-	@Inject @Genesis private VerifiedTxnsAndProof genesisTxns;
-	@Inject private DeterministicProcessor processor;
-	@Inject private DeterministicNetwork network;
-	@Inject private RadixEngineStateComputer stateComputer;
-	@Inject private SystemCounters systemCounters;
-	@Inject private PeersView peersView;
-	@Inject private RERules rules;
-	@Inject @MempoolRelayInitialDelay private long initialDelay;
-	@Inject @MempoolRelayRepeatDelay private long repeatDelay;
+  @Inject @Self private BFTNode self;
+  @Inject @Genesis private VerifiedTxnsAndProof genesisTxns;
+  @Inject private DeterministicProcessor processor;
+  @Inject private DeterministicNetwork network;
+  @Inject private RadixEngineStateComputer stateComputer;
+  @Inject private SystemCounters systemCounters;
+  @Inject private PeersView peersView;
+  @Inject private RERules rules;
+  @Inject @MempoolRelayInitialDelay private long initialDelay;
+  @Inject @MempoolRelayRepeatDelay private long repeatDelay;
 
-	private Injector getInjector() {
-		return Guice.createInjector(
-			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().removeSigsPerRoundLimit()),
-			MempoolConfig.asModule(10, 10, 200, 500, 10),
-			new MainnetForkConfigsModule(),
-			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY, NUM_PEERS),
-			new MockedGenesisModule(
-				Set.of(VALIDATOR_KEY.getPublicKey()),
-				Amount.ofTokens(1000),
-				Amount.ofTokens(100)
-			),
-			new AbstractModule() {
-				@Override
-				protected void configure() {
-					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-				}
-			}
-		);
-	}
+  private Injector getInjector() {
+    return Guice.createInjector(
+        new RadixEngineForksLatestOnlyModule(
+            RERulesConfig.testingDefault().removeSigsPerRoundLimit()),
+        MempoolConfig.asModule(10, 10, 200, 500, 10),
+        new MainnetForkConfigsModule(),
+        new ForksModule(),
+        new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY, NUM_PEERS),
+        new MockedGenesisModule(
+            Set.of(VALIDATOR_KEY.getPublicKey()), Amount.ofTokens(1000), Amount.ofTokens(100)),
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            bindConstant()
+                .annotatedWith(DatabaseLocation.class)
+                .to(folder.getRoot().getAbsolutePath());
+          }
+        });
+  }
 
-	private BFTNode getFirstPeer() {
-		return peersView.peers().findFirst().get().bftNode();
-	}
+  private BFTNode getFirstPeer() {
+    return peersView.peers().findFirst().get().bftNode();
+  }
 
-	private Txn createTxn(ECKeyPair keyPair, int numMutexes) throws Exception {
-		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder(rules.getSerialization());
-		for (int i = 0; i < numMutexes; i++) {
-			var symbol = "test" + (char) ('c' + i);
-			var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);
-			atomBuilder
-				.syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8))
-				.virtualDown(SubstateId.ofSubstate(genesisTxns.getTxns().get(0).getId(), 0), addr.getBytes())
-				.end();
-		}
-		var signature = keyPair.sign(atomBuilder.hashToSign());
-		return atomBuilder.sig(signature).build();
-	}
+  private Txn createTxn(ECKeyPair keyPair, int numMutexes) throws Exception {
+    TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder(rules.getSerialization());
+    for (int i = 0; i < numMutexes; i++) {
+      var symbol = "test" + (char) ('c' + i);
+      var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);
+      atomBuilder
+          .syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8))
+          .virtualDown(
+              SubstateId.ofSubstate(genesisTxns.getTxns().get(0).getId(), 0), addr.getBytes())
+          .end();
+    }
+    var signature = keyPair.sign(atomBuilder.hashToSign());
+    return atomBuilder.sig(signature).build();
+  }
 
-	private Txn createTxn(ECKeyPair keyPair) throws Exception {
-		return createTxn(keyPair, 1);
-	}
+  private Txn createTxn(ECKeyPair keyPair) throws Exception {
+    return createTxn(keyPair, 1);
+  }
 
-	@Test
-	public void add_local_command_to_mempool() throws Exception {
-		// Arrange
-		getInjector().injectMembers(this);
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		var txn = createTxn(keyPair);
+  @Test
+  public void add_local_command_to_mempool() throws Exception {
+    // Arrange
+    getInjector().injectMembers(this);
+    ECKeyPair keyPair = ECKeyPair.generateNew();
+    var txn = createTxn(keyPair);
 
-		// Act
-		processor.handleMessage(self, MempoolAdd.create(txn), null);
+    // Act
+    processor.handleMessage(self, MempoolAdd.create(txn), null);
 
-		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isEqualTo(1);
-		// FIXME: Added hack which requires genesis to be sent as message so ignore this check for now
-		//assertThat(network.allMessages())
-			//.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolAddSuccess.class));
-	}
+    // Assert
+    assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isEqualTo(1);
+    // FIXME: Added hack which requires genesis to be sent as message so ignore this check for now
+    // assertThat(network.allMessages())
+    // .hasOnlyOneElementSatisfying(m ->
+    // assertThat(m.message()).isInstanceOf(MempoolAddSuccess.class));
+  }
 
-	@Test
-	public void add_remote_command_to_mempool() throws Exception {
-		// Arrange
-		getInjector().injectMembers(this);
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		var txn = createTxn(keyPair);
+  @Test
+  public void add_remote_command_to_mempool() throws Exception {
+    // Arrange
+    getInjector().injectMembers(this);
+    ECKeyPair keyPair = ECKeyPair.generateNew();
+    var txn = createTxn(keyPair);
 
-		// Act
-		processor.handleMessage(getFirstPeer(), MempoolAdd.create(txn), null);
+    // Act
+    processor.handleMessage(getFirstPeer(), MempoolAdd.create(txn), null);
 
-		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isEqualTo(1);
-		// FIXME: Added hack which requires genesis to be sent as message so ignore this check for now
-		//assertThat(network.allMessages())
-			//.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolAddSuccess.class));
-	}
+    // Assert
+    assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isEqualTo(1);
+    // FIXME: Added hack which requires genesis to be sent as message so ignore this check for now
+    // assertThat(network.allMessages())
+    // .hasOnlyOneElementSatisfying(m ->
+    // assertThat(m.message()).isInstanceOf(MempoolAddSuccess.class));
+  }
 
-	@Test
-	public void relay_successful_local_add() throws Exception {
-		// Arrange
-		getInjector().injectMembers(this);
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		var txn = createTxn(keyPair);
+  @Test
+  public void relay_successful_local_add() throws Exception {
+    // Arrange
+    getInjector().injectMembers(this);
+    ECKeyPair keyPair = ECKeyPair.generateNew();
+    var txn = createTxn(keyPair);
 
-		// Act
-		processor.handleMessage(self, MempoolAddSuccess.create(txn, null, null), null);
+    // Act
+    processor.handleMessage(self, MempoolAddSuccess.create(txn, null, null), null);
 
-		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYS_SENT)).isEqualTo(NUM_PEERS);
-	}
+    // Assert
+    assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYS_SENT)).isEqualTo(NUM_PEERS);
+  }
 
-	@Test
-	public void relay_successful_remote_add() throws Exception {
-		// Arrange
-		getInjector().injectMembers(this);
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		var txn = createTxn(keyPair);
+  @Test
+  public void relay_successful_remote_add() throws Exception {
+    // Arrange
+    getInjector().injectMembers(this);
+    ECKeyPair keyPair = ECKeyPair.generateNew();
+    var txn = createTxn(keyPair);
 
-		// Act
-		processor.handleMessage(self, MempoolAddSuccess.create(txn, null, getFirstPeer()), null);
+    // Act
+    processor.handleMessage(self, MempoolAddSuccess.create(txn, null, getFirstPeer()), null);
 
-		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYS_SENT)).isEqualTo(NUM_PEERS - 1);
-	}
+    // Assert
+    assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYS_SENT)).isEqualTo(NUM_PEERS - 1);
+  }
 
-	@Test
-	public void add_same_command_to_mempool() throws Exception {
-		// Arrange
-		getInjector().injectMembers(this);
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		var txn = createTxn(keyPair);
-		MempoolAdd mempoolAdd = MempoolAdd.create(txn);
-		processor.handleMessage(getFirstPeer(), mempoolAdd, null);
+  @Test
+  public void add_same_command_to_mempool() throws Exception {
+    // Arrange
+    getInjector().injectMembers(this);
+    ECKeyPair keyPair = ECKeyPair.generateNew();
+    var txn = createTxn(keyPair);
+    MempoolAdd mempoolAdd = MempoolAdd.create(txn);
+    processor.handleMessage(getFirstPeer(), mempoolAdd, null);
 
-		// Act
-		processor.handleMessage(getFirstPeer(), mempoolAdd, null);
+    // Act
+    processor.handleMessage(getFirstPeer(), mempoolAdd, null);
 
-		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isEqualTo(1);
-	}
+    // Assert
+    assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isEqualTo(1);
+  }
 
-	@Test
-	public void add_conflicting_commands_to_mempool() throws Exception {
-		// Arrange
-		getInjector().injectMembers(this);
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		var txn = createTxn(keyPair, 2);
-		MempoolAdd mempoolAdd = MempoolAdd.create(txn);
-		processor.handleMessage(getFirstPeer(), mempoolAdd, null);
+  @Test
+  public void add_conflicting_commands_to_mempool() throws Exception {
+    // Arrange
+    getInjector().injectMembers(this);
+    ECKeyPair keyPair = ECKeyPair.generateNew();
+    var txn = createTxn(keyPair, 2);
+    MempoolAdd mempoolAdd = MempoolAdd.create(txn);
+    processor.handleMessage(getFirstPeer(), mempoolAdd, null);
 
-		// Act
-		var txn2 = createTxn(keyPair, 1);
-		MempoolAdd mempoolAddSuccess2 = MempoolAdd.create(txn2);
-		processor.handleMessage(getFirstPeer(), mempoolAddSuccess2, null);
+    // Act
+    var txn2 = createTxn(keyPair, 1);
+    MempoolAdd mempoolAddSuccess2 = MempoolAdd.create(txn2);
+    processor.handleMessage(getFirstPeer(), mempoolAddSuccess2, null);
 
-		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isEqualTo(2);
-	}
+    // Assert
+    assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isEqualTo(2);
+  }
 
-	@Test
-	public void add_bad_command_to_mempool() {
-		// Arrange
-		getInjector().injectMembers(this);
-		final var txn = Txn.create(new byte[0]);
+  @Test
+  public void add_bad_command_to_mempool() {
+    // Arrange
+    getInjector().injectMembers(this);
+    final var txn = Txn.create(new byte[0]);
 
-		// Act
-		MempoolAdd mempoolAdd = MempoolAdd.create(txn);
-		processor.handleMessage(getFirstPeer(), mempoolAdd, null);
+    // Act
+    MempoolAdd mempoolAdd = MempoolAdd.create(txn);
+    processor.handleMessage(getFirstPeer(), mempoolAdd, null);
 
-		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
-	}
+    // Assert
+    assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
+  }
 
-	@Test
-	public void replay_command_to_mempool() throws Exception {
-		// Arrange
-		getInjector().injectMembers(this);
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		var txn = createTxn(keyPair);
-		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
-		when(proof.getView()).thenReturn(View.of(1));
-		var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn), proof);
-		stateComputer.commit(commandsAndProof, null);
+  @Test
+  public void replay_command_to_mempool() throws Exception {
+    // Arrange
+    getInjector().injectMembers(this);
+    ECKeyPair keyPair = ECKeyPair.generateNew();
+    var txn = createTxn(keyPair);
+    var proof = mock(LedgerProof.class);
+    when(proof.getAccumulatorState())
+        .thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
+    when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
+    when(proof.getView()).thenReturn(View.of(1));
+    var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn), proof);
+    stateComputer.commit(commandsAndProof, null);
 
-		// Act
-		MempoolAdd mempoolAdd = MempoolAdd.create(txn);
-		processor.handleMessage(getFirstPeer(), mempoolAdd, null);
+    // Act
+    MempoolAdd mempoolAdd = MempoolAdd.create(txn);
+    processor.handleMessage(getFirstPeer(), mempoolAdd, null);
 
-		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
-	}
+    // Assert
+    assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
+  }
 
-	@Test
-	public void mempool_removes_conflicts_on_commit() throws Exception {
-		// Arrange
-		getInjector().injectMembers(this);
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		var txn = createTxn(keyPair, 2);
-		MempoolAdd mempoolAdd = MempoolAdd.create(txn);
-		processor.handleMessage(getFirstPeer(), mempoolAdd, null);
+  @Test
+  public void mempool_removes_conflicts_on_commit() throws Exception {
+    // Arrange
+    getInjector().injectMembers(this);
+    ECKeyPair keyPair = ECKeyPair.generateNew();
+    var txn = createTxn(keyPair, 2);
+    MempoolAdd mempoolAdd = MempoolAdd.create(txn);
+    processor.handleMessage(getFirstPeer(), mempoolAdd, null);
 
-		// Act
-		var txn2 = createTxn(keyPair, 1);
-		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
-		when(proof.getView()).thenReturn(View.of(1));
-		var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn2), proof);
-		stateComputer.commit(commandsAndProof, null);
+    // Act
+    var txn2 = createTxn(keyPair, 1);
+    var proof = mock(LedgerProof.class);
+    when(proof.getAccumulatorState())
+        .thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
+    when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
+    when(proof.getView()).thenReturn(View.of(1));
+    var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn2), proof);
+    stateComputer.commit(commandsAndProof, null);
 
-		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
-	}
+    // Assert
+    assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
+  }
 
-	@Test
-	public void mempool_removes_multiple_conflicts_on_commit() throws Exception {
-		// Arrange
-		getInjector().injectMembers(this);
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		var txn = createTxn(keyPair, 2);
-		MempoolAdd mempoolAdd = MempoolAdd.create(txn);
-		processor.handleMessage(getFirstPeer(), mempoolAdd, null);
-		var txn2 = createTxn(keyPair, 3);
-		processor.handleMessage(getFirstPeer(), MempoolAdd.create(txn2), null);
+  @Test
+  public void mempool_removes_multiple_conflicts_on_commit() throws Exception {
+    // Arrange
+    getInjector().injectMembers(this);
+    ECKeyPair keyPair = ECKeyPair.generateNew();
+    var txn = createTxn(keyPair, 2);
+    MempoolAdd mempoolAdd = MempoolAdd.create(txn);
+    processor.handleMessage(getFirstPeer(), mempoolAdd, null);
+    var txn2 = createTxn(keyPair, 3);
+    processor.handleMessage(getFirstPeer(), MempoolAdd.create(txn2), null);
 
-		// Act
-		var txn3 = createTxn(keyPair, 1);
-		var proof = mock(LedgerProof.class);
-		when(proof.getAccumulatorState()).thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
-		when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
-		when(proof.getView()).thenReturn(View.of(1));
-		var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn3), proof);
-		stateComputer.commit(commandsAndProof, null);
+    // Act
+    var txn3 = createTxn(keyPair, 1);
+    var proof = mock(LedgerProof.class);
+    when(proof.getAccumulatorState())
+        .thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
+    when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
+    when(proof.getView()).thenReturn(View.of(1));
+    var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn3), proof);
+    stateComputer.commit(commandsAndProof, null);
 
-		// Assert
-		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
-	}
+    // Assert
+    assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
+  }
 
-	@Test
-	@Ignore("Added hack which requires genesis to be sent as message. Reenable when fixed.")
-	public void mempool_should_relay_commands_respecting_delay_config_params() throws Exception {
-		// Arrange
-		getInjector().injectMembers(this);
-		final var keyPair = ECKeyPair.generateNew();
-		final var txn = createTxn(keyPair);
-		final var mempoolAdd = MempoolAdd.create(txn);
-		processor.handleMessage(self, mempoolAdd, null);
-		assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isEqualTo(1);
+  @Test
+  @Ignore("Added hack which requires genesis to be sent as message. Reenable when fixed.")
+  public void mempool_should_relay_commands_respecting_delay_config_params() throws Exception {
+    // Arrange
+    getInjector().injectMembers(this);
+    final var keyPair = ECKeyPair.generateNew();
+    final var txn = createTxn(keyPair);
+    final var mempoolAdd = MempoolAdd.create(txn);
+    processor.handleMessage(self, mempoolAdd, null);
+    assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isEqualTo(1);
 
-		assertThat(network.allMessages())
-			.hasOnlyOneElementSatisfying(m -> assertThat(m.message()).isInstanceOf(MempoolAddSuccess.class));
-		network.dropMessages(msg -> msg.message() instanceof MempoolAddSuccess);
+    assertThat(network.allMessages())
+        .hasOnlyOneElementSatisfying(
+            m -> assertThat(m.message()).isInstanceOf(MempoolAddSuccess.class));
+    network.dropMessages(msg -> msg.message() instanceof MempoolAddSuccess);
 
-		// should not relay immediately
-		processor.handleMessage(self, MempoolRelayTrigger.create(), null);
-		assertThat(network.allMessages()).isEmpty();
+    // should not relay immediately
+    processor.handleMessage(self, MempoolRelayTrigger.create(), null);
+    assertThat(network.allMessages()).isEmpty();
 
-		// should relay after initial delay
-		Thread.sleep(initialDelay);
-		processor.handleMessage(self, MempoolRelayTrigger.create(), null);
-		assertThat(network.allMessages())
-			.extracting(ControlledMessage::message)
-			.hasOnlyElementsOfType(MempoolAdd.class);
-		network.dropMessages(msg -> msg.message() instanceof MempoolAdd);
+    // should relay after initial delay
+    Thread.sleep(initialDelay);
+    processor.handleMessage(self, MempoolRelayTrigger.create(), null);
+    assertThat(network.allMessages())
+        .extracting(ControlledMessage::message)
+        .hasOnlyElementsOfType(MempoolAdd.class);
+    network.dropMessages(msg -> msg.message() instanceof MempoolAdd);
 
-		// should not relay again immediately
-		processor.handleMessage(self, MempoolRelayTrigger.create(), null);
-		assertThat(network.allMessages()).isEmpty();
+    // should not relay again immediately
+    processor.handleMessage(self, MempoolRelayTrigger.create(), null);
+    assertThat(network.allMessages()).isEmpty();
 
-		// should relay after repeat delay
-		Thread.sleep(repeatDelay);
-		processor.handleMessage(self, MempoolRelayTrigger.create(), null);
-		assertThat(network.allMessages())
-			.extracting(ControlledMessage::message)
-			.hasOnlyElementsOfType(MempoolAdd.class);
-	}
+    // should relay after repeat delay
+    Thread.sleep(repeatDelay);
+    processor.handleMessage(self, MempoolRelayTrigger.create(), null);
+    assertThat(network.allMessages())
+        .extracting(ControlledMessage::message)
+        .hasOnlyElementsOfType(MempoolAdd.class);
+  }
 }

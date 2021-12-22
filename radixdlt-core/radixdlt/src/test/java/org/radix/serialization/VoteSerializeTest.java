@@ -65,37 +65,37 @@
 package org.radix.serialization;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.HashUtils;
-
 import java.util.Optional;
 
 public class VoteSerializeTest extends SerializeObject<Vote> {
-	public VoteSerializeTest() {
-		super(Vote.class, VoteSerializeTest::get);
-	}
+  public VoteSerializeTest() {
+    super(Vote.class, VoteSerializeTest::get);
+  }
 
-	private static Vote get() {
-		View view = View.of(1234567891L);
-		HashCode id = HashUtils.random256();
+  private static Vote get() {
+    View view = View.of(1234567891L);
+    HashCode id = HashUtils.random256();
 
-		LedgerHeader ledgerHeader = LedgerHeader.mocked();
-		BFTHeader header = new BFTHeader(view, id, ledgerHeader);
-		BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
-		VoteData voteData = new VoteData(header, parent, null);
-		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		HighQC highQC = HighQC.from(qc, qc, Optional.empty());
-		return new Vote(author, voteData, 123456L, ECDSASignature.zeroSignature(), highQC, Optional.empty());
-	}
+    LedgerHeader ledgerHeader = LedgerHeader.mocked();
+    BFTHeader header = new BFTHeader(view, id, ledgerHeader);
+    BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
+    VoteData voteData = new VoteData(header, parent, null);
+    BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
+    QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
+    HighQC highQC = HighQC.from(qc, qc, Optional.empty());
+    return new Vote(
+        author, voteData, 123456L, ECDSASignature.zeroSignature(), highQC, Optional.empty());
+  }
 }

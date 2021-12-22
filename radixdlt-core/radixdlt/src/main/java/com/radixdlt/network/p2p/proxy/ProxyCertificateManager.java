@@ -81,10 +81,6 @@ import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.NetworkId;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.radix.time.Time;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -92,225 +88,230 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.radix.time.Time;
 
 /**
- * Manages the proxy certificates:
- *  - issued by this node
- *  - granted to this node
- *  - received from other peers
+ * Manages the proxy certificates: - issued by this node - granted to this node - received from
+ * other peers
  */
 public final class ProxyCertificateManager {
-	private static final Logger log = LogManager.getLogger();
+  private static final Logger log = LogManager.getLogger();
 
-	private final NodeId self;
-	private final P2PConfig config;
-	private final int networkId;
-	private final Addressing addressing;
-	private final ECKeyOps ecKeyOps;
-	private final PeersView peersView;
-	private final PeerControl peerControl;
-	private final AddressBook addressBook;
-	private final RemoteEventDispatcher<GrantedProxyCertificate> grantedProxyCertificateDispatcher;
-	private final RemoteEventDispatcher<ProxyCertificatesAnnouncement> proxyCertificatesAnnouncementDispatcher;
-	private final Object lock = new Object();
+  private final NodeId self;
+  private final P2PConfig config;
+  private final int networkId;
+  private final Addressing addressing;
+  private final ECKeyOps ecKeyOps;
+  private final PeersView peersView;
+  private final PeerControl peerControl;
+  private final AddressBook addressBook;
+  private final RemoteEventDispatcher<GrantedProxyCertificate> grantedProxyCertificateDispatcher;
+  private final RemoteEventDispatcher<ProxyCertificatesAnnouncement>
+      proxyCertificatesAnnouncementDispatcher;
+  private final Object lock = new Object();
 
-	// the certificates that were granted to this node
-	private final Map<NodeId, ProxyCertificate> receivedProxyCertificates = new ConcurrentHashMap<>();
+  // the certificates that were granted to this node
+  private final Map<NodeId, ProxyCertificate> receivedProxyCertificates = new ConcurrentHashMap<>();
 
-	// the certificates issued by this node
-	private final Map<NodeId, ProxyCertificate> issuedProxyCertificates = new ConcurrentHashMap<>();
+  // the certificates issued by this node
+  private final Map<NodeId, ProxyCertificate> issuedProxyCertificates = new ConcurrentHashMap<>();
 
-	// the certificates received from other nodes (granted to them)
-	private final Map<NodeId, Set<VerifiedProxyCertificate>> verifiedProxies = new ConcurrentHashMap<>();
+  // the certificates received from other nodes (granted to them)
+  private final Map<NodeId, Set<VerifiedProxyCertificate>> verifiedProxies =
+      new ConcurrentHashMap<>();
 
-	@Inject
-	public ProxyCertificateManager(
-		@Self NodeId self,
-		P2PConfig config,
-		@NetworkId int networkId,
-		Addressing addressing,
-		ECKeyOps ecKeyOps,
-		PeersView peersView,
-		PeerControl peerControl,
-		AddressBook addressBook,
-		RemoteEventDispatcher<GrantedProxyCertificate> grantedProxyCertificateDispatcher,
-		RemoteEventDispatcher<ProxyCertificatesAnnouncement> proxyCertificatesAnnouncementDispatcher
-	) {
-		this.self = Objects.requireNonNull(self);
-		this.config = Objects.requireNonNull(config);
-		this.networkId = networkId;
-		this.addressing = Objects.requireNonNull(addressing);
-		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
-		this.peersView = Objects.requireNonNull(peersView);
-		this.peerControl = Objects.requireNonNull(peerControl);
-		this.addressBook = Objects.requireNonNull(addressBook);
-		this.grantedProxyCertificateDispatcher = Objects.requireNonNull(grantedProxyCertificateDispatcher);
-		this.proxyCertificatesAnnouncementDispatcher = Objects.requireNonNull(proxyCertificatesAnnouncementDispatcher);
-	}
+  @Inject
+  public ProxyCertificateManager(
+      @Self NodeId self,
+      P2PConfig config,
+      @NetworkId int networkId,
+      Addressing addressing,
+      ECKeyOps ecKeyOps,
+      PeersView peersView,
+      PeerControl peerControl,
+      AddressBook addressBook,
+      RemoteEventDispatcher<GrantedProxyCertificate> grantedProxyCertificateDispatcher,
+      RemoteEventDispatcher<ProxyCertificatesAnnouncement>
+          proxyCertificatesAnnouncementDispatcher) {
+    this.self = Objects.requireNonNull(self);
+    this.config = Objects.requireNonNull(config);
+    this.networkId = networkId;
+    this.addressing = Objects.requireNonNull(addressing);
+    this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
+    this.peersView = Objects.requireNonNull(peersView);
+    this.peerControl = Objects.requireNonNull(peerControl);
+    this.addressBook = Objects.requireNonNull(addressBook);
+    this.grantedProxyCertificateDispatcher =
+        Objects.requireNonNull(grantedProxyCertificateDispatcher);
+    this.proxyCertificatesAnnouncementDispatcher =
+        Objects.requireNonNull(proxyCertificatesAnnouncementDispatcher);
+  }
 
-	public ImmutableSet<ProxyCertificate> getReceivedProxyCertificates() {
-		return ImmutableSet.copyOf(receivedProxyCertificates.values());
-	}
+  public ImmutableSet<ProxyCertificate> getReceivedProxyCertificates() {
+    return ImmutableSet.copyOf(receivedProxyCertificates.values());
+  }
 
-	public ImmutableSet<NodeId> getVerifiedProxiesForNode(NodeId nodeId) {
-		return verifiedProxies.getOrDefault(nodeId, Set.of())
-			.stream()
-			.filter(cert -> cert.expiresAt() > Time.currentTimestamp())
-			.map(VerifiedProxyCertificate::grantee)
-			.collect(ImmutableSet.toImmutableSet());
-	}
+  public ImmutableSet<NodeId> getVerifiedProxiesForNode(NodeId nodeId) {
+    return verifiedProxies.getOrDefault(nodeId, Set.of()).stream()
+        .filter(cert -> cert.expiresAt() > Time.currentTimestamp())
+        .map(VerifiedProxyCertificate::grantee)
+        .collect(ImmutableSet.toImmutableSet());
+  }
 
-	public void handlePeerConnected(PeerEvent.PeerConnected peerConnected) {
-		synchronized (lock) {
-			final var peerNodeId = peerConnected.getChannel().getRemoteNodeId();
+  public void handlePeerConnected(PeerEvent.PeerConnected peerConnected) {
+    synchronized (lock) {
+      final var peerNodeId = peerConnected.getChannel().getRemoteNodeId();
 
-			verifyAndUpdateProxyCertificates(peerNodeId, peerConnected.getChannel().proxyCertificates());
+      verifyAndUpdateProxyCertificates(peerNodeId, peerConnected.getChannel().proxyCertificates());
 
-			if (config.authorizedProxies().contains(peerNodeId)) {
-				handleProxyCertificateIssuance(peerNodeId);
-			}
-		}
-	}
+      if (config.authorizedProxies().contains(peerNodeId)) {
+        handleProxyCertificateIssuance(peerNodeId);
+      }
+    }
+  }
 
-	private void verifyAndUpdateProxyCertificates(NodeId peer, ImmutableSet<ProxyCertificate> proxyCertificates) {
-		final var verifiedCertificates = proxyCertificates.stream()
-			.map(cert -> this.verifyProxyCertificate(peer, cert))
-			.filter(Optional::isPresent)
-			.map(Optional::get)
-			.collect(ImmutableSet.toImmutableSet());
+  private void verifyAndUpdateProxyCertificates(
+      NodeId peer, ImmutableSet<ProxyCertificate> proxyCertificates) {
+    final var verifiedCertificates =
+        proxyCertificates.stream()
+            .map(cert -> this.verifyProxyCertificate(peer, cert))
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(ImmutableSet.toImmutableSet());
 
-		if (verifiedCertificates.size() == proxyCertificates.size()) {
-			verifiedCertificates.forEach(verifiedCertificate -> {
-				final var verifiedChannelsForSigner = this.verifiedProxies.computeIfAbsent(
-					verifiedCertificate.signer(),
-					unused -> Sets.newConcurrentHashSet()
-				);
-				verifiedChannelsForSigner.add(verifiedCertificate);
-			});
-			this.addressBook.updateProxyCertificates(peer, verifiedCertificates);
-		} else {
-			final var banDuration = Duration.ofMinutes(15);
-			log.warn(
-				"Received invalid proxy certificate from {}, banning for {}",
-				addressing.forNodes().of(peer.getPublicKey()),
-				banDuration
-			);
-			peerControl.banPeer(peer, banDuration, "Received invalid proxy certificate");
-		}
-	}
+    if (verifiedCertificates.size() == proxyCertificates.size()) {
+      verifiedCertificates.forEach(
+          verifiedCertificate -> {
+            final var verifiedChannelsForSigner =
+                this.verifiedProxies.computeIfAbsent(
+                    verifiedCertificate.signer(), unused -> Sets.newConcurrentHashSet());
+            verifiedChannelsForSigner.add(verifiedCertificate);
+          });
+      this.addressBook.updateProxyCertificates(peer, verifiedCertificates);
+    } else {
+      final var banDuration = Duration.ofMinutes(15);
+      log.warn(
+          "Received invalid proxy certificate from {}, banning for {}",
+          addressing.forNodes().of(peer.getPublicKey()),
+          banDuration);
+      peerControl.banPeer(peer, banDuration, "Received invalid proxy certificate");
+    }
+  }
 
-	public EventProcessor<RenewIssuedProxyCertificatesTrigger> renewIssuedProxyCertificatesTriggerProcessor() {
-		return unused -> {
-			// renew if cert expired or is about to expire in less than a minute
-			final var minExpirationTime = Instant.now().plus(Duration.ofMinutes(1));
-			final var certsToRenew = this.issuedProxyCertificates.entrySet().stream()
-				.filter(e -> minExpirationTime.isAfter(Instant.ofEpochMilli(e.getValue().getData().expiresAt())))
-				.map(Map.Entry::getKey)
-				.collect(ImmutableSet.toImmutableSet());
+  public EventProcessor<RenewIssuedProxyCertificatesTrigger>
+      renewIssuedProxyCertificatesTriggerProcessor() {
+    return unused -> {
+      // renew if cert expired or is about to expire in less than a minute
+      final var minExpirationTime = Instant.now().plus(Duration.ofMinutes(1));
+      final var certsToRenew =
+          this.issuedProxyCertificates.entrySet().stream()
+              .filter(
+                  e ->
+                      minExpirationTime.isAfter(
+                          Instant.ofEpochMilli(e.getValue().getData().expiresAt())))
+              .map(Map.Entry::getKey)
+              .collect(ImmutableSet.toImmutableSet());
 
-			certsToRenew.forEach(this::handleProxyCertificateIssuance);
-		};
-	}
+      certsToRenew.forEach(this::handleProxyCertificateIssuance);
+    };
+  }
 
-	private Optional<VerifiedProxyCertificate> verifyProxyCertificate(
-		NodeId expectedGrantee,
-		ProxyCertificate proxyCertificate
-	) {
-		return proxyCertificate.verify()
-			.filter(cert -> cert.grantee().equals(expectedGrantee))
-			.filter(cert -> cert.networkId() == networkId);
-	}
+  private Optional<VerifiedProxyCertificate> verifyProxyCertificate(
+      NodeId expectedGrantee, ProxyCertificate proxyCertificate) {
+    return proxyCertificate
+        .verify()
+        .filter(cert -> cert.grantee().equals(expectedGrantee))
+        .filter(cert -> cert.networkId() == networkId);
+  }
 
-	private void handleProxyCertificateIssuance(NodeId nodeId) {
-		log.debug("Issuing a proxy certificate for {}", addressing.forNodes().of(nodeId.getPublicKey()));
-		final var cert = issueProxyCertificate(nodeId, config.issuedProxyCertificateValidityDuration());
-		this.issuedProxyCertificates.put(nodeId, cert);
-		grantedProxyCertificateDispatcher.dispatch(
-			BFTNode.create(nodeId.getPublicKey()),
-			new GrantedProxyCertificate(cert)
-		);
-	}
+  private void handleProxyCertificateIssuance(NodeId nodeId) {
+    log.debug(
+        "Issuing a proxy certificate for {}", addressing.forNodes().of(nodeId.getPublicKey()));
+    final var cert = issueProxyCertificate(nodeId, config.issuedProxyCertificateValidityDuration());
+    this.issuedProxyCertificates.put(nodeId, cert);
+    grantedProxyCertificateDispatcher.dispatch(
+        BFTNode.create(nodeId.getPublicKey()), new GrantedProxyCertificate(cert));
+  }
 
-	private ProxyCertificate issueProxyCertificate(NodeId nodeId, Duration validityDuration) {
-		final var expiresAt = Instant.now().plus(validityDuration).toEpochMilli();
-		final var data = ProxyCertificateData.create(nodeId, expiresAt, networkId);
-		final var signature = ecKeyOps.sign(data.hashToSign().asBytes());
-		return ProxyCertificate.create(data, signature);
-	}
+  private ProxyCertificate issueProxyCertificate(NodeId nodeId, Duration validityDuration) {
+    final var expiresAt = Instant.now().plus(validityDuration).toEpochMilli();
+    final var data = ProxyCertificateData.create(nodeId, expiresAt, networkId);
+    final var signature = ecKeyOps.sign(data.hashToSign().asBytes());
+    return ProxyCertificate.create(data, signature);
+  }
 
-	public RemoteEventProcessor<GrantedProxyCertificate> grantedProxyCertificateEventProcessor() {
-		return (peer, ev) -> {
-			synchronized (lock) {
-				if (!config.proxyEnabled()) {
-					return; // ignore if proxy not enabled
-				}
+  public RemoteEventProcessor<GrantedProxyCertificate> grantedProxyCertificateEventProcessor() {
+    return (peer, ev) -> {
+      synchronized (lock) {
+        if (!config.proxyEnabled()) {
+          return; // ignore if proxy not enabled
+        }
 
-				if (!config.authorizedProxiedPeers().contains(NodeId.fromPublicKey(peer.getKey()))) {
-					return; // peer is not an authorized proxied node; ignore
-				}
+        if (!config.authorizedProxiedPeers().contains(NodeId.fromPublicKey(peer.getKey()))) {
+          return; // peer is not an authorized proxied node; ignore
+        }
 
-				verifyProxyCertificate(self, ev.proxyCertificate()).ifPresentOrElse(
-					verifiedCert -> handleVerifiedGrantedProxyCertificate(ev.proxyCertificate(), verifiedCert),
-					() -> handleInvalidGrantedProxyCertificate(NodeId.fromPublicKey(peer.getKey()))
-				);
-			}
-		};
-	}
+        verifyProxyCertificate(self, ev.proxyCertificate())
+            .ifPresentOrElse(
+                verifiedCert ->
+                    handleVerifiedGrantedProxyCertificate(ev.proxyCertificate(), verifiedCert),
+                () -> handleInvalidGrantedProxyCertificate(NodeId.fromPublicKey(peer.getKey())));
+      }
+    };
+  }
 
-	private void handleVerifiedGrantedProxyCertificate(
-		ProxyCertificate unverifiedCert,
-		VerifiedProxyCertificate verifiedCert
-	) {
-		log.trace("Received a granted proxy certificate");
+  private void handleVerifiedGrantedProxyCertificate(
+      ProxyCertificate unverifiedCert, VerifiedProxyCertificate verifiedCert) {
+    log.trace("Received a granted proxy certificate");
 
-		final var existingCertExpiration = Optional.ofNullable(this.receivedProxyCertificates.get(verifiedCert.signer()))
-			.map(cert -> cert.getData().expiresAt())
-			.orElse(0L);
+    final var existingCertExpiration =
+        Optional.ofNullable(this.receivedProxyCertificates.get(verifiedCert.signer()))
+            .map(cert -> cert.getData().expiresAt())
+            .orElse(0L);
 
-		if (verifiedCert.expiresAt() <= existingCertExpiration) {
-			return; // certificate expires earlier that the one we currently have; ignore
-		}
+    if (verifiedCert.expiresAt() <= existingCertExpiration) {
+      return; // certificate expires earlier that the one we currently have; ignore
+    }
 
-		this.receivedProxyCertificates.put(verifiedCert.signer(), unverifiedCert);
+    this.receivedProxyCertificates.put(verifiedCert.signer(), unverifiedCert);
 
-		// announce the certificate to connected peers
-		this.proxyCertificatesAnnouncementDispatcher.dispatch(
-			peersView.peers().map(p -> BFTNode.create(p.getNodeId().getPublicKey())).toList(),
-			new ProxyCertificatesAnnouncement(ImmutableSet.copyOf(receivedProxyCertificates.values()))
-		);
-	}
+    // announce the certificate to connected peers
+    this.proxyCertificatesAnnouncementDispatcher.dispatch(
+        peersView.peers().map(p -> BFTNode.create(p.getNodeId().getPublicKey())).toList(),
+        new ProxyCertificatesAnnouncement(ImmutableSet.copyOf(receivedProxyCertificates.values())));
+  }
 
-	private void handleInvalidGrantedProxyCertificate(NodeId peer) {
-		final var banDuration = Duration.ofSeconds(30);
-		log.warn(
-			"Received invalid granted proxy certificate from {}, banning for {}",
-			addressing.forNodes().of(peer.getPublicKey()),
-			banDuration
-		);
-		peerControl.banPeer(peer, banDuration, "Received invalid granted proxy certificate");
-	}
+  private void handleInvalidGrantedProxyCertificate(NodeId peer) {
+    final var banDuration = Duration.ofSeconds(30);
+    log.warn(
+        "Received invalid granted proxy certificate from {}, banning for {}",
+        addressing.forNodes().of(peer.getPublicKey()),
+        banDuration);
+    peerControl.banPeer(peer, banDuration, "Received invalid granted proxy certificate");
+  }
 
-	public RemoteEventProcessor<ProxyCertificatesAnnouncement> proxyCertificatesAnnouncementEventProcessor() {
-		return (peer, ev) ->
-			verifyAndUpdateProxyCertificates(
-				NodeId.fromPublicKey(peer.getKey()),
-				ev.proxyCertificates()
-			);
-	}
+  public RemoteEventProcessor<ProxyCertificatesAnnouncement>
+      proxyCertificatesAnnouncementEventProcessor() {
+    return (peer, ev) ->
+        verifyAndUpdateProxyCertificates(
+            NodeId.fromPublicKey(peer.getKey()), ev.proxyCertificates());
+  }
 
-	public void handlePeerDisconnected(PeerEvent.PeerDisconnected peerDisconnected) {
-		synchronized (lock) {
-			final var channel = peerDisconnected.getChannel();
-			final var mapEntryIter = this.verifiedProxies.entrySet().iterator();
-			while (mapEntryIter.hasNext()) {
-				final var certs = mapEntryIter.next().getValue();
-				certs.removeIf(cert -> cert.grantee().equals(channel.getRemoteNodeId()));
-				if (certs.isEmpty()) {
-					mapEntryIter.remove();
-				}
-			}
+  public void handlePeerDisconnected(PeerEvent.PeerDisconnected peerDisconnected) {
+    synchronized (lock) {
+      final var channel = peerDisconnected.getChannel();
+      final var mapEntryIter = this.verifiedProxies.entrySet().iterator();
+      while (mapEntryIter.hasNext()) {
+        final var certs = mapEntryIter.next().getValue();
+        certs.removeIf(cert -> cert.grantee().equals(channel.getRemoteNodeId()));
+        if (certs.isEmpty()) {
+          mapEntryIter.remove();
+        }
+      }
 
-			this.issuedProxyCertificates.remove(peerDisconnected.getChannel().getRemoteNodeId());
-		}
-	}
+      this.issuedProxyCertificates.remove(peerDisconnected.getChannel().getRemoteNodeId());
+    }
+  }
 }

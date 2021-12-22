@@ -65,17 +65,17 @@
 package com.radixdlt.mempool;
 
 /**
- * Exception thrown when an attempt to add new items would
- * exceed the mempool's maximum capacity.
+ * Exception thrown when an attempt to add new items would exceed the mempool's maximum capacity.
  */
 public class MempoolFullException extends MempoolRejectedException {
-	private final int maxSize;
-	public MempoolFullException(int curSize, int maxSize) {
-		super(String.format("Mempool full: %s of %s items", curSize, maxSize));
-		this.maxSize = maxSize;
-	}
+  private final int maxSize;
 
-	public int getMaxSize() {
-		return maxSize;
-	}
+  public MempoolFullException(int curSize, int maxSize) {
+    super(String.format("Mempool full: %s of %s items", curSize, maxSize));
+    this.maxSize = maxSize;
+  }
+
+  public int getMaxSize() {
+    return maxSize;
+  }
 }

@@ -68,44 +68,42 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import nl.jqno.equalsverifier.EqualsVerifier;
-
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.HashUtils;
-
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
 public class EpochChangeTest {
-	private LedgerProof proof;
-	private BFTConfiguration configuration;
-	private EpochChange epochChange;
+  private LedgerProof proof;
+  private BFTConfiguration configuration;
+  private EpochChange epochChange;
 
-	@Before
-	public void setup() {
-		this.proof = mock(LedgerProof.class);
-		when(proof.getEpoch()).thenReturn(323L);
-		this.configuration = mock(BFTConfiguration.class);
+  @Before
+  public void setup() {
+    this.proof = mock(LedgerProof.class);
+    when(proof.getEpoch()).thenReturn(323L);
+    this.configuration = mock(BFTConfiguration.class);
 
-		this.epochChange = new EpochChange(proof, configuration);
-	}
+    this.epochChange = new EpochChange(proof, configuration);
+  }
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(EpochChange.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(EpochChange.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 
-	@Test
-	public void when_get_next_epoch__then_should_be_epoch_after_proof() {
-		assertThat(epochChange.getEpoch()).isEqualTo(324L);
-	}
+  @Test
+  public void when_get_next_epoch__then_should_be_epoch_after_proof() {
+    assertThat(epochChange.getEpoch()).isEqualTo(324L);
+  }
 
-	@Test
-	public void when_get_configuration__then_should_return_configuration() {
-		assertThat(epochChange.getBFTConfiguration()).isEqualTo(configuration);
-	}
+  @Test
+  public void when_get_configuration__then_should_return_configuration() {
+    assertThat(epochChange.getBFTConfiguration()).isEqualTo(configuration);
+  }
 }

@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -70,35 +71,31 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-
 import java.nio.ByteBuffer;
 
 public final class RecoverableSubstateShutdown implements RecoverableSubstate {
-	private final ByteBuffer substateBuffer;
-	private final SubstateId substateId;
-	private final boolean isBootUp;
+  private final ByteBuffer substateBuffer;
+  private final SubstateId substateId;
+  private final boolean isBootUp;
 
-	public RecoverableSubstateShutdown(ByteBuffer substateBuffer, SubstateId substateId, boolean isBootUp) {
-		this.substateBuffer = substateBuffer;
-		this.substateId = substateId;
-		this.isBootUp = isBootUp;
-	}
+  public RecoverableSubstateShutdown(
+      ByteBuffer substateBuffer, SubstateId substateId, boolean isBootUp) {
+    this.substateBuffer = substateBuffer;
+    this.substateId = substateId;
+    this.isBootUp = isBootUp;
+  }
 
-	private Particle deserialize(RadixEngine<LedgerAndBFTProof> radixEngine) {
-		var deserialization = radixEngine.getSubstateDeserialization();
-		try {
-			return deserialization.deserialize(substateBuffer);
-		} catch (DeserializeException e) {
-			throw new IllegalStateException("Failed to deserialize substate.", e);
-		}
-	}
+  private Particle deserialize(RadixEngine<LedgerAndBFTProof> radixEngine) {
+    var deserialization = radixEngine.getSubstateDeserialization();
+    try {
+      return deserialization.deserialize(substateBuffer);
+    } catch (DeserializeException e) {
+      throw new IllegalStateException("Failed to deserialize substate.", e);
+    }
+  }
 
-	@Override
-	public SubstateOperation recover(Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider) {
-		return new SubstateOperation(
-			deserialize(radixEngineProvider.get()),
-			substateId,
-			isBootUp
-		);
-	}
+  @Override
+  public SubstateOperation recover(Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider) {
+    return new SubstateOperation(deserialize(radixEngineProvider.get()), substateId, isBootUp);
+  }
 }

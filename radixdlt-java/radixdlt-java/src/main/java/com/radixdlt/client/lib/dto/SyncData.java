@@ -66,106 +66,118 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class SyncData {
-	private final long processed;
-	private final long targetStateVersion;
-	private final long remoteRequestsProcessed;
-	private final long invalidCommandsReceived;
-	private final long lastReadMillis;
-	private final long targetCurrentDiff;
+  private final long processed;
+  private final long targetStateVersion;
+  private final long remoteRequestsProcessed;
+  private final long invalidCommandsReceived;
+  private final long lastReadMillis;
+  private final long targetCurrentDiff;
 
-	private SyncData(
-		long processed,
-		long targetStateVersion,
-		long remoteRequestsProcessed,
-		long invalidCommandsReceived,
-		long lastReadMillis,
-		long targetCurrentDiff
-	) {
-		this.processed = processed;
-		this.targetStateVersion = targetStateVersion;
-		this.remoteRequestsProcessed = remoteRequestsProcessed;
-		this.invalidCommandsReceived = invalidCommandsReceived;
-		this.lastReadMillis = lastReadMillis;
-		this.targetCurrentDiff = targetCurrentDiff;
-	}
+  private SyncData(
+      long processed,
+      long targetStateVersion,
+      long remoteRequestsProcessed,
+      long invalidCommandsReceived,
+      long lastReadMillis,
+      long targetCurrentDiff) {
+    this.processed = processed;
+    this.targetStateVersion = targetStateVersion;
+    this.remoteRequestsProcessed = remoteRequestsProcessed;
+    this.invalidCommandsReceived = invalidCommandsReceived;
+    this.lastReadMillis = lastReadMillis;
+    this.targetCurrentDiff = targetCurrentDiff;
+  }
 
-	@JsonCreator
-	public static SyncData create(
-		@JsonProperty(value = "processed", required = true) long processed,
-		@JsonProperty(value = "targetStateVersion", required = true) long targetStateVersion,
-		@JsonProperty(value = "remoteRequestsProcessed", required = true) long remoteRequestsProcessed,
-		@JsonProperty(value = "invalidCommandsReceived", required = true) long invalidCommandsReceived,
-		@JsonProperty(value = "lastReadMillis", required = true) long lastReadMillis,
-		@JsonProperty(value = "targetCurrentDiff", required = true) long targetCurrentDiff
-	) {
-		return new SyncData(
-			processed, targetStateVersion, remoteRequestsProcessed,
-			invalidCommandsReceived, lastReadMillis, targetCurrentDiff
-		);
-	}
+  @JsonCreator
+  public static SyncData create(
+      @JsonProperty(value = "processed", required = true) long processed,
+      @JsonProperty(value = "targetStateVersion", required = true) long targetStateVersion,
+      @JsonProperty(value = "remoteRequestsProcessed", required = true)
+          long remoteRequestsProcessed,
+      @JsonProperty(value = "invalidCommandsReceived", required = true)
+          long invalidCommandsReceived,
+      @JsonProperty(value = "lastReadMillis", required = true) long lastReadMillis,
+      @JsonProperty(value = "targetCurrentDiff", required = true) long targetCurrentDiff) {
+    return new SyncData(
+        processed,
+        targetStateVersion,
+        remoteRequestsProcessed,
+        invalidCommandsReceived,
+        lastReadMillis,
+        targetCurrentDiff);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof SyncData)) {
-			return false;
-		}
+    if (!(o instanceof SyncData)) {
+      return false;
+    }
 
-		var syncData = (SyncData) o;
-		return processed == syncData.processed
-			&& targetStateVersion == syncData.targetStateVersion
-			&& remoteRequestsProcessed == syncData.remoteRequestsProcessed
-			&& invalidCommandsReceived == syncData.invalidCommandsReceived
-			&& lastReadMillis == syncData.lastReadMillis
-			&& targetCurrentDiff == syncData.targetCurrentDiff;
-	}
+    var syncData = (SyncData) o;
+    return processed == syncData.processed
+        && targetStateVersion == syncData.targetStateVersion
+        && remoteRequestsProcessed == syncData.remoteRequestsProcessed
+        && invalidCommandsReceived == syncData.invalidCommandsReceived
+        && lastReadMillis == syncData.lastReadMillis
+        && targetCurrentDiff == syncData.targetCurrentDiff;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(
-			processed, targetStateVersion, remoteRequestsProcessed,
-			invalidCommandsReceived, lastReadMillis, targetCurrentDiff
-		);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        processed,
+        targetStateVersion,
+        remoteRequestsProcessed,
+        invalidCommandsReceived,
+        lastReadMillis,
+        targetCurrentDiff);
+  }
 
-	@Override
-	public String toString() {
-		return "{processed:" + processed
-			+ ", targetStateVersion:" + targetStateVersion
-			+ ", remoteRequestsProcessed:" + remoteRequestsProcessed
-			+ ", invalidCommandsReceived:" + invalidCommandsReceived
-			+ ", lastReadMillis:" + lastReadMillis
-			+ ", targetCurrentDiff:" + targetCurrentDiff + '}';
-	}
+  @Override
+  public String toString() {
+    return "{processed:"
+        + processed
+        + ", targetStateVersion:"
+        + targetStateVersion
+        + ", remoteRequestsProcessed:"
+        + remoteRequestsProcessed
+        + ", invalidCommandsReceived:"
+        + invalidCommandsReceived
+        + ", lastReadMillis:"
+        + lastReadMillis
+        + ", targetCurrentDiff:"
+        + targetCurrentDiff
+        + '}';
+  }
 
-	public long getProcessed() {
-		return processed;
-	}
+  public long getProcessed() {
+    return processed;
+  }
 
-	public long getTargetStateVersion() {
-		return targetStateVersion;
-	}
+  public long getTargetStateVersion() {
+    return targetStateVersion;
+  }
 
-	public long getRemoteRequestsProcessed() {
-		return remoteRequestsProcessed;
-	}
+  public long getRemoteRequestsProcessed() {
+    return remoteRequestsProcessed;
+  }
 
-	public long getInvalidCommandsReceived() {
-		return invalidCommandsReceived;
-	}
+  public long getInvalidCommandsReceived() {
+    return invalidCommandsReceived;
+  }
 
-	public long getLastReadMillis() {
-		return lastReadMillis;
-	}
+  public long getLastReadMillis() {
+    return lastReadMillis;
+  }
 
-	public long getTargetCurrentDiff() {
-		return targetCurrentDiff;
-	}
+  public long getTargetCurrentDiff() {
+    return targetCurrentDiff;
+  }
 }

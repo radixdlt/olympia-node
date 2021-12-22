@@ -69,20 +69,20 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 
 public final class UpdateValidatorOwner implements TxValidatorAction {
-	private final ECPublicKey validatorKey;
-	private final REAddr ownerAddress;
+  private final ECPublicKey validatorKey;
+  private final REAddr ownerAddress;
 
-	public UpdateValidatorOwner(ECPublicKey validatorKey, REAddr ownerAddress) {
-		this.validatorKey = validatorKey;
-		this.ownerAddress = ownerAddress;
-	}
+  public UpdateValidatorOwner(ECPublicKey validatorKey, REAddr ownerAddress) {
+    this.validatorKey = validatorKey;
+    this.ownerAddress = ownerAddress;
+  }
 
-	@Override
-	public ECPublicKey validatorKey() {
-		return validatorKey;
-	}
+  @Override
+  public ECPublicKey validatorKey() {
+    return validatorKey;
+  }
 
-	public REAddr getOwnerAddress() {
-		return ownerAddress;
-	}
+  public REAddr getOwnerAddress() {
+    return ownerAddress;
+  }
 }

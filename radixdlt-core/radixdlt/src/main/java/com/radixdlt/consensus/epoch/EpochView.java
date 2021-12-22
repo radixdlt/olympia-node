@@ -67,59 +67,57 @@ package com.radixdlt.consensus.epoch;
 import com.radixdlt.consensus.bft.View;
 import java.util.Objects;
 
-/**
- * A bft view with it's corresponding epoch
- */
+/** A bft view with it's corresponding epoch */
 public final class EpochView implements Comparable<EpochView> {
-	private final long epoch;
-	private final View view;
+  private final long epoch;
+  private final View view;
 
-	public EpochView(long epoch, View view) {
-		if (epoch < 0) {
-			throw new IllegalArgumentException("epoch must be >= 0");
-		}
-		this.epoch = epoch;
-		this.view = Objects.requireNonNull(view);
-	}
+  public EpochView(long epoch, View view) {
+    if (epoch < 0) {
+      throw new IllegalArgumentException("epoch must be >= 0");
+    }
+    this.epoch = epoch;
+    this.view = Objects.requireNonNull(view);
+  }
 
-	public static EpochView of(long epoch, View view) {
-		return new EpochView(epoch, view);
-	}
+  public static EpochView of(long epoch, View view) {
+    return new EpochView(epoch, view);
+  }
 
-	public long getEpoch() {
-		return epoch;
-	}
+  public long getEpoch() {
+    return epoch;
+  }
 
-	public View getView() {
-		return view;
-	}
+  public View getView() {
+    return view;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{epoch=%s view=%s}", this.getClass().getSimpleName(), epoch, view);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{epoch=%s view=%s}", this.getClass().getSimpleName(), epoch, view);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(epoch, view);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(epoch, view);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof EpochView)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof EpochView)) {
+      return false;
+    }
 
-		EpochView other = (EpochView) o;
-		return other.epoch == this.epoch && Objects.equals(other.view, this.view);
-	}
+    EpochView other = (EpochView) o;
+    return other.epoch == this.epoch && Objects.equals(other.view, this.view);
+  }
 
-	@Override
-	public int compareTo(EpochView o) {
-		if (this.epoch != o.epoch) {
-			return Long.compare(this.epoch, o.epoch);
-		}
+  @Override
+  public int compareTo(EpochView o) {
+    if (this.epoch != o.epoch) {
+      return Long.compare(this.epoch, o.epoch);
+    }
 
-		return this.view.compareTo(o.view);
-	}
+    return this.view.compareTo(o.view);
+  }
 }

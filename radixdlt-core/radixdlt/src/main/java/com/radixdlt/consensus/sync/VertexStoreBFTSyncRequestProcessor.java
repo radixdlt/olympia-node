@@ -74,45 +74,43 @@ import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/**
- * Processor of sync requests and responds with info from a VertexStore
- */
-public final class VertexStoreBFTSyncRequestProcessor implements RemoteEventProcessor<GetVerticesRequest> {
-	private static final Logger log = LogManager.getLogger();
-	private final VertexStore vertexStore;
-	private final RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher;
-	private final RemoteEventDispatcher<GetVerticesResponse> responseDispatcher;
-	private final SystemCounters systemCounters;
+/** Processor of sync requests and responds with info from a VertexStore */
+public final class VertexStoreBFTSyncRequestProcessor
+    implements RemoteEventProcessor<GetVerticesRequest> {
+  private static final Logger log = LogManager.getLogger();
+  private final VertexStore vertexStore;
+  private final RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher;
+  private final RemoteEventDispatcher<GetVerticesResponse> responseDispatcher;
+  private final SystemCounters systemCounters;
 
-	@Inject
-	public VertexStoreBFTSyncRequestProcessor(
-		VertexStore vertexStore,
-		RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher,
-		RemoteEventDispatcher<GetVerticesResponse> responseDispatcher,
-		SystemCounters systemCounters
-	) {
-		this.vertexStore = Objects.requireNonNull(vertexStore);
-		this.errorResponseDispatcher = Objects.requireNonNull(errorResponseDispatcher);
-		this.responseDispatcher = Objects.requireNonNull(responseDispatcher);
-		this.systemCounters = systemCounters;
-	}
+  @Inject
+  public VertexStoreBFTSyncRequestProcessor(
+      VertexStore vertexStore,
+      RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher,
+      RemoteEventDispatcher<GetVerticesResponse> responseDispatcher,
+      SystemCounters systemCounters) {
+    this.vertexStore = Objects.requireNonNull(vertexStore);
+    this.errorResponseDispatcher = Objects.requireNonNull(errorResponseDispatcher);
+    this.responseDispatcher = Objects.requireNonNull(responseDispatcher);
+    this.systemCounters = systemCounters;
+  }
 
-	@Override
-	public void process(BFTNode sender, GetVerticesRequest request) {
-		// TODO: Handle nodes trying to DDOS this endpoint
-		systemCounters.increment(SystemCounters.CounterType.BFT_SYNC_REQUESTS_RECEIVED);
+  @Override
+  public void process(BFTNode sender, GetVerticesRequest request) {
+    // TODO: Handle nodes trying to DDOS this endpoint
+    systemCounters.increment(SystemCounters.CounterType.BFT_SYNC_REQUESTS_RECEIVED);
 
-		log.debug("SYNC_VERTICES: Received GetVerticesRequest {}", request);
-		var verticesMaybe = vertexStore.getVertices(request.getVertexId(), request.getCount());
-		verticesMaybe.ifPresentOrElse(
-			fetched -> {
-				log.debug("SYNC_VERTICES: Sending Response {}", fetched);
-				this.responseDispatcher.dispatch(sender, new GetVerticesResponse(fetched));
-			},
-			() -> {
-				log.debug("SYNC_VERTICES: Sending error response {}", vertexStore.highQC());
-				this.errorResponseDispatcher.dispatch(sender, new GetVerticesErrorResponse(vertexStore.highQC(), request));
-			}
-		);
-	}
+    log.debug("SYNC_VERTICES: Received GetVerticesRequest {}", request);
+    var verticesMaybe = vertexStore.getVertices(request.getVertexId(), request.getCount());
+    verticesMaybe.ifPresentOrElse(
+        fetched -> {
+          log.debug("SYNC_VERTICES: Sending Response {}", fetched);
+          this.responseDispatcher.dispatch(sender, new GetVerticesResponse(fetched));
+        },
+        () -> {
+          log.debug("SYNC_VERTICES: Sending error response {}", vertexStore.highQC());
+          this.errorResponseDispatcher.dispatch(
+              sender, new GetVerticesErrorResponse(vertexStore.highQC(), request));
+        });
+  }
 }

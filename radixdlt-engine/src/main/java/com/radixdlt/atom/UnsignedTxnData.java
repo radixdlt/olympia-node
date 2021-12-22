@@ -68,25 +68,25 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.utils.UInt256;
 
 public final class UnsignedTxnData {
-	private final byte[] blob;
-	private final HashCode hashToSign;
-	private final UInt256 feesPaid;
+  private final byte[] blob;
+  private final HashCode hashToSign;
+  private final UInt256 feesPaid;
 
-	public UnsignedTxnData(byte[] blob, HashCode hashToSign, UInt256 feesPaid) {
-		this.blob = blob;
-		this.hashToSign = hashToSign;
-		this.feesPaid = feesPaid;
-	}
+  public UnsignedTxnData(byte[] blob, HashCode hashToSign, UInt256 feesPaid) {
+    this.blob = blob;
+    this.hashToSign = hashToSign;
+    this.feesPaid = feesPaid;
+  }
 
-	public byte[] blob() {
-		return blob;
-	}
+  public byte[] blob() {
+    return blob;
+  }
 
-	public HashCode hashToSign() {
-		return hashToSign;
-	}
+  public HashCode hashToSign() {
+    return hashToSign;
+  }
 
-	public UInt256 feesPaid() {
-		return feesPaid;
-	}
+  public UInt256 feesPaid() {
+    return feesPaid;
+  }
 }

@@ -67,53 +67,51 @@ package com.radixdlt.client.lib.dto;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.lib.api.AccountAddress;
-
 import java.util.Objects;
 
 public final class LocalAccount {
-	private final AccountAddress address;
-	private final AccountBalance balance;
+  private final AccountAddress address;
+  private final AccountBalance balance;
 
-	private LocalAccount(AccountAddress address, AccountBalance balance) {
-		this.address = address;
-		this.balance = balance;
-	}
+  private LocalAccount(AccountAddress address, AccountBalance balance) {
+    this.address = address;
+    this.balance = balance;
+  }
 
-	@JsonCreator
-	public static LocalAccount create(
-		@JsonProperty(value = "address", required = true) AccountAddress address,
-		@JsonProperty(value = "balance", required = true) AccountBalance balance
-	) {
-		return new LocalAccount(address, balance);
-	}
+  @JsonCreator
+  public static LocalAccount create(
+      @JsonProperty(value = "address", required = true) AccountAddress address,
+      @JsonProperty(value = "balance", required = true) AccountBalance balance) {
+    return new LocalAccount(address, balance);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof LocalAccount)) {
-			return false;
-		}
-		LocalAccount that = (LocalAccount) o;
-		return address.equals(that.address) && balance.equals(that.balance);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof LocalAccount)) {
+      return false;
+    }
+    LocalAccount that = (LocalAccount) o;
+    return address.equals(that.address) && balance.equals(that.balance);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(address, balance);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(address, balance);
+  }
 
-	@Override
-	public String toString() {
-		return "{address:" + address + ", balance:" + balance + '}';
-	}
+  @Override
+  public String toString() {
+    return "{address:" + address + ", balance:" + balance + '}';
+  }
 
-	public AccountAddress getAddress() {
-		return address;
-	}
+  public AccountAddress getAddress() {
+    return address;
+  }
 
-	public AccountBalance getBalance() {
-		return balance;
-	}
+  public AccountBalance getBalance() {
+    return balance;
+  }
 }

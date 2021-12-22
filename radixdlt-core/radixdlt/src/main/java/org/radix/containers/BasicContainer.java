@@ -64,28 +64,26 @@
 
 package org.radix.containers;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializeWithHid;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 @SerializeWithHid
 public abstract class BasicContainer {
-	// Placeholder for the serializer ID
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(Output.ALL)
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
+  // Placeholder for the serializer ID
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(Output.ALL)
+  private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	protected BasicContainer() {
-	}
+  protected BasicContainer() {}
 
-	@Override
-	public String toString() {
-		return this.getClass().toString() + " " + this.hashCode();
-	}
+  @Override
+  public String toString() {
+    return this.getClass().toString() + " " + this.hashCode();
+  }
 
-	public abstract short version();
+  public abstract short version();
 }

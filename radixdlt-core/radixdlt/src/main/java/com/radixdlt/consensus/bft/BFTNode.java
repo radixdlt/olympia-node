@@ -67,62 +67,61 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
-
 import java.util.Objects;
 
 /**
  * A node in a BFT network which can run BFT validation
  *
- * TODO: turn this into an interface so that an ECPublicKey is not required
- * TODO: Serialization of BFT messages are currently what prevent this from happening
+ * <p>TODO: turn this into an interface so that an ECPublicKey is not required TODO: Serialization
+ * of BFT messages are currently what prevent this from happening
  */
 public final class BFTNode {
-	private final ECPublicKey key;
-	private final String simpleName;
+  private final ECPublicKey key;
+  private final String simpleName;
 
-	private BFTNode(ECPublicKey key, String simpleName) {
-		this.key = Objects.requireNonNull(key);
-		this.simpleName = Objects.requireNonNull(simpleName);
-	}
+  private BFTNode(ECPublicKey key, String simpleName) {
+    this.key = Objects.requireNonNull(key);
+    this.simpleName = Objects.requireNonNull(simpleName);
+  }
 
-	public static BFTNode create(ECPublicKey key) {
-		var shortenedAddress = key.toHex().substring(0, 10);
-		return new BFTNode(key, shortenedAddress);
-	}
+  public static BFTNode create(ECPublicKey key) {
+    var shortenedAddress = key.toHex().substring(0, 10);
+    return new BFTNode(key, shortenedAddress);
+  }
 
-	public static BFTNode fromPublicKeyBytes(byte[] key) throws PublicKeyException {
-		return create(ECPublicKey.fromBytes(key));
-	}
+  public static BFTNode fromPublicKeyBytes(byte[] key) throws PublicKeyException {
+    return create(ECPublicKey.fromBytes(key));
+  }
 
-	public static BFTNode random() {
-		return create(ECKeyPair.generateNew().getPublicKey());
-	}
+  public static BFTNode random() {
+    return create(ECKeyPair.generateNew().getPublicKey());
+  }
 
-	public ECPublicKey getKey() {
-		return key;
-	}
+  public ECPublicKey getKey() {
+    return key;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(key);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(key);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof BFTNode)) {
-			return  false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof BFTNode)) {
+      return false;
+    }
 
-		BFTNode bftNodeId = (BFTNode) o;
-		return Objects.equals(bftNodeId.key, this.key);
-	}
+    BFTNode bftNodeId = (BFTNode) o;
+    return Objects.equals(bftNodeId.key, this.key);
+  }
 
-	public String getSimpleName() {
-		return simpleName;
-	}
+  public String getSimpleName() {
+    return simpleName;
+  }
 
-	@Override
-	public String toString() {
-		return simpleName;
-	}
+  @Override
+  public String toString() {
+    return simpleName;
+  }
 }

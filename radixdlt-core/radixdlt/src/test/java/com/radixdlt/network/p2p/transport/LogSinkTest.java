@@ -64,46 +64,46 @@
 
 package com.radixdlt.network.p2p.transport;
 
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+
 import com.radixdlt.network.p2p.transport.logging.LogSink;
 import org.apache.logging.log4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-
 public class LogSinkTest {
 
-	private Logger log;
-	private LogSink logSink;
+  private Logger log;
+  private LogSink logSink;
 
-	@Before
-	public void beforeTest() {
-		this.log = mock(Logger.class);
-		this.logSink = LogSink.using(log);
-	}
+  @Before
+  public void beforeTest() {
+    this.log = mock(Logger.class);
+    this.logSink = LogSink.using(log);
+  }
 
-	@Test
-	public void testIsTraceEnabled() {
-		when(log.isTraceEnabled()).thenReturn(true); // false is default
+  @Test
+  public void testIsTraceEnabled() {
+    when(log.isTraceEnabled()).thenReturn(true); // false is default
 
-		assertTrue(logSink.isTraceEnabled());
-		verify(log, times(1)).isTraceEnabled();
-		verifyNoMoreInteractions(log);
-	}
+    assertTrue(logSink.isTraceEnabled());
+    verify(log, times(1)).isTraceEnabled();
+    verifyNoMoreInteractions(log);
+  }
 
-	@Test
-	public void testTraceMessage() {
-		logSink.trace("baz");
-		verify(log, times(1)).trace("baz");
-		verifyNoMoreInteractions(log);
-	}
+  @Test
+  public void testTraceMessage() {
+    logSink.trace("baz");
+    verify(log, times(1)).trace("baz");
+    verifyNoMoreInteractions(log);
+  }
 
-	@Test
-	public void testTraceThrowable() {
-		Throwable t = new Throwable();
-		logSink.trace("bar", t);
-		verify(log, times(1)).trace("bar", t);
-		verifyNoMoreInteractions(log);
-	}
+  @Test
+  public void testTraceThrowable() {
+    Throwable t = new Throwable();
+    logSink.trace("bar", t);
+    verify(log, times(1)).trace("bar", t);
+    verifyNoMoreInteractions(log);
+  }
 }

@@ -75,80 +75,78 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Longs;
-
 import java.util.Objects;
 
 @SerializerId2("network.p2p.proxy_certificate_data")
 public final class ProxyCertificateData {
-	// Placeholder for the serializer ID
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(DsonOutput.Output.ALL)
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
+  // Placeholder for the serializer ID
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(DsonOutput.Output.ALL)
+  private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("grantee")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final NodeId grantee;
+  @JsonProperty("grantee")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final NodeId grantee;
 
-	@JsonProperty("expiresAt")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final long expiresAt;
+  @JsonProperty("expiresAt")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final long expiresAt;
 
-	@JsonProperty("networkId")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final int networkId;
+  @JsonProperty("networkId")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final int networkId;
 
-	@JsonCreator
-	private static ProxyCertificateData deserialize(
-		@JsonProperty(value = "grantee", required = true) NodeId grantee,
-		@JsonProperty(value = "expiresAt", required = true) long expiresAt,
-		@JsonProperty(value = "networkId", required = true) int networkId
-	) {
-		return new ProxyCertificateData(grantee, expiresAt, networkId);
-	}
+  @JsonCreator
+  private static ProxyCertificateData deserialize(
+      @JsonProperty(value = "grantee", required = true) NodeId grantee,
+      @JsonProperty(value = "expiresAt", required = true) long expiresAt,
+      @JsonProperty(value = "networkId", required = true) int networkId) {
+    return new ProxyCertificateData(grantee, expiresAt, networkId);
+  }
 
-	public static ProxyCertificateData create(NodeId grantee, long expiresAt, int networkId) {
-		return new ProxyCertificateData(grantee, expiresAt, networkId);
-	}
+  public static ProxyCertificateData create(NodeId grantee, long expiresAt, int networkId) {
+    return new ProxyCertificateData(grantee, expiresAt, networkId);
+  }
 
-	private ProxyCertificateData(NodeId grantee, long expiresAt, int networkId) {
-		this.grantee = Objects.requireNonNull(grantee);
-		this.expiresAt = expiresAt;
-		this.networkId = networkId;
-	}
+  private ProxyCertificateData(NodeId grantee, long expiresAt, int networkId) {
+    this.grantee = Objects.requireNonNull(grantee);
+    this.expiresAt = expiresAt;
+    this.networkId = networkId;
+  }
 
-	public NodeId grantee() {
-		return grantee;
-	}
+  public NodeId grantee() {
+    return grantee;
+  }
 
-	public long expiresAt() {
-		return expiresAt;
-	}
+  public long expiresAt() {
+    return expiresAt;
+  }
 
-	public int networkId() {
-		return networkId;
-	}
+  public int networkId() {
+    return networkId;
+  }
 
-	public HashCode hashToSign() {
-		return HashUtils.sha256(Bytes.concat(
-			grantee.getPublicKey().getBytes(),
-			Longs.toByteArray(expiresAt),
-			Longs.toByteArray(networkId)
-		));
-	}
+  public HashCode hashToSign() {
+    return HashUtils.sha256(
+        Bytes.concat(
+            grantee.getPublicKey().getBytes(),
+            Longs.toByteArray(expiresAt),
+            Longs.toByteArray(networkId)));
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		return o instanceof ProxyCertificateData that
-			&& expiresAt == that.expiresAt
-			&& Objects.equals(grantee, that.grantee)
-			&& Objects.equals(networkId, that.networkId);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    return o instanceof ProxyCertificateData that
+        && expiresAt == that.expiresAt
+        && Objects.equals(grantee, that.grantee)
+        && Objects.equals(networkId, that.networkId);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(grantee, expiresAt, networkId);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(grantee, expiresAt, networkId);
+  }
 }

@@ -69,50 +69,56 @@ import java.util.Optional;
 
 /**
  * Registration for a remote event processor to run on a certain runner
+ *
  * @param <T> the class of the remote event
  */
 public final class RemoteEventProcessorOnRunner<T> {
-    private final String runnerName;
-    private final Class<T> eventClass;
-    private final RemoteEventProcessor<T> processor;
-    private final long rateLimitDelayMs;
+  private final String runnerName;
+  private final Class<T> eventClass;
+  private final RemoteEventProcessor<T> processor;
+  private final long rateLimitDelayMs;
 
-    public RemoteEventProcessorOnRunner(String runnerName, Class<T> eventClass, RemoteEventProcessor<T> processor) {
-        this(runnerName, eventClass, processor, 0);
+  public RemoteEventProcessorOnRunner(
+      String runnerName, Class<T> eventClass, RemoteEventProcessor<T> processor) {
+    this(runnerName, eventClass, processor, 0);
+  }
+
+  public RemoteEventProcessorOnRunner(
+      String runnerName,
+      Class<T> eventClass,
+      RemoteEventProcessor<T> processor,
+      long rateLimitDelayMs) {
+    this.runnerName = Objects.requireNonNull(runnerName);
+    this.eventClass = Objects.requireNonNull(eventClass);
+    this.processor = Objects.requireNonNull(processor);
+    if (rateLimitDelayMs < 0) {
+      throw new IllegalArgumentException("rateLimitDelayMs must be >= 0.");
+    }
+    this.rateLimitDelayMs = rateLimitDelayMs;
+  }
+
+  public long getRateLimitDelayMs() {
+    return rateLimitDelayMs;
+  }
+
+  public String getRunnerName() {
+    return runnerName;
+  }
+
+  public <U> Optional<RemoteEventProcessor<U>> getProcessor(Class<U> c) {
+    if (c.isAssignableFrom(eventClass)) {
+      return Optional.of((RemoteEventProcessor<U>) processor);
     }
 
-    public RemoteEventProcessorOnRunner(String runnerName, Class<T> eventClass, RemoteEventProcessor<T> processor, long rateLimitDelayMs) {
-        this.runnerName = Objects.requireNonNull(runnerName);
-        this.eventClass = Objects.requireNonNull(eventClass);
-        this.processor = Objects.requireNonNull(processor);
-        if (rateLimitDelayMs < 0) {
-            throw new IllegalArgumentException("rateLimitDelayMs must be >= 0.");
-        }
-        this.rateLimitDelayMs = rateLimitDelayMs;
-    }
+    return Optional.empty();
+  }
 
-    public long getRateLimitDelayMs() {
-        return rateLimitDelayMs;
-    }
+  public Class<T> getEventClass() {
+    return eventClass;
+  }
 
-    public String getRunnerName() {
-        return runnerName;
-    }
-
-    public <U> Optional<RemoteEventProcessor<U>> getProcessor(Class<U> c) {
-        if (c.isAssignableFrom(eventClass)) {
-            return Optional.of((RemoteEventProcessor<U>) processor);
-        }
-
-        return Optional.empty();
-    }
-
-    public Class<T> getEventClass() {
-        return eventClass;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("%s Processor %s", this.runnerName, this.processor);
-    }
+  @Override
+  public String toString() {
+    return String.format("%s Processor %s", this.runnerName, this.processor);
+  }
 }

@@ -71,27 +71,24 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.radixdlt.utils.Bytes;
 import java.io.IOException;
 
-/**
- * Deserializer for translation from JSON encoded binary data
- * to {@code byte[]} data.
- */
+/** Deserializer for translation from JSON encoded binary data to {@code byte[]} data. */
 class JacksonJsonBytesDeserializer extends StdDeserializer<byte[]> {
-	private static final long serialVersionUID = -2472482347700365657L;
+  private static final long serialVersionUID = -2472482347700365657L;
 
-	JacksonJsonBytesDeserializer() {
-		this(null);
-	}
+  JacksonJsonBytesDeserializer() {
+    this(null);
+  }
 
-	JacksonJsonBytesDeserializer(Class<byte[]> t) {
-		super(t);
-	}
+  JacksonJsonBytesDeserializer(Class<byte[]> t) {
+    super(t);
+  }
 
-	@Override
-	public byte[] deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-		String value = p.getValueAsString();
-		if (!value.startsWith(JacksonCodecConstants.BYTE_STR_VALUE)) {
-			throw new InvalidFormatException(p, "Expecting bytes", value, byte[].class);
-		}
-		return Bytes.fromBase64String(value.substring(JacksonCodecConstants.STR_VALUE_LEN));
-	}
+  @Override
+  public byte[] deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+    String value = p.getValueAsString();
+    if (!value.startsWith(JacksonCodecConstants.BYTE_STR_VALUE)) {
+      throw new InvalidFormatException(p, "Expecting bytes", value, byte[].class);
+    }
+    return Bytes.fromBase64String(value.substring(JacksonCodecConstants.STR_VALUE_LEN));
+  }
 }

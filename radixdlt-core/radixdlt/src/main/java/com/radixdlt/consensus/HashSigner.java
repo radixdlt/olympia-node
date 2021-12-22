@@ -69,27 +69,25 @@ import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.crypto.ECDSASignature;
 
-/**
- * Signs a hash.
- */
+/** Signs a hash. */
 @FunctionalInterface
 @SecurityCritical(SecurityKind.SIG_SIGN)
 public interface HashSigner {
-	/**
-	 * Sign the specified hash with the specified key.
-	 *
-	 * @param hash The hash to sign
-	 * @return The {@link ECDSASignature}
-	 */
-	ECDSASignature sign(byte[] hash);
+  /**
+   * Sign the specified hash with the specified key.
+   *
+   * @param hash The hash to sign
+   * @return The {@link ECDSASignature}
+   */
+  ECDSASignature sign(byte[] hash);
 
-	/**
-	 * Sign the specified hash with the specified key.
-	 *
-	 * @param hash The hash to sign
-	 * @return The {@link ECDSASignature}
-	 */
-	default ECDSASignature sign(HashCode hash) {
-		return sign(hash.asBytes());
-	}
+  /**
+   * Sign the specified hash with the specified key.
+   *
+   * @param hash The hash to sign
+   * @return The {@link ECDSASignature}
+   */
+  default ECDSASignature sign(HashCode hash) {
+    return sign(hash.asBytes());
+  }
 }

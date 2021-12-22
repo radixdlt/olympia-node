@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.integration.api.actors;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.radixdlt.api.core.openapitools.model.CommittedTransaction;
 import com.radixdlt.api.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.openapitools.model.Operation;
@@ -71,7 +74,6 @@ import com.radixdlt.api.core.openapitools.model.ResourceAmount;
 import com.radixdlt.api.core.openapitools.model.ResourceIdentifier;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 import com.radixdlt.integration.api.DeterministicActor;
-
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -81,86 +83,98 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
- * Reconciles the balances that are computed by reading the transaction stream and
- * the /entity endpoint
+ * Reconciles the balances that are computed by reading the transaction stream and the /entity
+ * endpoint
  */
 public final class BalanceReconciler implements DeterministicActor {
-	private final Map<EntityIdentifier, Map<ResourceIdentifier, BigInteger>> balances = new HashMap<>();
-	private long currentStateVersion = 0L;
+  private final Map<EntityIdentifier, Map<ResourceIdentifier, BigInteger>> balances =
+      new HashMap<>();
+  private long currentStateVersion = 0L;
 
-	private static Map<EntityIdentifier, Map<ResourceIdentifier, BigInteger>> balanceChanges(Stream<OperationGroup> operationGroups) {
-		return operationGroups.flatMap(group -> group.getOperations().stream())
-			.filter(op -> op.getAmount() != null)
-			.collect(Collectors.groupingBy(
-				Operation::getEntityIdentifier,
-				Collectors.groupingBy(
-					op -> op.getAmount().getResourceIdentifier(),
-					Collectors.mapping(
-						op -> new BigInteger(op.getAmount().getValue()),
-						Collectors.reducing(BigInteger.ZERO, BigInteger::add)
-					)
-				)
-			));
-	}
+  private static Map<EntityIdentifier, Map<ResourceIdentifier, BigInteger>> balanceChanges(
+      Stream<OperationGroup> operationGroups) {
+    return operationGroups
+        .flatMap(group -> group.getOperations().stream())
+        .filter(op -> op.getAmount() != null)
+        .collect(
+            Collectors.groupingBy(
+                Operation::getEntityIdentifier,
+                Collectors.groupingBy(
+                    op -> op.getAmount().getResourceIdentifier(),
+                    Collectors.mapping(
+                        op -> new BigInteger(op.getAmount().getValue()),
+                        Collectors.reducing(BigInteger.ZERO, BigInteger::add)))));
+  }
 
-	@Override
-	public String execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
-		var injector = runner.getNode(0);
-		var nodeApiClient = injector.getInstance(NodeApiClient.class);
-		var transactions = new ArrayList<CommittedTransaction>();
+  @Override
+  public String execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
+    var injector = runner.getNode(0);
+    var nodeApiClient = injector.getInstance(NodeApiClient.class);
+    var transactions = new ArrayList<CommittedTransaction>();
 
-		final long startingStateVersion = currentStateVersion;
-		// Sync fully to ledger
-		List<CommittedTransaction> loadedTransactions;
-		do {
-			loadedTransactions = nodeApiClient.getTransactions(currentStateVersion, random.nextLong(1, 10));
-			transactions.addAll(loadedTransactions);
-			currentStateVersion = currentStateVersion + loadedTransactions.size();
-		} while (!loadedTransactions.isEmpty());
+    final long startingStateVersion = currentStateVersion;
+    // Sync fully to ledger
+    List<CommittedTransaction> loadedTransactions;
+    do {
+      loadedTransactions =
+          nodeApiClient.getTransactions(currentStateVersion, random.nextLong(1, 10));
+      transactions.addAll(loadedTransactions);
+      currentStateVersion = currentStateVersion + loadedTransactions.size();
+    } while (!loadedTransactions.isEmpty());
 
-		var nodeStateVersion = nodeApiClient.getStateIdentifier().getStateVersion();
-		assertThat(nodeStateVersion).isEqualTo(currentStateVersion);
+    var nodeStateVersion = nodeApiClient.getStateIdentifier().getStateVersion();
+    assertThat(nodeStateVersion).isEqualTo(currentStateVersion);
 
-		// Compute balance changes since last sync
-		var balanceChanges = balanceChanges(transactions.stream().flatMap(txn -> txn.getOperationGroups().stream()));
+    // Compute balance changes since last sync
+    var balanceChanges =
+        balanceChanges(transactions.stream().flatMap(txn -> txn.getOperationGroups().stream()));
 
-		// Update balance states
-		balanceChanges.forEach((identifier, balanceMap) ->
-			balanceMap.forEach((resource, value) -> {
-				if (value.equals(BigInteger.ZERO)) {
-					return;
-				}
+    // Update balance states
+    balanceChanges.forEach(
+        (identifier, balanceMap) ->
+            balanceMap.forEach(
+                (resource, value) -> {
+                  if (value.equals(BigInteger.ZERO)) {
+                    return;
+                  }
 
-				balances.merge(identifier, Map.of(resource, value), (b0, b1) ->
-					Stream.concat(b0.entrySet().stream(), b1.entrySet().stream()).collect(
-							Collectors.groupingBy(
-								Map.Entry::getKey,
-								Collectors.mapping(Map.Entry::getValue, Collectors.reducing(BigInteger.ZERO, BigInteger::add))
-							)
-						).entrySet().stream()
-						.filter(e -> !e.getValue().equals(BigInteger.ZERO))
-						.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
-				);
-			})
-		);
+                  balances.merge(
+                      identifier,
+                      Map.of(resource, value),
+                      (b0, b1) ->
+                          Stream.concat(b0.entrySet().stream(), b1.entrySet().stream())
+                              .collect(
+                                  Collectors.groupingBy(
+                                      Map.Entry::getKey,
+                                      Collectors.mapping(
+                                          Map.Entry::getValue,
+                                          Collectors.reducing(BigInteger.ZERO, BigInteger::add))))
+                              .entrySet()
+                              .stream()
+                              .filter(e -> !e.getValue().equals(BigInteger.ZERO))
+                              .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+                }));
 
-		// Verify that updated balance states match the node
-		for (var entityIdentifier : balanceChanges.keySet()) {
-			var myBalances = balances.getOrDefault(entityIdentifier, Map.of());
-			var response = nodeApiClient.getEntity(entityIdentifier);
-			assertThat(response.getStateIdentifier().getStateVersion()).isEqualTo(currentStateVersion);
+    // Verify that updated balance states match the node
+    for (var entityIdentifier : balanceChanges.keySet()) {
+      var myBalances = balances.getOrDefault(entityIdentifier, Map.of());
+      var response = nodeApiClient.getEntity(entityIdentifier);
+      assertThat(response.getStateIdentifier().getStateVersion()).isEqualTo(currentStateVersion);
 
-			var nodeBalances = response.getBalances().stream()
-				.collect(Collectors.toMap(ResourceAmount::getResourceIdentifier, r -> new BigInteger(r.getValue())));
+      var nodeBalances =
+          response.getBalances().stream()
+              .collect(
+                  Collectors.toMap(
+                      ResourceAmount::getResourceIdentifier, r -> new BigInteger(r.getValue())));
 
-			assertThat(nodeBalances)
-				.describedAs("Balance of %s", entityIdentifier)
-				.containsExactlyInAnyOrderEntriesOf(myBalances);
-		}
+      assertThat(nodeBalances)
+          .describedAs("Balance of %s", entityIdentifier)
+          .containsExactlyInAnyOrderEntriesOf(myBalances);
+    }
 
-		return String.format("Okay{last_state_version=%s current_state_version=%s}", startingStateVersion, currentStateVersion);
-	}
+    return String.format(
+        "Okay{last_state_version=%s current_state_version=%s}",
+        startingStateVersion, currentStateVersion);
+  }
 }

@@ -66,5 +66,5 @@ package com.radixdlt.utils.functional;
 
 @FunctionalInterface
 public interface ThrowingSupplier<T> {
-	T get() throws Throwable;
+  T get() throws Throwable;
 }

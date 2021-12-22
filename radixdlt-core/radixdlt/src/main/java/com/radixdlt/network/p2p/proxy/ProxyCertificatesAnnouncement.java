@@ -66,7 +66,6 @@ package com.radixdlt.network.p2p.proxy;
 
 import com.google.common.collect.ImmutableSet;
 
-/**
- * Remote event containing new proxy certificates that were granted to the sender.
- */
-public final record ProxyCertificatesAnnouncement(ImmutableSet<ProxyCertificate> proxyCertificates) { }
+/** Remote event containing new proxy certificates that were granted to the sender. */
+public final record ProxyCertificatesAnnouncement(
+    ImmutableSet<ProxyCertificate> proxyCertificates) {}

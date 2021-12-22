@@ -84,52 +84,55 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.List;
-
 public class UpdateValidatorSystemMetadataTest {
-	private RadixEngine<Void> engine;
-	private EngineStore<Void> store;
+  private RadixEngine<Void> engine;
+  private EngineStore<Void> store;
 
-	@Before
-	public void setup() throws Exception {
-		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScrypt());
-		cmAtomOS.load(new RoundUpdateConstraintScrypt(2));
-		cmAtomOS.load(new EpochUpdateConstraintScrypt(2, UInt256.NINE, 1, 1, 100));
-		cmAtomOS.load(new ValidatorConstraintScryptV2());
-		var cm = new ConstraintMachine(
-			cmAtomOS.getProcedures(),
-			cmAtomOS.buildSubstateDeserialization(),
-			cmAtomOS.buildVirtualSubstateDeserialization()
-		);
-		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
-		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(
-			parser,
-			cmAtomOS.buildSubstateSerialization(),
-			REConstructor.newBuilder()
-				.put(UpdateValidatorSystemMetadata.class, new UpdateValidatorSystemMetadataConstructor())
-				.put(CreateSystem.class, new CreateSystemConstructorV2())
-				.build(),
-			cm,
-			store
-		);
-		var txn = this.engine.construct(new CreateSystem(0)).buildWithoutSignature();
-		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
-	}
+  @Before
+  public void setup() throws Exception {
+    var cmAtomOS = new CMAtomOS();
+    cmAtomOS.load(new SystemConstraintScrypt());
+    cmAtomOS.load(new RoundUpdateConstraintScrypt(2));
+    cmAtomOS.load(new EpochUpdateConstraintScrypt(2, UInt256.NINE, 1, 1, 100));
+    cmAtomOS.load(new ValidatorConstraintScryptV2());
+    var cm =
+        new ConstraintMachine(
+            cmAtomOS.getProcedures(),
+            cmAtomOS.buildSubstateDeserialization(),
+            cmAtomOS.buildVirtualSubstateDeserialization());
+    var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+    this.store = new InMemoryEngineStore<>();
+    this.engine =
+        new RadixEngine<>(
+            parser,
+            cmAtomOS.buildSubstateSerialization(),
+            REConstructor.newBuilder()
+                .put(
+                    UpdateValidatorSystemMetadata.class,
+                    new UpdateValidatorSystemMetadataConstructor())
+                .put(CreateSystem.class, new CreateSystemConstructorV2())
+                .build(),
+            cm,
+            store);
+    var txn = this.engine.construct(new CreateSystem(0)).buildWithoutSignature();
+    this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
+  }
 
-	@Test
-	public void update_validator_metadata() throws Exception {
-		// Arrange
-		var key = ECKeyPair.generateNew();
+  @Test
+  public void update_validator_metadata() throws Exception {
+    // Arrange
+    var key = ECKeyPair.generateNew();
 
-		var bytes = Bytes.fromHexString(Strings.repeat("0c", 32));
-		// Act and Assert
-		var txn = this.engine.construct(new UpdateValidatorSystemMetadata(key.getPublicKey(), bytes))
-			.signAndBuild(key::sign);
-		this.engine.execute(List.of(txn));
-	}
+    var bytes = Bytes.fromHexString(Strings.repeat("0c", 32));
+    // Act and Assert
+    var txn =
+        this.engine
+            .construct(new UpdateValidatorSystemMetadata(key.getPublicKey(), bytes))
+            .signAndBuild(key::sign);
+    this.engine.execute(List.of(txn));
+  }
 }

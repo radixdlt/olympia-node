@@ -68,58 +68,59 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.proxy.ProxyCertificate;
-
 import java.util.Optional;
 
 public interface AuthHandshakeResult {
 
-	static AuthHandshakeSuccess success(ECPublicKey remotePubKey, Secrets secrets, ImmutableSet<ProxyCertificate> proxyCertificates) {
-		return new AuthHandshakeSuccess(NodeId.fromPublicKey(remotePubKey), secrets, proxyCertificates);
-	}
+  static AuthHandshakeSuccess success(
+      ECPublicKey remotePubKey, Secrets secrets, ImmutableSet<ProxyCertificate> proxyCertificates) {
+    return new AuthHandshakeSuccess(NodeId.fromPublicKey(remotePubKey), secrets, proxyCertificates);
+  }
 
-	static AuthHandshakeError error(String msg, Optional<NodeId> maybeNodeId) {
-		return new AuthHandshakeError(msg, maybeNodeId);
-	}
+  static AuthHandshakeError error(String msg, Optional<NodeId> maybeNodeId) {
+    return new AuthHandshakeError(msg, maybeNodeId);
+  }
 
-	final class AuthHandshakeSuccess implements AuthHandshakeResult {
-		private final NodeId remoteNodeId;
-		private final Secrets secrets;
-		private final ImmutableSet<ProxyCertificate> proxyCertificates;
+  final class AuthHandshakeSuccess implements AuthHandshakeResult {
+    private final NodeId remoteNodeId;
+    private final Secrets secrets;
+    private final ImmutableSet<ProxyCertificate> proxyCertificates;
 
-		private AuthHandshakeSuccess(NodeId remoteNodeId, Secrets secrets, ImmutableSet<ProxyCertificate> proxyCertificates) {
-			this.remoteNodeId = remoteNodeId;
-			this.secrets = secrets;
-			this.proxyCertificates = proxyCertificates;
-		}
+    private AuthHandshakeSuccess(
+        NodeId remoteNodeId, Secrets secrets, ImmutableSet<ProxyCertificate> proxyCertificates) {
+      this.remoteNodeId = remoteNodeId;
+      this.secrets = secrets;
+      this.proxyCertificates = proxyCertificates;
+    }
 
-		public NodeId getRemoteNodeId() {
-			return remoteNodeId;
-		}
+    public NodeId getRemoteNodeId() {
+      return remoteNodeId;
+    }
 
-		public Secrets getSecrets() {
-			return secrets;
-		}
+    public Secrets getSecrets() {
+      return secrets;
+    }
 
-		public ImmutableSet<ProxyCertificate> getProxyCertificates() {
-			return proxyCertificates;
-		}
-	}
+    public ImmutableSet<ProxyCertificate> getProxyCertificates() {
+      return proxyCertificates;
+    }
+  }
 
-	final class AuthHandshakeError implements AuthHandshakeResult {
-		private final String msg;
-		private final Optional<NodeId> maybeNodeId;
+  final class AuthHandshakeError implements AuthHandshakeResult {
+    private final String msg;
+    private final Optional<NodeId> maybeNodeId;
 
-		public AuthHandshakeError(String msg, Optional<NodeId> maybeNodeId) {
-			this.msg = msg;
-			this.maybeNodeId = maybeNodeId;
-		}
+    public AuthHandshakeError(String msg, Optional<NodeId> maybeNodeId) {
+      this.msg = msg;
+      this.maybeNodeId = maybeNodeId;
+    }
 
-		public String getMsg() {
-			return msg;
-		}
+    public String getMsg() {
+      return msg;
+    }
 
-		public Optional<NodeId> getMaybeNodeId() {
-			return maybeNodeId;
-		}
-	}
+    public Optional<NodeId> getMaybeNodeId() {
+      return maybeNodeId;
+    }
+  }
 }

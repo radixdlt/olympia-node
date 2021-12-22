@@ -68,71 +68,62 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import java.util.Objects;
 
-/**
- * A potential timeout that is scheduled
- */
+/** A potential timeout that is scheduled */
 public final class ScheduledLocalTimeout {
-	private final ViewUpdate viewUpdate;
-	private final long millisecondsWaitTime;
-	private final int count;
+  private final ViewUpdate viewUpdate;
+  private final long millisecondsWaitTime;
+  private final int count;
 
-	private ScheduledLocalTimeout(
-		ViewUpdate viewUpdate,
-		long millisecondsWaitTime,
-		int count
-	) {
-		this.viewUpdate = viewUpdate;
-		this.millisecondsWaitTime = millisecondsWaitTime;
-		this.count = count;
-	}
+  private ScheduledLocalTimeout(ViewUpdate viewUpdate, long millisecondsWaitTime, int count) {
+    this.viewUpdate = viewUpdate;
+    this.millisecondsWaitTime = millisecondsWaitTime;
+    this.count = count;
+  }
 
-	public static ScheduledLocalTimeout create(ViewUpdate viewUpdate, long millisecondsWaitTime) {
-		return new ScheduledLocalTimeout(viewUpdate, millisecondsWaitTime, 0);
-	}
+  public static ScheduledLocalTimeout create(ViewUpdate viewUpdate, long millisecondsWaitTime) {
+    return new ScheduledLocalTimeout(viewUpdate, millisecondsWaitTime, 0);
+  }
 
-	public ScheduledLocalTimeout nextRetry(long millisecondsWaitTime) {
-		return new ScheduledLocalTimeout(
-			viewUpdate,
-			millisecondsWaitTime,
-			this.count + 1
-		);
-	}
+  public ScheduledLocalTimeout nextRetry(long millisecondsWaitTime) {
+    return new ScheduledLocalTimeout(viewUpdate, millisecondsWaitTime, this.count + 1);
+  }
 
-	public int count() {
-		return count;
-	}
+  public int count() {
+    return count;
+  }
 
-	public ViewUpdate viewUpdate() {
-		return viewUpdate;
-	}
+  public ViewUpdate viewUpdate() {
+    return viewUpdate;
+  }
 
-	public View view() {
-		return viewUpdate.getCurrentView();
-	}
+  public View view() {
+    return viewUpdate.getCurrentView();
+  }
 
-	public long millisecondsWaitTime() {
-		return millisecondsWaitTime;
-	}
+  public long millisecondsWaitTime() {
+    return millisecondsWaitTime;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(viewUpdate, millisecondsWaitTime, count);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(viewUpdate, millisecondsWaitTime, count);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof ScheduledLocalTimeout)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof ScheduledLocalTimeout)) {
+      return false;
+    }
 
-		ScheduledLocalTimeout other = (ScheduledLocalTimeout) o;
-		return Objects.equals(other.viewUpdate, this.viewUpdate)
-			&& other.millisecondsWaitTime == this.millisecondsWaitTime
-			&& other.count == this.count;
-	}
+    ScheduledLocalTimeout other = (ScheduledLocalTimeout) o;
+    return Objects.equals(other.viewUpdate, this.viewUpdate)
+        && other.millisecondsWaitTime == this.millisecondsWaitTime
+        && other.count == this.count;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{view=%s count=%s}", this.getClass().getSimpleName(), viewUpdate, count);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{view=%s count=%s}", this.getClass().getSimpleName(), viewUpdate, count);
+  }
 }

@@ -68,43 +68,42 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.EventProcessorOnDispatch;
-
 import java.util.Optional;
 import java.util.function.Function;
 
 public final class FailOnEvent {
-	private FailOnEvent() {
-		throw new IllegalStateException("Cannot instantiate");
-	}
+  private FailOnEvent() {
+    throw new IllegalStateException("Cannot instantiate");
+  }
 
-	public static Module asModule(Class<?> eventClass) {
-		return new AbstractModule() {
-			@ProvidesIntoSet
-			EventProcessorOnDispatch<?> failOnEvent() {
-				return new EventProcessorOnDispatch<>(
-					eventClass,
-					i -> {
-						throw new IllegalStateException("Invalid event: " + i);
-					}
-				);
-			};
-		};
-	}
+  public static Module asModule(Class<?> eventClass) {
+    return new AbstractModule() {
+      @ProvidesIntoSet
+      EventProcessorOnDispatch<?> failOnEvent() {
+        return new EventProcessorOnDispatch<>(
+            eventClass,
+            i -> {
+              throw new IllegalStateException("Invalid event: " + i);
+            });
+      }
+      ;
+    };
+  }
 
-	public static <T> Module asModule(Class<T> eventClass, Function<T, Optional<Throwable>> mapper) {
-		return new AbstractModule() {
-			@ProvidesIntoSet
-			EventProcessorOnDispatch<?> failOnEvent() {
-				return new EventProcessorOnDispatch<>(
-					eventClass,
-					i -> {
-						var maybeError = mapper.apply(i);
-						if (maybeError.isPresent()) {
-							throw new IllegalStateException("Invalid event: " + i, maybeError.get());
-						}
-					}
-				);
-			};
-		};
-	}
+  public static <T> Module asModule(Class<T> eventClass, Function<T, Optional<Throwable>> mapper) {
+    return new AbstractModule() {
+      @ProvidesIntoSet
+      EventProcessorOnDispatch<?> failOnEvent() {
+        return new EventProcessorOnDispatch<>(
+            eventClass,
+            i -> {
+              var maybeError = mapper.apply(i);
+              if (maybeError.isPresent()) {
+                throw new IllegalStateException("Invalid event: " + i, maybeError.get());
+              }
+            });
+      }
+      ;
+    };
+  }
 }

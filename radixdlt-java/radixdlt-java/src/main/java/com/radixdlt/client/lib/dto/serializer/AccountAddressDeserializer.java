@@ -71,20 +71,20 @@ import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
-
 import java.io.IOException;
 
 public class AccountAddressDeserializer extends StdDeserializer<AccountAddress> {
-	private final AccountAddressing addressing;
+  private final AccountAddressing addressing;
 
-	public AccountAddressDeserializer(Addressing networkAddressing) {
-		super(AccountAddress.class);
-		addressing = networkAddressing.forAccounts();
-	}
+  public AccountAddressDeserializer(Addressing networkAddressing) {
+    super(AccountAddress.class);
+    addressing = networkAddressing.forAccounts();
+  }
 
-	@Override
-	public AccountAddress deserialize(JsonParser parser, DeserializationContext ctxt) throws IOException {
-		var value = parser.getText();
-		return AccountAddress.create(addressing.parseOrThrow(value, DeserializeException::new));
-	}
+  @Override
+  public AccountAddress deserialize(JsonParser parser, DeserializationContext ctxt)
+      throws IOException {
+    var value = parser.getText();
+    return AccountAddress.create(addressing.parseOrThrow(value, DeserializeException::new));
+  }
 }

@@ -71,35 +71,33 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerProof;
-
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
 public class VerifiedTxnsAndProofTest {
-	private LedgerProof stateAndProof;
-	private VerifiedTxnsAndProof emptyCommandsAndProof;
-	private final long stateVersion = 232L;
+  private LedgerProof stateAndProof;
+  private VerifiedTxnsAndProof emptyCommandsAndProof;
+  private final long stateVersion = 232L;
 
-	@Before
-	public void setUp() {
-		this.stateAndProof = mock(LedgerProof.class);
-		when(stateAndProof.getStateVersion()).thenReturn(stateVersion);
+  @Before
+  public void setUp() {
+    this.stateAndProof = mock(LedgerProof.class);
+    when(stateAndProof.getStateVersion()).thenReturn(stateVersion);
 
-		this.emptyCommandsAndProof = VerifiedTxnsAndProof.create(ImmutableList.of(), stateAndProof);
-	}
+    this.emptyCommandsAndProof = VerifiedTxnsAndProof.create(ImmutableList.of(), stateAndProof);
+  }
 
-	@Test
-	public void testGetters() {
-		assertThat(this.emptyCommandsAndProof.getProof()).isEqualTo(stateAndProof);
-	}
+  @Test
+  public void testGetters() {
+    assertThat(this.emptyCommandsAndProof.getProof()).isEqualTo(stateAndProof);
+  }
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(VerifiedTxnsAndProof.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
-
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(VerifiedTxnsAndProof.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 }

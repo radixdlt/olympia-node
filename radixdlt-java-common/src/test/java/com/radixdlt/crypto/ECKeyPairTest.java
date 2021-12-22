@@ -64,114 +64,116 @@
 
 package com.radixdlt.crypto;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import com.radixdlt.TestSetupUtils;
-
-import java.nio.charset.StandardCharsets;
-
-import nl.jqno.equalsverifier.EqualsVerifier;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.radixdlt.TestSetupUtils;
+import java.nio.charset.StandardCharsets;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 public class ECKeyPairTest {
 
-	@BeforeClass
-	public static void beforeClass() {
-		TestSetupUtils.installBouncyCastleProvider();
-	}
+  @BeforeClass
+  public static void beforeClass() {
+    TestSetupUtils.installBouncyCastleProvider();
+  }
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(ECKeyPair.class)
-			.withIgnoredFields("publicKey") // public key is derived from used private key.
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(ECKeyPair.class)
+        .withIgnoredFields("publicKey") // public key is derived from used private key.
+        .verify();
+  }
 
-	@Test
-	public void checkKeyIntegrity() throws Exception {
-		final int iterations = 5000;
+  @Test
+  public void checkKeyIntegrity() throws Exception {
+    final int iterations = 5000;
 
-		for (int i = 0; i < iterations; i++) {
-			var key = ECKeyPair.generateNew();
+    for (int i = 0; i < iterations; i++) {
+      var key = ECKeyPair.generateNew();
 
-			var priv = key.getPrivateKey();
-			var pub = key.getPublicKey().getBytes();
+      var priv = key.getPrivateKey();
+      var pub = key.getPublicKey().getBytes();
 
-			key = ECKeyPair.fromPrivateKey(priv);
+      key = ECKeyPair.fromPrivateKey(priv);
 
-			assertArrayEquals(priv, key.getPrivateKey());
-			assertArrayEquals(pub, key.getPublicKey().getBytes());
-		}
-	}
+      assertArrayEquals(priv, key.getPrivateKey());
+      assertArrayEquals(pub, key.getPublicKey().getBytes());
+    }
+  }
 
-	@Test
-	public void signAndVerify() throws Exception {
-		final int iterations = 2000;
-		var helloWorld = "Hello World";
+  @Test
+  public void signAndVerify() throws Exception {
+    final int iterations = 2000;
+    var helloWorld = "Hello World";
 
-		for (int i = 0; i < iterations; i++) {
-			var key = ECKeyPair.generateNew();
-			var priv = key.getPrivateKey();
-			var pub = key.getPublicKey().getBytes();
+    for (int i = 0; i < iterations; i++) {
+      var key = ECKeyPair.generateNew();
+      var priv = key.getPrivateKey();
+      var pub = key.getPublicKey().getBytes();
 
-			var keyPair = ECKeyPair.fromPrivateKey(priv);
-			var signature = keyPair.sign(HashUtils.sha256(helloWorld.getBytes(StandardCharsets.UTF_8)).asBytes());
+      var keyPair = ECKeyPair.fromPrivateKey(priv);
+      var signature =
+          keyPair.sign(HashUtils.sha256(helloWorld.getBytes(StandardCharsets.UTF_8)).asBytes());
 
-			var pubKey = ECPublicKey.fromBytes(pub);
-			assertTrue(pubKey.verify(HashUtils.sha256(helloWorld.getBytes(StandardCharsets.UTF_8)).asBytes(), signature));
-		}
-	}
+      var pubKey = ECPublicKey.fromBytes(pub);
+      assertTrue(
+          pubKey.verify(
+              HashUtils.sha256(helloWorld.getBytes(StandardCharsets.UTF_8)).asBytes(), signature));
+    }
+  }
 
-	@Test
-	public void checkKeyPairEquals() {
-		EqualsVerifier.forClass(ECKeyPair.class)
-			.withIgnoredFields("publicKey") // Computed
-			.verify();
-	}
+  @Test
+  public void checkKeyPairEquals() {
+    EqualsVerifier.forClass(ECKeyPair.class)
+        .withIgnoredFields("publicKey") // Computed
+        .verify();
+  }
 
-	@Test
-	public void when_generating_two_default_key_pairs__they_should_have_different_private_keys() {
-		var privateKey1 = ECKeyPair.generateNew().getPrivateKey();
-		var privateKey2 = ECKeyPair.generateNew().getPrivateKey();
+  @Test
+  public void when_generating_two_default_key_pairs__they_should_have_different_private_keys() {
+    var privateKey1 = ECKeyPair.generateNew().getPrivateKey();
+    var privateKey2 = ECKeyPair.generateNew().getPrivateKey();
 
-		assertThat(privateKey1).isNotEqualTo(privateKey2);
-	}
+    assertThat(privateKey1).isNotEqualTo(privateKey2);
+  }
 
-	@Test
-	public void when_generating_two_key_pairs_from_same_seed__they_should_have_same_private_keys() {
-		var seed = "seed".getBytes();
-		var privateKey1 = ECKeyPair.fromSeed(seed).getPrivateKey();
-		var privateKey2 = ECKeyPair.fromSeed(seed).getPrivateKey();
+  @Test
+  public void when_generating_two_key_pairs_from_same_seed__they_should_have_same_private_keys() {
+    var seed = "seed".getBytes();
+    var privateKey1 = ECKeyPair.fromSeed(seed).getPrivateKey();
+    var privateKey2 = ECKeyPair.fromSeed(seed).getPrivateKey();
 
-		assertThat(privateKey1).isEqualTo(privateKey2);
-	}
+    assertThat(privateKey1).isEqualTo(privateKey2);
+  }
 
-	@Test
-	public void when_signing_some_hash_with_a_seeded_key_pair__another_key_pair_from_same_seed_can_verify_the_signature() {
-		var seed = "seed".getBytes();
-		var keyPair1 = ECKeyPair.fromSeed(seed);
-		var keyPair2 = ECKeyPair.fromSeed(seed);
+  @Test
+  public void
+      when_signing_some_hash_with_a_seeded_key_pair__another_key_pair_from_same_seed_can_verify_the_signature() {
+    var seed = "seed".getBytes();
+    var keyPair1 = ECKeyPair.fromSeed(seed);
+    var keyPair2 = ECKeyPair.fromSeed(seed);
 
-		var hash1 = HashUtils.random256();
-		var hash2 = HashUtils.random256();
-		var signature1 = keyPair1.sign(hash1);
-		var signature2 = keyPair2.sign(hash2);
+    var hash1 = HashUtils.random256();
+    var hash2 = HashUtils.random256();
+    var signature1 = keyPair1.sign(hash1);
+    var signature2 = keyPair2.sign(hash2);
 
-		// Assert that KeyPair1 can be used to verify the signature of Hash2
-		assertTrue(keyPair1.getPublicKey().verify(hash2, signature2));
+    // Assert that KeyPair1 can be used to verify the signature of Hash2
+    assertTrue(keyPair1.getPublicKey().verify(hash2, signature2));
 
-		// Assert that KeyPair2 can be used to verify the signature of Hash1
-		assertTrue(keyPair2.getPublicKey().verify(hash1, signature1));
-	}
+    // Assert that KeyPair2 can be used to verify the signature of Hash1
+    assertTrue(keyPair2.getPublicKey().verify(hash1, signature1));
+  }
 
-	@Test
-	public void validateSeedBeforeUse() {
-		assertThatThrownBy(() -> ECKeyPair.fromSeed(null)).isInstanceOf(NullPointerException.class);
-		assertThatThrownBy(() -> ECKeyPair.fromSeed(new byte[]{})).isInstanceOf(IllegalArgumentException.class);
-	}
+  @Test
+  public void validateSeedBeforeUse() {
+    assertThatThrownBy(() -> ECKeyPair.fromSeed(null)).isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> ECKeyPair.fromSeed(new byte[] {}))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
 }

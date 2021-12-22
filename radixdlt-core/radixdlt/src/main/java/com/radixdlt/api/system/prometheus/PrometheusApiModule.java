@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -70,17 +71,17 @@ import com.radixdlt.api.HandlerRoute;
 import io.undertow.server.HttpHandler;
 
 public final class PrometheusApiModule extends AbstractModule {
-	private final String path;
+  private final String path;
 
-	public PrometheusApiModule(String path) {
-		this.path = path;
-	}
+  public PrometheusApiModule(String path) {
+    this.path = path;
+  }
 
-	@Override
-	protected void configure() {
-		bind(PrometheusHandler.class).in(Scopes.SINGLETON);
-		MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class)
-			.addBinding(HandlerRoute.get(path))
-			.to(PrometheusHandler.class);
-	}
+  @Override
+  protected void configure() {
+    bind(PrometheusHandler.class).in(Scopes.SINGLETON);
+    MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class)
+        .addBinding(HandlerRoute.get(path))
+        .to(PrometheusHandler.class);
+  }
 }

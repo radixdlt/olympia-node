@@ -74,26 +74,27 @@ import com.radixdlt.network.p2p.PeersView;
 
 public class MockedPeersViewModule extends AbstractModule {
 
-	private final ImmutableMap<Integer, ImmutableList<Integer>> nodes;
+  private final ImmutableMap<Integer, ImmutableList<Integer>> nodes;
 
-	public MockedPeersViewModule(ImmutableMap<Integer, ImmutableList<Integer>> nodes) {
-		this.nodes = nodes;
-	}
+  public MockedPeersViewModule(ImmutableMap<Integer, ImmutableList<Integer>> nodes) {
+    this.nodes = nodes;
+  }
 
-	@Provides
-	public PeersView peersView(@Self BFTNode self, ImmutableList<BFTNode> nodes) {
-		final var nodesFiltered = filterNodes(self, nodes);
-		return () -> nodesFiltered.stream()
-			.filter(n -> !n.equals(self))
-			.map(PeersView.PeerInfo::fromBftNode);
-	}
+  @Provides
+  public PeersView peersView(@Self BFTNode self, ImmutableList<BFTNode> nodes) {
+    final var nodesFiltered = filterNodes(self, nodes);
+    return () ->
+        nodesFiltered.stream().filter(n -> !n.equals(self)).map(PeersView.PeerInfo::fromBftNode);
+  }
 
-	private ImmutableList<BFTNode> filterNodes(BFTNode self, ImmutableList<BFTNode> allNodes) {
-		final var selfIndex = allNodes.indexOf(self);
-		if (nodes != null && nodes.containsKey(selfIndex)) {
-			return nodes.get(selfIndex).stream().map(allNodes::get).collect(ImmutableList.toImmutableList());
-		} else {
-			return allNodes;
-		}
-	}
+  private ImmutableList<BFTNode> filterNodes(BFTNode self, ImmutableList<BFTNode> allNodes) {
+    final var selfIndex = allNodes.indexOf(self);
+    if (nodes != null && nodes.containsKey(selfIndex)) {
+      return nodes.get(selfIndex).stream()
+          .map(allNodes::get)
+          .collect(ImmutableList.toImmutableList());
+    } else {
+      return allNodes;
+    }
+  }
 }

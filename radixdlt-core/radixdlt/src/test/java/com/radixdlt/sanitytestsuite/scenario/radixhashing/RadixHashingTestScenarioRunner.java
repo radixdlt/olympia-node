@@ -64,28 +64,29 @@
 
 package com.radixdlt.sanitytestsuite.scenario.radixhashing;
 
+import static org.junit.Assert.assertEquals;
+
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
 import com.radixdlt.utils.Bytes;
 
-import static org.junit.Assert.assertEquals;
+public final class RadixHashingTestScenarioRunner
+    extends SanityTestScenarioRunner<RadixHashingTestVector> {
 
-public final class RadixHashingTestScenarioRunner extends SanityTestScenarioRunner<RadixHashingTestVector> {
+  @Override
+  public String testScenarioIdentifier() {
+    return "radix_hashing";
+  }
 
-	@Override
-	public String testScenarioIdentifier() {
-		return "radix_hashing";
-	}
+  @Override
+  public Class<RadixHashingTestVector> testVectorType() {
+    return RadixHashingTestVector.class;
+  }
 
-	@Override
-	public Class<RadixHashingTestVector> testVectorType() {
-		return RadixHashingTestVector.class;
-	}
+  @Override
+  public void doRunTestVector(RadixHashingTestVector testVector) throws AssertionError {
+    var hashHex = Bytes.toHexString(HashUtils.sha256(testVector.input.bytesToHash()).asBytes());
 
-	@Override
-	public void doRunTestVector(RadixHashingTestVector testVector) throws AssertionError {
-		var hashHex = Bytes.toHexString(HashUtils.sha256(testVector.input.bytesToHash()).asBytes());
-
-		assertEquals(testVector.expected.hashOfHash, hashHex);
-	}
+    assertEquals(testVector.expected.hashOfHash, hashHex);
+  }
 }

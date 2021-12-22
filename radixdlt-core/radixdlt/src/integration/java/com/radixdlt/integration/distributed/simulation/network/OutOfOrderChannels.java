@@ -73,22 +73,25 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Provides message ordering in a channel which does not
- * necessarily need to be in order.
- */
+/** Provides message ordering in a channel which does not necessarily need to be in order. */
 public class OutOfOrderChannels implements ChannelCommunication {
-	private final LatencyProvider latencyProvider;
+  private final LatencyProvider latencyProvider;
 
-	@Inject
-	public OutOfOrderChannels(LatencyProvider latencyProvider) {
-		this.latencyProvider = Objects.requireNonNull(latencyProvider);
-	}
+  @Inject
+  public OutOfOrderChannels(LatencyProvider latencyProvider) {
+    this.latencyProvider = Objects.requireNonNull(latencyProvider);
+  }
 
-	@Override
-	public Observable<MessageInTransit> transform(BFTNode sender, BFTNode receiver, Observable<MessageInTransit> messages) {
-		return messages.map(msg -> msg.delayed(latencyProvider.nextLatency(msg)))
-			.filter(msg -> msg.getDelay() >= 0)
-			.flatMap(msg -> Observable.just(msg).delay(msg.getDelay(), TimeUnit.MILLISECONDS).observeOn(Schedulers.io()));
-	}
+  @Override
+  public Observable<MessageInTransit> transform(
+      BFTNode sender, BFTNode receiver, Observable<MessageInTransit> messages) {
+    return messages
+        .map(msg -> msg.delayed(latencyProvider.nextLatency(msg)))
+        .filter(msg -> msg.getDelay() >= 0)
+        .flatMap(
+            msg ->
+                Observable.just(msg)
+                    .delay(msg.getDelay(), TimeUnit.MILLISECONDS)
+                    .observeOn(Schedulers.io()));
+  }
 }

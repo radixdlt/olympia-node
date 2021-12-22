@@ -77,72 +77,75 @@ import com.radixdlt.integration.distributed.simulation.network.LatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.qualifier.LatencyProviderBase;
-
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public final class NetworkLatencies {
-	public static Module fixed(int latency) {
-		return new AbstractModule() {
-			@Provides
-			@LatencyProviderBase
-			LatencyProvider base() {
-				return msg -> latency;
-			}
-		};
-	}
+  public static Module fixed(int latency) {
+    return new AbstractModule() {
+      @Provides
+      @LatencyProviderBase
+      LatencyProvider base() {
+        return msg -> latency;
+      }
+    };
+  }
 
-	public static Module fixed() {
-		return fixed(SimulationNetwork.DEFAULT_LATENCY);
-	}
+  public static Module fixed() {
+    return fixed(SimulationNetwork.DEFAULT_LATENCY);
+  }
 
-	public static Module random(int minLatency, int maxLatency) {
-		return new AbstractModule() {
-			@Provides
-			@Singleton
-			@LatencyProviderBase
-			LatencyProvider base() {
-				return new RandomLatencyProvider(minLatency, maxLatency);
-			}
-		};
-	}
+  public static Module random(int minLatency, int maxLatency) {
+    return new AbstractModule() {
+      @Provides
+      @Singleton
+      @LatencyProviderBase
+      LatencyProvider base() {
+        return new RandomLatencyProvider(minLatency, maxLatency);
+      }
+    };
+  }
 
-	public static Module oneSlowProposalSender(int inBoundsLatency, int outOfBoundsLatency) {
-		return new AbstractModule() {
-			@Provides
-			@Singleton
-			@LatencyProviderBase
-			LatencyProvider base(ImmutableList<BFTNode> nodes) {
-				return msg -> {
-					if ((msg.getSender().equals(nodes.get(0)) || msg.getReceiver().equals(nodes.get(0)))
-						&& (msg.getContent() instanceof Proposal || msg.getContent() instanceof Vote
-						|| msg.getContent() instanceof GetVerticesResponse)
-					) {
-						return outOfBoundsLatency;
-					} else {
-						return inBoundsLatency;
-					}
-				};
-			}
-		};
-	}
+  public static Module oneSlowProposalSender(int inBoundsLatency, int outOfBoundsLatency) {
+    return new AbstractModule() {
+      @Provides
+      @Singleton
+      @LatencyProviderBase
+      LatencyProvider base(ImmutableList<BFTNode> nodes) {
+        return msg -> {
+          if ((msg.getSender().equals(nodes.get(0)) || msg.getReceiver().equals(nodes.get(0)))
+              && (msg.getContent() instanceof Proposal
+                  || msg.getContent() instanceof Vote
+                  || msg.getContent() instanceof GetVerticesResponse)) {
+            return outOfBoundsLatency;
+          } else {
+            return inBoundsLatency;
+          }
+        };
+      }
+    };
+  }
 
-	public static Module oneOutOfBounds(int inBoundsLatency, int outOfBoundsLatency) {
-		return new AbstractModule() {
-			@Provides
-			@Singleton
-			@LatencyProviderBase
-			LatencyProvider base(ImmutableList<BFTNode> nodes) {
-				Map<BFTNode, Integer> nodeLatencies = IntStream.range(0, nodes.size())
-					.boxed()
-					.collect(Collectors.toMap(nodes::get, i -> i == 0 ? outOfBoundsLatency : inBoundsLatency));
-				return msg -> Math.max(nodeLatencies.get(msg.getSender()), nodeLatencies.get(msg.getReceiver()));
-			}
-		};
-	}
+  public static Module oneOutOfBounds(int inBoundsLatency, int outOfBoundsLatency) {
+    return new AbstractModule() {
+      @Provides
+      @Singleton
+      @LatencyProviderBase
+      LatencyProvider base(ImmutableList<BFTNode> nodes) {
+        Map<BFTNode, Integer> nodeLatencies =
+            IntStream.range(0, nodes.size())
+                .boxed()
+                .collect(
+                    Collectors.toMap(
+                        nodes::get, i -> i == 0 ? outOfBoundsLatency : inBoundsLatency));
+        return msg ->
+            Math.max(nodeLatencies.get(msg.getSender()), nodeLatencies.get(msg.getReceiver()));
+      }
+    };
+  }
 
-	private NetworkLatencies() {
-		throw new UnsupportedOperationException("Cannot instantiate.");
-	}
+  private NetworkLatencies() {
+    throw new UnsupportedOperationException("Cannot instantiate.");
+  }
 }

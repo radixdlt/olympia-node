@@ -66,49 +66,48 @@ package com.radixdlt.client.lib.api;
 
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.networks.Addressing;
-
 import java.util.Objects;
 
 public class ValidatorAddress {
-	private final ECPublicKey address;
+  private final ECPublicKey address;
 
-	private ValidatorAddress(ECPublicKey address) {
-		this.address = address;
-	}
+  private ValidatorAddress(ECPublicKey address) {
+    this.address = address;
+  }
 
-	public static ValidatorAddress of(ECPublicKey publicKey) {
-		return new ValidatorAddress(publicKey);
-	}
+  public static ValidatorAddress of(ECPublicKey publicKey) {
+    return new ValidatorAddress(publicKey);
+  }
 
-	public ECPublicKey getAddress() {
-		return address;
-	}
+  public ECPublicKey getAddress() {
+    return address;
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof ValidatorAddress)) {
-			return false;
-		}
+    if (!(o instanceof ValidatorAddress)) {
+      return false;
+    }
 
-		var that = (ValidatorAddress) o;
-		return address.equals(that.address);
-	}
+    var that = (ValidatorAddress) o;
+    return address.equals(that.address);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(address);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(address);
+  }
 
-	@Override
-	public String toString() {
-		return "{" + address.toHex() + '}';
-	}
+  @Override
+  public String toString() {
+    return "{" + address.toHex() + '}';
+  }
 
-	public String toString(int networkId) {
-		return Addressing.ofNetworkId(networkId).forValidators().of(address);
-	}
+  public String toString(int networkId) {
+    return Addressing.ofNetworkId(networkId).forValidators().of(address);
+  }
 }

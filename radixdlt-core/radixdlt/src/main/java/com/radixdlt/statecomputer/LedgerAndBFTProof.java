@@ -66,52 +66,50 @@ package com.radixdlt.statecomputer;
 
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * Proof of ledger commit
- */
+/** Proof of ledger commit */
 public final class LedgerAndBFTProof {
-	private final LedgerProof ledgerProof;
-	private final VerifiedVertexStoreState vertexStoreState;
+  private final LedgerProof ledgerProof;
+  private final VerifiedVertexStoreState vertexStoreState;
 
-	private LedgerAndBFTProof(LedgerProof ledgerProof, VerifiedVertexStoreState vertexStoreState) {
-		this.ledgerProof = ledgerProof;
-		this.vertexStoreState = vertexStoreState;
-	}
+  private LedgerAndBFTProof(LedgerProof ledgerProof, VerifiedVertexStoreState vertexStoreState) {
+    this.ledgerProof = ledgerProof;
+    this.vertexStoreState = vertexStoreState;
+  }
 
-	public static LedgerAndBFTProof create(LedgerProof ledgerProof) {
-		return create(ledgerProof, null);
-	}
+  public static LedgerAndBFTProof create(LedgerProof ledgerProof) {
+    return create(ledgerProof, null);
+  }
 
-	public static LedgerAndBFTProof create(LedgerProof ledgerProof, VerifiedVertexStoreState vertexStoreState) {
-		Objects.requireNonNull(ledgerProof);
-		return new LedgerAndBFTProof(ledgerProof, vertexStoreState);
-	}
+  public static LedgerAndBFTProof create(
+      LedgerProof ledgerProof, VerifiedVertexStoreState vertexStoreState) {
+    Objects.requireNonNull(ledgerProof);
+    return new LedgerAndBFTProof(ledgerProof, vertexStoreState);
+  }
 
-	public LedgerProof getProof() {
-		return ledgerProof;
-	}
+  public LedgerProof getProof() {
+    return ledgerProof;
+  }
 
-	public Optional<VerifiedVertexStoreState> vertexStoreState() {
-		return Optional.ofNullable(vertexStoreState);
-	}
+  public Optional<VerifiedVertexStoreState> vertexStoreState() {
+    return Optional.ofNullable(vertexStoreState);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(ledgerProof, vertexStoreState);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(ledgerProof, vertexStoreState);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof LedgerAndBFTProof)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof LedgerAndBFTProof)) {
+      return false;
+    }
 
-		var other = (LedgerAndBFTProof) o;
-		return Objects.equals(this.ledgerProof, other.ledgerProof)
-			&& Objects.equals(this.vertexStoreState, other.vertexStoreState);
-	}
+    var other = (LedgerAndBFTProof) o;
+    return Objects.equals(this.ledgerProof, other.ledgerProof)
+        && Objects.equals(this.vertexStoreState, other.vertexStoreState);
+  }
 }

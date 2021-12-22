@@ -108,171 +108,181 @@ import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.TimeSupplier;
-import org.junit.rules.TemporaryFolder;
-
 import java.io.IOException;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.junit.rules.TemporaryFolder;
 
 public final class P2PTestNetworkRunner {
 
-	public static record NodeProps(ECKeyPair keyPair, RuntimeProperties properties) { }
+  public static record NodeProps(ECKeyPair keyPair, RuntimeProperties properties) {}
 
-	private final ImmutableList<TestNode> nodes;
-	private final DeterministicNetwork deterministicNetwork;
+  private final ImmutableList<TestNode> nodes;
+  private final DeterministicNetwork deterministicNetwork;
 
-	private P2PTestNetworkRunner(
-		ImmutableList<TestNode> nodes,
-		DeterministicNetwork deterministicNetwork
-	) {
-		this.nodes = Objects.requireNonNull(nodes);
-		this.deterministicNetwork = Objects.requireNonNull(deterministicNetwork);
-	}
+  private P2PTestNetworkRunner(
+      ImmutableList<TestNode> nodes, DeterministicNetwork deterministicNetwork) {
+    this.nodes = Objects.requireNonNull(nodes);
+    this.deterministicNetwork = Objects.requireNonNull(deterministicNetwork);
+  }
 
-	public static P2PTestNetworkRunner create(int numNodes, RuntimeProperties properties) throws Exception {
-		final var nodesProps = IntStream.range(0, numNodes)
-			.mapToObj(unused -> ECKeyPair.generateNew())
-			.map(key -> new NodeProps(key, properties))
-			.collect(ImmutableList.toImmutableList());
+  public static P2PTestNetworkRunner create(int numNodes, RuntimeProperties properties)
+      throws Exception {
+    final var nodesProps =
+        IntStream.range(0, numNodes)
+            .mapToObj(unused -> ECKeyPair.generateNew())
+            .map(key -> new NodeProps(key, properties))
+            .collect(ImmutableList.toImmutableList());
 
-		return create(nodesProps);
-	}
+    return create(nodesProps);
+  }
 
-	public static P2PTestNetworkRunner create(ImmutableList<NodeProps> nodes) throws Exception {
-		final var network = new DeterministicNetwork(
-			nodes.stream().map(node -> BFTNode.create(node.keyPair().getPublicKey())).collect(Collectors.toList()),
-			MessageSelector.firstSelector(),
-			MessageMutator.nothing()
-		);
+  public static P2PTestNetworkRunner create(ImmutableList<NodeProps> nodes) throws Exception {
+    final var network =
+        new DeterministicNetwork(
+            nodes.stream()
+                .map(node -> BFTNode.create(node.keyPair().getPublicKey()))
+                .collect(Collectors.toList()),
+            MessageSelector.firstSelector(),
+            MessageMutator.nothing());
 
-		final var p2pNetwork = new MockP2PNetwork();
+    final var p2pNetwork = new MockP2PNetwork();
 
-		final var builder = ImmutableList.<TestNode>builder();
-		for (int i = 0; i < nodes.size(); i++) {
-			final var nodeProps = nodes.get(i);
-			final var properties = nodeProps.properties();
-			final var nodeKey = nodeProps.keyPair();
-			final var uri = RadixNodeUri.fromPubKeyAndAddress(
-				1, nodeKey.getPublicKey(), "127.0.0.1", 30000 + i);
-			final var injector = createInjector(p2pNetwork, network, properties, nodeKey, uri, i);
-			builder.add(new TestNode(injector, uri, nodeKey));
-		}
+    final var builder = ImmutableList.<TestNode>builder();
+    for (int i = 0; i < nodes.size(); i++) {
+      final var nodeProps = nodes.get(i);
+      final var properties = nodeProps.properties();
+      final var nodeKey = nodeProps.keyPair();
+      final var uri =
+          RadixNodeUri.fromPubKeyAndAddress(1, nodeKey.getPublicKey(), "127.0.0.1", 30000 + i);
+      final var injector = createInjector(p2pNetwork, network, properties, nodeKey, uri, i);
+      builder.add(new TestNode(injector, uri, nodeKey));
+    }
 
-		final var injectors = builder.build();
+    final var injectors = builder.build();
 
-		p2pNetwork.setNodes(injectors);
+    p2pNetwork.setNodes(injectors);
 
-		return new P2PTestNetworkRunner(injectors, network);
-	}
+    return new P2PTestNetworkRunner(injectors, network);
+  }
 
-	private static Injector createInjector(
-		MockP2PNetwork p2pNetwork,
-		DeterministicNetwork network,
-		RuntimeProperties properties,
-		ECKeyPair nodeKey,
-		RadixNodeUri selfUri,
-		int selfNodeIndex
-	) {
-		return Guice.createInjector(
-				Stage.PRODUCTION,
-				Modules.override(new P2PModule(properties)).with(
-					new AbstractModule() {
-						@Override
-						protected void configure() {
-							bind(PeerOutboundBootstrap.class)
-								.toInstance(uri -> p2pNetwork.createChannel(selfNodeIndex, uri));
-							bind(P2PConfig.class).toInstance(
-								P2PConfig.fromRuntimeProperties(Addressing.ofNetwork(Network.LOCALNET), properties));
-							bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
-							bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-						}
-					}
-				),
-				new PeerDiscoveryModule(),
-				new PeerLivenessMonitorModule(),
-				new DispatcherModule(),
-				new MessageCentralModule(properties),
-				new AbstractModule() {
-					@Override
-					protected void configure() {
-						final var dbDir = new TemporaryFolder();
-						try {
-							dbDir.create();
-						} catch (IOException e) {
-							throw new RuntimeException(e);
-						}
-						bindConstant().annotatedWith(NetworkId.class).to(Network.LOCALNET.getId());
-						bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
-						bindConstant().annotatedWith(DatabaseLocation.class).to(dbDir.getRoot().getAbsolutePath());
-						bindConstant().annotatedWith(DatabaseCacheSize.class).to(100_000L);
-						bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(nodeKey);
-						bind(ECPublicKey.class).annotatedWith(Self.class).toInstance(nodeKey.getPublicKey());
-						bind(BFTNode.class).annotatedWith(Self.class).toInstance(BFTNode.create(nodeKey.getPublicKey()));
-						bind(String.class).annotatedWith(Self.class).toInstance(
-							Addressing.ofNetwork(Network.LOCALNET).forValidators().of(nodeKey.getPublicKey()).substring(0, 10)
-						);
-						bind(ECKeyOps.class).toInstance(ECKeyOps.fromKeyPair(nodeKey));
-						bind(Environment.class).toInstance(network.createSender(BFTNode.create(nodeKey.getPublicKey())));
-						bind(RuntimeProperties.class).toInstance(properties);
-						bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
-						bind(DeterministicProcessor.class);
-						Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
-						bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-					}
-				}
-		);
-	}
+  private static Injector createInjector(
+      MockP2PNetwork p2pNetwork,
+      DeterministicNetwork network,
+      RuntimeProperties properties,
+      ECKeyPair nodeKey,
+      RadixNodeUri selfUri,
+      int selfNodeIndex) {
+    return Guice.createInjector(
+        Stage.PRODUCTION,
+        Modules.override(new P2PModule(properties))
+            .with(
+                new AbstractModule() {
+                  @Override
+                  protected void configure() {
+                    bind(PeerOutboundBootstrap.class)
+                        .toInstance(uri -> p2pNetwork.createChannel(selfNodeIndex, uri));
+                    bind(P2PConfig.class)
+                        .toInstance(
+                            P2PConfig.fromRuntimeProperties(
+                                Addressing.ofNetwork(Network.LOCALNET), properties));
+                    bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
+                    bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+                  }
+                }),
+        new PeerDiscoveryModule(),
+        new PeerLivenessMonitorModule(),
+        new DispatcherModule(),
+        new MessageCentralModule(properties),
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            final var dbDir = new TemporaryFolder();
+            try {
+              dbDir.create();
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+            bindConstant().annotatedWith(NetworkId.class).to(Network.LOCALNET.getId());
+            bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
+            bindConstant()
+                .annotatedWith(DatabaseLocation.class)
+                .to(dbDir.getRoot().getAbsolutePath());
+            bindConstant().annotatedWith(DatabaseCacheSize.class).to(100_000L);
+            bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(nodeKey);
+            bind(ECPublicKey.class).annotatedWith(Self.class).toInstance(nodeKey.getPublicKey());
+            bind(BFTNode.class)
+                .annotatedWith(Self.class)
+                .toInstance(BFTNode.create(nodeKey.getPublicKey()));
+            bind(String.class)
+                .annotatedWith(Self.class)
+                .toInstance(
+                    Addressing.ofNetwork(Network.LOCALNET)
+                        .forValidators()
+                        .of(nodeKey.getPublicKey())
+                        .substring(0, 10));
+            bind(ECKeyOps.class).toInstance(ECKeyOps.fromKeyPair(nodeKey));
+            bind(Environment.class)
+                .toInstance(network.createSender(BFTNode.create(nodeKey.getPublicKey())));
+            bind(RuntimeProperties.class).toInstance(properties);
+            bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
+            bind(DeterministicProcessor.class);
+            Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
+            bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+          }
+        });
+  }
 
-	public void cleanup() {
-		this.nodes.forEach(node -> {
-			node.injector.getInstance(DatabaseEnvironment.class).stop();
-			try {
-				node.injector.getInstance(MessageCentral.class).close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		});
-	}
+  public void cleanup() {
+    this.nodes.forEach(
+        node -> {
+          node.injector.getInstance(DatabaseEnvironment.class).stop();
+          try {
+            node.injector.getInstance(MessageCentral.class).close();
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        });
+  }
 
-	public RadixNodeUri getUri(int nodeIndex) {
-		return this.nodes.get(nodeIndex).uri;
-	}
+  public RadixNodeUri getUri(int nodeIndex) {
+    return this.nodes.get(nodeIndex).uri;
+  }
 
-	public PeerManager peerManager(int nodeIndex) {
-		return getInstance(nodeIndex, PeerManager.class);
-	}
+  public PeerManager peerManager(int nodeIndex) {
+    return getInstance(nodeIndex, PeerManager.class);
+  }
 
-	public AddressBook addressBook(int nodeIndex) {
-		return getInstance(nodeIndex, AddressBook.class);
-	}
+  public AddressBook addressBook(int nodeIndex) {
+    return getInstance(nodeIndex, AddressBook.class);
+  }
 
-	public ProxyCertificateManager proxyCertManager(int nodeIndex) {
-		return getInstance(nodeIndex, ProxyCertificateManager.class);
-	}
+  public ProxyCertificateManager proxyCertManager(int nodeIndex) {
+    return getInstance(nodeIndex, ProxyCertificateManager.class);
+  }
 
-	public MessageCentral messageCentral(int nodeIndex) {
-		return getInstance(nodeIndex, MessageCentral.class);
-	}
+  public MessageCentral messageCentral(int nodeIndex) {
+    return getInstance(nodeIndex, MessageCentral.class);
+  }
 
-	public long counter(int nodeIndex, SystemCounters.CounterType counterType) {
-		return getInstance(nodeIndex, SystemCounters.class).get(counterType);
-	}
+  public long counter(int nodeIndex, SystemCounters.CounterType counterType) {
+    return getInstance(nodeIndex, SystemCounters.class).get(counterType);
+  }
 
-	public <T> T getInstance(int nodeIndex, Class<T> clazz) {
-		return this.nodes.get(nodeIndex).injector.getInstance(clazz);
-	}
+  public <T> T getInstance(int nodeIndex, Class<T> clazz) {
+    return this.nodes.get(nodeIndex).injector.getInstance(clazz);
+  }
 
-	public <T> T getInstance(int nodeIndex, Key<T> key) {
-		return this.nodes.get(nodeIndex).injector.getInstance(key);
-	}
+  public <T> T getInstance(int nodeIndex, Key<T> key) {
+    return this.nodes.get(nodeIndex).injector.getInstance(key);
+  }
 
-	public DeterministicNetwork getDeterministicNetwork() {
-		return this.deterministicNetwork;
-	}
+  public DeterministicNetwork getDeterministicNetwork() {
+    return this.deterministicNetwork;
+  }
 
-	public TestNode getNode(int index) {
-		return this.nodes.get(index);
-	}
-
+  public TestNode getNode(int index) {
+    return this.nodes.get(index);
+  }
 }

@@ -66,70 +66,66 @@ package com.radixdlt.atom;
 
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-
 import java.util.Objects;
 
-/**
- * Specifies high level parameters to a token definition
- */
+/** Specifies high level parameters to a token definition */
 public final class MutableTokenDefinition {
-	private final ECPublicKey key;
-	private final String symbol;
-	private final String name;
-	private final String description;
-	private final String iconUrl;
-	private final String tokenUrl;
+  private final ECPublicKey key;
+  private final String symbol;
+  private final String name;
+  private final String description;
+  private final String iconUrl;
+  private final String tokenUrl;
 
-	public MutableTokenDefinition(
-		ECPublicKey key,
-		String symbol,
-		String name,
-		String description,
-		String iconUrl,
-		String tokenUrl
-	) {
-		this.key = key;
-		this.symbol = symbol.toLowerCase();
-		this.name = Objects.requireNonNull(name);
-		this.description = description;
-		this.iconUrl = iconUrl;
-		this.tokenUrl = tokenUrl;
-	}
+  public MutableTokenDefinition(
+      ECPublicKey key,
+      String symbol,
+      String name,
+      String description,
+      String iconUrl,
+      String tokenUrl) {
+    this.key = key;
+    this.symbol = symbol.toLowerCase();
+    this.name = Objects.requireNonNull(name);
+    this.description = description;
+    this.iconUrl = iconUrl;
+    this.tokenUrl = tokenUrl;
+  }
 
-	public MutableTokenDefinition(ECPublicKey key, String symbol) {
-		this.key = key;
-		this.symbol = symbol.toLowerCase();
-		this.name = null;
-		this.description = null;
-		this.iconUrl = null;
-		this.tokenUrl = null;
-	}
+  public MutableTokenDefinition(ECPublicKey key, String symbol) {
+    this.key = key;
+    this.symbol = symbol.toLowerCase();
+    this.name = null;
+    this.description = null;
+    this.iconUrl = null;
+    this.tokenUrl = null;
+  }
 
-	public REAddr getResourceAddress() {
-		return REAddr.ofHashedKey(key, symbol);
-	}
+  public REAddr getResourceAddress() {
+    return REAddr.ofHashedKey(key, symbol);
+  }
 
-	public ECPublicKey getOwner() {
-		return key;
-	}
+  public ECPublicKey getOwner() {
+    return key;
+  }
 
-	public String getSymbol() {
-		return symbol;
-	}
+  public String getSymbol() {
+    return symbol;
+  }
 
-	public String getName() {
-		return name;
-	}
+  public String getName() {
+    return name;
+  }
 
-	public String getDescription() {
-		return description == null ? "" : description;
-	}
+  public String getDescription() {
+    return description == null ? "" : description;
+  }
 
-	public String getIconUrl() {
-		return iconUrl == null ? "" : iconUrl;
-	}
+  public String getIconUrl() {
+    return iconUrl == null ? "" : iconUrl;
+  }
 
-	public String getTokenUrl() {
-		return tokenUrl == null ? "" : tokenUrl;
-	}
+  public String getTokenUrl() {
+    return tokenUrl == null ? "" : tokenUrl;
+  }
 }

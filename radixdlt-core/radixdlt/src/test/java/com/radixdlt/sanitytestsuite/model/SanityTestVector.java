@@ -68,12 +68,13 @@ package com.radixdlt.sanitytestsuite.model;
 
 /**
  * Sanity test vector interface.
+ *
  * @param <I> - type of input value
  * @param <E> - type of expected value
  */
 public abstract class SanityTestVector<I, E> {
-	public E expected;
-	public I input;
+  public E expected;
+  public I input;
 }
 
 // CHECKSTYLE:ON

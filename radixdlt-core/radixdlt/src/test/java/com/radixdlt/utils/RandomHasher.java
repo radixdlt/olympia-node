@@ -67,34 +67,33 @@ package com.radixdlt.utils;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
-import org.bouncycastle.util.encoders.Hex;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.bouncycastle.util.encoders.Hex;
 
 /**
- * A hasher that returns a random hash for any object.
- * The same object will always get the same hash.
+ * A hasher that returns a random hash for any object. The same object will always get the same
+ * hash.
  */
 public class RandomHasher implements Hasher {
 
-    private final Map<Object, HashCode> cache = new HashMap<>();
+  private final Map<Object, HashCode> cache = new HashMap<>();
 
-    @Override
-    public int bytes() {
-        return 32;
-    }
+  @Override
+  public int bytes() {
+    return 32;
+  }
 
-    @Override
-    public HashCode hash(Object o) {
-        cache.putIfAbsent(o, HashUtils.random256());
-        return cache.get(o);
-    }
+  @Override
+  public HashCode hash(Object o) {
+    cache.putIfAbsent(o, HashUtils.random256());
+    return cache.get(o);
+  }
 
-    @Override
-    public HashCode hashBytes(byte[] bytes) {
-        var key = Hex.toHexString(bytes);
-        cache.putIfAbsent(key, HashUtils.random256());
-        return cache.get(key);
-    }
+  @Override
+  public HashCode hashBytes(byte[] bytes) {
+    var key = Hex.toHexString(bytes);
+    cache.putIfAbsent(key, HashUtils.random256());
+    return cache.get(key);
+  }
 }

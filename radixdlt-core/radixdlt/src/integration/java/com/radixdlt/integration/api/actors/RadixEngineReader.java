@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -72,52 +73,62 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.UInt256;
-
 import java.math.BigInteger;
 
-/**
- * Utility class for reading info in the radix engine
- */
+/** Utility class for reading info in the radix engine */
 public final class RadixEngineReader {
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+  private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
-	@Inject
-	public RadixEngineReader(RadixEngine<LedgerAndBFTProof> radixEngine) {
-		this.radixEngine = radixEngine;
-	}
+  @Inject
+  public RadixEngineReader(RadixEngine<LedgerAndBFTProof> radixEngine) {
+    this.radixEngine = radixEngine;
+  }
 
-	public BigInteger getTotalExittingStake() {
-		var totalStakeExitting = radixEngine.read(reader -> reader.reduce(ExitingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
-		return new BigInteger(1, totalStakeExitting.toByteArray());
-	}
+  public BigInteger getTotalExittingStake() {
+    var totalStakeExitting =
+        radixEngine.read(
+            reader ->
+                reader.reduce(ExitingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
+    return new BigInteger(1, totalStakeExitting.toByteArray());
+  }
 
-	public BigInteger getTotalNativeTokensInAccounts() {
-		var totalTokens = radixEngine.read(reader -> reader.reduceResources(TokensInAccount.class, TokensInAccount::getResourceAddr)
-			.get(REAddr.ofNativeToken()));
-		return new BigInteger(1, totalTokens.toByteArray());
-	}
+  public BigInteger getTotalNativeTokensInAccounts() {
+    var totalTokens =
+        radixEngine.read(
+            reader ->
+                reader
+                    .reduceResources(TokensInAccount.class, TokensInAccount::getResourceAddr)
+                    .get(REAddr.ofNativeToken()));
+    return new BigInteger(1, totalTokens.toByteArray());
+  }
 
-	private static BigInteger toBigInteger(UInt256 uInt256) {
-		return new BigInteger(1, uInt256.toByteArray());
-	}
+  private static BigInteger toBigInteger(UInt256 uInt256) {
+    return new BigInteger(1, uInt256.toByteArray());
+  }
 
-	public BigInteger getTotalNativeTokens() {
-		var tokensInAccounts = getTotalNativeTokensInAccounts();
-		var totalStaked = radixEngine.read(reader -> reader.reduce(
-			ValidatorStakeData.class,
-			BigInteger.ZERO,
-			(u, t) -> u.add(toBigInteger(t.getAmount()))
-		));
-		var totalStakePrepared = radixEngine.read(reader -> reader.reduce(
-			PreparedStake.class,
-			BigInteger.ZERO,
-			(u, t) -> u.add(toBigInteger(t.getAmount()))
-		));
-		var totalStakeExitting = radixEngine.read(reader -> reader.reduce(
-			ExitingStake.class,
-			BigInteger.ZERO,
-			(u, t) -> u.add(toBigInteger(t.getAmount()))
-		));
-		return tokensInAccounts.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting);
-	}
+  public BigInteger getTotalNativeTokens() {
+    var tokensInAccounts = getTotalNativeTokensInAccounts();
+    var totalStaked =
+        radixEngine.read(
+            reader ->
+                reader.reduce(
+                    ValidatorStakeData.class,
+                    BigInteger.ZERO,
+                    (u, t) -> u.add(toBigInteger(t.getAmount()))));
+    var totalStakePrepared =
+        radixEngine.read(
+            reader ->
+                reader.reduce(
+                    PreparedStake.class,
+                    BigInteger.ZERO,
+                    (u, t) -> u.add(toBigInteger(t.getAmount()))));
+    var totalStakeExitting =
+        radixEngine.read(
+            reader ->
+                reader.reduce(
+                    ExitingStake.class,
+                    BigInteger.ZERO,
+                    (u, t) -> u.add(toBigInteger(t.getAmount()))));
+    return tokensInAccounts.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting);
+  }
 }

@@ -64,37 +64,34 @@
 
 package org.radix;
 
-import java.util.Objects;
-
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
+import java.util.Objects;
 
-/**
- * An initial issuance of tokens to the specified key.
- */
+/** An initial issuance of tokens to the specified key. */
 public final class TokenIssuance {
-	private final ECPublicKey receiver;
-	private final UInt256 amount;
+  private final ECPublicKey receiver;
+  private final UInt256 amount;
 
-	private TokenIssuance(ECPublicKey receiver, UInt256 amount) {
-		this.receiver = Objects.requireNonNull(receiver);
-		this.amount = Objects.requireNonNull(amount);
-	}
+  private TokenIssuance(ECPublicKey receiver, UInt256 amount) {
+    this.receiver = Objects.requireNonNull(receiver);
+    this.amount = Objects.requireNonNull(amount);
+  }
 
-	public static TokenIssuance of(ECPublicKey receiver, UInt256 amount) {
-		return new TokenIssuance(receiver, amount);
-	}
+  public static TokenIssuance of(ECPublicKey receiver, UInt256 amount) {
+    return new TokenIssuance(receiver, amount);
+  }
 
-	public ECPublicKey receiver() {
-		return this.receiver;
-	}
+  public ECPublicKey receiver() {
+    return this.receiver;
+  }
 
-	public UInt256 amount() {
-		return this.amount;
-	}
+  public UInt256 amount() {
+    return this.amount;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s[->%s:%s]", getClass().getSimpleName(), this.receiver, this.amount);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s[->%s:%s]", getClass().getSimpleName(), this.receiver, this.amount);
+  }
 }

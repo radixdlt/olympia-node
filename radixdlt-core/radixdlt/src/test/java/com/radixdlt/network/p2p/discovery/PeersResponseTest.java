@@ -68,9 +68,8 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 public final class PeersResponseTest {
-	@Test
-	public void equalsTest() {
-		EqualsVerifier.forClass(PeersResponse.class)
-			.verify();
-	}
+  @Test
+  public void equalsTest() {
+    EqualsVerifier.forClass(PeersResponse.class).verify();
+  }
 }

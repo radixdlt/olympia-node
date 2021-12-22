@@ -71,39 +71,38 @@ import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.store.berkeley.SerializedVertexStoreState;
-
 import java.util.Optional;
 
 public class MockedPersistenceStoreModule extends AbstractModule {
 
-	@Override
-	public void configure() {
-		bind(PersistentSafetyStateStore.class).to(MockedPersistenceStore.class);
-		bind(PersistentVertexStore.class).to(MockedPersistentVertexStore.class);
-		OptionalBinder.newOptionalBinder(binder(), SerializedVertexStoreState.class);
-	}
+  @Override
+  public void configure() {
+    bind(PersistentSafetyStateStore.class).to(MockedPersistenceStore.class);
+    bind(PersistentVertexStore.class).to(MockedPersistentVertexStore.class);
+    OptionalBinder.newOptionalBinder(binder(), SerializedVertexStoreState.class);
+  }
 
-	private static class MockedPersistenceStore implements PersistentSafetyStateStore {
-		@Override
-		public Optional<SafetyState> get() {
-			return Optional.empty();
-		}
+  private static class MockedPersistenceStore implements PersistentSafetyStateStore {
+    @Override
+    public Optional<SafetyState> get() {
+      return Optional.empty();
+    }
 
-		@Override
-		public void commitState(SafetyState safetyState) {
-			// Nothing to do here
-		}
+    @Override
+    public void commitState(SafetyState safetyState) {
+      // Nothing to do here
+    }
 
-		@Override
-		public void close() {
-			// Nothing to do here
-		}
-	}
+    @Override
+    public void close() {
+      // Nothing to do here
+    }
+  }
 
-	private static class MockedPersistentVertexStore implements PersistentVertexStore {
-		@Override
-		public void save(VerifiedVertexStoreState vertexStoreState) {
-			// Nothing to do here
-		}
-	}
+  private static class MockedPersistentVertexStore implements PersistentVertexStore {
+    @Override
+    public void save(VerifiedVertexStoreState vertexStoreState) {
+      // Nothing to do here
+    }
+  }
 }

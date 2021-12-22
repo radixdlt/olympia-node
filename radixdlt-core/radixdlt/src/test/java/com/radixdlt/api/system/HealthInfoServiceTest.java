@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -60,67 +61,72 @@
  * Work. You assume all risks associated with Your use of the Work and the exercise of
  * permissions under this License.
  */
+
 package com.radixdlt.api.system;
 
-import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.api.system.health.ScheduledStatsCollecting;
-import org.junit.Test;
-
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.environment.ScheduledEventDispatcher;
-
-import java.util.stream.IntStream;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-
+import static com.radixdlt.api.system.health.HealthInfoService.LEDGER_KEY;
+import static com.radixdlt.api.system.health.HealthInfoService.TARGET_KEY;
 import static com.radixdlt.api.system.health.NodeStatus.BOOTING;
 import static com.radixdlt.api.system.health.NodeStatus.STALLED;
 import static com.radixdlt.api.system.health.NodeStatus.SYNCING;
 import static com.radixdlt.api.system.health.NodeStatus.UP;
-import static com.radixdlt.api.system.health.HealthInfoService.LEDGER_KEY;
-import static com.radixdlt.api.system.health.HealthInfoService.TARGET_KEY;
 import static com.radixdlt.counters.SystemCounters.CounterType;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+
+import com.radixdlt.api.system.health.HealthInfoService;
+import com.radixdlt.api.system.health.ScheduledStatsCollecting;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.environment.ScheduledEventDispatcher;
+import java.util.stream.IntStream;
+import org.junit.Test;
 
 public class HealthInfoServiceTest {
-	@SuppressWarnings("unchecked")
-	private final ScheduledEventDispatcher<ScheduledStatsCollecting> dispatcher = mock(ScheduledEventDispatcher.class);
-	private final SystemCounters systemCounters = new SystemCountersImpl();
-	private final HealthInfoService healthInfoService = new HealthInfoService(systemCounters, dispatcher);
+  @SuppressWarnings("unchecked")
+  private final ScheduledEventDispatcher<ScheduledStatsCollecting> dispatcher =
+      mock(ScheduledEventDispatcher.class);
 
-	@Test
-	public void testNodeStatus() {
-		assertEquals(BOOTING, healthInfoService.nodeStatus());
+  private final SystemCounters systemCounters = new SystemCountersImpl();
+  private final HealthInfoService healthInfoService =
+      new HealthInfoService(systemCounters, dispatcher);
 
-		updateStatsSync(10, TARGET_KEY, 5, LEDGER_KEY);
+  @Test
+  public void testNodeStatus() {
+    assertEquals(BOOTING, healthInfoService.nodeStatus());
 
-		assertEquals(SYNCING, healthInfoService.nodeStatus());
+    updateStatsSync(10, TARGET_KEY, 5, LEDGER_KEY);
 
-		updateStatsSync(10, TARGET_KEY, 15, LEDGER_KEY);
+    assertEquals(SYNCING, healthInfoService.nodeStatus());
 
-		assertEquals(UP, healthInfoService.nodeStatus());
+    updateStatsSync(10, TARGET_KEY, 15, LEDGER_KEY);
 
-		updateStatsSync(10, TARGET_KEY, 0, LEDGER_KEY);
+    assertEquals(UP, healthInfoService.nodeStatus());
 
-		assertEquals(STALLED, healthInfoService.nodeStatus());
-	}
+    updateStatsSync(10, TARGET_KEY, 0, LEDGER_KEY);
 
-	private void updateStatsSync(int count1, CounterType key1, int count2, CounterType key2) {
-		var count = Math.min(count1, count2);
+    assertEquals(STALLED, healthInfoService.nodeStatus());
+  }
 
-		IntStream.range(0, count).forEach(__ -> {
-			systemCounters.increment(key1);
-			systemCounters.increment(key2);
-			healthInfoService.updateStats().process(ScheduledStatsCollecting.create());
-		});
+  private void updateStatsSync(int count1, CounterType key1, int count2, CounterType key2) {
+    var count = Math.min(count1, count2);
 
-		var remaining = Math.max(count1, count2) - count;
-		var key = count1 > count2 ? key1 : key2;
+    IntStream.range(0, count)
+        .forEach(
+            __ -> {
+              systemCounters.increment(key1);
+              systemCounters.increment(key2);
+              healthInfoService.updateStats().process(ScheduledStatsCollecting.create());
+            });
 
-		IntStream.range(0, remaining).forEach(__ -> {
-			systemCounters.increment(key);
-			healthInfoService.updateStats().process(ScheduledStatsCollecting.create());
-		});
-	}
+    var remaining = Math.max(count1, count2) - count;
+    var key = count1 > count2 ? key1 : key2;
+
+    IntStream.range(0, remaining)
+        .forEach(
+            __ -> {
+              systemCounters.increment(key);
+              healthInfoService.updateStats().process(ScheduledStatsCollecting.create());
+            });
+  }
 }

@@ -64,51 +64,51 @@
 
 package com.radixdlt.application.system.construction;
 
+import com.radixdlt.application.system.state.RoundData;
+import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.NextRound;
-import com.radixdlt.application.system.state.RoundData;
-import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.KeyComparator;
-
 import java.util.TreeMap;
 
 public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
-	@Override
-	public void construct(NextRound action, TxBuilder txBuilder) throws TxBuilderException {
-		var prevRound = txBuilder.downSystem(RoundData.class);
-		if (action.view() <= prevRound.getView()) {
-			throw new InvalidRoundException(prevRound.getView(), action.view());
-		}
+  @Override
+  public void construct(NextRound action, TxBuilder txBuilder) throws TxBuilderException {
+    var prevRound = txBuilder.downSystem(RoundData.class);
+    if (action.view() <= prevRound.getView()) {
+      throw new InvalidRoundException(prevRound.getView(), action.view());
+    }
 
-		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorBFTData>(KeyComparator.instance());
-		for (long view = prevRound.getView() + 1; view < action.view(); view++) {
-			var missingLeader = action.leaderMapping().apply(view);
-			if (!validatorsToUpdate.containsKey(missingLeader)) {
-				var validatorData = txBuilder.down(ValidatorBFTData.class, missingLeader);
-				validatorsToUpdate.put(missingLeader, validatorData);
-			}
-			var nextData = validatorsToUpdate.get(missingLeader).incrementProposalsMissed();
-			validatorsToUpdate.put(missingLeader, nextData);
-		}
+    var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorBFTData>(KeyComparator.instance());
+    for (long view = prevRound.getView() + 1; view < action.view(); view++) {
+      var missingLeader = action.leaderMapping().apply(view);
+      if (!validatorsToUpdate.containsKey(missingLeader)) {
+        var validatorData = txBuilder.down(ValidatorBFTData.class, missingLeader);
+        validatorsToUpdate.put(missingLeader, validatorData);
+      }
+      var nextData = validatorsToUpdate.get(missingLeader).incrementProposalsMissed();
+      validatorsToUpdate.put(missingLeader, nextData);
+    }
 
-		var curLeader = action.leaderMapping().apply(action.view());
-		if (!validatorsToUpdate.containsKey(curLeader)) {
-			var validatorData = txBuilder.down(ValidatorBFTData.class, curLeader);
-			validatorsToUpdate.put(curLeader, validatorData);
-		}
-		var nextData = action.isTimeout()
-			? validatorsToUpdate.get(curLeader).incrementProposalsMissed()
-			: validatorsToUpdate.get(curLeader).incrementCompletedProposals();
-		validatorsToUpdate.put(curLeader, nextData);
+    var curLeader = action.leaderMapping().apply(action.view());
+    if (!validatorsToUpdate.containsKey(curLeader)) {
+      var validatorData = txBuilder.down(ValidatorBFTData.class, curLeader);
+      validatorsToUpdate.put(curLeader, validatorData);
+    }
+    var nextData =
+        action.isTimeout()
+            ? validatorsToUpdate.get(curLeader).incrementProposalsMissed()
+            : validatorsToUpdate.get(curLeader).incrementCompletedProposals();
+    validatorsToUpdate.put(curLeader, nextData);
 
-		for (var e : validatorsToUpdate.entrySet()) {
-			txBuilder.up(e.getValue());
-		}
+    for (var e : validatorsToUpdate.entrySet()) {
+      txBuilder.up(e.getValue());
+    }
 
-		txBuilder.up(new RoundData(action.view(), action.timestamp()));
-		txBuilder.end();
-	}
+    txBuilder.up(new RoundData(action.view(), action.timestamp()));
+    txBuilder.end();
+  }
 }

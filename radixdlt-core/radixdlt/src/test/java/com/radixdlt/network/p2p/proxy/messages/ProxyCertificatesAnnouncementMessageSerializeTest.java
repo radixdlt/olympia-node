@@ -71,23 +71,23 @@ import com.radixdlt.network.p2p.proxy.ProxyCertificate;
 import com.radixdlt.network.p2p.proxy.ProxyCertificateData;
 import org.radix.serialization.SerializeMessageObject;
 
-public final class ProxyCertificatesAnnouncementMessageSerializeTest extends SerializeMessageObject<ProxyCertificatesAnnouncementMessage> {
-	public ProxyCertificatesAnnouncementMessageSerializeTest() {
-		super(ProxyCertificatesAnnouncementMessage.class, ProxyCertificatesAnnouncementMessageSerializeTest::get);
-	}
+public final class ProxyCertificatesAnnouncementMessageSerializeTest
+    extends SerializeMessageObject<ProxyCertificatesAnnouncementMessage> {
+  public ProxyCertificatesAnnouncementMessageSerializeTest() {
+    super(
+        ProxyCertificatesAnnouncementMessage.class,
+        ProxyCertificatesAnnouncementMessageSerializeTest::get);
+  }
 
-	private static ProxyCertificatesAnnouncementMessage get() {
-		final var proxyCertData =
-			ProxyCertificateData.create(
-				NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey()),
-				System.currentTimeMillis(),
-				1
-			);
-		return new ProxyCertificatesAnnouncementMessage(
-			ImmutableSet.of(ProxyCertificate.create(
-				proxyCertData,
-				ECKeyPair.generateNew().sign(proxyCertData.hashToSign())
-			))
-		);
-	}
+  private static ProxyCertificatesAnnouncementMessage get() {
+    final var proxyCertData =
+        ProxyCertificateData.create(
+            NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey()),
+            System.currentTimeMillis(),
+            1);
+    return new ProxyCertificatesAnnouncementMessage(
+        ImmutableSet.of(
+            ProxyCertificate.create(
+                proxyCertData, ECKeyPair.generateNew().sign(proxyCertData.hashToSign()))));
+  }
 }

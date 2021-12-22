@@ -67,14 +67,13 @@ package com.radixdlt.consensus.liveness;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 
-/**
- * Represents the election for valid proposers
- */
+/** Represents the election for valid proposers */
 public interface ProposerElection {
-	/**
-	 * Retrieve the deterministic proposer for a given view
-	 * @param view the view to get the proposer for
-	 * @return the EUID of the proposer
-	 */
-	BFTNode getProposer(View view);
+  /**
+   * Retrieve the deterministic proposer for a given view
+   *
+   * @param view the view to get the proposer for
+   * @return the EUID of the proposer
+   */
+  BFTNode getProposer(View view);
 }

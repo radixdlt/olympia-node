@@ -72,45 +72,51 @@ import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
 import com.radixdlt.network.p2p.proxy.ProxyCertificate;
 import com.radixdlt.network.p2p.proxy.ProxyCertificateData;
-import org.radix.serialization.SerializeMessageObject;
-
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Random;
+import org.radix.serialization.SerializeMessageObject;
 
 public class AddressBookEntrySerializeTest extends SerializeMessageObject<AddressBookEntry> {
-	public AddressBookEntrySerializeTest() {
-		super(AddressBookEntry.class, AddressBookEntrySerializeTest::get);
-	}
+  public AddressBookEntrySerializeTest() {
+    super(AddressBookEntry.class, AddressBookEntrySerializeTest::get);
+  }
 
-	private static AddressBookEntry get() {
-		final var rnd = new Random();
-		final var keyPair = ECKeyPair.generateNew();
-		final var bannedUntil = rnd.nextBoolean()
-			? Optional.of(Instant.ofEpochMilli(Math.abs(rnd.nextLong())))
-			: Optional.<Instant>empty();
-		final var uri = RadixNodeUri.fromPubKeyAndAddress(
-			1,
-			keyPair.getPublicKey(),
-			"127.0.0.1",
-			30000
-		);
-		final var blacklistedUntil = rnd.nextBoolean()
-			? Optional.of(Instant.ofEpochMilli(Math.abs(rnd.nextLong())))
-			: Optional.<Instant>empty();
-		final var latestConnectionStatus = rnd.nextBoolean()
-			? Optional.of(rnd.nextBoolean() ? LatestConnectionStatus.FAILURE : LatestConnectionStatus.SUCCESS)
-			: Optional.<LatestConnectionStatus>empty();
-		final var addressEntry = new PeerAddressEntry(uri, latestConnectionStatus, blacklistedUntil);
-		final var proxyCertData =
-			ProxyCertificateData.create(
-				NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey()),
-				System.currentTimeMillis(),
-				1
-			);
-		final var proxyCerts = ImmutableSet.of(
-			ProxyCertificate.create(proxyCertData, ECKeyPair.generateNew().sign(proxyCertData.hashToSign())).verify().get());
+  private static AddressBookEntry get() {
+    final var rnd = new Random();
+    final var keyPair = ECKeyPair.generateNew();
+    final var bannedUntil =
+        rnd.nextBoolean()
+            ? Optional.of(Instant.ofEpochMilli(Math.abs(rnd.nextLong())))
+            : Optional.<Instant>empty();
+    final var uri =
+        RadixNodeUri.fromPubKeyAndAddress(1, keyPair.getPublicKey(), "127.0.0.1", 30000);
+    final var blacklistedUntil =
+        rnd.nextBoolean()
+            ? Optional.of(Instant.ofEpochMilli(Math.abs(rnd.nextLong())))
+            : Optional.<Instant>empty();
+    final var latestConnectionStatus =
+        rnd.nextBoolean()
+            ? Optional.of(
+                rnd.nextBoolean() ? LatestConnectionStatus.FAILURE : LatestConnectionStatus.SUCCESS)
+            : Optional.<LatestConnectionStatus>empty();
+    final var addressEntry = new PeerAddressEntry(uri, latestConnectionStatus, blacklistedUntil);
+    final var proxyCertData =
+        ProxyCertificateData.create(
+            NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey()),
+            System.currentTimeMillis(),
+            1);
+    final var proxyCerts =
+        ImmutableSet.of(
+            ProxyCertificate.create(
+                    proxyCertData, ECKeyPair.generateNew().sign(proxyCertData.hashToSign()))
+                .verify()
+                .get());
 
-		return new AddressBookEntry(NodeId.fromPublicKey(keyPair.getPublicKey()), bannedUntil, ImmutableSet.of(addressEntry), proxyCerts);
-	}
+    return new AddressBookEntry(
+        NodeId.fromPublicKey(keyPair.getPublicKey()),
+        bannedUntil,
+        ImmutableSet.of(addressEntry),
+        proxyCerts);
+  }
 }

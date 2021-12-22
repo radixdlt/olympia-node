@@ -65,11 +65,10 @@
 package com.radixdlt.atom;
 
 /**
- * Given a TxBuilder builds the high level action as radix engine
- * transaction.
+ * Given a TxBuilder builds the high level action as radix engine transaction.
  *
  * @param <T> the action type
  */
 public interface ActionConstructor<T extends TxAction> {
-	void construct(T action, TxBuilder builder) throws TxBuilderException;
+  void construct(T action, TxBuilder builder) throws TxBuilderException;
 }

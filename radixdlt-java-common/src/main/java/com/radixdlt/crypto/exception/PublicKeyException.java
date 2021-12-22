@@ -65,11 +65,11 @@
 package com.radixdlt.crypto.exception;
 
 public class PublicKeyException extends CryptoException {
-    public PublicKeyException(Throwable throwable) {
-        super(throwable);
-    }
+  public PublicKeyException(Throwable throwable) {
+    super(throwable);
+  }
 
-    public PublicKeyException(String errorMessage) {
-        super(errorMessage);
-    }
+  public PublicKeyException(String errorMessage) {
+    super(errorMessage);
+  }
 }

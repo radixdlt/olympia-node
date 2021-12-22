@@ -68,6 +68,7 @@ import com.radixdlt.network.messaging.Message;
 import com.radixdlt.utils.functional.Result;
 
 public interface MessageSerialization {
-	Result<byte[]> serialize(Message message);
-	Result<Message> deserialize(byte[] input);
+  Result<byte[]> serialize(Message message);
+
+  Result<Message> deserialize(byte[] input);
 }

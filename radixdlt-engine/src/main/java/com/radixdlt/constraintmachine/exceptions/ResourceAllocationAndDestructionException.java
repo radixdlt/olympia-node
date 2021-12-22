@@ -65,7 +65,7 @@
 package com.radixdlt.constraintmachine.exceptions;
 
 public class ResourceAllocationAndDestructionException extends Exception {
-	public ResourceAllocationAndDestructionException() {
-		super("Allocation and destruction of resources not enabled.");
-	}
+  public ResourceAllocationAndDestructionException() {
+    super("Allocation and destruction of resources not enabled.");
+  }
 }

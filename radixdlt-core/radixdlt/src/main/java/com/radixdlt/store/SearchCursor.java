@@ -66,17 +66,16 @@ package com.radixdlt.store;
 
 import com.radixdlt.identifiers.AID;
 
-/**
- * A ledger cursor, bound to a specific ledger instance.
- */
+/** A ledger cursor, bound to a specific ledger instance. */
 public interface SearchCursor {
-	long getStateVersion();
+  long getStateVersion();
 
-	/**
-	 * Gets the current AID at this cursor
-	 * @return The current AID
-	 */
-	AID get();
+  /**
+   * Gets the current AID at this cursor
+   *
+   * @return The current AID
+   */
+  AID get();
 
-	SearchCursor next();
+  SearchCursor next();
 }

@@ -67,27 +67,27 @@ package com.radixdlt.application.system.scrypt;
 import java.util.Optional;
 
 public enum Syscall {
-	FEE_RESERVE_PUT((byte) 0),
-	FEE_RESERVE_TAKE((byte) 1),
-	READDR_CLAIM((byte) 2);
+  FEE_RESERVE_PUT((byte) 0),
+  FEE_RESERVE_TAKE((byte) 1),
+  READDR_CLAIM((byte) 2);
 
-	private final byte id;
+  private final byte id;
 
-	Syscall(byte id) {
-		this.id = id;
-	}
+  Syscall(byte id) {
+    this.id = id;
+  }
 
-	public byte id() {
-		return id;
-	}
+  public byte id() {
+    return id;
+  }
 
-	public static Optional<Syscall> of(byte id) {
-		for (var s : Syscall.values()) {
-			if (s.id == id) {
-				return Optional.of(s);
-			}
-		}
+  public static Optional<Syscall> of(byte id) {
+    for (var s : Syscall.values()) {
+      if (s.id == id) {
+        return Optional.of(s);
+      }
+    }
 
-		return Optional.empty();
-	}
+    return Optional.empty();
+  }
 }

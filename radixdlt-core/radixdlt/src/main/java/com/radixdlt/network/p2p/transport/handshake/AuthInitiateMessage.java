@@ -74,98 +74,99 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
 import java.util.Objects;
 
 @SerializerId2("message.handshake.auth_initiate")
 public final class AuthInitiateMessage {
 
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(DsonOutput.Output.ALL)
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(DsonOutput.Output.ALL)
+  private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("signature")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final ECDSASignature signature;
+  @JsonProperty("signature")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final ECDSASignature signature;
 
-	@JsonProperty("publicKey")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final HashCode publicKey;
+  @JsonProperty("publicKey")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final HashCode publicKey;
 
-	@JsonProperty("nonce")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final HashCode nonce;
+  @JsonProperty("nonce")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final HashCode nonce;
 
-	@JsonProperty("networkId")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final int networkId;
+  @JsonProperty("networkId")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final int networkId;
 
-	@JsonProperty("proxyCertificates")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final ImmutableSet<ProxyCertificate> proxyCertificates;
+  @JsonProperty("proxyCertificates")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final ImmutableSet<ProxyCertificate> proxyCertificates;
 
-	@JsonCreator
-	public static AuthInitiateMessage deserialize(
-		@JsonProperty(value = "signature", required = true) ECDSASignature signature,
-		@JsonProperty(value = "publicKey", required = true) HashCode publicKey,
-		@JsonProperty(value = "nonce", required = true) HashCode nonce,
-		@JsonProperty("networkId") int networkId,
-		@JsonProperty("proxyCertificates") ImmutableSet<ProxyCertificate> proxyCertificates
-	) {
-		return new AuthInitiateMessage(signature, publicKey, nonce, networkId,
-			proxyCertificates != null ? proxyCertificates : ImmutableSet.of());
-	}
+  @JsonCreator
+  public static AuthInitiateMessage deserialize(
+      @JsonProperty(value = "signature", required = true) ECDSASignature signature,
+      @JsonProperty(value = "publicKey", required = true) HashCode publicKey,
+      @JsonProperty(value = "nonce", required = true) HashCode nonce,
+      @JsonProperty("networkId") int networkId,
+      @JsonProperty("proxyCertificates") ImmutableSet<ProxyCertificate> proxyCertificates) {
+    return new AuthInitiateMessage(
+        signature,
+        publicKey,
+        nonce,
+        networkId,
+        proxyCertificates != null ? proxyCertificates : ImmutableSet.of());
+  }
 
-	public AuthInitiateMessage(
-		ECDSASignature signature,
-		HashCode publicKey,
-		HashCode nonce,
-		int networkId,
-		ImmutableSet<ProxyCertificate> proxyCertificates
-	) {
-		this.signature = signature;
-		this.publicKey = publicKey;
-		this.nonce = nonce;
-		this.networkId = networkId;
-		this.proxyCertificates = proxyCertificates;
-	}
+  public AuthInitiateMessage(
+      ECDSASignature signature,
+      HashCode publicKey,
+      HashCode nonce,
+      int networkId,
+      ImmutableSet<ProxyCertificate> proxyCertificates) {
+    this.signature = signature;
+    this.publicKey = publicKey;
+    this.nonce = nonce;
+    this.networkId = networkId;
+    this.proxyCertificates = proxyCertificates;
+  }
 
-	public ECDSASignature getSignature() {
-		return signature;
-	}
+  public ECDSASignature getSignature() {
+    return signature;
+  }
 
-	public HashCode getPublicKey() {
-		return publicKey;
-	}
+  public HashCode getPublicKey() {
+    return publicKey;
+  }
 
-	public HashCode getNonce() {
-		return nonce;
-	}
+  public HashCode getNonce() {
+    return nonce;
+  }
 
-	public int getNetworkId() {
-		return networkId;
-	}
+  public int getNetworkId() {
+    return networkId;
+  }
 
-	public ImmutableSet<ProxyCertificate> getProxyCertificates() {
-		return proxyCertificates;
-	}
+  public ImmutableSet<ProxyCertificate> getProxyCertificates() {
+    return proxyCertificates;
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof AuthInitiateMessage that)
-			   && Objects.equals(signature, that.signature)
-			   && Objects.equals(publicKey, that.publicKey)
-			   && Objects.equals(nonce, that.nonce)
-			   && networkId == that.networkId
-			   && Objects.equals(proxyCertificates, that.proxyCertificates);
-	}
+    return (o instanceof AuthInitiateMessage that)
+        && Objects.equals(signature, that.signature)
+        && Objects.equals(publicKey, that.publicKey)
+        && Objects.equals(nonce, that.nonce)
+        && networkId == that.networkId
+        && Objects.equals(proxyCertificates, that.proxyCertificates);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(signature, publicKey, nonce, networkId, proxyCertificates);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(signature, publicKey, nonce, networkId, proxyCertificates);
+  }
 }

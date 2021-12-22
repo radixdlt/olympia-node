@@ -68,91 +68,93 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-/**
- * Wrapper class for amount staked per node
- */
+/** Wrapper class for amount staked per node */
 public final class Rewards {
-	private final ImmutableMap<ECPublicKey, UInt256> stakedAmounts;
+  private final ImmutableMap<ECPublicKey, UInt256> stakedAmounts;
 
-	private Rewards(ImmutableMap<ECPublicKey, UInt256> stakedAmounts) {
-		this.stakedAmounts = stakedAmounts;
-	}
+  private Rewards(ImmutableMap<ECPublicKey, UInt256> stakedAmounts) {
+    this.stakedAmounts = stakedAmounts;
+  }
 
-	public static Rewards create() {
-		return new Rewards(ImmutableMap.of());
-	}
+  public static Rewards create() {
+    return new Rewards(ImmutableMap.of());
+  }
 
-	public ImmutableMap<ECPublicKey, UInt256> toMap() {
-		return stakedAmounts;
-	}
+  public ImmutableMap<ECPublicKey, UInt256> toMap() {
+    return stakedAmounts;
+  }
 
-	public Rewards add(ECPublicKey delegatedKey, UInt256 amount) {
-		if (amount.isZero()) {
-			return this;
-		}
+  public Rewards add(ECPublicKey delegatedKey, UInt256 amount) {
+    if (amount.isZero()) {
+      return this;
+    }
 
-		final var nextAmount = this.stakedAmounts.getOrDefault(delegatedKey, UInt256.ZERO).add(amount);
-		final var nextStakedAmounts = Stream.concat(
-			Stream.of(Maps.immutableEntry(delegatedKey, nextAmount)),
-			this.stakedAmounts.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
-		).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+    final var nextAmount = this.stakedAmounts.getOrDefault(delegatedKey, UInt256.ZERO).add(amount);
+    final var nextStakedAmounts =
+        Stream.concat(
+                Stream.of(Maps.immutableEntry(delegatedKey, nextAmount)),
+                this.stakedAmounts.entrySet().stream()
+                    .filter(e -> !delegatedKey.equals(e.getKey())))
+            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-		return new Rewards(nextStakedAmounts);
-	}
+    return new Rewards(nextStakedAmounts);
+  }
 
-	public Rewards remove(ECPublicKey delegatedKey, UInt256 amount) {
-		if (!this.stakedAmounts.containsKey(delegatedKey)) {
-			throw new IllegalStateException("Removing stake which doesn't exist.");
-		}
+  public Rewards remove(ECPublicKey delegatedKey, UInt256 amount) {
+    if (!this.stakedAmounts.containsKey(delegatedKey)) {
+      throw new IllegalStateException("Removing stake which doesn't exist.");
+    }
 
-		if (amount.isZero()) {
-			return this;
-		}
+    if (amount.isZero()) {
+      return this;
+    }
 
-		final var oldAmount = this.stakedAmounts.get(delegatedKey);
-		final var comparison = amount.compareTo(oldAmount);
+    final var oldAmount = this.stakedAmounts.get(delegatedKey);
+    final var comparison = amount.compareTo(oldAmount);
 
-		if (comparison == 0) {
-			// remove stake
-			final var nextStakedAmounts = this.stakedAmounts.entrySet().stream()
-				.filter(e -> !delegatedKey.equals(e.getKey()))
-				.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-			return new Rewards(nextStakedAmounts);
-		} else if (comparison < 0) {
-			// reduce stake
-			final var nextAmount = oldAmount.subtract(amount);
-			final var nextStakedAmounts = Stream.concat(
-				Stream.of(Maps.immutableEntry(delegatedKey, nextAmount)),
-				this.stakedAmounts.entrySet().stream().filter(e -> !delegatedKey.equals(e.getKey()))
-			).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-			return new Rewards(nextStakedAmounts);
-		} else {
-			throw new IllegalStateException("Removing stake which doesn't exist.");
-		}
-	}
+    if (comparison == 0) {
+      // remove stake
+      final var nextStakedAmounts =
+          this.stakedAmounts.entrySet().stream()
+              .filter(e -> !delegatedKey.equals(e.getKey()))
+              .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+      return new Rewards(nextStakedAmounts);
+    } else if (comparison < 0) {
+      // reduce stake
+      final var nextAmount = oldAmount.subtract(amount);
+      final var nextStakedAmounts =
+          Stream.concat(
+                  Stream.of(Maps.immutableEntry(delegatedKey, nextAmount)),
+                  this.stakedAmounts.entrySet().stream()
+                      .filter(e -> !delegatedKey.equals(e.getKey())))
+              .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+      return new Rewards(nextStakedAmounts);
+    } else {
+      throw new IllegalStateException("Removing stake which doesn't exist.");
+    }
+  }
 
-	@Override
-	public String toString() {
-		return this.stakedAmounts.toString();
-	}
+  @Override
+  public String toString() {
+    return this.stakedAmounts.toString();
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(stakedAmounts);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(stakedAmounts);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof Rewards)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof Rewards)) {
+      return false;
+    }
 
-		var other = (Rewards) o;
-		return Objects.equals(this.stakedAmounts, other.stakedAmounts);
-	}
+    var other = (Rewards) o;
+    return Objects.equals(this.stakedAmounts, other.stakedAmounts);
+  }
 }

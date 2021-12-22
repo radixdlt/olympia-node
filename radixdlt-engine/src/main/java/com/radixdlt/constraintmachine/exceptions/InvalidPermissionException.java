@@ -67,7 +67,7 @@ package com.radixdlt.constraintmachine.exceptions;
 import com.radixdlt.constraintmachine.PermissionLevel;
 
 public class InvalidPermissionException extends Exception {
-	public InvalidPermissionException(PermissionLevel required, PermissionLevel actual) {
-		super("Required: " + required + " Actual: " + actual);
-	}
+  public InvalidPermissionException(PermissionLevel required, PermissionLevel actual) {
+    super("Required: " + required + " Actual: " + actual);
+  }
 }

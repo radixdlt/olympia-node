@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.api.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.TransactionsHandler;
@@ -78,82 +81,83 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.utils.Bytes;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class TransactionsHandlerTest extends ApiTest {
-	@Inject
-	private TransactionsHandler sut;
-	@Inject
-	@Genesis
-	private VerifiedTxnsAndProof genesis;
+  @Inject private TransactionsHandler sut;
+  @Inject @Genesis private VerifiedTxnsAndProof genesis;
 
-	@Test
-	public void retrieve_genesis_in_transaction_stream() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void retrieve_genesis_in_transaction_stream() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var request = new CommittedTransactionsRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.limit(1L)
-			.stateIdentifier(new PartialStateIdentifier().stateVersion(0L));
-		var response = handleRequestWithExpectedResponse(sut, request, CommittedTransactionsResponse.class);
+    // Act
+    var request =
+        new CommittedTransactionsRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .limit(1L)
+            .stateIdentifier(new PartialStateIdentifier().stateVersion(0L));
+    var response =
+        handleRequestWithExpectedResponse(sut, request, CommittedTransactionsResponse.class);
 
-		// Assert
-		assertThat(response.getTransactions()).hasSize(1);
-		var hex = response.getTransactions().get(0).getMetadata().getHex();
-		assertThat(hex).isEqualTo(Bytes.toHexString(genesis.getTxns().get(0).getPayload()));
-	}
+    // Assert
+    assertThat(response.getTransactions()).hasSize(1);
+    var hex = response.getTransactions().get(0).getMetadata().getHex();
+    assertThat(hex).isEqualTo(Bytes.toHexString(genesis.getTxns().get(0).getPayload()));
+  }
 
+  @Test
+  public void retrieve_last_state_version() throws Exception {
+    // Arrange
+    start();
 
-	@Test
-	public void retrieve_last_state_version() throws Exception {
-		// Arrange
-		start();
+    // Act
+    var request =
+        new CommittedTransactionsRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .limit(1L)
+            .stateIdentifier(new PartialStateIdentifier().stateVersion(1L));
+    var response =
+        handleRequestWithExpectedResponse(sut, request, CommittedTransactionsResponse.class);
 
-		// Act
-		var request = new CommittedTransactionsRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.limit(1L)
-			.stateIdentifier(new PartialStateIdentifier().stateVersion(1L));
-		var response = handleRequestWithExpectedResponse(sut, request, CommittedTransactionsResponse.class);
+    // Assert
+    assertThat(response.getTransactions()).isEmpty();
+    var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
+    var genesisAccumulator =
+        genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
+    assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+  }
 
-		// Assert
-		assertThat(response.getTransactions()).isEmpty();
-		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
-		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
-		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
-	}
+  @Test
+  public void retrieving_past_last_state_version_should_throw_exception() throws Exception {
+    // Arrange
+    start();
 
-	@Test
-	public void retrieving_past_last_state_version_should_throw_exception() throws Exception {
-		// Arrange
-		start();
+    // Act
+    var request =
+        new CommittedTransactionsRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .limit(1L)
+            .stateIdentifier(new PartialStateIdentifier().stateVersion(2L));
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Act
-		var request = new CommittedTransactionsRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.limit(1L)
-			.stateIdentifier(new PartialStateIdentifier().stateVersion(2L));
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+    // Assert
+    assertThat(response.getDetails()).isInstanceOf(StateIdentifierNotFoundError.class);
+  }
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(StateIdentifierNotFoundError.class);
-	}
+  @Test
+  public void retrieving_illegal_state_version_should_throw_exception() throws Exception {
+    // Arrange
+    start();
 
-	@Test
-	public void retrieving_illegal_state_version_should_throw_exception() throws Exception {
-		// Arrange
-		start();
+    // Act
+    var request =
+        new CommittedTransactionsRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .limit(1L)
+            .stateIdentifier(new PartialStateIdentifier().stateVersion(-1L));
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Act
-		var request = new CommittedTransactionsRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.limit(1L)
-			.stateIdentifier(new PartialStateIdentifier().stateVersion(-1L));
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
-
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(InvalidPartialStateIdentifierError.class);
-	}
+    // Assert
+    assertThat(response.getDetails()).isInstanceOf(InvalidPartialStateIdentifierError.class);
+  }
 }

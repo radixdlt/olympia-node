@@ -70,33 +70,33 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 public class UnstakeTokens implements TxAction {
-	private final REAddr accountAddr;
-	private final ECPublicKey validatorKey;
-	private final UInt256 amount;
+  private final REAddr accountAddr;
+  private final ECPublicKey validatorKey;
+  private final UInt256 amount;
 
-	public UnstakeTokens(ECPublicKey validatorKey, REAddr accountAddr, UInt256 amount) {
-		if (amount.isZero()) {
-			throw new IllegalArgumentException("Amount must be > 0.");
-		}
-		this.accountAddr = accountAddr;
-		this.validatorKey = validatorKey;
-		this.amount = amount;
-	}
+  public UnstakeTokens(ECPublicKey validatorKey, REAddr accountAddr, UInt256 amount) {
+    if (amount.isZero()) {
+      throw new IllegalArgumentException("Amount must be > 0.");
+    }
+    this.accountAddr = accountAddr;
+    this.validatorKey = validatorKey;
+    this.amount = amount;
+  }
 
-	public REAddr accountAddr() {
-		return accountAddr;
-	}
+  public REAddr accountAddr() {
+    return accountAddr;
+  }
 
-	public ECPublicKey from() {
-		return validatorKey;
-	}
+  public ECPublicKey from() {
+    return validatorKey;
+  }
 
-	public UInt256 amount() {
-		return amount;
-	}
+  public UInt256 amount() {
+    return amount;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{amt=%s}", this.getClass().getSimpleName(), amount);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{amt=%s}", this.getClass().getSimpleName(), amount);
+  }
 }

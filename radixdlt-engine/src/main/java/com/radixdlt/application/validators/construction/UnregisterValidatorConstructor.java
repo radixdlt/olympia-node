@@ -65,20 +65,22 @@
 package com.radixdlt.application.validators.construction;
 
 import com.radixdlt.application.system.state.EpochData;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UnregisterValidator;
-import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-
 import java.util.OptionalLong;
 
-public final class UnregisterValidatorConstructor implements ActionConstructor<UnregisterValidator> {
-	@Override
-	public void construct(UnregisterValidator action, TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.down(ValidatorRegisteredCopy.class, action.validatorKey());
-		var curEpoch = txBuilder.readSystem(EpochData.class);
-		txBuilder.up(new ValidatorRegisteredCopy(OptionalLong.of(curEpoch.getEpoch() + 1), action.validatorKey(), false));
-		txBuilder.end();
-	}
+public final class UnregisterValidatorConstructor
+    implements ActionConstructor<UnregisterValidator> {
+  @Override
+  public void construct(UnregisterValidator action, TxBuilder txBuilder) throws TxBuilderException {
+    txBuilder.down(ValidatorRegisteredCopy.class, action.validatorKey());
+    var curEpoch = txBuilder.readSystem(EpochData.class);
+    txBuilder.up(
+        new ValidatorRegisteredCopy(
+            OptionalLong.of(curEpoch.getEpoch() + 1), action.validatorKey(), false));
+    txBuilder.end();
+  }
 }

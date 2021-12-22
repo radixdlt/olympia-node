@@ -66,4 +66,4 @@ package com.radixdlt.network.messaging;
 
 import com.radixdlt.network.p2p.NodeId;
 
-public record InboundMessage(long receiveTime, NodeId source, byte[] message) { }
+public record InboundMessage(long receiveTime, NodeId source, byte[] message) {}

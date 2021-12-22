@@ -64,6 +64,9 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.full_function;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+
+import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -73,18 +76,12 @@ import com.radixdlt.integration.distributed.simulation.monitors.consensus.Consen
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.UInt256;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -93,69 +90,63 @@ import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
-
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
 public class OneOutOfBoundsTest {
-	@Parameterized.Parameters
-	public static Collection<Object[]> fees() {
-		return List.of(new Object[][] {
-			{UInt256.ONE}, {UInt256.ZERO},
-		});
-	}
+  @Parameterized.Parameters
+  public static Collection<Object[]> fees() {
+    return List.of(
+        new Object[][] {
+          {UInt256.ONE}, {UInt256.ZERO},
+        });
+  }
 
-	private final SimulationTest.Builder bftTestBuilder;
+  private final SimulationTest.Builder bftTestBuilder;
 
-	public OneOutOfBoundsTest(UInt256 perByteFee) {
-		bftTestBuilder = SimulationTest.builder()
-			.numNodes(4)
-			.pacemakerTimeout(3000)
-			.networkModules(
-				NetworkOrdering.inOrder(),
-				NetworkLatencies.oneOutOfBounds(50, 10000)
-			)
-			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
-			.addRadixEngineConfigModules(
-				new MainnetForkConfigsModule(),
-				new RadixEngineForksLatestOnlyModule(
-					new RERulesConfig(
-						Set.of("xrd"),
-						Pattern.compile("[a-z0-9]+"),
-						FeeTable.create(
-							Amount.ofSubunits(perByteFee),
-							Map.of()
-						),
-						1024 * 1024,
-						OptionalInt.of(5),
-						20L,
-						2,
-						Amount.ofTokens(10),
-						1,
-						Amount.ofTokens(10),
-						9800,
-						10
-					)),
-				new ForksModule()
-			)
-			.addNodeModule(MempoolConfig.asModule(1000, 10))
-			.addTestModules(
-				ConsensusMonitors.safety(),
-				ConsensusMonitors.liveness(10000, TimeUnit.SECONDS),
-				LedgerMonitors.consensusToLedger(),
-				LedgerMonitors.ordered(),
-				RadixEngineMonitors.noInvalidProposedCommands()
-			)
-			.addMempoolSubmissionsSteadyState(RadixEngineUniqueGenerator.class);
-	}
+  public OneOutOfBoundsTest(UInt256 perByteFee) {
+    bftTestBuilder =
+        SimulationTest.builder()
+            .numNodes(4)
+            .pacemakerTimeout(3000)
+            .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.oneOutOfBounds(50, 10000))
+            .fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
+            .addRadixEngineConfigModules(
+                new MainnetForkConfigsModule(),
+                new RadixEngineForksLatestOnlyModule(
+                    new RERulesConfig(
+                        Set.of("xrd"),
+                        Pattern.compile("[a-z0-9]+"),
+                        FeeTable.create(Amount.ofSubunits(perByteFee), Map.of()),
+                        1024 * 1024,
+                        OptionalInt.of(5),
+                        20L,
+                        2,
+                        Amount.ofTokens(10),
+                        1,
+                        Amount.ofTokens(10),
+                        9800,
+                        10)),
+                new ForksModule())
+            .addNodeModule(MempoolConfig.asModule(1000, 10))
+            .addTestModules(
+                ConsensusMonitors.safety(),
+                ConsensusMonitors.liveness(10000, TimeUnit.SECONDS),
+                LedgerMonitors.consensusToLedger(),
+                LedgerMonitors.ordered(),
+                RadixEngineMonitors.noInvalidProposedCommands())
+            .addMempoolSubmissionsSteadyState(RadixEngineUniqueGenerator.class);
+  }
 
+  @Test
+  public void sanity_tests_should_pass() {
+    SimulationTest simulationTest = bftTestBuilder.build();
 
-	@Test
-	public void sanity_tests_should_pass() {
-		SimulationTest simulationTest = bftTestBuilder
-			.build();
-
-		final var results = simulationTest.run(Duration.ofMinutes(2)).awaitCompletion();
-		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-	}
+    final var results = simulationTest.run(Duration.ofMinutes(2)).awaitCompletion();
+    assertThat(results)
+        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+  }
 }

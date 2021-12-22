@@ -76,68 +76,66 @@ import com.radixdlt.serialization.SerializerId2;
 
 @SerializerId2("different_client_atom")
 public class TestDifferentClientAtom implements TestLedgerAtom {
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput({Output.ALL})
-	SerializerDummy serializer = SerializerDummy.DUMMY;
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput({Output.ALL})
+  SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("datameta")
-	@DsonOutput({Output.ALL})
-	private final String metaData;
+  @JsonProperty("datameta")
+  @DsonOutput({Output.ALL})
+  private final String metaData;
 
-	@JsonProperty("dia")
-	@DsonOutput({Output.ALL})
-	private final AID aid;
+  @JsonProperty("dia")
+  @DsonOutput({Output.ALL})
+  private final AID aid;
 
-	@JsonCreator
-	private TestDifferentClientAtom(
-			@JsonProperty("dia") AID aid,
-			@JsonProperty("datameta") String metaData
-	) {
-		this.aid = aid;
-		this.metaData = metaData == null ? "no metadata" : metaData;
-	}
+  @JsonCreator
+  private TestDifferentClientAtom(
+      @JsonProperty("dia") AID aid, @JsonProperty("datameta") String metaData) {
+    this.aid = aid;
+    this.metaData = metaData == null ? "no metadata" : metaData;
+  }
 
-	public static TestDifferentClientAtom create(String metadata) {
-		var id = AID.from(HashUtils.random(AID.BYTES).asBytes());
-		return new TestDifferentClientAtom(id, metadata);
-	}
+  public static TestDifferentClientAtom create(String metadata) {
+    var id = AID.from(HashUtils.random(AID.BYTES).asBytes());
+    return new TestDifferentClientAtom(id, metadata);
+  }
 
-	public AID aid() {
-		return aid;
-	}
+  public AID aid() {
+    return aid;
+  }
 
-	public String metaData() {
-		return metaData;
-	}
+  public String metaData() {
+    return metaData;
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof TestDifferentClientAtom)) {
-			return false;
-		}
+    if (!(o instanceof TestDifferentClientAtom)) {
+      return false;
+    }
 
-		TestDifferentClientAtom that = (TestDifferentClientAtom) o;
+    TestDifferentClientAtom that = (TestDifferentClientAtom) o;
 
-		if (!metaData.equals(that.metaData)) {
-			return false;
-		}
+    if (!metaData.equals(that.metaData)) {
+      return false;
+    }
 
-		return aid.equals(that.aid);
-	}
+    return aid.equals(that.aid);
+  }
 
-	@Override
-	public int hashCode() {
-		int result = metaData.hashCode();
-		result = 31 * result + aid.hashCode();
-		return result;
-	}
+  @Override
+  public int hashCode() {
+    int result = metaData.hashCode();
+    result = 31 * result + aid.hashCode();
+    return result;
+  }
 
-	@Override
-	public String toString() {
-		return "DifferentClientAtom(metaData: '" + metaData + "', aid: " + aid + ')';
-	}
+  @Override
+  public String toString() {
+    return "DifferentClientAtom(metaData: '" + metaData + "', aid: " + aid + ')';
+  }
 }

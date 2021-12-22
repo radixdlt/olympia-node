@@ -71,10 +71,13 @@ import com.radixdlt.identifiers.REAddr;
 // TODO: these methods are really here for client api,
 // TODO: fix to be more in line with scrypto abstractions
 public interface Bucket {
-	Authorization withdrawAuthorization();
+  Authorization withdrawAuthorization();
 
-	REAddr resourceAddr();
-	REAddr getOwner();
-	ECPublicKey getValidatorKey();
-	Long getEpochUnlock();
+  REAddr resourceAddr();
+
+  REAddr getOwner();
+
+  ECPublicKey getValidatorKey();
+
+  Long getEpochUnlock();
 }

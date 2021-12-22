@@ -72,51 +72,49 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
-
 import java.time.Duration;
 
 /**
- * Checks that the first time a ledger update occurs on the network that it is close
- * to the real wall clock time.
+ * Checks that the first time a ledger update occurs on the network that it is close to the real
+ * wall clock time.
  */
 public final class TimestampChecker implements TestInvariant {
 
-	private final Duration acceptableTimeRange;
+  private final Duration acceptableTimeRange;
 
-	public TimestampChecker(Duration acceptableTimeRange) {
-		this.acceptableTimeRange = acceptableTimeRange;
-	}
+  public TimestampChecker(Duration acceptableTimeRange) {
+    this.acceptableTimeRange = acceptableTimeRange;
+  }
 
-	private Maybe<TestInvariantError> checkCloseTimestamp(LedgerUpdate update) {
-		final var now = System.currentTimeMillis();
-		final var proof = update.getTail();
-		final var timestamp = proof.timestamp();
-		final var diff = now - timestamp;
-		if (0 <= diff && diff < acceptableTimeRange.toMillis()) {
-			return Maybe.empty();
-		} else {
-			return Maybe.just(
-				new TestInvariantError(
-					String.format(
-						"Expecting timestamp to be close to %s but was %s%+d at %s:%s with %s",
-						now, now, diff, proof.getEpoch(), proof.getView(), update
-					)
-				)
-			);
-		}
-	}
+  private Maybe<TestInvariantError> checkCloseTimestamp(LedgerUpdate update) {
+    final var now = System.currentTimeMillis();
+    final var proof = update.getTail();
+    final var timestamp = proof.timestamp();
+    final var diff = now - timestamp;
+    if (0 <= diff && diff < acceptableTimeRange.toMillis()) {
+      return Maybe.empty();
+    } else {
+      return Maybe.just(
+          new TestInvariantError(
+              String.format(
+                  "Expecting timestamp to be close to %s but was %s%+d at %s:%s with %s",
+                  now, now, diff, proof.getEpoch(), proof.getView(), update)));
+    }
+  }
 
-	private static boolean isFirstView(LedgerUpdate ledgerUpdate) {
-		return ledgerUpdate.getTail().getEpoch() == 1 && ledgerUpdate.getTail().getView().equals(View.of(1));
-	}
+  private static boolean isFirstView(LedgerUpdate ledgerUpdate) {
+    return ledgerUpdate.getTail().getEpoch() == 1
+        && ledgerUpdate.getTail().getView().equals(View.of(1));
+  }
 
-	@Override
-	public Observable<TestInvariantError> check(RunningNetwork network) {
-		return network.ledgerUpdates()
-			.map(Pair::getSecond)
-			// Test on only the first ledger update in the network
-			.distinct(update -> EpochView.of(update.getTail().getEpoch(), update.getTail().getView()))
-			.filter(l -> !isFirstView(l))
-			.flatMapMaybe(this::checkCloseTimestamp);
-	}
+  @Override
+  public Observable<TestInvariantError> check(RunningNetwork network) {
+    return network
+        .ledgerUpdates()
+        .map(Pair::getSecond)
+        // Test on only the first ledger update in the network
+        .distinct(update -> EpochView.of(update.getTail().getEpoch(), update.getTail().getView()))
+        .filter(l -> !isFirstView(l))
+        .flatMapMaybe(this::checkCloseTimestamp);
+  }
 }

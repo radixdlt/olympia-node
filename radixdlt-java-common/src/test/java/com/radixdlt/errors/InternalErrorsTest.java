@@ -64,18 +64,16 @@
 
 package com.radixdlt.errors;
 
-import org.junit.Test;
-
 import com.radixdlt.utils.functional.Functions;
-
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.Test;
 
 public class InternalErrorsTest {
-	@Test
-	public void ensureUniqueCodes() {
-		//noinspection ResultOfMethodCallIgnored
-		Stream.of(InternalErrors.values())
-			.collect(Collectors.toMap(InternalErrors::code, Functions::identity));
-	}
+  @Test
+  public void ensureUniqueCodes() {
+    //noinspection ResultOfMethodCallIgnored
+    Stream.of(InternalErrors.values())
+        .collect(Collectors.toMap(InternalErrors::code, Functions::identity));
+  }
 }

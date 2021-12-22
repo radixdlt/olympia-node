@@ -66,7 +66,6 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -74,16 +73,15 @@ import java.util.function.Function;
 /**
  * Verifies whether a given accumulator extends a given one.
  *
- * All implementations should be stateless.
+ * <p>All implementations should be stateless.
  */
 public interface LedgerAccumulatorVerifier {
-	// TODO: use stream instead of list
-	boolean verify(AccumulatorState head, ImmutableList<HashCode> commands, AccumulatorState tail);
+  // TODO: use stream instead of list
+  boolean verify(AccumulatorState head, ImmutableList<HashCode> commands, AccumulatorState tail);
 
-	<T> Optional<List<T>> verifyAndGetExtension(
-		AccumulatorState current,
-		List<T> commands,
-		Function<T, HashCode> hashCodeMapper,
-		AccumulatorState tail
-	);
+  <T> Optional<List<T>> verifyAndGetExtension(
+      AccumulatorState current,
+      List<T> commands,
+      Function<T, HashCode> hashCodeMapper,
+      AccumulatorState tail);
 }

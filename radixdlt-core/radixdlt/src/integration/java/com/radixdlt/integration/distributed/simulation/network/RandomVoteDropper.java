@@ -70,25 +70,23 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.function.Predicate;
 
-/**
- * Drops random vote messages
- */
+/** Drops random vote messages */
 public class RandomVoteDropper implements Predicate<MessageInTransit> {
-	private final Random random;
-	private final double drops;
+  private final Random random;
+  private final double drops;
 
-	public RandomVoteDropper(Random random, double drops) {
-		this.random = Objects.requireNonNull(random);
-		this.drops = drops;
-	}
+  public RandomVoteDropper(Random random, double drops) {
+    this.random = Objects.requireNonNull(random);
+    this.drops = drops;
+  }
 
-	@Override
-	public boolean test(MessageInTransit msg) {
-		Object content = msg.getContent();
-		if (content instanceof Vote) {
-			return random.nextDouble() < drops;
-		}
+  @Override
+  public boolean test(MessageInTransit msg) {
+    Object content = msg.getContent();
+    if (content instanceof Vote) {
+      return random.nextDouble() < drops;
+    }
 
-		return false;
-	}
+    return false;
+  }
 }

@@ -72,35 +72,38 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerIds;
 import java.io.IOException;
 
-/**
- * Special converter for {@link SerializerDummy} class.
- */
+/** Special converter for {@link SerializerDummy} class. */
 class JacksonSerializerDummySerializer extends StdSerializer<SerializerDummy> {
-	private static final long serialVersionUID = -2472482347700365657L;
-	private final SerializerIds idLookup;
+  private static final long serialVersionUID = -2472482347700365657L;
+  private final SerializerIds idLookup;
 
-	JacksonSerializerDummySerializer(SerializerIds idLookup) {
-		this(null, idLookup);
-	}
+  JacksonSerializerDummySerializer(SerializerIds idLookup) {
+    this(null, idLookup);
+  }
 
-	JacksonSerializerDummySerializer(Class<SerializerDummy> t, SerializerIds idLookup) {
-		super(t);
-		this.idLookup = idLookup;
-	}
+  JacksonSerializerDummySerializer(Class<SerializerDummy> t, SerializerIds idLookup) {
+    super(t);
+    this.idLookup = idLookup;
+  }
 
-	@Override
-	public void serialize(SerializerDummy value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
-		Object parent = jgen.getOutputContext().getCurrentValue();
-		String id = idLookup.getIdForClass(parent.getClass());
-		if (id == null) {
-			throw new IllegalStateException("Can't find ID for class: " + parent.getClass().getName());
-		}
-		jgen.writeString(id);
-	}
-
-    @Override
-	public void serializeWithType(SerializerDummy value, JsonGenerator jgen, SerializerProvider provider, TypeSerializer typeSer)
-			throws IOException {
-    	serialize(value, jgen, provider);
+  @Override
+  public void serialize(SerializerDummy value, JsonGenerator jgen, SerializerProvider provider)
+      throws IOException {
+    Object parent = jgen.getOutputContext().getCurrentValue();
+    String id = idLookup.getIdForClass(parent.getClass());
+    if (id == null) {
+      throw new IllegalStateException("Can't find ID for class: " + parent.getClass().getName());
     }
+    jgen.writeString(id);
+  }
+
+  @Override
+  public void serializeWithType(
+      SerializerDummy value,
+      JsonGenerator jgen,
+      SerializerProvider provider,
+      TypeSerializer typeSer)
+      throws IOException {
+    serialize(value, jgen, provider);
+  }
 }

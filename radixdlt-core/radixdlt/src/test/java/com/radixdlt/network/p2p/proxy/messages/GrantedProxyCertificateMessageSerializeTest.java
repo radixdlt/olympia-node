@@ -70,23 +70,20 @@ import com.radixdlt.network.p2p.proxy.ProxyCertificate;
 import com.radixdlt.network.p2p.proxy.ProxyCertificateData;
 import org.radix.serialization.SerializeMessageObject;
 
-public final class GrantedProxyCertificateMessageSerializeTest extends SerializeMessageObject<GrantedProxyCertificateMessage> {
-	public GrantedProxyCertificateMessageSerializeTest() {
-		super(GrantedProxyCertificateMessage.class, GrantedProxyCertificateMessageSerializeTest::get);
-	}
+public final class GrantedProxyCertificateMessageSerializeTest
+    extends SerializeMessageObject<GrantedProxyCertificateMessage> {
+  public GrantedProxyCertificateMessageSerializeTest() {
+    super(GrantedProxyCertificateMessage.class, GrantedProxyCertificateMessageSerializeTest::get);
+  }
 
-	private static GrantedProxyCertificateMessage get() {
-		final var proxyCertData =
-			ProxyCertificateData.create(
-				NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey()),
-				System.currentTimeMillis(),
-				1
-			);
-		return new GrantedProxyCertificateMessage(
-			ProxyCertificate.create(
-				proxyCertData,
-				ECKeyPair.generateNew().sign(proxyCertData.hashToSign())
-			)
-		);
-	}
+  private static GrantedProxyCertificateMessage get() {
+    final var proxyCertData =
+        ProxyCertificateData.create(
+            NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey()),
+            System.currentTimeMillis(),
+            1);
+    return new GrantedProxyCertificateMessage(
+        ProxyCertificate.create(
+            proxyCertData, ECKeyPair.generateNew().sign(proxyCertData.hashToSign())));
+  }
 }

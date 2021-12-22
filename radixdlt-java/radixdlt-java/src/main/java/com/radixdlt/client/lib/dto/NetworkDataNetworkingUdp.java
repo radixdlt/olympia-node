@@ -66,48 +66,46 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class NetworkDataNetworkingUdp {
-	private final long droppedMessages;
+  private final long droppedMessages;
 
-	private NetworkDataNetworkingUdp(long droppedMessages) {
-		this.droppedMessages = droppedMessages;
-	}
+  private NetworkDataNetworkingUdp(long droppedMessages) {
+    this.droppedMessages = droppedMessages;
+  }
 
-	@JsonCreator
-	public static NetworkDataNetworkingUdp create(
-		@JsonProperty(value = "droppedMessages", required = true) long droppedMessages
-	) {
-		return new NetworkDataNetworkingUdp(droppedMessages);
-	}
+  @JsonCreator
+  public static NetworkDataNetworkingUdp create(
+      @JsonProperty(value = "droppedMessages", required = true) long droppedMessages) {
+    return new NetworkDataNetworkingUdp(droppedMessages);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof NetworkDataNetworkingUdp)) {
-			return false;
-		}
+    if (!(o instanceof NetworkDataNetworkingUdp)) {
+      return false;
+    }
 
-		var that = (NetworkDataNetworkingUdp) o;
-		return droppedMessages == that.droppedMessages;
-	}
+    var that = (NetworkDataNetworkingUdp) o;
+    return droppedMessages == that.droppedMessages;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(droppedMessages);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(droppedMessages);
+  }
 
-	@Override
-	public String toString() {
-		return "{" + "droppedMessages=" + droppedMessages + '}';
-	}
+  @Override
+  public String toString() {
+    return "{" + "droppedMessages=" + droppedMessages + '}';
+  }
 
-	public long getDroppedMessages() {
-		return droppedMessages;
-	}
+  public long getDroppedMessages() {
+    return droppedMessages;
+  }
 }

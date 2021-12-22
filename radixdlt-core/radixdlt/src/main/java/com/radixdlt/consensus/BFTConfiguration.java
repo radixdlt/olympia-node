@@ -67,62 +67,55 @@ package com.radixdlt.consensus;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.liveness.ProposerElection;
-
 import java.util.Objects;
 
-/**
- * Configuration for a bft instance which should be shared by all validators in the bft.
- */
+/** Configuration for a bft instance which should be shared by all validators in the bft. */
 public final class BFTConfiguration {
-	private final ProposerElection proposerElection;
-	private final BFTValidatorSet validatorSet;
-	private final VerifiedVertexStoreState vertexStoreState;
+  private final ProposerElection proposerElection;
+  private final BFTValidatorSet validatorSet;
+  private final VerifiedVertexStoreState vertexStoreState;
 
-	public BFTConfiguration(
-		ProposerElection proposerElection,
-		BFTValidatorSet validatorSet,
-		VerifiedVertexStoreState vertexStoreState
-	) {
-		this.proposerElection = Objects.requireNonNull(proposerElection);
-		this.validatorSet = Objects.requireNonNull(validatorSet);
-		this.vertexStoreState = Objects.requireNonNull(vertexStoreState);
-	}
+  public BFTConfiguration(
+      ProposerElection proposerElection,
+      BFTValidatorSet validatorSet,
+      VerifiedVertexStoreState vertexStoreState) {
+    this.proposerElection = Objects.requireNonNull(proposerElection);
+    this.validatorSet = Objects.requireNonNull(validatorSet);
+    this.vertexStoreState = Objects.requireNonNull(vertexStoreState);
+  }
 
-	public ProposerElection getProposerElection() {
-		return proposerElection;
-	}
+  public ProposerElection getProposerElection() {
+    return proposerElection;
+  }
 
-	public BFTValidatorSet getValidatorSet() {
-		return validatorSet;
-	}
+  public BFTValidatorSet getValidatorSet() {
+    return validatorSet;
+  }
 
-	public VerifiedVertexStoreState getVertexStoreState() {
-		return vertexStoreState;
-	}
+  public VerifiedVertexStoreState getVertexStoreState() {
+    return vertexStoreState;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(
-			this.proposerElection,
-			this.validatorSet,
-			this.vertexStoreState
-		);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.proposerElection, this.validatorSet, this.vertexStoreState);
+  }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (obj instanceof BFTConfiguration) {
-			BFTConfiguration that = (BFTConfiguration) obj;
-			return Objects.equals(this.validatorSet, that.validatorSet)
-				&& Objects.equals(this.vertexStoreState, that.vertexStoreState)
-				&& Objects.equals(this.proposerElection, that.proposerElection);
-		}
-		return false;
-	}
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof BFTConfiguration) {
+      BFTConfiguration that = (BFTConfiguration) obj;
+      return Objects.equals(this.validatorSet, that.validatorSet)
+          && Objects.equals(this.vertexStoreState, that.vertexStoreState)
+          && Objects.equals(this.proposerElection, that.proposerElection);
+    }
+    return false;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s[validatorSet=%s, vertexStoreState=%s]",
-			getClass().getSimpleName(), this.validatorSet, this.vertexStoreState);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s[validatorSet=%s, vertexStoreState=%s]",
+        getClass().getSimpleName(), this.validatorSet, this.vertexStoreState);
+  }
 }

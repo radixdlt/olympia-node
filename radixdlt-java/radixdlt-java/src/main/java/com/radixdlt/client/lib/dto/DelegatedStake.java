@@ -68,55 +68,53 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Objects;
 
 public final class DelegatedStake {
-	private final UInt256 amount;
-	private final AccountAddress delegator;
+  private final UInt256 amount;
+  private final AccountAddress delegator;
 
-	private DelegatedStake(UInt256 amount, AccountAddress delegator) {
-		this.amount = amount;
-		this.delegator = delegator;
-	}
+  private DelegatedStake(UInt256 amount, AccountAddress delegator) {
+    this.amount = amount;
+    this.delegator = delegator;
+  }
 
-	@JsonCreator
-	public static DelegatedStake create(
-		@JsonProperty(value = "amount", required = true) UInt256 amount,
-		@JsonProperty(value = "delegator", required = true) AccountAddress delegator
-	) {
-		return new DelegatedStake(amount, delegator);
-	}
+  @JsonCreator
+  public static DelegatedStake create(
+      @JsonProperty(value = "amount", required = true) UInt256 amount,
+      @JsonProperty(value = "delegator", required = true) AccountAddress delegator) {
+    return new DelegatedStake(amount, delegator);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof DelegatedStake)) {
-			return false;
-		}
+    if (!(o instanceof DelegatedStake)) {
+      return false;
+    }
 
-		var that = (DelegatedStake) o;
-		return amount.equals(that.amount) && delegator.equals(that.delegator);
-	}
+    var that = (DelegatedStake) o;
+    return amount.equals(that.amount) && delegator.equals(that.delegator);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(amount, delegator);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(amount, delegator);
+  }
 
-	@Override
-	public String toString() {
-		return "{amount:" + amount + ", delegator=" + delegator + '}';
-	}
+  @Override
+  public String toString() {
+    return "{amount:" + amount + ", delegator=" + delegator + '}';
+  }
 
-	public UInt256 getAmount() {
-		return amount;
-	}
+  public UInt256 getAmount() {
+    return amount;
+  }
 
-	public AccountAddress getDelegator() {
-		return delegator;
-	}
+  public AccountAddress getDelegator() {
+    return delegator;
+  }
 }

@@ -66,57 +66,56 @@ package com.radixdlt.statecomputer;
 
 import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.ECPublicKey;
-
 import java.util.Objects;
 
 /**
- * An event which signifies that a command has been proposed but which
- * does not pass verification.
+ * An event which signifies that a command has been proposed but which does not pass verification.
  */
 public final class InvalidProposedTxn {
-    private final ECPublicKey proposer;
-    private final Txn txn;
-    private final Exception e;
+  private final ECPublicKey proposer;
+  private final Txn txn;
+  private final Exception e;
 
-    private InvalidProposedTxn(ECPublicKey proposer, Txn txn, Exception e) {
-        this.proposer = proposer;
-        this.txn = txn;
-        this.e = e;
+  private InvalidProposedTxn(ECPublicKey proposer, Txn txn, Exception e) {
+    this.proposer = proposer;
+    this.txn = txn;
+    this.e = e;
+  }
+
+  public static InvalidProposedTxn create(ECPublicKey proposer, Txn txn, Exception e) {
+    Objects.requireNonNull(txn);
+    Objects.requireNonNull(e);
+    return new InvalidProposedTxn(proposer, txn, e);
+  }
+
+  public ECPublicKey getProposer() {
+    return proposer;
+  }
+
+  public Exception getException() {
+    return e;
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{txn=%s ex=%s}", this.getClass().getSimpleName(), this.txn.getId(), this.e.toString());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(proposer, txn, e);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof InvalidProposedTxn)) {
+      return false;
     }
 
-    public static InvalidProposedTxn create(ECPublicKey proposer, Txn txn, Exception e) {
-        Objects.requireNonNull(txn);
-        Objects.requireNonNull(e);
-        return new InvalidProposedTxn(proposer, txn, e);
-    }
-
-    public ECPublicKey getProposer() {
-        return proposer;
-    }
-
-    public Exception getException() {
-        return e;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("%s{txn=%s ex=%s}", this.getClass().getSimpleName(), this.txn.getId(), this.e.toString());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(proposer, txn, e);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof InvalidProposedTxn)) {
-            return false;
-        }
-
-        InvalidProposedTxn other = (InvalidProposedTxn) o;
-        return Objects.equals(this.proposer, other.proposer)
-            && Objects.equals(this.e, other.e)
-            && Objects.equals(this.txn, other.txn);
-    }
+    InvalidProposedTxn other = (InvalidProposedTxn) o;
+    return Objects.equals(this.proposer, other.proposer)
+        && Objects.equals(this.e, other.e)
+        && Objects.equals(this.txn, other.txn);
+  }
 }

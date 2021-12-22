@@ -68,49 +68,47 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import java.util.Objects;
 
-/**
- * An actual occurrence (as opposed to a potential) of a local timeout
- */
+/** An actual occurrence (as opposed to a potential) of a local timeout */
 public final class LocalTimeoutOccurrence {
-	private final ScheduledLocalTimeout scheduledLocalTimeout;
+  private final ScheduledLocalTimeout scheduledLocalTimeout;
 
-	public LocalTimeoutOccurrence(ScheduledLocalTimeout scheduledLocalTimeout) {
-		this.scheduledLocalTimeout = Objects.requireNonNull(scheduledLocalTimeout);
-	}
+  public LocalTimeoutOccurrence(ScheduledLocalTimeout scheduledLocalTimeout) {
+    this.scheduledLocalTimeout = Objects.requireNonNull(scheduledLocalTimeout);
+  }
 
-	public ScheduledLocalTimeout timeout() {
-		return scheduledLocalTimeout;
-	}
+  public ScheduledLocalTimeout timeout() {
+    return scheduledLocalTimeout;
+  }
 
-	public View getView() {
-		return scheduledLocalTimeout.view();
-	}
+  public View getView() {
+    return scheduledLocalTimeout.view();
+  }
 
-	public BFTNode getLeader() {
-		return scheduledLocalTimeout.viewUpdate().getLeader();
-	}
+  public BFTNode getLeader() {
+    return scheduledLocalTimeout.viewUpdate().getLeader();
+  }
 
-	public BFTNode getNextLeader() {
-		return scheduledLocalTimeout.viewUpdate().getNextLeader();
-	}
+  public BFTNode getNextLeader() {
+    return scheduledLocalTimeout.viewUpdate().getNextLeader();
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(scheduledLocalTimeout);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(scheduledLocalTimeout);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof LocalTimeoutOccurrence)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof LocalTimeoutOccurrence)) {
+      return false;
+    }
 
-		LocalTimeoutOccurrence other = (LocalTimeoutOccurrence) o;
-		return Objects.equals(scheduledLocalTimeout, other.scheduledLocalTimeout);
-	}
+    LocalTimeoutOccurrence other = (LocalTimeoutOccurrence) o;
+    return Objects.equals(scheduledLocalTimeout, other.scheduledLocalTimeout);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{timeout=%s}", this.getClass().getSimpleName(), scheduledLocalTimeout);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{timeout=%s}", this.getClass().getSimpleName(), scheduledLocalTimeout);
+  }
 }

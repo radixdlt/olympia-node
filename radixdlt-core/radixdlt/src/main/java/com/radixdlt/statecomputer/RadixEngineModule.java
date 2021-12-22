@@ -76,79 +76,72 @@ import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
+import java.util.OptionalInt;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.OptionalInt;
-
-/**
- * Module which manages execution of commands
- */
+/** Module which manages execution of commands */
 public class RadixEngineModule extends AbstractModule {
-	private static final Logger logger = LogManager.getLogger();
+  private static final Logger logger = LogManager.getLogger();
 
-	@Provides
-	@Singleton
-	RERules reRules(
-		CommittedReader committedReader, // TODO: This is a hack, remove
-		Forks forks
-	) {
-		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
-		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return forks.get(epoch);
-	}
+  @Provides
+  @Singleton
+  RERules reRules(
+      CommittedReader committedReader, // TODO: This is a hack, remove
+      Forks forks) {
+    var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
+    var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
+    return forks.get(epoch);
+  }
 
-	// TODO: Remove
-	@Provides
-	@Singleton
-	private REParser parser(RERules rules) {
-		return rules.getParser();
-	}
+  // TODO: Remove
+  @Provides
+  @Singleton
+  private REParser parser(RERules rules) {
+    return rules.getParser();
+  }
 
-	// TODO: Remove
-	@Provides
-	@Singleton
-	@MaxSigsPerRound
-	private OptionalInt maxSigsPerRound(RERules rules) {
-		return rules.getMaxSigsPerRound();
-	}
+  // TODO: Remove
+  @Provides
+  @Singleton
+  @MaxSigsPerRound
+  private OptionalInt maxSigsPerRound(RERules rules) {
+    return rules.getMaxSigsPerRound();
+  }
 
-	// TODO: Remove
-	@Provides
-	@Singleton
-	@EpochCeilingView
-	private View epochCeilingHighView(RERules rules) {
-		return rules.getMaxRounds();
-	}
+  // TODO: Remove
+  @Provides
+  @Singleton
+  @EpochCeilingView
+  private View epochCeilingHighView(RERules rules) {
+    return rules.getMaxRounds();
+  }
 
-	// TODO: Remove
-	@Provides
-	@Singleton
-	@MaxValidators
-	private int maxValidators(RERules rules) {
-		return rules.getMaxValidators();
-	}
+  // TODO: Remove
+  @Provides
+  @Singleton
+  @MaxValidators
+  private int maxValidators(RERules rules) {
+    return rules.getMaxValidators();
+  }
 
-	@Provides
-	@Singleton
-	private RadixEngine<LedgerAndBFTProof> getRadixEngine(
-		EngineStore<LedgerAndBFTProof> engineStore,
-		RERules rules
-	) {
-		var cmConfig = rules.getConstraintMachineConfig();
-		var cm = new ConstraintMachine(
-			cmConfig.getProcedures(),
-			cmConfig.getDeserialization(),
-			cmConfig.getVirtualSubstateDeserialization(),
-			cmConfig.getMeter()
-		);
-		return new RadixEngine<>(
-			rules.getParser(),
-			rules.getSerialization(),
-			rules.getActionConstructors(),
-			cm,
-			engineStore,
-			rules.getBatchVerifier()
-		);
-	}
+  @Provides
+  @Singleton
+  private RadixEngine<LedgerAndBFTProof> getRadixEngine(
+      EngineStore<LedgerAndBFTProof> engineStore, RERules rules) {
+    var cmConfig = rules.getConstraintMachineConfig();
+    var cm =
+        new ConstraintMachine(
+            cmConfig.getProcedures(),
+            cmConfig.getDeserialization(),
+            cmConfig.getVirtualSubstateDeserialization(),
+            cmConfig.getMeter());
+    return new RadixEngine<>(
+        rules.getParser(),
+        rules.getSerialization(),
+        rules.getActionConstructors(),
+        cm,
+        engineStore,
+        rules.getBatchVerifier());
+  }
 }

@@ -66,38 +66,36 @@ package com.radixdlt.errors;
 
 import com.radixdlt.utils.functional.Failure;
 
-/**
- * Full list of Java client error codes.
- */
+/** Full list of Java client error codes. */
 public enum ClientErrors implements Failure {
-	INTERRUPTED_OPERATION(200, "Operation interrupted with InterruptedException. Details: {0} {1}"),
+  INTERRUPTED_OPERATION(200, "Operation interrupted with InterruptedException. Details: {0} {1}"),
 
-	IO_ERROR(300, "I/O Error: {0} {1}"),
+  IO_ERROR(300, "I/O Error: {0} {1}"),
 
-	MISSING_BASE_URL(400, "Base URL is mandatory"),
+  MISSING_BASE_URL(400, "Base URL is mandatory"),
 
-	SSL_ALGORITHM_ERROR(500, "SSL algorithm error: {0}"),
-	SSL_GENERAL_ERROR(501, "SSL algorithm error: {0}"),
-	SSL_KEY_ERROR(502, "SSL Key error: {0}"),
+  SSL_ALGORITHM_ERROR(500, "SSL algorithm error: {0}"),
+  SSL_GENERAL_ERROR(501, "SSL algorithm error: {0}"),
+  SSL_KEY_ERROR(502, "SSL Key error: {0}"),
 
-	UNABLE_TO_DESERIALIZE(600, "Unable to deserialize: {0}"),
-	UNABLE_TO_SERIALIZE(601, "Unable to serialize: {0}");
+  UNABLE_TO_DESERIALIZE(600, "Unable to deserialize: {0}"),
+  UNABLE_TO_SERIALIZE(601, "Unable to serialize: {0}");
 
-	private final int code;
-	private final String message;
+  private final int code;
+  private final String message;
 
-	ClientErrors(int code, String message) {
-		this.code = code;
-		this.message = message;
-	}
+  ClientErrors(int code, String message) {
+    this.code = code;
+    this.message = message;
+  }
 
-	@Override
-	public String message() {
-		return message;
-	}
+  @Override
+  public String message() {
+    return message;
+  }
 
-	@Override
-	public int code() {
-		return Category.CLIENT.forId(code);
-	}
+  @Override
+  public int code() {
+    return Category.CLIENT.forId(code);
+  }
 }

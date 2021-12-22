@@ -64,49 +64,45 @@
 
 package com.radixdlt.network.hostip;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.net.HostAndPort;
+import com.radixdlt.properties.RuntimeProperties;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.net.HostAndPort;
-import com.radixdlt.properties.RuntimeProperties;
-
-/**
- * Query for a public IP address from {@link RuntimeProperties}.
- */
+/** Query for a public IP address from {@link RuntimeProperties}. */
 final class RuntimePropertiesHostIp implements HostIp {
-	private static final Logger log = LogManager.getLogger();
+  private static final Logger log = LogManager.getLogger();
 
-	@VisibleForTesting
-	static final String HOST_IP_PROPERTY = "network.host_ip";
+  @VisibleForTesting static final String HOST_IP_PROPERTY = "network.host_ip";
 
-	private final String value;
+  private final String value;
 
-	RuntimePropertiesHostIp(RuntimeProperties properties) {
-		String hostProperty = properties.get(HOST_IP_PROPERTY, "");
-		this.value = hostProperty == null ? "" : hostProperty.trim();
-	}
+  RuntimePropertiesHostIp(RuntimeProperties properties) {
+    String hostProperty = properties.get(HOST_IP_PROPERTY, "");
+    this.value = hostProperty == null ? "" : hostProperty.trim();
+  }
 
-	static HostIp create(RuntimeProperties properties) {
-		return new RuntimePropertiesHostIp(properties);
-	}
+  static HostIp create(RuntimeProperties properties) {
+    return new RuntimePropertiesHostIp(properties);
+  }
 
-	@Override
-	public Optional<String> hostIp() {
-		if (!this.value.isEmpty()) {
-			try {
-				InetAddress address = InetAddress.getByName(this.value);
-				HostAndPort hap = HostAndPort.fromHost(address.getHostAddress());
-				log.info("Found address {}", hap);
-				return Optional.of(hap.getHost());
-			} catch (UnknownHostException | IllegalArgumentException e) {
-				log.warn("Property {} is invalid: '{}'", HOST_IP_PROPERTY, this.value);
-			}
-		}
-		log.info("No suitable address found");
-		return Optional.empty();
-	}
+  @Override
+  public Optional<String> hostIp() {
+    if (!this.value.isEmpty()) {
+      try {
+        InetAddress address = InetAddress.getByName(this.value);
+        HostAndPort hap = HostAndPort.fromHost(address.getHostAddress());
+        log.info("Found address {}", hap);
+        return Optional.of(hap.getHost());
+      } catch (UnknownHostException | IllegalArgumentException e) {
+        log.warn("Property {} is invalid: '{}'", HOST_IP_PROPERTY, this.value);
+      }
+    }
+    log.info("No suitable address found");
+    return Optional.empty();
+  }
 }

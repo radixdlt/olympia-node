@@ -64,6 +64,10 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_sync;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
@@ -75,84 +79,87 @@ import com.radixdlt.environment.Runners;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
+import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.sync.SyncConfig;
-import org.junit.Test;
-
 import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.IntStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
 
 /**
- * A node that falls behind multiple epochs should be able to successfully sync its ledger
- * and keep up once synced.
+ * A node that falls behind multiple epochs should be able to successfully sync its ledger and keep
+ * up once synced.
  */
 public class FallBehindMultipleEpochsLedgerSyncTest {
-	private static final int NODE_UNDER_TEST_INDEX = 2;
-	private static final long SYNC_DELAY = 5000L;
+  private static final int NODE_UNDER_TEST_INDEX = 2;
+  private static final long SYNC_DELAY = 5000L;
 
-	private final Builder testBuilder;
+  private final Builder testBuilder;
 
-	public FallBehindMultipleEpochsLedgerSyncTest() {
-		this.testBuilder = SimulationTest.builder()
-			.numNodes(3)
-			.networkModules(
-				NetworkOrdering.inOrder(),
-				NetworkLatencies.fixed(10)
-			)
-			.overrideWithIncorrectModule(new AbstractModule() {
-				@Provides
-				public BFTValidatorSet genesisValidatorSet(Function<Long, BFTValidatorSet> mapper) {
-					return mapper.apply(0L);
-				}
-			})
-			.pacemakerTimeout(3000)
-			.ledgerAndEpochsAndSync(View.of(10), (unused) -> IntStream.of(0, 1), SyncConfig.of(200L, 10, 2000L))
-			.addTestModules(
-				ConsensusMonitors.safety(),
-				ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
-				ConsensusMonitors.directParents(),
-				LedgerMonitors.consensusToLedger(),
-				LedgerMonitors.ordered(),
-				ConsensusMonitors.epochCeilingView(View.of(10))
-			);
-	}
+  public FallBehindMultipleEpochsLedgerSyncTest() {
+    this.testBuilder =
+        SimulationTest.builder()
+            .numNodes(3)
+            .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed(10))
+            .overrideWithIncorrectModule(
+                new AbstractModule() {
+                  @Provides
+                  public BFTValidatorSet genesisValidatorSet(
+                      Function<Long, BFTValidatorSet> mapper) {
+                    return mapper.apply(0L);
+                  }
+                })
+            .pacemakerTimeout(3000)
+            .ledgerAndEpochsAndSync(
+                View.of(10), (unused) -> IntStream.of(0, 1), SyncConfig.of(200L, 10, 2000L))
+            .addTestModules(
+                ConsensusMonitors.safety(),
+                ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
+                ConsensusMonitors.directParents(),
+                LedgerMonitors.consensusToLedger(),
+                LedgerMonitors.ordered(),
+                ConsensusMonitors.epochCeilingView(View.of(10)));
+  }
 
-	@Test
-	public void given_a_node_that_falls_behind_multiple_epochs__it_should_sync_up() {
-		final var simulationTest = testBuilder.build();
+  @Test
+  public void given_a_node_that_falls_behind_multiple_epochs__it_should_sync_up() {
+    final var simulationTest = testBuilder.build();
 
-		final var runningTest = simulationTest.run(
-			Duration.ofSeconds(15),
-			ImmutableMap.of(NODE_UNDER_TEST_INDEX, ImmutableSet.of(Runners.SYNC))
-		);
+    final var runningTest =
+        simulationTest.run(
+            Duration.ofSeconds(15),
+            ImmutableMap.of(NODE_UNDER_TEST_INDEX, ImmutableSet.of(Runners.SYNC)));
 
-		Executors.newSingleThreadScheduledExecutor()
-			.schedule(() -> runningTest.getNetwork().runModule(NODE_UNDER_TEST_INDEX, Runners.SYNC), SYNC_DELAY, TimeUnit.MILLISECONDS);
+    Executors.newSingleThreadScheduledExecutor()
+        .schedule(
+            () -> runningTest.getNetwork().runModule(NODE_UNDER_TEST_INDEX, Runners.SYNC),
+            SYNC_DELAY,
+            TimeUnit.MILLISECONDS);
 
-		final var results = runningTest.awaitCompletion();
+    final var results = runningTest.awaitCompletion();
 
-		final var nodeCounters = runningTest.getNetwork()
-			.getSystemCounters().get(runningTest.getNetwork().getNodes().get(NODE_UNDER_TEST_INDEX));
+    final var nodeCounters =
+        runningTest
+            .getNetwork()
+            .getSystemCounters()
+            .get(runningTest.getNetwork().getNodes().get(NODE_UNDER_TEST_INDEX));
 
-		assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
+    assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
 
-		// node must be synced up to some state after the first epoch
-		// and must not fall behind too much
-		var diff = nodeCounters.get(CounterType.SYNC_TARGET_STATE_VERSION) - nodeCounters.get(CounterType.SYNC_CURRENT_STATE_VERSION);
-		assertThat(diff).isLessThan(200);
-		assertTrue(nodeCounters.get(CounterType.SYNC_VALID_RESPONSES_RECEIVED) > 200);
-		assertTrue(nodeCounters.get(CounterType.LEDGER_STATE_VERSION) > 200);
-		// just to be sure that node wasn't a validator
-		assertEquals(0, nodeCounters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT));
-		assertEquals(0, nodeCounters.get(CounterType.BFT_COMMITTED_VERTICES));
-	}
+    // node must be synced up to some state after the first epoch
+    // and must not fall behind too much
+    var diff =
+        nodeCounters.get(CounterType.SYNC_TARGET_STATE_VERSION)
+            - nodeCounters.get(CounterType.SYNC_CURRENT_STATE_VERSION);
+    assertThat(diff).isLessThan(200);
+    assertTrue(nodeCounters.get(CounterType.SYNC_VALID_RESPONSES_RECEIVED) > 200);
+    assertTrue(nodeCounters.get(CounterType.LEDGER_STATE_VERSION) > 200);
+    // just to be sure that node wasn't a validator
+    assertEquals(0, nodeCounters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT));
+    assertEquals(0, nodeCounters.get(CounterType.BFT_COMMITTED_VERTICES));
+  }
 }

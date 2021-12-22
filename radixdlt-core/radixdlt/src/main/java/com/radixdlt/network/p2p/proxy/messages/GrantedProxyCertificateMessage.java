@@ -70,44 +70,43 @@ import com.radixdlt.network.messaging.Message;
 import com.radixdlt.network.p2p.proxy.ProxyCertificate;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
-
 import java.util.Objects;
 
 @SerializerId2("p2p.proxy.granted_proxy_certificate")
 public final class GrantedProxyCertificateMessage extends Message {
-	@JsonProperty("proxyCertificate")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final ProxyCertificate proxyCertificate;
+  @JsonProperty("proxyCertificate")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final ProxyCertificate proxyCertificate;
 
-	@JsonCreator
-	public GrantedProxyCertificateMessage(
-		@JsonProperty(value = "proxyCertificate", required = true) ProxyCertificate proxyCertificate
-	) {
-		this.proxyCertificate = Objects.requireNonNull(proxyCertificate);
-	}
+  @JsonCreator
+  public GrantedProxyCertificateMessage(
+      @JsonProperty(value = "proxyCertificate", required = true)
+          ProxyCertificate proxyCertificate) {
+    this.proxyCertificate = Objects.requireNonNull(proxyCertificate);
+  }
 
-	public ProxyCertificate getProxyCertificate() {
-		return proxyCertificate;
-	}
+  public ProxyCertificate getProxyCertificate() {
+    return proxyCertificate;
+  }
 
-	@Override
-	public String toString() {
-		return getClass().getSimpleName();
-	}
+  @Override
+  public String toString() {
+    return getClass().getSimpleName();
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof GrantedProxyCertificateMessage that)
-			&& Objects.equals(proxyCertificate, that.getProxyCertificate())
-			&& Objects.equals(getTimestamp(), that.getTimestamp());
-	}
+    return (o instanceof GrantedProxyCertificateMessage that)
+        && Objects.equals(proxyCertificate, that.getProxyCertificate())
+        && Objects.equals(getTimestamp(), that.getTimestamp());
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(proxyCertificate, getTimestamp());
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(proxyCertificate, getTimestamp());
+  }
 }

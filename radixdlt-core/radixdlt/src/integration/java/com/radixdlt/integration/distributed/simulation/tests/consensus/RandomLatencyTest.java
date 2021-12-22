@@ -66,72 +66,63 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
-import java.util.concurrent.TimeUnit;
-
 /**
- * Simulation which randomly selects (uniform distribution) latencies for each message as
- * long as its still within the bounds of synchrony, the idea being that random edge cases
- * may be found.
+ * Simulation which randomly selects (uniform distribution) latencies for each message as long as
+ * its still within the bounds of synchrony, the idea being that random edge cases may be found.
  */
 public class RandomLatencyTest {
-	// use a maxLatency of 20x the min latency since we know a round can take up to
-	// atleast 6x transmission time. 20x so that we can hit these cases more often
-	private final int minLatency = 10;
-	private final int maxLatency = 200;
-	// the minimum latency per round is determined using the network latency
-	// a round can consist of 6 * max_transmission_time (MTT)
-	private final int trips = 6;
-	private final int synchronousTimeout = maxLatency * trips;
+  // use a maxLatency of 20x the min latency since we know a round can take up to
+  // atleast 6x transmission time. 20x so that we can hit these cases more often
+  private final int minLatency = 10;
+  private final int maxLatency = 200;
+  // the minimum latency per round is determined using the network latency
+  // a round can consist of 6 * max_transmission_time (MTT)
+  private final int trips = 6;
+  private final int synchronousTimeout = maxLatency * trips;
 
-	private Builder bftTestBuilder = SimulationTest.builder()
-		.networkModules(
-			NetworkOrdering.inOrder(),
-			NetworkLatencies.random(minLatency, maxLatency),
-			NetworkDroppers.bftSyncMessagesDropped()
-		)
-		.pacemakerTimeout(synchronousTimeout) // Since no syncing needed 6*MTT required
-		.addTestModules(
-			ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(synchronousTimeout, TimeUnit.MILLISECONDS),
-			ConsensusMonitors.noTimeouts(),
-			ConsensusMonitors.directParents()
-		);
+  private Builder bftTestBuilder =
+      SimulationTest.builder()
+          .networkModules(
+              NetworkOrdering.inOrder(),
+              NetworkLatencies.random(minLatency, maxLatency),
+              NetworkDroppers.bftSyncMessagesDropped())
+          .pacemakerTimeout(synchronousTimeout) // Since no syncing needed 6*MTT required
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(synchronousTimeout, TimeUnit.MILLISECONDS),
+              ConsensusMonitors.noTimeouts(),
+              ConsensusMonitors.directParents());
 
-	/**
-	 * Tests a static configuration of 3 nodes with random, high variance in latency
-	 */
-	@Test
-	public void given_3_correct_nodes_in_random_network_and_no_sync__then_all_synchronous_checks_should_pass() {
-		SimulationTest test = bftTestBuilder
-			.numNodes(3)
-			.build();
+  /** Tests a static configuration of 3 nodes with random, high variance in latency */
+  @Test
+  public void
+      given_3_correct_nodes_in_random_network_and_no_sync__then_all_synchronous_checks_should_pass() {
+    SimulationTest test = bftTestBuilder.numNodes(3).build();
 
-		final var runningTest = test.run();
-		final var checkResults = runningTest.awaitCompletion();
+    final var runningTest = test.run();
+    final var checkResults = runningTest.awaitCompletion();
 
-		assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
-	}
+    assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
+  }
 
-	/**
-	 * Tests a static configuration of 4 nodes with random, high variance in latency
-	 */
-	@Test
-	public void given_4_correct_bfts_in_random_network_and_no_sync__then_all_synchronous_checks_should_pass() {
-		SimulationTest test = bftTestBuilder
-			.numNodes(4)
-			.build();
+  /** Tests a static configuration of 4 nodes with random, high variance in latency */
+  @Test
+  public void
+      given_4_correct_bfts_in_random_network_and_no_sync__then_all_synchronous_checks_should_pass() {
+    SimulationTest test = bftTestBuilder.numNodes(4).build();
 
-		final var runningTest = test.run();
-		final var checkResults = runningTest.awaitCompletion();
+    final var runningTest = test.run();
+    final var checkResults = runningTest.awaitCompletion();
 
-		assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
-	}
+    assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
+  }
 }

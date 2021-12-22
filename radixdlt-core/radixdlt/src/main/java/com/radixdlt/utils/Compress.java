@@ -64,53 +64,48 @@
 
 package com.radixdlt.utils;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import org.xerial.snappy.Snappy;
 import org.xerial.snappy.SnappyFramedInputStream;
 import org.xerial.snappy.SnappyFramedOutputStream;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-
-/**
- * Common utility methods for compression/decompression.
- */
+/** Common utility methods for compression/decompression. */
 public class Compress {
-	private Compress() {
-		throw new UnsupportedOperationException("Utility class should not be instantiated.");
-	}
+  private Compress() {
+    throw new UnsupportedOperationException("Utility class should not be instantiated.");
+  }
 
-	/**
-	 * Compresses input byte array into output byte array.
-	 *
-	 * @param input source data to compress
-	 * @return compressed output.
-	 *
-	 * @throws IOException
-	 */
-	public static byte[] compress(byte[] input) throws IOException {
-		try (var out = new ByteArrayOutputStream();
-			 var os = new SnappyFramedOutputStream(out)) {
-			os.transferFrom(new ByteArrayInputStream(input));
-			os.flush();
-			return out.toByteArray();
-		}
-	}
+  /**
+   * Compresses input byte array into output byte array.
+   *
+   * @param input source data to compress
+   * @return compressed output.
+   * @throws IOException
+   */
+  public static byte[] compress(byte[] input) throws IOException {
+    try (var out = new ByteArrayOutputStream();
+        var os = new SnappyFramedOutputStream(out)) {
+      os.transferFrom(new ByteArrayInputStream(input));
+      os.flush();
+      return out.toByteArray();
+    }
+  }
 
-	/**
-	 * Decompresses input byte array into output byte array.
-	 *
-	 * @param input source data to decompress
-	 * @return decompressed output.
-	 *
-	 * @throws IOException
-	 */
-	public static byte[] uncompress(byte[] input) throws IOException {
-		try (var is = new SnappyFramedInputStream(new ByteArrayInputStream(input));
-			 var os = new ByteArrayOutputStream(Snappy.uncompressedLength(input))) {
-			is.transferTo(os);
-			os.flush();
-			return os.toByteArray();
-		}
-	}
+  /**
+   * Decompresses input byte array into output byte array.
+   *
+   * @param input source data to decompress
+   * @return decompressed output.
+   * @throws IOException
+   */
+  public static byte[] uncompress(byte[] input) throws IOException {
+    try (var is = new SnappyFramedInputStream(new ByteArrayInputStream(input));
+        var os = new ByteArrayOutputStream(Snappy.uncompressedLength(input))) {
+      is.transferTo(os);
+      os.flush();
+      return os.toByteArray();
+    }
+  }
 }

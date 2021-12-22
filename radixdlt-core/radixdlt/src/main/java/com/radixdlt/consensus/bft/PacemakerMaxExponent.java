@@ -73,11 +73,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
-/**
- * Pacemaker's max exponent
- */
+/** Pacemaker's max exponent */
 @Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
+@Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface PacemakerMaxExponent {
-}
+public @interface PacemakerMaxExponent {}

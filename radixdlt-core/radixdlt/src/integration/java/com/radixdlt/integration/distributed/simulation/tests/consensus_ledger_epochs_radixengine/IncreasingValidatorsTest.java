@@ -66,60 +66,55 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
-import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import java.util.concurrent.TimeUnit;
-
 import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRegistrator;
+import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
+import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
-/**
- * Slowly registers more and more validators to the network
- */
+/** Slowly registers more and more validators to the network */
 public class IncreasingValidatorsTest {
-	private final Builder bftTestBuilder = SimulationTest.builder()
-		.networkModules(
-			NetworkOrdering.inOrder(),
-			NetworkLatencies.fixed()
-		)
-		.pacemakerTimeout(3000)
-		.numNodes(50, 2) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware pacemaker
-		.addRadixEngineConfigModules(
-			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
-			new ForksModule()
-		)
-		.ledgerAndRadixEngineWithEpochHighView()
-		.addTestModules(
-			ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
-			ConsensusMonitors.noTimeouts(),
-			ConsensusMonitors.directParents(),
-			LedgerMonitors.consensusToLedger(),
-			LedgerMonitors.ordered(),
-			RadixEngineMonitors.noInvalidProposedCommands(),
-			ApplicationMonitors.registeredNodeToEpoch()
-		)
-		.addActor(NodeValidatorRegistrator.class);
+  private final Builder bftTestBuilder =
+      SimulationTest.builder()
+          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .pacemakerTimeout(3000)
+          .numNodes(
+              50, 2) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware
+          // pacemaker
+          .addRadixEngineConfigModules(
+              new MainnetForkConfigsModule(),
+              new RadixEngineForksLatestOnlyModule(
+                  RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
+              new ForksModule())
+          .ledgerAndRadixEngineWithEpochHighView()
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
+              ConsensusMonitors.noTimeouts(),
+              ConsensusMonitors.directParents(),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered(),
+              RadixEngineMonitors.noInvalidProposedCommands(),
+              ApplicationMonitors.registeredNodeToEpoch())
+          .addActor(NodeValidatorRegistrator.class);
 
-	@Test
-	public void when_increasing_validators__then_they_should_be_getting_registered() {
-		SimulationTest simulationTest = bftTestBuilder
-			.build();
+  @Test
+  public void when_increasing_validators__then_they_should_be_getting_registered() {
+    SimulationTest simulationTest = bftTestBuilder.build();
 
-		final var runningTest = simulationTest.run();
-		final var checkResults = runningTest.awaitCompletion();
+    final var runningTest = simulationTest.run();
+    final var checkResults = runningTest.awaitCompletion();
 
-		assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
-	}
+    assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
+  }
 }

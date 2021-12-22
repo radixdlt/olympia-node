@@ -70,32 +70,32 @@ import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 
 public final class SigsPerRoundMeter implements Meter {
 
-	private final int sigsPerRound;
+  private final int sigsPerRound;
 
-	private SigsPerRoundMeter(int sigsPerRound) {
-		this.sigsPerRound = sigsPerRound;
-	}
+  private SigsPerRoundMeter(int sigsPerRound) {
+    this.sigsPerRound = sigsPerRound;
+  }
 
-	public static SigsPerRoundMeter create(int sigsPerRound) {
-		return new SigsPerRoundMeter(sigsPerRound);
-	}
+  public static SigsPerRoundMeter create(int sigsPerRound) {
+    return new SigsPerRoundMeter(sigsPerRound);
+  }
 
-	@Override
-	public void onStart(ExecutionContext context) {
-		// No-op
-	}
+  @Override
+  public void onStart(ExecutionContext context) {
+    // No-op
+  }
 
-	@Override
-	public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) {
-	}
+  @Override
+  public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) {}
 
-	@Override
-	public void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) {
-		context.resetSigs(sigsPerRound);
-	}
+  @Override
+  public void onSuperUserProcedure(
+      ProcedureKey procedureKey, Object param, ExecutionContext context) {
+    context.resetSigs(sigsPerRound);
+  }
 
-	@Override
-	public void onSigInstruction(ExecutionContext context) throws AuthorizationException {
-		context.sig();
-	}
+  @Override
+  public void onSigInstruction(ExecutionContext context) throws AuthorizationException {
+    context.sig();
+  }
 }

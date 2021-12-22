@@ -64,56 +64,55 @@
 
 package com.radixdlt.client.lib.api;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import static java.util.Objects.requireNonNull;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import java.time.Instant;
 import java.util.Objects;
 
-import static java.util.Objects.requireNonNull;
-
 public class TxTimestamp {
-	private final Instant instant;
+  private final Instant instant;
 
-	private TxTimestamp(Instant instant) {
-		this.instant = instant;
-	}
+  private TxTimestamp(Instant instant) {
+    this.instant = instant;
+  }
 
-	public static TxTimestamp create(Instant instant) {
-		requireNonNull(instant);
+  public static TxTimestamp create(Instant instant) {
+    requireNonNull(instant);
 
-		return new TxTimestamp(instant);
-	}
+    return new TxTimestamp(instant);
+  }
 
-	@JsonCreator
-	public static TxTimestamp create(String input) {
-		return create(Instant.parse(input));
-	}
+  @JsonCreator
+  public static TxTimestamp create(String input) {
+    return create(Instant.parse(input));
+  }
 
-	public Instant getInstant() {
-		return instant;
-	}
+  public Instant getInstant() {
+    return instant;
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof TxTimestamp)) {
-			return false;
-		}
+    if (!(o instanceof TxTimestamp)) {
+      return false;
+    }
 
-		var that = (TxTimestamp) o;
-		return instant.equals(that.instant);
-	}
+    var that = (TxTimestamp) o;
+    return instant.equals(that.instant);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(instant);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(instant);
+  }
 
-	@Override
-	public String toString() {
-		return "TxTimestamp(" + instant + ")";
-	}
+  @Override
+  public String toString() {
+    return "TxTimestamp(" + instant + ")";
+  }
 }

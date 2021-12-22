@@ -70,36 +70,33 @@ package com.radixdlt.network.messaging;
  * @param <T> elements of the queue
  */
 interface SimpleBlockingQueue<T> {
-    /**
-     * Retrieves and removes the head of this queue, waiting if necessary
-     * until an element becomes available.
-     *
-     * @return the head of this queue
-     * @throws InterruptedException if interrupted while waiting
-     */
-	T take() throws InterruptedException;
+  /**
+   * Retrieves and removes the head of this queue, waiting if necessary until an element becomes
+   * available.
+   *
+   * @return the head of this queue
+   * @throws InterruptedException if interrupted while waiting
+   */
+  T take() throws InterruptedException;
 
-    /**
-     * Inserts the specified element into this queue if it is possible to do
-     * so immediately without violating capacity restrictions, returning
-     * {@code true} upon success and {@code false} if no space is currently
-     * available.
-     *
-     * @param e the element to add
-     * @return {@code true} if the element was added to this queue, else
-     *         {@code false}
-     * @throws ClassCastException if the class of the specified element
-     *         prevents it from being added to this queue
-     * @throws NullPointerException if the specified element is null
-     */
-	boolean offer(T item);
+  /**
+   * Inserts the specified element into this queue if it is possible to do so immediately without
+   * violating capacity restrictions, returning {@code true} upon success and {@code false} if no
+   * space is currently available.
+   *
+   * @param e the element to add
+   * @return {@code true} if the element was added to this queue, else {@code false}
+   * @throws ClassCastException if the class of the specified element prevents it from being added
+   *     to this queue
+   * @throws NullPointerException if the specified element is null
+   */
+  boolean offer(T item);
 
-    /**
-     * Returns the number of elements in this collection.  If this collection
-     * contains more than {@code Integer.MAX_VALUE} elements, returns
-     * {@code Integer.MAX_VALUE}.
-     *
-     * @return the number of elements in this collection
-     */
-	int size();
+  /**
+   * Returns the number of elements in this collection. If this collection contains more than {@code
+   * Integer.MAX_VALUE} elements, returns {@code Integer.MAX_VALUE}.
+   *
+   * @return the number of elements in this collection
+   */
+  int size();
 }

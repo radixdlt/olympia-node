@@ -64,6 +64,8 @@
 
 package com.radixdlt.consensus;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
@@ -79,173 +81,176 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
 import java.util.Objects;
 import java.util.Optional;
 
-import static java.util.Objects.requireNonNull;
-
-/**
- * Represents a vote on a vertex
- */
+/** Represents a vote on a vertex */
 @Immutable
 @SerializerId2("consensus.vote")
 public final class Vote implements ConsensusEvent {
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(Output.ALL)
-	SerializerDummy serializer = SerializerDummy.DUMMY;
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(Output.ALL)
+  SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private final BFTNode author;
+  private final BFTNode author;
 
-	@JsonProperty("high_qc")
-	@DsonOutput(Output.ALL)
-	private final HighQC highQC;
+  @JsonProperty("high_qc")
+  @DsonOutput(Output.ALL)
+  private final HighQC highQC;
 
-	@JsonProperty("vote_data")
-	@DsonOutput(Output.ALL)
-	private final VoteData voteData;
+  @JsonProperty("vote_data")
+  @DsonOutput(Output.ALL)
+  private final VoteData voteData;
 
-	@JsonProperty("ts")
-	@DsonOutput(Output.ALL)
-	private final long timestamp;
+  @JsonProperty("ts")
+  @DsonOutput(Output.ALL)
+  private final long timestamp;
 
-	@JsonProperty("signature")
-	@DsonOutput(Output.ALL)
-	private final ECDSASignature signature;
+  @JsonProperty("signature")
+  @DsonOutput(Output.ALL)
+  private final ECDSASignature signature;
 
-	private final Optional<ECDSASignature> timeoutSignature;
+  private final Optional<ECDSASignature> timeoutSignature;
 
-	@JsonCreator
-	@VisibleForTesting
-	public Vote(
-		@JsonProperty(value = "author", required = true) byte[] author,
-		@JsonProperty(value = "vote_data", required = true) VoteData voteData,
-		@JsonProperty("ts") long timestamp,
-		@JsonProperty(value = "signature", required = true) ECDSASignature signature,
-		@JsonProperty(value = "high_qc", required = true) HighQC highQC,
-		@JsonProperty("timeout_signature") ECDSASignature timeoutSignature
-	) throws PublicKeyException {
-		this(
-			BFTNode.fromPublicKeyBytes(requireNonNull(author)), voteData, timestamp,
-			signature, highQC, Optional.ofNullable(timeoutSignature)
-		);
-	}
+  @JsonCreator
+  @VisibleForTesting
+  public Vote(
+      @JsonProperty(value = "author", required = true) byte[] author,
+      @JsonProperty(value = "vote_data", required = true) VoteData voteData,
+      @JsonProperty("ts") long timestamp,
+      @JsonProperty(value = "signature", required = true) ECDSASignature signature,
+      @JsonProperty(value = "high_qc", required = true) HighQC highQC,
+      @JsonProperty("timeout_signature") ECDSASignature timeoutSignature)
+      throws PublicKeyException {
+    this(
+        BFTNode.fromPublicKeyBytes(requireNonNull(author)),
+        voteData,
+        timestamp,
+        signature,
+        highQC,
+        Optional.ofNullable(timeoutSignature));
+  }
 
-	public Vote(
-		BFTNode author,
-		VoteData voteData,
-		long timestamp,
-		ECDSASignature signature,
-		HighQC highQC,
-		Optional<ECDSASignature> timeoutSignature
-	) {
-		if (timestamp <= 0) {
-			throw new IllegalArgumentException("Timestamp before epoch:" + timestamp);
-		}
+  public Vote(
+      BFTNode author,
+      VoteData voteData,
+      long timestamp,
+      ECDSASignature signature,
+      HighQC highQC,
+      Optional<ECDSASignature> timeoutSignature) {
+    if (timestamp <= 0) {
+      throw new IllegalArgumentException("Timestamp before epoch:" + timestamp);
+    }
 
-		this.author = requireNonNull(author);
-		this.voteData = requireNonNull(voteData);
-		this.timestamp = timestamp;
-		this.signature = requireNonNull(signature);
-		this.highQC = requireNonNull(highQC);
-		this.timeoutSignature = requireNonNull(timeoutSignature);
-	}
+    this.author = requireNonNull(author);
+    this.voteData = requireNonNull(voteData);
+    this.timestamp = timestamp;
+    this.signature = requireNonNull(signature);
+    this.highQC = requireNonNull(highQC);
+    this.timeoutSignature = requireNonNull(timeoutSignature);
+  }
 
-	@Override
-	public long getEpoch() {
-		return voteData.getProposed().getLedgerHeader().getEpoch();
-	}
+  @Override
+  public long getEpoch() {
+    return voteData.getProposed().getLedgerHeader().getEpoch();
+  }
 
-	@Override
-	public BFTNode getAuthor() {
-		return author;
-	}
+  @Override
+  public BFTNode getAuthor() {
+    return author;
+  }
 
-	@Override
-	public HighQC highQC() {
-		return this.highQC;
-	}
+  @Override
+  public HighQC highQC() {
+    return this.highQC;
+  }
 
-	@Override
-	public View getView() {
-		return getVoteData().getProposed().getView();
-	}
+  @Override
+  public View getView() {
+    return getVoteData().getProposed().getView();
+  }
 
-	public VoteData getVoteData() {
-		return voteData;
-	}
+  public VoteData getVoteData() {
+    return voteData;
+  }
 
-	public static HashCode getHashOfData(Hasher hasher, VoteData voteData, long timestamp) {
-		var opaque = hasher.hash(voteData);
-		var header = voteData.getCommitted().map(BFTHeader::getLedgerHeader).orElse(null);
-		return ConsensusHasher.toHash(opaque, header, timestamp, hasher);
-	}
+  public static HashCode getHashOfData(Hasher hasher, VoteData voteData, long timestamp) {
+    var opaque = hasher.hash(voteData);
+    var header = voteData.getCommitted().map(BFTHeader::getLedgerHeader).orElse(null);
+    return ConsensusHasher.toHash(opaque, header, timestamp, hasher);
+  }
 
-	public HashCode getHashOfData(Hasher hasher) {
-		return getHashOfData(hasher, this.voteData, this.timestamp);
-	}
+  public HashCode getHashOfData(Hasher hasher) {
+    return getHashOfData(hasher, this.voteData, this.timestamp);
+  }
 
-	public long getTimestamp() {
-		return timestamp;
-	}
+  public long getTimestamp() {
+    return timestamp;
+  }
 
-	public ECDSASignature getSignature() {
-		return this.signature;
-	}
+  public ECDSASignature getSignature() {
+    return this.signature;
+  }
 
-	public Optional<ECDSASignature> getTimeoutSignature() {
-		return timeoutSignature;
-	}
+  public Optional<ECDSASignature> getTimeoutSignature() {
+    return timeoutSignature;
+  }
 
-	public Vote withTimeoutSignature(ECDSASignature timeoutSignature) {
-		return new Vote(
-			this.author,
-			this.voteData,
-			this.timestamp,
-			this.signature,
-			this.highQC,
-			Optional.of(timeoutSignature)
-		);
-	}
+  public Vote withTimeoutSignature(ECDSASignature timeoutSignature) {
+    return new Vote(
+        this.author,
+        this.voteData,
+        this.timestamp,
+        this.signature,
+        this.highQC,
+        Optional.of(timeoutSignature));
+  }
 
-	public boolean isTimeout() {
-		return timeoutSignature.isPresent();
-	}
+  public boolean isTimeout() {
+    return timeoutSignature.isPresent();
+  }
 
-	@JsonProperty("author")
-	@DsonOutput(Output.ALL)
-	private byte[] getSerializerAuthor() {
-		return this.author == null ? null : this.author.getKey().getBytes();
-	}
+  @JsonProperty("author")
+  @DsonOutput(Output.ALL)
+  private byte[] getSerializerAuthor() {
+    return this.author == null ? null : this.author.getKey().getBytes();
+  }
 
-	@JsonProperty("timeout_signature")
-	@DsonOutput(Output.ALL)
-	private ECDSASignature getSerializerTimeoutSignature() {
-		return this.timeoutSignature.orElse(null);
-	}
+  @JsonProperty("timeout_signature")
+  @DsonOutput(Output.ALL)
+  private ECDSASignature getSerializerTimeoutSignature() {
+    return this.timeoutSignature.orElse(null);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{epoch=%s view=%s author=%s timeout?=%s %s}", getClass().getSimpleName(),
-			getEpoch(), getView(), author, isTimeout(), highQC);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{epoch=%s view=%s author=%s timeout?=%s %s}",
+        getClass().getSimpleName(), getEpoch(), getView(), author, isTimeout(), highQC);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.author, this.voteData, this.timestamp, this.signature, this.highQC, this.timeoutSignature);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        this.author,
+        this.voteData,
+        this.timestamp,
+        this.signature,
+        this.highQC,
+        this.timeoutSignature);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (o == this) {
-			return true;
-		}
-		return (o instanceof Vote other)
-			   && Objects.equals(this.author, other.author)
-			   && Objects.equals(this.voteData, other.voteData)
-			   && this.timestamp == other.timestamp
-			   && Objects.equals(this.signature, other.signature)
-			   && Objects.equals(this.highQC, other.highQC)
-			   && Objects.equals(this.timeoutSignature, other.timeoutSignature);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) {
+      return true;
+    }
+    return (o instanceof Vote other)
+        && Objects.equals(this.author, other.author)
+        && Objects.equals(this.voteData, other.voteData)
+        && this.timestamp == other.timestamp
+        && Objects.equals(this.signature, other.signature)
+        && Objects.equals(this.highQC, other.highQC)
+        && Objects.equals(this.timeoutSignature, other.timeoutSignature);
+  }
 }

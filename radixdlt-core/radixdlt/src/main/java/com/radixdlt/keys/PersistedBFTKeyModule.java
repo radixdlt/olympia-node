@@ -76,55 +76,52 @@ import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.qualifier.LocalSigner;
-
 import java.util.function.Function;
 
-/**
- * Configures the key to be used for signing things as a BFT validator.
- */
+/** Configures the key to be used for signing things as a BFT validator. */
 public final class PersistedBFTKeyModule extends AbstractModule {
-	@Override
-	public void configure() {
-		bind(HashSigner.class).annotatedWith(LocalSigner.class).to(HashSigner.class);
-	}
+  @Override
+  public void configure() {
+    bind(HashSigner.class).annotatedWith(LocalSigner.class).to(HashSigner.class);
+  }
 
-	@Provides
-	@Singleton
-	PersistedBFTKeyManager bftKeyManager(RuntimeProperties properties) {
-		var nodeKeyPath = properties.get("node.key.path", "node.ks");
+  @Provides
+  @Singleton
+  PersistedBFTKeyManager bftKeyManager(RuntimeProperties properties) {
+    var nodeKeyPath = properties.get("node.key.path", "node.ks");
 
-		return new PersistedBFTKeyManager(nodeKeyPath);
-	}
+    return new PersistedBFTKeyManager(nodeKeyPath);
+  }
 
-	@Provides
-	@Self
-	ECPublicKey key(@Self BFTNode bftNode) {
-		return bftNode.getKey();
-	}
+  @Provides
+  @Self
+  ECPublicKey key(@Self BFTNode bftNode) {
+    return bftNode.getKey();
+  }
 
-	@Provides
-	ECKeyOps ecKeyOps(PersistedBFTKeyManager keyManager) {
-		return ECKeyOps.fromKeyPair(keyManager.getKeyPair());
-	}
+  @Provides
+  ECKeyOps ecKeyOps(PersistedBFTKeyManager keyManager) {
+    return ECKeyOps.fromKeyPair(keyManager.getKeyPair());
+  }
 
-	@Provides
-	@Self
-	BFTNode bftNode(PersistedBFTKeyManager bftKeyManager) {
-		return bftKeyManager.self();
-	}
+  @Provides
+  @Self
+  BFTNode bftNode(PersistedBFTKeyManager bftKeyManager) {
+    return bftKeyManager.self();
+  }
 
-	@Provides
-	@Self
-	String name(Function<ECPublicKey, String> nodeToString, @Self ECPublicKey key) {
-		return nodeToString.apply(key);
-	}
+  @Provides
+  @Self
+  String name(Function<ECPublicKey, String> nodeToString, @Self ECPublicKey key) {
+    return nodeToString.apply(key);
+  }
 
-	@Provides
-	@Singleton
-	HashSigner hashSigner(PersistedBFTKeyManager bftKeyManager, SystemCounters counters) {
-		return hash -> {
-			counters.increment(CounterType.SIGNATURES_SIGNED);
-			return bftKeyManager.sign(hash);
-		};
-	}
+  @Provides
+  @Singleton
+  HashSigner hashSigner(PersistedBFTKeyManager bftKeyManager, SystemCounters counters) {
+    return hash -> {
+      counters.increment(CounterType.SIGNATURES_SIGNED);
+      return bftKeyManager.sign(hash);
+    };
+  }
 }

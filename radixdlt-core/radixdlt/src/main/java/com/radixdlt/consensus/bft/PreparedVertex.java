@@ -69,84 +69,85 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
 import com.radixdlt.utils.Pair;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-/**
- * Vertex which has been executed in the prepare phase
- */
+/** Vertex which has been executed in the prepare phase */
 public final class PreparedVertex {
-	private final long timeOfExecution;
-	private final VerifiedVertex vertex;
+  private final long timeOfExecution;
+  private final VerifiedVertex vertex;
 
-	private final LedgerHeader ledgerHeader;
+  private final LedgerHeader ledgerHeader;
 
-	private final List<PreparedTxn> preparedTxns;
-	private final Map<Txn, Exception> commandExceptions;
+  private final List<PreparedTxn> preparedTxns;
+  private final Map<Txn, Exception> commandExceptions;
 
-	PreparedVertex(
-		VerifiedVertex vertex,
-		LedgerHeader ledgerHeader,
-		List<PreparedTxn> preparedTxns,
-		Map<Txn, Exception> commandExceptions,
-		long timeOfExecution
-	) {
-		this.vertex = Objects.requireNonNull(vertex);
-		this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
-		this.preparedTxns = Objects.requireNonNull(preparedTxns);
-		this.commandExceptions = Objects.requireNonNull(commandExceptions);
-		this.timeOfExecution = timeOfExecution;
-	}
+  PreparedVertex(
+      VerifiedVertex vertex,
+      LedgerHeader ledgerHeader,
+      List<PreparedTxn> preparedTxns,
+      Map<Txn, Exception> commandExceptions,
+      long timeOfExecution) {
+    this.vertex = Objects.requireNonNull(vertex);
+    this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
+    this.preparedTxns = Objects.requireNonNull(preparedTxns);
+    this.commandExceptions = Objects.requireNonNull(commandExceptions);
+    this.timeOfExecution = timeOfExecution;
+  }
 
-	public long getTimeOfExecution() {
-		return timeOfExecution;
-	}
+  public long getTimeOfExecution() {
+    return timeOfExecution;
+  }
 
-	public HashCode getId() {
-		return vertex.getId();
-	}
+  public HashCode getId() {
+    return vertex.getId();
+  }
 
-	public HashCode getParentId() {
-		return vertex.getParentId();
-	}
+  public HashCode getParentId() {
+    return vertex.getParentId();
+  }
 
-	public View getView() {
-		return vertex.getView();
-	}
+  public View getView() {
+    return vertex.getView();
+  }
 
-	public Stream<PreparedTxn> successfulCommands() {
-		return preparedTxns.stream();
-	}
+  public Stream<PreparedTxn> successfulCommands() {
+    return preparedTxns.stream();
+  }
 
-	public Stream<Pair<Txn, Exception>> errorCommands() {
-		return commandExceptions.entrySet().stream().map(e -> Pair.of(e.getKey(), e.getValue()));
-	}
+  public Stream<Pair<Txn, Exception>> errorCommands() {
+    return commandExceptions.entrySet().stream().map(e -> Pair.of(e.getKey(), e.getValue()));
+  }
 
-	public Stream<Txn> getTxns() {
-		return Stream.concat(successfulCommands().map(PreparedTxn::txn), errorCommands().map(Pair::getFirst));
-	}
+  public Stream<Txn> getTxns() {
+    return Stream.concat(
+        successfulCommands().map(PreparedTxn::txn), errorCommands().map(Pair::getFirst));
+  }
 
-	/**
-	 * Retrieve the resulting header which is to be persisted on ledger
-	 * @return the header
-	 */
-	public LedgerHeader getLedgerHeader() {
-		return ledgerHeader;
-	}
+  /**
+   * Retrieve the resulting header which is to be persisted on ledger
+   *
+   * @return the header
+   */
+  public LedgerHeader getLedgerHeader() {
+    return ledgerHeader;
+  }
 
-	/**
-	 * Retrieve the vertex which was executed
-	 * @return the executed vertex
-	 */
-	public VerifiedVertex getVertex() {
-		return vertex;
-	}
+  /**
+   * Retrieve the vertex which was executed
+   *
+   * @return the executed vertex
+   */
+  public VerifiedVertex getVertex() {
+    return vertex;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{vertex=%s ledgerHeader=%s}", this.getClass().getSimpleName(), this.vertex, this.ledgerHeader);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{vertex=%s ledgerHeader=%s}",
+        this.getClass().getSimpleName(), this.vertex, this.ledgerHeader);
+  }
 }

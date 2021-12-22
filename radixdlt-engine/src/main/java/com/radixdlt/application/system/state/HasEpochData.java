@@ -65,5 +65,5 @@
 package com.radixdlt.application.system.state;
 
 public interface HasEpochData {
-	long getEpoch();
+  long getEpoch();
 }

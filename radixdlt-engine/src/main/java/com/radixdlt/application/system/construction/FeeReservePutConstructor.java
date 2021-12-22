@@ -73,19 +73,18 @@ import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.identifiers.REAddr;
 
 public class FeeReservePutConstructor implements ActionConstructor<FeeReservePut> {
-	@Override
-	public void construct(FeeReservePut action, TxBuilder txBuilder) throws TxBuilderException {
-		if (action.amount().isZero()) {
-			return;
-		}
-		txBuilder.putFeeReserve(
-			action.from(),
-			action.amount(),
-			available -> {
-				var from = AccountBucket.from(REAddr.ofNativeToken(), action.from());
-				return new NotEnoughResourcesException(from, action.amount(), available);
-			}
-		);
-		txBuilder.end();
-	}
+  @Override
+  public void construct(FeeReservePut action, TxBuilder txBuilder) throws TxBuilderException {
+    if (action.amount().isZero()) {
+      return;
+    }
+    txBuilder.putFeeReserve(
+        action.from(),
+        action.amount(),
+        available -> {
+          var from = AccountBucket.from(REAddr.ofNativeToken(), action.from());
+          return new NotEnoughResourcesException(from, action.amount(), available);
+        });
+    txBuilder.end();
+  }
 }

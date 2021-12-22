@@ -70,67 +70,67 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Implementation of a {@link SimpleBlockingQueue} that provides
- * priority ordering, while respecting FIFO properties
- * within a priority class.
+ * Implementation of a {@link SimpleBlockingQueue} that provides priority ordering, while respecting
+ * FIFO properties within a priority class.
  *
  * @param <T> The element type
  */
 public class SimplePriorityBlockingQueue<T> implements SimpleBlockingQueue<T> {
-	private final PriorityBlockingQueue<SimpleEntry<T>> queue;
+  private final PriorityBlockingQueue<SimpleEntry<T>> queue;
 
-	static final class SimpleEntry<U> {
-		private static final AtomicLong sequence = new AtomicLong(0);
+  static final class SimpleEntry<U> {
+    private static final AtomicLong sequence = new AtomicLong(0);
 
-		final long seq;
-		final U entry;
+    final long seq;
+    final U entry;
 
-		SimpleEntry(U entry) {
-			this.seq = sequence.getAndIncrement();
-			this.entry = entry;
-		}
+    SimpleEntry(U entry) {
+      this.seq = sequence.getAndIncrement();
+      this.entry = entry;
+    }
 
-		long getSeq() {
-			return this.seq;
-		}
+    long getSeq() {
+      return this.seq;
+    }
 
-		U getEntry() {
-			return this.entry;
-		}
+    U getEntry() {
+      return this.entry;
+    }
 
-		@Override
-		public String toString() {
-			return this.entry.toString();
-		}
-	}
+    @Override
+    public String toString() {
+      return this.entry.toString();
+    }
+  }
 
-	public SimplePriorityBlockingQueue(int size, Comparator<? super T> comparator) {
-		this.queue = new PriorityBlockingQueue<>(size, comparator(comparator));
-	}
+  public SimplePriorityBlockingQueue(int size, Comparator<? super T> comparator) {
+    this.queue = new PriorityBlockingQueue<>(size, comparator(comparator));
+  }
 
-	private Comparator<SimpleEntry<T>> comparator(Comparator<? super T> comparator) {
-		return Comparator.comparing(SimpleEntry<T>::getEntry, comparator).thenComparingLong(SimpleEntry<T>::getSeq);
-	}
+  private Comparator<SimpleEntry<T>> comparator(Comparator<? super T> comparator) {
+    return Comparator.comparing(SimpleEntry<T>::getEntry, comparator)
+        .thenComparingLong(SimpleEntry<T>::getSeq);
+  }
 
-	@Override
-	public T take() throws InterruptedException {
-		return this.queue.take().getEntry();
-	}
+  @Override
+  public T take() throws InterruptedException {
+    return this.queue.take().getEntry();
+  }
 
-	@Override
-	public boolean offer(T item) {
-		return this.queue.offer(new SimpleEntry<>(Objects.requireNonNull(item)));
-	}
+  @Override
+  public boolean offer(T item) {
+    return this.queue.offer(new SimpleEntry<>(Objects.requireNonNull(item)));
+  }
 
-	@Override
-	public int size() {
-		return this.queue.size();
-	}
+  @Override
+  public int size() {
+    return this.queue.size();
+  }
 
-	// No straightforward way to implement equals, so not doing that here
+  // No straightforward way to implement equals, so not doing that here
 
-	@Override
-	public String toString() {
-		return this.queue.toString();
-	}
+  @Override
+  public String toString() {
+    return this.queue.toString();
+  }
 }

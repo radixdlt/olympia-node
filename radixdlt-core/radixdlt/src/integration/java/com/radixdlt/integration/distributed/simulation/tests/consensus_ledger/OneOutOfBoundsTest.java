@@ -66,50 +66,45 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 /**
- * Runs checks with a consensus and ledger module across 4 nodes with a single
- * node out of bounds and verifies sanity checks are maintained
+ * Runs checks with a consensus and ledger module across 4 nodes with a single node out of bounds
+ * and verifies sanity checks are maintained
  */
 public class OneOutOfBoundsTest {
-	private static final int latency = 50;
-	private static final int outOfBoundsLatency = 1500;
+  private static final int latency = 50;
+  private static final int outOfBoundsLatency = 1500;
 
-	// TODO: Add 1 timeout check
-	private final Builder bftTestBuilder = SimulationTest.builder()
-		.networkModules(
-			NetworkOrdering.inOrder(),
-			NetworkLatencies.oneOutOfBounds(latency, outOfBoundsLatency)
-		)
-		.ledger()
-		.pacemakerTimeout(1000)
-		.addTestModules(
-	        ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(4, TimeUnit.SECONDS),
-			LedgerMonitors.consensusToLedger(),
-			LedgerMonitors.ordered()
-		);
+  // TODO: Add 1 timeout check
+  private final Builder bftTestBuilder =
+      SimulationTest.builder()
+          .networkModules(
+              NetworkOrdering.inOrder(),
+              NetworkLatencies.oneOutOfBounds(latency, outOfBoundsLatency))
+          .ledger()
+          .pacemakerTimeout(1000)
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(4, TimeUnit.SECONDS),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered());
 
-	/**
-	 * Tests a configuration of 1 out of 4 nodes out of synchrony bounds
-	 */
-	@Test
-	public void given_1_out_of_4_nodes_out_of_synchrony_bounds() {
-		SimulationTest test = bftTestBuilder
-			.numNodes(4)
-			.build();
+  /** Tests a configuration of 1 out of 4 nodes out of synchrony bounds */
+  @Test
+  public void given_1_out_of_4_nodes_out_of_synchrony_bounds() {
+    SimulationTest test = bftTestBuilder.numNodes(4).build();
 
-		final var runningTest = test.run();
-		final var checkResults = runningTest.awaitCompletion();
+    final var runningTest = test.run();
+    final var checkResults = runningTest.awaitCompletion();
 
-		assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
-	}
+    assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
+  }
 }

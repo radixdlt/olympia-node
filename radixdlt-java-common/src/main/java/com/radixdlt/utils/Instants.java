@@ -67,24 +67,25 @@ package com.radixdlt.utils;
 import java.time.Instant;
 
 public final class Instants {
-	private static final int BYTES = Long.BYTES + Integer.BYTES;
+  private static final int BYTES = Long.BYTES + Integer.BYTES;
 
-	private Instants() { }
+  private Instants() {}
 
-	public static byte[] toBytes(Instant instant) {
-		var result = new byte[BYTES];
+  public static byte[] toBytes(Instant instant) {
+    var result = new byte[BYTES];
 
-		Longs.copyTo(instant.getEpochSecond(), result, 0);
-		Ints.copyTo(instant.getNano(), result, Long.BYTES);
+    Longs.copyTo(instant.getEpochSecond(), result, 0);
+    Ints.copyTo(instant.getNano(), result, Long.BYTES);
 
-		return result;
-	}
+    return result;
+  }
 
-	public static Instant fromBytes(byte[] bytes) {
-		if (bytes.length < BYTES) {
-			throw new IllegalArgumentException("Instant decoding error: not enough data to decode");
-		}
+  public static Instant fromBytes(byte[] bytes) {
+    if (bytes.length < BYTES) {
+      throw new IllegalArgumentException("Instant decoding error: not enough data to decode");
+    }
 
-		return Instant.ofEpochSecond(Longs.fromByteArray(bytes, 0), Ints.fromByteArray(bytes, Long.BYTES));
-	}
+    return Instant.ofEpochSecond(
+        Longs.fromByteArray(bytes, 0), Ints.fromByteArray(bytes, Long.BYTES));
+  }
 }

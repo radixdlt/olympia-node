@@ -65,30 +65,30 @@
 package com.radixdlt.utils.functional;
 
 public final class Unit {
-	private Unit() { }
+  private Unit() {}
 
-	private static final Unit UNIT = new Unit();
+  private static final Unit UNIT = new Unit();
 
-	public static Unit unit() {
-		return UNIT;
-	}
+  public static Unit unit() {
+    return UNIT;
+  }
 
-	public static <T> Unit unit(final T ignored) {
-		return UNIT;
-	}
+  public static <T> Unit unit(final T ignored) {
+    return UNIT;
+  }
 
-	@Override
-	public String toString() {
-		return "()";
-	}
+  @Override
+  public String toString() {
+    return "()";
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		return o instanceof Unit;
-	}
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof Unit;
+  }
 
-	@Override
-	public int hashCode() {
-		return 1;
-	}
+  @Override
+  public int hashCode() {
+    return 1;
+  }
 }

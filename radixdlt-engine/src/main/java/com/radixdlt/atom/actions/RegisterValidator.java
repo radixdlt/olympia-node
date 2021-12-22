@@ -68,19 +68,19 @@ import com.radixdlt.atom.TxValidatorAction;
 import com.radixdlt.crypto.ECPublicKey;
 
 public final class RegisterValidator implements TxValidatorAction {
-	private final ECPublicKey validatorKey;
+  private final ECPublicKey validatorKey;
 
-	public RegisterValidator(ECPublicKey validatorKey) {
-		this.validatorKey = validatorKey;
-	}
+  public RegisterValidator(ECPublicKey validatorKey) {
+    this.validatorKey = validatorKey;
+  }
 
-	@Override
-	public ECPublicKey validatorKey() {
-		return validatorKey;
-	}
+  @Override
+  public ECPublicKey validatorKey() {
+    return validatorKey;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{key=%s}", this.getClass().getSimpleName(), validatorKey.toHex());
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{key=%s}", this.getClass().getSimpleName(), validatorKey.toHex());
+  }
 }

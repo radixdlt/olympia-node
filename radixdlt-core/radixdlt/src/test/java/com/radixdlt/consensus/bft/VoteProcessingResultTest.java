@@ -69,21 +69,18 @@ import org.junit.Test;
 
 public class VoteProcessingResultTest {
 
-    @Test
-    public void equalsVoteAccepted() {
-        EqualsVerifier.forClass(VoteProcessingResult.VoteAccepted.class)
-            .verify();
-    }
+  @Test
+  public void equalsVoteAccepted() {
+    EqualsVerifier.forClass(VoteProcessingResult.VoteAccepted.class).verify();
+  }
 
-    @Test
-    public void equalsVoteRejected() {
-        EqualsVerifier.forClass(VoteProcessingResult.VoteRejected.class)
-            .verify();
-    }
+  @Test
+  public void equalsVoteRejected() {
+    EqualsVerifier.forClass(VoteProcessingResult.VoteRejected.class).verify();
+  }
 
-    @Test
-    public void equalsQuorumReached() {
-        EqualsVerifier.forClass(VoteProcessingResult.QuorumReached.class)
-            .verify();
-    }
+  @Test
+  public void equalsQuorumReached() {
+    EqualsVerifier.forClass(VoteProcessingResult.QuorumReached.class).verify();
+  }
 }

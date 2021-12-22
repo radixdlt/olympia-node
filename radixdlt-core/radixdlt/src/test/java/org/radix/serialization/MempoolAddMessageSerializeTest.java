@@ -66,16 +66,15 @@ package org.radix.serialization;
 
 import com.radixdlt.atom.Txn;
 import com.radixdlt.middleware2.network.MempoolAddMessage;
-
 import java.util.List;
 
 public class MempoolAddMessageSerializeTest extends SerializeMessageObject<MempoolAddMessage> {
-	public MempoolAddMessageSerializeTest() {
-		super(MempoolAddMessage.class, MempoolAddMessageSerializeTest::get);
-	}
+  public MempoolAddMessageSerializeTest() {
+    super(MempoolAddMessage.class, MempoolAddMessageSerializeTest::get);
+  }
 
-	private static MempoolAddMessage get() {
-		final var txn = Txn.create(new byte[]{0, 1});
-		return MempoolAddMessage.from(List.of(txn));
-	}
+  private static MempoolAddMessage get() {
+    final var txn = Txn.create(new byte[] {0, 1});
+    return MempoolAddMessage.from(List.of(txn));
+  }
 }

@@ -68,9 +68,7 @@ import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.environment.RemoteEventProcessor;
 
-/**
- * Creates new instances of sync request processors given a vertex store
- */
+/** Creates new instances of sync request processors given a vertex store */
 public interface BFTSyncRequestProcessorFactory {
-	RemoteEventProcessor<GetVerticesRequest> create(VertexStore vertexStore);
+  RemoteEventProcessor<GetVerticesRequest> create(VertexStore vertexStore);
 }

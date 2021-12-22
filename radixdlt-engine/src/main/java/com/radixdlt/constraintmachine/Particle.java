@@ -64,8 +64,5 @@
 
 package com.radixdlt.constraintmachine;
 
-/**
- * Marker interface for raw substates
- */
-public interface Particle {
-}
+/** Marker interface for raw substates */
+public interface Particle {}

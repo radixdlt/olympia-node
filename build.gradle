@@ -157,6 +157,7 @@ allprojects {
             // through git history (see "license" section below)
             licenseHeaderFile("${project.rootDir}/licence-header.txt")
 
+            targetExclude('**/openapitools/**/*.java')
         }
     }
 

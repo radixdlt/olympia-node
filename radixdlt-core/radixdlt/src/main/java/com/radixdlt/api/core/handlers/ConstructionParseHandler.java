@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -81,55 +82,56 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 
-public final class ConstructionParseHandler extends CoreJsonRpcHandler<ConstructionParseRequest, ConstructionParseResponse> {
-	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
-	private final RadixEngineStateComputer radixEngineStateComputer;
-	private final CoreModelMapper modelMapper;
+public final class ConstructionParseHandler
+    extends CoreJsonRpcHandler<ConstructionParseRequest, ConstructionParseResponse> {
+  private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
+  private final RadixEngineStateComputer radixEngineStateComputer;
+  private final CoreModelMapper modelMapper;
 
-	@Inject
-	ConstructionParseHandler(
-		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
-		RadixEngineStateComputer radixEngineStateComputer,
-		CoreModelMapper modelMapper
-	) {
-		super(ConstructionParseRequest.class);
+  @Inject
+  ConstructionParseHandler(
+      Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
+      RadixEngineStateComputer radixEngineStateComputer,
+      CoreModelMapper modelMapper) {
+    super(ConstructionParseRequest.class);
 
-		this.radixEngineProvider = radixEngineProvider;
-		this.radixEngineStateComputer = radixEngineStateComputer;
-		this.modelMapper = modelMapper;
-	}
+    this.radixEngineProvider = radixEngineProvider;
+    this.radixEngineStateComputer = radixEngineStateComputer;
+    this.modelMapper = modelMapper;
+  }
 
-	private String symbol(REAddr tokenAddress) {
-		var mapKey = SystemMapKey.ofResourceData(tokenAddress, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-		var substate = radixEngineProvider.get().read(reader -> reader.get(mapKey).orElseThrow());
-		// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
-		var tokenResourceMetadata = (TokenResourceMetadata) substate;
-		return tokenResourceMetadata.getSymbol();
-	}
+  private String symbol(REAddr tokenAddress) {
+    var mapKey =
+        SystemMapKey.ofResourceData(tokenAddress, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+    var substate = radixEngineProvider.get().read(reader -> reader.get(mapKey).orElseThrow());
+    // TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+    var tokenResourceMetadata = (TokenResourceMetadata) substate;
+    return tokenResourceMetadata.getSymbol();
+  }
 
-	@Override
-	public ConstructionParseResponse handleRequest(ConstructionParseRequest request) throws CoreApiException {
-		modelMapper.verifyNetwork(request.getNetworkIdentifier());
+  @Override
+  public ConstructionParseResponse handleRequest(ConstructionParseRequest request)
+      throws CoreApiException {
+    modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var txn = modelMapper.bytes(request.getTransaction());
+    var txn = modelMapper.bytes(request.getTransaction());
 
-		REProcessedTxn processed;
-		try {
-			processed = radixEngineStateComputer.test(txn, request.getSigned());
-		} catch (RadixEngineException e) {
-			throw modelMapper.radixEngineException(e);
-		}
+    REProcessedTxn processed;
+    try {
+      processed = radixEngineStateComputer.test(txn, request.getSigned());
+    } catch (RadixEngineException e) {
+      throw modelMapper.radixEngineException(e);
+    }
 
-		var response = new ConstructionParseResponse();
-		var transaction = modelMapper.transaction(processed, this::symbol);
-		transaction.getOperationGroups()
-			.forEach(response::addOperationGroupsItem);
+    var response = new ConstructionParseResponse();
+    var transaction = modelMapper.transaction(processed, this::symbol);
+    transaction.getOperationGroups().forEach(response::addOperationGroupsItem);
 
-		response.metadata(new ParsedTransactionMetadata()
-			.fee(transaction.getMetadata().getFee())
-			.message(transaction.getMetadata().getMessage())
-		);
+    response.metadata(
+        new ParsedTransactionMetadata()
+            .fee(transaction.getMetadata().getFee())
+            .message(transaction.getMetadata().getMessage()));
 
-		return response;
-	}
+    return response;
+  }
 }

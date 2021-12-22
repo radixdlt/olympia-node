@@ -64,6 +64,8 @@
 
 package com.radixdlt.consensus;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
@@ -75,112 +77,107 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
 import java.util.Objects;
 import java.util.Optional;
 
-import static java.util.Objects.requireNonNull;
-
-/**
- * Represents a proposal made by a leader in a round of consensus
- */
+/** Represents a proposal made by a leader in a round of consensus */
 @SerializerId2("consensus.proposal")
 @Immutable // author cannot be but is effectively final because of serializer
 public final class Proposal implements ConsensusEvent {
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(Output.ALL)
-	SerializerDummy serializer = SerializerDummy.DUMMY;
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(Output.ALL)
+  SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("vertex")
-	@DsonOutput(Output.ALL)
-	private final UnverifiedVertex vertex;
+  @JsonProperty("vertex")
+  @DsonOutput(Output.ALL)
+  private final UnverifiedVertex vertex;
 
-	@JsonProperty("signature")
-	@DsonOutput(Output.ALL)
-	private final ECDSASignature signature;
+  @JsonProperty("signature")
+  @DsonOutput(Output.ALL)
+  private final ECDSASignature signature;
 
-	@JsonProperty("committedQC")
-	@DsonOutput(Output.ALL)
-	private final QuorumCertificate committedQC;
+  @JsonProperty("committedQC")
+  @DsonOutput(Output.ALL)
+  private final QuorumCertificate committedQC;
 
-	@JsonProperty("highestTC")
-	@DsonOutput(Output.ALL)
-	private final TimeoutCertificate highestTC;
+  @JsonProperty("highestTC")
+  @DsonOutput(Output.ALL)
+  private final TimeoutCertificate highestTC;
 
-	@JsonCreator
-	Proposal(
-		@JsonProperty(value = "vertex", required = true) UnverifiedVertex vertex,
-		@JsonProperty(value = "committedQC", required = true) QuorumCertificate committedQC,
-		@JsonProperty(value = "signature", required = true) ECDSASignature signature,
-		@JsonProperty("highestTC") TimeoutCertificate highestTC
-	) {
-		this(vertex, committedQC, signature, Optional.ofNullable(highestTC));
-	}
+  @JsonCreator
+  Proposal(
+      @JsonProperty(value = "vertex", required = true) UnverifiedVertex vertex,
+      @JsonProperty(value = "committedQC", required = true) QuorumCertificate committedQC,
+      @JsonProperty(value = "signature", required = true) ECDSASignature signature,
+      @JsonProperty("highestTC") TimeoutCertificate highestTC) {
+    this(vertex, committedQC, signature, Optional.ofNullable(highestTC));
+  }
 
-	public Proposal(
-		UnverifiedVertex vertex,
-		QuorumCertificate committedQC,
-		ECDSASignature signature,
-		Optional<TimeoutCertificate> highestTC
-	) {
-		this.vertex = requireNonNull(vertex);
-		this.committedQC = requireNonNull(committedQC);
-		this.signature = requireNonNull(signature);
+  public Proposal(
+      UnverifiedVertex vertex,
+      QuorumCertificate committedQC,
+      ECDSASignature signature,
+      Optional<TimeoutCertificate> highestTC) {
+    this.vertex = requireNonNull(vertex);
+    this.committedQC = requireNonNull(committedQC);
+    this.signature = requireNonNull(signature);
 
-		this.highestTC = // only relevant if it's for a higher view than QC
-			highestTC.filter(tc -> tc.getView().gt(vertex.getQC().getView())).orElse(null);
-	}
+    this.highestTC = // only relevant if it's for a higher view than QC
+        highestTC.filter(tc -> tc.getView().gt(vertex.getQC().getView())).orElse(null);
+  }
 
-	@Override
-	public long getEpoch() {
-		return vertex.getQC().getProposed().getLedgerHeader().getEpoch();
-	}
+  @Override
+  public long getEpoch() {
+    return vertex.getQC().getProposed().getLedgerHeader().getEpoch();
+  }
 
-	@Override
-	public View getView() {
-		return vertex.getView();
-	}
+  @Override
+  public View getView() {
+    return vertex.getView();
+  }
 
-	@Override
-	public HighQC highQC() {
-		return HighQC.from(vertex.getQC(), committedQC, Optional.ofNullable(highestTC));
-	}
+  @Override
+  public HighQC highQC() {
+    return HighQC.from(vertex.getQC(), committedQC, Optional.ofNullable(highestTC));
+  }
 
-	@Override
-	public BFTNode getAuthor() {
-		return vertex.getProposer();
-	}
+  @Override
+  public BFTNode getAuthor() {
+    return vertex.getProposer();
+  }
 
-	public UnverifiedVertex getVertex() {
-		return vertex;
-	}
+  public UnverifiedVertex getVertex() {
+    return vertex;
+  }
 
-	public ECDSASignature getSignature() {
-		return signature;
-	}
+  public ECDSASignature getSignature() {
+    return signature;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{vertex=%s author=%s tc=%s}", getClass().getSimpleName(), vertex, getAuthor(), highestTC);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{vertex=%s author=%s tc=%s}",
+        getClass().getSimpleName(), vertex, getAuthor(), highestTC);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.vertex, this.signature, this.committedQC, this.highestTC);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.vertex, this.signature, this.committedQC, this.highestTC);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (o == this) {
-			return true;
-		}
-		if (o instanceof Proposal) {
-			Proposal other = (Proposal) o;
-			return Objects.equals(this.vertex, other.vertex)
-				&& Objects.equals(this.signature, other.signature)
-				&& Objects.equals(this.committedQC, other.committedQC)
-				&& Objects.equals(this.highestTC, other.highestTC);
-		}
-		return false;
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (o instanceof Proposal) {
+      Proposal other = (Proposal) o;
+      return Objects.equals(this.vertex, other.vertex)
+          && Objects.equals(this.signature, other.signature)
+          && Objects.equals(this.committedQC, other.committedQC)
+          && Objects.equals(this.highestTC, other.highestTC);
+    }
+    return false;
+  }
 }
