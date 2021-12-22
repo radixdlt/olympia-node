@@ -176,9 +176,9 @@ public interface P2PConfig {
 
 	/**
 	 * Specifies a list of peers that this node can connect to.
-	 * If empty, no restrictions are applied.
+	 * If empty, all peers are allowed.
 	 */
-	ImmutableSet<NodeId> allowedPeers();
+	ImmutableSet<NodeId> peerWhitelist();
 
 	/**
 	 * Create a configuration from specified {@link RuntimeProperties}.
@@ -284,6 +284,15 @@ public interface P2PConfig {
 				final var valueMs =
 					properties.get("network.p2p.proxy.issued_certificate_validity_duration_ms", 3600000);
 				return Duration.ofMillis(valueMs);
+			}
+
+			@Override
+			public ImmutableSet<NodeId> peerWhitelist() {
+				final var rawList = properties.get("network.p2p.peer_whitelist", "");
+				return Arrays.stream(rawList.split(","))
+					.filter(not(String::isEmpty))
+					.map(this::parseNodeId)
+					.collect(ImmutableSet.toImmutableSet());
 			}
 
 			private NodeId parseNodeId(String s) {

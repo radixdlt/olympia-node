@@ -188,11 +188,15 @@ public final class PeerDiscovery {
 				Stream.concat(
 					Stream.of(selfUri),
 					this.addressBook.bestCandidatesToConnect()
-						.filter(not(uri -> config.authorizedProxiedPeers().contains(uri.getNodeId())))
+						.filter(this::shouldBroadcastPeerUri)
 						.limit(MAX_PEERS_IN_RESPONSE - 1)
 				).collect(ImmutableSet.toImmutableSet());
 
 			peersResponseRemoteEventDispatcher.dispatch(sender, PeersResponse.create(peers));
 		};
+	}
+
+	private boolean shouldBroadcastPeerUri(RadixNodeUri uri) {
+		return !config.authorizedProxiedPeers().contains(uri.getNodeId());
 	}
 }

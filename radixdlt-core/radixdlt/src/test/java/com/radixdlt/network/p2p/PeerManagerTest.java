@@ -64,8 +64,13 @@
 
 package com.radixdlt.network.p2p;
 
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.messaging.serialization.MessageSerialization;
 import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
+import com.radixdlt.network.p2p.test.P2PTestNetworkRunner;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import org.junit.After;
 import org.junit.Test;
 import com.radixdlt.network.p2p.liveness.messages.PeerPingMessage;
@@ -184,7 +189,7 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(uriOfNode(1)));
 
 		final var channel1Future = testNetworkRunner.peerManager(0)
-		.findOrCreateDirectChannel(uriOfNode(1).getNodeId());
+			.findOrCreateDirectChannel(uriOfNode(1).getNodeId());
 
 		processAll();
 
@@ -199,6 +204,32 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 		processAll();
 
 		// assert connection closed
+		assertEquals(0L, testNetworkRunner.peerManager(0).activeChannels().size());
+		assertEquals(0L, testNetworkRunner.peerManager(1).activeChannels().size());
+	}
+
+	@Test
+	public void should_respect_peer_whitelist_config() throws Exception {
+		final var nodeAddressing = Addressing.ofNetwork(Network.LOCALNET).forNodes();
+
+		// first test node is only allowed to connect to some random peer, not to the other test node
+		final var testNodeProps = defaultProperties();
+		testNodeProps.set("network.p2p.peer_whitelist", nodeAddressing.of(ECKeyPair.generateNew().getPublicKey()));
+
+		setupTestRunner(ImmutableList.of(
+			new P2PTestNetworkRunner.NodeProps(ECKeyPair.generateNew(), testNodeProps),
+			new P2PTestNetworkRunner.NodeProps(ECKeyPair.generateNew(), defaultProperties())
+		));
+
+		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(uriOfNode(1)));
+
+		final var channel1Future = testNetworkRunner.peerManager(0)
+			.findOrCreateDirectChannel(uriOfNode(1).getNodeId());
+
+		processAll();
+
+		// the connection should fail
+		assertTrue(channel1Future.isCompletedExceptionally());
 		assertEquals(0L, testNetworkRunner.peerManager(0).activeChannels().size());
 		assertEquals(0L, testNetworkRunner.peerManager(1).activeChannels().size());
 	}

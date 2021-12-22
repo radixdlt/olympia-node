@@ -100,6 +100,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.radixdlt.network.messaging.MessagingErrors.PEER_BANNED;
+import static com.radixdlt.network.messaging.MessagingErrors.PEER_CONNECTION_FORBIDDEN;
 import static com.radixdlt.network.messaging.MessagingErrors.SELF_CONNECTION_ATTEMPT;
 import static java.util.function.Predicate.not;
 
@@ -257,6 +258,11 @@ public final class PeerManager {
 			return PEER_BANNED.result();
 		}
 
+		if (!this.config.peerWhitelist().contains(nodeId)
+			&& !this.config.peerWhitelist().isEmpty()) {
+			return PEER_CONNECTION_FORBIDDEN.result();
+		}
+
 		return Result.ok(new Object());
 	}
 
@@ -345,7 +351,6 @@ public final class PeerManager {
 		final var isBanned = this.addressBook.get().findById(nodeId)
 			.map(AddressBookEntry::isBanned)
 			.orElse(false);
-
 		if (isBanned) {
 			log.info(
 				"Dropping inbound connection from peer {}: peer is banned",
@@ -361,7 +366,16 @@ public final class PeerManager {
 			);
 		}
 
-		return !isBanned && !limitReached;
+		final var isWhitelisted = config.peerWhitelist().isEmpty()
+			|| config.peerWhitelist().contains(nodeId);
+		if (!isWhitelisted) {
+			log.info(
+				"Dropping inbound connection from peer {}: peer is not whitelisted",
+				addressing.forNodes().of(nodeId.getPublicKey())
+			);
+		}
+
+		return !isBanned && !limitReached && isWhitelisted;
 	}
 
 	private void handlePeerDisconnected(PeerDisconnected peerDisconnected) {
