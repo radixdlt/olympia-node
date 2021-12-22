@@ -191,7 +191,7 @@ public final class PeerDiscovery {
                   Stream.of(selfUri),
                   this.addressBook
                       .bestCandidatesToConnect()
-                      .filter(this::shouldBroadcastPeerUri)
+                      .filter(this::shouldExposePeerUri)
                       .limit(MAX_PEERS_IN_RESPONSE - 1))
               .collect(ImmutableSet.toImmutableSet());
 
@@ -199,7 +199,7 @@ public final class PeerDiscovery {
     };
   }
 
-  private boolean shouldBroadcastPeerUri(RadixNodeUri uri) {
-    return !config.authorizedProxiedPeers().contains(uri.getNodeId());
+  private boolean shouldExposePeerUri(RadixNodeUri uri) {
+    return !config.privatePeers().contains(uri.getNodeId());
   }
 }

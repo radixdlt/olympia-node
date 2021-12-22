@@ -148,6 +148,9 @@ public interface P2PConfig {
   /** Specifies a list of peers that this node can connect to. If empty, all peers are allowed. */
   ImmutableSet<NodeId> peerWhitelist();
 
+  /** Specifies a list of peers that will not be exposed to other peers. */
+  ImmutableSet<NodeId> privatePeers();
+
   /**
    * Create a configuration from specified {@link RuntimeProperties}.
    *
@@ -257,6 +260,15 @@ public interface P2PConfig {
       @Override
       public ImmutableSet<NodeId> peerWhitelist() {
         final var rawList = properties.get("network.p2p.peer_whitelist", "");
+        return Arrays.stream(rawList.split(","))
+            .filter(not(String::isEmpty))
+            .map(this::parseNodeId)
+            .collect(ImmutableSet.toImmutableSet());
+      }
+
+      @Override
+      public ImmutableSet<NodeId> privatePeers() {
+        final var rawList = properties.get("network.p2p.private_peers", "");
         return Arrays.stream(rawList.split(","))
             .filter(not(String::isEmpty))
             .map(this::parseNodeId)

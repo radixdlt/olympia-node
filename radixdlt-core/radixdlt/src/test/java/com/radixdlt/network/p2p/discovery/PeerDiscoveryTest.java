@@ -145,7 +145,7 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
   }
 
   @Test
-  public void when_get_peers_then_shouldnt_return_proxied_peers() {
+  public void when_get_peers_then_shouldnt_return_private_peers() {
     final var selfKey = ECKeyPair.generateNew();
     final var selfUri =
         RadixNodeUri.fromPubKeyAndAddress(1, selfKey.getPublicKey(), "127.0.0.1", 3000);
@@ -178,7 +178,7 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
         .thenReturn(Stream.of(peer1, peer2, peer3, peer4, peer5, peer6));
 
     // peer3 shouldn't be returned in discovery response
-    when(config.authorizedProxiedPeers()).thenReturn(ImmutableSet.of(peer3.getNodeId()));
+    when(config.privatePeers()).thenReturn(ImmutableSet.of(peer3.getNodeId()));
 
     sut.getPeersRemoteEventProcessor().process(BFTNode.random(), GetPeers.create());
 
