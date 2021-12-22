@@ -67,15 +67,14 @@ package com.radixdlt.consensus.epoch;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.VertexStore;
 
-/**
- * A Vertex Store factory
- */
+/** A Vertex Store factory */
 public interface VertexStoreFactory {
 
-	/**
-	 * Creates a new VertexStore given initial vertex and QC
-	 * @param vertexStoreState the initial vertex store state
-	 * @return a new VertexStore
-	 */
-	VertexStore create(VerifiedVertexStoreState vertexStoreState);
+  /**
+   * Creates a new VertexStore given initial vertex and QC
+   *
+   * @param vertexStoreState the initial vertex store state
+   * @return a new VertexStore
+   */
+  VertexStore create(VerifiedVertexStoreState vertexStoreState);
 }

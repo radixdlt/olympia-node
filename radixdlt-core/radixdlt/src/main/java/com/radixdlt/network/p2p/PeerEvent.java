@@ -68,99 +68,99 @@ import com.radixdlt.network.p2p.transport.PeerChannel;
 
 public sealed interface PeerEvent {
 
-	final class PeerConnected implements PeerEvent {
-		private final PeerChannel channel;
+  final class PeerConnected implements PeerEvent {
+    private final PeerChannel channel;
 
-		public static PeerConnected create(PeerChannel channel) {
-			return new PeerConnected(channel);
-		}
+    public static PeerConnected create(PeerChannel channel) {
+      return new PeerConnected(channel);
+    }
 
-		private PeerConnected(PeerChannel channel) {
-			this.channel = channel;
-		}
+    private PeerConnected(PeerChannel channel) {
+      this.channel = channel;
+    }
 
-		public PeerChannel getChannel() {
-			return this.channel;
-		}
-	}
+    public PeerChannel getChannel() {
+      return this.channel;
+    }
+  }
 
-	final class PeerDisconnected implements PeerEvent {
-		private final PeerChannel channel;
+  final class PeerDisconnected implements PeerEvent {
+    private final PeerChannel channel;
 
-		public static PeerDisconnected create(PeerChannel channel) {
-			return new PeerDisconnected(channel);
-		}
+    public static PeerDisconnected create(PeerChannel channel) {
+      return new PeerDisconnected(channel);
+    }
 
-		private PeerDisconnected(PeerChannel channel) {
-			this.channel = channel;
-		}
+    private PeerDisconnected(PeerChannel channel) {
+      this.channel = channel;
+    }
 
-		public PeerChannel getChannel() {
-			return this.channel;
-		}
-	}
+    public PeerChannel getChannel() {
+      return this.channel;
+    }
+  }
 
-	final class PeerLostLiveness implements PeerEvent {
-		private final NodeId nodeId;
+  final class PeerLostLiveness implements PeerEvent {
+    private final NodeId nodeId;
 
-		public static PeerLostLiveness create(NodeId nodeId) {
-			return new PeerLostLiveness(nodeId);
-		}
+    public static PeerLostLiveness create(NodeId nodeId) {
+      return new PeerLostLiveness(nodeId);
+    }
 
-		private PeerLostLiveness(NodeId nodeId) {
-			this.nodeId = nodeId;
-		}
+    private PeerLostLiveness(NodeId nodeId) {
+      this.nodeId = nodeId;
+    }
 
-		public NodeId getNodeId() {
-			return this.nodeId;
-		}
-	}
+    public NodeId getNodeId() {
+      return this.nodeId;
+    }
+  }
 
-	final class PeerBanned implements PeerEvent {
-		private final NodeId nodeId;
+  final class PeerBanned implements PeerEvent {
+    private final NodeId nodeId;
 
-		public static PeerBanned create(NodeId nodeId) {
-			return new PeerBanned(nodeId);
-		}
+    public static PeerBanned create(NodeId nodeId) {
+      return new PeerBanned(nodeId);
+    }
 
-		private PeerBanned(NodeId nodeId) {
-			this.nodeId = nodeId;
-		}
+    private PeerBanned(NodeId nodeId) {
+      this.nodeId = nodeId;
+    }
 
-		public NodeId getNodeId() {
-			return this.nodeId;
-		}
-	}
+    public NodeId getNodeId() {
+      return this.nodeId;
+    }
+  }
 
-	final class PeerConnectionTimeout implements PeerEvent {
-		private final RadixNodeUri uri;
+  final class PeerConnectionTimeout implements PeerEvent {
+    private final RadixNodeUri uri;
 
-		public static PeerConnectionTimeout create(RadixNodeUri uri) {
-			return new PeerConnectionTimeout(uri);
-		}
+    public static PeerConnectionTimeout create(RadixNodeUri uri) {
+      return new PeerConnectionTimeout(uri);
+    }
 
-		private PeerConnectionTimeout(RadixNodeUri uri) {
-			this.uri = uri;
-		}
+    private PeerConnectionTimeout(RadixNodeUri uri) {
+      this.uri = uri;
+    }
 
-		public RadixNodeUri getUri() {
-			return this.uri;
-		}
-	}
+    public RadixNodeUri getUri() {
+      return this.uri;
+    }
+  }
 
-	final class PeerHandshakeFailed implements PeerEvent {
-		private final PeerChannel channel;
+  final class PeerHandshakeFailed implements PeerEvent {
+    private final PeerChannel channel;
 
-		public static PeerHandshakeFailed create(PeerChannel channel) {
-			return new PeerHandshakeFailed(channel);
-		}
+    public static PeerHandshakeFailed create(PeerChannel channel) {
+      return new PeerHandshakeFailed(channel);
+    }
 
-		private PeerHandshakeFailed(PeerChannel channel) {
-			this.channel = channel;
-		}
+    private PeerHandshakeFailed(PeerChannel channel) {
+      this.channel = channel;
+    }
 
-		public PeerChannel getChannel() {
-			return this.channel;
-		}
-	}
+    public PeerChannel getChannel() {
+      return this.channel;
+    }
+  }
 }

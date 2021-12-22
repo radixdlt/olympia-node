@@ -69,14 +69,15 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.discovery.messages.PeersResponseMessage;
 
-public class PeersResponseMessageSerializeTest extends SerializeMessageObject<PeersResponseMessage> {
-	public PeersResponseMessageSerializeTest() {
-		super(PeersResponseMessage.class, PeersResponseMessageSerializeTest::get);
-	}
+public class PeersResponseMessageSerializeTest
+    extends SerializeMessageObject<PeersResponseMessage> {
+  public PeersResponseMessageSerializeTest() {
+    super(PeersResponseMessage.class, PeersResponseMessageSerializeTest::get);
+  }
 
-	private static PeersResponseMessage get() {
-		final var pubKey = ECKeyPair.generateNew().getPublicKey();
-		final var uri = RadixNodeUri.fromPubKeyAndAddress(1, pubKey, "127.0.0.1", 30000);
-		return new PeersResponseMessage(ImmutableSet.of(uri));
-	}
+  private static PeersResponseMessage get() {
+    final var pubKey = ECKeyPair.generateNew().getPublicKey();
+    final var uri = RadixNodeUri.fromPubKeyAndAddress(1, pubKey, "127.0.0.1", 30000);
+    return new PeersResponseMessage(ImmutableSet.of(uri));
+  }
 }

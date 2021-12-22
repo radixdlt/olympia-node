@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -69,28 +70,29 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 
 public class PrometheusHandler implements HttpHandler {
-	// 	https://prometheus.io/docs/instrumenting/exposition_formats/
-	private static final String CONTENT_TYPE_TEXT_PLAIN_004 = "text/plain; version=0.0.4;charset=utf-8";
+  // 	https://prometheus.io/docs/instrumenting/exposition_formats/
+  private static final String CONTENT_TYPE_TEXT_PLAIN_004 =
+      "text/plain; version=0.0.4;charset=utf-8";
 
-	private final PrometheusService metricsService;
+  private final PrometheusService metricsService;
 
-	@Inject
-	public PrometheusHandler(PrometheusService metricsService) {
-		this.metricsService = metricsService;
-	}
+  @Inject
+  public PrometheusHandler(PrometheusService metricsService) {
+    this.metricsService = metricsService;
+  }
 
-	@Override
-	public void handleRequest(HttpServerExchange exchange) throws Exception {
-		if (exchange.isInIoThread()) {
-			exchange.dispatch(this);
-			return;
-		}
+  @Override
+  public void handleRequest(HttpServerExchange exchange) throws Exception {
+    if (exchange.isInIoThread()) {
+      exchange.dispatch(this);
+      return;
+    }
 
-		exchange.startBlocking();
+    exchange.startBlocking();
 
-		var text = metricsService.getMetrics();
-		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_TEXT_PLAIN_004);
-		exchange.setStatusCode(200);
-		exchange.getResponseSender().send(text);
-	}
+    var text = metricsService.getMetrics();
+    exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_TEXT_PLAIN_004);
+    exchange.setStatusCode(200);
+    exchange.getResponseSender().send(text);
+  }
 }

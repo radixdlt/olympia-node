@@ -65,7 +65,7 @@
 package com.radixdlt.constraintmachine.exceptions;
 
 public class ReservedSymbolException extends Exception {
-	public ReservedSymbolException(String symbol) {
-		super("Trying to use reserved symbol " + symbol);
-	}
+  public ReservedSymbolException(String symbol) {
+    super("Trying to use reserved symbol " + symbol);
+  }
 }

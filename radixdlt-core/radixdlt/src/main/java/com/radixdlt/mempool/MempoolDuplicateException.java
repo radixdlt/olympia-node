@@ -64,12 +64,9 @@
 
 package com.radixdlt.mempool;
 
-/**
- * Exception thrown when an attempt to add an item which
- * already exists in the mempool
- */
+/** Exception thrown when an attempt to add an item which already exists in the mempool */
 public class MempoolDuplicateException extends MempoolRejectedException {
-	public MempoolDuplicateException(String message) {
-		super(message);
-	}
+  public MempoolDuplicateException(String message) {
+    super(message);
+  }
 }

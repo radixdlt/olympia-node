@@ -67,35 +67,35 @@ package com.radixdlt.consensus;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 
-/**
- * A consensus event which requires syncing to be effectively
- * processed
- */
-//TODO: make interface sealed
+/** A consensus event which requires syncing to be effectively processed */
+// TODO: make interface sealed
 public interface ConsensusEvent {
 
-	/**
-	 * Retrieve the epoch number the consensus message is a part of
-	 * @return the epoch number
-	 */
-	long getEpoch();
+  /**
+   * Retrieve the epoch number the consensus message is a part of
+   *
+   * @return the epoch number
+   */
+  long getEpoch();
 
-	/**
-	 * Get the view the consensus event is meant for
-	 * @return view of consensus event
-	 */
-	View getView();
+  /**
+   * Get the view the consensus event is meant for
+   *
+   * @return view of consensus event
+   */
+  View getView();
 
-	/**
-	 * Get the node author of this consensus message
-	 * @return the node author
-	 */
-	BFTNode getAuthor();
+  /**
+   * Get the node author of this consensus message
+   *
+   * @return the node author
+   */
+  BFTNode getAuthor();
 
-	/**
-	 * Retrieves the {@link HighQC} associated with the event.
-	 *
-	 * @return {@link HighQC} associated with event
-	 */
-	HighQC highQC();
+  /**
+   * Retrieves the {@link HighQC} associated with the event.
+   *
+   * @return {@link HighQC} associated with event
+   */
+  HighQC highQC();
 }

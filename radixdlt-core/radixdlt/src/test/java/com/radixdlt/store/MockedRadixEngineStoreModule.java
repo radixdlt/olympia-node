@@ -72,14 +72,14 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 public class MockedRadixEngineStoreModule extends AbstractModule {
-	@Override
-	public void configure() {
-		bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
-	}
+  @Override
+  public void configure() {
+    bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
+  }
 
-	@Provides
-	@Singleton
-	private EngineStore<LedgerAndBFTProof> engineStore() {
-		return new InMemoryEngineStore<>();
-	}
+  @Provides
+  @Singleton
+  private EngineStore<LedgerAndBFTProof> engineStore() {
+    return new InMemoryEngineStore<>();
+  }
 }

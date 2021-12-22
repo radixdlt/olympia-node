@@ -64,22 +64,21 @@
 
 package com.radixdlt.sanitytestsuite.scenario.jsonserialization;
 
-import com.radixdlt.sanitytestsuite.model.SanityTestVector;
-
-import java.util.Map;
-
 import static com.radixdlt.sanitytestsuite.scenario.jsonserialization.JsonSerializationTestVector.Expected;
 import static com.radixdlt.sanitytestsuite.scenario.jsonserialization.JsonSerializationTestVector.Input;
 
+import com.radixdlt.sanitytestsuite.model.SanityTestVector;
+import java.util.Map;
+
 // CHECKSTYLE:OFF checkstyle:VisibilityModifier
 public final class JsonSerializationTestVector extends SanityTestVector<Input, Expected> {
-	public static final class Expected {
-		public String jsonPrettyPrinted;
-	}
+  public static final class Expected {
+    public String jsonPrettyPrinted;
+  }
 
-	public static final class Input {
-		public Map<String, Object> arguments;
-		public String typeSerialization;
-	}
+  public static final class Input {
+    public Map<String, Object> arguments;
+    public String typeSerialization;
+  }
 }
 // CHECKSTYLE:ON

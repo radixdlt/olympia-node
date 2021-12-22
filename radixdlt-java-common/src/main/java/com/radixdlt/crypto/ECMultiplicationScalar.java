@@ -67,5 +67,5 @@ package com.radixdlt.crypto;
 import org.bouncycastle.math.ec.ECPoint;
 
 public interface ECMultiplicationScalar {
-	ECPoint multiply(ECPoint point);
+  ECPoint multiply(ECPoint point);
 }

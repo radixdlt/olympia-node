@@ -65,36 +65,39 @@
 package com.radixdlt.integration.distributed.simulation.monitors.consensus;
 
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Check that every proposal on the network has a direct parent.
- * This check only makes sense in networks where there are no failing nodes.
+ * Check that every proposal on the network has a direct parent. This check only makes sense in
+ * networks where there are no failing nodes.
  */
 public class AllProposalsHaveDirectParentsInvariant implements TestInvariant {
 
-	@Override
-	public Observable<TestInvariantError> check(RunningNetwork network) {
-		List<Observable<UnverifiedVertex>> correctProposals = network.getNodes().stream()
-			.map(network.getUnderlyingNetwork()::getNetwork)
-			.map(net -> net.remoteEvents(ConsensusEvent.class).map(RemoteEvent::getEvent))
-			.map(p -> p.ofType(Proposal.class).toObservable().map(Proposal::getVertex))
-			.collect(Collectors.toList());
+  @Override
+  public Observable<TestInvariantError> check(RunningNetwork network) {
+    List<Observable<UnverifiedVertex>> correctProposals =
+        network.getNodes().stream()
+            .map(network.getUnderlyingNetwork()::getNetwork)
+            .map(net -> net.remoteEvents(ConsensusEvent.class).map(RemoteEvent::getEvent))
+            .map(p -> p.ofType(Proposal.class).toObservable().map(Proposal::getVertex))
+            .collect(Collectors.toList());
 
-		return Observable.merge(correctProposals)
-			.concatMap(v -> {
-				if (!v.getView().equals(v.getQC().getProposed().getView().next())) {
-					return Observable.just(new TestInvariantError(String.format("Vertex %s has no direct parent", v)));
-				} else {
-					return Observable.empty();
-				}
-			});
-	}
+    return Observable.merge(correctProposals)
+        .concatMap(
+            v -> {
+              if (!v.getView().equals(v.getQC().getProposed().getView().next())) {
+                return Observable.just(
+                    new TestInvariantError(String.format("Vertex %s has no direct parent", v)));
+              } else {
+                return Observable.empty();
+              }
+            });
+  }
 }

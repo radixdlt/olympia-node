@@ -67,80 +67,76 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.consensus.HighQC;
 import java.util.Objects;
 
-/**
- * Represents an internal (local) view update.
- */
+/** Represents an internal (local) view update. */
 public final class ViewUpdate {
 
-	private final View currentView;
-	private final HighQC highQC;
+  private final View currentView;
+  private final HighQC highQC;
 
-	private final BFTNode leader;
-	private final BFTNode nextLeader;
+  private final BFTNode leader;
+  private final BFTNode nextLeader;
 
-	private ViewUpdate(View currentView, HighQC highQC, BFTNode leader, BFTNode nextLeader) {
-		this.currentView = currentView;
-		this.highQC = highQC;
-		this.leader = leader;
-		this.nextLeader = nextLeader;
-	}
+  private ViewUpdate(View currentView, HighQC highQC, BFTNode leader, BFTNode nextLeader) {
+    this.currentView = currentView;
+    this.highQC = highQC;
+    this.leader = leader;
+    this.nextLeader = nextLeader;
+  }
 
-	public static ViewUpdate create(View currentView, HighQC highQC, BFTNode leader, BFTNode nextLeader) {
-		Objects.requireNonNull(currentView);
-		Objects.requireNonNull(highQC);
-		Objects.requireNonNull(leader);
-		Objects.requireNonNull(nextLeader);
+  public static ViewUpdate create(
+      View currentView, HighQC highQC, BFTNode leader, BFTNode nextLeader) {
+    Objects.requireNonNull(currentView);
+    Objects.requireNonNull(highQC);
+    Objects.requireNonNull(leader);
+    Objects.requireNonNull(nextLeader);
 
-		return new ViewUpdate(currentView, highQC, leader, nextLeader);
-	}
+    return new ViewUpdate(currentView, highQC, leader, nextLeader);
+  }
 
-	public HighQC getHighQC() {
-		return highQC;
-	}
+  public HighQC getHighQC() {
+    return highQC;
+  }
 
-	public BFTNode getLeader() {
-		return leader;
-	}
+  public BFTNode getLeader() {
+    return leader;
+  }
 
-	public BFTNode getNextLeader() {
-		return nextLeader;
-	}
+  public BFTNode getNextLeader() {
+    return nextLeader;
+  }
 
-	public View getCurrentView() {
-		return currentView;
-	}
+  public View getCurrentView() {
+    return currentView;
+  }
 
-	public long uncommittedViewsCount() {
-		return Math.max(0L, currentView.number() - highQC.highestCommittedQC().getView().number() - 1);
-	}
+  public long uncommittedViewsCount() {
+    return Math.max(0L, currentView.number() - highQC.highestCommittedQC().getView().number() - 1);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s[%s %s leader=%s next=%s]",
-			getClass().getSimpleName(),
-			this.currentView,
-			this.highQC,
-			this.leader,
-			this.nextLeader);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s[%s %s leader=%s next=%s]",
+        getClass().getSimpleName(), this.currentView, this.highQC, this.leader, this.nextLeader);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		final ViewUpdate that = (ViewUpdate) o;
-		return Objects.equals(currentView, that.currentView)
-			&& Objects.equals(highQC, that.highQC)
-			&& Objects.equals(leader, that.leader)
-			&& Objects.equals(nextLeader, that.nextLeader);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ViewUpdate that = (ViewUpdate) o;
+    return Objects.equals(currentView, that.currentView)
+        && Objects.equals(highQC, that.highQC)
+        && Objects.equals(leader, that.leader)
+        && Objects.equals(nextLeader, that.nextLeader);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(currentView, highQC, leader, nextLeader);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(currentView, highQC, leader, nextLeader);
+  }
 }

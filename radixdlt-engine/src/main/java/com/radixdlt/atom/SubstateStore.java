@@ -67,28 +67,26 @@ package com.radixdlt.atom;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SystemMapKey;
-
 import java.util.Optional;
 
-/**
- * Store which contains an index into up substates
- */
+/** Store which contains an index into up substates */
 public interface SubstateStore {
 
-	CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index);
-	Optional<RawSubstateBytes> get(SystemMapKey key);
+  CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index);
 
-	static SubstateStore empty() {
-		return new SubstateStore() {
-			@Override
-			public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
-				return CloseableCursor.empty();
-			}
+  Optional<RawSubstateBytes> get(SystemMapKey key);
 
-			@Override
-			public Optional<RawSubstateBytes> get(SystemMapKey key) {
-				return Optional.empty();
-			}
-		};
-	}
+  static SubstateStore empty() {
+    return new SubstateStore() {
+      @Override
+      public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
+        return CloseableCursor.empty();
+      }
+
+      @Override
+      public Optional<RawSubstateBytes> get(SystemMapKey key) {
+        return Optional.empty();
+      }
+    };
+  }
 }

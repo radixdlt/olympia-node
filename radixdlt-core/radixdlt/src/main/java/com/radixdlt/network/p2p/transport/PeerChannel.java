@@ -64,6 +64,9 @@
 
 package com.radixdlt.network.p2p.transport;
 
+import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
+import static com.radixdlt.utils.functional.Unit.unit;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.counters.SystemCounters;
@@ -71,17 +74,17 @@ import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.RadixNodeUri;
+import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerEvent;
+import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
+import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
+import com.radixdlt.network.p2p.PeerEvent.PeerHandshakeFailed;
+import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.proxy.ProxyCertificate;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeError;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshaker;
-import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
-import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
-import com.radixdlt.network.p2p.PeerEvent.PeerHandshakeFailed;
-import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.RateCalculator;
@@ -97,273 +100,270 @@ import io.netty.channel.socket.SocketChannel;
 import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.processors.PublishProcessor;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.radix.time.Time;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
-
-import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
-import static com.radixdlt.utils.functional.Unit.unit;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.radix.time.Time;
 
 /**
- * Class that manages TCP connection channel.
- * It takes care of the initial handshake,
- * creating the frame and message codec
- * and forwarding the messages to MessageCentral.
+ * Class that manages TCP connection channel. It takes care of the initial handshake, creating the
+ * frame and message codec and forwarding the messages to MessageCentral.
  */
 public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
-	private static final Logger log = LogManager.getLogger();
+  private static final Logger log = LogManager.getLogger();
 
-	enum ChannelState {
-		INACTIVE, AUTH_HANDSHAKE, ACTIVE
-	}
+  enum ChannelState {
+    INACTIVE,
+    AUTH_HANDSHAKE,
+    ACTIVE
+  }
 
-	private final Object lock = new Object();
-	private final RateLimiter droppedMessagesRateLimiter = RateLimiter.create(1.0);
-	private final PublishProcessor<InboundMessage> inboundMessageSink = PublishProcessor.create();
-	private final Flowable<InboundMessage> inboundMessages;
+  private final Object lock = new Object();
+  private final RateLimiter droppedMessagesRateLimiter = RateLimiter.create(1.0);
+  private final PublishProcessor<InboundMessage> inboundMessageSink = PublishProcessor.create();
+  private final Flowable<InboundMessage> inboundMessages;
 
-	private final SystemCounters counters;
-	private final Addressing addressing;
-	private final EventDispatcher<PeerEvent> peerEventDispatcher;
-	private final Optional<RadixNodeUri> uri;
-	private final AuthHandshaker authHandshaker;
-	private final boolean isInitiator;
-	private final SocketChannel nettyChannel;
-	private Optional<InetSocketAddress> remoteAddress;
+  private final SystemCounters counters;
+  private final Addressing addressing;
+  private final EventDispatcher<PeerEvent> peerEventDispatcher;
+  private final Optional<RadixNodeUri> uri;
+  private final AuthHandshaker authHandshaker;
+  private final boolean isInitiator;
+  private final SocketChannel nettyChannel;
+  private Optional<InetSocketAddress> remoteAddress;
 
-	private ChannelState state = ChannelState.INACTIVE;
-	private NodeId remoteNodeId;
-	private ImmutableSet<ProxyCertificate> proxyCertificates;
-	private FrameCodec frameCodec;
+  private ChannelState state = ChannelState.INACTIVE;
+  private NodeId remoteNodeId;
+  private ImmutableSet<ProxyCertificate> proxyCertificates;
+  private FrameCodec frameCodec;
 
-	private final RateCalculator outMessagesStats = new RateCalculator(Duration.ofSeconds(10), 128);
+  private final RateCalculator outMessagesStats = new RateCalculator(Duration.ofSeconds(10), 128);
 
-	public PeerChannel(
-		P2PConfig config,
-		Addressing addressing,
-		int networkId,
-		ImmutableSet<ProxyCertificate> grantedProxyCertificates,
-		SystemCounters counters,
-		Serialization serialization,
-		SecureRandom secureRandom,
-		ECKeyOps ecKeyOps,
-		EventDispatcher<PeerEvent> peerEventDispatcher,
-		Optional<RadixNodeUri> uri,
-		SocketChannel nettyChannel,
-		Optional<InetSocketAddress> remoteAddress
-	) {
-		this.counters = Objects.requireNonNull(counters);
-		this.addressing = Objects.requireNonNull(addressing);
-		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
-		this.uri = Objects.requireNonNull(uri);
-		uri.ifPresent(u -> this.remoteNodeId = u.getNodeId());
-		this.authHandshaker = new AuthHandshaker(serialization, secureRandom, ecKeyOps, networkId, grantedProxyCertificates);
-		this.nettyChannel = Objects.requireNonNull(nettyChannel);
-		this.remoteAddress = Objects.requireNonNull(remoteAddress);
+  public PeerChannel(
+      P2PConfig config,
+      Addressing addressing,
+      int networkId,
+      ImmutableSet<ProxyCertificate> grantedProxyCertificates,
+      SystemCounters counters,
+      Serialization serialization,
+      SecureRandom secureRandom,
+      ECKeyOps ecKeyOps,
+      EventDispatcher<PeerEvent> peerEventDispatcher,
+      Optional<RadixNodeUri> uri,
+      SocketChannel nettyChannel,
+      Optional<InetSocketAddress> remoteAddress) {
+    this.counters = Objects.requireNonNull(counters);
+    this.addressing = Objects.requireNonNull(addressing);
+    this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
+    this.uri = Objects.requireNonNull(uri);
+    uri.ifPresent(u -> this.remoteNodeId = u.getNodeId());
+    this.authHandshaker =
+        new AuthHandshaker(
+            serialization, secureRandom, ecKeyOps, networkId, grantedProxyCertificates);
+    this.nettyChannel = Objects.requireNonNull(nettyChannel);
+    this.remoteAddress = Objects.requireNonNull(remoteAddress);
 
-		this.isInitiator = uri.isPresent();
+    this.isInitiator = uri.isPresent();
 
-		this.inboundMessages = inboundMessageSink
-			.onBackpressureBuffer(
-				config.channelBufferSize(),
-				() -> {
-					this.counters.increment(SystemCounters.CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
-					final var logLevel = droppedMessagesRateLimiter.tryAcquire() ? Level.WARN : Level.TRACE;
-					log.log(logLevel, "TCP msg buffer overflow, dropping msg on {}", this.toString());
-				},
-				BackpressureOverflowStrategy.DROP_LATEST);
+    this.inboundMessages =
+        inboundMessageSink.onBackpressureBuffer(
+            config.channelBufferSize(),
+            () -> {
+              this.counters.increment(SystemCounters.CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
+              final var logLevel =
+                  droppedMessagesRateLimiter.tryAcquire() ? Level.WARN : Level.TRACE;
+              log.log(logLevel, "TCP msg buffer overflow, dropping msg on {}", this.toString());
+            },
+            BackpressureOverflowStrategy.DROP_LATEST);
 
-		if (this.nettyChannel.isActive()) {
-			this.init();
-		}
-	}
+    if (this.nettyChannel.isActive()) {
+      this.init();
+    }
+  }
 
-	private void initHandshake(NodeId remoteNodeId) {
-		final var initiatePacket = authHandshaker.initiate(remoteNodeId.getPublicKey());
-		log.trace("Sending auth initiate to {}", this.toString());
-		this.write(Unpooled.wrappedBuffer(initiatePacket));
-	}
+  private void initHandshake(NodeId remoteNodeId) {
+    final var initiatePacket = authHandshaker.initiate(remoteNodeId.getPublicKey());
+    log.trace("Sending auth initiate to {}", this.toString());
+    this.write(Unpooled.wrappedBuffer(initiatePacket));
+  }
 
-	public Flowable<InboundMessage> inboundMessages() {
-		return inboundMessages;
-	}
+  public Flowable<InboundMessage> inboundMessages() {
+    return inboundMessages;
+  }
 
-	private void handleHandshakeData(ByteBuf data) throws IOException {
-		if (this.isInitiator) {
-			log.trace("Auth response from {}", this.toString());
-			final var handshakeResult = this.authHandshaker.handleResponseMessage(data);
-			this.finalizeHandshake(handshakeResult);
-		} else {
-			log.trace("Auth initiate from {}", this.toString());
-			final var result = this.authHandshaker.handleInitialMessage(data);
-			this.write(Unpooled.wrappedBuffer(result.getFirst()));
-			this.finalizeHandshake(result.getSecond());
-		}
-	}
+  private void handleHandshakeData(ByteBuf data) throws IOException {
+    if (this.isInitiator) {
+      log.trace("Auth response from {}", this.toString());
+      final var handshakeResult = this.authHandshaker.handleResponseMessage(data);
+      this.finalizeHandshake(handshakeResult);
+    } else {
+      log.trace("Auth initiate from {}", this.toString());
+      final var result = this.authHandshaker.handleInitialMessage(data);
+      this.write(Unpooled.wrappedBuffer(result.getFirst()));
+      this.finalizeHandshake(result.getSecond());
+    }
+  }
 
-	private void finalizeHandshake(AuthHandshakeResult handshakeResult) {
-		if (handshakeResult instanceof AuthHandshakeSuccess) {
-			final var successResult = (AuthHandshakeSuccess) handshakeResult;
-			this.remoteNodeId = successResult.getRemoteNodeId();
-			this.proxyCertificates = successResult.getProxyCertificates();
-			this.frameCodec = new FrameCodec(successResult.getSecrets());
-			this.state = ChannelState.ACTIVE;
-			log.trace("Successful auth handshake: {}", this.toString());
-			peerEventDispatcher.dispatch(PeerConnected.create(this));
-		} else {
-			final var errorResult = (AuthHandshakeError) handshakeResult;
-			log.warn("Auth handshake failed on {}: {}", this.toString(), errorResult.getMsg());
-			peerEventDispatcher.dispatch(PeerHandshakeFailed.create(this));
-			this.disconnect();
-		}
-	}
+  private void finalizeHandshake(AuthHandshakeResult handshakeResult) {
+    if (handshakeResult instanceof AuthHandshakeSuccess) {
+      final var successResult = (AuthHandshakeSuccess) handshakeResult;
+      this.remoteNodeId = successResult.getRemoteNodeId();
+      this.proxyCertificates = successResult.getProxyCertificates();
+      this.frameCodec = new FrameCodec(successResult.getSecrets());
+      this.state = ChannelState.ACTIVE;
+      log.trace("Successful auth handshake: {}", this.toString());
+      peerEventDispatcher.dispatch(PeerConnected.create(this));
+    } else {
+      final var errorResult = (AuthHandshakeError) handshakeResult;
+      log.warn("Auth handshake failed on {}: {}", this.toString(), errorResult.getMsg());
+      peerEventDispatcher.dispatch(PeerHandshakeFailed.create(this));
+      this.disconnect();
+    }
+  }
 
-	public ImmutableSet<ProxyCertificate> proxyCertificates() {
-		return this.proxyCertificates;
-	}
+  public ImmutableSet<ProxyCertificate> proxyCertificates() {
+    return this.proxyCertificates;
+  }
 
-	private void handleMessage(ByteBuf buf) throws IOException {
-		final var receiveTime = Time.currentTimestamp();
+  private void handleMessage(ByteBuf buf) throws IOException {
+    final var receiveTime = Time.currentTimestamp();
 
-		synchronized (this.lock) {
-			final var maybeFrame = this.frameCodec.tryReadSingleFrame(buf);
-			maybeFrame.ifPresentOrElse(
-				frame -> inboundMessageSink.onNext(new InboundMessage(receiveTime, remoteNodeId, frame)),
-				() -> log.error("Failed to read a complete frame: {}", this.toString())
-			);
-		}
-	}
+    synchronized (this.lock) {
+      final var maybeFrame = this.frameCodec.tryReadSingleFrame(buf);
+      maybeFrame.ifPresentOrElse(
+          frame -> inboundMessageSink.onNext(new InboundMessage(receiveTime, remoteNodeId, frame)),
+          () -> log.error("Failed to read a complete frame: {}", this.toString()));
+    }
+  }
 
-	@Override
-	public void channelActive(ChannelHandlerContext ctx) {
-		// if we weren't able to determine peer's address earlier, it should be available now
-		if (this.remoteAddress.isEmpty()) {
-			this.remoteAddress = Optional.ofNullable(this.nettyChannel.remoteAddress());
-		}
+  @Override
+  public void channelActive(ChannelHandlerContext ctx) {
+    // if we weren't able to determine peer's address earlier, it should be available now
+    if (this.remoteAddress.isEmpty()) {
+      this.remoteAddress = Optional.ofNullable(this.nettyChannel.remoteAddress());
+    }
 
-		if (this.state == ChannelState.INACTIVE) {
-			this.init();
-		}
-	}
+    if (this.state == ChannelState.INACTIVE) {
+      this.init();
+    }
+  }
 
-	private void init() {
-		log.trace("Init: {}", this.toString());
-		this.state = ChannelState.AUTH_HANDSHAKE;
-		if (this.isInitiator) {
-			this.initHandshake(this.remoteNodeId);
-		}
-	}
+  private void init() {
+    log.trace("Init: {}", this.toString());
+    this.state = ChannelState.AUTH_HANDSHAKE;
+    if (this.isInitiator) {
+      this.initHandshake(this.remoteNodeId);
+    }
+  }
 
-	@Override
-	public void channelRead0(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
-		switch (this.state) {
-			case INACTIVE:
-				throw new RuntimeException("Unexpected read on inactive channel");
-			case AUTH_HANDSHAKE:
-				this.handleHandshakeData(buf);
-				break;
-			case ACTIVE:
-				this.handleMessage(buf);
-				break;
-		}
-	}
+  @Override
+  public void channelRead0(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
+    switch (this.state) {
+      case INACTIVE:
+        throw new RuntimeException("Unexpected read on inactive channel");
+      case AUTH_HANDSHAKE:
+        this.handleHandshakeData(buf);
+        break;
+      case ACTIVE:
+        this.handleMessage(buf);
+        break;
+    }
+  }
 
-	@Override
-	public void channelInactive(ChannelHandlerContext ctx) {
-		log.info("Closed: {}", this.toString());
+  @Override
+  public void channelInactive(ChannelHandlerContext ctx) {
+    log.info("Closed: {}", this.toString());
 
-		final var prevState = this.state;
-		this.state = ChannelState.INACTIVE;
-		this.inboundMessageSink.onComplete();
+    final var prevState = this.state;
+    this.state = ChannelState.INACTIVE;
+    this.inboundMessageSink.onComplete();
 
-		if (prevState == ChannelState.ACTIVE) {
-			// only send out event if peer was previously active
-			this.peerEventDispatcher.dispatch(PeerDisconnected.create(this));
-		}
-	}
+    if (prevState == ChannelState.ACTIVE) {
+      // only send out event if peer was previously active
+      this.peerEventDispatcher.dispatch(PeerDisconnected.create(this));
+    }
+  }
 
-	@Override
-	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-		log.warn("Exception on {}: {}", this.toString(), cause.getMessage());
-		ctx.close();
-	}
+  @Override
+  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+    log.warn("Exception on {}: {}", this.toString(), cause.getMessage());
+    ctx.close();
+  }
 
-	private void write(ByteBuf data) {
-		this.nettyChannel.writeAndFlush(data);
-	}
+  private void write(ByteBuf data) {
+    this.nettyChannel.writeAndFlush(data);
+  }
 
-	public Result<Unit> send(byte[] data) {
-		synchronized (this.lock) {
-			if (this.state != ChannelState.ACTIVE) {
-				return IO_ERROR.result();
-			} else {
-				try {
-					// we don't need to release the buffer manually as this is done by Netty (in writeAndFlush)
-					final var buf = PooledByteBufAllocator.DEFAULT.buffer(data.length);
-					try (var out = new ByteBufOutputStream(buf)) {
-						this.frameCodec.writeFrame(data, out);
-					}
-					this.write(buf);
-					this.outMessagesStats.tick();
-					return Result.ok(unit());
-				} catch (IOException e) {
-					return IO_ERROR.result();
-				}
-			}
-		}
-	}
+  public Result<Unit> send(byte[] data) {
+    synchronized (this.lock) {
+      if (this.state != ChannelState.ACTIVE) {
+        return IO_ERROR.result();
+      } else {
+        try {
+          // we don't need to release the buffer manually as this is done by Netty (in
+          // writeAndFlush)
+          final var buf = PooledByteBufAllocator.DEFAULT.buffer(data.length);
+          try (var out = new ByteBufOutputStream(buf)) {
+            this.frameCodec.writeFrame(data, out);
+          }
+          this.write(buf);
+          this.outMessagesStats.tick();
+          return Result.ok(unit());
+        } catch (IOException e) {
+          return IO_ERROR.result();
+        }
+      }
+    }
+  }
 
-	public long sentMessagesRate() {
-		return this.outMessagesStats.currentRate();
-	}
+  public long sentMessagesRate() {
+    return this.outMessagesStats.currentRate();
+  }
 
-	public void disconnect() {
-		synchronized (this.lock) {
-			this.nettyChannel.close();
-		}
-	}
+  public void disconnect() {
+    synchronized (this.lock) {
+      this.nettyChannel.close();
+    }
+  }
 
-	public NodeId getRemoteNodeId() {
-		return this.remoteNodeId;
-	}
+  public NodeId getRemoteNodeId() {
+    return this.remoteNodeId;
+  }
 
-	public boolean isInbound() {
-		return !this.isInitiator;
-	}
+  public boolean isInbound() {
+    return !this.isInitiator;
+  }
 
-	public boolean isOutbound() {
-		return this.isInitiator;
-	}
+  public boolean isOutbound() {
+    return this.isInitiator;
+  }
 
-	public Optional<RadixNodeUri> getUri() {
-		return this.uri;
-	}
+  public Optional<RadixNodeUri> getUri() {
+    return this.uri;
+  }
 
-	public String getHost() {
-		return remoteAddress.map(InetSocketAddress::getHostString).orElse("?");
-	}
+  public String getHost() {
+    return remoteAddress.map(InetSocketAddress::getHostString).orElse("?");
+  }
 
-	public int getPort() {
-		return remoteAddress.map(InetSocketAddress::getPort).orElse(0);
-	}
+  public int getPort() {
+    return remoteAddress.map(InetSocketAddress::getPort).orElse(0);
+  }
 
-	@Override
-	public String toString() {
-		return String.format(
-			"{%s %s@%s:%s | %s}",
-			isInitiator ? "<-" : "->",
-			remoteNodeId != null ? addressing.forNodes().of(this.remoteNodeId.getPublicKey()) : "?",
-			getHost(),
-			getPort(),
-			state
-		);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "{%s %s@%s:%s | %s}",
+        isInitiator ? "<-" : "->",
+        remoteNodeId != null ? addressing.forNodes().of(this.remoteNodeId.getPublicKey()) : "?",
+        getHost(),
+        getPort(),
+        state);
+  }
 }

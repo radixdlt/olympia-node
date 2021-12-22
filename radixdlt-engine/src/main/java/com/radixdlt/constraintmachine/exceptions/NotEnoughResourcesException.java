@@ -67,20 +67,20 @@ package com.radixdlt.constraintmachine.exceptions;
 import com.radixdlt.utils.UInt256;
 
 public final class NotEnoughResourcesException extends Exception {
-	private final UInt256 request;
-	private final UInt256 amount;
+  private final UInt256 request;
+  private final UInt256 amount;
 
-	public NotEnoughResourcesException(UInt256 request, UInt256 amount) {
-		super("request: " + request + " amount: " + amount);
-		this.request = request;
-		this.amount = amount;
-	}
+  public NotEnoughResourcesException(UInt256 request, UInt256 amount) {
+    super("request: " + request + " amount: " + amount);
+    this.request = request;
+    this.amount = amount;
+  }
 
-	public UInt256 getRequest() {
-		return request;
-	}
+  public UInt256 getRequest() {
+    return request;
+  }
 
-	public UInt256 getAmount() {
-		return amount;
-	}
+  public UInt256 getAmount() {
+    return amount;
+  }
 }

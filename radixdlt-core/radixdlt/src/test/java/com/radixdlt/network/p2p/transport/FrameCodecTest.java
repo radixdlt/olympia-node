@@ -64,6 +64,8 @@
 
 package com.radixdlt.network.p2p.transport;
 
+import static org.junit.Assert.assertArrayEquals;
+
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECKeyOps;
@@ -74,54 +76,69 @@ import com.radixdlt.network.p2p.transport.handshake.Secrets;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Pair;
 import io.netty.buffer.Unpooled;
-import org.junit.Test;
 import java.io.ByteArrayOutputStream;
 import java.security.SecureRandom;
-
-import static org.junit.Assert.assertArrayEquals;
+import org.junit.Test;
 
 public final class FrameCodecTest {
-	private final Serialization serialization = DefaultSerialization.getInstance();
-	private final SecureRandom secureRandom = new SecureRandom();
+  private final Serialization serialization = DefaultSerialization.getInstance();
+  private final SecureRandom secureRandom = new SecureRandom();
 
-	@Test
-	public void test_frame_codec_write_read() throws Exception {
-		final var nodeKey1 = ECKeyPair.generateNew();
-		final var nodeKey2 = ECKeyPair.generateNew();
+  @Test
+  public void test_frame_codec_write_read() throws Exception {
+    final var nodeKey1 = ECKeyPair.generateNew();
+    final var nodeKey2 = ECKeyPair.generateNew();
 
-		final var secrets = agreeSecrets(nodeKey1, nodeKey2);
+    final var secrets = agreeSecrets(nodeKey1, nodeKey2);
 
-		final var frameCodec1 = new FrameCodec(secrets.getFirst());
-		final var frameCodec2 = new FrameCodec(secrets.getSecond());
+    final var frameCodec1 = new FrameCodec(secrets.getFirst());
+    final var frameCodec2 = new FrameCodec(secrets.getSecond());
 
-		final var messageCount = 1000;
-		for (int i = 0; i < messageCount; i++) {
-			final var direction = secureRandom.nextBoolean();
-			final var source = direction ? frameCodec1 : frameCodec2;
-			final var destination = direction ? frameCodec2 : frameCodec1;
+    final var messageCount = 1000;
+    for (int i = 0; i < messageCount; i++) {
+      final var direction = secureRandom.nextBoolean();
+      final var source = direction ? frameCodec1 : frameCodec2;
+      final var destination = direction ? frameCodec2 : frameCodec1;
 
-			final var messageLength = secureRandom.nextInt(1024 * 10);
-			final var message = new byte[messageLength];
-			secureRandom.nextBytes(message);
+      final var messageLength = secureRandom.nextInt(1024 * 10);
+      final var message = new byte[messageLength];
+      secureRandom.nextBytes(message);
 
-			final var baos = new ByteArrayOutputStream();
-			source.writeFrame(message, baos);
-			final var readFrame = destination.tryReadSingleFrame(Unpooled.wrappedBuffer(baos.toByteArray()));
+      final var baos = new ByteArrayOutputStream();
+      source.writeFrame(message, baos);
+      final var readFrame =
+          destination.tryReadSingleFrame(Unpooled.wrappedBuffer(baos.toByteArray()));
 
-			assertArrayEquals(message, readFrame.get());
-		}
-	}
+      assertArrayEquals(message, readFrame.get());
+    }
+  }
 
-	private Pair<Secrets, Secrets> agreeSecrets(ECKeyPair nodeKey1, ECKeyPair nodeKey2) throws Exception {
-		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01, ImmutableSet.of());
-		final var handshaker2 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x01, ImmutableSet.of());
+  private Pair<Secrets, Secrets> agreeSecrets(ECKeyPair nodeKey1, ECKeyPair nodeKey2)
+      throws Exception {
+    final var handshaker1 =
+        new AuthHandshaker(
+            serialization,
+            secureRandom,
+            ECKeyOps.fromKeyPair(nodeKey1),
+            (byte) 0x01,
+            ImmutableSet.of());
+    final var handshaker2 =
+        new AuthHandshaker(
+            serialization,
+            secureRandom,
+            ECKeyOps.fromKeyPair(nodeKey2),
+            (byte) 0x01,
+            ImmutableSet.of());
 
-		final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
-		final var handshaker2ResultPair = handshaker2.handleInitialMessage(Unpooled.wrappedBuffer(initMessage));
-		final var handshaker2Result = (AuthHandshakeSuccess) handshaker2ResultPair.getSecond();
-		final var responseMessage = handshaker2ResultPair.getFirst();
-		final var handshaker1Result = (AuthHandshakeSuccess) handshaker1.handleResponseMessage(Unpooled.wrappedBuffer(responseMessage));
+    final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
+    final var handshaker2ResultPair =
+        handshaker2.handleInitialMessage(Unpooled.wrappedBuffer(initMessage));
+    final var handshaker2Result = (AuthHandshakeSuccess) handshaker2ResultPair.getSecond();
+    final var responseMessage = handshaker2ResultPair.getFirst();
+    final var handshaker1Result =
+        (AuthHandshakeSuccess)
+            handshaker1.handleResponseMessage(Unpooled.wrappedBuffer(responseMessage));
 
-		return Pair.of(handshaker1Result.getSecrets(), handshaker2Result.getSecrets());
-	}
+    return Pair.of(handshaker1Result.getSecrets(), handshaker2Result.getSecrets());
+  }
 }

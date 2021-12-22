@@ -64,58 +64,61 @@
 
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-
-import java.util.List;
-import java.util.Random;
-import java.util.stream.IntStream;
-
-import org.assertj.core.api.Condition;
-import org.junit.Test;
-
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.Assert.assertEquals;
 
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.IntStream;
+import org.assertj.core.api.Condition;
+import org.junit.Test;
+
 public class RandomChannelOrderResponsiveTest {
 
-	private void run(int numNodes, long viewsToRun) {
-		assertEquals(0, viewsToRun % numNodes);
+  private void run(int numNodes, long viewsToRun) {
+    assertEquals(0, viewsToRun % numNodes);
 
-		final Random random = new Random(12345);
+    final Random random = new Random(12345);
 
-		DeterministicTest test = DeterministicTest.builder()
-			.numNodes(numNodes)
-			.messageSelector(MessageSelector.randomSelector(random))
-			.messageMutator(MessageMutator.dropTimeouts())
-			.buildWithoutEpochs()
-			.runUntil(DeterministicTest.hasReachedView(View.of(viewsToRun)));
+    DeterministicTest test =
+        DeterministicTest.builder()
+            .numNodes(numNodes)
+            .messageSelector(MessageSelector.randomSelector(random))
+            .messageMutator(MessageMutator.dropTimeouts())
+            .buildWithoutEpochs()
+            .runUntil(DeterministicTest.hasReachedView(View.of(viewsToRun)));
 
-		List<Long> proposalsMade = IntStream.range(0, numNodes)
-			.mapToObj(test::getSystemCounters)
-			.map(counters -> counters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT))
-			.collect(ImmutableList.toImmutableList());
+    List<Long> proposalsMade =
+        IntStream.range(0, numNodes)
+            .mapToObj(test::getSystemCounters)
+            .map(counters -> counters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT))
+            .collect(ImmutableList.toImmutableList());
 
-		final long numViews = viewsToRun / numNodes;
+    final long numViews = viewsToRun / numNodes;
 
-		assertThat(proposalsMade)
-			.hasSize(numNodes)
-			.areAtLeast(numNodes - 1, new Condition<>(l -> l == numViews, "has as many proposals as views"))
-			// the last view in the epoch doesn't have a proposal
-			.areAtMost(1, new Condition<>(l -> l == numViews - 1, "has one less proposal"));
-	}
+    assertThat(proposalsMade)
+        .hasSize(numNodes)
+        .areAtLeast(
+            numNodes - 1, new Condition<>(l -> l == numViews, "has as many proposals as views"))
+        // the last view in the epoch doesn't have a proposal
+        .areAtMost(1, new Condition<>(l -> l == numViews - 1, "has one less proposal"));
+  }
 
-	@Test
-	public void when_run_4_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-		run(4, 4 * 25000L);
-	}
+  @Test
+  public void
+      when_run_4_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
+    run(4, 4 * 25000L);
+  }
 
-	@Test
-	public void when_run_100_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-		run(100, 100 * 5L);
-	}
+  @Test
+  public void
+      when_run_100_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
+    run(100, 100 * 5L);
+  }
 }

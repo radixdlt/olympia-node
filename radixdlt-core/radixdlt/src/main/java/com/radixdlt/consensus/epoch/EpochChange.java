@@ -68,53 +68,50 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerProof;
 import java.util.Objects;
 
-/**
- * An epoch change message to consensus
- */
+/** An epoch change message to consensus */
 public final class EpochChange {
-	private final LedgerProof proof;
-	private final BFTConfiguration bftConfiguration;
+  private final LedgerProof proof;
+  private final BFTConfiguration bftConfiguration;
 
-	public EpochChange(LedgerProof proof, BFTConfiguration bftConfiguration) {
-		this.proof = Objects.requireNonNull(proof);
-		this.bftConfiguration = Objects.requireNonNull(bftConfiguration);
-	}
+  public EpochChange(LedgerProof proof, BFTConfiguration bftConfiguration) {
+    this.proof = Objects.requireNonNull(proof);
+    this.bftConfiguration = Objects.requireNonNull(bftConfiguration);
+  }
 
-	public BFTConfiguration getBFTConfiguration() {
-		return bftConfiguration;
-	}
+  public BFTConfiguration getBFTConfiguration() {
+    return bftConfiguration;
+  }
 
-	public LedgerProof getGenesisHeader() {
-		return bftConfiguration.getVertexStoreState().getRootHeader();
-	}
+  public LedgerProof getGenesisHeader() {
+    return bftConfiguration.getVertexStoreState().getRootHeader();
+  }
 
-	public long getEpoch() {
-		return proof.getEpoch() + 1;
-	}
+  public long getEpoch() {
+    return proof.getEpoch() + 1;
+  }
 
-	public LedgerProof getProof() {
-		return proof;
-	}
+  public LedgerProof getProof() {
+    return proof;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.proof, this.bftConfiguration);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.proof, this.bftConfiguration);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (o instanceof EpochChange) {
-			final var that = (EpochChange) o;
-			return Objects.equals(this.proof, that.proof)
-				&& Objects.equals(this.bftConfiguration, that.bftConfiguration);
-		}
-		return false;
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (o instanceof EpochChange) {
+      final var that = (EpochChange) o;
+      return Objects.equals(this.proof, that.proof)
+          && Objects.equals(this.bftConfiguration, that.bftConfiguration);
+    }
+    return false;
+  }
 
-	@Override
-	public String toString() {
-		return String.format(
-			"%s{proof=%s config=%s}", this.getClass().getSimpleName(), proof, bftConfiguration
-		);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{proof=%s config=%s}", this.getClass().getSimpleName(), proof, bftConfiguration);
+  }
 }

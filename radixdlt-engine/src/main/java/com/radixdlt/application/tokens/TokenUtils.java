@@ -66,22 +66,15 @@ package com.radixdlt.application.tokens;
 
 import com.radixdlt.utils.UInt256;
 
-/**
- * Utility values and methods for tokens.
- */
+/** Utility values and methods for tokens. */
 public final class TokenUtils {
-	/**
-	 * Power of 10 number of subunits to be used by every token.
-	 * Follows EIP-777 model.
-	 */
-	public static final int SUB_UNITS_POW_10 = 18;
+  /** Power of 10 number of subunits to be used by every token. Follows EIP-777 model. */
+  public static final int SUB_UNITS_POW_10 = 18;
 
-	/**
-	 * Implicit number of subunits to be used by every token. Follows EIP-777 model.
-	 */
-	public static final UInt256 SUB_UNITS = UInt256.TEN.pow(SUB_UNITS_POW_10);
+  /** Implicit number of subunits to be used by every token. Follows EIP-777 model. */
+  public static final UInt256 SUB_UNITS = UInt256.TEN.pow(SUB_UNITS_POW_10);
 
-	private TokenUtils() {
-		throw new IllegalStateException("Cannot instantiate.");
-	}
+  private TokenUtils() {
+    throw new IllegalStateException("Cannot instantiate.");
+  }
 }

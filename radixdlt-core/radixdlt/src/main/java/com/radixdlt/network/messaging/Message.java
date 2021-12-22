@@ -71,25 +71,25 @@ import org.radix.containers.BasicContainer;
 import org.radix.time.Time;
 
 public abstract class Message extends BasicContainer {
-	@Override
-	public short version() {
-		return 100;
-	}
+  @Override
+  public short version() {
+    return 100;
+  }
 
-	@JsonProperty("timestamp")
-	@DsonOutput(value = {Output.API, Output.PERSIST})
-	private final long timestamp;
+  @JsonProperty("timestamp")
+  @DsonOutput(value = {Output.API, Output.PERSIST})
+  private final long timestamp;
 
-	protected Message() {
-		this.timestamp = Time.currentTimestamp();
-	}
+  protected Message() {
+    this.timestamp = Time.currentTimestamp();
+  }
 
-	public long getTimestamp() {
-		return this.timestamp;
-	}
+  public long getTimestamp() {
+    return this.timestamp;
+  }
 
-	@Override
-	public String toString() {
-		return this.getClass().getSimpleName() + ":" + this.hashCode() + " @ " + this.getTimestamp();
-	}
+  @Override
+  public String toString() {
+    return this.getClass().getSimpleName() + ":" + this.hashCode() + " @ " + this.getTimestamp();
+  }
 }

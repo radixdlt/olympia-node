@@ -64,33 +64,30 @@
 
 package com.radixdlt.network.p2p.proxy;
 
-/**
- * Local event that triggers proxy certificate renewal.
- */
+/** Local event that triggers proxy certificate renewal. */
 public final class RenewIssuedProxyCertificatesTrigger {
 
-	public static RenewIssuedProxyCertificatesTrigger create() {
-		return new RenewIssuedProxyCertificatesTrigger();
-	}
+  public static RenewIssuedProxyCertificatesTrigger create() {
+    return new RenewIssuedProxyCertificatesTrigger();
+  }
 
-	private RenewIssuedProxyCertificatesTrigger() {
-	}
+  private RenewIssuedProxyCertificatesTrigger() {}
 
-	@Override
-	public String toString() {
-		return String.format("%s{}", this.getClass().getSimpleName());
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{}", this.getClass().getSimpleName());
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		return o instanceof RenewIssuedProxyCertificatesTrigger;
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    return o instanceof RenewIssuedProxyCertificatesTrigger;
+  }
 
-	@Override
-	public int hashCode() {
-		return 1;
-	}
+  @Override
+  public int hashCode() {
+    return 1;
+  }
 }

@@ -66,48 +66,45 @@ package com.radixdlt.environment.deterministic.network;
 
 import java.util.Objects;
 
-/**
- * ID for a channel between two nodes.
- */
+/** ID for a channel between two nodes. */
 public final class ChannelId {
-	private final int senderIndex;
-	private final int receiverIndex;
+  private final int senderIndex;
+  private final int receiverIndex;
 
-	private ChannelId(int senderIndex, int receiverIndex) {
-		this.senderIndex = senderIndex;
-		this.receiverIndex = receiverIndex;
-	}
+  private ChannelId(int senderIndex, int receiverIndex) {
+    this.senderIndex = senderIndex;
+    this.receiverIndex = receiverIndex;
+  }
 
-	public static ChannelId of(int senderIndex, int receiverIndex) {
-		return new ChannelId(senderIndex, receiverIndex);
-	}
+  public static ChannelId of(int senderIndex, int receiverIndex) {
+    return new ChannelId(senderIndex, receiverIndex);
+  }
 
-	public int receiverIndex() {
-		return this.receiverIndex;
-	}
+  public int receiverIndex() {
+    return this.receiverIndex;
+  }
 
-	public int senderIndex() {
-		return this.senderIndex;
-	}
+  public int senderIndex() {
+    return this.senderIndex;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.senderIndex, this.receiverIndex);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.senderIndex, this.receiverIndex);
+  }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (!(obj instanceof ChannelId)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj instanceof ChannelId)) {
+      return false;
+    }
 
-		ChannelId other = (ChannelId) obj;
-		return this.senderIndex == other.senderIndex && this.receiverIndex == other.receiverIndex;
-	}
+    ChannelId other = (ChannelId) obj;
+    return this.senderIndex == other.senderIndex && this.receiverIndex == other.receiverIndex;
+  }
 
-	@Override
-	public String toString() {
-		return this.senderIndex + "->" + this.receiverIndex;
-	}
+  @Override
+  public String toString() {
+    return this.senderIndex + "->" + this.receiverIndex;
+  }
 }
-

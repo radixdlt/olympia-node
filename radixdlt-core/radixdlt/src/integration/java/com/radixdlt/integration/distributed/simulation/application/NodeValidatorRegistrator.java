@@ -81,47 +81,50 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
-
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Registers nodes in order as validators
- */
+/** Registers nodes in order as validators */
 public final class NodeValidatorRegistrator implements SimulationTest.SimulationNetworkActor {
-    private Disposable disposable;
-    private final Subject<BFTNode> validationRegistrations = BehaviorSubject.create();
+  private Disposable disposable;
+  private final Subject<BFTNode> validationRegistrations = BehaviorSubject.create();
 
-    @Override
-    public void start(SimulationNodes.RunningNetwork network) {
-        List<BFTNode> nodes = network.getNodes();
-        this.disposable = Observable.fromIterable(nodes)
+  @Override
+  public void start(SimulationNodes.RunningNetwork network) {
+    List<BFTNode> nodes = network.getNodes();
+    this.disposable =
+        Observable.fromIterable(nodes)
             .concatMap(i -> Observable.timer(3, TimeUnit.SECONDS).map(l -> i))
             .doOnNext(validationRegistrations::onNext)
-            .subscribe(node -> {
-                var radixEngine = network.getNodeInjector(node)
-                    .getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() { }));
-                var radixEngineStateComputer = network.getNodeInjector(node)
-                    .getInstance(RadixEngineStateComputer.class);
-                var hashSigner = network.getNodeInjector(node).getInstance(HashSigner.class);
-                var request = TxnConstructionRequest.create()
-                    .action(new RegisterValidator(node.getKey()))
-                    .feePayer(REAddr.ofPubKeyAccount(node.getKey()));
-                var txBuilder = radixEngine.construct(request);
-                var txn = txBuilder.signAndBuild(hashSigner::sign);
-                try {
+            .subscribe(
+                node -> {
+                  var radixEngine =
+                      network
+                          .getNodeInjector(node)
+                          .getInstance(
+                              Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() {}));
+                  var radixEngineStateComputer =
+                      network.getNodeInjector(node).getInstance(RadixEngineStateComputer.class);
+                  var hashSigner = network.getNodeInjector(node).getInstance(HashSigner.class);
+                  var request =
+                      TxnConstructionRequest.create()
+                          .action(new RegisterValidator(node.getKey()))
+                          .feePayer(REAddr.ofPubKeyAccount(node.getKey()));
+                  var txBuilder = radixEngine.construct(request);
+                  var txn = txBuilder.signAndBuild(hashSigner::sign);
+                  try {
                     radixEngineStateComputer.addToMempool(txn);
-                } catch (MempoolRejectedException ignored) {
-                }
-            });
-    }
+                  } catch (MempoolRejectedException ignored) {
+                  }
+                });
+  }
 
-    @Override
-    public void stop() {
-        this.disposable.dispose();
-    }
+  @Override
+  public void stop() {
+    this.disposable.dispose();
+  }
 
-    public Observable<BFTNode> validatorRegistrationSubmissions() {
-        return validationRegistrations;
-    }
+  public Observable<BFTNode> validatorRegistrationSubmissions() {
+    return validationRegistrations;
+  }
 }

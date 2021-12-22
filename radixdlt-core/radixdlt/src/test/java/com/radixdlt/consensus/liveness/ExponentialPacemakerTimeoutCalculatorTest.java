@@ -64,46 +64,46 @@
 
 package com.radixdlt.consensus.liveness;
 
-import org.junit.Test;
-
-import java.util.Map;
-
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 
+import java.util.Map;
+import org.junit.Test;
+
 public class ExponentialPacemakerTimeoutCalculatorTest {
 
-    @Test
-    public void when_creating_timeout_calculator_with_invalid_timeout__then_exception_is_thrown() {
-        checkConstructionParams(0, 1.2, 1, "timeoutMilliseconds must be > 0");
-        checkConstructionParams(-1, 1.2, 1, "timeoutMilliseconds must be > 0");
-        checkConstructionParams(1, 1.0, 1, "rate must be > 1.0");
-        checkConstructionParams(1, 1.2, -1, "maxExponent must be >= 0");
-        checkConstructionParams(1, 100.0, 100, "Maximum timeout value");
-    }
+  @Test
+  public void when_creating_timeout_calculator_with_invalid_timeout__then_exception_is_thrown() {
+    checkConstructionParams(0, 1.2, 1, "timeoutMilliseconds must be > 0");
+    checkConstructionParams(-1, 1.2, 1, "timeoutMilliseconds must be > 0");
+    checkConstructionParams(1, 1.0, 1, "rate must be > 1.0");
+    checkConstructionParams(1, 1.2, -1, "maxExponent must be >= 0");
+    checkConstructionParams(1, 100.0, 100, "Maximum timeout value");
+  }
 
-    @Test
-    public void timeout_should_grow_exponentially() {
-        final ExponentialPacemakerTimeoutCalculator calculator =
-            new ExponentialPacemakerTimeoutCalculator(1000L, 2.0, 6);
+  @Test
+  public void timeout_should_grow_exponentially() {
+    final ExponentialPacemakerTimeoutCalculator calculator =
+        new ExponentialPacemakerTimeoutCalculator(1000L, 2.0, 6);
 
-        final Map<Long, Long> expectedTimeouts = Map.of(
+    final Map<Long, Long> expectedTimeouts =
+        Map.of(
             0L, 1000L,
             1L, 2000L,
             2L, 4000L,
             3L, 8000L,
             4L, 16000L,
-            5L, 32000L
-        );
+            5L, 32000L);
 
-        expectedTimeouts.forEach((uncommittedViews, expectedResult) ->
-            assertEquals(expectedResult.longValue(), calculator.timeout(uncommittedViews))
-        );
-    }
+    expectedTimeouts.forEach(
+        (uncommittedViews, expectedResult) ->
+            assertEquals(expectedResult.longValue(), calculator.timeout(uncommittedViews)));
+  }
 
-    private void checkConstructionParams(long timeout, double rate, int maxExponent, String exceptionMessage) {
-        assertThatThrownBy(() -> new ExponentialPacemakerTimeoutCalculator(timeout, rate, maxExponent))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageStartingWith(exceptionMessage);
-    }
+  private void checkConstructionParams(
+      long timeout, double rate, int maxExponent, String exceptionMessage) {
+    assertThatThrownBy(() -> new ExponentialPacemakerTimeoutCalculator(timeout, rate, maxExponent))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageStartingWith(exceptionMessage);
+  }
 }

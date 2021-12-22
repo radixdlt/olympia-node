@@ -64,6 +64,11 @@
 
 package com.radixdlt.network.p2p;
 
+import static com.radixdlt.network.messaging.MessagingErrors.PEER_BANNED;
+import static com.radixdlt.network.messaging.MessagingErrors.PEER_CONNECTION_FORBIDDEN;
+import static com.radixdlt.network.messaging.MessagingErrors.SELF_CONNECTION_ATTEMPT;
+import static java.util.function.Predicate.not;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
@@ -73,23 +78,20 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.network.messaging.InboundMessage;
+import com.radixdlt.network.p2p.PeerEvent.PeerBanned;
+import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
+import com.radixdlt.network.p2p.PeerEvent.PeerConnectionTimeout;
+import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
+import com.radixdlt.network.p2p.PeerEvent.PeerHandshakeFailed;
+import com.radixdlt.network.p2p.PeerEvent.PeerLostLiveness;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
-import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
-import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
-import com.radixdlt.network.p2p.PeerEvent.PeerLostLiveness;
-import com.radixdlt.network.p2p.PeerEvent.PeerConnectionTimeout;
-import com.radixdlt.network.p2p.PeerEvent.PeerHandshakeFailed;
-import com.radixdlt.network.p2p.PeerEvent.PeerBanned;
 import com.radixdlt.network.p2p.proxy.ProxyCertificateManager;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
@@ -98,354 +100,360 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import static com.radixdlt.network.messaging.MessagingErrors.PEER_BANNED;
-import static com.radixdlt.network.messaging.MessagingErrors.PEER_CONNECTION_FORBIDDEN;
-import static com.radixdlt.network.messaging.MessagingErrors.SELF_CONNECTION_ATTEMPT;
-import static java.util.function.Predicate.not;
-
-/**
- * Manages active connections to other peers.
- */
+/** Manages active connections to other peers. */
 public final class PeerManager {
-	private static final Logger log = LogManager.getLogger();
+  private static final Logger log = LogManager.getLogger();
 
-	private final NodeId self;
-	private final P2PConfig config;
-	private final Addressing addressing;
-	private final Provider<AddressBook> addressBook;
-	private final Provider<PendingOutboundChannelsManager> pendingOutboundChannelsManager;
-	private final SystemCounters counters;
-	private final Provider<ProxyCertificateManager> proxyCertificateManager;
+  private final NodeId self;
+  private final P2PConfig config;
+  private final Addressing addressing;
+  private final Provider<AddressBook> addressBook;
+  private final Provider<PendingOutboundChannelsManager> pendingOutboundChannelsManager;
+  private final SystemCounters counters;
+  private final Provider<ProxyCertificateManager> proxyCertificateManager;
 
-	private final Object lock = new Object();
-	private final Map<NodeId, Set<PeerChannel>> activeChannels = new ConcurrentHashMap<>();
-	private final PublishSubject<Observable<InboundMessage>> inboundMessagesFromChannels = PublishSubject.create();
+  private final Object lock = new Object();
+  private final Map<NodeId, Set<PeerChannel>> activeChannels = new ConcurrentHashMap<>();
+  private final PublishSubject<Observable<InboundMessage>> inboundMessagesFromChannels =
+      PublishSubject.create();
 
-	@Inject
-	public PeerManager(
-		@Self RadixNodeUri self,
-		P2PConfig config,
-		Addressing addressing,
-		Provider<AddressBook> addressBook,
-		Provider<PendingOutboundChannelsManager> pendingOutboundChannelsManager,
-		SystemCounters counters,
-		Provider<ProxyCertificateManager> proxyCertificateManager
-	) {
-		this.self = Objects.requireNonNull(self.getNodeId());
-		this.config = Objects.requireNonNull(config);
-		this.addressing = addressing;
-		this.addressBook = Objects.requireNonNull(addressBook);
-		this.pendingOutboundChannelsManager = Objects.requireNonNull(pendingOutboundChannelsManager);
-		this.counters = Objects.requireNonNull(counters);
-		this.proxyCertificateManager = Objects.requireNonNull(proxyCertificateManager);
+  @Inject
+  public PeerManager(
+      @Self RadixNodeUri self,
+      P2PConfig config,
+      Addressing addressing,
+      Provider<AddressBook> addressBook,
+      Provider<PendingOutboundChannelsManager> pendingOutboundChannelsManager,
+      SystemCounters counters,
+      Provider<ProxyCertificateManager> proxyCertificateManager) {
+    this.self = Objects.requireNonNull(self.getNodeId());
+    this.config = Objects.requireNonNull(config);
+    this.addressing = addressing;
+    this.addressBook = Objects.requireNonNull(addressBook);
+    this.pendingOutboundChannelsManager = Objects.requireNonNull(pendingOutboundChannelsManager);
+    this.counters = Objects.requireNonNull(counters);
+    this.proxyCertificateManager = Objects.requireNonNull(proxyCertificateManager);
 
-		log.info("Node URI: {}",  self);
-	}
+    log.info("Node URI: {}", self);
+  }
 
-	public Observable<InboundMessage> messages() {
-		return Observable.merge(inboundMessagesFromChannels);
-	}
+  public Observable<InboundMessage> messages() {
+    return Observable.merge(inboundMessagesFromChannels);
+  }
 
-	public CompletableFuture<PeerChannel> findOrCreateDirectChannel(NodeId nodeId) {
-		synchronized (lock) {
-			final var checkResult = this.canConnectTo(nodeId);
-			return checkResult.fold(
-				error -> CompletableFuture.failedFuture(new PeerConnectionException(error.message())),
-				unused -> this.findOrCreateChannelInternal(nodeId)
-			);
-		}
-	}
+  public CompletableFuture<PeerChannel> findOrCreateDirectChannel(NodeId nodeId) {
+    synchronized (lock) {
+      final var checkResult = this.canConnectTo(nodeId);
+      return checkResult.fold(
+          error -> CompletableFuture.failedFuture(new PeerConnectionException(error.message())),
+          unused -> this.findOrCreateChannelInternal(nodeId));
+    }
+  }
 
-	public CompletableFuture<PeerChannel> findOrCreateProxyChannel(NodeId nodeId) {
-		synchronized (lock) {
-			return findActiveProxyChannel(nodeId)
-				.map(CompletableFuture::completedFuture)
-				.orElseGet(() ->
-					this.addressBook.get().findBestCandidateProxyFor(nodeId)
-						.map(this::createAndVerifyProxyChannel)
-						.orElseGet(() -> CompletableFuture.failedFuture(new PeerConnectionException("No available proxy node")))
-				);
-		}
-	}
+  public CompletableFuture<PeerChannel> findOrCreateProxyChannel(NodeId nodeId) {
+    synchronized (lock) {
+      return findActiveProxyChannel(nodeId)
+          .map(CompletableFuture::completedFuture)
+          .orElseGet(
+              () ->
+                  this.addressBook
+                      .get()
+                      .findBestCandidateProxyFor(nodeId)
+                      .map(this::createAndVerifyProxyChannel)
+                      .orElseGet(
+                          () ->
+                              CompletableFuture.failedFuture(
+                                  new PeerConnectionException("No available proxy node"))));
+    }
+  }
 
-	private Optional<PeerChannel> findActiveProxyChannel(NodeId nodeId) {
-		return this.proxyCertificateManager.get()
-			.getVerifiedProxiesForNode(nodeId)
-			.stream()
-			.filter(activeChannels::containsKey)
-			.map(activeChannels::get)
-			.flatMap(Set::stream)
-			.findAny();
-	}
+  private Optional<PeerChannel> findActiveProxyChannel(NodeId nodeId) {
+    return this.proxyCertificateManager.get().getVerifiedProxiesForNode(nodeId).stream()
+        .filter(activeChannels::containsKey)
+        .map(activeChannels::get)
+        .flatMap(Set::stream)
+        .findAny();
+  }
 
-	private CompletableFuture<PeerChannel> createAndVerifyProxyChannel(RadixNodeUri uri) {
-		final var channelFuture = connect(uri);
-		return channelFuture.thenCompose(channel -> {
-			final var isValidProxy = proxyCertificateManager.get()
-				.getVerifiedProxiesForNode(uri.getNodeId())
-				.contains(channel.getRemoteNodeId());
-			if (isValidProxy) {
-				return CompletableFuture.completedFuture(channel);
-			} else {
-				channel.disconnect();
-				return CompletableFuture.failedFuture(new PeerConnectionException("No available proxy node"));
-			}
-		});
-	}
+  private CompletableFuture<PeerChannel> createAndVerifyProxyChannel(RadixNodeUri uri) {
+    final var channelFuture = connect(uri);
+    return channelFuture.thenCompose(
+        channel -> {
+          final var isValidProxy =
+              proxyCertificateManager
+                  .get()
+                  .getVerifiedProxiesForNode(uri.getNodeId())
+                  .contains(channel.getRemoteNodeId());
+          if (isValidProxy) {
+            return CompletableFuture.completedFuture(channel);
+          } else {
+            channel.disconnect();
+            return CompletableFuture.failedFuture(
+                new PeerConnectionException("No available proxy node"));
+          }
+        });
+  }
 
-	public CompletableFuture<PeerChannel> findOrCreateConfiguredProxyChannel() {
-		synchronized (lock) {
-			final var maybeActiveChannel = config.authorizedProxies().stream()
-				.map(this::channelFor)
-				.filter(Optional::isPresent)
-				.map(Optional::get)
-				.findAny();
-			if (maybeActiveChannel.isPresent()) {
-				return CompletableFuture.completedFuture(maybeActiveChannel.get());
-			} else {
-				final var maybeAddress = this.addressBook.get().findBestKnownAddressOf(config.authorizedProxies());
-				if (maybeAddress.isPresent()) {
-					return connect(maybeAddress.get());
-				} else {
-					return CompletableFuture.failedFuture(new PeerConnectionException("No available configured proxy node"));
-				}
-			}
-		}
-	}
+  public CompletableFuture<PeerChannel> findOrCreateConfiguredProxyChannel() {
+    synchronized (lock) {
+      final var maybeActiveChannel =
+          config.authorizedProxies().stream()
+              .map(this::channelFor)
+              .filter(Optional::isPresent)
+              .map(Optional::get)
+              .findAny();
+      if (maybeActiveChannel.isPresent()) {
+        return CompletableFuture.completedFuture(maybeActiveChannel.get());
+      } else {
+        final var maybeAddress =
+            this.addressBook.get().findBestKnownAddressOf(config.authorizedProxies());
+        if (maybeAddress.isPresent()) {
+          return connect(maybeAddress.get());
+        } else {
+          return CompletableFuture.failedFuture(
+              new PeerConnectionException("No available configured proxy node"));
+        }
+      }
+    }
+  }
 
-	private CompletableFuture<PeerChannel> findOrCreateChannelInternal(NodeId nodeId) {
-		final var maybeActiveChannel = channelFor(nodeId);
-		if (maybeActiveChannel.isPresent()) {
-			return CompletableFuture.completedFuture(maybeActiveChannel.get());
-		} else {
-			final var maybeAddress = this.addressBook.get().findBestKnownAddressById(nodeId);
-			if (maybeAddress.isPresent()) {
-				return connect(maybeAddress.get());
-			} else {
-				return CompletableFuture.failedFuture(new PeerConnectionException("Unknown peer "
-					+ addressing.forNodes().of(nodeId.getPublicKey())));
-			}
-		}
-	}
+  private CompletableFuture<PeerChannel> findOrCreateChannelInternal(NodeId nodeId) {
+    final var maybeActiveChannel = channelFor(nodeId);
+    if (maybeActiveChannel.isPresent()) {
+      return CompletableFuture.completedFuture(maybeActiveChannel.get());
+    } else {
+      final var maybeAddress = this.addressBook.get().findBestKnownAddressById(nodeId);
+      if (maybeAddress.isPresent()) {
+        return connect(maybeAddress.get());
+      } else {
+        return CompletableFuture.failedFuture(
+            new PeerConnectionException(
+                "Unknown peer " + addressing.forNodes().of(nodeId.getPublicKey())));
+      }
+    }
+  }
 
-	/**
-	 * Try connecting to a specific URI
-	 */
-	public void tryConnect(RadixNodeUri uri) {
-		synchronized (lock) {
-			if (!canConnectTo(uri.getNodeId()).isSuccess()) {
-				return;
-			}
+  /** Try connecting to a specific URI */
+  public void tryConnect(RadixNodeUri uri) {
+    synchronized (lock) {
+      if (!canConnectTo(uri.getNodeId()).isSuccess()) {
+        return;
+      }
 
-			if (this.getRemainingOutboundSlots() <= 0) {
-				return;
-			}
+      if (this.getRemainingOutboundSlots() <= 0) {
+        return;
+      }
 
-			if (channelFor(uri.getNodeId()).isEmpty()) {
-				this.connect(uri);
-			}
-		}
-	}
+      if (channelFor(uri.getNodeId()).isEmpty()) {
+        this.connect(uri);
+      }
+    }
+  }
 
-	private Result<Object> canConnectTo(NodeId nodeId) {
-		if (nodeId.equals(self)) {
-			log.info("Ignoring self connection attempt");
-			return SELF_CONNECTION_ATTEMPT.result();
-		}
+  private Result<Object> canConnectTo(NodeId nodeId) {
+    if (nodeId.equals(self)) {
+      log.info("Ignoring self connection attempt");
+      return SELF_CONNECTION_ATTEMPT.result();
+    }
 
-		if (this.addressBook.get().findById(nodeId).filter(AddressBookEntry::isBanned).isPresent()) {
-			return PEER_BANNED.result();
-		}
+    if (this.addressBook.get().findById(nodeId).filter(AddressBookEntry::isBanned).isPresent()) {
+      return PEER_BANNED.result();
+    }
 
-		if (!this.config.peerWhitelist().contains(nodeId)
-			&& !this.config.peerWhitelist().isEmpty()) {
-			return PEER_CONNECTION_FORBIDDEN.result();
-		}
+    if (!this.config.peerWhitelist().contains(nodeId) && !this.config.peerWhitelist().isEmpty()) {
+      return PEER_CONNECTION_FORBIDDEN.result();
+    }
 
-		return Result.ok(new Object());
-	}
+    return Result.ok(new Object());
+  }
 
-	private Optional<PeerChannel> channelFor(NodeId nodeId) {
-		return Optional.ofNullable(this.activeChannels.get(nodeId))
-			.stream().map(s -> s.iterator().next())
-			.findAny();
-	}
+  private Optional<PeerChannel> channelFor(NodeId nodeId) {
+    return Optional.ofNullable(this.activeChannels.get(nodeId)).stream()
+        .map(s -> s.iterator().next())
+        .findAny();
+  }
 
-	private CompletableFuture<PeerChannel> connect(RadixNodeUri uri) {
-		synchronized (lock) {
-			return channelFor(uri.getNodeId())
-				.map(CompletableFuture::completedFuture) // either return an existing channel
-				.orElseGet(() -> this.pendingOutboundChannelsManager.get().connectTo(uri)); // or try to create a new one
-		}
-	}
+  private CompletableFuture<PeerChannel> connect(RadixNodeUri uri) {
+    synchronized (lock) {
+      return channelFor(uri.getNodeId())
+          .map(CompletableFuture::completedFuture) // either return an existing channel
+          .orElseGet(
+              () ->
+                  this.pendingOutboundChannelsManager
+                      .get()
+                      .connectTo(uri)); // or try to create a new one
+    }
+  }
 
-	public EventProcessor<PeerEvent> peerEventProcessor() {
-		return peerEvent -> {
-			if (peerEvent instanceof PeerConnected) {
-				this.handlePeerConnected((PeerConnected) peerEvent);
-			} else if (peerEvent instanceof PeerDisconnected) {
-				this.handlePeerDisconnected((PeerDisconnected) peerEvent);
-			} else if (peerEvent instanceof PeerLostLiveness) {
-				this.handlePeerLostLiveness((PeerLostLiveness) peerEvent);
-			} else if (peerEvent instanceof PeerBanned) {
-				this.handlePeerBanned((PeerBanned) peerEvent);
-			} else if (peerEvent instanceof PeerConnectionTimeout) {
-				this.handlePeerConnectionTimeout((PeerConnectionTimeout) peerEvent);
-			} else if (peerEvent instanceof PeerHandshakeFailed) {
-				this.handlePeerHandshakeFailed((PeerHandshakeFailed) peerEvent);
-			}
-		};
-	}
+  public EventProcessor<PeerEvent> peerEventProcessor() {
+    return peerEvent -> {
+      if (peerEvent instanceof PeerConnected) {
+        this.handlePeerConnected((PeerConnected) peerEvent);
+      } else if (peerEvent instanceof PeerDisconnected) {
+        this.handlePeerDisconnected((PeerDisconnected) peerEvent);
+      } else if (peerEvent instanceof PeerLostLiveness) {
+        this.handlePeerLostLiveness((PeerLostLiveness) peerEvent);
+      } else if (peerEvent instanceof PeerBanned) {
+        this.handlePeerBanned((PeerBanned) peerEvent);
+      } else if (peerEvent instanceof PeerConnectionTimeout) {
+        this.handlePeerConnectionTimeout((PeerConnectionTimeout) peerEvent);
+      } else if (peerEvent instanceof PeerHandshakeFailed) {
+        this.handlePeerHandshakeFailed((PeerHandshakeFailed) peerEvent);
+      }
+    };
+  }
 
-	private void handlePeerConnected(PeerConnected peerConnected) {
-		synchronized (lock) {
-			final var channel = peerConnected.getChannel();
-			final var channels = this.activeChannels.computeIfAbsent(
-				channel.getRemoteNodeId(),
-				unused -> Sets.newConcurrentHashSet()
-			);
-			channels.add(channel);
-			channel.getUri().ifPresent(this.addressBook.get()::addOrUpdatePeerWithSuccessfulConnection);
-			inboundMessagesFromChannels.onNext(channel.inboundMessages().toObservable());
+  private void handlePeerConnected(PeerConnected peerConnected) {
+    synchronized (lock) {
+      final var channel = peerConnected.getChannel();
+      final var channels =
+          this.activeChannels.computeIfAbsent(
+              channel.getRemoteNodeId(), unused -> Sets.newConcurrentHashSet());
+      channels.add(channel);
+      channel.getUri().ifPresent(this.addressBook.get()::addOrUpdatePeerWithSuccessfulConnection);
+      inboundMessagesFromChannels.onNext(channel.inboundMessages().toObservable());
 
-			if (channel.isInbound() && !this.shouldAcceptInboundPeer(channel.getRemoteNodeId())) {
-				channel.disconnect();
-			}
+      if (channel.isInbound() && !this.shouldAcceptInboundPeer(channel.getRemoteNodeId())) {
+        channel.disconnect();
+      }
 
-			if (channel.isOutbound() && this.getRemainingOutboundSlots() < 0) {
-				// we're over the limit, need to disconnect one of the peers
-				this.disconnectOutboundPeersOverLimit(peerConnected.getChannel().getRemoteNodeId());
-			}
+      if (channel.isOutbound() && this.getRemainingOutboundSlots() < 0) {
+        // we're over the limit, need to disconnect one of the peers
+        this.disconnectOutboundPeersOverLimit(peerConnected.getChannel().getRemoteNodeId());
+      }
 
-			updateChannelsCounters();
+      updateChannelsCounters();
 
-			// note: the order here is important, when pendingOutboundChannelsManager completes the channel Future,
-			// we need proxyCertificateManager to reflect the latest received proxy certs.
-			this.proxyCertificateManager.get().handlePeerConnected(peerConnected);
-			this.pendingOutboundChannelsManager.get().handlePeerConnected(peerConnected);
-		}
-	}
+      // note: the order here is important, when pendingOutboundChannelsManager completes the
+      // channel Future,
+      // we need proxyCertificateManager to reflect the latest received proxy certs.
+      this.proxyCertificateManager.get().handlePeerConnected(peerConnected);
+      this.pendingOutboundChannelsManager.get().handlePeerConnected(peerConnected);
+    }
+  }
 
-	private void disconnectOutboundPeersOverLimit(NodeId justConnectedPeer) {
-		// TODO(luk): first try to disconnect duplicated channels (inbound)
+  private void disconnectOutboundPeersOverLimit(NodeId justConnectedPeer) {
+    // TODO(luk): first try to disconnect duplicated channels (inbound)
 
-		if (this.getRemainingOutboundSlots() >= 0) {
-			return; // we're good
-		}
+    if (this.getRemainingOutboundSlots() >= 0) {
+      return; // we're good
+    }
 
-		final var peersOverLimit = -this.getRemainingOutboundSlots();
+    final var peersOverLimit = -this.getRemainingOutboundSlots();
 
-		final Comparator<PeerChannel> comparator =
-			(p1, p2) -> (int) (p1.sentMessagesRate() - p2.sentMessagesRate());
+    final Comparator<PeerChannel> comparator =
+        (p1, p2) -> (int) (p1.sentMessagesRate() - p2.sentMessagesRate());
 
-		this.activeChannels().stream()
-			// not disconnecting peer that has just connected
-			.filter(not(p -> p.getRemoteNodeId().equals(justConnectedPeer)))
-			.sorted(comparator)
-			.limit(peersOverLimit)
-			.forEach(PeerChannel::disconnect);
-	}
+    this.activeChannels().stream()
+        // not disconnecting peer that has just connected
+        .filter(not(p -> p.getRemoteNodeId().equals(justConnectedPeer)))
+        .sorted(comparator)
+        .limit(peersOverLimit)
+        .forEach(PeerChannel::disconnect);
+  }
 
-	private boolean shouldAcceptInboundPeer(NodeId nodeId) {
-		final var isBanned = this.addressBook.get().findById(nodeId)
-			.map(AddressBookEntry::isBanned)
-			.orElse(false);
-		if (isBanned) {
-			log.info(
-				"Dropping inbound connection from peer {}: peer is banned",
-				addressing.forNodes().of(nodeId.getPublicKey())
-			);
-		}
+  private boolean shouldAcceptInboundPeer(NodeId nodeId) {
+    final var isBanned =
+        this.addressBook.get().findById(nodeId).map(AddressBookEntry::isBanned).orElse(false);
+    if (isBanned) {
+      log.info(
+          "Dropping inbound connection from peer {}: peer is banned",
+          addressing.forNodes().of(nodeId.getPublicKey()));
+    }
 
-		final var limitReached = this.activeChannels.size() > config.maxInboundChannels();
-		if (limitReached) {
-			log.info(
-				"Dropping inbound connection from peer {}: no more inbound channels allowed",
-				addressing.forNodes().of(nodeId.getPublicKey())
-			);
-		}
+    final var limitReached = this.activeChannels.size() > config.maxInboundChannels();
+    if (limitReached) {
+      log.info(
+          "Dropping inbound connection from peer {}: no more inbound channels allowed",
+          addressing.forNodes().of(nodeId.getPublicKey()));
+    }
 
-		final var isWhitelisted = config.peerWhitelist().isEmpty()
-			|| config.peerWhitelist().contains(nodeId);
-		if (!isWhitelisted) {
-			log.info(
-				"Dropping inbound connection from peer {}: peer is not whitelisted",
-				addressing.forNodes().of(nodeId.getPublicKey())
-			);
-		}
+    final var isWhitelisted =
+        config.peerWhitelist().isEmpty() || config.peerWhitelist().contains(nodeId);
+    if (!isWhitelisted) {
+      log.info(
+          "Dropping inbound connection from peer {}: peer is not whitelisted",
+          addressing.forNodes().of(nodeId.getPublicKey()));
+    }
 
-		return !isBanned && !limitReached && isWhitelisted;
-	}
+    return !isBanned && !limitReached && isWhitelisted;
+  }
 
-	private void handlePeerDisconnected(PeerDisconnected peerDisconnected) {
-		synchronized (lock) {
-			final var channel = peerDisconnected.getChannel();
-			final var channelsForPubKey = this.activeChannels.get(channel.getRemoteNodeId());
-			if (channelsForPubKey != null) {
-				channelsForPubKey.remove(channel);
-				if (channelsForPubKey.isEmpty()) {
-					this.activeChannels.remove(channel.getRemoteNodeId());
-					updateChannelsCounters();
-				}
-			}
-			this.proxyCertificateManager.get().handlePeerDisconnected(peerDisconnected);
-		}
-	}
+  private void handlePeerDisconnected(PeerDisconnected peerDisconnected) {
+    synchronized (lock) {
+      final var channel = peerDisconnected.getChannel();
+      final var channelsForPubKey = this.activeChannels.get(channel.getRemoteNodeId());
+      if (channelsForPubKey != null) {
+        channelsForPubKey.remove(channel);
+        if (channelsForPubKey.isEmpty()) {
+          this.activeChannels.remove(channel.getRemoteNodeId());
+          updateChannelsCounters();
+        }
+      }
+      this.proxyCertificateManager.get().handlePeerDisconnected(peerDisconnected);
+    }
+  }
 
-	private void handlePeerLostLiveness(PeerLostLiveness peerLostLiveness) {
-		synchronized (lock) {
-			log.info(
-				"Peer {} lost liveness (ping timeout)",
-				addressing.forNodes().of(peerLostLiveness.getNodeId().getPublicKey())
-			);
-			channelFor(peerLostLiveness.getNodeId()).ifPresent(PeerChannel::disconnect);
-		}
-	}
+  private void handlePeerLostLiveness(PeerLostLiveness peerLostLiveness) {
+    synchronized (lock) {
+      log.info(
+          "Peer {} lost liveness (ping timeout)",
+          addressing.forNodes().of(peerLostLiveness.getNodeId().getPublicKey()));
+      channelFor(peerLostLiveness.getNodeId()).ifPresent(PeerChannel::disconnect);
+    }
+  }
 
-	public ImmutableSet<PeerChannel> activeChannels() {
-		return this.activeChannels.values().stream()
-			.flatMap(Collection::stream)
-			.collect(ImmutableSet.toImmutableSet());
-	}
+  public ImmutableSet<PeerChannel> activeChannels() {
+    return this.activeChannels.values().stream()
+        .flatMap(Collection::stream)
+        .collect(ImmutableSet.toImmutableSet());
+  }
 
-	public boolean isPeerConnected(NodeId nodeId) {
-		return this.activeChannels.containsKey(nodeId);
-	}
+  public boolean isPeerConnected(NodeId nodeId) {
+    return this.activeChannels.containsKey(nodeId);
+  }
 
-	public int getRemainingOutboundSlots() {
-		final var numChannels = this.activeChannels.values().stream()
-			.flatMap(Set::stream)
-			.filter(not(PeerChannel::isInbound))
-			.count();
+  public int getRemainingOutboundSlots() {
+    final var numChannels =
+        this.activeChannels.values().stream()
+            .flatMap(Set::stream)
+            .filter(not(PeerChannel::isInbound))
+            .count();
 
-		return (int) (config.maxOutboundChannels() - numChannels);
-	}
+    return (int) (config.maxOutboundChannels() - numChannels);
+  }
 
-	private void handlePeerBanned(PeerBanned event) {
-		this.activeChannels().stream()
-			.filter(p -> p.getRemoteNodeId().equals(event.getNodeId()))
-			.forEach(pc -> {
-				log.info(
-					"Closing channel to peer {} because peer has been banned",
-					addressing.forNodes().of(pc.getRemoteNodeId().getPublicKey())
-				);
-				pc.disconnect();
-			});
-	}
+  private void handlePeerBanned(PeerBanned event) {
+    this.activeChannels().stream()
+        .filter(p -> p.getRemoteNodeId().equals(event.getNodeId()))
+        .forEach(
+            pc -> {
+              log.info(
+                  "Closing channel to peer {} because peer has been banned",
+                  addressing.forNodes().of(pc.getRemoteNodeId().getPublicKey()));
+              pc.disconnect();
+            });
+  }
 
-	private void handlePeerConnectionTimeout(PeerConnectionTimeout peerConnectionTimeout) {
-		this.addressBook.get().addOrUpdatePeerWithFailedConnection(peerConnectionTimeout.getUri());
-	}
+  private void handlePeerConnectionTimeout(PeerConnectionTimeout peerConnectionTimeout) {
+    this.addressBook.get().addOrUpdatePeerWithFailedConnection(peerConnectionTimeout.getUri());
+  }
 
-	private void handlePeerHandshakeFailed(PeerHandshakeFailed peerHandshakeFailed) {
-		peerHandshakeFailed.getChannel().getUri().ifPresent(this.addressBook.get()::blacklist);
-		this.pendingOutboundChannelsManager.get().handlePeerHandshakeFailed(peerHandshakeFailed);
-	}
+  private void handlePeerHandshakeFailed(PeerHandshakeFailed peerHandshakeFailed) {
+    peerHandshakeFailed.getChannel().getUri().ifPresent(this.addressBook.get()::blacklist);
+    this.pendingOutboundChannelsManager.get().handlePeerHandshakeFailed(peerHandshakeFailed);
+  }
 
-	private void updateChannelsCounters() {
-		counters.set(CounterType.NETWORKING_P2P_ACTIVE_CHANNELS, activeChannels().size());
-		counters.set(CounterType.NETWORKING_P2P_ACTIVE_INBOUND_CHANNELS, activeChannels().stream().filter(PeerChannel::isInbound).count());
-		counters.set(CounterType.NETWORKING_P2P_ACTIVE_OUTBOUND_CHANNELS, activeChannels().stream().filter(PeerChannel::isOutbound).count());
-	}
+  private void updateChannelsCounters() {
+    counters.set(CounterType.NETWORKING_P2P_ACTIVE_CHANNELS, activeChannels().size());
+    counters.set(
+        CounterType.NETWORKING_P2P_ACTIVE_INBOUND_CHANNELS,
+        activeChannels().stream().filter(PeerChannel::isInbound).count());
+    counters.set(
+        CounterType.NETWORKING_P2P_ACTIVE_OUTBOUND_CHANNELS,
+        activeChannels().stream().filter(PeerChannel::isOutbound).count());
+  }
 }

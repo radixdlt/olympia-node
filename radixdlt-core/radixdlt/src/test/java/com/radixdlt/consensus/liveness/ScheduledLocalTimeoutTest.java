@@ -70,10 +70,10 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 public class ScheduledLocalTimeoutTest {
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(ScheduledLocalTimeout.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(ScheduledLocalTimeout.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 }

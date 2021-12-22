@@ -65,34 +65,32 @@
 package com.radixdlt.network.p2p.discovery.messages;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.network.messaging.Message;
-
+import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 
 @SerializerId2("p2p.discovery.get_peers")
 public final class GetPeersMessage extends Message {
-	@JsonCreator
-	public GetPeersMessage() {
-	}
+  @JsonCreator
+  public GetPeersMessage() {}
 
-	@Override
-	public String toString() {
-		return getClass().getSimpleName();
-	}
+  @Override
+  public String toString() {
+    return getClass().getSimpleName();
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof GetPeersMessage that)
-			   && Objects.equals(getTimestamp(), that.getTimestamp());
-	}
+    return (o instanceof GetPeersMessage that)
+        && Objects.equals(getTimestamp(), that.getTimestamp());
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hashCode(getTimestamp());
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(getTimestamp());
+  }
 }

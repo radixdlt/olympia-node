@@ -66,46 +66,45 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class TimeDTO {
-	private final long time;
+  private final long time;
 
-	private TimeDTO(long time) {
-		this.time = time;
-	}
+  private TimeDTO(long time) {
+    this.time = time;
+  }
 
-	@JsonCreator
-	public static TimeDTO create(@JsonProperty(value = "time", required = true) long time) {
-		return new TimeDTO(time);
-	}
+  @JsonCreator
+  public static TimeDTO create(@JsonProperty(value = "time", required = true) long time) {
+    return new TimeDTO(time);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof TimeDTO)) {
-			return false;
-		}
+    if (!(o instanceof TimeDTO)) {
+      return false;
+    }
 
-		var timeDTO = (TimeDTO) o;
-		return time == timeDTO.time;
-	}
+    var timeDTO = (TimeDTO) o;
+    return time == timeDTO.time;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(time);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(time);
+  }
 
-	@Override
-	public String toString() {
-		return "{time:" + time + '}';
-	}
+  @Override
+  public String toString() {
+    return "{time:" + time + '}';
+  }
 
-	public long getTime() {
-		return time;
-	}
+  public long getTime() {
+    return time;
+  }
 }

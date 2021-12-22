@@ -64,19 +64,15 @@
 
 package com.radixdlt.mempool;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
 import static java.lang.annotation.ElementType.*;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/**
- * Specifies how often a txn is re-relayed once its eligible
- * for relay
- */
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
+
+/** Specifies how often a txn is re-relayed once its eligible for relay */
 @Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
+@Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface MempoolRelayRepeatDelay {
-}
+public @interface MempoolRelayRepeatDelay {}

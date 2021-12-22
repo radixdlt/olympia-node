@@ -68,37 +68,37 @@ import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.engine.parser.exceptions.SubstateDeserializationException;
 import com.radixdlt.engine.parser.exceptions.TrailingBytesException;
 import com.radixdlt.serialization.DeserializeException;
-
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class VirtualSubstateDeserialization {
-	private final Map<Byte, SubstateDefinition<? extends Particle>> byteToDeserializer;
+  private final Map<Byte, SubstateDefinition<? extends Particle>> byteToDeserializer;
 
-	public VirtualSubstateDeserialization(Collection<SubstateDefinition<? extends Particle>> definitions) {
-		this.byteToDeserializer = definitions.stream()
-			.collect(Collectors.toMap(SubstateDefinition::getTypeByte, d -> d));
-	}
+  public VirtualSubstateDeserialization(
+      Collection<SubstateDefinition<? extends Particle>> definitions) {
+    this.byteToDeserializer =
+        definitions.stream().collect(Collectors.toMap(SubstateDefinition::getTypeByte, d -> d));
+  }
 
-	public Particle keyToSubstate(byte typeByte, ByteBuffer buf) throws DeserializeException {
-		var deserializer = byteToDeserializer.get(typeByte);
-		if (deserializer == null) {
-			throw new DeserializeException("Unknown byte type: " + typeByte);
-		}
-		Particle rawSubstate;
-		try {
-			var key = deserializer.getKeyDeserializer().deserialize(buf);
-			rawSubstate = deserializer.getVirtualMapper().map(key);
-		} catch (Exception e) {
-			throw new SubstateDeserializationException(deserializer.getSubstateClass(), e);
-		}
+  public Particle keyToSubstate(byte typeByte, ByteBuffer buf) throws DeserializeException {
+    var deserializer = byteToDeserializer.get(typeByte);
+    if (deserializer == null) {
+      throw new DeserializeException("Unknown byte type: " + typeByte);
+    }
+    Particle rawSubstate;
+    try {
+      var key = deserializer.getKeyDeserializer().deserialize(buf);
+      rawSubstate = deserializer.getVirtualMapper().map(key);
+    } catch (Exception e) {
+      throw new SubstateDeserializationException(deserializer.getSubstateClass(), e);
+    }
 
-		if (buf.hasRemaining()) {
-			throw new TrailingBytesException("Buffer has " + buf.remaining() + " bytes remaining.");
-		}
+    if (buf.hasRemaining()) {
+      throw new TrailingBytesException("Buffer has " + buf.remaining() + " bytes remaining.");
+    }
 
-		return rawSubstate;
-	}
+    return rawSubstate;
+  }
 }

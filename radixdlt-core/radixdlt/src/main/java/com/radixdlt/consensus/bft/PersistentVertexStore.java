@@ -65,9 +65,9 @@
 package com.radixdlt.consensus.bft;
 
 /**
- * Store which saves the Vertex Store State for recovery
- * TODO: Remove this interface, integrate with RadixEngine ((RPNV1-718)
+ * Store which saves the Vertex Store State for recovery TODO: Remove this interface, integrate with
+ * RadixEngine ((RPNV1-718)
  */
 public interface PersistentVertexStore {
-	void save(VerifiedVertexStoreState vertexStoreState);
+  void save(VerifiedVertexStoreState vertexStoreState);
 }

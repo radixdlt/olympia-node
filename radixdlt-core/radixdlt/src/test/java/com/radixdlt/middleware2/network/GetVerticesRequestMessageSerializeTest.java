@@ -67,12 +67,13 @@ package com.radixdlt.middleware2.network;
 import com.radixdlt.crypto.HashUtils;
 import org.radix.serialization.SerializeMessageObject;
 
-public class GetVerticesRequestMessageSerializeTest extends SerializeMessageObject<GetVerticesRequestMessage> {
-	public GetVerticesRequestMessageSerializeTest() {
-		super(GetVerticesRequestMessage.class, GetVerticesRequestMessageSerializeTest::get);
-	}
+public class GetVerticesRequestMessageSerializeTest
+    extends SerializeMessageObject<GetVerticesRequestMessage> {
+  public GetVerticesRequestMessageSerializeTest() {
+    super(GetVerticesRequestMessage.class, GetVerticesRequestMessageSerializeTest::get);
+  }
 
-	private static GetVerticesRequestMessage get() {
-		return new GetVerticesRequestMessage(HashUtils.random256(), 1);
-	}
+  private static GetVerticesRequestMessage get() {
+    return new GetVerticesRequestMessage(HashUtils.random256(), 1);
+  }
 }

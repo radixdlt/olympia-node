@@ -68,26 +68,23 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.TimeSupplier;
 import java.security.SecureRandom;
 import java.util.Random;
 import org.radix.time.Time;
 
-/**
- * Module which specifies implementations of system objects such as
- * random and time.
- */
+/** Module which specifies implementations of system objects such as random and time. */
 public class SystemModule extends AbstractModule {
-	@Override
-	public void configure() {
-		bind(Random.class).to(SecureRandom.class).in(Scopes.SINGLETON);
-	}
+  @Override
+  public void configure() {
+    bind(Random.class).to(SecureRandom.class).in(Scopes.SINGLETON);
+  }
 
-	@Provides
-	@Singleton
-	TimeSupplier time(RuntimeProperties properties) {
-		Time.start(properties);
-		return Time::currentTimestamp;
-	}
+  @Provides
+  @Singleton
+  TimeSupplier time(RuntimeProperties properties) {
+    Time.start(properties);
+    return Time::currentTimestamp;
+  }
 }

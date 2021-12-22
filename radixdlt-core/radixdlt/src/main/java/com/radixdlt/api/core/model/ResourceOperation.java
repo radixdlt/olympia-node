@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -66,33 +67,33 @@ package com.radixdlt.api.core.model;
 import com.radixdlt.utils.UInt256;
 
 public final class ResourceOperation {
-	private final Resource resource;
-	private final UInt256 amount;
-	private final boolean deposit;
+  private final Resource resource;
+  private final UInt256 amount;
+  private final boolean deposit;
 
-	private ResourceOperation(Resource resource, UInt256 amount, boolean deposit) {
-		this.resource = resource;
-		this.amount = amount;
-		this.deposit = deposit;
-	}
+  private ResourceOperation(Resource resource, UInt256 amount, boolean deposit) {
+    this.resource = resource;
+    this.amount = amount;
+    this.deposit = deposit;
+  }
 
-	public ResourceUnsignedAmount getAmount() {
-		return new ResourceUnsignedAmount(resource, amount);
-	}
+  public ResourceUnsignedAmount getAmount() {
+    return new ResourceUnsignedAmount(resource, amount);
+  }
 
-	public boolean isDeposit() {
-		return deposit;
-	}
+  public boolean isDeposit() {
+    return deposit;
+  }
 
-	public static ResourceOperation from(Resource resource, UInt256 amount, boolean deposit) {
-		return new ResourceOperation(resource, amount, deposit);
-	}
+  public static ResourceOperation from(Resource resource, UInt256 amount, boolean deposit) {
+    return new ResourceOperation(resource, amount, deposit);
+  }
 
-	public static ResourceOperation deposit(Resource resource, UInt256 amount) {
-		return new ResourceOperation(resource, amount, true);
-	}
+  public static ResourceOperation deposit(Resource resource, UInt256 amount) {
+    return new ResourceOperation(resource, amount, true);
+  }
 
-	public static ResourceOperation withdraw(Resource resource, UInt256 amount) {
-		return new ResourceOperation(resource, amount, false);
-	}
+  public static ResourceOperation withdraw(Resource resource, UInt256 amount) {
+    return new ResourceOperation(resource, amount, false);
+  }
 }

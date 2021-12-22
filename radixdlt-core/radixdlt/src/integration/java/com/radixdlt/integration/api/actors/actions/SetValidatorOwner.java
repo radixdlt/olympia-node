@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -71,31 +72,36 @@ import com.radixdlt.api.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.openapitools.model.Operation;
 import com.radixdlt.api.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.openapitools.model.PreparedValidatorOwner;
-
 import java.util.List;
 import java.util.function.Function;
 
 public final class SetValidatorOwner implements NodeTransactionAction {
-	private final EntityIdentifier owner;
+  private final EntityIdentifier owner;
 
-	public SetValidatorOwner(EntityIdentifier owner) {
-		this.owner = owner;
-	}
+  public SetValidatorOwner(EntityIdentifier owner) {
+    this.owner = owner;
+  }
 
-	@Override
-	public List<OperationGroup> toOperationGroups(
-		EngineConfiguration configuration,
-		Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction
-	) {
-		var operationGroup = new OperationGroup().addOperationsItem(
-			new Operation()
-				.type("Data")
-				.data(new Data().action(Data.ActionEnum.CREATE)
-					.dataObject(new PreparedValidatorOwner().owner(owner).type(PreparedValidatorOwner.class.getSimpleName()))
-				)
-				.entityIdentifier(identifierFunction.apply(new ConstructionDeriveRequestMetadataValidator().type("Validator")))
-		);
+  @Override
+  public List<OperationGroup> toOperationGroups(
+      EngineConfiguration configuration,
+      Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction) {
+    var operationGroup =
+        new OperationGroup()
+            .addOperationsItem(
+                new Operation()
+                    .type("Data")
+                    .data(
+                        new Data()
+                            .action(Data.ActionEnum.CREATE)
+                            .dataObject(
+                                new PreparedValidatorOwner()
+                                    .owner(owner)
+                                    .type(PreparedValidatorOwner.class.getSimpleName())))
+                    .entityIdentifier(
+                        identifierFunction.apply(
+                            new ConstructionDeriveRequestMetadataValidator().type("Validator"))));
 
-		return List.of(operationGroup);
-	}
+    return List.of(operationGroup);
+  }
 }

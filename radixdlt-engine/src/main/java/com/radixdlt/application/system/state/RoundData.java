@@ -65,49 +65,48 @@
 package com.radixdlt.application.system.state;
 
 import com.google.common.base.Objects;
-
 import java.time.Instant;
 
 public final class RoundData implements SystemData {
-	private final long view;
-	private final long timestamp;
+  private final long view;
+  private final long timestamp;
 
-	public RoundData(long view, long timestamp) {
-		this.view = view;
-		this.timestamp = timestamp;
-	}
+  public RoundData(long view, long timestamp) {
+    this.view = view;
+    this.timestamp = timestamp;
+  }
 
-	public long getView() {
-		return view;
-	}
+  public long getView() {
+    return view;
+  }
 
-	public long getTimestamp() {
-		return timestamp;
-	}
+  public long getTimestamp() {
+    return timestamp;
+  }
 
-	public Instant asInstant() {
-		return Instant.ofEpochMilli(timestamp);
-	}
+  public Instant asInstant() {
+    return Instant.ofEpochMilli(timestamp);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hashCode(view, timestamp);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(view, timestamp);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof RoundData)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof RoundData)) {
+      return false;
+    }
 
-		var other = (RoundData) o;
+    var other = (RoundData) o;
 
-		return this.view == other.view
-			&& this.timestamp == other.timestamp;
-	}
+    return this.view == other.view && this.timestamp == other.timestamp;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{view=%s timestamp=%s}", this.getClass().getSimpleName(), view, timestamp);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{view=%s timestamp=%s}", this.getClass().getSimpleName(), view, timestamp);
+  }
 }

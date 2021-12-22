@@ -65,7 +65,7 @@
 package com.radixdlt.network.p2p;
 
 public final class PeerConnectionException extends Exception {
-	public PeerConnectionException(String msg) {
-		super(msg);
-	}
+  public PeerConnectionException(String msg) {
+    super(msg);
+  }
 }

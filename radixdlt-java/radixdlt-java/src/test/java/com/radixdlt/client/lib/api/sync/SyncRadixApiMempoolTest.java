@@ -61,15 +61,8 @@
  * Work. You assume all risks associated with Your use of the Work and the exercise of
  * permissions under this License.
  */
+
 package com.radixdlt.client.lib.api.sync;
-
-import org.junit.Test;
-
-import com.radixdlt.utils.functional.Result;
-
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
-import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -77,48 +70,68 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.utils.functional.Result;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
+import java.util.Optional;
+import org.junit.Test;
+
 public class SyncRadixApiMempoolTest {
-	private static final String BASE_URL = "http://localhost/";
+  private static final String BASE_URL = "http://localhost/";
 
-	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
-	private static final String CONFIGURATION = "{\"result\":{\"throttleMs\":5,\"maxSize\":10000},\"id\":\"2\","
-		+ "\"jsonrpc\":\"2.0\"}";
-	private static final String DATA = "{\"result\":{\"addSuccess\":1273473,\"maxcount\":0,\"relayerSentCount\":0,"
-		+ "\"proposedTransaction\":0,\"count\":0,\"errors\":{\"other\":0,\"hook\":3,\"conflict\":0}},\"id\":\"2\","
-		+ "\"jsonrpc\":\"2.0\"}";
+  private static final String NETWORK_ID =
+      "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
+  private static final String CONFIGURATION =
+      "{\"result\":{\"throttleMs\":5,\"maxSize\":10000},\"id\":\"2\"," + "\"jsonrpc\":\"2.0\"}";
+  private static final String DATA =
+      "{\"result\":{\"addSuccess\":1273473,\"maxcount\":0,\"relayerSentCount\":0,"
+          + "\"proposedTransaction\":0,\"count\":0,\"errors\":{\"other\":0,\"hook\":3,\"conflict\":0}},\"id\":\"2\","
+          + "\"jsonrpc\":\"2.0\"}";
 
-	private final HttpClient client = mock(HttpClient.class);
+  private final HttpClient client = mock(HttpClient.class);
 
-	@Test
-	public void testConfiguration() throws Exception {
-		prepareClient(CONFIGURATION)
-			.map(RadixApi::withTrace)
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.mempool().configuration()
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(configuration -> assertEquals(10000L, configuration.getMaxSize()))
-				.onSuccess(configuration -> assertEquals(5L, configuration.getThrottleMs())));
-	}
+  @Test
+  public void testConfiguration() throws Exception {
+    prepareClient(CONFIGURATION)
+        .map(RadixApi::withTrace)
+        .onFailure(failure -> fail(failure.toString()))
+        .onSuccess(
+            client ->
+                client
+                    .mempool()
+                    .configuration()
+                    .onFailure(failure -> fail(failure.toString()))
+                    .onSuccess(configuration -> assertEquals(10000L, configuration.getMaxSize()))
+                    .onSuccess(configuration -> assertEquals(5L, configuration.getThrottleMs())));
+  }
 
-	@Test
-	public void testData() throws Exception {
-		prepareClient(DATA)
-			.map(RadixApi::withTrace)
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(
-				client -> client.mempool().data()
-					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(data -> assertEquals(1273473L, data.getAddSuccess()))
-					.onSuccess(data -> assertEquals(3L, data.getErrors().getHook())));
-	}
+  @Test
+  public void testData() throws Exception {
+    prepareClient(DATA)
+        .map(RadixApi::withTrace)
+        .onFailure(failure -> fail(failure.toString()))
+        .onSuccess(
+            client ->
+                client
+                    .mempool()
+                    .data()
+                    .onFailure(failure -> fail(failure.toString()))
+                    .onSuccess(data -> assertEquals(1273473L, data.getAddSuccess()))
+                    .onSuccess(data -> assertEquals(3L, data.getErrors().getHook())));
+  }
 
-	private Result<RadixApi> prepareClient(String responseBody) throws Exception {
-		@SuppressWarnings("unchecked")
-		var response = (HttpResponse<String>) mock(HttpResponse.class);
+  private Result<RadixApi> prepareClient(String responseBody) throws Exception {
+    @SuppressWarnings("unchecked")
+    var response = (HttpResponse<String>) mock(HttpResponse.class);
 
-		when(response.body()).thenReturn(NETWORK_ID, responseBody);
-		when(client.<String>send(any(), any())).thenReturn(response);
+    when(response.body()).thenReturn(NETWORK_ID, responseBody);
+    when(client.<String>send(any(), any())).thenReturn(response);
 
-		return SyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client, Optional.empty());
-	}
+    return SyncRadixApi.connect(
+        BASE_URL,
+        RadixApi.DEFAULT_PRIMARY_PORT,
+        RadixApi.DEFAULT_SECONDARY_PORT,
+        client,
+        Optional.empty());
+  }
 }

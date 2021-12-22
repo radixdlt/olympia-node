@@ -70,19 +70,19 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.networks.Addressing;
-
 import java.io.IOException;
 
 public class AccountAddressSerializer extends StdSerializer<AccountAddress> {
-	private final AccountAddressing addressing;
+  private final AccountAddressing addressing;
 
-	public AccountAddressSerializer(Addressing networkAddressing) {
-		super(AccountAddress.class);
-		addressing = networkAddressing.forAccounts();
-	}
+  public AccountAddressSerializer(Addressing networkAddressing) {
+    super(AccountAddress.class);
+    addressing = networkAddressing.forAccounts();
+  }
 
-	@Override
-	public void serialize(AccountAddress value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-		gen.writeString(addressing.of(value.getAddress()));
-	}
+  @Override
+  public void serialize(AccountAddress value, JsonGenerator gen, SerializerProvider provider)
+      throws IOException {
+    gen.writeString(addressing.of(value.getAddress()));
+  }
 }

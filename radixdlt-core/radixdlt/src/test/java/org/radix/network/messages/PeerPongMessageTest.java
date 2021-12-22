@@ -72,12 +72,12 @@ import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
 public class PeerPongMessageTest {
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(PeerPongMessage.class)
-			.suppress(Warning.NONFINAL_FIELDS)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.withRedefinedSuperclass()
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(PeerPongMessage.class)
+        .suppress(Warning.NONFINAL_FIELDS)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .withRedefinedSuperclass()
+        .verify();
+  }
 }

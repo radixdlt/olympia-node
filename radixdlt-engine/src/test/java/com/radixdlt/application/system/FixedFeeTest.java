@@ -64,6 +64,9 @@
 
 package com.radixdlt.application.system;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
@@ -78,9 +81,9 @@ import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
+import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.atom.actions.FeeReserveTake;
 import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -95,174 +98,170 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.Before;
+import org.junit.Test;
 
 public class FixedFeeTest {
-	private RadixEngine<Void> engine;
-	private EngineStore<Void> store;
-	private final ECKeyPair key = ECKeyPair.generateNew();
-	private final REAddr accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
+  private RadixEngine<Void> engine;
+  private EngineStore<Void> store;
+  private final ECKeyPair key = ECKeyPair.generateNew();
+  private final REAddr accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 
-	@Before
-	public void setup() throws Exception {
-		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")));
-		cmAtomOS.load(new SystemConstraintScrypt());
-		var cm = new ConstraintMachine(
-			cmAtomOS.getProcedures(),
-			cmAtomOS.buildSubstateDeserialization(),
-			cmAtomOS.buildVirtualSubstateDeserialization(),
-			FixedFeeMeter.create(UInt256.FIVE)
-		);
-		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
-		var serialization = cmAtomOS.buildSubstateSerialization();
-		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(
-			parser,
-			serialization,
-			REConstructor.newBuilder()
-				.put(CreateSystem.class, new CreateSystemConstructorV2())
-				.put(TransferToken.class, new TransferTokensConstructorV2())
-				.put(CreateMutableToken.class, new CreateMutableTokenConstructor(SystemConstraintScrypt.MAX_SYMBOL_LENGTH))
-				.put(MintToken.class, new MintTokenConstructor())
-				.put(FeeReservePut.class, new FeeReservePutConstructor())
-				.put(FeeReserveTake.class, new FeeReserveTakeConstructor())
-				.build(),
-			cm,
-			store
-		);
-		var txn = this.engine.construct(
-			TxnConstructionRequest.create()
-				.action(new CreateSystem(0))
-				.action(new CreateMutableToken(REAddr.ofNativeToken(), "xrd", "xrd", "", "", "", null))
-				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, UInt256.TEN))
-		).buildWithoutSignature();
-		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
-	}
+  @Before
+  public void setup() throws Exception {
+    var cmAtomOS = new CMAtomOS();
+    cmAtomOS.load(new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")));
+    cmAtomOS.load(new SystemConstraintScrypt());
+    var cm =
+        new ConstraintMachine(
+            cmAtomOS.getProcedures(),
+            cmAtomOS.buildSubstateDeserialization(),
+            cmAtomOS.buildVirtualSubstateDeserialization(),
+            FixedFeeMeter.create(UInt256.FIVE));
+    var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+    var serialization = cmAtomOS.buildSubstateSerialization();
+    this.store = new InMemoryEngineStore<>();
+    this.engine =
+        new RadixEngine<>(
+            parser,
+            serialization,
+            REConstructor.newBuilder()
+                .put(CreateSystem.class, new CreateSystemConstructorV2())
+                .put(TransferToken.class, new TransferTokensConstructorV2())
+                .put(
+                    CreateMutableToken.class,
+                    new CreateMutableTokenConstructor(SystemConstraintScrypt.MAX_SYMBOL_LENGTH))
+                .put(MintToken.class, new MintTokenConstructor())
+                .put(FeeReservePut.class, new FeeReservePutConstructor())
+                .put(FeeReserveTake.class, new FeeReserveTakeConstructor())
+                .build(),
+            cm,
+            store);
+    var txn =
+        this.engine
+            .construct(
+                TxnConstructionRequest.create()
+                    .action(new CreateSystem(0))
+                    .action(
+                        new CreateMutableToken(
+                            REAddr.ofNativeToken(), "xrd", "xrd", "", "", "", null))
+                    .action(new MintToken(REAddr.ofNativeToken(), accountAddr, UInt256.TEN)))
+            .buildWithoutSignature();
+    this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
+  }
 
-	@Test
-	public void paying_for_fees_should_work() throws Exception {
-		// Act
-		var nextKey = ECKeyPair.generateNew();
-		var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());
-		var transfer = this.engine.construct(
-			TxnConstructionRequest.create()
-				.action(new FeeReservePut(accountAddr, UInt256.FIVE))
-				.action(new TransferToken(REAddr.ofNativeToken(), accountAddr, to, UInt256.FIVE)))
-			.signAndBuild(key::sign);
+  @Test
+  public void paying_for_fees_should_work() throws Exception {
+    // Act
+    var nextKey = ECKeyPair.generateNew();
+    var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());
+    var transfer =
+        this.engine
+            .construct(
+                TxnConstructionRequest.create()
+                    .action(new FeeReservePut(accountAddr, UInt256.FIVE))
+                    .action(
+                        new TransferToken(REAddr.ofNativeToken(), accountAddr, to, UInt256.FIVE)))
+            .signAndBuild(key::sign);
 
-		// Act
-		var result = this.engine.execute(List.of(transfer));
-		var accounting0 = REResourceAccounting.compute(
-			result.getProcessedTxn().getGroupedStateUpdates().get(0).stream()
-		);
-		assertThat(accounting0.bucketAccounting())
-			.hasSize(1)
-			.containsEntry(
-				AccountBucket.from(REAddr.ofNativeToken(), accountAddr),
-				BigInteger.valueOf(-5)
-			);
-		var accounting1 = REResourceAccounting.compute(
-			result.getProcessedTxn().getGroupedStateUpdates().get(1).stream()
-		);
-		assertThat(accounting1.bucketAccounting())
-			.hasSize(2)
-			.containsEntry(
-				AccountBucket.from(REAddr.ofNativeToken(), accountAddr),
-				BigInteger.valueOf(-5)
-			)
-			.containsEntry(
-				AccountBucket.from(REAddr.ofNativeToken(), to),
-				BigInteger.valueOf(5)
-			);
-	}
+    // Act
+    var result = this.engine.execute(List.of(transfer));
+    var accounting0 =
+        REResourceAccounting.compute(
+            result.getProcessedTxn().getGroupedStateUpdates().get(0).stream());
+    assertThat(accounting0.bucketAccounting())
+        .hasSize(1)
+        .containsEntry(
+            AccountBucket.from(REAddr.ofNativeToken(), accountAddr), BigInteger.valueOf(-5));
+    var accounting1 =
+        REResourceAccounting.compute(
+            result.getProcessedTxn().getGroupedStateUpdates().get(1).stream());
+    assertThat(accounting1.bucketAccounting())
+        .hasSize(2)
+        .containsEntry(
+            AccountBucket.from(REAddr.ofNativeToken(), accountAddr), BigInteger.valueOf(-5))
+        .containsEntry(AccountBucket.from(REAddr.ofNativeToken(), to), BigInteger.valueOf(5));
+  }
 
+  @Test
+  public void paying_too_little_fees_should_fail() throws Exception {
+    // Arrange
+    var nextKey = ECKeyPair.generateNew();
+    var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());
+    var transfer =
+        this.engine
+            .construct(
+                TxnConstructionRequest.create()
+                    .action(new FeeReservePut(accountAddr, UInt256.THREE))
+                    .action(
+                        new TransferToken(REAddr.ofNativeToken(), accountAddr, to, UInt256.FIVE)))
+            .signAndBuild(key::sign);
 
-	@Test
-	public void paying_too_little_fees_should_fail() throws Exception {
-		// Arrange
-		var nextKey = ECKeyPair.generateNew();
-		var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());
-		var transfer = this.engine.construct(
-			TxnConstructionRequest.create()
-				.action(new FeeReservePut(accountAddr, UInt256.THREE))
-				.action(new TransferToken(REAddr.ofNativeToken(), accountAddr, to, UInt256.FIVE)))
-			.signAndBuild(key::sign);
+    // Act
+    assertThatThrownBy(() -> this.engine.execute(List.of(transfer)))
+        .hasRootCauseInstanceOf(DefaultedSystemLoanException.class);
+  }
 
-		// Act
-		assertThatThrownBy(() -> this.engine.execute(List.of(transfer)))
-			.hasRootCauseInstanceOf(DefaultedSystemLoanException.class);
-	}
+  @Test
+  public void paying_too_much_in_fees_should_fail() throws Exception {
+    // Arrange
+    var nextKey = ECKeyPair.generateNew();
+    var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());
+    var transfer =
+        this.engine
+            .construct(
+                TxnConstructionRequest.create()
+                    .action(new FeeReservePut(accountAddr, UInt256.EIGHT))
+                    .action(
+                        new TransferToken(REAddr.ofNativeToken(), accountAddr, to, UInt256.TWO)))
+            .signAndBuild(key::sign);
 
-	@Test
-	public void paying_too_much_in_fees_should_fail() throws Exception {
-		// Arrange
-		var nextKey = ECKeyPair.generateNew();
-		var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());
-		var transfer = this.engine.construct(
-			TxnConstructionRequest.create()
-				.action(new FeeReservePut(accountAddr, UInt256.EIGHT))
-				.action(new TransferToken(REAddr.ofNativeToken(), accountAddr, to, UInt256.TWO))
-		).signAndBuild(key::sign);
+    // Act
+    assertThatThrownBy(() -> this.engine.execute(List.of(transfer)))
+        .hasRootCauseInstanceOf(ExecutionContextDestroyException.class);
+  }
 
-		// Act
-		assertThatThrownBy(() -> this.engine.execute(List.of(transfer)))
-			.hasRootCauseInstanceOf(ExecutionContextDestroyException.class);
-	}
+  @Test
+  public void put_then_take_reserve_should_work() throws Exception {
+    // Arrange
+    var nextKey = ECKeyPair.generateNew();
+    var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());
+    var transfer =
+        this.engine
+            .construct(
+                TxnConstructionRequest.create()
+                    .action(new FeeReservePut(accountAddr, UInt256.EIGHT))
+                    .action(new TransferToken(REAddr.ofNativeToken(), accountAddr, to, UInt256.TWO))
+                    .action(new FeeReserveTake(accountAddr, UInt256.THREE)))
+            .signAndBuild(key::sign);
 
-	@Test
-	public void put_then_take_reserve_should_work() throws Exception {
-		// Arrange
-		var nextKey = ECKeyPair.generateNew();
-		var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());
-		var transfer = this.engine.construct(
-			TxnConstructionRequest.create()
-				.action(new FeeReservePut(accountAddr, UInt256.EIGHT))
-				.action(new TransferToken(REAddr.ofNativeToken(), accountAddr, to, UInt256.TWO))
-				.action(new FeeReserveTake(accountAddr, UInt256.THREE)))
-			.signAndBuild(key::sign);
-
-		// Act
-		var result = this.engine.execute(List.of(transfer));
-		var accounting0 = REResourceAccounting.compute(
-			result.getProcessedTxn().getGroupedStateUpdates().get(0).stream()
-		);
-		assertThat(accounting0.bucketAccounting())
-			.hasSize(1)
-			.containsEntry(
-				AccountBucket.from(REAddr.ofNativeToken(), accountAddr),
-				BigInteger.valueOf(-8)
-			);
-		var accounting1 = REResourceAccounting.compute(
-			result.getProcessedTxn().getGroupedStateUpdates().get(1).stream()
-		);
-		assertThat(accounting1.bucketAccounting())
-			.hasSize(2)
-			.containsEntry(
-				AccountBucket.from(REAddr.ofNativeToken(), accountAddr),
-				BigInteger.valueOf(-2)
-			)
-			.containsEntry(
-				AccountBucket.from(REAddr.ofNativeToken(), to),
-				BigInteger.valueOf(2)
-			);
-		var accounting2 = REResourceAccounting.compute(
-			result.getProcessedTxn().getGroupedStateUpdates().get(2).stream()
-		);
-		assertThat(accounting2.bucketAccounting())
-			.hasSize(1)
-			.containsEntry(
-				AccountBucket.from(REAddr.ofNativeToken(), accountAddr),
-				BigInteger.valueOf(3)
-			);
-	}
+    // Act
+    var result = this.engine.execute(List.of(transfer));
+    var accounting0 =
+        REResourceAccounting.compute(
+            result.getProcessedTxn().getGroupedStateUpdates().get(0).stream());
+    assertThat(accounting0.bucketAccounting())
+        .hasSize(1)
+        .containsEntry(
+            AccountBucket.from(REAddr.ofNativeToken(), accountAddr), BigInteger.valueOf(-8));
+    var accounting1 =
+        REResourceAccounting.compute(
+            result.getProcessedTxn().getGroupedStateUpdates().get(1).stream());
+    assertThat(accounting1.bucketAccounting())
+        .hasSize(2)
+        .containsEntry(
+            AccountBucket.from(REAddr.ofNativeToken(), accountAddr), BigInteger.valueOf(-2))
+        .containsEntry(AccountBucket.from(REAddr.ofNativeToken(), to), BigInteger.valueOf(2));
+    var accounting2 =
+        REResourceAccounting.compute(
+            result.getProcessedTxn().getGroupedStateUpdates().get(2).stream());
+    assertThat(accounting2.bucketAccounting())
+        .hasSize(1)
+        .containsEntry(
+            AccountBucket.from(REAddr.ofNativeToken(), accountAddr), BigInteger.valueOf(3));
+  }
 }

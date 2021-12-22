@@ -64,52 +64,53 @@
 
 package com.radixdlt.network.messaging;
 
-import org.junit.Test;
-
 import static org.junit.Assert.*;
+
+import org.junit.Test;
 
 public class SimplePriorityBlockingQueueTest {
 
-	static final class TestObject implements Comparable<TestObject> {
-		final int i;
+  static final class TestObject implements Comparable<TestObject> {
+    final int i;
 
-		TestObject(int i) {
-			this.i = i;
-		}
+    TestObject(int i) {
+      this.i = i;
+    }
 
-		@Override
-		public int compareTo(TestObject o) {
-			// All the same prio class
-			return 0;
-		}
-	}
+    @Override
+    public int compareTo(TestObject o) {
+      // All the same prio class
+      return 0;
+    }
+  }
 
-	@Test
-	public void testOrdering() throws InterruptedException {
-		// For this test, we need to ensure that we are not interrupted
-		Thread.interrupted();
+  @Test
+  public void testOrdering() throws InterruptedException {
+    // For this test, we need to ensure that we are not interrupted
+    Thread.interrupted();
 
-		SimplePriorityBlockingQueue<TestObject> test = new SimplePriorityBlockingQueue<>(100, TestObject::compareTo);
+    SimplePriorityBlockingQueue<TestObject> test =
+        new SimplePriorityBlockingQueue<>(100, TestObject::compareTo);
 
-		final int testObjects = 1000;
-		for (int i = 0; i < testObjects; ++i) {
-			assertEquals(i, test.size());
-			assertTrue(test.offer(new TestObject(i)));
-		}
+    final int testObjects = 1000;
+    for (int i = 0; i < testObjects; ++i) {
+      assertEquals(i, test.size());
+      assertTrue(test.offer(new TestObject(i)));
+    }
 
-		for (int i = 0; i < testObjects; ++i) {
-			assertEquals(i, test.take().i);
-		}
-	}
+    for (int i = 0; i < testObjects; ++i) {
+      assertEquals(i, test.take().i);
+    }
+  }
 
-	@Test
-	public void sensibleToString() {
-		SimplePriorityBlockingQueue<Long> test = new SimplePriorityBlockingQueue<>(100, Long::compare);
+  @Test
+  public void sensibleToString() {
+    SimplePriorityBlockingQueue<Long> test = new SimplePriorityBlockingQueue<>(100, Long::compare);
 
-		assertTrue(test.offer(4321L));
-		assertTrue(test.offer(1234L));
+    assertTrue(test.offer(4321L));
+    assertTrue(test.offer(1234L));
 
-		String s = test.toString();
-		assertEquals("[1234, 4321]", s);
-	}
+    String s = test.toString();
+    assertEquals("[1234, 4321]", s);
+  }
 }

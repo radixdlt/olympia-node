@@ -68,8 +68,8 @@ import com.google.inject.Inject;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.proxy.ProxyCertificateManager;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.NetworkId;
@@ -78,69 +78,68 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-
 import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Optional;
 
 public final class PeerServerBootstrap {
-	private static final int BACKLOG_SIZE = 100;
+  private static final int BACKLOG_SIZE = 100;
 
-	private final P2PConfig config;
-	private final Addressing addressing;
-	private final int networkId;
-	private final SystemCounters counters;
-	private final Serialization serialization;
-	private final SecureRandom secureRandom;
-	private final ECKeyOps ecKeyOps;
-	private final EventDispatcher<PeerEvent> peerEventDispatcher;
-	private final ProxyCertificateManager proxyCertificateManager;
+  private final P2PConfig config;
+  private final Addressing addressing;
+  private final int networkId;
+  private final SystemCounters counters;
+  private final Serialization serialization;
+  private final SecureRandom secureRandom;
+  private final ECKeyOps ecKeyOps;
+  private final EventDispatcher<PeerEvent> peerEventDispatcher;
+  private final ProxyCertificateManager proxyCertificateManager;
 
-	@Inject
-	public PeerServerBootstrap(
-		P2PConfig config,
-		Addressing addressing,
-		@NetworkId int networkId,
-		SystemCounters counters,
-		Serialization serialization,
-		SecureRandom secureRandom,
-		ECKeyOps ecKeyOps,
-		EventDispatcher<PeerEvent> peerEventDispatcher,
-		ProxyCertificateManager proxyCertificateManager
-	) {
-		this.config = Objects.requireNonNull(config);
-		this.addressing = Objects.requireNonNull(addressing);
-		this.networkId = networkId;
-		this.counters = Objects.requireNonNull(counters);
-		this.serialization = Objects.requireNonNull(serialization);
-		this.secureRandom = Objects.requireNonNull(secureRandom);
-		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
-		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
-		this.proxyCertificateManager = Objects.requireNonNull(proxyCertificateManager);
-	}
+  @Inject
+  public PeerServerBootstrap(
+      P2PConfig config,
+      Addressing addressing,
+      @NetworkId int networkId,
+      SystemCounters counters,
+      Serialization serialization,
+      SecureRandom secureRandom,
+      ECKeyOps ecKeyOps,
+      EventDispatcher<PeerEvent> peerEventDispatcher,
+      ProxyCertificateManager proxyCertificateManager) {
+    this.config = Objects.requireNonNull(config);
+    this.addressing = Objects.requireNonNull(addressing);
+    this.networkId = networkId;
+    this.counters = Objects.requireNonNull(counters);
+    this.serialization = Objects.requireNonNull(serialization);
+    this.secureRandom = Objects.requireNonNull(secureRandom);
+    this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
+    this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
+    this.proxyCertificateManager = Objects.requireNonNull(proxyCertificateManager);
+  }
 
-	public void start() throws InterruptedException {
-		final var serverGroup = new NioEventLoopGroup(1);
-		final var workerGroup = new NioEventLoopGroup();
+  public void start() throws InterruptedException {
+    final var serverGroup = new NioEventLoopGroup(1);
+    final var workerGroup = new NioEventLoopGroup();
 
-		final var serverBootstrap = new ServerBootstrap();
-		serverBootstrap.group(serverGroup, workerGroup)
-			.channel(NioServerSocketChannel.class)
-			.option(ChannelOption.SO_BACKLOG, BACKLOG_SIZE)
-			.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.peerConnectionTimeout())
-			.childHandler(new PeerChannelInitializer(
-				config,
-				addressing,
-				networkId,
-				proxyCertificateManager.getReceivedProxyCertificates(),
-				counters,
-				serialization,
-				secureRandom,
-				ecKeyOps,
-				peerEventDispatcher,
-				Optional.empty()
-			));
+    final var serverBootstrap = new ServerBootstrap();
+    serverBootstrap
+        .group(serverGroup, workerGroup)
+        .channel(NioServerSocketChannel.class)
+        .option(ChannelOption.SO_BACKLOG, BACKLOG_SIZE)
+        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.peerConnectionTimeout())
+        .childHandler(
+            new PeerChannelInitializer(
+                config,
+                addressing,
+                networkId,
+                proxyCertificateManager.getReceivedProxyCertificates(),
+                counters,
+                serialization,
+                secureRandom,
+                ecKeyOps,
+                peerEventDispatcher,
+                Optional.empty()));
 
-		serverBootstrap.bind(config.listenAddress(), config.listenPort()).sync();
-	}
+    serverBootstrap.bind(config.listenAddress(), config.listenPort()).sync();
+  }
 }

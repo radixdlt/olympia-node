@@ -66,59 +66,52 @@ package com.radixdlt.ledger;
 
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
-
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Commands along with proof that they have been committed on ledger.
- */
+/** Commands along with proof that they have been committed on ledger. */
 public final class VerifiedTxnsAndProof {
-	private final List<Txn> txns;
-	private final LedgerProof proof;
+  private final List<Txn> txns;
+  private final LedgerProof proof;
 
-	private VerifiedTxnsAndProof(
-		List<Txn> txns,
-		LedgerProof proof
-	) {
-		this.txns = Objects.requireNonNull(txns);
-		this.proof = Objects.requireNonNull(proof);
-	}
+  private VerifiedTxnsAndProof(List<Txn> txns, LedgerProof proof) {
+    this.txns = Objects.requireNonNull(txns);
+    this.proof = Objects.requireNonNull(proof);
+  }
 
-	public static VerifiedTxnsAndProof create(List<Txn> txns, LedgerProof proof) {
-		return new VerifiedTxnsAndProof(txns, proof);
-	}
+  public static VerifiedTxnsAndProof create(List<Txn> txns, LedgerProof proof) {
+    return new VerifiedTxnsAndProof(txns, proof);
+  }
 
-	public List<Txn> getTxns() {
-		return txns;
-	}
+  public List<Txn> getTxns() {
+    return txns;
+  }
 
-	public boolean contains(Txn txn) {
-		return txns.contains(txn);
-	}
+  public boolean contains(Txn txn) {
+    return txns.contains(txn);
+  }
 
-	public LedgerProof getProof() {
-		return proof;
-	}
+  public LedgerProof getProof() {
+    return proof;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(txns, proof);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(txns, proof);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof VerifiedTxnsAndProof)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof VerifiedTxnsAndProof)) {
+      return false;
+    }
 
-		VerifiedTxnsAndProof other = (VerifiedTxnsAndProof) o;
-		return Objects.equals(this.txns, other.txns)
-			&& Objects.equals(this.proof, other.proof);
-	}
+    VerifiedTxnsAndProof other = (VerifiedTxnsAndProof) o;
+    return Objects.equals(this.txns, other.txns) && Objects.equals(this.proof, other.proof);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{txns=%s proof=%s}", this.getClass().getSimpleName(), txns, proof);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{txns=%s proof=%s}", this.getClass().getSimpleName(), txns, proof);
+  }
 }

@@ -70,7 +70,6 @@ import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
-
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
@@ -78,69 +77,70 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class REResourceAccounting {
-	private final Map<Bucket, BigInteger> bucketAccounting;
-	private final Map<ECPublicKey, BigInteger> stakeOwnershipAccounting;
-	private final Map<REAddr, BigInteger> resourceAccounting;
+  private final Map<Bucket, BigInteger> bucketAccounting;
+  private final Map<ECPublicKey, BigInteger> stakeOwnershipAccounting;
+  private final Map<REAddr, BigInteger> resourceAccounting;
 
-	private REResourceAccounting(
-		Map<Bucket, BigInteger> bucketAccounting,
-		Map<ECPublicKey, BigInteger> stakeOwnershipAccounting,
-		Map<REAddr, BigInteger> resourceAccounting
-	) {
-		this.bucketAccounting = bucketAccounting;
-		this.stakeOwnershipAccounting = stakeOwnershipAccounting;
-		this.resourceAccounting = resourceAccounting;
-	}
+  private REResourceAccounting(
+      Map<Bucket, BigInteger> bucketAccounting,
+      Map<ECPublicKey, BigInteger> stakeOwnershipAccounting,
+      Map<REAddr, BigInteger> resourceAccounting) {
+    this.bucketAccounting = bucketAccounting;
+    this.stakeOwnershipAccounting = stakeOwnershipAccounting;
+    this.resourceAccounting = resourceAccounting;
+  }
 
-	public Map<Bucket, BigInteger> bucketAccounting() {
-		return bucketAccounting;
-	}
+  public Map<Bucket, BigInteger> bucketAccounting() {
+    return bucketAccounting;
+  }
 
-	public Map<ECPublicKey, BigInteger> stakeOwnershipAccounting() {
-		return stakeOwnershipAccounting;
-	}
+  public Map<ECPublicKey, BigInteger> stakeOwnershipAccounting() {
+    return stakeOwnershipAccounting;
+  }
 
-	public Map<REAddr, BigInteger> resourceAccounting() {
-		return resourceAccounting;
-	}
+  public Map<REAddr, BigInteger> resourceAccounting() {
+    return resourceAccounting;
+  }
 
-	private static BigInteger sumIfZeroThenNull(BigInteger a, BigInteger b) {
-		var sum = a.add(b);
-		return sum.equals(BigInteger.ZERO) ? null : sum;
-	}
+  private static BigInteger sumIfZeroThenNull(BigInteger a, BigInteger b) {
+    var sum = a.add(b);
+    return sum.equals(BigInteger.ZERO) ? null : sum;
+  }
 
-	public static REResourceAccounting compute(Stream<REStateUpdate> updates) {
-		Map<Bucket, BigInteger> bucketAccounting = new HashMap<>();
-		updates.forEach(update -> {
-			var substate = update.getParsed();
-			if (substate instanceof ResourceInBucket resourceInBucket) {
-				bucketAccounting.merge(
-					resourceInBucket.bucket(),
-					new BigInteger(update.isBootUp() ? 1 : -1, resourceInBucket.getAmount().toByteArray(), 0, UInt256.BYTES),
-					REResourceAccounting::sumIfZeroThenNull
-				);
-			}
-		});
+  public static REResourceAccounting compute(Stream<REStateUpdate> updates) {
+    Map<Bucket, BigInteger> bucketAccounting = new HashMap<>();
+    updates.forEach(
+        update -> {
+          var substate = update.getParsed();
+          if (substate instanceof ResourceInBucket resourceInBucket) {
+            bucketAccounting.merge(
+                resourceInBucket.bucket(),
+                new BigInteger(
+                    update.isBootUp() ? 1 : -1,
+                    resourceInBucket.getAmount().toByteArray(),
+                    0,
+                    UInt256.BYTES),
+                REResourceAccounting::sumIfZeroThenNull);
+          }
+        });
 
-		var stakeOwnershipAccounting = bucketAccounting.entrySet().stream()
-			.filter(e -> e.getKey().resourceAddr() == null)
-			.collect(Collectors.toMap(
-				e -> e.getKey().getValidatorKey(),
-				Map.Entry::getValue,
-				REResourceAccounting::sumIfZeroThenNull
-			));
-		var resourceAccounting = bucketAccounting.entrySet().stream()
-			.filter(e -> e.getKey().resourceAddr() != null)
-			.collect(Collectors.toMap(
-				e -> e.getKey().resourceAddr(),
-				Map.Entry::getValue,
-				REResourceAccounting::sumIfZeroThenNull
-			));
+    var stakeOwnershipAccounting =
+        bucketAccounting.entrySet().stream()
+            .filter(e -> e.getKey().resourceAddr() == null)
+            .collect(
+                Collectors.toMap(
+                    e -> e.getKey().getValidatorKey(),
+                    Map.Entry::getValue,
+                    REResourceAccounting::sumIfZeroThenNull));
+    var resourceAccounting =
+        bucketAccounting.entrySet().stream()
+            .filter(e -> e.getKey().resourceAddr() != null)
+            .collect(
+                Collectors.toMap(
+                    e -> e.getKey().resourceAddr(),
+                    Map.Entry::getValue,
+                    REResourceAccounting::sumIfZeroThenNull));
 
-		return new REResourceAccounting(
-			bucketAccounting,
-			stakeOwnershipAccounting,
-			resourceAccounting
-		);
-	}
+    return new REResourceAccounting(bucketAccounting, stakeOwnershipAccounting, resourceAccounting);
+  }
 }

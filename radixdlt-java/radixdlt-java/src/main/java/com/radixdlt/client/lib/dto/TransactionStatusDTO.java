@@ -64,63 +64,61 @@
 
 package com.radixdlt.client.lib.dto;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.identifiers.AID;
-
 import java.util.Objects;
 
-import static java.util.Objects.requireNonNull;
-
 public final class TransactionStatusDTO {
-	private final AID txId;
-	private final TransactionStatus status;
+  private final AID txId;
+  private final TransactionStatus status;
 
-	private TransactionStatusDTO(AID txId, TransactionStatus status) {
-		this.txId = txId;
-		this.status = status;
-	}
+  private TransactionStatusDTO(AID txId, TransactionStatus status) {
+    this.txId = txId;
+    this.status = status;
+  }
 
-	@JsonCreator
-	public static TransactionStatusDTO create(
-		@JsonProperty(value = "txID", required = true) AID txId,
-		@JsonProperty(value = "status", required = true) TransactionStatus status
-	) {
-		requireNonNull(txId);
-		requireNonNull(status);
+  @JsonCreator
+  public static TransactionStatusDTO create(
+      @JsonProperty(value = "txID", required = true) AID txId,
+      @JsonProperty(value = "status", required = true) TransactionStatus status) {
+    requireNonNull(txId);
+    requireNonNull(status);
 
-		return new TransactionStatusDTO(txId, status);
-	}
+    return new TransactionStatusDTO(txId, status);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof TransactionStatusDTO)) {
-			return false;
-		}
+    if (!(o instanceof TransactionStatusDTO)) {
+      return false;
+    }
 
-		var that = (TransactionStatusDTO) o;
-		return txId.equals(that.txId) && status == that.status;
-	}
+    var that = (TransactionStatusDTO) o;
+    return txId.equals(that.txId) && status == that.status;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(txId, status);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(txId, status);
+  }
 
-	@Override
-	public String toString() {
-		return "TransactionStatusDTO(" + txId +	", " + status +	')';
-	}
+  @Override
+  public String toString() {
+    return "TransactionStatusDTO(" + txId + ", " + status + ')';
+  }
 
-	public AID getTxId() {
-		return txId;
-	}
+  public AID getTxId() {
+    return txId;
+  }
 
-	public TransactionStatus getStatus() {
-		return status;
-	}
+  public TransactionStatus getStatus() {
+    return status;
+  }
 }

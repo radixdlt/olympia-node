@@ -65,45 +65,42 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.constraintmachine.REProcessedTxn;
-
 import java.util.List;
 
 public final class RadixEngineResult {
-	private final List<REProcessedTxn> processedTxns;
-	private final long verificationTime;
-	private final long storeTime;
+  private final List<REProcessedTxn> processedTxns;
+  private final long verificationTime;
+  private final long storeTime;
 
-	private RadixEngineResult(List<REProcessedTxn> processedTxns, long verificationTime, long storeTime) {
-		this.processedTxns = processedTxns;
-		this.verificationTime = verificationTime;
-		this.storeTime = storeTime;
-	}
+  private RadixEngineResult(
+      List<REProcessedTxn> processedTxns, long verificationTime, long storeTime) {
+    this.processedTxns = processedTxns;
+    this.verificationTime = verificationTime;
+    this.storeTime = storeTime;
+  }
 
-	public static RadixEngineResult create(
-		List<REProcessedTxn> processedTxns,
-		long verificationTime,
-		long storeTime
-	) {
-		return new RadixEngineResult(processedTxns, verificationTime, storeTime);
-	}
+  public static RadixEngineResult create(
+      List<REProcessedTxn> processedTxns, long verificationTime, long storeTime) {
+    return new RadixEngineResult(processedTxns, verificationTime, storeTime);
+  }
 
-	public long getVerificationTime() {
-		return verificationTime;
-	}
+  public long getVerificationTime() {
+    return verificationTime;
+  }
 
-	public long getStoreTime() {
-		return storeTime;
-	}
+  public long getStoreTime() {
+    return storeTime;
+  }
 
-	// TODO: Create separate class for single transaction results
-	public REProcessedTxn getProcessedTxn() {
-		if (processedTxns.size() > 1) {
-			throw new IllegalStateException("Multiple processed transactions.");
-		}
-		return processedTxns.get(0);
-	}
+  // TODO: Create separate class for single transaction results
+  public REProcessedTxn getProcessedTxn() {
+    if (processedTxns.size() > 1) {
+      throw new IllegalStateException("Multiple processed transactions.");
+    }
+    return processedTxns.get(0);
+  }
 
-	public List<REProcessedTxn> getProcessedTxns() {
-		return processedTxns;
-	}
+  public List<REProcessedTxn> getProcessedTxns() {
+    return processedTxns;
+  }
 }

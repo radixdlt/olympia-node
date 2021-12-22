@@ -70,14 +70,13 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateValidatorSystemMetadata;
 
-public class UpdateValidatorSystemMetadataConstructor implements ActionConstructor<UpdateValidatorSystemMetadata> {
-	@Override
-	public void construct(UpdateValidatorSystemMetadata action, TxBuilder builder) throws TxBuilderException {
-		builder.down(ValidatorSystemMetadata.class, action.validatorKey());
-		builder.up(new ValidatorSystemMetadata(
-			action.validatorKey(),
-			action.bytes()
-		));
-		builder.end();
-	}
+public class UpdateValidatorSystemMetadataConstructor
+    implements ActionConstructor<UpdateValidatorSystemMetadata> {
+  @Override
+  public void construct(UpdateValidatorSystemMetadata action, TxBuilder builder)
+      throws TxBuilderException {
+    builder.down(ValidatorSystemMetadata.class, action.validatorKey());
+    builder.up(new ValidatorSystemMetadata(action.validatorKey(), action.bytes()));
+    builder.end();
+  }
 }

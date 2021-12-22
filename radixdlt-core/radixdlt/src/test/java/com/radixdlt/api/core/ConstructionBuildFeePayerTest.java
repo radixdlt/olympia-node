@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.api.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.ConstructionBuildHandler;
@@ -81,47 +84,41 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.PrivateKeys;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class ConstructionBuildFeePayerTest extends ApiTest {
-	@Inject
-	private ConstructionBuildHandler sut;
-	@Inject
-	private CoreModelMapper coreModelMapper;
-	@Inject
-	@Self
-	private ECPublicKey self;
+  @Inject private ConstructionBuildHandler sut;
+  @Inject private CoreModelMapper coreModelMapper;
+  @Inject @Self private ECPublicKey self;
 
-	private ConstructionBuildRequest buildRequestWithFeePayer(EntityIdentifier feePayer) {
-		var transferAmount = getLiquidAmount().toSubunits().subtract(Amount.ofTokens(1).toSubunits());
-		var accountAddress = REAddr.ofPubKeyAccount(self);
-		var otherKey = PrivateKeys.ofNumeric(2).getPublicKey();
-		var otherAddress = REAddr.ofPubKeyAccount(otherKey);
-		return new ConstructionBuildRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.feePayer(feePayer)
-			.addOperationGroupsItem(new OperationGroup()
-				.addOperationsItem(new Operation()
-					.entityIdentifier(coreModelMapper.entityIdentifier(accountAddress))
-					.amount(coreModelMapper.nativeTokenAmount(false, transferAmount))
-				)
-				.addOperationsItem(new Operation()
-					.entityIdentifier(coreModelMapper.entityIdentifier(otherAddress))
-					.amount(coreModelMapper.nativeTokenAmount(true, transferAmount))
-				)
-			);
-	}
+  private ConstructionBuildRequest buildRequestWithFeePayer(EntityIdentifier feePayer) {
+    var transferAmount = getLiquidAmount().toSubunits().subtract(Amount.ofTokens(1).toSubunits());
+    var accountAddress = REAddr.ofPubKeyAccount(self);
+    var otherKey = PrivateKeys.ofNumeric(2).getPublicKey();
+    var otherAddress = REAddr.ofPubKeyAccount(otherKey);
+    return new ConstructionBuildRequest()
+        .networkIdentifier(new NetworkIdentifier().network("localnet"))
+        .feePayer(feePayer)
+        .addOperationGroupsItem(
+            new OperationGroup()
+                .addOperationsItem(
+                    new Operation()
+                        .entityIdentifier(coreModelMapper.entityIdentifier(accountAddress))
+                        .amount(coreModelMapper.nativeTokenAmount(false, transferAmount)))
+                .addOperationsItem(
+                    new Operation()
+                        .entityIdentifier(coreModelMapper.entityIdentifier(otherAddress))
+                        .amount(coreModelMapper.nativeTokenAmount(true, transferAmount))));
+  }
 
-	@Test
-	public void bad_fee_payer_should_throw_exception() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void bad_fee_payer_should_throw_exception() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var request = buildRequestWithFeePayer(coreModelMapper.entityIdentifier(self));
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+    // Act
+    var request = buildRequestWithFeePayer(coreModelMapper.entityIdentifier(self));
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(InvalidFeePayerEntityError.class);
-	}
+    // Assert
+    assertThat(response.getDetails()).isInstanceOf(InvalidFeePayerEntityError.class);
+  }
 }

@@ -70,22 +70,24 @@ import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 
 public final class DefaultSerialization {
 
-	private DefaultSerialization() {
-		throw new IllegalStateException("Can't construct");
-	}
+  private DefaultSerialization() {
+    throw new IllegalStateException("Can't construct");
+  }
 
-	private static class LazyHolder {
-		static final Serialization INSTANCE = Serialization.create(
-				ClasspathScanningSerializerIds.create(),
-				ClasspathScanningSerializationPolicy.create()
-		);
-	}
+  private static class LazyHolder {
+    static final Serialization INSTANCE =
+        Serialization.create(
+            ClasspathScanningSerializerIds.create(), ClasspathScanningSerializationPolicy.create());
+  }
 
-	/**
-	 * A singleton created using {@link ClasspathScanningSerializerIds} and {@link ClasspathScanningSerializationPolicy}
-	 * @return A singleton created using {@link ClasspathScanningSerializerIds} and {@link ClasspathScanningSerializationPolicy},
-	 */
-	public static Serialization getInstance() {
-		return LazyHolder.INSTANCE;
-	}
+  /**
+   * A singleton created using {@link ClasspathScanningSerializerIds} and {@link
+   * ClasspathScanningSerializationPolicy}
+   *
+   * @return A singleton created using {@link ClasspathScanningSerializerIds} and {@link
+   *     ClasspathScanningSerializationPolicy},
+   */
+  public static Serialization getInstance() {
+    return LazyHolder.INSTANCE;
+  }
 }

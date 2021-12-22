@@ -69,34 +69,32 @@ import java.util.Random;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/**
- * Latency Provider which uniformly distributes latency across a minimum and maximum
- */
+/** Latency Provider which uniformly distributes latency across a minimum and maximum */
 public final class RandomLatencyProvider implements LatencyProvider {
-	private static final Logger log = LogManager.getLogger();
+  private static final Logger log = LogManager.getLogger();
 
-	private final int minLatency;
-	private final int maxLatency;
-	private final Random rng;
+  private final int minLatency;
+  private final int maxLatency;
+  private final Random rng;
 
-	public RandomLatencyProvider(int minLatency, int maxLatency) {
-		if (minLatency < 0) {
-			throw new IllegalArgumentException("minimumLatency must be >= 0 but was " + minLatency);
-		}
-		if (maxLatency < 0) {
-			throw new IllegalArgumentException("maximumLatency must be >= 0 but was " + maxLatency);
-		}
+  public RandomLatencyProvider(int minLatency, int maxLatency) {
+    if (minLatency < 0) {
+      throw new IllegalArgumentException("minimumLatency must be >= 0 but was " + minLatency);
+    }
+    if (maxLatency < 0) {
+      throw new IllegalArgumentException("maximumLatency must be >= 0 but was " + maxLatency);
+    }
 
-		final long seed = System.currentTimeMillis();
-		log.info("{} using seed {}", this.getClass().getSimpleName(), seed);
+    final long seed = System.currentTimeMillis();
+    log.info("{} using seed {}", this.getClass().getSimpleName(), seed);
 
-		this.rng = new Random(seed);
-		this.minLatency = minLatency;
-		this.maxLatency = maxLatency;
-	}
+    this.rng = new Random(seed);
+    this.minLatency = minLatency;
+    this.maxLatency = maxLatency;
+  }
 
-	@Override
-	public int nextLatency(MessageInTransit msg) {
-		return minLatency + rng.nextInt(maxLatency - minLatency + 1);
-	}
+  @Override
+  public int nextLatency(MessageInTransit msg) {
+    return minLatency + rng.nextInt(maxLatency - minLatency + 1);
+  }
 }

@@ -66,46 +66,45 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class NetworkStats {
-	private final long tps;
+  private final long tps;
 
-	private NetworkStats(long tps) {
-		this.tps = tps;
-	}
+  private NetworkStats(long tps) {
+    this.tps = tps;
+  }
 
-	@JsonCreator
-	public static NetworkStats create(@JsonProperty(value = "tps", required = true) long tps) {
-		return new NetworkStats(tps);
-	}
+  @JsonCreator
+  public static NetworkStats create(@JsonProperty(value = "tps", required = true) long tps) {
+    return new NetworkStats(tps);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof NetworkStats)) {
-			return false;
-		}
+    if (!(o instanceof NetworkStats)) {
+      return false;
+    }
 
-		var that = (NetworkStats) o;
-		return tps == that.tps;
-	}
+    var that = (NetworkStats) o;
+    return tps == that.tps;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(tps);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(tps);
+  }
 
-	@Override
-	public String toString() {
-		return "TPS:" + tps;
-	}
+  @Override
+  public String toString() {
+    return "TPS:" + tps;
+  }
 
-	public long getTps() {
-		return tps;
-	}
+  public long getTps() {
+    return tps;
+  }
 }

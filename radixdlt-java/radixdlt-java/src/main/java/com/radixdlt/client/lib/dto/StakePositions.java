@@ -64,65 +64,68 @@
 
 package com.radixdlt.client.lib.dto;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.networks.Network;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Objects;
 
-import static java.util.Objects.requireNonNull;
-
 public final class StakePositions {
-	private final ValidatorAddress validator;
-	private final UInt256 amount;
+  private final ValidatorAddress validator;
+  private final UInt256 amount;
 
-	private StakePositions(ValidatorAddress validator, UInt256 amount) {
-		this.validator = validator;
-		this.amount = amount;
-	}
+  private StakePositions(ValidatorAddress validator, UInt256 amount) {
+    this.validator = validator;
+    this.amount = amount;
+  }
 
-	@JsonCreator
-	public static StakePositions create(
-		@JsonProperty(value = "validator", required = true) ValidatorAddress validator,
-		@JsonProperty(value = "amount", required = true) UInt256 amount
-	) {
-		requireNonNull(validator);
-		requireNonNull(amount);
+  @JsonCreator
+  public static StakePositions create(
+      @JsonProperty(value = "validator", required = true) ValidatorAddress validator,
+      @JsonProperty(value = "amount", required = true) UInt256 amount) {
+    requireNonNull(validator);
+    requireNonNull(amount);
 
-		return new StakePositions(validator, amount);
-	}
+    return new StakePositions(validator, amount);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof StakePositions)) {
-			return false;
-		}
+    if (!(o instanceof StakePositions)) {
+      return false;
+    }
 
-		var that = (StakePositions) o;
-		return validator.equals(that.validator) && amount.equals(that.amount);
-	}
+    var that = (StakePositions) o;
+    return validator.equals(that.validator) && amount.equals(that.amount);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(validator, amount);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(validator, amount);
+  }
 
-	@Override
-	public String toString() {
-		return "StakePositionsDTO(" + "validator=" + validator.toString(Network.MAINNET.getId()) + ", amount=" + amount +	')';
-	}
+  @Override
+  public String toString() {
+    return "StakePositionsDTO("
+        + "validator="
+        + validator.toString(Network.MAINNET.getId())
+        + ", amount="
+        + amount
+        + ')';
+  }
 
-	public ValidatorAddress getValidator() {
-		return validator;
-	}
+  public ValidatorAddress getValidator() {
+    return validator;
+  }
 
-	public UInt256 getAmount() {
-		return amount;
-	}
+  public UInt256 getAmount() {
+    return amount;
+  }
 }

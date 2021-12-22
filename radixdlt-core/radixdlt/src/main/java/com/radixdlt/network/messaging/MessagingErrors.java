@@ -67,27 +67,27 @@ package com.radixdlt.network.messaging;
 import com.radixdlt.utils.functional.Failure;
 
 public enum MessagingErrors implements Failure {
-	MESSAGE_EXPIRED(1, "Message expired"),
-	IO_ERROR(2, "IO Error"),
-	SELF_CONNECTION_ATTEMPT(3, "Attempt to connect to self"),
-	PEER_BANNED(4, "Peer is banned"),
-	PEER_CONNECTION_FORBIDDEN(5, "Peer connection forbidden");
+  MESSAGE_EXPIRED(1, "Message expired"),
+  IO_ERROR(2, "IO Error"),
+  SELF_CONNECTION_ATTEMPT(3, "Attempt to connect to self"),
+  PEER_BANNED(4, "Peer is banned"),
+  PEER_CONNECTION_FORBIDDEN(5, "Peer connection forbidden");
 
-	private final int code;
-	private final String message;
+  private final int code;
+  private final String message;
 
-	MessagingErrors(int code, String message) {
-		this.code = code;
-		this.message = message;
-	}
+  MessagingErrors(int code, String message) {
+    this.code = code;
+    this.message = message;
+  }
 
-	@Override
-	public String message() {
-		return message;
-	}
+  @Override
+  public String message() {
+    return message;
+  }
 
-	@Override
-	public int code() {
-		return code;
-	}
+  @Override
+  public int code() {
+    return code;
+  }
 }

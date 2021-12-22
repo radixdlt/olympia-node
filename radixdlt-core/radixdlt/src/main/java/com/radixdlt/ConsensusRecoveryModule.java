@@ -78,64 +78,59 @@ import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.store.LastEpochProof;
-
 import java.util.Optional;
 
-/**
- * Manages consensus recovery on startup
- */
+/** Manages consensus recovery on startup */
 public class ConsensusRecoveryModule extends AbstractModule {
-	@Provides
-	private ViewUpdate view(
-		VerifiedVertexStoreState vertexStoreState,
-		BFTConfiguration configuration
-	) {
-		var highQC = vertexStoreState.getHighQC();
-		var view = highQC.highestQC().getView().next();
-		var proposerElection = configuration.getProposerElection();
-		var leader = proposerElection.getProposer(view);
-		var nextLeader = proposerElection.getProposer(view.next());
+  @Provides
+  private ViewUpdate view(
+      VerifiedVertexStoreState vertexStoreState, BFTConfiguration configuration) {
+    var highQC = vertexStoreState.getHighQC();
+    var view = highQC.highestQC().getView().next();
+    var proposerElection = configuration.getProposerElection();
+    var leader = proposerElection.getProposer(view);
+    var nextLeader = proposerElection.getProposer(view.next());
 
-		return ViewUpdate.create(view, highQC, leader, nextLeader);
-	}
+    return ViewUpdate.create(view, highQC, leader, nextLeader);
+  }
 
-	@Provides
-	@Singleton
-	private BFTConfiguration initialConfig(
-		BFTValidatorSet validatorSet,
-		VerifiedVertexStoreState vertexStoreState
-	) {
-		var proposerElection = new WeightedRotatingLeaders(validatorSet);
-		return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
-	}
+  @Provides
+  @Singleton
+  private BFTConfiguration initialConfig(
+      BFTValidatorSet validatorSet, VerifiedVertexStoreState vertexStoreState) {
+    var proposerElection = new WeightedRotatingLeaders(validatorSet);
+    return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
+  }
 
-	@Provides
-	private BFTValidatorSet validatorSet(
-		@LastEpochProof LedgerProof lastEpochProof
-	) {
-		return lastEpochProof.getNextValidatorSet().orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
-	}
+  @Provides
+  private BFTValidatorSet validatorSet(@LastEpochProof LedgerProof lastEpochProof) {
+    return lastEpochProof
+        .getNextValidatorSet()
+        .orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
+  }
 
-	@Provides
-	@Singleton
-	private SafetyState safetyState(EpochChange initialEpoch, PersistentSafetyStateStore safetyStore) {
-		return safetyStore.get().flatMap(safetyState -> {
-			final long safetyStateEpoch =
-				safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
+  @Provides
+  @Singleton
+  private SafetyState safetyState(
+      EpochChange initialEpoch, PersistentSafetyStateStore safetyStore) {
+    return safetyStore
+        .get()
+        .flatMap(
+            safetyState -> {
+              final long safetyStateEpoch =
+                  safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
 
-			if (safetyStateEpoch > initialEpoch.getEpoch()) {
-				throw new IllegalStateException(
-					String.format(
-						"Last vote is in a future epoch. Vote epoch: %s, Epoch: %s",
-						safetyStateEpoch,
-						initialEpoch.getEpoch()
-					)
-				);
-			} else if (safetyStateEpoch == initialEpoch.getEpoch()) {
-				return Optional.of(safetyState);
-			} else {
-				return Optional.empty();
-			}
-		}).orElse(new SafetyState());
-	}
+              if (safetyStateEpoch > initialEpoch.getEpoch()) {
+                throw new IllegalStateException(
+                    String.format(
+                        "Last vote is in a future epoch. Vote epoch: %s, Epoch: %s",
+                        safetyStateEpoch, initialEpoch.getEpoch()));
+              } else if (safetyStateEpoch == initialEpoch.getEpoch()) {
+                return Optional.of(safetyState);
+              } else {
+                return Optional.empty();
+              }
+            })
+        .orElse(new SafetyState());
+  }
 }

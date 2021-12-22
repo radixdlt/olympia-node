@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -69,46 +70,49 @@ import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineReader;
 import com.radixdlt.identifiers.REAddr;
-
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 public final class KeyQuery {
-	private final SystemMapKey key;
-	private final Supplier<Optional<Particle>> virtualSubstate;
+  private final SystemMapKey key;
+  private final Supplier<Optional<Particle>> virtualSubstate;
 
-	private KeyQuery(SystemMapKey key, Supplier<Optional<Particle>> virtualSubstate) {
-		this.key = key;
-		this.virtualSubstate = virtualSubstate;
-	}
+  private KeyQuery(SystemMapKey key, Supplier<Optional<Particle>> virtualSubstate) {
+    this.key = key;
+    this.virtualSubstate = virtualSubstate;
+  }
 
-	public Optional<Particle> get(RadixEngineReader<?> reader) {
-		return reader.get(key).or(virtualSubstate);
-	}
+  public Optional<Particle> get(RadixEngineReader<?> reader) {
+    return reader.get(key).or(virtualSubstate);
+  }
 
-	public static KeyQuery fromToken(REAddr tokenAddress, SubstateTypeId typeId, Function<REAddr, Particle> virtualSubstate) {
-		var key = SystemMapKey.ofResourceData(tokenAddress, typeId.id());
-		return new KeyQuery(key, () -> Optional.of(virtualSubstate.apply(tokenAddress)));
-	}
+  public static KeyQuery fromToken(
+      REAddr tokenAddress, SubstateTypeId typeId, Function<REAddr, Particle> virtualSubstate) {
+    var key = SystemMapKey.ofResourceData(tokenAddress, typeId.id());
+    return new KeyQuery(key, () -> Optional.of(virtualSubstate.apply(tokenAddress)));
+  }
 
-	public static KeyQuery fromToken(REAddr tokenAddress, SubstateTypeId typeId) {
-		var key = SystemMapKey.ofResourceData(tokenAddress, typeId.id());
-		return new KeyQuery(key, Optional::empty);
-	}
+  public static KeyQuery fromToken(REAddr tokenAddress, SubstateTypeId typeId) {
+    var key = SystemMapKey.ofResourceData(tokenAddress, typeId.id());
+    return new KeyQuery(key, Optional::empty);
+  }
 
-	public static KeyQuery fromSystem(SubstateTypeId typeId) {
-		var key = SystemMapKey.ofSystem(typeId.id());
-		return new KeyQuery(key, Optional::empty);
-	}
+  public static KeyQuery fromSystem(SubstateTypeId typeId) {
+    var key = SystemMapKey.ofSystem(typeId.id());
+    return new KeyQuery(key, Optional::empty);
+  }
 
-	public static KeyQuery fromValidator(ECPublicKey validatorKey, SubstateTypeId typeId, Function<ECPublicKey, Particle> virtualSubstate) {
-		var key = SystemMapKey.ofSystem(typeId.id(), validatorKey.getCompressedBytes());
-		return new KeyQuery(key, () -> Optional.of(virtualSubstate.apply(validatorKey)));
-	}
+  public static KeyQuery fromValidator(
+      ECPublicKey validatorKey,
+      SubstateTypeId typeId,
+      Function<ECPublicKey, Particle> virtualSubstate) {
+    var key = SystemMapKey.ofSystem(typeId.id(), validatorKey.getCompressedBytes());
+    return new KeyQuery(key, () -> Optional.of(virtualSubstate.apply(validatorKey)));
+  }
 
-	public static KeyQuery fromValidator(ECPublicKey validatorKey, SubstateTypeId typeId) {
-		var key = SystemMapKey.ofSystem(typeId.id(), validatorKey.getCompressedBytes());
-		return new KeyQuery(key, Optional::empty);
-	}
+  public static KeyQuery fromValidator(ECPublicKey validatorKey, SubstateTypeId typeId) {
+    var key = SystemMapKey.ofSystem(typeId.id(), validatorKey.getCompressedBytes());
+    return new KeyQuery(key, Optional::empty);
+  }
 }

@@ -69,73 +69,59 @@ import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Objects;
 
 public final class PreparedUnstakeOwnership implements ResourceInBucket {
-	private final UInt256 amount;
+  private final UInt256 amount;
 
-	// Bucket keys
-	private final REAddr owner;
-	private final ECPublicKey delegateKey;
+  // Bucket keys
+  private final REAddr owner;
+  private final ECPublicKey delegateKey;
 
-	public PreparedUnstakeOwnership(
-		ECPublicKey delegateKey,
-		REAddr owner,
-		UInt256 amount
-	) {
-		this.delegateKey = Objects.requireNonNull(delegateKey);
-		this.owner = Objects.requireNonNull(owner);
-		this.amount = Objects.requireNonNull(amount);
-	}
+  public PreparedUnstakeOwnership(ECPublicKey delegateKey, REAddr owner, UInt256 amount) {
+    this.delegateKey = Objects.requireNonNull(delegateKey);
+    this.owner = Objects.requireNonNull(owner);
+    this.amount = Objects.requireNonNull(amount);
+  }
 
-	public ECPublicKey getDelegateKey() {
-		return delegateKey;
-	}
+  public ECPublicKey getDelegateKey() {
+    return delegateKey;
+  }
 
-	public REAddr getOwner() {
-		return this.owner;
-	}
+  public REAddr getOwner() {
+    return this.owner;
+  }
 
-	@Override
-	public UInt256 getAmount() {
-		return this.amount;
-	}
+  @Override
+  public UInt256 getAmount() {
+    return this.amount;
+  }
 
-	public Bucket bucket() {
-		return new ExittingOwnershipBucket(owner, delegateKey);
-	}
+  public Bucket bucket() {
+    return new ExittingOwnershipBucket(owner, delegateKey);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s[%s:%s:%s]",
-			getClass().getSimpleName(),
-			amount,
-			owner,
-			delegateKey
-		);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s[%s:%s:%s]", getClass().getSimpleName(), amount, owner, delegateKey);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof PreparedUnstakeOwnership)) {
-			return false;
-		}
-		var that = (PreparedUnstakeOwnership) o;
-		return Objects.equals(delegateKey, that.delegateKey)
-			&& Objects.equals(owner, that.owner)
-			&& Objects.equals(amount, that.amount);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof PreparedUnstakeOwnership)) {
+      return false;
+    }
+    var that = (PreparedUnstakeOwnership) o;
+    return Objects.equals(delegateKey, that.delegateKey)
+        && Objects.equals(owner, that.owner)
+        && Objects.equals(amount, that.amount);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(
-			delegateKey,
-			owner,
-			amount
-		);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(delegateKey, owner, amount);
+  }
 }

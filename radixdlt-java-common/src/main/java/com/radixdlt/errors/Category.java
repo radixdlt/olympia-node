@@ -1,5 +1,4 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -65,26 +64,24 @@
 
 package com.radixdlt.errors;
 
-/**
- * General error categories.
- */
+/** General error categories. */
 public enum Category {
-	API(1),
-	INTERNAL(2),
-	CLIENT(3),
-	PROTOCOL(32);
+  API(1),
+  INTERNAL(2),
+  CLIENT(3),
+  PROTOCOL(32);
 
-	private final int code;
+  private final int code;
 
-	Category(int code) {
-		this.code = code;
-	}
+  Category(int code) {
+    this.code = code;
+  }
 
-	public int code() {
-		return code;
-	}
+  public int code() {
+    return code;
+  }
 
-	public int forId(int id) {
-		return -(code * 1000 + id);
-	}
+  public int forId(int id) {
+    return -(code * 1000 + id);
+  }
 }

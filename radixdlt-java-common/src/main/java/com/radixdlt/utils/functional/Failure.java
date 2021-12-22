@@ -67,89 +67,84 @@ package com.radixdlt.utils.functional;
 import java.text.MessageFormat;
 import java.util.Objects;
 
-/**
- * Simplest failure descriptor.
- */
+/** Simplest failure descriptor. */
 public interface Failure {
-	String message();
+  String message();
 
-	int code();
+  int code();
 
-	default <T> Result<T> result() {
-		return Result.fail(this);
-	}
+  default <T> Result<T> result() {
+    return Result.fail(this);
+  }
 
-	default <T> Failure with(Object... params) {
-		return failure(code(), message(), params);
-	}
+  default <T> Failure with(Object... params) {
+    return failure(code(), message(), params);
+  }
 
-	/**
-	 * Create instance of Failure with given code, message format string and parameters.
-	 *
-	 * @param code format string
-	 * @param format message format string
-	 * @param values parameters
-	 *
-	 * @return created instance of Failure
-	 *
-	 * @see MessageFormat for supported format string options
-	 */
-	static Failure failure(int code, String format, Object... values) {
-		return failure(code, MessageFormat.format(format, values));
-	}
+  /**
+   * Create instance of Failure with given code, message format string and parameters.
+   *
+   * @param code format string
+   * @param format message format string
+   * @param values parameters
+   * @return created instance of Failure
+   * @see MessageFormat for supported format string options
+   */
+  static Failure failure(int code, String format, Object... values) {
+    return failure(code, MessageFormat.format(format, values));
+  }
 
-	/**
-	 * Create instance of Failure with given message and code.
-	 *
-	 * @param message failure message
-	 *
-	 * @return created instance of Failure
-	 */
-	static Failure failure(int code, String message) {
-		return new FailureImpl(code, message);
-	}
+  /**
+   * Create instance of Failure with given message and code.
+   *
+   * @param message failure message
+   * @return created instance of Failure
+   */
+  static Failure failure(int code, String message) {
+    return new FailureImpl(code, message);
+  }
 
-	class FailureImpl implements Failure {
-		private final int code;
-		private final String message;
+  class FailureImpl implements Failure {
+    private final int code;
+    private final String message;
 
-		private FailureImpl(int code, String message) {
-			this.message = message;
-			this.code = code;
-		}
+    private FailureImpl(int code, String message) {
+      this.message = message;
+      this.code = code;
+    }
 
-		@Override
-		public String message() {
-			return message;
-		}
+    @Override
+    public String message() {
+      return message;
+    }
 
-		@Override
-		public int code() {
-			return code;
-		}
+    @Override
+    public int code() {
+      return code;
+    }
 
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) {
-				return true;
-			}
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
 
-			if (!(o instanceof FailureImpl)) {
-				return false;
-			}
+      if (!(o instanceof FailureImpl)) {
+        return false;
+      }
 
-			var failure = (FailureImpl) o;
-			return code == failure.code && Objects.equals(message, failure.message);
-		}
+      var failure = (FailureImpl) o;
+      return code == failure.code && Objects.equals(message, failure.message);
+    }
 
-		@Override
-		public int hashCode() {
-			return Objects.hash(message, code);
-		}
+    @Override
+    public int hashCode() {
+      return Objects.hash(message, code);
+    }
 
-		@Override
-		public String toString() {
-			return "{" + code + ", '" + message + "'}";
-		}
-	}
+    @Override
+    public String toString() {
+      return "{" + code + ", '" + message + "'}";
+    }
+  }
 }

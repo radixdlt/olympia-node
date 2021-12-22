@@ -64,8 +64,14 @@
 
 package com.radixdlt.application.tokens;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
+import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
+import com.radixdlt.application.tokens.construction.MintTokenConstructor;
+import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
+import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
@@ -73,10 +79,6 @@ import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
-import com.radixdlt.application.tokens.construction.MintTokenConstructor;
-import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
-import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -89,82 +91,87 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.regex.Pattern;
-
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 @RunWith(Parameterized.class)
 public class NativeTokensTest {
-	@Parameterized.Parameters
-	public static Collection<Object[]> parameters() {
-		return List.of(new Object[][] {
-			{
-				new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
-				new TransferTokensConstructorV2()
-			},
-		});
-	}
+  @Parameterized.Parameters
+  public static Collection<Object[]> parameters() {
+    return List.of(
+        new Object[][] {
+          {
+            new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
+            new TransferTokensConstructorV2()
+          },
+        });
+  }
 
-	private final ConstraintScrypt scrypt;
-	private final ActionConstructor<TransferToken> transferTokensConstructor;
-	private RadixEngine<Void> engine;
-	private EngineStore<Void> store;
+  private final ConstraintScrypt scrypt;
+  private final ActionConstructor<TransferToken> transferTokensConstructor;
+  private RadixEngine<Void> engine;
+  private EngineStore<Void> store;
 
-	public NativeTokensTest(ConstraintScrypt scrypt, ActionConstructor<TransferToken> transferTokensConstructor) {
-		this.scrypt = scrypt;
-		this.transferTokensConstructor = transferTokensConstructor;
-	}
+  public NativeTokensTest(
+      ConstraintScrypt scrypt, ActionConstructor<TransferToken> transferTokensConstructor) {
+    this.scrypt = scrypt;
+    this.transferTokensConstructor = transferTokensConstructor;
+  }
 
-	@Before
-	public void setup() throws Exception {
-		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(scrypt);
-		cmAtomOS.load(new SystemConstraintScrypt());
-		var cm = new ConstraintMachine(
-			cmAtomOS.getProcedures(),
-			cmAtomOS.buildSubstateDeserialization(),
-			cmAtomOS.buildVirtualSubstateDeserialization()
-		);
-		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
-		var serialization = cmAtomOS.buildSubstateSerialization();
-		this.store = new InMemoryEngineStore<>();
-		this.engine = new RadixEngine<>(
-			parser,
-			serialization,
-			REConstructor.newBuilder()
-				.put(CreateSystem.class, new CreateSystemConstructorV2())
-				.put(TransferToken.class, transferTokensConstructor)
-				.put(CreateMutableToken.class, new CreateMutableTokenConstructor(SystemConstraintScrypt.MAX_SYMBOL_LENGTH))
-				.put(MintToken.class, new MintTokenConstructor())
-				.build(),
-			cm,
-			store
-		);
-		var txn = this.engine.construct(
-			TxnConstructionRequest.create()
-				.action(new CreateSystem(0))
-				.action(new CreateMutableToken(REAddr.ofNativeToken(), "xrd", "xrd", "", "", "", null))
-		).buildWithoutSignature();
-		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
-	}
+  @Before
+  public void setup() throws Exception {
+    var cmAtomOS = new CMAtomOS();
+    cmAtomOS.load(scrypt);
+    cmAtomOS.load(new SystemConstraintScrypt());
+    var cm =
+        new ConstraintMachine(
+            cmAtomOS.getProcedures(),
+            cmAtomOS.buildSubstateDeserialization(),
+            cmAtomOS.buildVirtualSubstateDeserialization());
+    var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+    var serialization = cmAtomOS.buildSubstateSerialization();
+    this.store = new InMemoryEngineStore<>();
+    this.engine =
+        new RadixEngine<>(
+            parser,
+            serialization,
+            REConstructor.newBuilder()
+                .put(CreateSystem.class, new CreateSystemConstructorV2())
+                .put(TransferToken.class, transferTokensConstructor)
+                .put(
+                    CreateMutableToken.class,
+                    new CreateMutableTokenConstructor(SystemConstraintScrypt.MAX_SYMBOL_LENGTH))
+                .put(MintToken.class, new MintTokenConstructor())
+                .build(),
+            cm,
+            store);
+    var txn =
+        this.engine
+            .construct(
+                TxnConstructionRequest.create()
+                    .action(new CreateSystem(0))
+                    .action(
+                        new CreateMutableToken(
+                            REAddr.ofNativeToken(), "xrd", "xrd", "", "", "", null)))
+            .buildWithoutSignature();
+    this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
+  }
 
-
-	@Test
-	public void mint_native_token_as_super_user_should_fail() throws Exception {
-		// Arrange
-		var addr = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
-		var txn = this.engine.construct(
-			new MintToken(REAddr.ofNativeToken(), addr, UInt256.TEN)
-		).buildWithoutSignature();
-		assertThatThrownBy(() -> this.engine.execute(List.of(txn), null, PermissionLevel.SUPER_USER))
-			.isInstanceOf(RadixEngineException.class);
-	}
+  @Test
+  public void mint_native_token_as_super_user_should_fail() throws Exception {
+    // Arrange
+    var addr = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
+    var txn =
+        this.engine
+            .construct(new MintToken(REAddr.ofNativeToken(), addr, UInt256.TEN))
+            .buildWithoutSignature();
+    assertThatThrownBy(() -> this.engine.execute(List.of(txn), null, PermissionLevel.SUPER_USER))
+        .isInstanceOf(RadixEngineException.class);
+  }
 }

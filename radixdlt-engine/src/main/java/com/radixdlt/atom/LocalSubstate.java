@@ -65,47 +65,45 @@
 package com.radixdlt.atom;
 
 import com.radixdlt.constraintmachine.Particle;
-
 import java.util.Objects;
 
 /**
- * A particle which only has a local identifier since it's enclosing
- * transaction has not yet finished being constructed.
+ * A particle which only has a local identifier since it's enclosing transaction has not yet
+ * finished being constructed.
  */
 public final class LocalSubstate {
-	private final int index;
-	private final Particle particle;
+  private final int index;
+  private final Particle particle;
 
-	private LocalSubstate(int index, Particle particle) {
-		this.index = index;
-		this.particle = particle;
-	}
+  private LocalSubstate(int index, Particle particle) {
+    this.index = index;
+    this.particle = particle;
+  }
 
-	public static LocalSubstate create(int index, Particle particle) {
-		return new LocalSubstate(index, particle);
-	}
+  public static LocalSubstate create(int index, Particle particle) {
+    return new LocalSubstate(index, particle);
+  }
 
-	public Particle getParticle() {
-		return particle;
-	}
+  public Particle getParticle() {
+    return particle;
+  }
 
-	public int getIndex() {
-		return index;
-	}
+  public int getIndex() {
+    return index;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(index, particle);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(index, particle);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof LocalSubstate)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof LocalSubstate)) {
+      return false;
+    }
 
-		var other = (LocalSubstate) o;
-		return this.index == other.index
-			&& Objects.equals(this.particle, other.particle);
-	}
+    var other = (LocalSubstate) o;
+    return this.index == other.index && Objects.equals(this.particle, other.particle);
+  }
 }

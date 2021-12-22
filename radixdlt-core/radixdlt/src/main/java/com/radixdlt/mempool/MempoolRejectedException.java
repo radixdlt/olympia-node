@@ -64,16 +64,14 @@
 
 package com.radixdlt.mempool;
 
-/**
- * Exception thrown when mempool rejects an atom.
- */
+/** Exception thrown when mempool rejects an atom. */
 public class MempoolRejectedException extends Exception {
 
-	public MempoolRejectedException(String message) {
-		super(message);
-	}
+  public MempoolRejectedException(String message) {
+    super(message);
+  }
 
-	public MempoolRejectedException(Throwable cause) {
-		super(cause);
-	}
+  public MempoolRejectedException(Throwable cause) {
+    super(cause);
+  }
 }

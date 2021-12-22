@@ -64,104 +64,100 @@
 
 package com.radixdlt.network.messaging;
 
-import java.util.ArrayList;
-
-import com.radixdlt.network.p2p.NodeId;
-import org.junit.Test;
-import com.radixdlt.network.p2p.liveness.messages.PeerPingMessage;
-import com.radixdlt.network.p2p.liveness.messages.PeerPongMessage;
-
-import com.google.common.collect.Lists;
-import nl.jqno.equalsverifier.EqualsVerifier;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
+import com.google.common.collect.Lists;
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.liveness.messages.PeerPingMessage;
+import com.radixdlt.network.p2p.liveness.messages.PeerPongMessage;
+import java.util.ArrayList;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
+
 public class OutboundMessageEventTest {
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(OutboundMessageEvent.class)
-			.withRedefinedSuperclass()
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(OutboundMessageEvent.class).withRedefinedSuperclass().verify();
+  }
 
-	@Test
-	public void sensibleToString() {
-		NodeId peer = mock(NodeId.class);
-		Message message = mock(Message.class);
-		long nanoTimeDiff = 123456789L;
-		OutboundMessageEvent event = new OutboundMessageEvent(peer, message, nanoTimeDiff);
+  @Test
+  public void sensibleToString() {
+    NodeId peer = mock(NodeId.class);
+    Message message = mock(Message.class);
+    long nanoTimeDiff = 123456789L;
+    OutboundMessageEvent event = new OutboundMessageEvent(peer, message, nanoTimeDiff);
 
-		String s = event.toString();
-		assertThat(s)
-			.contains(OutboundMessageEvent.class.getSimpleName())
-			.contains(peer.toString())
-			.contains(message.toString())
-			.contains(String.valueOf(nanoTimeDiff))
-			.contains("priority=0");
-	}
+    String s = event.toString();
+    assertThat(s)
+        .contains(OutboundMessageEvent.class.getSimpleName())
+        .contains(peer.toString())
+        .contains(message.toString())
+        .contains(String.valueOf(nanoTimeDiff))
+        .contains("priority=0");
+  }
 
-	@Test
-	public void peerPingToString() {
-		NodeId peer = mock(NodeId.class);
-		Message message = mock(PeerPingMessage.class);
-		long nanoTimeDiff = 123456789L;
-		OutboundMessageEvent event = new OutboundMessageEvent(peer, message, nanoTimeDiff);
+  @Test
+  public void peerPingToString() {
+    NodeId peer = mock(NodeId.class);
+    Message message = mock(PeerPingMessage.class);
+    long nanoTimeDiff = 123456789L;
+    OutboundMessageEvent event = new OutboundMessageEvent(peer, message, nanoTimeDiff);
 
-		String s = event.toString();
-		assertThat(s)
-			.contains(OutboundMessageEvent.class.getSimpleName())
-			.contains(peer.toString())
-			.contains(message.toString())
-			.contains(String.valueOf(nanoTimeDiff))
-			.contains("priority=" + Integer.MIN_VALUE);
-	}
+    String s = event.toString();
+    assertThat(s)
+        .contains(OutboundMessageEvent.class.getSimpleName())
+        .contains(peer.toString())
+        .contains(message.toString())
+        .contains(String.valueOf(nanoTimeDiff))
+        .contains("priority=" + Integer.MIN_VALUE);
+  }
 
-	@Test
-	public void peerPongToString() {
-		NodeId peer = mock(NodeId.class);
-		Message message = mock(PeerPongMessage.class);
-		long nanoTimeDiff = 123456789L;
-		OutboundMessageEvent event = new OutboundMessageEvent(peer, message, nanoTimeDiff);
+  @Test
+  public void peerPongToString() {
+    NodeId peer = mock(NodeId.class);
+    Message message = mock(PeerPongMessage.class);
+    long nanoTimeDiff = 123456789L;
+    OutboundMessageEvent event = new OutboundMessageEvent(peer, message, nanoTimeDiff);
 
-		String s = event.toString();
-		assertThat(s)
-			.contains(OutboundMessageEvent.class.getSimpleName())
-			.contains(peer.toString())
-			.contains(message.toString())
-			.contains(String.valueOf(nanoTimeDiff))
-			.contains("priority=" + Integer.MIN_VALUE);
-	}
+    String s = event.toString();
+    assertThat(s)
+        .contains(OutboundMessageEvent.class.getSimpleName())
+        .contains(peer.toString())
+        .contains(message.toString())
+        .contains(String.valueOf(nanoTimeDiff))
+        .contains("priority=" + Integer.MIN_VALUE);
+  }
 
-	@Test
-	public void comparatorCheck() {
-		ArrayList<OutboundMessageEvent> events = Lists.newArrayList();
-		events.add(makeMessageEventFor(Message.class));
-		events.add(makeMessageEventFor(Message.class));
-		events.add(makeMessageEventFor(Message.class));
-		events.add(makeMessageEventFor(PeerPingMessage.class));
-		assertFalse(events.get(0).message() instanceof PeerPingMessage);
-		assertFalse(events.get(0).message() instanceof PeerPongMessage);
-		events.sort(OutboundMessageEvent.comparator());
-		assertTrue(events.get(0).message() instanceof PeerPingMessage);
+  @Test
+  public void comparatorCheck() {
+    ArrayList<OutboundMessageEvent> events = Lists.newArrayList();
+    events.add(makeMessageEventFor(Message.class));
+    events.add(makeMessageEventFor(Message.class));
+    events.add(makeMessageEventFor(Message.class));
+    events.add(makeMessageEventFor(PeerPingMessage.class));
+    assertFalse(events.get(0).message() instanceof PeerPingMessage);
+    assertFalse(events.get(0).message() instanceof PeerPongMessage);
+    events.sort(OutboundMessageEvent.comparator());
+    assertTrue(events.get(0).message() instanceof PeerPingMessage);
 
-		events.clear();
-		events.add(makeMessageEventFor(Message.class));
-		events.add(makeMessageEventFor(Message.class));
-		events.add(makeMessageEventFor(Message.class));
-		events.add(makeMessageEventFor(PeerPongMessage.class));
-		assertFalse(events.get(0).message() instanceof PeerPingMessage);
-		assertFalse(events.get(0).message() instanceof PeerPongMessage);
-		events.sort(OutboundMessageEvent.comparator());
-		assertTrue(events.get(0).message() instanceof PeerPongMessage);
-	}
+    events.clear();
+    events.add(makeMessageEventFor(Message.class));
+    events.add(makeMessageEventFor(Message.class));
+    events.add(makeMessageEventFor(Message.class));
+    events.add(makeMessageEventFor(PeerPongMessage.class));
+    assertFalse(events.get(0).message() instanceof PeerPingMessage);
+    assertFalse(events.get(0).message() instanceof PeerPongMessage);
+    events.sort(OutboundMessageEvent.comparator());
+    assertTrue(events.get(0).message() instanceof PeerPongMessage);
+  }
 
-	private OutboundMessageEvent makeMessageEventFor(Class<? extends Message> cls) {
-		NodeId peer = mock(NodeId.class);
-		Message message = mock(cls);
-		long nanoTimeDiff = 123456789L;
-		return new OutboundMessageEvent(peer, message, nanoTimeDiff);
-	}
+  private OutboundMessageEvent makeMessageEventFor(Class<? extends Message> cls) {
+    NodeId peer = mock(NodeId.class);
+    Message message = mock(cls);
+    long nanoTimeDiff = 123456789L;
+    return new OutboundMessageEvent(peer, message, nanoTimeDiff);
+  }
 }

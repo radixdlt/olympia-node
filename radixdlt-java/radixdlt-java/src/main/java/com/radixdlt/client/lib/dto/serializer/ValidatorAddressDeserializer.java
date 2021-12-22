@@ -71,20 +71,20 @@ import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
-
 import java.io.IOException;
 
 public class ValidatorAddressDeserializer extends StdDeserializer<ValidatorAddress> {
-	private final ValidatorAddressing addressing;
+  private final ValidatorAddressing addressing;
 
-	public ValidatorAddressDeserializer(Addressing networkAddressing) {
-		super(ValidatorAddress.class);
-		addressing = networkAddressing.forValidators();
-	}
+  public ValidatorAddressDeserializer(Addressing networkAddressing) {
+    super(ValidatorAddress.class);
+    addressing = networkAddressing.forValidators();
+  }
 
-	@Override
-	public ValidatorAddress deserialize(JsonParser parser, DeserializationContext ctxt) throws IOException {
-		var value = parser.getText();
-		return ValidatorAddress.of(addressing.parseOrThrow(value, DeserializeException::new));
-	}
+  @Override
+  public ValidatorAddress deserialize(JsonParser parser, DeserializationContext ctxt)
+      throws IOException {
+    var value = parser.getText();
+    return ValidatorAddress.of(addressing.parseOrThrow(value, DeserializeException::new));
+  }
 }

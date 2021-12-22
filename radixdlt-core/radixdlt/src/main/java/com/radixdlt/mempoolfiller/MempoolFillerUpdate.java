@@ -64,98 +64,86 @@
 
 package com.radixdlt.mempoolfiller;
 
-import com.radixdlt.utils.functional.Unit;
+import static com.radixdlt.utils.functional.Unit.unit;
 
+import com.radixdlt.utils.functional.Unit;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.concurrent.CompletableFuture;
 
-import static com.radixdlt.utils.functional.Unit.unit;
-
-/**
- * An update event to the mempool filler
- */
+/** An update event to the mempool filler */
 public final class MempoolFillerUpdate {
-    private final int parallelTransactions;
-    private final boolean sendToSelf;
-    private final CompletableFuture<Unit> completableFuture;
+  private final int parallelTransactions;
+  private final boolean sendToSelf;
+  private final CompletableFuture<Unit> completableFuture;
 
-    private MempoolFillerUpdate(
-        int parallelTransactions,
-        boolean sendToSelf,
-		CompletableFuture<Unit> completableFuture
-    ) {
-        this.parallelTransactions = parallelTransactions;
-        this.sendToSelf = sendToSelf;
-        this.completableFuture = completableFuture;
+  private MempoolFillerUpdate(
+      int parallelTransactions, boolean sendToSelf, CompletableFuture<Unit> completableFuture) {
+    this.parallelTransactions = parallelTransactions;
+    this.sendToSelf = sendToSelf;
+    this.completableFuture = completableFuture;
+  }
+
+  public static MempoolFillerUpdate enable(int parallelTransactions, boolean sendToSelf) {
+    return new MempoolFillerUpdate(parallelTransactions, sendToSelf, null);
+  }
+
+  public static MempoolFillerUpdate enable(
+      int parallelTransactions, boolean sendToSelf, CompletableFuture<Unit> completableFuture) {
+    if (parallelTransactions < 0) {
+      throw new IllegalArgumentException("parallelTransactions must be > 0.");
+    }
+    Objects.requireNonNull(completableFuture);
+    return new MempoolFillerUpdate(parallelTransactions, sendToSelf, completableFuture);
+  }
+
+  public static MempoolFillerUpdate disable() {
+    return new MempoolFillerUpdate(-1, false, null);
+  }
+
+  public static MempoolFillerUpdate disable(CompletableFuture<Unit> completableFuture) {
+    Objects.requireNonNull(completableFuture);
+    return new MempoolFillerUpdate(-1, false, completableFuture);
+  }
+
+  public void onSuccess() {
+    if (completableFuture != null) {
+      completableFuture.complete(unit());
+    }
+  }
+
+  public void onError(String error) {
+    if (completableFuture != null) {
+      completableFuture.completeExceptionally(new RuntimeException(error));
+    }
+  }
+
+  public boolean enabled() {
+    return parallelTransactions > 0;
+  }
+
+  public OptionalInt numTransactions() {
+    return parallelTransactions > 0 ? OptionalInt.of(parallelTransactions) : OptionalInt.empty();
+  }
+
+  public Optional<Boolean> sendToSelf() {
+    return parallelTransactions > 0 ? Optional.of(sendToSelf) : Optional.empty();
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(parallelTransactions, sendToSelf);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof MempoolFillerUpdate)) {
+      return false;
     }
 
-    public static MempoolFillerUpdate enable(
-        int parallelTransactions,
-        boolean sendToSelf
-    ) {
-    	return new MempoolFillerUpdate(parallelTransactions, sendToSelf, null);
-    }
-
-    public static MempoolFillerUpdate enable(
-        int parallelTransactions,
-        boolean sendToSelf,
-        CompletableFuture<Unit> completableFuture
-    ) {
-    	if (parallelTransactions < 0) {
-    	    throw new IllegalArgumentException("parallelTransactions must be > 0.");
-        }
-    	Objects.requireNonNull(completableFuture);
-        return new MempoolFillerUpdate(parallelTransactions, sendToSelf, completableFuture);
-    }
-
-    public static MempoolFillerUpdate disable() {
-    	return new MempoolFillerUpdate(-1, false, null);
-	}
-
-    public static MempoolFillerUpdate disable(CompletableFuture<Unit> completableFuture) {
-        Objects.requireNonNull(completableFuture);
-        return new MempoolFillerUpdate(-1, false, completableFuture);
-    }
-
-    public void onSuccess() {
-        if (completableFuture != null) {
-            completableFuture.complete(unit());
-        }
-    }
-
-    public void onError(String error) {
-        if (completableFuture != null) {
-            completableFuture.completeExceptionally(new RuntimeException(error));
-        }
-    }
-
-    public boolean enabled() {
-        return parallelTransactions > 0;
-    }
-
-    public OptionalInt numTransactions() {
-        return parallelTransactions > 0 ? OptionalInt.of(parallelTransactions) : OptionalInt.empty();
-    }
-
-    public Optional<Boolean> sendToSelf() {
-        return parallelTransactions > 0 ? Optional.of(sendToSelf) : Optional.empty();
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(parallelTransactions, sendToSelf);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof MempoolFillerUpdate)) {
-            return false;
-        }
-
-        MempoolFillerUpdate other = (MempoolFillerUpdate) o;
-        return this.parallelTransactions == other.parallelTransactions
-            && this.sendToSelf == other.sendToSelf;
-    }
+    MempoolFillerUpdate other = (MempoolFillerUpdate) o;
+    return this.parallelTransactions == other.parallelTransactions
+        && this.sendToSelf == other.sendToSelf;
+  }
 }

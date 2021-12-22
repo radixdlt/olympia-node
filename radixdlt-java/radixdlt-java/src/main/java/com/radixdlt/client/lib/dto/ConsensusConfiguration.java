@@ -66,55 +66,57 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class ConsensusConfiguration {
-	private final long pacemakerTimeout;
-	private final long bftSyncPatienceMs;
+  private final long pacemakerTimeout;
+  private final long bftSyncPatienceMs;
 
-	private ConsensusConfiguration(long pacemakerTimeout, long bftSyncPatienceMs) {
-		this.pacemakerTimeout = pacemakerTimeout;
-		this.bftSyncPatienceMs = bftSyncPatienceMs;
-	}
+  private ConsensusConfiguration(long pacemakerTimeout, long bftSyncPatienceMs) {
+    this.pacemakerTimeout = pacemakerTimeout;
+    this.bftSyncPatienceMs = bftSyncPatienceMs;
+  }
 
-	@JsonCreator
-	public static ConsensusConfiguration create(
-		@JsonProperty(value = "pacemakerTimeout", required = true) long pacemakerTimeout,
-		@JsonProperty(value = "bftSyncPatienceMs", required = true) long bftSyncPatienceMs
-	) {
-		return new ConsensusConfiguration(pacemakerTimeout, bftSyncPatienceMs);
-	}
+  @JsonCreator
+  public static ConsensusConfiguration create(
+      @JsonProperty(value = "pacemakerTimeout", required = true) long pacemakerTimeout,
+      @JsonProperty(value = "bftSyncPatienceMs", required = true) long bftSyncPatienceMs) {
+    return new ConsensusConfiguration(pacemakerTimeout, bftSyncPatienceMs);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof ConsensusConfiguration)) {
-			return false;
-		}
+    if (!(o instanceof ConsensusConfiguration)) {
+      return false;
+    }
 
-		var that = (ConsensusConfiguration) o;
-		return pacemakerTimeout == that.pacemakerTimeout && bftSyncPatienceMs == that.bftSyncPatienceMs;
-	}
+    var that = (ConsensusConfiguration) o;
+    return pacemakerTimeout == that.pacemakerTimeout && bftSyncPatienceMs == that.bftSyncPatienceMs;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(pacemakerTimeout, bftSyncPatienceMs);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(pacemakerTimeout, bftSyncPatienceMs);
+  }
 
-	@Override
-	public String toString() {
-		return "{pacemakerTimeout:" + pacemakerTimeout + ", bftSyncPatienceMs:" + bftSyncPatienceMs + '}';
-	}
+  @Override
+  public String toString() {
+    return "{pacemakerTimeout:"
+        + pacemakerTimeout
+        + ", bftSyncPatienceMs:"
+        + bftSyncPatienceMs
+        + '}';
+  }
 
-	public long getPacemakerTimeout() {
-		return pacemakerTimeout;
-	}
+  public long getPacemakerTimeout() {
+    return pacemakerTimeout;
+  }
 
-	public long getBftSyncPatienceMs() {
-		return bftSyncPatienceMs;
-	}
+  public long getBftSyncPatienceMs() {
+    return bftSyncPatienceMs;
+  }
 }

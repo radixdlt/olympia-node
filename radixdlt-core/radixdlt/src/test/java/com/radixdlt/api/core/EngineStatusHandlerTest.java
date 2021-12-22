@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.api.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.EngineStatusHandler;
@@ -73,29 +76,25 @@ import com.radixdlt.api.core.openapitools.model.Validator;
 import com.radixdlt.networks.Addressing;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 public final class EngineStatusHandlerTest extends ApiTest {
-	@Inject
-	private EngineStatusHandler sut;
-	@Inject
-	private Addressing addressing;
+  @Inject private EngineStatusHandler sut;
+  @Inject private Addressing addressing;
 
-	@Test
-	public void engine_configuration_should_return_correct_data() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void engine_configuration_should_return_correct_data() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var request = new EngineStatusRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"));
-		var response = handleRequestWithExpectedResponse(sut, request, EngineStatusResponse.class);
+    // Act
+    var request =
+        new EngineStatusRequest().networkIdentifier(new NetworkIdentifier().network("localnet"));
+    var response = handleRequestWithExpectedResponse(sut, request, EngineStatusResponse.class);
 
-		// Assert
-		assertThat(response.getValidatorSet())
-			.containsExactly(new Validator()
-				.validatorAddress(addressing.forValidators().of(selfKey()))
-				.stake(getStakeAmount().toSubunits().toString())
-			);
-	}
+    // Assert
+    assertThat(response.getValidatorSet())
+        .containsExactly(
+            new Validator()
+                .validatorAddress(addressing.forValidators().of(selfKey()))
+                .stake(getStakeAmount().toSubunits().toString()));
+  }
 }

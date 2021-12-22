@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,37 +64,35 @@
 
 package com.radixdlt.api.core.model.entities;
 
+import static com.radixdlt.atom.SubstateTypeId.*;
+
 import com.radixdlt.api.core.model.Entity;
 import com.radixdlt.api.core.model.KeyQuery;
 import com.radixdlt.api.core.model.ResourceQuery;
-
 import java.util.List;
 
-import static com.radixdlt.atom.SubstateTypeId.*;
-
 public record SystemEntity() implements Entity {
-	@Override
-	public List<ResourceQuery> getResourceQueries() {
-		return List.of();
-	}
+  @Override
+  public List<ResourceQuery> getResourceQueries() {
+    return List.of();
+  }
 
-	@Override
-	public List<KeyQuery> getKeyQueries() {
-		return List.of(
-			KeyQuery.fromSystem(UNCLAIMED_READDR),
-			KeyQuery.fromSystem(EPOCH_DATA),
-			KeyQuery.fromSystem(ROUND_DATA),
-			KeyQuery.fromSystem(VALIDATOR_META_DATA),
-			KeyQuery.fromSystem(VALIDATOR_STAKE_DATA),
-			KeyQuery.fromSystem(VALIDATOR_ALLOW_DELEGATION_FLAG),
-			KeyQuery.fromSystem(VALIDATOR_REGISTERED_FLAG_COPY),
-			KeyQuery.fromSystem(VALIDATOR_RAKE_COPY),
-			KeyQuery.fromSystem(VALIDATOR_OWNER_COPY),
-			KeyQuery.fromSystem(VALIDATOR_SYSTEM_META_DATA)
-		);
-	}
+  @Override
+  public List<KeyQuery> getKeyQueries() {
+    return List.of(
+        KeyQuery.fromSystem(UNCLAIMED_READDR),
+        KeyQuery.fromSystem(EPOCH_DATA),
+        KeyQuery.fromSystem(ROUND_DATA),
+        KeyQuery.fromSystem(VALIDATOR_META_DATA),
+        KeyQuery.fromSystem(VALIDATOR_STAKE_DATA),
+        KeyQuery.fromSystem(VALIDATOR_ALLOW_DELEGATION_FLAG),
+        KeyQuery.fromSystem(VALIDATOR_REGISTERED_FLAG_COPY),
+        KeyQuery.fromSystem(VALIDATOR_RAKE_COPY),
+        KeyQuery.fromSystem(VALIDATOR_OWNER_COPY),
+        KeyQuery.fromSystem(VALIDATOR_SYSTEM_META_DATA));
+  }
 
-	public static SystemEntity instance() {
-		return new SystemEntity();
-	}
+  public static SystemEntity instance() {
+    return new SystemEntity();
+  }
 }

@@ -101,12 +101,6 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.sync.CommittedReader;
 import io.reactivex.rxjava3.disposables.Disposable;
-import org.apache.commons.cli.ParseException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.json.JSONObject;
-import org.radix.utils.LedgerFileSync;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -116,270 +110,281 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import org.apache.commons.cli.ParseException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.json.JSONObject;
+import org.radix.utils.LedgerFileSync;
 
 public final class RadixShell {
-	private static final Logger log = LogManager.getLogger();
+  private static final Logger log = LogManager.getLogger();
 
-	public static void log(String msg, Object... params) {
-		log.info(msg, params);
-	}
+  public static void log(String msg, Object... params) {
+    log.info(msg, params);
+  }
 
-	public static NodeBuilder nodeBuilder() throws ParseException {
-		return new NodeBuilder();
-	}
+  public static NodeBuilder nodeBuilder() throws ParseException {
+    return new NodeBuilder();
+  }
 
-	public static class NodeBuilder {
-		private Network network = Network.LOCALNET;
-		private RuntimeProperties properties;
-		private int p2pServerPort = 0;
-		private ImmutableSet.Builder<String> moduleRunnersBuilder = new ImmutableSet.Builder<>();
-		private ImmutableMap.Builder<String, String> customProperties = new ImmutableMap.Builder<>();
-		private Optional<String> dataDir = Optional.empty();
-		private Optional<ECKeyPair> customKeyPair = Optional.empty();
-		private final String nodeKeyPass = System.getenv("RADIX_NODE_KEYSTORE_PASSWORD");
+  public static class NodeBuilder {
+    private Network network = Network.LOCALNET;
+    private RuntimeProperties properties;
+    private int p2pServerPort = 0;
+    private ImmutableSet.Builder<String> moduleRunnersBuilder = new ImmutableSet.Builder<>();
+    private ImmutableMap.Builder<String, String> customProperties = new ImmutableMap.Builder<>();
+    private Optional<String> dataDir = Optional.empty();
+    private Optional<ECKeyPair> customKeyPair = Optional.empty();
+    private final String nodeKeyPass = System.getenv("RADIX_NODE_KEYSTORE_PASSWORD");
 
-		public NodeBuilder() throws ParseException {
-			properties = new RuntimeProperties(new JSONObject(), new String[] { });
-		}
+    public NodeBuilder() throws ParseException {
+      properties = new RuntimeProperties(new JSONObject(), new String[] {});
+    }
 
-		public NodeBuilder p2pServer(int p2pServerPort) {
-			this.p2pServerPort = p2pServerPort;
-			moduleRunnersBuilder.add(Runners.P2P_NETWORK);
-			properties.set("network.p2p.listen_port", p2pServerPort);
-			properties.set("network.p2p.listen_address", "127.0.0.1");
-			properties.set("network.p2p.seed_nodes", "");
-			return this;
-		}
+    public NodeBuilder p2pServer(int p2pServerPort) {
+      this.p2pServerPort = p2pServerPort;
+      moduleRunnersBuilder.add(Runners.P2P_NETWORK);
+      properties.set("network.p2p.listen_port", p2pServerPort);
+      properties.set("network.p2p.listen_address", "127.0.0.1");
+      properties.set("network.p2p.seed_nodes", "");
+      return this;
+    }
 
-		public NodeBuilder ledgerSync() {
-			moduleRunnersBuilder.add(Runners.SYNC);
-			return this;
-		}
+    public NodeBuilder ledgerSync() {
+      moduleRunnersBuilder.add(Runners.SYNC);
+      return this;
+    }
 
-		public NodeBuilder network(Network network) {
-			this.network = network;
-			return this;
-		}
+    public NodeBuilder network(Network network) {
+      this.network = network;
+      return this;
+    }
 
-		public NodeBuilder keyPair(ECKeyPair keyPair) {
-			this.customKeyPair = Optional.of(keyPair);
-			return this;
-		}
+    public NodeBuilder keyPair(ECKeyPair keyPair) {
+      this.customKeyPair = Optional.of(keyPair);
+      return this;
+    }
 
-		public NodeBuilder dataDir(String path) {
-			this.dataDir = Optional.of(path);
-			return this;
-		}
+    public NodeBuilder dataDir(String path) {
+      this.dataDir = Optional.of(path);
+      return this;
+    }
 
-		public NodeBuilder prop(String name, String value) {
-			customProperties.put(name, value);
-			return this;
-		}
+    public NodeBuilder prop(String name, String value) {
+      customProperties.put(name, value);
+      return this;
+    }
 
-		public Node build() throws Exception {
-			final File dataDir;
-			if (this.dataDir.isPresent()) {
-				dataDir = new File(this.dataDir.get());
-				if (!dataDir.exists()) {
-					dataDir.mkdirs();
-				}
-			} else {
-		 		dataDir = new File(Files.createTempDirectory("radix-shell-node-").toString());
-			}
+    public Node build() throws Exception {
+      final File dataDir;
+      if (this.dataDir.isPresent()) {
+        dataDir = new File(this.dataDir.get());
+        if (!dataDir.exists()) {
+          dataDir.mkdirs();
+        }
+      } else {
+        dataDir = new File(Files.createTempDirectory("radix-shell-node-").toString());
+      }
 
-			customProperties.build().forEach((k, v) -> properties.set(k, v));
+      customProperties.build().forEach((k, v) -> properties.set(k, v));
 
-			properties.set("db.location", dataDir.toString());
+      properties.set("db.location", dataDir.toString());
 
-			if (properties.get("node.key.path", "").isEmpty()) {
-				properties.set("node.key.path", new File(dataDir, "node-keystore.ks").getAbsolutePath());
-			}
+      if (properties.get("node.key.path", "").isEmpty()) {
+        properties.set("node.key.path", new File(dataDir, "node-keystore.ks").getAbsolutePath());
+      }
 
-			if (properties.get("network.host_ip", "").isEmpty()) {
-				properties.set("network.host_ip", "127.0.0.1");
-			}
+      if (properties.get("network.host_ip", "").isEmpty()) {
+        properties.set("network.host_ip", "127.0.0.1");
+      }
 
-			log.info("Node data dir: {}", dataDir);
+      log.info("Node data dir: {}", dataDir);
 
-			final var nodeKeyFile = new File(properties.get("node.key.path"));
-			if (!nodeKeyFile.exists()) {
-				final var newKeyPair = this.customKeyPair.orElseGet(ECKeyPair::generateNew);
-				RadixKeyStore.fromFile(nodeKeyFile, nodeKeyPass.toCharArray(), true)
-					.writeKeyPair("node", newKeyPair);
-			}
+      final var nodeKeyFile = new File(properties.get("node.key.path"));
+      if (!nodeKeyFile.exists()) {
+        final var newKeyPair = this.customKeyPair.orElseGet(ECKeyPair::generateNew);
+        RadixKeyStore.fromFile(nodeKeyFile, nodeKeyPass.toCharArray(), true)
+            .writeKeyPair("node", newKeyPair);
+      }
 
-			properties.set("network.id", network.getId());
-			if (network.genesisTxn().isEmpty() && properties.get("network.genesis_txn", "").isEmpty()) {
-				properties.set("network.genesis_txn", Network.STOKENET.genesisTxn().get()); // default to stokenet genesis
-			}
+      properties.set("network.id", network.getId());
+      if (network.genesisTxn().isEmpty() && properties.get("network.genesis_txn", "").isEmpty()) {
+        properties.set(
+            "network.genesis_txn",
+            Network.STOKENET.genesisTxn().get()); // default to stokenet genesis
+      }
 
-			final var injector = Guice.createInjector(new RadixNodeModule(properties));
-			final var node = new Node(injector);
+      final var injector = Guice.createInjector(new RadixNodeModule(properties));
+      final var node = new Node(injector);
 
-			moduleRunnersBuilder.build().forEach(node::startRunner);
+      moduleRunnersBuilder.build().forEach(node::startRunner);
 
-			if (p2pServerPort > 0) {
-				node.startP2PServer();
-			}
+      if (p2pServerPort > 0) {
+        node.startP2PServer();
+      }
 
-			return node;
-		}
-	}
+      return node;
+    }
+  }
 
-	public static final class Node {
-		private final Injector injector;
-		private final Map<String, ModuleRunner> moduleRunners;
-		private final Set<Disposable> msgConsumers = new HashSet<>();
-		private final Set<Disposable> eventConsumers = new HashSet<>();
-		private final Set<Disposable> remoteEventConsumers = new HashSet<>();
+  public static final class Node {
+    private final Injector injector;
+    private final Map<String, ModuleRunner> moduleRunners;
+    private final Set<Disposable> msgConsumers = new HashSet<>();
+    private final Set<Disposable> eventConsumers = new HashSet<>();
+    private final Set<Disposable> remoteEventConsumers = new HashSet<>();
 
-		public Node(Injector injector) {
-			this.injector = injector;
-			this.moduleRunners = injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }));
-		}
+    public Node(Injector injector) {
+      this.injector = injector;
+      this.moduleRunners =
+          injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}));
+    }
 
-		public <T> T getInstance(Key<T> key) {
-			return injector.getInstance(key);
-		}
+    public <T> T getInstance(Key<T> key) {
+      return injector.getInstance(key);
+    }
 
-		public <T> T getInstance(Class<T> clz) {
-			return injector.getInstance(clz);
-		}
+    public <T> T getInstance(Class<T> clz) {
+      return injector.getInstance(clz);
+    }
 
-		public void startRunner(String runner) {
-			moduleRunners.get(runner).start();
-		}
+    public void startRunner(String runner) {
+      moduleRunners.get(runner).start();
+    }
 
-		public void stopRunner(String runner) {
-			moduleRunners.get(runner).stop();
-		}
+    public void stopRunner(String runner) {
+      moduleRunners.get(runner).stop();
+    }
 
-		public void startP2PServer() {
-			final var peerServer = injector.getInstance(PeerServerBootstrap.class);
-			try {
-				peerServer.start();
-				log.info("P2P server started: " + self());
-			} catch (InterruptedException e) {
-				log.error("Cannot start p2p server", e);
-			}
-		}
+    public void startP2PServer() {
+      final var peerServer = injector.getInstance(PeerServerBootstrap.class);
+      try {
+        peerServer.start();
+        log.info("P2P server started: " + self());
+      } catch (InterruptedException e) {
+        log.error("Cannot start p2p server", e);
+      }
+    }
 
-		public RadixNodeUri self() {
-			return injector.getInstance(Key.get(RadixNodeUri.class, Self.class));
-		}
+    public RadixNodeUri self() {
+      return injector.getInstance(Key.get(RadixNodeUri.class, Self.class));
+    }
 
-		public void connectTo(String uri) throws DeserializeException {
-			connectTo(RadixNodeUri.fromUri(URI.create(uri)));
-		}
+    public void connectTo(String uri) throws DeserializeException {
+      connectTo(RadixNodeUri.fromUri(URI.create(uri)));
+    }
 
-		public void connectTo(RadixNodeUri uri) {
-			final var bootstrap = getInstance(PeerOutboundBootstrap.class);
-			bootstrap.initOutboundConnection(uri);
-		}
+    public void connectTo(RadixNodeUri uri) {
+      final var bootstrap = getInstance(PeerOutboundBootstrap.class);
+      bootstrap.initOutboundConnection(uri);
+    }
 
-		public ImmutableList<PeerChannel> peers() {
-			return ImmutableList.<PeerChannel>builder()
-				.addAll(getInstance(PeerManager.class).activeChannels())
-				.build();
-		}
+    public ImmutableList<PeerChannel> peers() {
+      return ImmutableList.<PeerChannel>builder()
+          .addAll(getInstance(PeerManager.class).activeChannels())
+          .build();
+    }
 
-		@SuppressWarnings("unchecked")
-		public <T> void dispatch(T t) {
-			((EventDispatcher<T>) injector.getInstance(Environment.class).getDispatcher(t.getClass()))
-				.dispatch(t);
-		}
+    @SuppressWarnings("unchecked")
+    public <T> void dispatch(T t) {
+      ((EventDispatcher<T>) injector.getInstance(Environment.class).getDispatcher(t.getClass()))
+          .dispatch(t);
+    }
 
-		public <T> Disposable onEvent(Class<T> eventClass, Consumer<T> consumer) {
-			final var disposable =
-				injector.getInstance(RxEnvironment.class).getObservable(eventClass).subscribe(consumer::accept);
+    public <T> Disposable onEvent(Class<T> eventClass, Consumer<T> consumer) {
+      final var disposable =
+          injector
+              .getInstance(RxEnvironment.class)
+              .getObservable(eventClass)
+              .subscribe(consumer::accept);
 
-			eventConsumers.add(disposable);
-			return disposable;
-		}
+      eventConsumers.add(disposable);
+      return disposable;
+    }
 
-		public void cleanEventConsumers() {
-			eventConsumers.forEach(Disposable::dispose);
-			eventConsumers.clear();
-		}
+    public void cleanEventConsumers() {
+      eventConsumers.forEach(Disposable::dispose);
+      eventConsumers.clear();
+    }
 
-		public <T> void dispatchRemote(PeerChannel receiver, T t) {
-			dispatchRemote(BFTNode.create(receiver.getRemoteNodeId().getPublicKey()), t);
-		}
+    public <T> void dispatchRemote(PeerChannel receiver, T t) {
+      dispatchRemote(BFTNode.create(receiver.getRemoteNodeId().getPublicKey()), t);
+    }
 
-		public <T> void dispatchRemote(RadixNodeUri receiver, T t) {
-			dispatchRemote(BFTNode.create(receiver.getNodeId().getPublicKey()), t);
-		}
+    public <T> void dispatchRemote(RadixNodeUri receiver, T t) {
+      dispatchRemote(BFTNode.create(receiver.getNodeId().getPublicKey()), t);
+    }
 
-		public <T> Disposable onRemoteEvent(Class<T> eventClass, Consumer<RemoteEvent<T>> consumer) {
-			final var disposable =
-				injector.getInstance(RxRemoteEnvironment.class).remoteEvents(eventClass)
-					.subscribe(consumer::accept);
+    public <T> Disposable onRemoteEvent(Class<T> eventClass, Consumer<RemoteEvent<T>> consumer) {
+      final var disposable =
+          injector
+              .getInstance(RxRemoteEnvironment.class)
+              .remoteEvents(eventClass)
+              .subscribe(consumer::accept);
 
-			remoteEventConsumers.add(disposable);
-			return disposable;
-		}
+      remoteEventConsumers.add(disposable);
+      return disposable;
+    }
 
-		public void cleanRemoteEventConsumers() {
-			remoteEventConsumers.forEach(Disposable::dispose);
-			remoteEventConsumers.clear();
-		}
+    public void cleanRemoteEventConsumers() {
+      remoteEventConsumers.forEach(Disposable::dispose);
+      remoteEventConsumers.clear();
+    }
 
-		@SuppressWarnings("unchecked")
-		public <T> void dispatchRemote(BFTNode receiver, T t) {
-			((RemoteEventDispatcher<T>) injector.getInstance(Environment.class).getRemoteDispatcher(t.getClass()))
-				.dispatch(receiver, t);
-		}
+    @SuppressWarnings("unchecked")
+    public <T> void dispatchRemote(BFTNode receiver, T t) {
+      ((RemoteEventDispatcher<T>)
+              injector.getInstance(Environment.class).getRemoteDispatcher(t.getClass()))
+          .dispatch(receiver, t);
+    }
 
-		public void sendMsg(RadixNodeUri uri, Message message) {
-			sendMsg(uri.getNodeId(), message);
-		}
+    public void sendMsg(RadixNodeUri uri, Message message) {
+      sendMsg(uri.getNodeId(), message);
+    }
 
-		public void sendMsg(String nodeId, Message message) throws DeserializeException {
-			final var addressing = injector.getInstance(Addressing.class);
-			sendMsg(NodeId.fromPublicKey(addressing.forNodes().parse(nodeId)), message);
-		}
+    public void sendMsg(String nodeId, Message message) throws DeserializeException {
+      final var addressing = injector.getInstance(Addressing.class);
+      sendMsg(NodeId.fromPublicKey(addressing.forNodes().parse(nodeId)), message);
+    }
 
-		public void sendMsg(NodeId nodeId, Message message) {
-			getInstance(MessageCentral.class).send(nodeId, message);
-		}
+    public void sendMsg(NodeId nodeId, Message message) {
+      getInstance(MessageCentral.class).send(nodeId, message);
+    }
 
-		public <T extends Message> Disposable onMsg(Class<T> msgClass, Consumer<MessageFromPeer<T>> consumer) {
-			final var disposable = getInstance(MessageCentral.class).messagesOf(msgClass)
-				.subscribe(consumer::accept);
-			msgConsumers.add(disposable);
-			return disposable;
-		}
+    public <T extends Message> Disposable onMsg(
+        Class<T> msgClass, Consumer<MessageFromPeer<T>> consumer) {
+      final var disposable =
+          getInstance(MessageCentral.class).messagesOf(msgClass).subscribe(consumer::accept);
+      msgConsumers.add(disposable);
+      return disposable;
+    }
 
-		public void cleanMsgConsumers() {
-			msgConsumers.forEach(Disposable::dispose);
-			msgConsumers.clear();
-		}
+    public void cleanMsgConsumers() {
+      msgConsumers.forEach(Disposable::dispose);
+      msgConsumers.clear();
+    }
 
-		public void writeLedgerSyncToFile(String fileName) throws IOException {
-			final var start = System.currentTimeMillis();
-			LedgerFileSync.writeToFile(
-				fileName,
-				getInstance(Serialization.class),
-				getInstance(CommittedReader.class)
-			);
-			final var time = System.currentTimeMillis() - start;
-			System.out.printf("Dump finished. Took %ss%n", time / 1000);
-		}
+    public void writeLedgerSyncToFile(String fileName) throws IOException {
+      final var start = System.currentTimeMillis();
+      LedgerFileSync.writeToFile(
+          fileName, getInstance(Serialization.class), getInstance(CommittedReader.class));
+      final var time = System.currentTimeMillis() - start;
+      System.out.printf("Dump finished. Took %ss%n", time / 1000);
+    }
 
-		public void restoreLedgerFromFile(String fileName) throws IOException {
-			final var start = System.currentTimeMillis();
-			LedgerFileSync.restoreFromFile(
-				fileName,
-				getInstance(Serialization.class),
-				getInstance(Key.get(new TypeLiteral<EventDispatcher<VerifiedTxnsAndProof>>() { }))
-			);
-			final var time = System.currentTimeMillis() - start;
-			System.out.printf("Restore finished. Took %ss%n", time / 1000);
-		}
+    public void restoreLedgerFromFile(String fileName) throws IOException {
+      final var start = System.currentTimeMillis();
+      LedgerFileSync.restoreFromFile(
+          fileName,
+          getInstance(Serialization.class),
+          getInstance(Key.get(new TypeLiteral<EventDispatcher<VerifiedTxnsAndProof>>() {})));
+      final var time = System.currentTimeMillis() - start;
+      System.out.printf("Restore finished. Took %ss%n", time / 1000);
+    }
 
-		@Override
-		public String toString() {
-			return self().toString();
-		}
-	}
+    @Override
+    public String toString() {
+      return self().toString();
+    }
+  }
 }

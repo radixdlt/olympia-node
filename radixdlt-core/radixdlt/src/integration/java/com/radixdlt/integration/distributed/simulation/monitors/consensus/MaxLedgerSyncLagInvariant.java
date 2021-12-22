@@ -71,35 +71,47 @@ import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.R
 import io.reactivex.rxjava3.core.Observable;
 
 /**
- * Checks that at all times ledger sync lag is no more than a specified maximum number of state versions
- * (compared to the highest state version in the network) for any node.
+ * Checks that at all times ledger sync lag is no more than a specified maximum number of state
+ * versions (compared to the highest state version in the network) for any node.
  */
 public final class MaxLedgerSyncLagInvariant implements TestInvariant {
 
-	private final long maxLag;
+  private final long maxLag;
 
-	public MaxLedgerSyncLagInvariant(long maxLag) {
-		this.maxLag = maxLag;
-	}
+  public MaxLedgerSyncLagInvariant(long maxLag) {
+    this.maxLag = maxLag;
+  }
 
-	@Override
-	public Observable<TestInvariantError> check(RunningNetwork network) {
-		return network.ledgerUpdates().flatMap(unused -> {
-			final var maxStateVersion = network
-				.getSystemCounters().values().stream()
-				.map(sc -> sc.get(SystemCounters.CounterType.LEDGER_STATE_VERSION))
-				.max(Long::compareTo)
-				.get();
+  @Override
+  public Observable<TestInvariantError> check(RunningNetwork network) {
+    return network
+        .ledgerUpdates()
+        .flatMap(
+            unused -> {
+              final var maxStateVersion =
+                  network.getSystemCounters().values().stream()
+                      .map(sc -> sc.get(SystemCounters.CounterType.LEDGER_STATE_VERSION))
+                      .max(Long::compareTo)
+                      .get();
 
-			final var maybeTooMuchLag = network.getSystemCounters().entrySet().stream()
-				.filter(e -> e.getValue().get(CounterType.LEDGER_STATE_VERSION) + maxLag < maxStateVersion)
-				.findAny();
+              final var maybeTooMuchLag =
+                  network.getSystemCounters().entrySet().stream()
+                      .filter(
+                          e ->
+                              e.getValue().get(CounterType.LEDGER_STATE_VERSION) + maxLag
+                                  < maxStateVersion)
+                      .findAny();
 
-			return maybeTooMuchLag
-				.map(e -> Observable.just(new TestInvariantError(
-					String.format("Node %s ledger sync lag exceeded maximum of %s state versions", e.getKey(), maxLag))
-				))
-				.orElse(Observable.empty());
-		});
-	}
+              return maybeTooMuchLag
+                  .map(
+                      e ->
+                          Observable.just(
+                              new TestInvariantError(
+                                  String.format(
+                                      "Node %s ledger sync lag exceeded maximum of %s state"
+                                          + " versions",
+                                      e.getKey(), maxLag))))
+                  .orElse(Observable.empty());
+            });
+  }
 }

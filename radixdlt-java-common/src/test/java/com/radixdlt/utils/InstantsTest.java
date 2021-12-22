@@ -64,27 +64,26 @@
 
 package com.radixdlt.utils;
 
-import org.junit.Test;
-
-import java.time.Instant;
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+import java.time.Instant;
+import org.junit.Test;
+
 public class InstantsTest {
-	@Test
-	public void toBytesWorksCorrectly() {
-		var instant = Instant.ofEpochSecond(1620640302L, 820166000);
-		var expected = new byte[] {0, 0, 0, 0, 96, -103, 2, 46, 48, -30, -67, 112};
+  @Test
+  public void toBytesWorksCorrectly() {
+    var instant = Instant.ofEpochSecond(1620640302L, 820166000);
+    var expected = new byte[] {0, 0, 0, 0, 96, -103, 2, 46, 48, -30, -67, 112};
 
-		assertArrayEquals(expected, Instants.toBytes(instant));
-	}
+    assertArrayEquals(expected, Instants.toBytes(instant));
+  }
 
-	@Test
-	public void fromBytesWorksCorrectly() {
-		var expected = Instant.ofEpochSecond(1620640302L, 820166000);
-		var bytes = new byte[] {0, 0, 0, 0, 96, -103, 2, 46, 48, -30, -67, 112};
+  @Test
+  public void fromBytesWorksCorrectly() {
+    var expected = Instant.ofEpochSecond(1620640302L, 820166000);
+    var bytes = new byte[] {0, 0, 0, 0, 96, -103, 2, 46, 48, -30, -67, 112};
 
-		assertEquals(expected, Instants.fromBytes(bytes));
-	}
+    assertEquals(expected, Instants.fromBytes(bytes));
+  }
 }

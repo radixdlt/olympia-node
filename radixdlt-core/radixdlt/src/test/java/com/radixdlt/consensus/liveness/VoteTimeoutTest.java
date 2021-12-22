@@ -71,17 +71,16 @@ import org.radix.serialization.SerializeMessageObject;
 
 public class VoteTimeoutTest extends SerializeMessageObject<VoteTimeout> {
 
-    public VoteTimeoutTest() {
-        super(VoteTimeout.class, VoteTimeoutTest::get);
-    }
+  public VoteTimeoutTest() {
+    super(VoteTimeout.class, VoteTimeoutTest::get);
+  }
 
-    private static VoteTimeout get() {
-        return new VoteTimeout(View.of(1), 2);
-    }
+  private static VoteTimeout get() {
+    return new VoteTimeout(View.of(1), 2);
+  }
 
-    @Test
-    public void equalsTest() {
-        EqualsVerifier.forClass(VoteTimeout.class)
-            .verify();
-    }
+  @Test
+  public void equalsTest() {
+    EqualsVerifier.forClass(VoteTimeout.class).verify();
+  }
 }

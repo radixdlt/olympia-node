@@ -68,10 +68,15 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.network.p2p.NodeId;
 
 public interface AddressBookPersistence {
-	void open();
-	void reset();
-	void close();
-	boolean saveEntry(AddressBookEntry entry);
-	boolean removeEntry(NodeId nodeId);
-	ImmutableList<AddressBookEntry> getAllEntries();
+  void open();
+
+  void reset();
+
+  void close();
+
+  boolean saveEntry(AddressBookEntry entry);
+
+  boolean removeEntry(NodeId nodeId);
+
+  ImmutableList<AddressBookEntry> getAllEntries();
 }

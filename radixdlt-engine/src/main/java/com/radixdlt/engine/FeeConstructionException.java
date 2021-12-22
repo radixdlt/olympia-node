@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -66,14 +67,14 @@ package com.radixdlt.engine;
 import com.radixdlt.atom.TxBuilderException;
 
 public final class FeeConstructionException extends TxBuilderException {
-	private final int attempts;
+  private final int attempts;
 
-	public FeeConstructionException(int attempts) {
-		super("Unable to construct transaction with fees after " + attempts + " attempts.");
-		this.attempts = attempts;
-	}
+  public FeeConstructionException(int attempts) {
+    super("Unable to construct transaction with fees after " + attempts + " attempts.");
+    this.attempts = attempts;
+  }
 
-	public int getAttempts() {
-		return attempts;
-	}
+  public int getAttempts() {
+    return attempts;
+  }
 }

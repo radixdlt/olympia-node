@@ -71,28 +71,29 @@ import io.reactivex.rxjava3.core.Observable;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Checks to make sure that a node has been registered as a validator
- * in some epoch
- */
+/** Checks to make sure that a node has been registered as a validator in some epoch */
 public class RegisteredValidatorChecker implements TestInvariant {
-	private final Observable<BFTNode> registeringValidators;
+  private final Observable<BFTNode> registeringValidators;
 
-	public RegisteredValidatorChecker(Observable<BFTNode> registeringValidators) {
-		this.registeringValidators = Objects.requireNonNull(registeringValidators);
-	}
+  public RegisteredValidatorChecker(Observable<BFTNode> registeringValidators) {
+    this.registeringValidators = Objects.requireNonNull(registeringValidators);
+  }
 
-	@Override
-	public Observable<TestInvariantError> check(RunningNetwork network) {
-		return registeringValidators
-			.flatMapMaybe(validator ->
-				network.latestEpochChanges()
-					.filter(epochChange -> epochChange.getBFTConfiguration().getValidatorSet().containsNode(validator))
-					.timeout(20, TimeUnit.SECONDS)
-					.firstOrError()
-					.ignoreElement()
-					.onErrorReturn(e -> new TestInvariantError(validator + " was not included in any epoch in last 20 seconds"))
-			);
-	}
-
+  @Override
+  public Observable<TestInvariantError> check(RunningNetwork network) {
+    return registeringValidators.flatMapMaybe(
+        validator ->
+            network
+                .latestEpochChanges()
+                .filter(
+                    epochChange ->
+                        epochChange.getBFTConfiguration().getValidatorSet().containsNode(validator))
+                .timeout(20, TimeUnit.SECONDS)
+                .firstOrError()
+                .ignoreElement()
+                .onErrorReturn(
+                    e ->
+                        new TestInvariantError(
+                            validator + " was not included in any epoch in last 20 seconds")));
+  }
 }

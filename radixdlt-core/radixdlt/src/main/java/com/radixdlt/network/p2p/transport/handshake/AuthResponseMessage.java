@@ -73,69 +73,73 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
 import java.util.Objects;
 
 @SerializerId2("message.handshake.auth_response")
 public final class AuthResponseMessage {
 
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(DsonOutput.Output.ALL)
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(DsonOutput.Output.ALL)
+  private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("ephemeralPublicKey")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final HashCode ephemeralPublicKey;
+  @JsonProperty("ephemeralPublicKey")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final HashCode ephemeralPublicKey;
 
-	@JsonProperty("nonce")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final HashCode nonce;
+  @JsonProperty("nonce")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final HashCode nonce;
 
-	@JsonProperty("proxyCertificates")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final ImmutableSet<ProxyCertificate> proxyCertificates;
+  @JsonProperty("proxyCertificates")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final ImmutableSet<ProxyCertificate> proxyCertificates;
 
-	@JsonCreator
-	public static AuthResponseMessage deserialize(
-		@JsonProperty(value = "ephemeralPublicKey", required = true) HashCode ephemeralPublicKey,
-		@JsonProperty(value = "nonce", required = true) HashCode nonce,
-		@JsonProperty("proxyCertificates") ImmutableSet<ProxyCertificate> proxyCertificates
-	) {
-		return new AuthResponseMessage(ephemeralPublicKey, nonce, proxyCertificates != null ? proxyCertificates : ImmutableSet.of());
-	}
+  @JsonCreator
+  public static AuthResponseMessage deserialize(
+      @JsonProperty(value = "ephemeralPublicKey", required = true) HashCode ephemeralPublicKey,
+      @JsonProperty(value = "nonce", required = true) HashCode nonce,
+      @JsonProperty("proxyCertificates") ImmutableSet<ProxyCertificate> proxyCertificates) {
+    return new AuthResponseMessage(
+        ephemeralPublicKey,
+        nonce,
+        proxyCertificates != null ? proxyCertificates : ImmutableSet.of());
+  }
 
-	public AuthResponseMessage(HashCode ephemeralPublicKey, HashCode nonce, ImmutableSet<ProxyCertificate> proxyCertificates) {
-		this.ephemeralPublicKey = ephemeralPublicKey;
-		this.nonce = nonce;
-		this.proxyCertificates = proxyCertificates;
-	}
+  public AuthResponseMessage(
+      HashCode ephemeralPublicKey,
+      HashCode nonce,
+      ImmutableSet<ProxyCertificate> proxyCertificates) {
+    this.ephemeralPublicKey = ephemeralPublicKey;
+    this.nonce = nonce;
+    this.proxyCertificates = proxyCertificates;
+  }
 
-	public HashCode getEphemeralPublicKey() {
-		return ephemeralPublicKey;
-	}
+  public HashCode getEphemeralPublicKey() {
+    return ephemeralPublicKey;
+  }
 
-	public HashCode getNonce() {
-		return nonce;
-	}
+  public HashCode getNonce() {
+    return nonce;
+  }
 
-	public ImmutableSet<ProxyCertificate> getProxyCertificates() {
-		return proxyCertificates;
-	}
+  public ImmutableSet<ProxyCertificate> getProxyCertificates() {
+    return proxyCertificates;
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof AuthResponseMessage that)
-			   && Objects.equals(ephemeralPublicKey, that.ephemeralPublicKey)
-			   && Objects.equals(nonce, that.nonce)
-			   && Objects.equals(proxyCertificates, that.proxyCertificates);
-	}
+    return (o instanceof AuthResponseMessage that)
+        && Objects.equals(ephemeralPublicKey, that.ephemeralPublicKey)
+        && Objects.equals(nonce, that.nonce)
+        && Objects.equals(proxyCertificates, that.proxyCertificates);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(ephemeralPublicKey, nonce, proxyCertificates);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(ephemeralPublicKey, nonce, proxyCertificates);
+  }
 }

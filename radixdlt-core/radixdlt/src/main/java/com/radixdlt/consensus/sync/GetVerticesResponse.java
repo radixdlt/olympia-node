@@ -68,22 +68,20 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * An RPC response
- */
+/** An RPC response */
 public final class GetVerticesResponse {
-	private final List<VerifiedVertex> vertices;
+  private final List<VerifiedVertex> vertices;
 
-	public GetVerticesResponse(List<VerifiedVertex> vertices) {
-		this.vertices = Objects.requireNonNull(vertices);
-	}
+  public GetVerticesResponse(List<VerifiedVertex> vertices) {
+    this.vertices = Objects.requireNonNull(vertices);
+  }
 
-	public List<VerifiedVertex> getVertices() {
-		return vertices;
-	}
+  public List<VerifiedVertex> getVertices() {
+    return vertices;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{vertices=%s}", this.getClass().getSimpleName(), vertices);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{vertices=%s}", this.getClass().getSimpleName(), vertices);
+  }
 }

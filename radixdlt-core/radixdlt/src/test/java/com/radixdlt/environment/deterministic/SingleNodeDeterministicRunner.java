@@ -67,53 +67,51 @@ package com.radixdlt.environment.deterministic;
 import com.google.inject.Inject;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-
 import java.util.function.Predicate;
 
 public final class SingleNodeDeterministicRunner {
-	private static final int MAX_EVENTS_DEFAULT = 10000;
+  private static final int MAX_EVENTS_DEFAULT = 10000;
 
-	private final DeterministicProcessor processor;
-	private final DeterministicNetwork network;
+  private final DeterministicProcessor processor;
+  private final DeterministicNetwork network;
 
-	@Inject
-	public SingleNodeDeterministicRunner(
-		DeterministicProcessor processor,
-		DeterministicNetwork network
-	) {
-		this.processor = processor;
-		this.network = network;
-	}
+  @Inject
+  public SingleNodeDeterministicRunner(
+      DeterministicProcessor processor, DeterministicNetwork network) {
+    this.processor = processor;
+    this.network = network;
+  }
 
-	public void start() {
-		processor.start();
-	}
+  public void start() {
+    processor.start();
+  }
 
-	public void processNext(int count) {
-		for (int i = 0; i < count; i++) {
-			processNext();
-		}
-	}
+  public void processNext(int count) {
+    for (int i = 0; i < count; i++) {
+      processNext();
+    }
+  }
 
-	public ControlledMessage processNext() {
-		var msg = network.nextMessage().value();
-		processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-		return msg;
-	}
+  public ControlledMessage processNext() {
+    var msg = network.nextMessage().value();
+    processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
+    return msg;
+  }
 
-	public <T> T runNextEventsThrough(Class<T> eventClass) {
-		return runNextEventsThrough(eventClass, t -> true);
-	}
+  public <T> T runNextEventsThrough(Class<T> eventClass) {
+    return runNextEventsThrough(eventClass, t -> true);
+  }
 
-	@SuppressWarnings("unchecked")
-	public <T> T runNextEventsThrough(Class<T> eventClass, Predicate<T> eventPredicate) {
-		for (int i = 0; i < MAX_EVENTS_DEFAULT; i++) {
-			var msg = processNext();
-			if (eventClass.isInstance(msg.message()) && eventPredicate.test((T) msg.message())) {
-				return (T) msg.message();
-			}
-		}
+  @SuppressWarnings("unchecked")
+  public <T> T runNextEventsThrough(Class<T> eventClass, Predicate<T> eventPredicate) {
+    for (int i = 0; i < MAX_EVENTS_DEFAULT; i++) {
+      var msg = processNext();
+      if (eventClass.isInstance(msg.message()) && eventPredicate.test((T) msg.message())) {
+        return (T) msg.message();
+      }
+    }
 
-		throw new RuntimeException("Reached " + MAX_EVENTS_DEFAULT + " events without finding " + eventClass);
-	}
+    throw new RuntimeException(
+        "Reached " + MAX_EVENTS_DEFAULT + " events without finding " + eventClass);
+  }
 }

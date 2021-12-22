@@ -67,54 +67,51 @@ package com.radixdlt.middleware2.network;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.network.messaging.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.network.messaging.Message;
-
 import java.util.List;
 import java.util.Objects;
 
 @SerializerId2("message.mempool.add")
 public final class MempoolAddMessage extends Message {
-	@JsonProperty("txns")
-	@DsonOutput(Output.ALL)
-	private final List<byte[]> txns;
+  @JsonProperty("txns")
+  @DsonOutput(Output.ALL)
+  private final List<byte[]> txns;
 
-	@JsonCreator
-	public MempoolAddMessage(
-		@JsonProperty(value = "txns", required = true) List<byte[]> txns
-	) {
-		this.txns = Objects.requireNonNull(txns);
-		this.txns.forEach(Objects::requireNonNull);
-	}
+  @JsonCreator
+  public MempoolAddMessage(@JsonProperty(value = "txns", required = true) List<byte[]> txns) {
+    this.txns = Objects.requireNonNull(txns);
+    this.txns.forEach(Objects::requireNonNull);
+  }
 
-	public static MempoolAddMessage from(List<Txn> txns) {
-		return new MempoolAddMessage(txns.stream().map(Txn::getPayload).toList());
-	}
+  public static MempoolAddMessage from(List<Txn> txns) {
+    return new MempoolAddMessage(txns.stream().map(Txn::getPayload).toList());
+  }
 
-	public List<Txn> getTxns() {
-		return txns == null ? List.of() : txns.stream().map(Txn::create).toList();
-	}
+  public List<Txn> getTxns() {
+    return txns == null ? List.of() : txns.stream().map(Txn::create).toList();
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{txns=%s}", getClass().getSimpleName(), getTxns());
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{txns=%s}", getClass().getSimpleName(), getTxns());
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof MempoolAddMessage that)
-			   && Objects.equals(getTxns(), that.getTxns())
-			   && Objects.equals(getTimestamp(), that.getTimestamp());
-	}
+    return (o instanceof MempoolAddMessage that)
+        && Objects.equals(getTxns(), that.getTxns())
+        && Objects.equals(getTimestamp(), that.getTimestamp());
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(getTxns(), getTimestamp());
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(getTxns(), getTimestamp());
+  }
 }

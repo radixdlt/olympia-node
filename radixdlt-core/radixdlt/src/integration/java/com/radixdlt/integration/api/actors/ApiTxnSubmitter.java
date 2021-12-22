@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -75,8 +76,11 @@ import com.radixdlt.api.core.openapitools.model.NotValidatorOwnerError;
 import com.radixdlt.api.core.openapitools.model.ResourceAmount;
 import com.radixdlt.api.core.openapitools.model.TokenData;
 import com.radixdlt.api.core.openapitools.model.TokenResourceIdentifier;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 import com.radixdlt.integration.api.DeterministicActor;
 import com.radixdlt.integration.api.actors.actions.BurnTokens;
 import com.radixdlt.integration.api.actors.actions.CreateTokenDefinition;
@@ -89,170 +93,174 @@ import com.radixdlt.integration.api.actors.actions.SetValidatorOwner;
 import com.radixdlt.integration.api.actors.actions.StakeTokens;
 import com.radixdlt.integration.api.actors.actions.TransferTokens;
 import com.radixdlt.integration.api.actors.actions.UnstakeStakeUnits;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
-import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Submits a random transaction through a random node in a deterministic test.
- */
+/** Submits a random transaction through a random node in a deterministic test. */
 public final class ApiTxnSubmitter implements DeterministicActor {
-	private static final Set<Class<? extends CoreError>> OKAY_ERRORS = Set.of(
-		MempoolFullError.class,
-		NotEnoughResourcesError.class,
-		AboveMaximumValidatorFeeIncreaseError.class,
-		BelowMinimumStakeError.class,
-		NotValidatorOwnerError.class
-	);
-	private int tokenId = 0;
+  private static final Set<Class<? extends CoreError>> OKAY_ERRORS =
+      Set.of(
+          MempoolFullError.class,
+          NotEnoughResourcesError.class,
+          AboveMaximumValidatorFeeIncreaseError.class,
+          BelowMinimumStakeError.class,
+          NotValidatorOwnerError.class);
+  private int tokenId = 0;
 
-	private Amount nextAmount(Random random) {
-		return Amount.ofTokens(random.nextInt(10) * 10 + 1);
-	}
+  private Amount nextAmount(Random random) {
+    return Amount.ofTokens(random.nextInt(10) * 10 + 1);
+  }
 
-	private TransferTokens transferTokens(NodeApiClient nodeClient, EntityIdentifier to, Random random) throws Exception {
-		var publicKey = nodeClient.getPublicKey();
-		var accountIdentifier = nodeClient.deriveAccount(publicKey);
-		var response = nodeClient.getEntity(accountIdentifier);
-		var tokenTypes = response.getBalances()
-			.stream()
-			.map(ResourceAmount::getResourceIdentifier)
-			.filter(TokenResourceIdentifier.class::isInstance)
-			.map(TokenResourceIdentifier.class::cast)
-			.collect(Collectors.toList());
+  private TransferTokens transferTokens(
+      NodeApiClient nodeClient, EntityIdentifier to, Random random) throws Exception {
+    var publicKey = nodeClient.getPublicKey();
+    var accountIdentifier = nodeClient.deriveAccount(publicKey);
+    var response = nodeClient.getEntity(accountIdentifier);
+    var tokenTypes =
+        response.getBalances().stream()
+            .map(ResourceAmount::getResourceIdentifier)
+            .filter(TokenResourceIdentifier.class::isInstance)
+            .map(TokenResourceIdentifier.class::cast)
+            .collect(Collectors.toList());
 
-		TokenResourceIdentifier tokenResourceIdentifier;
-		if (tokenTypes.isEmpty()) {
-			tokenResourceIdentifier = nodeClient.nativeToken();
-		} else {
-			var nextIndex = random.nextInt(tokenTypes.size());
-			tokenResourceIdentifier = tokenTypes.get(nextIndex);
-		}
+    TokenResourceIdentifier tokenResourceIdentifier;
+    if (tokenTypes.isEmpty()) {
+      tokenResourceIdentifier = nodeClient.nativeToken();
+    } else {
+      var nextIndex = random.nextInt(tokenTypes.size());
+      tokenResourceIdentifier = tokenTypes.get(nextIndex);
+    }
 
-		return new TransferTokens(nextAmount(random), tokenResourceIdentifier, to);
-	}
+    return new TransferTokens(nextAmount(random), tokenResourceIdentifier, to);
+  }
 
-	private TokenResourceIdentifier findTokenClientOwns(NodeApiClient nodeClient, Random random) throws Exception {
-		var publicKey = nodeClient.getPublicKey();
-		var accountIdentifier = nodeClient.deriveAccount(publicKey);
-		var response = nodeClient.getEntity(accountIdentifier);
-		var tokenTypes = response.getBalances()
-			.stream()
-			.map(ResourceAmount::getResourceIdentifier)
-			.filter(TokenResourceIdentifier.class::isInstance)
-			.map(TokenResourceIdentifier.class::cast)
-			.filter(t -> {
-				try {
-					var entityResponse = nodeClient.getEntity(new EntityIdentifier().address(t.getRri()));
-					return entityResponse.getDataObjects().stream()
-						.filter(TokenData.class::isInstance)
-						.map(TokenData.class::cast)
-						.filter(d -> d.getOwner() != null)
-						.anyMatch(d -> d.getOwner().equals(accountIdentifier));
-				} catch (Exception e) {
-					throw new IllegalStateException(e);
-				}
-			})
-			.collect(Collectors.toList());
+  private TokenResourceIdentifier findTokenClientOwns(NodeApiClient nodeClient, Random random)
+      throws Exception {
+    var publicKey = nodeClient.getPublicKey();
+    var accountIdentifier = nodeClient.deriveAccount(publicKey);
+    var response = nodeClient.getEntity(accountIdentifier);
+    var tokenTypes =
+        response.getBalances().stream()
+            .map(ResourceAmount::getResourceIdentifier)
+            .filter(TokenResourceIdentifier.class::isInstance)
+            .map(TokenResourceIdentifier.class::cast)
+            .filter(
+                t -> {
+                  try {
+                    var entityResponse =
+                        nodeClient.getEntity(new EntityIdentifier().address(t.getRri()));
+                    return entityResponse.getDataObjects().stream()
+                        .filter(TokenData.class::isInstance)
+                        .map(TokenData.class::cast)
+                        .filter(d -> d.getOwner() != null)
+                        .anyMatch(d -> d.getOwner().equals(accountIdentifier));
+                  } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                  }
+                })
+            .collect(Collectors.toList());
 
-		if (tokenTypes.isEmpty()) {
-			return null;
-		} else {
-			var nextIndex = random.nextInt(tokenTypes.size());
-			return tokenTypes.get(nextIndex);
-		}
-	}
+    if (tokenTypes.isEmpty()) {
+      return null;
+    } else {
+      var nextIndex = random.nextInt(tokenTypes.size());
+      return tokenTypes.get(nextIndex);
+    }
+  }
 
-	private MintTokens mintTokens(NodeApiClient nodeClient, EntityIdentifier to, Random random) throws Exception {
-		var tokenResourceIdentifier = findTokenClientOwns(nodeClient, random);
-		if (tokenResourceIdentifier == null) {
-			return null;
-		}
+  private MintTokens mintTokens(NodeApiClient nodeClient, EntityIdentifier to, Random random)
+      throws Exception {
+    var tokenResourceIdentifier = findTokenClientOwns(nodeClient, random);
+    if (tokenResourceIdentifier == null) {
+      return null;
+    }
 
-		return new MintTokens(nextAmount(random), tokenResourceIdentifier, to);
-	}
+    return new MintTokens(nextAmount(random), tokenResourceIdentifier, to);
+  }
 
-	private BurnTokens burnTokens(NodeApiClient nodeClient, Random random) throws Exception {
-		var tokenResourceIdentifier = findTokenClientOwns(nodeClient, random);
-		if (tokenResourceIdentifier == null) {
-			return null;
-		}
-		var publicKey = nodeClient.getPublicKey();
-		var accountIdentifier = nodeClient.deriveAccount(publicKey);
-		return new BurnTokens(nextAmount(random), tokenResourceIdentifier, accountIdentifier);
-	}
+  private BurnTokens burnTokens(NodeApiClient nodeClient, Random random) throws Exception {
+    var tokenResourceIdentifier = findTokenClientOwns(nodeClient, random);
+    if (tokenResourceIdentifier == null) {
+      return null;
+    }
+    var publicKey = nodeClient.getPublicKey();
+    var accountIdentifier = nodeClient.deriveAccount(publicKey);
+    return new BurnTokens(nextAmount(random), tokenResourceIdentifier, accountIdentifier);
+  }
 
-	private CreateTokenDefinition createTokenDefinition(NodeApiClient nodeClient, EntityIdentifier to, Random random) throws Exception {
-		var publicKey = nodeClient.getPublicKey();
-		var owner = nodeClient.deriveAccount(publicKey);
-		var uint256Bytes = new byte[UInt256.BYTES];
-		random.nextBytes(uint256Bytes);
-		var amount = UInt256.from(uint256Bytes);
-		if (random.nextBoolean()) {
-			return CreateTokenDefinition.mutableTokenSupply("test" + tokenId++, amount, owner, to);
-		} else {
-			return CreateTokenDefinition.fixedTokenSupply("test" + tokenId++, amount, to);
-		}
-	}
+  private CreateTokenDefinition createTokenDefinition(
+      NodeApiClient nodeClient, EntityIdentifier to, Random random) throws Exception {
+    var publicKey = nodeClient.getPublicKey();
+    var owner = nodeClient.deriveAccount(publicKey);
+    var uint256Bytes = new byte[UInt256.BYTES];
+    random.nextBytes(uint256Bytes);
+    var amount = UInt256.from(uint256Bytes);
+    if (random.nextBoolean()) {
+      return CreateTokenDefinition.mutableTokenSupply("test" + tokenId++, amount, owner, to);
+    } else {
+      return CreateTokenDefinition.fixedTokenSupply("test" + tokenId++, amount, to);
+    }
+  }
 
-	private String submitAction(NodeApiClient nodeClient, NodeTransactionAction action) {
-		try {
-			nodeClient.submit(action, false);
-		} catch (CoreApiException e) {
-			// Throw error if not expected
-			if (!OKAY_ERRORS.contains(e.toError().getDetails().getClass())) {
-				throw new IllegalStateException(String.format("Invalid failure on action %s", action), e);
-			}
+  private String submitAction(NodeApiClient nodeClient, NodeTransactionAction action) {
+    try {
+      nodeClient.submit(action, false);
+    } catch (CoreApiException e) {
+      // Throw error if not expected
+      if (!OKAY_ERRORS.contains(e.toError().getDetails().getClass())) {
+        throw new IllegalStateException(String.format("Invalid failure on action %s", action), e);
+      }
 
-			var errorName = e.toError().getDetails().getClass().getSimpleName();
-			return String.format("BuildError{action=%s error=%s}", action.getClass().getSimpleName(), errorName);
-		} catch (Exception e) {
-			throw new IllegalStateException(String.format("Invalid failure on action %s", action), e);
-		}
+      var errorName = e.toError().getDetails().getClass().getSimpleName();
+      return String.format(
+          "BuildError{action=%s error=%s}", action.getClass().getSimpleName(), errorName);
+    } catch (Exception e) {
+      throw new IllegalStateException(String.format("Invalid failure on action %s", action), e);
+    }
 
-		return String.format("Submitted{action=%s}", action.getClass().getSimpleName());
-	}
+    return String.format("Submitted{action=%s}", action.getClass().getSimpleName());
+  }
 
-	@Override
-	public String execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
-		int size = runner.getSize();
-		var nodeIndex = random.nextInt(size);
-		var nodeInjector = runner.getNode(nodeIndex);
-		var nodeClient = nodeInjector.getInstance(NodeApiClient.class);
-		var otherNodeIndex = random.nextInt(size);
-		var otherKey = runner.getNode(otherNodeIndex)
-			.getInstance(Key.get(ECPublicKey.class, Self.class));
-		var next = random.nextInt(11);
+  @Override
+  public String execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
+    int size = runner.getSize();
+    var nodeIndex = random.nextInt(size);
+    var nodeInjector = runner.getNode(nodeIndex);
+    var nodeClient = nodeInjector.getInstance(NodeApiClient.class);
+    var otherNodeIndex = random.nextInt(size);
+    var otherKey =
+        runner.getNode(otherNodeIndex).getInstance(Key.get(ECPublicKey.class, Self.class));
+    var next = random.nextInt(11);
 
-		// Don't let the last validator unregister
-		if (next == 4 && nodeIndex <= 0) {
-			return "Skipped";
-		}
+    // Don't let the last validator unregister
+    if (next == 4 && nodeIndex <= 0) {
+      return "Skipped";
+    }
 
-		NodeTransactionAction action = switch (next) {
-			case 0 -> transferTokens(nodeClient, nodeClient.deriveAccount(otherKey), random);
-			case 1 -> new StakeTokens(nextAmount(random), nodeClient.deriveValidator(otherKey));
-			case 2 -> new UnstakeStakeUnits(nextAmount(random), nodeClient.deriveValidator(otherKey).getAddress());
-			case 3 -> new RegisterValidator(true);
-			case 4 -> new RegisterValidator(false);
-			case 5 -> new SetValidatorFee(random.nextInt(ValidatorUpdateRakeConstraintScrypt.RAKE_MAX + 1));
-			case 6 -> new SetValidatorOwner(nodeClient.deriveAccount(otherKey));
-			case 7 -> new SetAllowDelegationFlag(random.nextBoolean());
-			case 8 -> createTokenDefinition(nodeClient, nodeClient.deriveAccount(otherKey), random);
-			case 9 -> mintTokens(nodeClient, nodeClient.deriveAccount(otherKey), random);
-			case 10 -> burnTokens(nodeClient, random);
-			default -> throw new IllegalStateException("Unexpected value: " + next);
-		};
+    NodeTransactionAction action =
+        switch (next) {
+          case 0 -> transferTokens(nodeClient, nodeClient.deriveAccount(otherKey), random);
+          case 1 -> new StakeTokens(nextAmount(random), nodeClient.deriveValidator(otherKey));
+          case 2 -> new UnstakeStakeUnits(
+              nextAmount(random), nodeClient.deriveValidator(otherKey).getAddress());
+          case 3 -> new RegisterValidator(true);
+          case 4 -> new RegisterValidator(false);
+          case 5 -> new SetValidatorFee(
+              random.nextInt(ValidatorUpdateRakeConstraintScrypt.RAKE_MAX + 1));
+          case 6 -> new SetValidatorOwner(nodeClient.deriveAccount(otherKey));
+          case 7 -> new SetAllowDelegationFlag(random.nextBoolean());
+          case 8 -> createTokenDefinition(nodeClient, nodeClient.deriveAccount(otherKey), random);
+          case 9 -> mintTokens(nodeClient, nodeClient.deriveAccount(otherKey), random);
+          case 10 -> burnTokens(nodeClient, random);
+          default -> throw new IllegalStateException("Unexpected value: " + next);
+        };
 
-		if (action == null) {
-			return "Skipped";
-		}
+    if (action == null) {
+      return "Skipped";
+    }
 
-		return submitAction(nodeClient, action);
-	}
+    return submitAction(nodeClient, action);
+  }
 }

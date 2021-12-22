@@ -68,56 +68,53 @@ import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 
 /**
- * A mutator called on new messages that can mutate the message rank,
- * the message itself, or the message queue.
+ * A mutator called on new messages that can mutate the message rank, the message itself, or the
+ * message queue.
  */
 @FunctionalInterface
 public interface MessageMutator {
-	/**
-	 * Mutates the message queue.  The simplest form of mutation is
-	 * to add the supplied message to the queue at the specified rank, but
-	 * other mutations are possible; the rank can be changed, and the message
-	 * can be substituted for a different message.
-	 *
-	 * @param message the message
-	 * @param queue the queue to me mutated
-	 * @return {@code true} if the message was processed, {@code false} otherwise.
-	 */
-	boolean mutate(ControlledMessage message, MessageQueue queue);
+  /**
+   * Mutates the message queue. The simplest form of mutation is to add the supplied message to the
+   * queue at the specified rank, but other mutations are possible; the rank can be changed, and the
+   * message can be substituted for a different message.
+   *
+   * @param message the message
+   * @param queue the queue to me mutated
+   * @return {@code true} if the message was processed, {@code false} otherwise.
+   */
+  boolean mutate(ControlledMessage message, MessageQueue queue);
 
-	/**
-	 * Chains this mutator with another.  If this mutator does not
-	 * handle the message, then the next mutator is called.
-	 *
-	 * @param next the next mutator in the chain to call if this
-	 * 		mutator does not handle the message
-	 * @return This mutator chained with the specified mutator
-	 */
-	default MessageMutator andThen(MessageMutator next) {
-		return (message, queue) -> mutate(message, queue) || next.mutate(message, queue);
-	}
+  /**
+   * Chains this mutator with another. If this mutator does not handle the message, then the next
+   * mutator is called.
+   *
+   * @param next the next mutator in the chain to call if this mutator does not handle the message
+   * @return This mutator chained with the specified mutator
+   */
+  default MessageMutator andThen(MessageMutator next) {
+    return (message, queue) -> mutate(message, queue) || next.mutate(message, queue);
+  }
 
-	/**
-	 * Returns default mutator that does not handle messages.
-	 * By default, the underlying network code will add the message to the
-	 * message queue.
-	 *
-	 * @return A {@code MessageMutator} that does nothing.
-	 */
-	static MessageMutator nothing() {
-		return (message, queue) -> false;
-	}
+  /**
+   * Returns default mutator that does not handle messages. By default, the underlying network code
+   * will add the message to the message queue.
+   *
+   * @return A {@code MessageMutator} that does nothing.
+   */
+  static MessageMutator nothing() {
+    return (message, queue) -> false;
+  }
 
-	/**
-	 * Returns a mutator that drops timeout messages.
-	 * @return A {@code MessageMutator} that drops {@code LocalTimeout} messages.
-	 */
-	static MessageMutator dropTimeouts() {
-		return (message, queue) -> {
-			Object msg = message.message();
-			return msg instanceof ScheduledLocalTimeout
-				|| Epoched.isInstance(msg, ScheduledLocalTimeout.class);
-		};
-	}
-
+  /**
+   * Returns a mutator that drops timeout messages.
+   *
+   * @return A {@code MessageMutator} that drops {@code LocalTimeout} messages.
+   */
+  static MessageMutator dropTimeouts() {
+    return (message, queue) -> {
+      Object msg = message.message();
+      return msg instanceof ScheduledLocalTimeout
+          || Epoched.isInstance(msg, ScheduledLocalTimeout.class);
+    };
+  }
 }

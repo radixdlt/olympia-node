@@ -64,102 +64,107 @@
 
 package com.radixdlt.network.p2p;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.NodeAddressing;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-import static java.util.Objects.requireNonNull;
-
 public final class RadixNodeUri {
-	private final String host;
-	private final int port;
-	private final String networkNodeHrp;
-	private final NodeId nodeId;
+  private final String host;
+  private final int port;
+  private final String networkNodeHrp;
+  private final NodeId nodeId;
 
-	@JsonCreator
-	public static RadixNodeUri deserialize(byte[] uri) throws URISyntaxException, DeserializeException {
-		return fromUri(new URI(new String(requireNonNull(uri))));
-	}
+  @JsonCreator
+  public static RadixNodeUri deserialize(byte[] uri)
+      throws URISyntaxException, DeserializeException {
+    return fromUri(new URI(new String(requireNonNull(uri))));
+  }
 
-	public static RadixNodeUri fromPubKeyAndAddress(int networkId, ECPublicKey publicKey, String host, int port) {
-		var hrp = Addressing.ofNetworkId(networkId).forNodes().getHrp();
-		return new RadixNodeUri(host, port, hrp, NodeId.fromPublicKey(publicKey));
-	}
+  public static RadixNodeUri fromPubKeyAndAddress(
+      int networkId, ECPublicKey publicKey, String host, int port) {
+    var hrp = Addressing.ofNetworkId(networkId).forNodes().getHrp();
+    return new RadixNodeUri(host, port, hrp, NodeId.fromPublicKey(publicKey));
+  }
 
-	public static RadixNodeUri fromUri(URI uri) throws DeserializeException {
-		var hrpAndKey = NodeAddressing.parseUnknownHrp(uri.getUserInfo());
-		return new RadixNodeUri(uri.getHost(), uri.getPort(), hrpAndKey.getFirst(), NodeId.fromPublicKey(hrpAndKey.getSecond()));
-	}
+  public static RadixNodeUri fromUri(URI uri) throws DeserializeException {
+    var hrpAndKey = NodeAddressing.parseUnknownHrp(uri.getUserInfo());
+    return new RadixNodeUri(
+        uri.getHost(),
+        uri.getPort(),
+        hrpAndKey.getFirst(),
+        NodeId.fromPublicKey(hrpAndKey.getSecond()));
+  }
 
-	private RadixNodeUri(String host, int port, String networkNodeHrp, NodeId nodeId) {
-		if (port <= 0) {
-			throw new RuntimeException("Port must be a positive integer");
-		}
-		this.host = requireNonNull(host);
-		this.port = port;
-		this.networkNodeHrp = networkNodeHrp;
-		this.nodeId = requireNonNull(nodeId);
-	}
+  private RadixNodeUri(String host, int port, String networkNodeHrp, NodeId nodeId) {
+    if (port <= 0) {
+      throw new RuntimeException("Port must be a positive integer");
+    }
+    this.host = requireNonNull(host);
+    this.port = port;
+    this.networkNodeHrp = networkNodeHrp;
+    this.nodeId = requireNonNull(nodeId);
+  }
 
-	public String getHost() {
-		return host;
-	}
+  public String getHost() {
+    return host;
+  }
 
-	public int getPort() {
-		return port;
-	}
+  public int getPort() {
+    return port;
+  }
 
-	public NodeId getNodeId() {
-		return nodeId;
-	}
+  public NodeId getNodeId() {
+    return nodeId;
+  }
 
-	@JsonValue
-	private byte[] getSerializedValue() {
-		return getUriString().getBytes(StandardCharsets.UTF_8);
-	}
+  @JsonValue
+  private byte[] getSerializedValue() {
+    return getUriString().getBytes(StandardCharsets.UTF_8);
+  }
 
-	private String getUriString() {
-		return String.format("radix://%s@%s:%s", nodeAddress(), host, port);
-	}
+  private String getUriString() {
+    return String.format("radix://%s@%s:%s", nodeAddress(), host, port);
+  }
 
-	public String nodeAddress() {
-		return NodeAddressing.of(networkNodeHrp, nodeId.getPublicKey());
-	}
+  public String nodeAddress() {
+    return NodeAddressing.of(networkNodeHrp, nodeId.getPublicKey());
+  }
 
-	public String getNetworkNodeHrp() {
-		return this.networkNodeHrp;
-	}
+  public String getNetworkNodeHrp() {
+    return this.networkNodeHrp;
+  }
 
-	@Override
-	public String toString() {
-		return getUriString();
-	}
+  @Override
+  public String toString() {
+    return getUriString();
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		final var that = (RadixNodeUri) o;
-		return port == that.port
-			&& Objects.equals(host, that.host)
-			&& Objects.equals(nodeId, that.nodeId)
-			&& Objects.equals(networkNodeHrp, that.networkNodeHrp);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final var that = (RadixNodeUri) o;
+    return port == that.port
+        && Objects.equals(host, that.host)
+        && Objects.equals(nodeId, that.nodeId)
+        && Objects.equals(networkNodeHrp, that.networkNodeHrp);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(host, port, nodeId, networkNodeHrp);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(host, port, nodeId, networkNodeHrp);
+  }
 }

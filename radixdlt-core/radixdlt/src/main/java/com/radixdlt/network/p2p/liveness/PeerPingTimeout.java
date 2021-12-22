@@ -65,39 +65,38 @@
 package com.radixdlt.network.p2p.liveness;
 
 import com.radixdlt.network.p2p.NodeId;
-
 import java.util.Objects;
 
 public final class PeerPingTimeout {
 
-	private final NodeId nodeId;
+  private final NodeId nodeId;
 
-	public static PeerPingTimeout create(NodeId nodeId) {
-		return new PeerPingTimeout(nodeId);
-	}
+  public static PeerPingTimeout create(NodeId nodeId) {
+    return new PeerPingTimeout(nodeId);
+  }
 
-	private PeerPingTimeout(NodeId nodeId) {
-		this.nodeId = nodeId;
-	}
+  private PeerPingTimeout(NodeId nodeId) {
+    this.nodeId = nodeId;
+  }
 
-	public NodeId getNodeId() {
-		return nodeId;
-	}
+  public NodeId getNodeId() {
+    return nodeId;
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		final var that = (PeerPingTimeout) o;
-		return Objects.equals(nodeId, that.nodeId);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final var that = (PeerPingTimeout) o;
+    return Objects.equals(nodeId, that.nodeId);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(nodeId);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(nodeId);
+  }
 }

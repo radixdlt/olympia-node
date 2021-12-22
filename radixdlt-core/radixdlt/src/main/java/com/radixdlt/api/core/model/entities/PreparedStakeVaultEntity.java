@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.api.core.model.entities;
 
+import static com.radixdlt.atom.SubstateTypeId.PREPARED_STAKE;
+
 import com.radixdlt.api.core.model.Entity;
 import com.radixdlt.api.core.model.KeyQuery;
 import com.radixdlt.api.core.model.ResourceQuery;
@@ -81,59 +84,58 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
-
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static com.radixdlt.atom.SubstateTypeId.PREPARED_STAKE;
+public record PreparedStakeVaultEntity(REAddr accountAddress, ECPublicKey validatorKey)
+    implements Entity {
+  private boolean amountIsNative(ResourceUnsignedAmount amount) {
+    if (!(amount.resource() instanceof TokenResource tokenResource)) {
+      return false;
+    }
+    return tokenResource.tokenAddress().isNativeToken();
+  }
 
-public record PreparedStakeVaultEntity(REAddr accountAddress, ECPublicKey validatorKey) implements Entity {
-	private boolean amountIsNative(ResourceUnsignedAmount amount) {
-		if (!(amount.resource() instanceof TokenResource tokenResource)) {
-			return false;
-		}
-		return tokenResource.tokenAddress().isNativeToken();
-	}
+  @Override
+  public void deposit(
+      ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
+      throws TxBuilderException {
+    if (!amountIsNative(amount)) {
+      throw new EntityDoesNotSupportResourceDepositException(this, amount.resource());
+    }
 
-	@Override
-	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
-		throws TxBuilderException {
-		if (!amountIsNative(amount)) {
-			throw new EntityDoesNotSupportResourceDepositException(this, amount.resource());
-		}
+    var minStake = config.get().getMinimumStake().toSubunits();
+    var attempt = UInt256.from(amount.amount().toByteArray());
+    if (attempt.compareTo(minStake) < 0) {
+      throw new MinimumStakeException(minStake, attempt);
+    }
 
-		var minStake = config.get().getMinimumStake().toSubunits();
-		var attempt = UInt256.from(amount.amount().toByteArray());
-		if (attempt.compareTo(minStake) < 0) {
-			throw new MinimumStakeException(minStake, attempt);
-		}
+    var flag = txBuilder.read(AllowDelegationFlag.class, validatorKey);
+    if (!flag.allowsDelegation()) {
+      var validator = txBuilder.read(ValidatorOwnerCopy.class, validatorKey);
+      var owner = validator.getOwner();
+      if (!accountAddress.equals(owner)) {
+        throw new DelegateStakePermissionException(owner, accountAddress);
+      }
+    }
+    var substate = new PreparedStake(attempt, accountAddress, validatorKey);
+    txBuilder.up(substate);
+  }
 
-		var flag = txBuilder.read(AllowDelegationFlag.class, validatorKey);
-		if (!flag.allowsDelegation()) {
-			var validator = txBuilder.read(ValidatorOwnerCopy.class, validatorKey);
-			var owner = validator.getOwner();
-			if (!accountAddress.equals(owner)) {
-				throw new DelegateStakePermissionException(owner, accountAddress);
-			}
-		}
-		var substate = new PreparedStake(attempt, accountAddress, validatorKey);
-		txBuilder.up(substate);
-	}
+  @Override
+  public List<ResourceQuery> getResourceQueries() {
+    var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + REAddr.PUB_KEY_BYTES);
+    buf.put(PREPARED_STAKE.id());
+    buf.put((byte) 0); // Reserved byte
+    buf.put(validatorKey.getCompressedBytes());
+    buf.put(accountAddress.getBytes());
+    var index = SubstateIndex.<ResourceInBucket>create(buf.array(), PreparedStake.class);
+    return List.of(ResourceQuery.from(index));
+  }
 
-	@Override
-	public List<ResourceQuery> getResourceQueries() {
-		var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + REAddr.PUB_KEY_BYTES);
-		buf.put(PREPARED_STAKE.id());
-		buf.put((byte) 0); // Reserved byte
-		buf.put(validatorKey.getCompressedBytes());
-		buf.put(accountAddress.getBytes());
-		var index = SubstateIndex.<ResourceInBucket>create(buf.array(), PreparedStake.class);
-		return List.of(ResourceQuery.from(index));
-	}
-
-	@Override
-	public List<KeyQuery> getKeyQueries() {
-		return List.of();
-	}
+  @Override
+  public List<KeyQuery> getKeyQueries() {
+    return List.of();
+  }
 }

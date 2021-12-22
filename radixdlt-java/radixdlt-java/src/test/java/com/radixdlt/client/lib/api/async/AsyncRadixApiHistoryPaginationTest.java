@@ -61,10 +61,10 @@
  * Work. You assume all risks associated with Your use of the Work and the exercise of
  * permissions under this License.
  */
+
 package com.radixdlt.client.lib.api.async;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import static org.junit.Assert.fail;
 
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
@@ -75,13 +75,12 @@ import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
-
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-
-import static org.junit.Assert.fail;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /*
  * Before running this test, launch in separate console local network (cd radixdlt-core/docker && ./scripts/rundocker.sh 2).
@@ -92,95 +91,104 @@ import static org.junit.Assert.fail;
  *
  * Then run testTransactionHistoryInPages(). It should print list of transactions split into batches of 50 (see parameters)
  */
-//TODO: move to acceptance tests
+// TODO: move to acceptance tests
 public class AsyncRadixApiHistoryPaginationTest {
-	private static final String BASE_URL = "http://localhost/";
-	public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);
-	public static final ECKeyPair KEY_PAIR2 = keyPairOf(2);
-	private static final AccountAddress ACCOUNT_ADDRESS1 = AccountAddress.create(KEY_PAIR1.getPublicKey());
-	private static final AccountAddress ACCOUNT_ADDRESS2 = AccountAddress.create(KEY_PAIR2.getPublicKey());
+  private static final String BASE_URL = "http://localhost/";
+  public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);
+  public static final ECKeyPair KEY_PAIR2 = keyPairOf(2);
+  private static final AccountAddress ACCOUNT_ADDRESS1 =
+      AccountAddress.create(KEY_PAIR1.getPublicKey());
+  private static final AccountAddress ACCOUNT_ADDRESS2 =
+      AccountAddress.create(KEY_PAIR2.getPublicKey());
 
-	@Test
-	@Ignore("Online test")
-	public void testAddManyTransactions() {
-		RadixApi.connect(BASE_URL)
-			.map(RadixApi::withTrace)
-			.join()
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> {
-				for (int i = 0; i < 20; i++) {
-					addTransaction(client, i);
-					try {
-						Thread.sleep(500);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			});
-	}
+  @Test
+  @Ignore("Online test")
+  public void testAddManyTransactions() {
+    RadixApi.connect(BASE_URL)
+        .map(RadixApi::withTrace)
+        .join()
+        .onFailure(failure -> fail(failure.toString()))
+        .onSuccess(
+            client -> {
+              for (int i = 0; i < 20; i++) {
+                addTransaction(client, i);
+                try {
+                  Thread.sleep(500);
+                } catch (InterruptedException e) {
+                  e.printStackTrace();
+                }
+              }
+            });
+  }
 
-	@Test
-	@Ignore("Online test")
-	public void testTransactionHistoryInPages() {
-		RadixApi.connect(BASE_URL)
-			.map(RadixApi::withTrace)
-			.join()
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(
-				client -> {
-					var cursorHolder = new AtomicReference<>(OptionalLong.empty());
-					do {
-						client.account().history(ACCOUNT_ADDRESS1, 50, cursorHolder.get()).join()
-							.onFailure(failure -> fail(failure.toString()))
-							.onSuccess(v -> v.getNextOffset().ifPresent(System.out::println))
-							.onSuccess(v -> cursorHolder.set(v.getNextOffset()))
-							.map(TransactionHistory::getTransactions)
-							.map(this::formatTxns)
-							.onSuccess(System.out::println);
-					} while (cursorHolder.get().isPresent());
-				});
-	}
+  @Test
+  @Ignore("Online test")
+  public void testTransactionHistoryInPages() {
+    RadixApi.connect(BASE_URL)
+        .map(RadixApi::withTrace)
+        .join()
+        .onFailure(failure -> fail(failure.toString()))
+        .onSuccess(
+            client -> {
+              var cursorHolder = new AtomicReference<>(OptionalLong.empty());
+              do {
+                client
+                    .account()
+                    .history(ACCOUNT_ADDRESS1, 50, cursorHolder.get())
+                    .join()
+                    .onFailure(failure -> fail(failure.toString()))
+                    .onSuccess(v -> v.getNextOffset().ifPresent(System.out::println))
+                    .onSuccess(v -> cursorHolder.set(v.getNextOffset()))
+                    .map(TransactionHistory::getTransactions)
+                    .map(this::formatTxns)
+                    .onSuccess(System.out::println);
+              } while (cursorHolder.get().isPresent());
+            });
+  }
 
-	private List<String> formatTxns(List<TransactionDTO> t) {
-		return t.stream()
-			.map(v -> String.format(
-				"%s (%s) - %s (%d:%d), Fee: %s%n",
-				v.getTxID(),
-				v.getMessage().orElse("<none>"),
-				v.getSentAt().getInstant(),
-				v.getSentAt().getInstant().getEpochSecond(),
-				v.getSentAt().getInstant().getNano(),
-				v.getFee()
-			))
-			.collect(Collectors.toList());
-	}
+  private List<String> formatTxns(List<TransactionDTO> t) {
+    return t.stream()
+        .map(
+            v ->
+                String.format(
+                    "%s (%s) - %s (%d:%d), Fee: %s%n",
+                    v.getTxID(),
+                    v.getMessage().orElse("<none>"),
+                    v.getSentAt().getInstant(),
+                    v.getSentAt().getInstant().getEpochSecond(),
+                    v.getSentAt().getInstant().getNano(),
+                    v.getFee()))
+        .collect(Collectors.toList());
+  }
 
-	private void addTransaction(RadixApi client, int count) {
-		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
-			.transfer(
-				ACCOUNT_ADDRESS1,
-				ACCOUNT_ADDRESS2,
-				UInt256.from(count + 10),
-				"xrd_dr1qyrs8qwl"
-			)
-			.message("Test message " + count)
-			.build();
+  private void addTransaction(RadixApi client, int count) {
+    var request =
+        TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
+            .transfer(
+                ACCOUNT_ADDRESS1, ACCOUNT_ADDRESS2, UInt256.from(count + 10), "xrd_dr1qyrs8qwl")
+            .message("Test message " + count)
+            .build();
 
-		client.transaction().build(request).join()
-			.onFailure(failure -> fail(failure.toString()))
-			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
-			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true).join());
-	}
+    client
+        .transaction()
+        .build(request)
+        .join()
+        .onFailure(failure -> fail(failure.toString()))
+        .map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
+        .onSuccess(
+            finalizedTransaction ->
+                client.transaction().finalize(finalizedTransaction, true).join());
+  }
 
-	private static ECKeyPair keyPairOf(int pk) {
-		var privateKey = new byte[ECKeyPair.BYTES];
+  private static ECKeyPair keyPairOf(int pk) {
+    var privateKey = new byte[ECKeyPair.BYTES];
 
-		Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
+    Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
 
-		try {
-			return ECKeyPair.fromPrivateKey(privateKey);
-		} catch (PrivateKeyException | PublicKeyException e) {
-			throw new IllegalArgumentException("Error while generating public key", e);
-		}
-	}
+    try {
+      return ECKeyPair.fromPrivateKey(privateKey);
+    } catch (PrivateKeyException | PublicKeyException e) {
+      throw new IllegalArgumentException("Error while generating public key", e);
+    }
+  }
 }

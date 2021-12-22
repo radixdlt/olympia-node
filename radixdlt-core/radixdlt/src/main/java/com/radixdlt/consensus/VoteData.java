@@ -71,75 +71,73 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
-import javax.annotation.concurrent.Immutable;
 import java.util.Objects;
 import java.util.Optional;
+import javax.annotation.concurrent.Immutable;
 
 /**
  * Serves as data which is voted upon in a round of BFT. In a standard implementation this would
  * only include a proposed vertex which extends the chain. In this implementation we include data
- * for both the parent and any vertex which would be committed if this data reaches a quorum of votes.
- * This way, vote processing can be handled statelessly.
+ * for both the parent and any vertex which would be committed if this data reaches a quorum of
+ * votes. This way, vote processing can be handled statelessly.
  */
 @Immutable
 @SerializerId2("consensus.vote_data")
 public final class VoteData {
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-	SerializerDummy serializer = SerializerDummy.DUMMY;
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+  SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("proposed")
-	@DsonOutput(Output.ALL)
-	private final BFTHeader proposed;
+  @JsonProperty("proposed")
+  @DsonOutput(Output.ALL)
+  private final BFTHeader proposed;
 
-	@JsonProperty("parent")
-	@DsonOutput(Output.ALL)
-	private final BFTHeader parent;
+  @JsonProperty("parent")
+  @DsonOutput(Output.ALL)
+  private final BFTHeader parent;
 
-	@JsonProperty("committed")
-	@DsonOutput(Output.ALL)
-	private final BFTHeader committed;
+  @JsonProperty("committed")
+  @DsonOutput(Output.ALL)
+  private final BFTHeader committed;
 
-	@JsonCreator
-	public VoteData(
-		@JsonProperty(value = "proposed", required = true) BFTHeader proposed,
-		@JsonProperty(value = "parent", required = true) BFTHeader parent,
-		@JsonProperty("committed") BFTHeader committed
-	) {
-		this.proposed = Objects.requireNonNull(proposed);
-		this.parent = Objects.requireNonNull(parent);
-		this.committed = committed;
-	}
+  @JsonCreator
+  public VoteData(
+      @JsonProperty(value = "proposed", required = true) BFTHeader proposed,
+      @JsonProperty(value = "parent", required = true) BFTHeader parent,
+      @JsonProperty("committed") BFTHeader committed) {
+    this.proposed = Objects.requireNonNull(proposed);
+    this.parent = Objects.requireNonNull(parent);
+    this.committed = committed;
+  }
 
-	public BFTHeader getProposed() {
-		return proposed;
-	}
+  public BFTHeader getProposed() {
+    return proposed;
+  }
 
-	public BFTHeader getParent() {
-		return parent;
-	}
+  public BFTHeader getParent() {
+    return parent;
+  }
 
-	public Optional<BFTHeader> getCommitted() {
-		return Optional.ofNullable(committed);
-	}
+  public Optional<BFTHeader> getCommitted() {
+    return Optional.ofNullable(committed);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		VoteData that = (VoteData) o;
-		return Objects.equals(proposed, that.proposed)
-			&& Objects.equals(parent, that.parent)
-			&& Objects.equals(committed, that.committed);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    VoteData that = (VoteData) o;
+    return Objects.equals(proposed, that.proposed)
+        && Objects.equals(parent, that.parent)
+        && Objects.equals(committed, that.committed);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(proposed, parent, committed);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(proposed, parent, committed);
+  }
 }

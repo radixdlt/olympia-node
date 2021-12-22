@@ -71,27 +71,24 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.google.common.hash.HashCode;
 import java.io.IOException;
 
-/**
- * Deserializer for translation from JSON encoded {@code Hash} data
- * to a {@code Hash} object.
- */
+/** Deserializer for translation from JSON encoded {@code Hash} data to a {@code Hash} object. */
 class JacksonJsonHashCodeDeserializer extends StdDeserializer<HashCode> {
-	private static final long serialVersionUID = -2472482347700365657L;
+  private static final long serialVersionUID = -2472482347700365657L;
 
-	JacksonJsonHashCodeDeserializer() {
-		this(null);
-	}
+  JacksonJsonHashCodeDeserializer() {
+    this(null);
+  }
 
-	JacksonJsonHashCodeDeserializer(Class<HashCode> t) {
-		super(t);
-	}
+  JacksonJsonHashCodeDeserializer(Class<HashCode> t) {
+    super(t);
+  }
 
-	@Override
-	public HashCode deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-		String value = p.getValueAsString();
-		if (!value.startsWith(JacksonCodecConstants.HASH_STR_VALUE)) {
-			throw new InvalidFormatException(p, "Expecting Hash", value, HashCode.class);
-		}
-		return HashCode.fromString(value.substring(JacksonCodecConstants.STR_VALUE_LEN));
-	}
+  @Override
+  public HashCode deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+    String value = p.getValueAsString();
+    if (!value.startsWith(JacksonCodecConstants.HASH_STR_VALUE)) {
+      throw new InvalidFormatException(p, "Expecting Hash", value, HashCode.class);
+    }
+    return HashCode.fromString(value.substring(JacksonCodecConstants.STR_VALUE_LEN));
+  }
 }

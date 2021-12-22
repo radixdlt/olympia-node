@@ -65,35 +65,35 @@
 package com.radixdlt.application.tokens.state;
 
 import com.radixdlt.identifiers.REAddr;
-
 import java.util.Optional;
 
 public class DeprecatedResourceInBucket {
-	private final REAddr resourceAddr;
-	// Bucket
-	private final REAddr holdingAddress;
-	// Bucket properties
-	private final Long epochUnlocked;
+  private final REAddr resourceAddr;
+  // Bucket
+  private final REAddr holdingAddress;
+  // Bucket properties
+  private final Long epochUnlocked;
 
-	public DeprecatedResourceInBucket(REAddr resourceAddr, REAddr holdingAddress, Long epochUnlocked) {
-		this.resourceAddr = resourceAddr;
-		this.holdingAddress = holdingAddress;
-		this.epochUnlocked = epochUnlocked;
-	}
+  public DeprecatedResourceInBucket(
+      REAddr resourceAddr, REAddr holdingAddress, Long epochUnlocked) {
+    this.resourceAddr = resourceAddr;
+    this.holdingAddress = holdingAddress;
+    this.epochUnlocked = epochUnlocked;
+  }
 
-	public boolean isNativeToken() {
-		return resourceAddr.isNativeToken();
-	}
+  public boolean isNativeToken() {
+    return resourceAddr.isNativeToken();
+  }
 
-	public REAddr resourceAddr() {
-		return resourceAddr;
-	}
+  public REAddr resourceAddr() {
+    return resourceAddr;
+  }
 
-	public REAddr holdingAddress() {
-		return holdingAddress;
-	}
+  public REAddr holdingAddress() {
+    return holdingAddress;
+  }
 
-	public Optional<Long> epochUnlocked() {
-		return Optional.ofNullable(epochUnlocked);
-	}
+  public Optional<Long> epochUnlocked() {
+    return Optional.ofNullable(epochUnlocked);
+  }
 }

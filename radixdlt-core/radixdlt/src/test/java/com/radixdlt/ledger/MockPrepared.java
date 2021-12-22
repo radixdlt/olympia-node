@@ -69,14 +69,14 @@ import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
 
 public class MockPrepared implements PreparedTxn {
 
-	private final Txn txn;
+  private final Txn txn;
 
-	public MockPrepared(Txn txn) {
-		this.txn = txn;
-	}
+  public MockPrepared(Txn txn) {
+    this.txn = txn;
+  }
 
-	@Override
-	public Txn txn() {
-		return txn;
-	}
+  @Override
+  public Txn txn() {
+    return txn;
+  }
 }

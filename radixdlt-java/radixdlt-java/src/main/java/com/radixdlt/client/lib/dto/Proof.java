@@ -66,65 +66,61 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.List;
 import java.util.Objects;
 
 public final class Proof {
-	private final String opaque;
-	private final List<SignatureDetails> sigs;
-	private final ProofHeader header;
+  private final String opaque;
+  private final List<SignatureDetails> sigs;
+  private final ProofHeader header;
 
-	private Proof(String opaque, List<SignatureDetails> sigs, ProofHeader header) {
-		this.opaque = opaque;
-		this.sigs = sigs;
-		this.header = header;
-	}
+  private Proof(String opaque, List<SignatureDetails> sigs, ProofHeader header) {
+    this.opaque = opaque;
+    this.sigs = sigs;
+    this.header = header;
+  }
 
-	@JsonCreator
-	public static Proof create(
-		@JsonProperty(value = "opaque", required = true) String opaque,
-		@JsonProperty(value = "sigs", required = true) List<SignatureDetails> sigs,
-		@JsonProperty(value = "header", required = true) ProofHeader header
-	) {
-		return new Proof(opaque, sigs, header);
-	}
+  @JsonCreator
+  public static Proof create(
+      @JsonProperty(value = "opaque", required = true) String opaque,
+      @JsonProperty(value = "sigs", required = true) List<SignatureDetails> sigs,
+      @JsonProperty(value = "header", required = true) ProofHeader header) {
+    return new Proof(opaque, sigs, header);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof Proof)) {
-			return false;
-		}
+    if (!(o instanceof Proof)) {
+      return false;
+    }
 
-		var proof = (Proof) o;
-		return opaque.equals(proof.opaque) && sigs.equals(proof.sigs) && header.equals(proof.header);
-	}
+    var proof = (Proof) o;
+    return opaque.equals(proof.opaque) && sigs.equals(proof.sigs) && header.equals(proof.header);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(opaque, sigs, header);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(opaque, sigs, header);
+  }
 
-	@Override
-	public String toString() {
-		return "{opaque:" + opaque
-			+ ", sigs:" + sigs
-			+ ", header:" + header + '}';
-	}
+  @Override
+  public String toString() {
+    return "{opaque:" + opaque + ", sigs:" + sigs + ", header:" + header + '}';
+  }
 
-	public String getOpaque() {
-		return opaque;
-	}
+  public String getOpaque() {
+    return opaque;
+  }
 
-	public List<SignatureDetails> getSigs() {
-		return sigs;
-	}
+  public List<SignatureDetails> getSigs() {
+    return sigs;
+  }
 
-	public ProofHeader getHeader() {
-		return header;
-	}
+  public ProofHeader getHeader() {
+    return header;
+  }
 }

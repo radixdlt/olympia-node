@@ -64,85 +64,84 @@
 
 package com.radixdlt.consensus;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
+import java.util.Optional;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 import org.radix.serialization.SerializeObject;
 
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
 public class HighQCTest extends SerializeObject<HighQC> {
-	public HighQCTest() {
-		super(HighQC.class, HighQCTest::get);
-	}
+  public HighQCTest() {
+    super(HighQC.class, HighQCTest::get);
+  }
 
-	private static HighQC get() {
-		View view = View.of(1234567891L);
-		HashCode id = HashUtils.random256();
-		LedgerHeader ledgerHeader = LedgerHeader.mocked();
-		BFTHeader header = new BFTHeader(view, id, ledgerHeader);
-		BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
-		BFTHeader commit = new BFTHeader(View.of(1234567889L), HashUtils.random256(), ledgerHeader);
-		VoteData voteData = new VoteData(header, parent, commit);
-		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		return HighQC.from(qc, qc, Optional.empty());
-	}
+  private static HighQC get() {
+    View view = View.of(1234567891L);
+    HashCode id = HashUtils.random256();
+    LedgerHeader ledgerHeader = LedgerHeader.mocked();
+    BFTHeader header = new BFTHeader(view, id, ledgerHeader);
+    BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
+    BFTHeader commit = new BFTHeader(View.of(1234567889L), HashUtils.random256(), ledgerHeader);
+    VoteData voteData = new VoteData(header, parent, commit);
+    QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
+    return HighQC.from(qc, qc, Optional.empty());
+  }
 
-	@Test
-	public void when_created_with_equal_qcs__highest_committed_is_elided() {
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		HighQC highQC = HighQC.from(qc, qc, Optional.empty());
-		QuorumCertificate storedCommitQC = highQC.rawHighestCommittedQC();
-		assertThat(storedCommitQC).isNull();
-		assertThat(highQC.highestQC()).isEqualTo(qc);
-		assertThat(highQC.highestCommittedQC()).isEqualTo(qc);
-	}
+  @Test
+  public void when_created_with_equal_qcs__highest_committed_is_elided() {
+    QuorumCertificate qc = mock(QuorumCertificate.class);
+    HighQC highQC = HighQC.from(qc, qc, Optional.empty());
+    QuorumCertificate storedCommitQC = highQC.rawHighestCommittedQC();
+    assertThat(storedCommitQC).isNull();
+    assertThat(highQC.highestQC()).isEqualTo(qc);
+    assertThat(highQC.highestCommittedQC()).isEqualTo(qc);
+  }
 
-	@Test
-	public void when_created_with_unequal_qcs__highest_committed_is_stored() {
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		QuorumCertificate cqc = mock(QuorumCertificate.class);
-		HighQC highQC = HighQC.from(qc, cqc, Optional.empty());
-		QuorumCertificate storedCommitQC = highQC.rawHighestCommittedQC();
-		assertThat(storedCommitQC).isEqualTo(cqc);
-		assertThat(highQC.highestQC()).isEqualTo(qc);
-		assertThat(highQC.highestCommittedQC()).isEqualTo(cqc);
-	}
+  @Test
+  public void when_created_with_unequal_qcs__highest_committed_is_stored() {
+    QuorumCertificate qc = mock(QuorumCertificate.class);
+    QuorumCertificate cqc = mock(QuorumCertificate.class);
+    HighQC highQC = HighQC.from(qc, cqc, Optional.empty());
+    QuorumCertificate storedCommitQC = highQC.rawHighestCommittedQC();
+    assertThat(storedCommitQC).isEqualTo(cqc);
+    assertThat(highQC.highestQC()).isEqualTo(qc);
+    assertThat(highQC.highestCommittedQC()).isEqualTo(cqc);
+  }
 
-	@Test
-	public void sensibleToString() {
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		QuorumCertificate cqc = mock(QuorumCertificate.class);
-		HighQC highQC1 = HighQC.from(qc, cqc, Optional.empty());
+  @Test
+  public void sensibleToString() {
+    QuorumCertificate qc = mock(QuorumCertificate.class);
+    QuorumCertificate cqc = mock(QuorumCertificate.class);
+    HighQC highQC1 = HighQC.from(qc, cqc, Optional.empty());
 
-		String s1 = highQC1.toString();
-		assertThat(s1)
-			.contains(HighQC.class.getSimpleName())
-			.contains(qc.toString())
-			.contains(cqc.toString());
+    String s1 = highQC1.toString();
+    assertThat(s1)
+        .contains(HighQC.class.getSimpleName())
+        .contains(qc.toString())
+        .contains(cqc.toString());
 
-		HighQC highQC2 = HighQC.from(qc, qc, Optional.empty());
-		String s2 = highQC2.toString();
-		assertThat(s2)
-			.contains(HighQC.class.getSimpleName())
-			.contains(qc.toString())
-			.contains("<same>");
-	}
+    HighQC highQC2 = HighQC.from(qc, qc, Optional.empty());
+    String s2 = highQC2.toString();
+    assertThat(s2)
+        .contains(HighQC.class.getSimpleName())
+        .contains(qc.toString())
+        .contains("<same>");
+  }
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(HighQC.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(HighQC.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializationWithNullThrowsException() {
-		HighQC.serializerCreate(null, mock(QuorumCertificate.class), mock(TimeoutCertificate.class));
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException() {
+    HighQC.serializerCreate(null, mock(QuorumCertificate.class), mock(TimeoutCertificate.class));
+  }
 }

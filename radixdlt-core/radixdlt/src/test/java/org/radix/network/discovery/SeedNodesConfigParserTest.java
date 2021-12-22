@@ -64,7 +64,10 @@
 
 package org.radix.network.discovery;
 
-import java.io.IOException;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECKeyPair;
@@ -73,30 +76,32 @@ import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.discovery.util.SeedNodesConfigParser;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
+import java.io.IOException;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 public class SeedNodesConfigParserTest {
-	private P2PConfig p2pConfig;
+  private P2PConfig p2pConfig;
 
-	@Before
-	public void setUp() throws IOException {
-		p2pConfig = mock(P2PConfig.class);
-		when(p2pConfig.defaultPort()).thenReturn(30000);
-	}
+  @Before
+  public void setUp() throws IOException {
+    p2pConfig = mock(P2PConfig.class);
+    when(p2pConfig.defaultPort()).thenReturn(30000);
+  }
 
-	@Test
-	public void parse_seeds_from_config() {
-		doReturn(ImmutableList.of(String.format(
-			"radix://%s@1.1.1.1",
-			NodeAddressing.of(Network.LOCALNET.getNodeHrp(), ECKeyPair.generateNew().getPublicKey())
-		))).when(p2pConfig).seedNodes();
-		final var testSubject = new SeedNodesConfigParser(p2pConfig, Network.LOCALNET.getId(), Addressing.ofNetwork(Network.LOCALNET));
-		assertEquals(1, testSubject.getResolvedSeedNodes().size());
-	}
+  @Test
+  public void parse_seeds_from_config() {
+    doReturn(
+            ImmutableList.of(
+                String.format(
+                    "radix://%s@1.1.1.1",
+                    NodeAddressing.of(
+                        Network.LOCALNET.getNodeHrp(), ECKeyPair.generateNew().getPublicKey()))))
+        .when(p2pConfig)
+        .seedNodes();
+    final var testSubject =
+        new SeedNodesConfigParser(
+            p2pConfig, Network.LOCALNET.getId(), Addressing.ofNetwork(Network.LOCALNET));
+    assertEquals(1, testSubject.getResolvedSeedNodes().size());
+  }
 }

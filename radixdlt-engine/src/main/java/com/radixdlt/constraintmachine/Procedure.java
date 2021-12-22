@@ -67,12 +67,11 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
 public interface Procedure {
-	ProcedureKey key();
-	Authorization authorization(Object o);
-	ReducerResult call(
-		Object o,
-		ReducerState reducerState,
-		Resources immutableAddrs,
-		ExecutionContext context
-	) throws ProcedureException;
+  ProcedureKey key();
+
+  Authorization authorization(Object o);
+
+  ReducerResult call(
+      Object o, ReducerState reducerState, Resources immutableAddrs, ExecutionContext context)
+      throws ProcedureException;
 }

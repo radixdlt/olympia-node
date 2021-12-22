@@ -66,15 +66,15 @@ package com.radixdlt.constraintmachine.exceptions;
 
 public class AuthorizationException extends Exception {
 
-	public AuthorizationException(Exception cause) {
-		super(cause);
-	}
+  public AuthorizationException(Exception cause) {
+    super(cause);
+  }
 
-	public AuthorizationException(String msg) {
-		super(msg);
-	}
+  public AuthorizationException(String msg) {
+    super(msg);
+  }
 
-	public AuthorizationException(String msg, Exception cause) {
-		super(msg, cause);
-	}
+  public AuthorizationException(String msg, Exception cause) {
+    super(msg, cause);
+  }
 }

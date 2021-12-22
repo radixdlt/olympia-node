@@ -71,65 +71,63 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
 import java.util.Objects;
 
 @SerializerId2("network.p2p.verified_proxy_certificate")
 public final class VerifiedProxyCertificate {
-	// Placeholder for the serializer ID
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(DsonOutput.Output.ALL)
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
+  // Placeholder for the serializer ID
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(DsonOutput.Output.ALL)
+  private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("data")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final ProxyCertificateData data;
+  @JsonProperty("data")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final ProxyCertificateData data;
 
-	@JsonProperty("signer")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final NodeId signer;
+  @JsonProperty("signer")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final NodeId signer;
 
-	@JsonCreator
-	private static VerifiedProxyCertificate deserialize(
-		@JsonProperty(value = "data", required = true) ProxyCertificateData data,
-		@JsonProperty(value = "signer", required = true) NodeId signer
-	) {
-		return new VerifiedProxyCertificate(data, signer);
-	}
+  @JsonCreator
+  private static VerifiedProxyCertificate deserialize(
+      @JsonProperty(value = "data", required = true) ProxyCertificateData data,
+      @JsonProperty(value = "signer", required = true) NodeId signer) {
+    return new VerifiedProxyCertificate(data, signer);
+  }
 
-	VerifiedProxyCertificate(ProxyCertificateData data, NodeId signer) {
-		this.data = Objects.requireNonNull(data);
-		this.signer = Objects.requireNonNull(signer);
-	}
+  VerifiedProxyCertificate(ProxyCertificateData data, NodeId signer) {
+    this.data = Objects.requireNonNull(data);
+    this.signer = Objects.requireNonNull(signer);
+  }
 
-	public NodeId grantee() {
-		return data.grantee();
-	}
+  public NodeId grantee() {
+    return data.grantee();
+  }
 
-	public long expiresAt() {
-		return data.expiresAt();
-	}
+  public long expiresAt() {
+    return data.expiresAt();
+  }
 
-	public int networkId() {
-		return data.networkId();
-	}
+  public int networkId() {
+    return data.networkId();
+  }
 
-	public NodeId signer() {
-		return this.signer;
-	}
+  public NodeId signer() {
+    return this.signer;
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		return o instanceof VerifiedProxyCertificate that
-			&& Objects.equals(data, that.data)
-			&& Objects.equals(signer, that.signer);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    return o instanceof VerifiedProxyCertificate that
+        && Objects.equals(data, that.data)
+        && Objects.equals(signer, that.signer);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(data, signer);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(data, signer);
+  }
 }

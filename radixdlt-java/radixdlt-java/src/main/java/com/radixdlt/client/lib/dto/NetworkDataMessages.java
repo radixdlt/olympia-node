@@ -66,55 +66,54 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class NetworkDataMessages {
-	private final NetworkDataMessagesInbound inbound;
-	private final NetworkDataMessagesOutbound outbound;
+  private final NetworkDataMessagesInbound inbound;
+  private final NetworkDataMessagesOutbound outbound;
 
-	private NetworkDataMessages(NetworkDataMessagesInbound inbound, NetworkDataMessagesOutbound outbound) {
-		this.inbound = inbound;
-		this.outbound = outbound;
-	}
+  private NetworkDataMessages(
+      NetworkDataMessagesInbound inbound, NetworkDataMessagesOutbound outbound) {
+    this.inbound = inbound;
+    this.outbound = outbound;
+  }
 
-	@JsonCreator
-	public static NetworkDataMessages create(
-		@JsonProperty(value = "inbound", required = true) NetworkDataMessagesInbound inbound,
-		@JsonProperty(value = "outbound", required = true) NetworkDataMessagesOutbound outbound
-	) {
-		return new NetworkDataMessages(inbound, outbound);
-	}
+  @JsonCreator
+  public static NetworkDataMessages create(
+      @JsonProperty(value = "inbound", required = true) NetworkDataMessagesInbound inbound,
+      @JsonProperty(value = "outbound", required = true) NetworkDataMessagesOutbound outbound) {
+    return new NetworkDataMessages(inbound, outbound);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof NetworkDataMessages)) {
-			return false;
-		}
+    if (!(o instanceof NetworkDataMessages)) {
+      return false;
+    }
 
-		var that = (NetworkDataMessages) o;
-		return inbound.equals(that.inbound) && outbound.equals(that.outbound);
-	}
+    var that = (NetworkDataMessages) o;
+    return inbound.equals(that.inbound) && outbound.equals(that.outbound);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(inbound, outbound);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(inbound, outbound);
+  }
 
-	@Override
-	public String toString() {
-		return "{" + "inbound=" + inbound + ", outbound=" + outbound + '}';
-	}
+  @Override
+  public String toString() {
+    return "{" + "inbound=" + inbound + ", outbound=" + outbound + '}';
+  }
 
-	public NetworkDataMessagesInbound getInbound() {
-		return inbound;
-	}
+  public NetworkDataMessagesInbound getInbound() {
+    return inbound;
+  }
 
-	public NetworkDataMessagesOutbound getOutbound() {
-		return outbound;
-	}
+  public NetworkDataMessagesOutbound getOutbound() {
+    return outbound;
+  }
 }

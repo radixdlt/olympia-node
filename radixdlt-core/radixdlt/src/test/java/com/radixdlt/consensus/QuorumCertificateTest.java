@@ -64,6 +64,10 @@
 
 package com.radixdlt.consensus;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
@@ -71,33 +75,29 @@ import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 public class QuorumCertificateTest {
-	@Test
-	public void when_create_genesis_qc_with_non_genesis_vertex__then_should_throw_exception() {
-		VerifiedVertex vertex = mock(VerifiedVertex.class);
-		when(vertex.getView()).thenReturn(View.of(1));
-		assertThatThrownBy(() -> QuorumCertificate.ofGenesis(vertex, mock(LedgerHeader.class)))
-			.isInstanceOf(IllegalArgumentException.class);
-	}
+  @Test
+  public void when_create_genesis_qc_with_non_genesis_vertex__then_should_throw_exception() {
+    VerifiedVertex vertex = mock(VerifiedVertex.class);
+    when(vertex.getView()).thenReturn(View.of(1));
+    assertThatThrownBy(() -> QuorumCertificate.ofGenesis(vertex, mock(LedgerHeader.class)))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(QuorumCertificate.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(QuorumCertificate.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializationWithNullThrowsException1() {
-		new QuorumCertificate(null, mock(TimestampedECDSASignatures.class));
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException1() {
+    new QuorumCertificate(null, mock(TimestampedECDSASignatures.class));
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializationWithNullThrowsException2() {
-		new QuorumCertificate(mock(VoteData.class), null);
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException2() {
+    new QuorumCertificate(mock(VoteData.class), null);
+  }
 }

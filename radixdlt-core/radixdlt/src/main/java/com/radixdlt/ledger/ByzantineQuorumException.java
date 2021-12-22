@@ -65,18 +65,18 @@
 package com.radixdlt.ledger;
 
 /**
- * Exception which suggests that there exists a byzantine quorum which
- * got us to this exception state.
+ * Exception which suggests that there exists a byzantine quorum which got us to this exception
+ * state.
  *
- * TODO: Remove all instance of this class and replace with mechanism to
- * log and revert to last known good state.
+ * <p>TODO: Remove all instance of this class and replace with mechanism to log and revert to last
+ * known good state.
  */
 public class ByzantineQuorumException extends RuntimeException {
-	public ByzantineQuorumException(String message) {
-		super(message);
-	}
+  public ByzantineQuorumException(String message) {
+    super(message);
+  }
 
-	public ByzantineQuorumException(String message, Exception cause) {
-		super(message, cause);
-	}
+  public ByzantineQuorumException(String message, Exception cause) {
+    super(message, cause);
+  }
 }

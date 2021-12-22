@@ -67,39 +67,35 @@ package com.radixdlt.environment.deterministic.network;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Select a message from a list of possible messages.
- */
+/** Select a message from a list of possible messages. */
 @FunctionalInterface
 public interface MessageSelector {
 
-	/**
-	 * Selects a message for processing from the supplied non-empty list.
-	 * The supplied list is from a single rank, and is in arrival order.
-	 *
-	 * @param messages the messages to select from
-	 * @return The selected message, or {@code null} if processing should stop
-	 */
-	ControlledMessage select(List<ControlledMessage> messages);
+  /**
+   * Selects a message for processing from the supplied non-empty list. The supplied list is from a
+   * single rank, and is in arrival order.
+   *
+   * @param messages the messages to select from
+   * @return The selected message, or {@code null} if processing should stop
+   */
+  ControlledMessage select(List<ControlledMessage> messages);
 
-	/**
-	 * Returns a selector that always returns the first message from the
-	 * supplied list.
-	 *
-	 * @return a selector that always returns the first message from the
-	 * 		supplied list
-	 */
-	static MessageSelector firstSelector() {
-		return messages -> messages.get(0);
-	}
+  /**
+   * Returns a selector that always returns the first message from the supplied list.
+   *
+   * @return a selector that always returns the first message from the supplied list
+   */
+  static MessageSelector firstSelector() {
+    return messages -> messages.get(0);
+  }
 
-	/**
-	 * Returns a selector that returns a random message from the supplied list.
-	 *
-	 * @param random the random generator to use to select messages
-	 * @return a selector that returns a random message from the supplied list
-	 */
-	static MessageSelector randomSelector(Random random) {
-		return messages -> messages.get(random.nextInt(messages.size()));
-	}
+  /**
+   * Returns a selector that returns a random message from the supplied list.
+   *
+   * @param random the random generator to use to select messages
+   * @return a selector that returns a random message from the supplied list
+   */
+  static MessageSelector randomSelector(Random random) {
+    return messages -> messages.get(random.nextInt(messages.size()));
+  }
 }

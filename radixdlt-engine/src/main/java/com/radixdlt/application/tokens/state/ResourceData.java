@@ -68,5 +68,5 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.REAddr;
 
 public interface ResourceData extends Particle {
-	REAddr getAddr();
+  REAddr getAddr();
 }

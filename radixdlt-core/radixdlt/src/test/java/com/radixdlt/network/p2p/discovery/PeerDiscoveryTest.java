@@ -64,6 +64,16 @@
 
 package com.radixdlt.network.p2p.discovery;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Key;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -78,106 +88,111 @@ import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.discovery.util.SeedNodesConfigParser;
 import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
-import org.junit.Test;
-
 import java.util.Set;
 import java.util.stream.Stream;
-
-import static com.radixdlt.utils.TypedMocks.rmock;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.junit.Test;
 
 public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
 
-	@Test
-	public void when_discover_peers_then_should_connect_to_some_peers() throws Exception {
-		setupTestRunner(5, defaultProperties());
+  @Test
+  public void when_discover_peers_then_should_connect_to_some_peers() throws Exception {
+    setupTestRunner(5, defaultProperties());
 
-		// add 4 peers to the addr book
-		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(
-			testNetworkRunner.getUri(1),
-			testNetworkRunner.getUri(2),
-			testNetworkRunner.getUri(3),
-			testNetworkRunner.getUri(4)
-		));
+    // add 4 peers to the addr book
+    testNetworkRunner
+        .addressBook(0)
+        .addUncheckedPeers(
+            Set.of(
+                testNetworkRunner.getUri(1),
+                testNetworkRunner.getUri(2),
+                testNetworkRunner.getUri(3),
+                testNetworkRunner.getUri(4)));
 
-		testNetworkRunner.getInstance(0, new Key<EventDispatcher<DiscoverPeers>>() { })
-			.dispatch(DiscoverPeers.create());
+    testNetworkRunner
+        .getInstance(0, new Key<EventDispatcher<DiscoverPeers>>() {})
+        .dispatch(DiscoverPeers.create());
 
-		processForCount(10);
+    processForCount(10);
 
-		// with 10 slots (default), max num of peers to connect is 3 (10/2 - 2)
-		assertEquals(3L, testNetworkRunner.peerManager(0).activeChannels().size());
-	}
+    // with 10 slots (default), max num of peers to connect is 3 (10/2 - 2)
+    assertEquals(3L, testNetworkRunner.peerManager(0).activeChannels().size());
+  }
 
-	@Test
-	public void when_unexpected_response_then_ban_peer() throws Exception {
-		setupTestRunner(1, defaultProperties());
+  @Test
+  public void when_unexpected_response_then_ban_peer() throws Exception {
+    setupTestRunner(1, defaultProperties());
 
-		final var unexpectedSender = BFTNode.random();
-		final var peersResponse = PeersResponse.create(
-			ImmutableSet.of(RadixNodeUri.fromPubKeyAndAddress(0, ECKeyPair.generateNew().getPublicKey(), "127.0.0.1", 1234))
-		);
+    final var unexpectedSender = BFTNode.random();
+    final var peersResponse =
+        PeersResponse.create(
+            ImmutableSet.of(
+                RadixNodeUri.fromPubKeyAndAddress(
+                    0, ECKeyPair.generateNew().getPublicKey(), "127.0.0.1", 1234)));
 
-		testNetworkRunner.getInstance(0, PeerDiscovery.class).peersResponseRemoteEventProcessor()
-			.process(unexpectedSender, peersResponse);
+    testNetworkRunner
+        .getInstance(0, PeerDiscovery.class)
+        .peersResponseRemoteEventProcessor()
+        .process(unexpectedSender, peersResponse);
 
-		processAll();
+    processAll();
 
-		assertTrue(testNetworkRunner.addressBook(0).findById(NodeId.fromPublicKey(unexpectedSender.getKey())).get().isBanned());
-	}
+    assertTrue(
+        testNetworkRunner
+            .addressBook(0)
+            .findById(NodeId.fromPublicKey(unexpectedSender.getKey()))
+            .get()
+            .isBanned());
+  }
 
-	@Test
-	public void when_get_peers_then_shouldnt_return_proxied_peers() {
-		final var selfKey = ECKeyPair.generateNew();
-		final var selfUri = RadixNodeUri.fromPubKeyAndAddress(1, selfKey.getPublicKey(), "127.0.0.1", 3000);
+  @Test
+  public void when_get_peers_then_shouldnt_return_proxied_peers() {
+    final var selfKey = ECKeyPair.generateNew();
+    final var selfUri =
+        RadixNodeUri.fromPubKeyAndAddress(1, selfKey.getPublicKey(), "127.0.0.1", 3000);
 
-		final var config = mock(P2PConfig.class);
-		final var addressBook = mock(AddressBook.class);
-		final RemoteEventDispatcher<PeersResponse> peersResponseDispatcher = rmock(RemoteEventDispatcher.class);
+    final var config = mock(P2PConfig.class);
+    final var addressBook = mock(AddressBook.class);
+    final RemoteEventDispatcher<PeersResponse> peersResponseDispatcher =
+        rmock(RemoteEventDispatcher.class);
 
-		final var sut = new PeerDiscovery(
-			selfUri,
-			config,
-			mock(PeerManager.class),
-			addressBook,
-			mock(PeerControl.class),
-			mock(SeedNodesConfigParser.class),
-			rmock(RemoteEventDispatcher.class),
-			peersResponseDispatcher
-		);
+    final var sut =
+        new PeerDiscovery(
+            selfUri,
+            config,
+            mock(PeerManager.class),
+            addressBook,
+            mock(PeerControl.class),
+            mock(SeedNodesConfigParser.class),
+            rmock(RemoteEventDispatcher.class),
+            peersResponseDispatcher);
 
-		final var peer1 = randomNodeUri();
-		final var peer2 = randomNodeUri();
-		final var peer3 = randomNodeUri();
-		final var peer4 = randomNodeUri();
-		final var peer5 = randomNodeUri();
-		final var peer6 = randomNodeUri();
+    final var peer1 = randomNodeUri();
+    final var peer2 = randomNodeUri();
+    final var peer3 = randomNodeUri();
+    final var peer4 = randomNodeUri();
+    final var peer5 = randomNodeUri();
+    final var peer6 = randomNodeUri();
 
-		// peer3 is included in the address book
-		when(addressBook.bestCandidatesToConnect()).thenReturn(
-			Stream.of(peer1, peer2, peer3, peer4, peer5, peer6)
-		);
+    // peer3 is included in the address book
+    when(addressBook.bestCandidatesToConnect())
+        .thenReturn(Stream.of(peer1, peer2, peer3, peer4, peer5, peer6));
 
-		// peer3 shouldn't be returned in discovery response
-		when(config.authorizedProxiedPeers()).thenReturn(ImmutableSet.of(peer3.getNodeId()));
+    // peer3 shouldn't be returned in discovery response
+    when(config.authorizedProxiedPeers()).thenReturn(ImmutableSet.of(peer3.getNodeId()));
 
-		sut.getPeersRemoteEventProcessor().process(BFTNode.random(), GetPeers.create());
+    sut.getPeersRemoteEventProcessor().process(BFTNode.random(), GetPeers.create());
 
-		verify(peersResponseDispatcher, times(1)).dispatch((BFTNode) any(), argThat(
-			response ->
-				response.getPeers().containsAll(Set.of(peer1, peer2, peer4, peer5, peer6))
-					&& !response.getPeers().contains(peer3)
-		));
-	}
+    verify(peersResponseDispatcher, times(1))
+        .dispatch(
+            (BFTNode) any(),
+            argThat(
+                response ->
+                    response.getPeers().containsAll(Set.of(peer1, peer2, peer4, peer5, peer6))
+                        && !response.getPeers().contains(peer3)));
+  }
 
-	private RadixNodeUri randomNodeUri() {
-		return RadixNodeUri.fromPubKeyAndAddress(0, ECKeyPair.generateNew().getPublicKey(), "127.0.0.1", 1);
-	}
+  private RadixNodeUri randomNodeUri() {
+    return RadixNodeUri.fromPubKeyAndAddress(
+        0, ECKeyPair.generateNew().getPublicKey(), "127.0.0.1", 1);
+  }
 }

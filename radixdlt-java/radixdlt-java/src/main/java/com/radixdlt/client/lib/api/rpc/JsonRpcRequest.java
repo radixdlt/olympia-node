@@ -65,7 +65,6 @@
 package com.radixdlt.client.lib.api.rpc;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -73,66 +72,65 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class JsonRpcRequest {
-	private static final String VERSION = "2.0";
+  private static final String VERSION = "2.0";
 
-	private final String version;
-	private final String id;
-	private final RpcMethod method;
-	private final List<Object> parameters = new ArrayList<>();
+  private final String version;
+  private final String id;
+  private final RpcMethod method;
+  private final List<Object> parameters = new ArrayList<>();
 
-	private JsonRpcRequest(String version, String id, RpcMethod method, List<Object> parameters) {
-		this.version = version;
-		this.id = id;
-		this.method = method;
-		this.parameters.addAll(parameters);
-	}
+  private JsonRpcRequest(String version, String id, RpcMethod method, List<Object> parameters) {
+    this.version = version;
+    this.id = id;
+    this.method = method;
+    this.parameters.addAll(parameters);
+  }
 
-	public static JsonRpcRequest create(RpcMethod method, Long id, Object... parameters) {
-		var list = Stream.of(parameters)
-			.filter(JsonRpcRequest::isNotEmpty)
-			.collect(Collectors.toList());
+  public static JsonRpcRequest create(RpcMethod method, Long id, Object... parameters) {
+    var list =
+        Stream.of(parameters).filter(JsonRpcRequest::isNotEmpty).collect(Collectors.toList());
 
-		return new JsonRpcRequest(VERSION, id.toString(), method, list);
-	}
+    return new JsonRpcRequest(VERSION, id.toString(), method, list);
+  }
 
-	private static boolean isNotEmpty(Object obj) {
-		if (obj == null) {
-			return false;
-		}
+  private static boolean isNotEmpty(Object obj) {
+    if (obj == null) {
+      return false;
+    }
 
-		if (obj instanceof Optional) {
-			return ((Optional<?>) obj).isPresent();
-		}
+    if (obj instanceof Optional) {
+      return ((Optional<?>) obj).isPresent();
+    }
 
-		return true;
-	}
+    return true;
+  }
 
-	@JsonProperty("jsonrpc")
-	public String getVersion() {
-		return version;
-	}
+  @JsonProperty("jsonrpc")
+  public String getVersion() {
+    return version;
+  }
 
-	@JsonProperty("id")
-	public String getId() {
-		return id;
-	}
+  @JsonProperty("id")
+  public String getId() {
+    return id;
+  }
 
-	@JsonProperty("params")
-	public List<?> getParameters() {
-		return parameters;
-	}
+  @JsonProperty("params")
+  public List<?> getParameters() {
+    return parameters;
+  }
 
-	@JsonProperty("method")
-	public String getMethod() {
-		return method.method();
-	}
+  @JsonProperty("method")
+  public String getMethod() {
+    return method.method();
+  }
 
-	public JsonRpcRequest addParameters(Object... params) {
-		parameters.addAll(List.of(params));
-		return this;
-	}
+  public JsonRpcRequest addParameters(Object... params) {
+    parameters.addAll(List.of(params));
+    return this;
+  }
 
-	public RpcMethod rpcDetails() {
-		return method;
-	}
+  public RpcMethod rpcDetails() {
+    return method;
+  }
 }

@@ -65,58 +65,54 @@
 package com.radixdlt.atom;
 
 import com.radixdlt.utils.UInt256;
-
 import java.util.Objects;
 
-/**
- * Describes a fixed token definition
- */
+/** Describes a fixed token definition */
 public final class FixedTokenDefinition {
 
-	private final String symbol;
-	private final String name;
-	private final String description;
-	private final String iconUrl;
-	private final String tokenUrl;
-	private final UInt256 supply;
+  private final String symbol;
+  private final String name;
+  private final String description;
+  private final String iconUrl;
+  private final String tokenUrl;
+  private final UInt256 supply;
 
-	public FixedTokenDefinition(
-		String symbol,
-		String name,
-		String description,
-		String iconUrl,
-		String tokenUrl,
-		UInt256 supply
-	) {
-		this.symbol = Objects.requireNonNull(symbol);
-		this.name = Objects.requireNonNull(name);
-		this.description = Objects.requireNonNull(description);
-		this.iconUrl = iconUrl;
-		this.tokenUrl = tokenUrl;
-		this.supply = Objects.requireNonNull(supply);
-	}
+  public FixedTokenDefinition(
+      String symbol,
+      String name,
+      String description,
+      String iconUrl,
+      String tokenUrl,
+      UInt256 supply) {
+    this.symbol = Objects.requireNonNull(symbol);
+    this.name = Objects.requireNonNull(name);
+    this.description = Objects.requireNonNull(description);
+    this.iconUrl = iconUrl;
+    this.tokenUrl = tokenUrl;
+    this.supply = Objects.requireNonNull(supply);
+  }
 
-	public String getSymbol() {
-		return symbol;
-	}
+  public String getSymbol() {
+    return symbol;
+  }
 
-	public String getName() {
-		return name;
-	}
+  public String getName() {
+    return name;
+  }
 
-	public String getDescription() {
-		return description;
-	}
+  public String getDescription() {
+    return description;
+  }
 
-	public String getIconUrl() {
-		return iconUrl == null ? "" : iconUrl;
-	}
+  public String getIconUrl() {
+    return iconUrl == null ? "" : iconUrl;
+  }
 
-	public String getTokenUrl() {
-		return tokenUrl == null ? "" : tokenUrl;
-	}
+  public String getTokenUrl() {
+    return tokenUrl == null ? "" : tokenUrl;
+  }
 
-	public UInt256 getSupply() {
-		return supply;
-	}
+  public UInt256 getSupply() {
+    return supply;
+  }
 }

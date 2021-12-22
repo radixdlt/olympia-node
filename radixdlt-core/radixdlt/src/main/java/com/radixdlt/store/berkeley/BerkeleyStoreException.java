@@ -64,15 +64,13 @@
 
 package com.radixdlt.store.berkeley;
 
-/**
- * A Tempo exception
- */
+/** A Tempo exception */
 public class BerkeleyStoreException extends RuntimeException {
-	public BerkeleyStoreException(String message) {
-		super(message);
-	}
+  public BerkeleyStoreException(String message) {
+    super(message);
+  }
 
-	public BerkeleyStoreException(String message, Throwable cause) {
-		super(message, cause);
-	}
+  public BerkeleyStoreException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }

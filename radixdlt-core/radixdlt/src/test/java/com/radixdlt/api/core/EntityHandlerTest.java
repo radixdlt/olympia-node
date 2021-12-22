@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.api.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.EntityHandler;
@@ -94,240 +97,254 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.utils.Bytes;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 // TODO: Refactor so that every entity is just a parameter in a parametrized test
 public class EntityHandlerTest extends ApiTest {
-	@Inject
-	private EntityHandler sut;
-	@Inject
-	private CoreModelMapper coreModelMapper;
-	@Inject
-	@Genesis
-	private VerifiedTxnsAndProof genesis;
+  @Inject private EntityHandler sut;
+  @Inject private CoreModelMapper coreModelMapper;
+  @Inject @Genesis private VerifiedTxnsAndProof genesis;
 
-	@Test
-	public void retrieve_system_entity_on_genesis() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void retrieve_system_entity_on_genesis() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var request = new EntityRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.entityIdentifier(new EntityIdentifier().address("system"));
-		var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
+    // Act
+    var request =
+        new EntityRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .entityIdentifier(new EntityIdentifier().address("system"));
+    var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
 
-		// Assert
-		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
-		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
-		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
-		assertThat(response.getBalances()).isEmpty();
-		assertThat(response.getDataObjects()).isNotEmpty();
-	}
+    // Assert
+    var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
+    var genesisAccumulator =
+        genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
+    assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+    assertThat(response.getBalances()).isEmpty();
+    assertThat(response.getDataObjects()).isNotEmpty();
+  }
 
-	@Test
-	public void retrieve_native_token_on_genesis() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void retrieve_native_token_on_genesis() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var request = new EntityRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.entityIdentifier(coreModelMapper.entityIdentifier(REAddr.ofNativeToken(), "xrd"));
-		var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
+    // Act
+    var request =
+        new EntityRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .entityIdentifier(coreModelMapper.entityIdentifier(REAddr.ofNativeToken(), "xrd"));
+    var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
 
-		// Assert
-		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
-		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
-		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
-		assertThat(response.getBalances()).isEmpty();
-		assertThat(response.getDataObjects()).hasAtLeastOneElementOfType(TokenData.class);
-		assertThat(response.getDataObjects()).hasAtLeastOneElementOfType(TokenMetadata.class);
-	}
+    // Assert
+    var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
+    var genesisAccumulator =
+        genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
+    assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+    assertThat(response.getBalances()).isEmpty();
+    assertThat(response.getDataObjects()).hasAtLeastOneElementOfType(TokenData.class);
+    assertThat(response.getDataObjects()).hasAtLeastOneElementOfType(TokenMetadata.class);
+  }
 
-	@Test
-	public void retrieve_non_existent_token_on_genesis() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void retrieve_non_existent_token_on_genesis() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var tokenAddress = REAddr.ofHashedKey(selfKey(), "test");
-		var request = new EntityRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.entityIdentifier(coreModelMapper.entityIdentifier(tokenAddress, "test"));
-		var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
+    // Act
+    var tokenAddress = REAddr.ofHashedKey(selfKey(), "test");
+    var request =
+        new EntityRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .entityIdentifier(coreModelMapper.entityIdentifier(tokenAddress, "test"));
+    var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
 
-		// Assert
-		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
-		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
-		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
-		assertThat(response.getBalances()).isEmpty();
-		assertThat(response.getDataObjects())
-			.containsExactly(new UnclaimedRadixEngineAddress()
-				.type(SubstateTypeMapping.getName(SubstateTypeId.UNCLAIMED_READDR))
-			);
-	}
+    // Assert
+    var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
+    var genesisAccumulator =
+        genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
+    assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+    assertThat(response.getBalances()).isEmpty();
+    assertThat(response.getDataObjects())
+        .containsExactly(
+            new UnclaimedRadixEngineAddress()
+                .type(SubstateTypeMapping.getName(SubstateTypeId.UNCLAIMED_READDR)));
+  }
 
-	@Test
-	public void retrieve_account_entity_on_genesis() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void retrieve_account_entity_on_genesis() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var request = new EntityRequest()
-			.networkIdentifier(networkIdentifier())
-			.entityIdentifier(coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(selfKey())));
-		var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
+    // Act
+    var request =
+        new EntityRequest()
+            .networkIdentifier(networkIdentifier())
+            .entityIdentifier(coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(selfKey())));
+    var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
 
-		// Assert
-		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
-		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
-		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
-		assertThat(response.getBalances())
-			.containsExactlyInAnyOrder(
-				coreModelMapper.nativeTokenAmount(getLiquidAmount().toSubunits()),
-				coreModelMapper.stakeUnitAmount(selfKey(), getStakeAmount().toSubunits())
-			);
-	}
+    // Assert
+    var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
+    var genesisAccumulator =
+        genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
+    assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+    assertThat(response.getBalances())
+        .containsExactlyInAnyOrder(
+            coreModelMapper.nativeTokenAmount(getLiquidAmount().toSubunits()),
+            coreModelMapper.stakeUnitAmount(selfKey(), getStakeAmount().toSubunits()));
+  }
 
-	@Test
-	public void retrieve_validator_entity_on_genesis() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void retrieve_validator_entity_on_genesis() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var request = new EntityRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.entityIdentifier(coreModelMapper.entityIdentifier(selfKey()));
-		var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
+    // Act
+    var request =
+        new EntityRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .entityIdentifier(coreModelMapper.entityIdentifier(selfKey()));
+    var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
 
-		// Assert
-		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
-		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
-		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
-		assertThat(response.getDataObjects()).hasOnlyElementsOfTypes(
-			ValidatorAllowDelegation.class,
-			ValidatorMetadata.class,
-			ValidatorSystemMetadata.class,
-			PreparedValidatorOwner.class,
-			PreparedValidatorFee.class,
-			PreparedValidatorRegistered.class
-		);
-		assertThat(response.getBalances()).isEmpty();
-	}
+    // Assert
+    var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
+    var genesisAccumulator =
+        genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
+    assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+    assertThat(response.getDataObjects())
+        .hasOnlyElementsOfTypes(
+            ValidatorAllowDelegation.class,
+            ValidatorMetadata.class,
+            ValidatorSystemMetadata.class,
+            PreparedValidatorOwner.class,
+            PreparedValidatorFee.class,
+            PreparedValidatorRegistered.class);
+    assertThat(response.getBalances()).isEmpty();
+  }
 
-	@Test
-	public void retrieve_validator_system_entity_on_genesis() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void retrieve_validator_system_entity_on_genesis() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var request = new EntityRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.entityIdentifier(coreModelMapper.entityIdentifierValidatorSystem(selfKey()));
-		var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
+    // Act
+    var request =
+        new EntityRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .entityIdentifier(coreModelMapper.entityIdentifierValidatorSystem(selfKey()));
+    var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
 
-		// Assert
-		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
-		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
-		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
-		assertThat(response.getDataObjects())
-			.hasOnlyElementsOfTypes(ValidatorBFTData.class, ValidatorData.class);
-		assertThat(response.getBalances())
-			.containsExactly(coreModelMapper.nativeTokenAmount(getStakeAmount().toSubunits()));
-	}
+    // Assert
+    var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
+    var genesisAccumulator =
+        genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
+    assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+    assertThat(response.getDataObjects())
+        .hasOnlyElementsOfTypes(ValidatorBFTData.class, ValidatorData.class);
+    assertThat(response.getBalances())
+        .containsExactly(coreModelMapper.nativeTokenAmount(getStakeAmount().toSubunits()));
+  }
 
-	@Test
-	public void retrieve_prepared_stake_entity_on_genesis() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void retrieve_prepared_stake_entity_on_genesis() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var address = REAddr.ofPubKeyAccount(selfKey());
-		var request = new EntityRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.entityIdentifier(coreModelMapper.entityIdentifierPreparedStake(address, selfKey()));
-		var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
+    // Act
+    var address = REAddr.ofPubKeyAccount(selfKey());
+    var request =
+        new EntityRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .entityIdentifier(coreModelMapper.entityIdentifierPreparedStake(address, selfKey()));
+    var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
 
-		// Assert
-		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
-		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
-		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
-		assertThat(response.getDataObjects()).isEmpty();
-		assertThat(response.getBalances()).isEmpty();
-	}
+    // Assert
+    var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
+    var genesisAccumulator =
+        genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
+    assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+    assertThat(response.getDataObjects()).isEmpty();
+    assertThat(response.getBalances()).isEmpty();
+  }
 
-	@Test
-	public void retrieve_prepared_unstake_entity_on_genesis() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void retrieve_prepared_unstake_entity_on_genesis() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var address = REAddr.ofPubKeyAccount(selfKey());
-		var request = new EntityRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.entityIdentifier(coreModelMapper.entityIdentifierPreparedUnstake(address));
-		var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
+    // Act
+    var address = REAddr.ofPubKeyAccount(selfKey());
+    var request =
+        new EntityRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .entityIdentifier(coreModelMapper.entityIdentifierPreparedUnstake(address));
+    var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
 
-		// Assert
-		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
-		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
-		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
-		assertThat(response.getDataObjects()).isEmpty();
-		assertThat(response.getBalances()).isEmpty();
-	}
+    // Assert
+    var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
+    var genesisAccumulator =
+        genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
+    assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+    assertThat(response.getDataObjects()).isEmpty();
+    assertThat(response.getBalances()).isEmpty();
+  }
 
-	@Test
-	public void retrieve_exiting_stake_entity_on_genesis() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void retrieve_exiting_stake_entity_on_genesis() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var address = REAddr.ofPubKeyAccount(selfKey());
-		var request = new EntityRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.entityIdentifier(coreModelMapper.entityIdentifierExitingStake(address, selfKey(), 1));
-		var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
+    // Act
+    var address = REAddr.ofPubKeyAccount(selfKey());
+    var request =
+        new EntityRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .entityIdentifier(coreModelMapper.entityIdentifierExitingStake(address, selfKey(), 1));
+    var response = handleRequestWithExpectedResponse(sut, request, EntityResponse.class);
 
-		// Assert
-		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
-		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
-		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
-		assertThat(response.getDataObjects()).isEmpty();
-		assertThat(response.getBalances()).isEmpty();
-	}
+    // Assert
+    var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
+    var genesisAccumulator =
+        genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
+    assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+    assertThat(response.getDataObjects()).isEmpty();
+    assertThat(response.getBalances()).isEmpty();
+  }
 
-	@Test
-	public void retrieve_invalid_entity_should_throw() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void retrieve_invalid_entity_should_throw() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		// Assert
-		var request = new EntityRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.entityIdentifier(new EntityIdentifier().address("some_garbage_address"));
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+    // Act
+    // Assert
+    var request =
+        new EntityRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .entityIdentifier(new EntityIdentifier().address("some_garbage_address"));
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		assertThat(response.getDetails()).isInstanceOf(InvalidAddressError.class);
-	}
+    assertThat(response.getDetails()).isInstanceOf(InvalidAddressError.class);
+  }
 
-	@Test
-	public void retrieve_invalid_sub_entity_should_throw() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void retrieve_invalid_sub_entity_should_throw() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var address = REAddr.ofPubKeyAccount(selfKey());
-		var invalidSubEntity = coreModelMapper
-			.entityIdentifier(address)
-			.subEntity(new SubEntity().address("prepared_stakes"));
-		var request = new EntityRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.entityIdentifier(invalidSubEntity);
-		var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
+    // Act
+    var address = REAddr.ofPubKeyAccount(selfKey());
+    var invalidSubEntity =
+        coreModelMapper
+            .entityIdentifier(address)
+            .subEntity(new SubEntity().address("prepared_stakes"));
+    var request =
+        new EntityRequest()
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .entityIdentifier(invalidSubEntity);
+    var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);
 
-		// Assert
-		assertThat(response.getDetails()).isInstanceOf(InvalidSubEntityError.class);
-	}
+    // Assert
+    assertThat(response.getDetails()).isInstanceOf(InvalidSubEntityError.class);
+  }
 }

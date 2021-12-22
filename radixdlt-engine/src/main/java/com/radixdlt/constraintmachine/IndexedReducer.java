@@ -67,10 +67,10 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
 public interface IndexedReducer<D extends Particle, S extends ReducerState> {
-	ReducerResult reduce(
-		S reducerState,
-		IndexedSubstateIterator<D> inputState,
-		ExecutionContext context,
-		Resources immutableAddrs
-	) throws ProcedureException;
+  ReducerResult reduce(
+      S reducerState,
+      IndexedSubstateIterator<D> inputState,
+      ExecutionContext context,
+      Resources immutableAddrs)
+      throws ProcedureException;
 }

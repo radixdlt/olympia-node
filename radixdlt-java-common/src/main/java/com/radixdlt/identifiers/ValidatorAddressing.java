@@ -64,69 +64,69 @@
 
 package com.radixdlt.identifiers;
 
-import org.bitcoinj.core.AddressFormatException;
-import org.bitcoinj.core.Bech32;
-
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.Bits;
-
 import java.util.Objects;
 import java.util.function.Function;
+import org.bitcoinj.core.AddressFormatException;
+import org.bitcoinj.core.Bech32;
 
 /**
- * Bech-32 encoding/decoding of validators. Validators are represented as 33-byte
- * compressed EC Public Keys.
- * <p>
- * The data part is a conversion of the 33 byte compressed EC public key to Base32
- * similar to specification described in BIP_0173 for converting witness programs.
+ * Bech-32 encoding/decoding of validators. Validators are represented as 33-byte compressed EC
+ * Public Keys.
+ *
+ * <p>The data part is a conversion of the 33 byte compressed EC public key to Base32 similar to
+ * specification described in BIP_0173 for converting witness programs.
  */
 public final class ValidatorAddressing {
-	private final String hrp;
-	private ValidatorAddressing(String hrp) {
-		this.hrp = hrp;
-	}
+  private final String hrp;
 
-	public String getHrp() {
-		return hrp;
-	}
+  private ValidatorAddressing(String hrp) {
+    this.hrp = hrp;
+  }
 
-	public static ValidatorAddressing bech32(String hrp) {
-		Objects.requireNonNull(hrp);
-		return new ValidatorAddressing(hrp);
-	}
+  public String getHrp() {
+    return hrp;
+  }
 
-	private static byte[] toBech32Data(byte[] bytes) {
-		return Bits.convertBits(bytes, 0, bytes.length, 8, 5, true);
-	}
+  public static ValidatorAddressing bech32(String hrp) {
+    Objects.requireNonNull(hrp);
+    return new ValidatorAddressing(hrp);
+  }
 
-	private static byte[] fromBech32Data(byte[] bytes) {
-		return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
-	}
+  private static byte[] toBech32Data(byte[] bytes) {
+    return Bits.convertBits(bytes, 0, bytes.length, 8, 5, true);
+  }
 
-	public String of(ECPublicKey key) {
-		var bytes = key.getCompressedBytes();
-		var convert = toBech32Data(bytes);
-		return Bech32.encode(hrp, convert);
-	}
+  private static byte[] fromBech32Data(byte[] bytes) {
+    return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
+  }
 
-	public <X extends Exception> ECPublicKey parseOrThrow(String v, Function<String, X> exceptionSupplier) throws X {
-		Bech32.Bech32Data bech32Data;
-		try {
-			bech32Data = Bech32.decode(v);
-		} catch (AddressFormatException e) {
-			throw exceptionSupplier.apply("Could not decode");
-		}
+  public String of(ECPublicKey key) {
+    var bytes = key.getCompressedBytes();
+    var convert = toBech32Data(bytes);
+    return Bech32.encode(hrp, convert);
+  }
 
-		if (!bech32Data.hrp.equals(hrp)) {
-			throw exceptionSupplier.apply("hrp must be " + this.hrp + " but was " + bech32Data.hrp);
-		}
+  public <X extends Exception> ECPublicKey parseOrThrow(
+      String v, Function<String, X> exceptionSupplier) throws X {
+    Bech32.Bech32Data bech32Data;
+    try {
+      bech32Data = Bech32.decode(v);
+    } catch (AddressFormatException e) {
+      throw exceptionSupplier.apply("Could not decode");
+    }
 
-		var keyBytes = fromBech32Data(bech32Data.data);
-		try {
-			return ECPublicKey.fromBytes(keyBytes);
-		} catch (PublicKeyException e) {
-			throw exceptionSupplier.apply("Validator address does not contain a valid public key");
-		}
-	}
+    if (!bech32Data.hrp.equals(hrp)) {
+      throw exceptionSupplier.apply("hrp must be " + this.hrp + " but was " + bech32Data.hrp);
+    }
+
+    var keyBytes = fromBech32Data(bech32Data.data);
+    try {
+      return ECPublicKey.fromBytes(keyBytes);
+    } catch (PublicKeyException e) {
+      throw exceptionSupplier.apply("Validator address does not contain a valid public key");
+    }
+  }
 }

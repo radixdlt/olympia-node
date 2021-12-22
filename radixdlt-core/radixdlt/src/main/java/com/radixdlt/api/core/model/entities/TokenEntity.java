@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -80,69 +81,72 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
-
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.Supplier;
 
 public record TokenEntity(String symbol, REAddr tokenAddr) implements Entity {
-	@Override
-	public void overwriteDataObject(
-		ParsedDataObject parsedDataObject,
-		TxBuilder builder,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		var dataObject = parsedDataObject.getDataObject();
-		if (dataObject instanceof TokenData tokenData) {
-			boolean isMutable = tokenData.getIsMutable();
-			var ownerKey = parsedDataObject.getParsed(ECPublicKey.class);
-			if (!isMutable && ownerKey != null) {
-				throw new InvalidDataObjectException(parsedDataObject, "Cannot have owner on fixed supply token.");
-			}
+  @Override
+  public void overwriteDataObject(
+      ParsedDataObject parsedDataObject, TxBuilder builder, Supplier<RERulesConfig> config)
+      throws TxBuilderException {
+    var dataObject = parsedDataObject.getDataObject();
+    if (dataObject instanceof TokenData tokenData) {
+      boolean isMutable = tokenData.getIsMutable();
+      var ownerKey = parsedDataObject.getParsed(ECPublicKey.class);
+      if (!isMutable && ownerKey != null) {
+        throw new InvalidDataObjectException(
+            parsedDataObject, "Cannot have owner on fixed supply token.");
+      }
 
-			if (isMutable && ownerKey == null) {
-				throw new InvalidDataObjectException(parsedDataObject, "Must have an owner on mutable supply token.");
-			}
+      if (isMutable && ownerKey == null) {
+        throw new InvalidDataObjectException(
+            parsedDataObject, "Must have an owner on mutable supply token.");
+      }
 
-			if (!tokenData.getGranularity().equals("1")) {
-				throw new InvalidDataObjectException(parsedDataObject, "granularity must be 1");
-			}
+      if (!tokenData.getGranularity().equals("1")) {
+        throw new InvalidDataObjectException(parsedDataObject, "granularity must be 1");
+      }
 
-			builder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8));
-			builder.downREAddr(tokenAddr);
-			var tokenResource = new TokenResource(tokenAddr, UInt256.ONE, isMutable, ownerKey);
-			builder.up(tokenResource);
-		} else if (dataObject instanceof TokenMetadata tokenMetadata) {
-			if (!tokenMetadata.getSymbol().equals(this.symbol)) {
-				throw new InvalidDataObjectException(
-					parsedDataObject, "TokenMetadata symbol (" + tokenMetadata.getSymbol()
-					+ " does not match Entity symbol (" + this.symbol + ")"
-				);
-			}
+      builder
+          .toLowLevelBuilder()
+          .syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8));
+      builder.downREAddr(tokenAddr);
+      var tokenResource = new TokenResource(tokenAddr, UInt256.ONE, isMutable, ownerKey);
+      builder.up(tokenResource);
+    } else if (dataObject instanceof TokenMetadata tokenMetadata) {
+      if (!tokenMetadata.getSymbol().equals(this.symbol)) {
+        throw new InvalidDataObjectException(
+            parsedDataObject,
+            "TokenMetadata symbol ("
+                + tokenMetadata.getSymbol()
+                + " does not match Entity symbol ("
+                + this.symbol
+                + ")");
+      }
 
-			builder.up(new TokenResourceMetadata(
-				tokenAddr,
-				symbol,
-				tokenMetadata.getName(),
-				tokenMetadata.getDescription(),
-				tokenMetadata.getIconUrl(),
-				tokenMetadata.getUrl()
-			));
-		} else {
-			throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
-		}
-	}
+      builder.up(
+          new TokenResourceMetadata(
+              tokenAddr,
+              symbol,
+              tokenMetadata.getName(),
+              tokenMetadata.getDescription(),
+              tokenMetadata.getIconUrl(),
+              tokenMetadata.getUrl()));
+    } else {
+      throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
+    }
+  }
 
-	@Override
-	public List<ResourceQuery> getResourceQueries() {
-		return List.of();
-	}
+  @Override
+  public List<ResourceQuery> getResourceQueries() {
+    return List.of();
+  }
 
-	@Override
-	public List<KeyQuery> getKeyQueries() {
-		return List.of(
-			KeyQuery.fromToken(tokenAddr, SubstateTypeId.TOKEN_RESOURCE, UnclaimedREAddr::new),
-			KeyQuery.fromToken(tokenAddr, SubstateTypeId.TOKEN_RESOURCE_METADATA)
-		);
-	}
+  @Override
+  public List<KeyQuery> getKeyQueries() {
+    return List.of(
+        KeyQuery.fromToken(tokenAddr, SubstateTypeId.TOKEN_RESOURCE, UnclaimedREAddr::new),
+        KeyQuery.fromToken(tokenAddr, SubstateTypeId.TOKEN_RESOURCE_METADATA));
+  }
 }

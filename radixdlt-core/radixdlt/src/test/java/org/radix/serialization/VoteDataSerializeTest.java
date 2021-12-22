@@ -64,24 +64,23 @@
 
 package org.radix.serialization;
 
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.ledger.AccumulatorState;
 
 public class VoteDataSerializeTest extends SerializeObject<VoteData> {
-	public VoteDataSerializeTest() {
-		super(VoteData.class, VoteDataSerializeTest::get);
-	}
+  public VoteDataSerializeTest() {
+    super(VoteData.class, VoteDataSerializeTest::get);
+  }
 
-	private static VoteData get() {
-		View view = View.of(1234567890L);
-		LedgerHeader ledgerHeader = LedgerHeader.mocked();
-		BFTHeader committed = new BFTHeader(view, HashUtils.random256(), ledgerHeader);
-		BFTHeader parent = new BFTHeader(view.next(), HashUtils.random256(), ledgerHeader);
-		BFTHeader proposed = new BFTHeader(view.next().next(), HashUtils.random256(), ledgerHeader);
-		return new VoteData(proposed, parent, committed);
-	}
+  private static VoteData get() {
+    View view = View.of(1234567890L);
+    LedgerHeader ledgerHeader = LedgerHeader.mocked();
+    BFTHeader committed = new BFTHeader(view, HashUtils.random256(), ledgerHeader);
+    BFTHeader parent = new BFTHeader(view.next(), HashUtils.random256(), ledgerHeader);
+    BFTHeader proposed = new BFTHeader(view.next().next(), HashUtils.random256(), ledgerHeader);
+    return new VoteData(proposed, parent, committed);
+  }
 }

@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.api.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.core.handlers.ConstructionParseHandler;
@@ -84,67 +87,54 @@ import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
+import java.util.List;
 import org.junit.Test;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class ConstructionParseMessageTest extends ApiTest {
-	@Inject
-	private ConstructionParseHandler sut;
-	@Inject
-	@Self
-	private ECPublicKey self;
-	@Inject
-	private RadixEngine<LedgerAndBFTProof> radixEngine;
-	@Inject
-	private Forks forks;
+  @Inject private ConstructionParseHandler sut;
+  @Inject @Self private ECPublicKey self;
+  @Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
+  @Inject private Forks forks;
 
-	private byte[] buildUnsignedTxnWithMessage(String message) throws Exception {
-		var accountAddress = REAddr.ofPubKeyAccount(self);
-		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
-		var entityOperationGroups =
-			List.of(List.of(
-				EntityOperation.from(
-					new AccountVaultEntity(accountAddress),
-					ResourceOperation.withdraw(
-						new TokenResource("xrd", REAddr.ofNativeToken()),
-						UInt256.ONE
-					)
-				),
-				EntityOperation.from(
-					new AccountVaultEntity(otherAddress),
-					ResourceOperation.deposit(
-						new TokenResource("xrd", REAddr.ofNativeToken()),
-						UInt256.ONE
-					)
-				)
-			));
-		var operationTxBuilder = new OperationTxBuilder(message, entityOperationGroups, forks);
-		var builder = radixEngine.constructWithFees(
-			operationTxBuilder, false, accountAddress, NotEnoughNativeTokensForFeesException::new
-		);
-		var unsignedTransaction = builder.buildForExternalSign();
-		return unsignedTransaction.blob();
-	}
+  private byte[] buildUnsignedTxnWithMessage(String message) throws Exception {
+    var accountAddress = REAddr.ofPubKeyAccount(self);
+    var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+    var entityOperationGroups =
+        List.of(
+            List.of(
+                EntityOperation.from(
+                    new AccountVaultEntity(accountAddress),
+                    ResourceOperation.withdraw(
+                        new TokenResource("xrd", REAddr.ofNativeToken()), UInt256.ONE)),
+                EntityOperation.from(
+                    new AccountVaultEntity(otherAddress),
+                    ResourceOperation.deposit(
+                        new TokenResource("xrd", REAddr.ofNativeToken()), UInt256.ONE))));
+    var operationTxBuilder = new OperationTxBuilder(message, entityOperationGroups, forks);
+    var builder =
+        radixEngine.constructWithFees(
+            operationTxBuilder, false, accountAddress, NotEnoughNativeTokensForFeesException::new);
+    var unsignedTransaction = builder.buildForExternalSign();
+    return unsignedTransaction.blob();
+  }
 
-	@Test
-	public void parsing_transaction_with_message_should_show_message() throws Exception {
-		// Arrange
-		start();
+  @Test
+  public void parsing_transaction_with_message_should_show_message() throws Exception {
+    // Arrange
+    start();
 
-		// Act
-		var hex = "deadbeefdeadbeef";
-		var unsignedTxn = buildUnsignedTxnWithMessage(hex);
-		var request = new ConstructionParseRequest()
-			.signed(false)
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.transaction(Bytes.toHexString(unsignedTxn));
-		var response = handleRequestWithExpectedResponse(sut, request, ConstructionParseResponse.class);
+    // Act
+    var hex = "deadbeefdeadbeef";
+    var unsignedTxn = buildUnsignedTxnWithMessage(hex);
+    var request =
+        new ConstructionParseRequest()
+            .signed(false)
+            .networkIdentifier(new NetworkIdentifier().network("localnet"))
+            .transaction(Bytes.toHexString(unsignedTxn));
+    var response = handleRequestWithExpectedResponse(sut, request, ConstructionParseResponse.class);
 
-		// Assert
-		assertThat(response.getMetadata()).isNotNull();
-		assertThat(response.getMetadata().getMessage()).isEqualTo(hex);
-	}
+    // Assert
+    assertThat(response.getMetadata()).isNotNull();
+    assertThat(response.getMetadata().getMessage()).isEqualTo(hex);
+  }
 }

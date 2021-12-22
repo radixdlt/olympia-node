@@ -72,32 +72,28 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
-
 import java.math.BigInteger;
 import java.util.function.Function;
 
 public final class MockedKeyModule extends AbstractModule {
-	@Provides
-	@Self
-	String name(Function<BFTNode, String> nodeToString, @Self BFTNode self) {
-		return nodeToString.apply(self);
-	}
+  @Provides
+  @Self
+  String name(Function<BFTNode, String> nodeToString, @Self BFTNode self) {
+    return nodeToString.apply(self);
+  }
 
-	@Provides
-	private HashSigner hashSigner(
-		@Self BFTNode node,
-		SystemCounters counters,
-		HashFunction hashFunction
-	) {
-		return h -> {
-			var concat = new byte[64];
-			System.arraycopy(h, 0, concat, 0, 32);
-			System.arraycopy(node.getKey().getBytes(), 0, concat, 32, 32);
+  @Provides
+  private HashSigner hashSigner(
+      @Self BFTNode node, SystemCounters counters, HashFunction hashFunction) {
+    return h -> {
+      var concat = new byte[64];
+      System.arraycopy(h, 0, concat, 0, 32);
+      System.arraycopy(node.getKey().getBytes(), 0, concat, 32, 32);
 
-			var hashCode = hashFunction.hashBytes(concat).asLong();
-			counters.increment(SystemCounters.CounterType.SIGNATURES_SIGNED);
+      var hashCode = hashFunction.hashBytes(concat).asLong();
+      counters.increment(SystemCounters.CounterType.SIGNATURES_SIGNED);
 
-			return ECDSASignature.create(BigInteger.valueOf(hashCode), BigInteger.valueOf(hashCode), 0);
-		};
-	}
+      return ECDSASignature.create(BigInteger.valueOf(hashCode), BigInteger.valueOf(hashCode), 0);
+    };
+  }
 }

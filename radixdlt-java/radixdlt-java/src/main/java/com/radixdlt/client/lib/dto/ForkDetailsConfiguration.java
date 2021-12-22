@@ -67,169 +67,187 @@ package com.radixdlt.client.lib.dto;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.utils.UInt256;
-
 import java.util.List;
 import java.util.Objects;
 
 public final class ForkDetailsConfiguration {
-	private final long maxValidators;
-	private final long maxTransactionsPerRound;
-	private final long maxRoundsPerEpoch;
-	private final long minimumCompletedProposalsPercentage;
-	private final long unstakingDelayEpochLength;
-	private final FeeTable feeTable;
-	private final long validatorFeeIncreaseDebouncerEpochLength;
-	private final UInt256 minimumStake;
-	private final List<String> reservedSymbols;
-	private final long maxTransactionSize;
-	private final UInt256 rewardsPerProposal;
+  private final long maxValidators;
+  private final long maxTransactionsPerRound;
+  private final long maxRoundsPerEpoch;
+  private final long minimumCompletedProposalsPercentage;
+  private final long unstakingDelayEpochLength;
+  private final FeeTable feeTable;
+  private final long validatorFeeIncreaseDebouncerEpochLength;
+  private final UInt256 minimumStake;
+  private final List<String> reservedSymbols;
+  private final long maxTransactionSize;
+  private final UInt256 rewardsPerProposal;
 
-	private ForkDetailsConfiguration(
-		long maxValidators,
-		long maxTransactionsPerRound,
-		long maxRoundsPerEpoch,
-		long minimumCompletedProposalsPercentage,
-		long unstakingDelayEpochLength,
-		FeeTable feeTable,
-		long validatorFeeIncreaseDebouncerEpochLength,
-		UInt256 minimumStake,
-		List<String> reservedSymbols,
-		long maxTransactionSize,
-		UInt256 rewardsPerProposal
-	) {
-		this.maxValidators = maxValidators;
-		this.maxTransactionsPerRound = maxTransactionsPerRound;
-		this.maxRoundsPerEpoch = maxRoundsPerEpoch;
-		this.minimumCompletedProposalsPercentage = minimumCompletedProposalsPercentage;
-		this.unstakingDelayEpochLength = unstakingDelayEpochLength;
-		this.feeTable = feeTable;
-		this.validatorFeeIncreaseDebouncerEpochLength = validatorFeeIncreaseDebouncerEpochLength;
-		this.minimumStake = minimumStake;
-		this.reservedSymbols = reservedSymbols;
-		this.maxTransactionSize = maxTransactionSize;
-		this.rewardsPerProposal = rewardsPerProposal;
-	}
+  private ForkDetailsConfiguration(
+      long maxValidators,
+      long maxTransactionsPerRound,
+      long maxRoundsPerEpoch,
+      long minimumCompletedProposalsPercentage,
+      long unstakingDelayEpochLength,
+      FeeTable feeTable,
+      long validatorFeeIncreaseDebouncerEpochLength,
+      UInt256 minimumStake,
+      List<String> reservedSymbols,
+      long maxTransactionSize,
+      UInt256 rewardsPerProposal) {
+    this.maxValidators = maxValidators;
+    this.maxTransactionsPerRound = maxTransactionsPerRound;
+    this.maxRoundsPerEpoch = maxRoundsPerEpoch;
+    this.minimumCompletedProposalsPercentage = minimumCompletedProposalsPercentage;
+    this.unstakingDelayEpochLength = unstakingDelayEpochLength;
+    this.feeTable = feeTable;
+    this.validatorFeeIncreaseDebouncerEpochLength = validatorFeeIncreaseDebouncerEpochLength;
+    this.minimumStake = minimumStake;
+    this.reservedSymbols = reservedSymbols;
+    this.maxTransactionSize = maxTransactionSize;
+    this.rewardsPerProposal = rewardsPerProposal;
+  }
 
-	@JsonCreator
-	public static ForkDetailsConfiguration create(
-		@JsonProperty(value = "maxValidators", required = true) long maxValidators,
-		@JsonProperty(value = "maxTransactionsPerRound", required = true) long maxTransactionsPerRound,
-		@JsonProperty(value = "maxRoundsPerEpoch", required = true) long maxRoundsPerEpoch,
-		@JsonProperty(value = "minimumCompletedProposalsPercentage", required = true) long minimumCompletedProposalsPercentage,
-		@JsonProperty(value = "unstakingDelayEpochLength", required = true) long unstakingDelayEpochLength,
-		@JsonProperty(value = "feeTable", required = true) FeeTable feeTable,
-		@JsonProperty(value = "validatorFeeIncreaseDebouncerEpochLength", required = true) long validatorFeeIncreaseDebouncerEpochLength,
-		@JsonProperty(value = "minimumStake", required = true) UInt256 minimumStake,
-		@JsonProperty(value = "reservedSymbols", required = true) List<String> reservedSymbols,
-		@JsonProperty(value = "maxTransactionSize", required = true) long maxTransactionSize,
-		@JsonProperty(value = "rewardsPerProposal", required = true) UInt256 rewardsPerProposal
-	) {
-		return new ForkDetailsConfiguration(
-			maxValidators, maxTransactionsPerRound, maxRoundsPerEpoch, minimumCompletedProposalsPercentage,
-			unstakingDelayEpochLength, feeTable, validatorFeeIncreaseDebouncerEpochLength, minimumStake,
-			reservedSymbols, maxTransactionSize, rewardsPerProposal
-		);
-	}
+  @JsonCreator
+  public static ForkDetailsConfiguration create(
+      @JsonProperty(value = "maxValidators", required = true) long maxValidators,
+      @JsonProperty(value = "maxTransactionsPerRound", required = true)
+          long maxTransactionsPerRound,
+      @JsonProperty(value = "maxRoundsPerEpoch", required = true) long maxRoundsPerEpoch,
+      @JsonProperty(value = "minimumCompletedProposalsPercentage", required = true)
+          long minimumCompletedProposalsPercentage,
+      @JsonProperty(value = "unstakingDelayEpochLength", required = true)
+          long unstakingDelayEpochLength,
+      @JsonProperty(value = "feeTable", required = true) FeeTable feeTable,
+      @JsonProperty(value = "validatorFeeIncreaseDebouncerEpochLength", required = true)
+          long validatorFeeIncreaseDebouncerEpochLength,
+      @JsonProperty(value = "minimumStake", required = true) UInt256 minimumStake,
+      @JsonProperty(value = "reservedSymbols", required = true) List<String> reservedSymbols,
+      @JsonProperty(value = "maxTransactionSize", required = true) long maxTransactionSize,
+      @JsonProperty(value = "rewardsPerProposal", required = true) UInt256 rewardsPerProposal) {
+    return new ForkDetailsConfiguration(
+        maxValidators,
+        maxTransactionsPerRound,
+        maxRoundsPerEpoch,
+        minimumCompletedProposalsPercentage,
+        unstakingDelayEpochLength,
+        feeTable,
+        validatorFeeIncreaseDebouncerEpochLength,
+        minimumStake,
+        reservedSymbols,
+        maxTransactionSize,
+        rewardsPerProposal);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof ForkDetailsConfiguration)) {
-			return false;
-		}
+    if (!(o instanceof ForkDetailsConfiguration)) {
+      return false;
+    }
 
-		var that = (ForkDetailsConfiguration) o;
-		return maxValidators == that.maxValidators
-			&& maxTransactionsPerRound == that.maxTransactionsPerRound
-			&& maxRoundsPerEpoch == that.maxRoundsPerEpoch
-			&& minimumCompletedProposalsPercentage == that.minimumCompletedProposalsPercentage
-			&& unstakingDelayEpochLength == that.unstakingDelayEpochLength
-			&& validatorFeeIncreaseDebouncerEpochLength == that.validatorFeeIncreaseDebouncerEpochLength
-			&& maxTransactionSize == that.maxTransactionSize
-			&& feeTable.equals(that.feeTable)
-			&& minimumStake.equals(that.minimumStake)
-			&& reservedSymbols.equals(that.reservedSymbols)
-			&& rewardsPerProposal.equals(that.rewardsPerProposal);
-	}
+    var that = (ForkDetailsConfiguration) o;
+    return maxValidators == that.maxValidators
+        && maxTransactionsPerRound == that.maxTransactionsPerRound
+        && maxRoundsPerEpoch == that.maxRoundsPerEpoch
+        && minimumCompletedProposalsPercentage == that.minimumCompletedProposalsPercentage
+        && unstakingDelayEpochLength == that.unstakingDelayEpochLength
+        && validatorFeeIncreaseDebouncerEpochLength == that.validatorFeeIncreaseDebouncerEpochLength
+        && maxTransactionSize == that.maxTransactionSize
+        && feeTable.equals(that.feeTable)
+        && minimumStake.equals(that.minimumStake)
+        && reservedSymbols.equals(that.reservedSymbols)
+        && rewardsPerProposal.equals(that.rewardsPerProposal);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(
-			maxValidators,
-			maxTransactionsPerRound,
-			maxRoundsPerEpoch,
-			minimumCompletedProposalsPercentage,
-			unstakingDelayEpochLength,
-			feeTable,
-			validatorFeeIncreaseDebouncerEpochLength,
-			minimumStake,
-			reservedSymbols,
-			maxTransactionSize,
-			rewardsPerProposal
-		);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        maxValidators,
+        maxTransactionsPerRound,
+        maxRoundsPerEpoch,
+        minimumCompletedProposalsPercentage,
+        unstakingDelayEpochLength,
+        feeTable,
+        validatorFeeIncreaseDebouncerEpochLength,
+        minimumStake,
+        reservedSymbols,
+        maxTransactionSize,
+        rewardsPerProposal);
+  }
 
-	@Override
-	public String toString() {
-		return "{"
-			+ "maxValidators=" + maxValidators
-			+ ", maxTransactionsPerRound=" + maxTransactionsPerRound
-			+ ", maxRoundsPerEpoch=" + maxRoundsPerEpoch
-			+ ", minimumCompletedProposalsPercentage=" + minimumCompletedProposalsPercentage
-			+ ", unstakingDelayEpochLength=" + unstakingDelayEpochLength
-			+ ", feeTable=" + feeTable
-			+ ", validatorFeeIncreaseDebouncerEpochLength=" + validatorFeeIncreaseDebouncerEpochLength
-			+ ", minimumStake=" + minimumStake
-			+ ", reservedSymbols=" + reservedSymbols
-			+ ", maxTransactionSize=" + maxTransactionSize
-			+ ", rewardsPerProposal=" + rewardsPerProposal
-			+ '}';
-	}
+  @Override
+  public String toString() {
+    return "{"
+        + "maxValidators="
+        + maxValidators
+        + ", maxTransactionsPerRound="
+        + maxTransactionsPerRound
+        + ", maxRoundsPerEpoch="
+        + maxRoundsPerEpoch
+        + ", minimumCompletedProposalsPercentage="
+        + minimumCompletedProposalsPercentage
+        + ", unstakingDelayEpochLength="
+        + unstakingDelayEpochLength
+        + ", feeTable="
+        + feeTable
+        + ", validatorFeeIncreaseDebouncerEpochLength="
+        + validatorFeeIncreaseDebouncerEpochLength
+        + ", minimumStake="
+        + minimumStake
+        + ", reservedSymbols="
+        + reservedSymbols
+        + ", maxTransactionSize="
+        + maxTransactionSize
+        + ", rewardsPerProposal="
+        + rewardsPerProposal
+        + '}';
+  }
 
-	public long getMaxValidators() {
-		return maxValidators;
-	}
+  public long getMaxValidators() {
+    return maxValidators;
+  }
 
-	public long getMaxTransactionsPerRound() {
-		return maxTransactionsPerRound;
-	}
+  public long getMaxTransactionsPerRound() {
+    return maxTransactionsPerRound;
+  }
 
-	public long getMaxRoundsPerEpoch() {
-		return maxRoundsPerEpoch;
-	}
+  public long getMaxRoundsPerEpoch() {
+    return maxRoundsPerEpoch;
+  }
 
-	public long getMinimumCompletedProposalsPercentage() {
-		return minimumCompletedProposalsPercentage;
-	}
+  public long getMinimumCompletedProposalsPercentage() {
+    return minimumCompletedProposalsPercentage;
+  }
 
-	public long getUnstakingDelayEpochLength() {
-		return unstakingDelayEpochLength;
-	}
+  public long getUnstakingDelayEpochLength() {
+    return unstakingDelayEpochLength;
+  }
 
-	public FeeTable getFeeTable() {
-		return feeTable;
-	}
+  public FeeTable getFeeTable() {
+    return feeTable;
+  }
 
-	public long getValidatorFeeIncreaseDebouncerEpochLength() {
-		return validatorFeeIncreaseDebouncerEpochLength;
-	}
+  public long getValidatorFeeIncreaseDebouncerEpochLength() {
+    return validatorFeeIncreaseDebouncerEpochLength;
+  }
 
-	public UInt256 getMinimumStake() {
-		return minimumStake;
-	}
+  public UInt256 getMinimumStake() {
+    return minimumStake;
+  }
 
-	public List<String> getReservedSymbols() {
-		return reservedSymbols;
-	}
+  public List<String> getReservedSymbols() {
+    return reservedSymbols;
+  }
 
-	public long getMaxTransactionSize() {
-		return maxTransactionSize;
-	}
+  public long getMaxTransactionSize() {
+    return maxTransactionSize;
+  }
 
-	public UInt256 getRewardsPerProposal() {
-		return rewardsPerProposal;
-	}
+  public UInt256 getRewardsPerProposal() {
+    return rewardsPerProposal;
+  }
 }

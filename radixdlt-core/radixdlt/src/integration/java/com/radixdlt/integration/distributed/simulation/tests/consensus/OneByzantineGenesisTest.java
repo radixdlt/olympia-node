@@ -67,62 +67,59 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.recovery.MockedRecoveryModule;
-import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.recovery.MockedRecoveryModule;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-/**
- * Tests that progress cannot be made if nodes do not form a quorum on the
- * genesis hash.
- */
+/** Tests that progress cannot be made if nodes do not form a quorum on the genesis hash. */
 public class OneByzantineGenesisTest {
-	SimulationTest.Builder bftTestBuilder = SimulationTest.builder()
-		.networkModules(
-			NetworkOrdering.inOrder(),
-			NetworkLatencies.fixed()
-		)
-		.pacemakerTimeout(1000)
-		.addTestModules(ConsensusMonitors.safety());
+  SimulationTest.Builder bftTestBuilder =
+      SimulationTest.builder()
+          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .pacemakerTimeout(1000)
+          .addTestModules(ConsensusMonitors.safety());
 
-	@Test
-	public void given_2_correct_bfts_and_1_byzantine__then_should_never_make_progress() {
-		SimulationTest bftTest = bftTestBuilder
-			.numNodes(3)
-			.addSingleByzantineModule(new MockedRecoveryModule(HashUtils.random256()))
-			.addTestModules(ConsensusMonitors.noneCommitted())
-			.build();
+  @Test
+  public void given_2_correct_bfts_and_1_byzantine__then_should_never_make_progress() {
+    SimulationTest bftTest =
+        bftTestBuilder
+            .numNodes(3)
+            .addSingleByzantineModule(new MockedRecoveryModule(HashUtils.random256()))
+            .addTestModules(ConsensusMonitors.noneCommitted())
+            .build();
 
-		final var checkResults = bftTest.run().awaitCompletion();
-		assertThat(checkResults).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-	}
+    final var checkResults = bftTest.run().awaitCompletion();
+    assertThat(checkResults)
+        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+  }
 
-	@Test
-	public void given_3_correct_bfts__then_none_committed_invariant_should_fail() {
-		SimulationTest bftTest = bftTestBuilder
-			.numNodes(3)
-			.addTestModules(ConsensusMonitors.noneCommitted())
-			.build();
+  @Test
+  public void given_3_correct_bfts__then_none_committed_invariant_should_fail() {
+    SimulationTest bftTest =
+        bftTestBuilder.numNodes(3).addTestModules(ConsensusMonitors.noneCommitted()).build();
 
-		final var checkResults = bftTest.run().awaitCompletion();
-		assertThat(checkResults).hasEntrySatisfying(Monitor.CONSENSUS_NONE_COMMITTED, error -> assertThat(error).isPresent());
-	}
+    final var checkResults = bftTest.run().awaitCompletion();
+    assertThat(checkResults)
+        .hasEntrySatisfying(
+            Monitor.CONSENSUS_NONE_COMMITTED, error -> assertThat(error).isPresent());
+  }
 
-	@Test
-	public void given_3_correct_bfts_and_1_byzantine__then_should_make_progress() {
-		SimulationTest bftTest = bftTestBuilder
-			.numNodes(4)
-			.addSingleByzantineModule(new MockedRecoveryModule(HashUtils.random256()))
-			.addTestModules(ConsensusMonitors.liveness(5, TimeUnit.SECONDS))
-			.build();
+  @Test
+  public void given_3_correct_bfts_and_1_byzantine__then_should_make_progress() {
+    SimulationTest bftTest =
+        bftTestBuilder
+            .numNodes(4)
+            .addSingleByzantineModule(new MockedRecoveryModule(HashUtils.random256()))
+            .addTestModules(ConsensusMonitors.liveness(5, TimeUnit.SECONDS))
+            .build();
 
-		final var checkResults = bftTest.run().awaitCompletion();
-		assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
-	}
-
+    final var checkResults = bftTest.run().awaitCompletion();
+    assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
+  }
 }

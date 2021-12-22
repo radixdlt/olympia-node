@@ -64,109 +64,109 @@
 
 package com.radixdlt.network.messaging;
 
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.liveness.messages.PeerPingMessage;
+import com.radixdlt.network.p2p.liveness.messages.PeerPongMessage;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
 
-import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.liveness.messages.PeerPingMessage;
-import com.radixdlt.network.p2p.liveness.messages.PeerPongMessage;
-
-import com.google.common.collect.ImmutableMap;
-
 /**
  * Outbound message wrapper with priority, time and destination.
- * <p>
- * Note that priority is calculated from a fixed table of priorities for
- * specific message types, and cannot be specified by the user.
- * <p>
- * Time is number of nanoseconds since some arbitrary baseline.
+ *
+ * <p>Note that priority is calculated from a fixed table of priorities for specific message types,
+ * and cannot be specified by the user.
+ *
+ * <p>Time is number of nanoseconds since some arbitrary baseline.
  */
 public final class OutboundMessageEvent {
 
-	private static final int DEFAULT_PRIORITY = 0;
-	// Lower (inc -ve) numbers are higher priority than larger numbers
-	private static final Map<Class<?>, Integer> MESSAGE_PRIORITIES = ImmutableMap.of(
-		PeerPingMessage.class, Integer.MIN_VALUE,
-		PeerPongMessage.class, Integer.MIN_VALUE
-	);
+  private static final int DEFAULT_PRIORITY = 0;
+  // Lower (inc -ve) numbers are higher priority than larger numbers
+  private static final Map<Class<?>, Integer> MESSAGE_PRIORITIES =
+      ImmutableMap.of(
+          PeerPingMessage.class, Integer.MIN_VALUE,
+          PeerPongMessage.class, Integer.MIN_VALUE);
 
-	public static Comparator<OutboundMessageEvent> comparator() {
-		return Comparator.comparingInt(OutboundMessageEvent::priority).thenComparingLong(OutboundMessageEvent::nanoTimeDiff);
-	}
+  public static Comparator<OutboundMessageEvent> comparator() {
+    return Comparator.comparingInt(OutboundMessageEvent::priority)
+        .thenComparingLong(OutboundMessageEvent::nanoTimeDiff);
+  }
 
-	private final int priority;
-	private final long nanoTimeDiff;
-	private final NodeId receiver;
-	private final Message message;
+  private final int priority;
+  private final long nanoTimeDiff;
+  private final NodeId receiver;
+  private final Message message;
 
-	OutboundMessageEvent(NodeId receiver, Message message, long nanoTimeDiff) {
-		this.priority = MESSAGE_PRIORITIES.getOrDefault(message.getClass(), DEFAULT_PRIORITY);
-		this.nanoTimeDiff = nanoTimeDiff;
-		this.receiver = receiver;
-		this.message = message;
-	}
+  OutboundMessageEvent(NodeId receiver, Message message, long nanoTimeDiff) {
+    this.priority = MESSAGE_PRIORITIES.getOrDefault(message.getClass(), DEFAULT_PRIORITY);
+    this.nanoTimeDiff = nanoTimeDiff;
+    this.receiver = receiver;
+    this.message = message;
+  }
 
-	/**
-	 * Returns the messages priority.
-	 *
-	 * @return the messages priority.
-	 */
-	public int priority() {
-		return priority;
-	}
+  /**
+   * Returns the messages priority.
+   *
+   * @return the messages priority.
+   */
+  public int priority() {
+    return priority;
+  }
 
-	/**
-	 * Returns the time this event was created as a number of nanoseconds
-	 * since some arbitrary baseline.
-	 *
-	 * @return the time this event was created
-	 */
-	public long nanoTimeDiff() {
-		return nanoTimeDiff;
-	}
+  /**
+   * Returns the time this event was created as a number of nanoseconds since some arbitrary
+   * baseline.
+   *
+   * @return the time this event was created
+   */
+  public long nanoTimeDiff() {
+    return nanoTimeDiff;
+  }
 
-	/**
-	 * Returns the destination of the message.
-	 *
-	 * @return the source or destination of the message.
-	 */
-	public NodeId receiver() {
-		return receiver;
-	}
+  /**
+   * Returns the destination of the message.
+   *
+   * @return the source or destination of the message.
+   */
+  public NodeId receiver() {
+    return receiver;
+  }
 
-	/**
-	 * Returns the message.
-	 *
-	 * @return the message.
-	 */
-	public Message message() {
-		return message;
-	}
+  /**
+   * Returns the message.
+   *
+   * @return the message.
+   */
+  public Message message() {
+    return message;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.priority, this.nanoTimeDiff, this.receiver, this.message);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.priority, this.nanoTimeDiff, this.receiver, this.message);
+  }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj instanceof OutboundMessageEvent) {
-			OutboundMessageEvent that = (OutboundMessageEvent) obj;
-			return this.priority == that.priority
-				&& this.nanoTimeDiff == that.nanoTimeDiff
-				&& Objects.equals(this.receiver, that.receiver)
-				&& Objects.equals(this.message, that.message);
-		}
-		return false;
-	}
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (obj instanceof OutboundMessageEvent) {
+      OutboundMessageEvent that = (OutboundMessageEvent) obj;
+      return this.priority == that.priority
+          && this.nanoTimeDiff == that.nanoTimeDiff
+          && Objects.equals(this.receiver, that.receiver)
+          && Objects.equals(this.message, that.message);
+    }
+    return false;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s[priority=%s, nanoTime=%s, receiver=%s, message=%s]",
-			getClass().getSimpleName(), priority, nanoTimeDiff, receiver, message);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s[priority=%s, nanoTime=%s, receiver=%s, message=%s]",
+        getClass().getSimpleName(), priority, nanoTimeDiff, receiver, message);
+  }
 }

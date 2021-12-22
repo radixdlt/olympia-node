@@ -64,52 +64,48 @@
 
 package com.radixdlt.integration.distributed.deterministic.configuration;
 
-import java.util.Objects;
 import com.radixdlt.utils.UInt256;
+import java.util.Objects;
 
-/**
- * A node index, together with its weight.
- */
+/** A node index, together with its weight. */
 public final class NodeIndexAndWeight {
-	private final int index;
-	private final UInt256 weight;
+  private final int index;
+  private final UInt256 weight;
 
-	private NodeIndexAndWeight(int index, UInt256 weight) {
-		this.index = index;
-		this.weight = Objects.requireNonNull(weight);
-	}
+  private NodeIndexAndWeight(int index, UInt256 weight) {
+    this.index = index;
+    this.weight = Objects.requireNonNull(weight);
+  }
 
-	/**
-	 * Returns a {@code NodeIndexAndWeight} from specified values.
-	 */
-	public static NodeIndexAndWeight from(int index, UInt256 weight) {
-		return new NodeIndexAndWeight(index, weight);
-	}
+  /** Returns a {@code NodeIndexAndWeight} from specified values. */
+  public static NodeIndexAndWeight from(int index, UInt256 weight) {
+    return new NodeIndexAndWeight(index, weight);
+  }
 
-	public int index() {
-		return this.index;
-	}
+  public int index() {
+    return this.index;
+  }
 
-	public UInt256 weight() {
-		return this.weight;
-	}
+  public UInt256 weight() {
+    return this.weight;
+  }
 
-	@Override
-	public int hashCode() {
-		return weight.hashCode() * 31 + this.index;
-	}
+  @Override
+  public int hashCode() {
+    return weight.hashCode() * 31 + this.index;
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (o instanceof NodeIndexAndWeight) {
-			NodeIndexAndWeight that = (NodeIndexAndWeight) o;
-			return this.index == that.index && this.weight.equals(that.weight);
-		}
-		return false;
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (o instanceof NodeIndexAndWeight) {
+      NodeIndexAndWeight that = (NodeIndexAndWeight) o;
+      return this.index == that.index && this.weight.equals(that.weight);
+    }
+    return false;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s[%s:%s]", getClass().getSimpleName(), this.index, this.weight);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s[%s:%s]", getClass().getSimpleName(), this.index, this.weight);
+  }
 }

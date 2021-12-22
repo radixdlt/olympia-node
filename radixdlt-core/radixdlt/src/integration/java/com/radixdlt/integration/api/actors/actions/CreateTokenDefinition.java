@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -76,93 +77,98 @@ import com.radixdlt.api.core.openapitools.model.TokenData;
 import com.radixdlt.api.core.openapitools.model.TokenMetadata;
 import com.radixdlt.api.core.openapitools.model.TokenResourceIdentifier;
 import com.radixdlt.utils.UInt256;
-
 import java.util.List;
 import java.util.function.Function;
 
 public final class CreateTokenDefinition implements NodeTransactionAction {
-	private final String symbol;
-	private final UInt256 amount;
-	private final EntityIdentifier owner;
-	private final EntityIdentifier to;
+  private final String symbol;
+  private final UInt256 amount;
+  private final EntityIdentifier owner;
+  private final EntityIdentifier to;
 
-	private CreateTokenDefinition(String symbol, UInt256 amount, EntityIdentifier owner, EntityIdentifier to) {
-		this.symbol = symbol;
-		this.amount = amount;
-		this.owner = owner;
-		this.to = to;
-	}
+  private CreateTokenDefinition(
+      String symbol, UInt256 amount, EntityIdentifier owner, EntityIdentifier to) {
+    this.symbol = symbol;
+    this.amount = amount;
+    this.owner = owner;
+    this.to = to;
+  }
 
-	public static CreateTokenDefinition fixedTokenSupply(String symbol, UInt256 amount, EntityIdentifier to) {
-		return new CreateTokenDefinition(symbol, amount, null, to);
-	}
+  public static CreateTokenDefinition fixedTokenSupply(
+      String symbol, UInt256 amount, EntityIdentifier to) {
+    return new CreateTokenDefinition(symbol, amount, null, to);
+  }
 
-	public static CreateTokenDefinition mutableTokenSupply(String symbol, UInt256 amount, EntityIdentifier owner, EntityIdentifier to) {
-		return new CreateTokenDefinition(symbol, amount, owner, to);
-	}
+  public static CreateTokenDefinition mutableTokenSupply(
+      String symbol, UInt256 amount, EntityIdentifier owner, EntityIdentifier to) {
+    return new CreateTokenDefinition(symbol, amount, owner, to);
+  }
 
-	@Override
-	public List<OperationGroup> toOperationGroups(
-		EngineConfiguration configuration,
-		Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction
-	) {
-		var entityIdentifier = identifierFunction.apply(new ConstructionDeriveRequestMetadataToken()
-			.symbol(symbol)
-			.type("Token")
-		);
+  @Override
+  public List<OperationGroup> toOperationGroups(
+      EngineConfiguration configuration,
+      Function<ConstructionDeriveRequestMetadata, EntityIdentifier> identifierFunction) {
+    var entityIdentifier =
+        identifierFunction.apply(
+            new ConstructionDeriveRequestMetadataToken().symbol(symbol).type("Token"));
 
-		var mintOperation = new Operation()
-			.type("Resource")
-			.amount(new ResourceAmount()
-				.value(amount.toString())
-				.resourceIdentifier(new TokenResourceIdentifier().rri(entityIdentifier.getAddress()).type("Token"))
-			)
-			.entityIdentifier(to);
+    var mintOperation =
+        new Operation()
+            .type("Resource")
+            .amount(
+                new ResourceAmount()
+                    .value(amount.toString())
+                    .resourceIdentifier(
+                        new TokenResourceIdentifier()
+                            .rri(entityIdentifier.getAddress())
+                            .type("Token")))
+            .entityIdentifier(to);
 
-		var createTokenGroup = new OperationGroup();
-		createTokenGroup.addOperationsItem(
-			new Operation()
-				.type("Data")
-				.data(new Data().action(Data.ActionEnum.CREATE)
-					.dataObject(new TokenData()
-						.isMutable(owner != null)
-						.granularity("1")
-						.owner(owner)
-						.type(PreparedValidatorRegistered.class.getSimpleName())
-					)
-				)
-				.entityIdentifier(entityIdentifier)
-		);
+    var createTokenGroup = new OperationGroup();
+    createTokenGroup.addOperationsItem(
+        new Operation()
+            .type("Data")
+            .data(
+                new Data()
+                    .action(Data.ActionEnum.CREATE)
+                    .dataObject(
+                        new TokenData()
+                            .isMutable(owner != null)
+                            .granularity("1")
+                            .owner(owner)
+                            .type(PreparedValidatorRegistered.class.getSimpleName())))
+            .entityIdentifier(entityIdentifier));
 
-		if (owner == null) {
-			createTokenGroup.addOperationsItem(mintOperation);
-		}
+    if (owner == null) {
+      createTokenGroup.addOperationsItem(mintOperation);
+    }
 
-		createTokenGroup.addOperationsItem(
-			new Operation()
-				.type("Data")
-				.data(new Data().action(Data.ActionEnum.CREATE)
-					.dataObject(new TokenMetadata()
-						.symbol(symbol)
-						.name("some_name")
-						.description("some_description")
-						.url("")
-						.iconUrl("")
-					)
-				)
-				.entityIdentifier(entityIdentifier)
-		);
+    createTokenGroup.addOperationsItem(
+        new Operation()
+            .type("Data")
+            .data(
+                new Data()
+                    .action(Data.ActionEnum.CREATE)
+                    .dataObject(
+                        new TokenMetadata()
+                            .symbol(symbol)
+                            .name("some_name")
+                            .description("some_description")
+                            .url("")
+                            .iconUrl("")))
+            .entityIdentifier(entityIdentifier));
 
-		if (owner == null) {
-			return List.of(createTokenGroup);
-		}
+    if (owner == null) {
+      return List.of(createTokenGroup);
+    }
 
-		var mintTokenGroup = new OperationGroup().addOperationsItem(mintOperation);
-		return List.of(createTokenGroup, mintTokenGroup);
-	}
+    var mintTokenGroup = new OperationGroup().addOperationsItem(mintOperation);
+    return List.of(createTokenGroup, mintTokenGroup);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{symbol=%s amount=%s}", this.getClass().getSimpleName(), this.symbol, this.amount);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{symbol=%s amount=%s}", this.getClass().getSimpleName(), this.symbol, this.amount);
+  }
 }

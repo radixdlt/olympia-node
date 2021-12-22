@@ -64,21 +64,18 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.network.messaging.Message;
-
 import java.util.function.Supplier;
 
 /**
  * Raft of tests for serialization of objects.
- * <p>
- * This class extends {@link SerializeObject} to set up databases
- * required by most classes that extend {@link com.radixdlt.network.messaging.Message}.
+ *
+ * <p>This class extends {@link SerializeObject} to set up databases required by most classes that
+ * extend {@link com.radixdlt.network.messaging.Message}.
  *
  * @param <T> The type under test.
  */
-
 public abstract class SerializeMessageObject<T> extends SerializeObject<T> {
-	protected SerializeMessageObject(Class<T> cls, Supplier<T> factory) {
-		super(cls, factory);
-	}
+  protected SerializeMessageObject(Class<T> cls, Supplier<T> factory) {
+    super(cls, factory);
+  }
 }

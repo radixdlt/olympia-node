@@ -69,11 +69,8 @@ import org.junit.Test;
 
 public class BFTNodeTest {
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(BFTNode.class)
-			.withIgnoredFields("simpleName")
-			.verify();
-	}
-
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(BFTNode.class).withIgnoredFields("simpleName").verify();
+  }
 }

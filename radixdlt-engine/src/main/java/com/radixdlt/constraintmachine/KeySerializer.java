@@ -67,5 +67,5 @@ package com.radixdlt.constraintmachine;
 import java.nio.ByteBuffer;
 
 public interface KeySerializer {
-	void serialize(Object key, ByteBuffer buf);
+  void serialize(Object key, ByteBuffer buf);
 }

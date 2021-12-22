@@ -64,244 +64,212 @@
 
 package com.radixdlt.network.p2p;
 
+import static java.util.function.Predicate.not;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DeserializeException;
-
 import java.time.Duration;
 import java.util.Arrays;
 
-import static java.util.function.Predicate.not;
-
-/**
- * Static configuration data for P2P layer.
- */
+/** Static configuration data for P2P layer. */
 public interface P2PConfig {
-	/**
-	 * List of seed nodes for discovery.
-	 */
-	ImmutableList<String> seedNodes();
+  /** List of seed nodes for discovery. */
+  ImmutableList<String> seedNodes();
 
-	/**
-	 * Default port to use for discovery seed nodes.
-	 */
-	int defaultPort();
+  /** Default port to use for discovery seed nodes. */
+  int defaultPort();
 
-	/**
-	 * An interval at which peer discovery rounds trigger.
-	 */
-	long discoveryInterval();
+  /** An interval at which peer discovery rounds trigger. */
+  long discoveryInterval();
 
-	/**
-	 * Get the host to bind the p2p server to.
-	 */
-	String listenAddress();
+  /** Get the host to bind the p2p server to. */
+  String listenAddress();
 
-	/**
-	 * Get the port number to bind the p2p server to.
-	 */
-	int listenPort();
+  /** Get the port number to bind the p2p server to. */
+  int listenPort();
 
-	/**
-	 * Specifies whether the server should process the PROXY header for inbound connections.
-	 */
-	boolean useProxyProtocol();
+  /** Specifies whether the server should process the PROXY header for inbound connections. */
+  boolean useProxyProtocol();
 
-	/**
-	 * Get node's port number to broadcast to other peers.
-	 */
-	int broadcastPort();
+  /** Get node's port number to broadcast to other peers. */
+  int broadcastPort();
 
-	/**
-	 * The timeout for initiating outbound peer connection.
-	 */
-	int peerConnectionTimeout();
+  /** The timeout for initiating outbound peer connection. */
+  int peerConnectionTimeout();
 
-	/**
-	 * Get the maximum number of inbound open channels allowed.
-	 * Note that each channel consumes some resources on the host
-	 * machine, and there may be other global operating-system defined limits
-	 * that come into play.
-	 */
-	int maxInboundChannels();
+  /**
+   * Get the maximum number of inbound open channels allowed. Note that each channel consumes some
+   * resources on the host machine, and there may be other global operating-system defined limits
+   * that come into play.
+   */
+  int maxInboundChannels();
 
-	/**
-	 * Get the maximum number of outbound open channels allowed.
-	 * Note that each channel consumes some resources on the host
-	 * machine, and there may be other global operating-system defined limits
-	 * that come into play.
-	 */
-	int maxOutboundChannels();
+  /**
+   * Get the maximum number of outbound open channels allowed. Note that each channel consumes some
+   * resources on the host machine, and there may be other global operating-system defined limits
+   * that come into play.
+   */
+  int maxOutboundChannels();
 
-	/**
-	 * Get the buffer size of incoming messages for each TCP connection.
-	 *
-	 * @return the size of a message buffer
-	 */
-	int channelBufferSize();
+  /**
+   * Get the buffer size of incoming messages for each TCP connection.
+   *
+   * @return the size of a message buffer
+   */
+  int channelBufferSize();
 
-	/**
-	 * An interval at which peer liveness check is triggered (ping message).
-	 */
-	long peerLivenessCheckInterval();
+  /** An interval at which peer liveness check is triggered (ping message). */
+  long peerLivenessCheckInterval();
 
-	/**
-	 * The timeout for receiving a Pong message. PeerLivenessLost event is triggered if pong is not received on time.
-	 */
-	long pingTimeout();
+  /**
+   * The timeout for receiving a Pong message. PeerLivenessLost event is triggered if pong is not
+   * received on time.
+   */
+  long pingTimeout();
 
-	/**
-	 * Specifies whether this node should act as a proxy.
-	 */
-	boolean proxyEnabled();
+  /** Specifies whether this node should act as a proxy. */
+  boolean proxyEnabled();
 
-	/**
-	 * A list of authorized proxy nodes.
-	 */
-	ImmutableSet<NodeId> authorizedProxies();
+  /** A list of authorized proxy nodes. */
+  ImmutableSet<NodeId> authorizedProxies();
 
-	/**
-	 * A list of nodes that this node acts as a proxy for.
-	 * Used only if proxyEnabled = true.
-	 */
-	ImmutableSet<NodeId> authorizedProxiedPeers();
+  /** A list of nodes that this node acts as a proxy for. Used only if proxyEnabled = true. */
+  ImmutableSet<NodeId> authorizedProxiedPeers();
 
-	/**
-	 * Specifies how long the issued proxy certificate remains valid.
-	 * Certificates are automatically re-issued when they expire.
-	 */
-	Duration issuedProxyCertificateValidityDuration();
+  /**
+   * Specifies how long the issued proxy certificate remains valid. Certificates are automatically
+   * re-issued when they expire.
+   */
+  Duration issuedProxyCertificateValidityDuration();
 
-	/**
-	 * Specifies a list of peers that this node can connect to.
-	 * If empty, all peers are allowed.
-	 */
-	ImmutableSet<NodeId> peerWhitelist();
+  /** Specifies a list of peers that this node can connect to. If empty, all peers are allowed. */
+  ImmutableSet<NodeId> peerWhitelist();
 
-	/**
-	 * Create a configuration from specified {@link RuntimeProperties}.
-	 *
-	 * @param properties the properties to read the configuration from
-	 * @return The configuration
-	 */
-	static P2PConfig fromRuntimeProperties(Addressing addressing, RuntimeProperties properties) {
-		return new P2PConfig() {
-			@Override
-			public ImmutableList<String> seedNodes() {
-				return Arrays.stream(properties.get("network.p2p.seed_nodes", "").split(","))
-					.map(String::trim)
-					.filter(hn -> !hn.isEmpty())
-					.collect(ImmutableList.toImmutableList());
-			}
+  /**
+   * Create a configuration from specified {@link RuntimeProperties}.
+   *
+   * @param properties the properties to read the configuration from
+   * @return The configuration
+   */
+  static P2PConfig fromRuntimeProperties(Addressing addressing, RuntimeProperties properties) {
+    return new P2PConfig() {
+      @Override
+      public ImmutableList<String> seedNodes() {
+        return Arrays.stream(properties.get("network.p2p.seed_nodes", "").split(","))
+            .map(String::trim)
+            .filter(hn -> !hn.isEmpty())
+            .collect(ImmutableList.toImmutableList());
+      }
 
-			@Override
-			public int defaultPort() {
-				return properties.get("network.p2p.default_port", 30000);
-			}
+      @Override
+      public int defaultPort() {
+        return properties.get("network.p2p.default_port", 30000);
+      }
 
-			@Override
-			public long discoveryInterval() {
-				return properties.get("network.p2p.discovery_interval", 30_000);
-			}
+      @Override
+      public long discoveryInterval() {
+        return properties.get("network.p2p.discovery_interval", 30_000);
+      }
 
-			@Override
-			public String listenAddress() {
-				return properties.get("network.p2p.listen_address", "0.0.0.0");
-			}
+      @Override
+      public String listenAddress() {
+        return properties.get("network.p2p.listen_address", "0.0.0.0");
+      }
 
-			@Override
-			public int listenPort() {
-				return properties.get("network.p2p.listen_port", 30000);
-			}
+      @Override
+      public int listenPort() {
+        return properties.get("network.p2p.listen_port", 30000);
+      }
 
-			@Override
-			public boolean useProxyProtocol() {
-				return properties.get("network.p2p.use_proxy_protocol", false);
-			}
+      @Override
+      public boolean useProxyProtocol() {
+        return properties.get("network.p2p.use_proxy_protocol", false);
+      }
 
-			@Override
-			public int broadcastPort() {
-				return properties.get("network.p2p.broadcast_port", listenPort());
-			}
+      @Override
+      public int broadcastPort() {
+        return properties.get("network.p2p.broadcast_port", listenPort());
+      }
 
-			@Override
-			public int peerConnectionTimeout() {
-				return properties.get("network.p2p.peer_connection_timeout", 5000);
-			}
+      @Override
+      public int peerConnectionTimeout() {
+        return properties.get("network.p2p.peer_connection_timeout", 5000);
+      }
 
-			@Override
-			public int maxInboundChannels() {
-				return properties.get("network.p2p.max_inbound_channels", 1024);
-			}
+      @Override
+      public int maxInboundChannels() {
+        return properties.get("network.p2p.max_inbound_channels", 1024);
+      }
 
-			@Override
-			public int maxOutboundChannels() {
-				return properties.get("network.p2p.max_outbound_channels", 1024);
-			}
+      @Override
+      public int maxOutboundChannels() {
+        return properties.get("network.p2p.max_outbound_channels", 1024);
+      }
 
-			@Override
-			public int channelBufferSize() {
-				return properties.get("network.p2p.channel_buffer_size", 255);
-			}
+      @Override
+      public int channelBufferSize() {
+        return properties.get("network.p2p.channel_buffer_size", 255);
+      }
 
-			@Override
-			public long peerLivenessCheckInterval() {
-				return properties.get("network.p2p.peer_liveness_check_interval", 10000);
-			}
+      @Override
+      public long peerLivenessCheckInterval() {
+        return properties.get("network.p2p.peer_liveness_check_interval", 10000);
+      }
 
-			@Override
-			public long pingTimeout() {
-				return properties.get("network.p2p.ping_timeout", 5000);
-			}
+      @Override
+      public long pingTimeout() {
+        return properties.get("network.p2p.ping_timeout", 5000);
+      }
 
-			@Override
-			public boolean proxyEnabled() {
-				return properties.get("network.p2p.proxy.enabled", false);
-			}
+      @Override
+      public boolean proxyEnabled() {
+        return properties.get("network.p2p.proxy.enabled", false);
+      }
 
-			@Override
-			public ImmutableSet<NodeId> authorizedProxies() {
-				final var rawList = properties.get("network.p2p.proxy.authorized_proxies", "");
-				return Arrays.stream(rawList.split(","))
-					.filter(not(String::isEmpty))
-					.map(this::parseNodeId)
-					.collect(ImmutableSet.toImmutableSet());
-			}
+      @Override
+      public ImmutableSet<NodeId> authorizedProxies() {
+        final var rawList = properties.get("network.p2p.proxy.authorized_proxies", "");
+        return Arrays.stream(rawList.split(","))
+            .filter(not(String::isEmpty))
+            .map(this::parseNodeId)
+            .collect(ImmutableSet.toImmutableSet());
+      }
 
-			@Override
-			public ImmutableSet<NodeId> authorizedProxiedPeers() {
-				final var rawList = properties.get("network.p2p.proxy.authorized_proxied_nodes", "");
-				return Arrays.stream(rawList.split(","))
-					.filter(not(String::isEmpty))
-					.map(this::parseNodeId)
-					.collect(ImmutableSet.toImmutableSet());
-			}
+      @Override
+      public ImmutableSet<NodeId> authorizedProxiedPeers() {
+        final var rawList = properties.get("network.p2p.proxy.authorized_proxied_nodes", "");
+        return Arrays.stream(rawList.split(","))
+            .filter(not(String::isEmpty))
+            .map(this::parseNodeId)
+            .collect(ImmutableSet.toImmutableSet());
+      }
 
-			@Override
-			public Duration issuedProxyCertificateValidityDuration() {
-				final var valueMs =
-					properties.get("network.p2p.proxy.issued_certificate_validity_duration_ms", 3600000);
-				return Duration.ofMillis(valueMs);
-			}
+      @Override
+      public Duration issuedProxyCertificateValidityDuration() {
+        final var valueMs =
+            properties.get("network.p2p.proxy.issued_certificate_validity_duration_ms", 3600000);
+        return Duration.ofMillis(valueMs);
+      }
 
-			@Override
-			public ImmutableSet<NodeId> peerWhitelist() {
-				final var rawList = properties.get("network.p2p.peer_whitelist", "");
-				return Arrays.stream(rawList.split(","))
-					.filter(not(String::isEmpty))
-					.map(this::parseNodeId)
-					.collect(ImmutableSet.toImmutableSet());
-			}
+      @Override
+      public ImmutableSet<NodeId> peerWhitelist() {
+        final var rawList = properties.get("network.p2p.peer_whitelist", "");
+        return Arrays.stream(rawList.split(","))
+            .filter(not(String::isEmpty))
+            .map(this::parseNodeId)
+            .collect(ImmutableSet.toImmutableSet());
+      }
 
-			private NodeId parseNodeId(String s) {
-				try {
-					return NodeId.fromPublicKey(addressing.forNodes().parse(s));
-				} catch (DeserializeException e) {
-					throw new IllegalArgumentException("Can't parse node ID from " + s, e);
-				}
-			}
-		};
-	}
+      private NodeId parseNodeId(String s) {
+        try {
+          return NodeId.fromPublicKey(addressing.forNodes().parse(s));
+        } catch (DeserializeException e) {
+          throw new IllegalArgumentException("Can't parse node ID from " + s, e);
+        }
+      }
+    };
+  }
 }

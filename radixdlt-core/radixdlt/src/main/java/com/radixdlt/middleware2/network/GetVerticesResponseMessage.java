@@ -67,53 +67,49 @@ package com.radixdlt.middleware2.network;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.network.messaging.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.network.messaging.Message;
-
 import java.util.List;
 import java.util.Objects;
 
-/**
- * RPC Response message for GetVertex call
- */
+/** RPC Response message for GetVertex call */
 @SerializerId2("message.consensus.vertices_response")
 public final class GetVerticesResponseMessage extends Message {
-	@JsonProperty("vertices")
-	@DsonOutput(Output.ALL)
-	private final List<UnverifiedVertex> vertices;
+  @JsonProperty("vertices")
+  @DsonOutput(Output.ALL)
+  private final List<UnverifiedVertex> vertices;
 
-	@JsonCreator
-	public GetVerticesResponseMessage(
-		@JsonProperty(value = "vertices", required = true) List<UnverifiedVertex> vertices
-	) {
-		this.vertices = Objects.requireNonNull(vertices);
-		vertices.forEach(Objects::requireNonNull);
-	}
+  @JsonCreator
+  public GetVerticesResponseMessage(
+      @JsonProperty(value = "vertices", required = true) List<UnverifiedVertex> vertices) {
+    this.vertices = Objects.requireNonNull(vertices);
+    vertices.forEach(Objects::requireNonNull);
+  }
 
-	public List<UnverifiedVertex> getVertices() {
-		return vertices;
-	}
+  public List<UnverifiedVertex> getVertices() {
+    return vertices;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), vertices);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s[%s]", getClass().getSimpleName(), vertices);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof GetVerticesResponseMessage that)
-			   && Objects.equals(vertices, that.vertices)
-			   && Objects.equals(getTimestamp(), that.getTimestamp());
-	}
+    return (o instanceof GetVerticesResponseMessage that)
+        && Objects.equals(vertices, that.vertices)
+        && Objects.equals(getTimestamp(), that.getTimestamp());
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(vertices, getTimestamp());
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(vertices, getTimestamp());
+  }
 }

@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -76,51 +77,46 @@ import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.sync.SyncConfig;
 
-
 public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfigurationResponse> {
 
-	private final long pacemakerTimeout;
-	private final int bftSyncPatienceMillis;
-	private final int mempoolMaxSize;
-	private final long mempoolThrottleMs;
-	private final SyncConfig syncConfig;
-	private final P2PConfig p2PConfig;
-	private final ECPublicKey self;
-	private final SystemModelMapper systemModelMapper;
+  private final long pacemakerTimeout;
+  private final int bftSyncPatienceMillis;
+  private final int mempoolMaxSize;
+  private final long mempoolThrottleMs;
+  private final SyncConfig syncConfig;
+  private final P2PConfig p2PConfig;
+  private final ECPublicKey self;
+  private final SystemModelMapper systemModelMapper;
 
-	@Inject
-	ConfigurationHandler(
-		@Self ECPublicKey self,
-		@PacemakerTimeout long pacemakerTimeout,
-		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
-		@MempoolMaxSize int mempoolMaxSize,
-		@MempoolThrottleMs long mempoolThrottleMs,
-		SyncConfig syncConfig,
-		P2PConfig p2PConfig,
-		SystemModelMapper systemModelMapper
-	) {
-		this.self = self;
-		this.pacemakerTimeout = pacemakerTimeout;
-		this.bftSyncPatienceMillis = bftSyncPatienceMillis;
-		this.mempoolMaxSize = mempoolMaxSize;
-		this.mempoolThrottleMs = mempoolThrottleMs;
-		this.syncConfig = syncConfig;
-		this.p2PConfig = p2PConfig;
-		this.systemModelMapper = systemModelMapper;
-	}
+  @Inject
+  ConfigurationHandler(
+      @Self ECPublicKey self,
+      @PacemakerTimeout long pacemakerTimeout,
+      @BFTSyncPatienceMillis int bftSyncPatienceMillis,
+      @MempoolMaxSize int mempoolMaxSize,
+      @MempoolThrottleMs long mempoolThrottleMs,
+      SyncConfig syncConfig,
+      P2PConfig p2PConfig,
+      SystemModelMapper systemModelMapper) {
+    this.self = self;
+    this.pacemakerTimeout = pacemakerTimeout;
+    this.bftSyncPatienceMillis = bftSyncPatienceMillis;
+    this.mempoolMaxSize = mempoolMaxSize;
+    this.mempoolThrottleMs = mempoolThrottleMs;
+    this.syncConfig = syncConfig;
+    this.p2PConfig = p2PConfig;
+    this.systemModelMapper = systemModelMapper;
+  }
 
-	@Override
-	public SystemConfigurationResponse handleRequest() {
-		return new SystemConfigurationResponse()
-			.bft(new BFTConfiguration()
-				.bftSyncPatience(bftSyncPatienceMillis)
-				.pacemakerTimeout(pacemakerTimeout)
-			)
-			.mempool(new MempoolConfiguration()
-				.maxSize(mempoolMaxSize)
-				.throttle(mempoolThrottleMs)
-			)
-			.sync(systemModelMapper.syncConfiguration(syncConfig))
-			.networking(systemModelMapper.networkingConfiguration(self, p2PConfig));
-	}
+  @Override
+  public SystemConfigurationResponse handleRequest() {
+    return new SystemConfigurationResponse()
+        .bft(
+            new BFTConfiguration()
+                .bftSyncPatience(bftSyncPatienceMillis)
+                .pacemakerTimeout(pacemakerTimeout))
+        .mempool(new MempoolConfiguration().maxSize(mempoolMaxSize).throttle(mempoolThrottleMs))
+        .sync(systemModelMapper.syncConfiguration(syncConfig))
+        .networking(systemModelMapper.networkingConfiguration(self, p2PConfig));
+  }
 }

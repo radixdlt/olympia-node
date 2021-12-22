@@ -74,38 +74,44 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 public final class InOrderChannels implements ChannelCommunication {
-	private final LatencyProvider latencyProvider;
+  private final LatencyProvider latencyProvider;
 
-	@Inject
-	public InOrderChannels(LatencyProvider latencyProvider) {
-		this.latencyProvider = Objects.requireNonNull(latencyProvider);
-	}
+  @Inject
+  public InOrderChannels(LatencyProvider latencyProvider) {
+    this.latencyProvider = Objects.requireNonNull(latencyProvider);
+  }
 
-	private MessageInTransit addLatencyIfNotToSelf(MessageInTransit msg, BFTNode receiver) {
-		if (msg.getSender().equals(receiver)) {
-			return msg;
-		} else {
-			return msg.delayed(latencyProvider.nextLatency(msg));
-		}
-	}
+  private MessageInTransit addLatencyIfNotToSelf(MessageInTransit msg, BFTNode receiver) {
+    if (msg.getSender().equals(receiver)) {
+      return msg;
+    } else {
+      return msg.delayed(latencyProvider.nextLatency(msg));
+    }
+  }
 
-	public static Timed<MessageInTransit> delayCarryover(Timed<MessageInTransit> prev, Timed<MessageInTransit> next) {
-		int delayCarryover = (int) Math.max(prev.time() + prev.value().getDelay() - next.time(), 0);
-		int additionalDelay = (int) (next.value().getDelay() - delayCarryover);
-		if (additionalDelay > 0) {
-			return new Timed<>(next.value().delayAfterPrevious(additionalDelay), next.time(), next.unit());
-		} else {
-			return next;
-		}
-	}
+  public static Timed<MessageInTransit> delayCarryover(
+      Timed<MessageInTransit> prev, Timed<MessageInTransit> next) {
+    int delayCarryover = (int) Math.max(prev.time() + prev.value().getDelay() - next.time(), 0);
+    int additionalDelay = (int) (next.value().getDelay() - delayCarryover);
+    if (additionalDelay > 0) {
+      return new Timed<>(
+          next.value().delayAfterPrevious(additionalDelay), next.time(), next.unit());
+    } else {
+      return next;
+    }
+  }
 
-	@Override
-	public Observable<MessageInTransit> transform(BFTNode sender, BFTNode receiver, Observable<MessageInTransit> messages) {
-		return messages
-			.map(msg -> addLatencyIfNotToSelf(msg, receiver))
-			.filter(msg -> msg.getDelay() >= 0)
-			.timestamp(TimeUnit.MILLISECONDS)
-			.scan(InOrderChannels::delayCarryover)
-			.concatMap(p -> Observable.just(p.value()).delay(p.value().getDelayAfterPrevious(), TimeUnit.MILLISECONDS));
-	}
+  @Override
+  public Observable<MessageInTransit> transform(
+      BFTNode sender, BFTNode receiver, Observable<MessageInTransit> messages) {
+    return messages
+        .map(msg -> addLatencyIfNotToSelf(msg, receiver))
+        .filter(msg -> msg.getDelay() >= 0)
+        .timestamp(TimeUnit.MILLISECONDS)
+        .scan(InOrderChannels::delayCarryover)
+        .concatMap(
+            p ->
+                Observable.just(p.value())
+                    .delay(p.value().getDelayAfterPrevious(), TimeUnit.MILLISECONDS));
+  }
 }

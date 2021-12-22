@@ -64,28 +64,29 @@
 
 package com.radixdlt.application.misc;
 
+import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SplitToken;
-import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.utils.UInt256;
 
 public final class SplitTokenConstructor implements ActionConstructor<SplitToken> {
-	@Override
-	public void construct(SplitToken action, TxBuilder txBuilder) throws TxBuilderException {
-		var userAccount = action.userAcct();
-		var tokens = txBuilder.downSubstate(
-			TokensInAccount.class,
-			p -> p.getResourceAddr().equals(action.rri())
-				&& p.getHoldingAddr().equals(userAccount)
-				&& p.getAmount().compareTo(action.minSize()) > 0
-		);
+  @Override
+  public void construct(SplitToken action, TxBuilder txBuilder) throws TxBuilderException {
+    var userAccount = action.userAcct();
+    var tokens =
+        txBuilder.downSubstate(
+            TokensInAccount.class,
+            p ->
+                p.getResourceAddr().equals(action.rri())
+                    && p.getHoldingAddr().equals(userAccount)
+                    && p.getAmount().compareTo(action.minSize()) > 0);
 
-		var amt1 = tokens.getAmount().divide(UInt256.TWO);
-		var amt2 = tokens.getAmount().subtract(amt1);
-		txBuilder.up(new TokensInAccount(userAccount, action.rri(), amt1));
-		txBuilder.up(new TokensInAccount(userAccount, action.rri(), amt2));
-		txBuilder.end();
-	}
+    var amt1 = tokens.getAmount().divide(UInt256.TWO);
+    var amt2 = tokens.getAmount().subtract(amt1);
+    txBuilder.up(new TokensInAccount(userAccount, action.rri(), amt1));
+    txBuilder.up(new TokensInAccount(userAccount, action.rri(), amt2));
+    txBuilder.end();
+  }
 }

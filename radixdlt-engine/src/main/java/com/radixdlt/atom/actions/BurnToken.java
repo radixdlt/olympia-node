@@ -69,31 +69,29 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 public final class BurnToken implements TxAction {
-	private final REAddr resourceAddr;
-	private final REAddr accountAddr;
-	private final UInt256 amount;
+  private final REAddr resourceAddr;
+  private final REAddr accountAddr;
+  private final UInt256 amount;
 
-	public BurnToken(REAddr resourceAddr, REAddr accountAddr, UInt256 amount) {
-		if (amount.isZero()) {
-			throw new IllegalArgumentException("Amount must be > 0.");
-		}
+  public BurnToken(REAddr resourceAddr, REAddr accountAddr, UInt256 amount) {
+    if (amount.isZero()) {
+      throw new IllegalArgumentException("Amount must be > 0.");
+    }
 
-		this.resourceAddr = resourceAddr;
-		this.accountAddr = accountAddr;
-		this.amount = amount;
-	}
+    this.resourceAddr = resourceAddr;
+    this.accountAddr = accountAddr;
+    this.amount = amount;
+  }
 
-	public REAddr from() {
-		return accountAddr;
-	}
+  public REAddr from() {
+    return accountAddr;
+  }
 
-	public REAddr resourceAddr() {
-		return resourceAddr;
-	}
+  public REAddr resourceAddr() {
+    return resourceAddr;
+  }
 
-	public UInt256 amount() {
-		return amount;
-	}
-
+  public UInt256 amount() {
+    return amount;
+  }
 }
-

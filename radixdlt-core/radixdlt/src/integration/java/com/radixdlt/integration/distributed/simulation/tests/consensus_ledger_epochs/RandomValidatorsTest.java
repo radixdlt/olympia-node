@@ -67,12 +67,12 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -85,66 +85,63 @@ import org.assertj.core.api.Condition;
 import org.junit.Test;
 
 public class RandomValidatorsTest {
-	private static final int numNodes = 50;
+  private static final int numNodes = 50;
 
-	private final Builder bftTestBuilder = SimulationTest.builder()
-		.networkModules(
-			NetworkOrdering.inOrder(),
-			NetworkLatencies.fixed()
-		)
-		.pacemakerTimeout(5000)
-		.numNodes(numNodes, 2)
-		.addTestModules(
-			ConsensusMonitors.safety(),
-			ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS),
-			ConsensusMonitors.timestampChecker(),
-			ConsensusMonitors.noTimeouts(),
-			ConsensusMonitors.directParents(),
-			ConsensusMonitors.epochCeilingView(View.of(100)),
-			LedgerMonitors.consensusToLedger(),
-			LedgerMonitors.ordered()
-		);
+  private final Builder bftTestBuilder =
+      SimulationTest.builder()
+          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .pacemakerTimeout(5000)
+          .numNodes(numNodes, 2)
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS),
+              ConsensusMonitors.timestampChecker(),
+              ConsensusMonitors.noTimeouts(),
+              ConsensusMonitors.directParents(),
+              ConsensusMonitors.epochCeilingView(View.of(100)),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered());
 
-	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {
-		return epoch -> {
-			List<Integer> indices = IntStream.range(0, numNodes).boxed().collect(Collectors.toList());
-			Random random = randomSupplier.apply(epoch);
-			for (long i = 0; i < epoch; i++) {
-				random.nextInt(numNodes);
-			}
-			return IntStream.range(0, random.nextInt(numNodes) + 1)
-				.map(i -> indices.remove(random.nextInt(indices.size())));
-		};
-	}
+  private static Function<Long, IntStream> randomEpochToNodesMapper(
+      Function<Long, Random> randomSupplier) {
+    return epoch -> {
+      List<Integer> indices = IntStream.range(0, numNodes).boxed().collect(Collectors.toList());
+      Random random = randomSupplier.apply(epoch);
+      for (long i = 0; i < epoch; i++) {
+        random.nextInt(numNodes);
+      }
+      return IntStream.range(0, random.nextInt(numNodes) + 1)
+          .map(i -> indices.remove(random.nextInt(indices.size())));
+    };
+  }
 
-	private static Function<Long, IntStream> goodRandomEpochToNodesMapper() {
-		return randomEpochToNodesMapper(Random::new);
-	}
+  private static Function<Long, IntStream> goodRandomEpochToNodesMapper() {
+    return randomEpochToNodesMapper(Random::new);
+  }
 
-	private static Function<Long, IntStream> badRandomEpochToNodesMapper() {
-		// random number generator which gives a different number per node
-		Random random = new Random();
-		return randomEpochToNodesMapper(l -> random);
-	}
+  private static Function<Long, IntStream> badRandomEpochToNodesMapper() {
+    // random number generator which gives a different number per node
+    Random random = new Random();
+    return randomEpochToNodesMapper(l -> random);
+  }
 
-	@Test
-	public void given_deterministic_randomized_validator_sets__then_should_pass_bft_and_epoch_invariants() {
-		SimulationTest bftTest = bftTestBuilder
-			.ledgerAndEpochs(View.of(100), goodRandomEpochToNodesMapper())
-			.build();
+  @Test
+  public void
+      given_deterministic_randomized_validator_sets__then_should_pass_bft_and_epoch_invariants() {
+    SimulationTest bftTest =
+        bftTestBuilder.ledgerAndEpochs(View.of(100), goodRandomEpochToNodesMapper()).build();
 
-		final var checkResults = bftTest.run().awaitCompletion();
-		assertThat(checkResults).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-	}
+    final var checkResults = bftTest.run().awaitCompletion();
+    assertThat(checkResults)
+        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+  }
 
-	@Test
-	public void given_nondeterministic_randomized_validator_sets__then_should_fail() {
-		SimulationTest bftTest = bftTestBuilder
-			.ledgerAndEpochs(View.of(100), badRandomEpochToNodesMapper())
-			.build();
+  @Test
+  public void given_nondeterministic_randomized_validator_sets__then_should_fail() {
+    SimulationTest bftTest =
+        bftTestBuilder.ledgerAndEpochs(View.of(100), badRandomEpochToNodesMapper()).build();
 
-		final var checkResults = bftTest.run().awaitCompletion();
-		assertThat(checkResults).hasValueSatisfying(new Condition<>(Optional::isPresent, "Has error"));
-	}
-
+    final var checkResults = bftTest.run().awaitCompletion();
+    assertThat(checkResults).hasValueSatisfying(new Condition<>(Optional::isPresent, "Has error"));
+  }
 }

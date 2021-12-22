@@ -65,76 +65,72 @@
 package com.radixdlt.environment.deterministic.network;
 
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 
-import com.radixdlt.consensus.bft.BFTNode;
-
-/**
- * A sender within a deterministic network.
- */
+/** A sender within a deterministic network. */
 public final class ControlledSender implements Environment {
-	private final DeterministicNetwork network;
-	private final BFTNode self;
-	private final int senderIndex;
-	private final ChannelId localChannel;
+  private final DeterministicNetwork network;
+  private final BFTNode self;
+  private final int senderIndex;
+  private final ChannelId localChannel;
 
-	ControlledSender(DeterministicNetwork network, BFTNode self, int senderIndex) {
-		this.network = network;
-		this.self = self;
-		this.senderIndex = senderIndex;
-		this.localChannel = ChannelId.of(this.senderIndex, this.senderIndex);
-	}
+  ControlledSender(DeterministicNetwork network, BFTNode self, int senderIndex) {
+    this.network = network;
+    this.self = self;
+    this.senderIndex = senderIndex;
+    this.localChannel = ChannelId.of(this.senderIndex, this.senderIndex);
+  }
 
-	@Override
-	public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
-		return e -> handleMessage(new ControlledMessage(self, this.localChannel, e, null, arrivalTime(this.localChannel)));
-	}
+  @Override
+  public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
+    return e ->
+        handleMessage(
+            new ControlledMessage(
+                self, this.localChannel, e, null, arrivalTime(this.localChannel)));
+  }
 
-	@Override
-	public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass) {
-		return (t, milliseconds) -> {
-			var msg = new ControlledMessage(
-				self,
-				this.localChannel,
-				t,
-				null,
-				arrivalTime(this.localChannel) + milliseconds
-			);
-			handleMessage(msg);
-		};
-	}
+  @Override
+  public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass) {
+    return (t, milliseconds) -> {
+      var msg =
+          new ControlledMessage(
+              self, this.localChannel, t, null, arrivalTime(this.localChannel) + milliseconds);
+      handleMessage(msg);
+    };
+  }
 
-	@Override
-	public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(TypeLiteral<T> typeLiteral) {
-		return (t, milliseconds) -> {
-			var msg = new ControlledMessage(
-				self,
-				this.localChannel,
-				t,
-				typeLiteral,
-				arrivalTime(this.localChannel) + milliseconds
-			);
-			handleMessage(msg);
-		};
-	}
+  @Override
+  public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(TypeLiteral<T> typeLiteral) {
+    return (t, milliseconds) -> {
+      var msg =
+          new ControlledMessage(
+              self,
+              this.localChannel,
+              t,
+              typeLiteral,
+              arrivalTime(this.localChannel) + milliseconds);
+      handleMessage(msg);
+    };
+  }
 
-	@Override
-	public <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass) {
-		return (node, e) -> {
-			ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
-			handleMessage(new ControlledMessage(self, channelId, e, null, arrivalTime(channelId)));
-		};
-	}
+  @Override
+  public <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass) {
+    return (node, e) -> {
+      ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
+      handleMessage(new ControlledMessage(self, channelId, e, null, arrivalTime(channelId)));
+    };
+  }
 
-	private void handleMessage(ControlledMessage controlledMessage) {
-		this.network.handleMessage(controlledMessage);
-	}
+  private void handleMessage(ControlledMessage controlledMessage) {
+    this.network.handleMessage(controlledMessage);
+  }
 
-	private long arrivalTime(ChannelId channelId) {
-		long delay = this.network.delayForChannel(channelId);
-		return this.network.currentTime() + delay;
-	}
+  private long arrivalTime(ChannelId channelId) {
+    long delay = this.network.delayForChannel(channelId);
+    return this.network.currentTime() + delay;
+  }
 }

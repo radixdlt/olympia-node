@@ -69,9 +69,8 @@ import org.junit.Test;
 
 public class ViewQuorumReachedTest {
 
-    @Test
-    public void equalsTest() {
-        EqualsVerifier.forClass(ViewQuorumReached.class)
-            .verify();
-    }
+  @Test
+  public void equalsTest() {
+    EqualsVerifier.forClass(ViewQuorumReached.class).verify();
+  }
 }

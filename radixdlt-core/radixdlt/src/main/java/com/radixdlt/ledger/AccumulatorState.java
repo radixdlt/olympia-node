@@ -72,65 +72,63 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
-import javax.annotation.concurrent.Immutable;
-
 import java.util.Objects;
+import javax.annotation.concurrent.Immutable;
 
 @Immutable
 @SerializerId2("ledger.accumulator_state")
 public final class AccumulatorState {
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-	SerializerDummy serializer = SerializerDummy.DUMMY;
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+  SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("state_version")
-	@DsonOutput(Output.ALL)
-	private final long stateVersion;
+  @JsonProperty("state_version")
+  @DsonOutput(Output.ALL)
+  private final long stateVersion;
 
-	@JsonProperty("accumulator_hash")
-	@DsonOutput(Output.ALL)
-	private final HashCode accumulatorHash;
+  @JsonProperty("accumulator_hash")
+  @DsonOutput(Output.ALL)
+  private final HashCode accumulatorHash;
 
-	@JsonCreator
-	public AccumulatorState(
-		@JsonProperty("state_version") long stateVersion,
-		@JsonProperty(value = "accumulator_hash", required = true) HashCode accumulatorHash
-	) {
-		if (stateVersion < 0) {
-			throw new IllegalArgumentException("State version must be >= 0");
-		}
+  @JsonCreator
+  public AccumulatorState(
+      @JsonProperty("state_version") long stateVersion,
+      @JsonProperty(value = "accumulator_hash", required = true) HashCode accumulatorHash) {
+    if (stateVersion < 0) {
+      throw new IllegalArgumentException("State version must be >= 0");
+    }
 
-		this.accumulatorHash = Objects.requireNonNull(accumulatorHash);
-		this.stateVersion = stateVersion;
-	}
+    this.accumulatorHash = Objects.requireNonNull(accumulatorHash);
+    this.stateVersion = stateVersion;
+  }
 
-	public long getStateVersion() {
-		return stateVersion;
-	}
+  public long getStateVersion() {
+    return stateVersion;
+  }
 
-	public HashCode getAccumulatorHash() {
-		return accumulatorHash;
-	}
+  public HashCode getAccumulatorHash() {
+    return accumulatorHash;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(stateVersion, accumulatorHash);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(stateVersion, accumulatorHash);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof AccumulatorState)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof AccumulatorState)) {
+      return false;
+    }
 
-		AccumulatorState other = (AccumulatorState) o;
-		return stateVersion == other.stateVersion
-			&& Objects.equals(accumulatorHash, other.accumulatorHash);
-	}
+    AccumulatorState other = (AccumulatorState) o;
+    return stateVersion == other.stateVersion
+        && Objects.equals(accumulatorHash, other.accumulatorHash);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{version=%s hash=%s}", getClass().getSimpleName(), stateVersion, accumulatorHash);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{version=%s hash=%s}", getClass().getSimpleName(), stateVersion, accumulatorHash);
+  }
 }

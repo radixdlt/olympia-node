@@ -69,35 +69,37 @@ import com.radixdlt.constraintmachine.ProcedureKey;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 
 public final class Meters {
-	private Meters() {
-		throw new IllegalStateException("Cannot instantiate.");
-	}
+  private Meters() {
+    throw new IllegalStateException("Cannot instantiate.");
+  }
 
-	public static Meter combine(Meter m0, Meter m1) {
-		return new Meter() {
-			@Override
-			public void onStart(ExecutionContext context) {
-				m0.onStart(context);
-				m1.onStart(context);
-			}
+  public static Meter combine(Meter m0, Meter m1) {
+    return new Meter() {
+      @Override
+      public void onStart(ExecutionContext context) {
+        m0.onStart(context);
+        m1.onStart(context);
+      }
 
-			@Override
-			public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
-				m0.onUserProcedure(procedureKey, param, context);
-				m1.onUserProcedure(procedureKey, param, context);
-			}
+      @Override
+      public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context)
+          throws Exception {
+        m0.onUserProcedure(procedureKey, param, context);
+        m1.onUserProcedure(procedureKey, param, context);
+      }
 
-			@Override
-			public void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
-				m0.onSuperUserProcedure(procedureKey, param, context);
-				m1.onSuperUserProcedure(procedureKey, param, context);
-			}
+      @Override
+      public void onSuperUserProcedure(
+          ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
+        m0.onSuperUserProcedure(procedureKey, param, context);
+        m1.onSuperUserProcedure(procedureKey, param, context);
+      }
 
-			@Override
-			public void onSigInstruction(ExecutionContext context) throws AuthorizationException {
-				m0.onSigInstruction(context);
-				m1.onSigInstruction(context);
-			}
-		};
-	}
+      @Override
+      public void onSigInstruction(ExecutionContext context) throws AuthorizationException {
+        m0.onSigInstruction(context);
+        m1.onSigInstruction(context);
+      }
+    };
+  }
 }

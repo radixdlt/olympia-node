@@ -81,64 +81,54 @@ import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
-/**
- * Module which manages system info
- */
+/** Module which manages system info */
 public class SystemInfoModule extends AbstractModule {
-	@Override
-	protected void configure() {
-		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-		bind(InMemorySystemInfo.class).in(Scopes.SINGLETON);
-		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
-			.permitDuplicates();
-		eventBinder.addBinding().toInstance(EpochViewUpdate.class);
-		eventBinder.addBinding().toInstance(EpochLocalTimeoutOccurrence.class);
-		eventBinder.addBinding().toInstance(BFTCommittedUpdate.class);
-		eventBinder.addBinding().toInstance(BFTHighQCUpdate.class);
-	}
+  @Override
+  protected void configure() {
+    bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+    bind(InMemorySystemInfo.class).in(Scopes.SINGLETON);
+    var eventBinder =
+        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
+            .permitDuplicates();
+    eventBinder.addBinding().toInstance(EpochViewUpdate.class);
+    eventBinder.addBinding().toInstance(EpochLocalTimeoutOccurrence.class);
+    eventBinder.addBinding().toInstance(BFTCommittedUpdate.class);
+    eventBinder.addBinding().toInstance(BFTHighQCUpdate.class);
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> epochsLedgerUpdateProcessor(InMemorySystemInfo inMemorySystemInfo) {
-		return new EventProcessorOnRunner<>(
-			Runners.SYSTEM_INFO,
-			LedgerUpdate.class,
-			inMemorySystemInfo.ledgerUpdateEventProcessor()
-		);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> epochsLedgerUpdateProcessor(
+      InMemorySystemInfo inMemorySystemInfo) {
+    return new EventProcessorOnRunner<>(
+        Runners.SYSTEM_INFO, LedgerUpdate.class, inMemorySystemInfo.ledgerUpdateEventProcessor());
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> epochViewEventProcessor(InMemorySystemInfo inMemorySystemInfo) {
-		return new EventProcessorOnRunner<>(
-			Runners.SYSTEM_INFO,
-			EpochViewUpdate.class,
-			v -> inMemorySystemInfo.processView(v.getEpochView())
-		);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> epochViewEventProcessor(InMemorySystemInfo inMemorySystemInfo) {
+    return new EventProcessorOnRunner<>(
+        Runners.SYSTEM_INFO,
+        EpochViewUpdate.class,
+        v -> inMemorySystemInfo.processView(v.getEpochView()));
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> timeoutEventProcessor(InMemorySystemInfo inMemorySystemInfo) {
-		return new EventProcessorOnRunner<>(
-			Runners.SYSTEM_INFO,
-			EpochLocalTimeoutOccurrence.class,
-			inMemorySystemInfo::processTimeout
-		);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> timeoutEventProcessor(InMemorySystemInfo inMemorySystemInfo) {
+    return new EventProcessorOnRunner<>(
+        Runners.SYSTEM_INFO, EpochLocalTimeoutOccurrence.class, inMemorySystemInfo::processTimeout);
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> committedUpdateEventProcessor(InMemorySystemInfo inMemorySystemInfo) {
-		return new EventProcessorOnRunner<>(
-			Runners.SYSTEM_INFO,
-			BFTCommittedUpdate.class,
-			inMemorySystemInfo.bftCommittedUpdateEventProcessor()
-		);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> committedUpdateEventProcessor(
+      InMemorySystemInfo inMemorySystemInfo) {
+    return new EventProcessorOnRunner<>(
+        Runners.SYSTEM_INFO,
+        BFTCommittedUpdate.class,
+        inMemorySystemInfo.bftCommittedUpdateEventProcessor());
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> highQCProcessor(InMemorySystemInfo inMemorySystemInfo) {
-		return new EventProcessorOnRunner<>(
-			Runners.SYSTEM_INFO,
-			BFTHighQCUpdate.class,
-			inMemorySystemInfo.bftHighQCEventProcessor()
-		);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> highQCProcessor(InMemorySystemInfo inMemorySystemInfo) {
+    return new EventProcessorOnRunner<>(
+        Runners.SYSTEM_INFO, BFTHighQCUpdate.class, inMemorySystemInfo.bftHighQCEventProcessor());
+  }
 }

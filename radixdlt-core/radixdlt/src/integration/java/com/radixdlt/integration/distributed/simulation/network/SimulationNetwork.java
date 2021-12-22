@@ -73,7 +73,6 @@ import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
-
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Map;
@@ -81,144 +80,147 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Simple simulated network implementation that just sends messages to itself with a configurable latency.
+ * Simple simulated network implementation that just sends messages to itself with a configurable
+ * latency.
  */
 public class SimulationNetwork {
-	public static final int DEFAULT_LATENCY = 50;
+  public static final int DEFAULT_LATENCY = 50;
 
-	public static final class MessageInTransit {
-		private final Object content;
-		private final BFTNode sender;
-		private final BFTNode receiver;
-		private final long delay;
-		private final long delayAfterPrevious;
+  public static final class MessageInTransit {
+    private final Object content;
+    private final BFTNode sender;
+    private final BFTNode receiver;
+    private final long delay;
+    private final long delayAfterPrevious;
 
-		private MessageInTransit(Object content, BFTNode sender, BFTNode receiver, long delay, long delayAfterPrevious) {
-			if (content instanceof RemoteEvent) {
-				throw new IllegalArgumentException("Message in transit should not be RemoteEvent");
-			}
+    private MessageInTransit(
+        Object content, BFTNode sender, BFTNode receiver, long delay, long delayAfterPrevious) {
+      if (content instanceof RemoteEvent) {
+        throw new IllegalArgumentException("Message in transit should not be RemoteEvent");
+      }
 
-			this.content = Objects.requireNonNull(content);
-			this.sender = sender;
-			this.receiver = receiver;
-			this.delay = delay;
-			this.delayAfterPrevious = delayAfterPrevious;
-		}
+      this.content = Objects.requireNonNull(content);
+      this.sender = sender;
+      this.receiver = receiver;
+      this.delay = delay;
+      this.delayAfterPrevious = delayAfterPrevious;
+    }
 
-		private static MessageInTransit newMessage(Object content, BFTNode sender, BFTNode receiver) {
-			return new MessageInTransit(content, sender, receiver, 0, 0);
-		}
+    private static MessageInTransit newMessage(Object content, BFTNode sender, BFTNode receiver) {
+      return new MessageInTransit(content, sender, receiver, 0, 0);
+    }
 
-		public <T> Maybe<T> localEvent(Class<T> eventClass) {
-			if (sender.equals(receiver) && eventClass.isInstance(content)) {
-				return Maybe.just(eventClass.cast(content));
-			}
+    public <T> Maybe<T> localEvent(Class<T> eventClass) {
+      if (sender.equals(receiver) && eventClass.isInstance(content)) {
+        return Maybe.just(eventClass.cast(content));
+      }
 
-			return Maybe.empty();
-		}
+      return Maybe.empty();
+    }
 
-		public <T> Maybe<RemoteEvent<T>> remoteEvent(Class<T> eventClass) {
-			if (!sender.equals(receiver) && eventClass.isInstance(content)) {
-				return Maybe.just(RemoteEvent.create(sender, eventClass.cast(content)));
-			}
+    public <T> Maybe<RemoteEvent<T>> remoteEvent(Class<T> eventClass) {
+      if (!sender.equals(receiver) && eventClass.isInstance(content)) {
+        return Maybe.just(RemoteEvent.create(sender, eventClass.cast(content)));
+      }
 
-			return Maybe.empty();
-		}
+      return Maybe.empty();
+    }
 
-		MessageInTransit delayed(long delay) {
-			return new MessageInTransit(content, sender, receiver, delay, delay);
-		}
+    MessageInTransit delayed(long delay) {
+      return new MessageInTransit(content, sender, receiver, delay, delay);
+    }
 
-		MessageInTransit delayAfterPrevious(long delayAfterPrevious) {
-			return new MessageInTransit(content, sender, receiver, delay, delayAfterPrevious);
-		}
+    MessageInTransit delayAfterPrevious(long delayAfterPrevious) {
+      return new MessageInTransit(content, sender, receiver, delay, delayAfterPrevious);
+    }
 
-		public long getDelayAfterPrevious() {
-			return delayAfterPrevious;
-		}
+    public long getDelayAfterPrevious() {
+      return delayAfterPrevious;
+    }
 
-		public long getDelay() {
-			return delay;
-		}
+    public long getDelay() {
+      return delay;
+    }
 
-		public Object getContent() {
-			return this.content;
-		}
+    public Object getContent() {
+      return this.content;
+    }
 
-		public BFTNode getSender() {
-			return sender;
-		}
+    public BFTNode getSender() {
+      return sender;
+    }
 
-		public BFTNode getReceiver() {
-			return receiver;
-		}
+    public BFTNode getReceiver() {
+      return receiver;
+    }
 
-		@Override
-		public String toString() {
-			return String.format("%s %s -> %s %d %d",
-				content,
-				sender.getSimpleName(),
-				receiver.getSimpleName(),
-				delay,
-				delayAfterPrevious
-			);
-		}
-	}
+    @Override
+    public String toString() {
+      return String.format(
+          "%s %s -> %s %d %d",
+          content, sender.getSimpleName(), receiver.getSimpleName(), delay, delayAfterPrevious);
+    }
+  }
 
-	public interface ChannelCommunication {
-		Observable<MessageInTransit> transform(BFTNode sender, BFTNode receiver, Observable<MessageInTransit> messages);
-	}
+  public interface ChannelCommunication {
+    Observable<MessageInTransit> transform(
+        BFTNode sender, BFTNode receiver, Observable<MessageInTransit> messages);
+  }
 
-	private final Subject<MessageInTransit> receivedMessages;
-	private final Map<BFTNode, SimulatedNetworkImpl> receivers = new ConcurrentHashMap<>();
-	private final ChannelCommunication channelCommunication;
+  private final Subject<MessageInTransit> receivedMessages;
+  private final Map<BFTNode, SimulatedNetworkImpl> receivers = new ConcurrentHashMap<>();
+  private final ChannelCommunication channelCommunication;
 
-	@Inject
-	public SimulationNetwork(ChannelCommunication channelCommunication) {
-		this.channelCommunication = Objects.requireNonNull(channelCommunication);
-		this.receivedMessages = ReplaySubject.<MessageInTransit>createWithSize(128) // To catch startup timing issues
-			.toSerialized();
-	}
+  @Inject
+  public SimulationNetwork(ChannelCommunication channelCommunication) {
+    this.channelCommunication = Objects.requireNonNull(channelCommunication);
+    this.receivedMessages =
+        ReplaySubject.<MessageInTransit>createWithSize(128) // To catch startup timing issues
+            .toSerialized();
+  }
 
-	public class SimulatedNetworkImpl implements RxRemoteEnvironment {
-		private final Flowable<MessageInTransit> myMessages;
-		private final BFTNode thisNode;
+  public class SimulatedNetworkImpl implements RxRemoteEnvironment {
+    private final Flowable<MessageInTransit> myMessages;
+    private final BFTNode thisNode;
 
-		private SimulatedNetworkImpl(BFTNode node) {
-			this.thisNode = node;
-			// filter only relevant messages (appropriate target and if receiving is allowed)
-			this.myMessages = Flowable.fromObservable(receivedMessages
-				.filter(msg -> msg.receiver.equals(node))
-				.groupBy(MessageInTransit::getSender)
-				.serialize()
-				.flatMap(groupedObservable ->
-					channelCommunication
-						.transform(groupedObservable.getKey(), node, groupedObservable)
-				)
-				.publish()
-				.refCount(), BackpressureStrategy.BUFFER)
-			.onBackpressureBuffer(255, false, true /* unbounded */);
-		}
+    private SimulatedNetworkImpl(BFTNode node) {
+      this.thisNode = node;
+      // filter only relevant messages (appropriate target and if receiving is allowed)
+      this.myMessages =
+          Flowable.fromObservable(
+                  receivedMessages
+                      .filter(msg -> msg.receiver.equals(node))
+                      .groupBy(MessageInTransit::getSender)
+                      .serialize()
+                      .flatMap(
+                          groupedObservable ->
+                              channelCommunication.transform(
+                                  groupedObservable.getKey(), node, groupedObservable))
+                      .publish()
+                      .refCount(),
+                  BackpressureStrategy.BUFFER)
+              .onBackpressureBuffer(255, false, true /* unbounded */);
+    }
 
-		public <T> Observable<T> localEvents(Class<T> eventClass) {
-			return myMessages.flatMapMaybe(m -> m.localEvent(eventClass)).toObservable();
-		}
+    public <T> Observable<T> localEvents(Class<T> eventClass) {
+      return myMessages.flatMapMaybe(m -> m.localEvent(eventClass)).toObservable();
+    }
 
-		@Override
-		public <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> eventClass) {
-			return myMessages.flatMapMaybe(m -> m.remoteEvent(eventClass));
-		}
+    @Override
+    public <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> eventClass) {
+      return myMessages.flatMapMaybe(m -> m.remoteEvent(eventClass));
+    }
 
-		public <T> RemoteEventDispatcher<T> remoteEventDispatcher(Class<T> eventClass) {
-			return this::sendRemoteEvent;
-		}
+    public <T> RemoteEventDispatcher<T> remoteEventDispatcher(Class<T> eventClass) {
+      return this::sendRemoteEvent;
+    }
 
-		private <T> void sendRemoteEvent(BFTNode node, T event) {
-			receivedMessages.onNext(MessageInTransit.newMessage(event, thisNode, node));
-		}
-	}
+    private <T> void sendRemoteEvent(BFTNode node, T event) {
+      receivedMessages.onNext(MessageInTransit.newMessage(event, thisNode, node));
+    }
+  }
 
-	public SimulatedNetworkImpl getNetwork(BFTNode forNode) {
-		return receivers.computeIfAbsent(forNode, SimulatedNetworkImpl::new);
-	}
+  public SimulatedNetworkImpl getNetwork(BFTNode forNode) {
+    return receivers.computeIfAbsent(forNode, SimulatedNetworkImpl::new);
+  }
 }

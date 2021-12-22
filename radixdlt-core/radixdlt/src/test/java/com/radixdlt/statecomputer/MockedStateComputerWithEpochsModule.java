@@ -69,8 +69,8 @@ import com.google.inject.Scopes;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
 public class MockedStateComputerWithEpochsModule extends AbstractModule {
-	@Override
-	protected void configure() {
-		bind(StateComputer.class).to(MockedStateComputerWithEpochs.class).in(Scopes.SINGLETON);
-	}
+  @Override
+  protected void configure() {
+    bind(StateComputer.class).to(MockedStateComputerWithEpochs.class).in(Scopes.SINGLETON);
+  }
 }

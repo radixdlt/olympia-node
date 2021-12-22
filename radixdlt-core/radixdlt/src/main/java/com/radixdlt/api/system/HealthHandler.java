@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -64,27 +65,28 @@
 package com.radixdlt.api.system;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.system.openapitools.model.HealthResponse;
 import com.radixdlt.api.system.health.HealthInfoService;
+import com.radixdlt.api.system.openapitools.model.HealthResponse;
 
 final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
-	private final HealthInfoService healthInfoService;
+  private final HealthInfoService healthInfoService;
 
-	@Inject
-	HealthHandler(HealthInfoService healthInfoService) {
-		this.healthInfoService = healthInfoService;
-	}
+  @Inject
+  HealthHandler(HealthInfoService healthInfoService) {
+    this.healthInfoService = healthInfoService;
+  }
 
-	@Override
-	public HealthResponse handleRequest() {
-		var nodeStatus = healthInfoService.nodeStatus();
-		var status = switch (nodeStatus) {
-			case UP -> HealthResponse.StatusEnum.UP;
-			case BOOTING -> HealthResponse.StatusEnum.BOOTING;
-			case SYNCING -> HealthResponse.StatusEnum.SYNCING;
-			case STALLED -> HealthResponse.StatusEnum.STALLED;
-			case OUT_OF_SYNC -> HealthResponse.StatusEnum.OUT_OF_SYNC;
-		};
-		return new HealthResponse().status(status);
-	}
+  @Override
+  public HealthResponse handleRequest() {
+    var nodeStatus = healthInfoService.nodeStatus();
+    var status =
+        switch (nodeStatus) {
+          case UP -> HealthResponse.StatusEnum.UP;
+          case BOOTING -> HealthResponse.StatusEnum.BOOTING;
+          case SYNCING -> HealthResponse.StatusEnum.SYNCING;
+          case STALLED -> HealthResponse.StatusEnum.STALLED;
+          case OUT_OF_SYNC -> HealthResponse.StatusEnum.OUT_OF_SYNC;
+        };
+    return new HealthResponse().status(status);
+  }
 }

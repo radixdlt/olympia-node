@@ -65,11 +65,10 @@
 package com.radixdlt.environment;
 
 /**
- * Processes an event. An environment is responsible for making
- * the call into processors.
+ * Processes an event. An environment is responsible for making the call into processors.
  *
  * @param <T> the event class
  */
 public interface EventProcessor<T> {
-	void process(T t);
+  void process(T t);
 }

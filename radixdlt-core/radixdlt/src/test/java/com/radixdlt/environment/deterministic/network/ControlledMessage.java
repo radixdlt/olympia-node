@@ -68,71 +68,80 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 
-/**
- * A message sent over a channel.
- */
+/** A message sent over a channel. */
 public final class ControlledMessage {
-	private final BFTNode origin;
-	private final ChannelId channelId;
-	private final Object message;
-	private final TypeLiteral<?> typeLiteral;
-	private final long arrivalTime;
+  private final BFTNode origin;
+  private final ChannelId channelId;
+  private final Object message;
+  private final TypeLiteral<?> typeLiteral;
+  private final long arrivalTime;
 
-	public ControlledMessage(BFTNode origin, ChannelId channelId, Object message, TypeLiteral<?> typeLiteral, long arrivalTime) {
-		this.origin = origin;
-		this.channelId = channelId;
-		this.message = message;
-		this.typeLiteral = typeLiteral;
-		this.arrivalTime = arrivalTime;
-	}
+  public ControlledMessage(
+      BFTNode origin,
+      ChannelId channelId,
+      Object message,
+      TypeLiteral<?> typeLiteral,
+      long arrivalTime) {
+    this.origin = origin;
+    this.channelId = channelId;
+    this.message = message;
+    this.typeLiteral = typeLiteral;
+    this.arrivalTime = arrivalTime;
+  }
 
-	public ControlledMessage withAdditionalDelay(long additionalDelay) {
-		return new ControlledMessage(this.origin, this.channelId, this.message, this.typeLiteral, this.arrivalTime + additionalDelay);
-	}
+  public ControlledMessage withAdditionalDelay(long additionalDelay) {
+    return new ControlledMessage(
+        this.origin,
+        this.channelId,
+        this.message,
+        this.typeLiteral,
+        this.arrivalTime + additionalDelay);
+  }
 
-	public ControlledMessage withArrivalTime(long arrivalTime) {
-		return new ControlledMessage(this.origin, this.channelId, this.message, this.typeLiteral, arrivalTime);
-	}
+  public ControlledMessage withArrivalTime(long arrivalTime) {
+    return new ControlledMessage(
+        this.origin, this.channelId, this.message, this.typeLiteral, arrivalTime);
+  }
 
-	public BFTNode origin() {
-		return origin;
-	}
+  public BFTNode origin() {
+    return origin;
+  }
 
-	public ChannelId channelId() {
-		return this.channelId;
-	}
+  public ChannelId channelId() {
+    return this.channelId;
+  }
 
-	public Object message() {
-		return this.message;
-	}
+  public Object message() {
+    return this.message;
+  }
 
-	public TypeLiteral<?> typeLiteral() {
-		return typeLiteral;
-	}
+  public TypeLiteral<?> typeLiteral() {
+    return typeLiteral;
+  }
 
-	public long arrivalTime() {
-		return this.arrivalTime;
-	}
+  public long arrivalTime() {
+    return this.arrivalTime;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.origin, this.channelId, this.message, this.arrivalTime);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.origin, this.channelId, this.message, this.arrivalTime);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (o instanceof ControlledMessage) {
-			ControlledMessage that = (ControlledMessage) o;
-			return this.arrivalTime == that.arrivalTime
-				&& Objects.equals(this.origin, that.origin)
-				&& Objects.equals(this.channelId, that.channelId)
-				&& Objects.equals(this.message, that.message);
-		}
-		return false;
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (o instanceof ControlledMessage) {
+      ControlledMessage that = (ControlledMessage) o;
+      return this.arrivalTime == that.arrivalTime
+          && Objects.equals(this.origin, that.origin)
+          && Objects.equals(this.channelId, that.channelId)
+          && Objects.equals(this.message, that.message);
+    }
+    return false;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s(%s) %s", channelId, arrivalTime, message);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s(%s) %s", channelId, arrivalTime, message);
+  }
 }

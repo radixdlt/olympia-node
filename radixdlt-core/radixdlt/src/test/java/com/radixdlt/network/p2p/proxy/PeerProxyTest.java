@@ -64,210 +64,246 @@
 
 package com.radixdlt.network.p2p.proxy;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
-import com.radixdlt.network.p2p.test.P2PTestNetworkRunner.NodeProps;
-import com.radixdlt.network.p2p.transport.PeerChannel;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.Network;
-import org.junit.After;
-import org.junit.Test;
-import com.radixdlt.network.p2p.liveness.messages.PeerPingMessage;
-
-import java.time.Duration;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.wildfly.common.Assert.assertFalse;
 
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.network.p2p.liveness.messages.PeerPingMessage;
+import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
+import com.radixdlt.network.p2p.test.P2PTestNetworkRunner.NodeProps;
+import com.radixdlt.network.p2p.transport.PeerChannel;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
+import java.time.Duration;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.junit.After;
+import org.junit.Test;
+
 public final class PeerProxyTest extends DeterministicP2PNetworkTest {
 
-	private static final int VALIDATOR_NODE = 0;
-	private static final int PROXY_NODE = 1;
-	private static final int EXTERNAL_NODE = 2;
+  private static final int VALIDATOR_NODE = 0;
+  private static final int PROXY_NODE = 1;
+  private static final int EXTERNAL_NODE = 2;
 
-	@After
-	public void cleanup() {
-		testNetworkRunner.cleanup();
-	}
+  @After
+  public void cleanup() {
+    testNetworkRunner.cleanup();
+  }
 
-	@Test
-	public void test_peer_proxy() throws Exception {
-		final var nodeAddressing = Addressing.ofNetwork(Network.LOCALNET).forNodes();
-		final var validatorKey = ECKeyPair.generateNew();
-		final var proxyKey = ECKeyPair.generateNew();
+  @Test
+  public void test_peer_proxy() throws Exception {
+    final var nodeAddressing = Addressing.ofNetwork(Network.LOCALNET).forNodes();
+    final var validatorKey = ECKeyPair.generateNew();
+    final var proxyKey = ECKeyPair.generateNew();
 
-		final var validatorProps = defaultProperties();
-		validatorProps.set("network.p2p.proxy.authorized_proxies", nodeAddressing.of(proxyKey.getPublicKey()));
+    final var validatorProps = defaultProperties();
+    validatorProps.set(
+        "network.p2p.proxy.authorized_proxies", nodeAddressing.of(proxyKey.getPublicKey()));
 
-		final var proxyProps = defaultProperties();
-		proxyProps.set("network.p2p.proxy.enabled", "true");
-		proxyProps.set("network.p2p.proxy.authorized_proxied_nodes", nodeAddressing.of(validatorKey.getPublicKey()));
+    final var proxyProps = defaultProperties();
+    proxyProps.set("network.p2p.proxy.enabled", "true");
+    proxyProps.set(
+        "network.p2p.proxy.authorized_proxied_nodes",
+        nodeAddressing.of(validatorKey.getPublicKey()));
 
-		// a network with 3 nodes: a (hidden) validator, a proxy and a default "external" node
-		setupTestRunner(ImmutableList.of(
-			new NodeProps(validatorKey, validatorProps),
-			new NodeProps(proxyKey, proxyProps),
-			new NodeProps(ECKeyPair.generateNew(), defaultProperties())
-		));
+    // a network with 3 nodes: a (hidden) validator, a proxy and a default "external" node
+    setupTestRunner(
+        ImmutableList.of(
+            new NodeProps(validatorKey, validatorProps),
+            new NodeProps(proxyKey, proxyProps),
+            new NodeProps(ECKeyPair.generateNew(), defaultProperties())));
 
-		// proxy node connects to the validator
-		testNetworkRunner.addressBook(PROXY_NODE).addUncheckedPeers(Set.of(uriOfNode(VALIDATOR_NODE)));
-		testNetworkRunner.peerManager(PROXY_NODE).findOrCreateDirectChannel(nodeIdOf(VALIDATOR_NODE));
+    // proxy node connects to the validator
+    testNetworkRunner.addressBook(PROXY_NODE).addUncheckedPeers(Set.of(uriOfNode(VALIDATOR_NODE)));
+    testNetworkRunner.peerManager(PROXY_NODE).findOrCreateDirectChannel(nodeIdOf(VALIDATOR_NODE));
 
-		// external node connects to the proxy node
-		testNetworkRunner.addressBook(EXTERNAL_NODE).addUncheckedPeers(Set.of(uriOfNode(PROXY_NODE)));
-		testNetworkRunner.peerManager(EXTERNAL_NODE).findOrCreateDirectChannel(nodeIdOf(PROXY_NODE));
+    // external node connects to the proxy node
+    testNetworkRunner.addressBook(EXTERNAL_NODE).addUncheckedPeers(Set.of(uriOfNode(PROXY_NODE)));
+    testNetworkRunner.peerManager(EXTERNAL_NODE).findOrCreateDirectChannel(nodeIdOf(PROXY_NODE));
 
-		processAll();
+    processAll();
 
-		// verify all nodes are connected as expected
-		assertEquals(1L, testNetworkRunner.peerManager(VALIDATOR_NODE).activeChannels().size());
-		assertEquals(2L, testNetworkRunner.peerManager(PROXY_NODE).activeChannels().size());
-		assertEquals(1L, testNetworkRunner.peerManager(EXTERNAL_NODE).activeChannels().size());
+    // verify all nodes are connected as expected
+    assertEquals(1L, testNetworkRunner.peerManager(VALIDATOR_NODE).activeChannels().size());
+    assertEquals(2L, testNetworkRunner.peerManager(PROXY_NODE).activeChannels().size());
+    assertEquals(1L, testNetworkRunner.peerManager(EXTERNAL_NODE).activeChannels().size());
 
-		// verify that the proxy node has received a valid certificate
-		final var receivedCerts =
-			testNetworkRunner.proxyCertManager(PROXY_NODE).getReceivedProxyCertificates();
-		assertEquals(1L, receivedCerts.size());
-		final var receivedCert = receivedCerts.iterator().next().verify().get();
-		assertEquals(nodeIdOf(VALIDATOR_NODE), receivedCert.signer());
-		assertEquals(nodeIdOf(PROXY_NODE), receivedCert.grantee());
-		assertTrue(receivedCert.expiresAt() > System.currentTimeMillis());
+    // verify that the proxy node has received a valid certificate
+    final var receivedCerts =
+        testNetworkRunner.proxyCertManager(PROXY_NODE).getReceivedProxyCertificates();
+    assertEquals(1L, receivedCerts.size());
+    final var receivedCert = receivedCerts.iterator().next().verify().get();
+    assertEquals(nodeIdOf(VALIDATOR_NODE), receivedCert.signer());
+    assertEquals(nodeIdOf(PROXY_NODE), receivedCert.grantee());
+    assertTrue(receivedCert.expiresAt() > System.currentTimeMillis());
 
-		// verify that the proxy has forwarded its certificate to an external node
-		final var verifiedProxies = testNetworkRunner.proxyCertManager(EXTERNAL_NODE)
-			.getVerifiedProxiesForNode(nodeIdOf(VALIDATOR_NODE));
-		assertEquals(1L, verifiedProxies.size());
+    // verify that the proxy has forwarded its certificate to an external node
+    final var verifiedProxies =
+        testNetworkRunner
+            .proxyCertManager(EXTERNAL_NODE)
+            .getVerifiedProxiesForNode(nodeIdOf(VALIDATOR_NODE));
+    assertEquals(1L, verifiedProxies.size());
 
-		// verify that the message can be routed from external node, through proxy, to the validator
-		testNetworkRunner.messageCentral(EXTERNAL_NODE).send(nodeIdOf(VALIDATOR_NODE), new PeerPingMessage());
+    // verify that the message can be routed from external node, through proxy, to the validator
+    testNetworkRunner
+        .messageCentral(EXTERNAL_NODE)
+        .send(nodeIdOf(VALIDATOR_NODE), new PeerPingMessage());
 
-		// await until a message is received by the validator
-		await()
-			.atMost(Duration.ofSeconds(2))
-			.until(() -> testNetworkRunner.counter(VALIDATOR_NODE, CounterType.MESSAGES_INBOUND_PROCESSED) == 1L);
+    // await until a message is received by the validator
+    await()
+        .atMost(Duration.ofSeconds(2))
+        .until(
+            () ->
+                testNetworkRunner.counter(VALIDATOR_NODE, CounterType.MESSAGES_INBOUND_PROCESSED)
+                    == 1L);
 
-		// proxy node has processed and forwarded a single message
-		assertEquals(1L, testNetworkRunner.counter(PROXY_NODE, CounterType.MESSAGES_INBOUND_PROCESSED));
-		assertEquals(1L, testNetworkRunner.counter(PROXY_NODE, CounterType.NETWORKING_ROUTING_FORWARDED_MESSAGES));
+    // proxy node has processed and forwarded a single message
+    assertEquals(1L, testNetworkRunner.counter(PROXY_NODE, CounterType.MESSAGES_INBOUND_PROCESSED));
+    assertEquals(
+        1L,
+        testNetworkRunner.counter(PROXY_NODE, CounterType.NETWORKING_ROUTING_FORWARDED_MESSAGES));
 
-		// verify that the message can be routed from the validator node, through proxy, to the external node
-		testNetworkRunner.messageCentral(VALIDATOR_NODE).send(nodeIdOf(EXTERNAL_NODE), new PeerPingMessage());
+    // verify that the message can be routed from the validator node, through proxy, to the external
+    // node
+    testNetworkRunner
+        .messageCentral(VALIDATOR_NODE)
+        .send(nodeIdOf(EXTERNAL_NODE), new PeerPingMessage());
 
-		// await until a message is received by the external node
-		await()
-			.atMost(Duration.ofSeconds(2))
-			.until(() -> testNetworkRunner.counter(EXTERNAL_NODE, CounterType.MESSAGES_INBOUND_PROCESSED) == 1L);
+    // await until a message is received by the external node
+    await()
+        .atMost(Duration.ofSeconds(2))
+        .until(
+            () ->
+                testNetworkRunner.counter(EXTERNAL_NODE, CounterType.MESSAGES_INBOUND_PROCESSED)
+                    == 1L);
 
-		// proxy node has processed and forwarded one more message
-		assertEquals(2L, testNetworkRunner.counter(PROXY_NODE, CounterType.MESSAGES_INBOUND_PROCESSED));
-		assertEquals(2L, testNetworkRunner.counter(PROXY_NODE, CounterType.NETWORKING_ROUTING_FORWARDED_MESSAGES));
-	}
+    // proxy node has processed and forwarded one more message
+    assertEquals(2L, testNetworkRunner.counter(PROXY_NODE, CounterType.MESSAGES_INBOUND_PROCESSED));
+    assertEquals(
+        2L,
+        testNetworkRunner.counter(PROXY_NODE, CounterType.NETWORKING_ROUTING_FORWARDED_MESSAGES));
+  }
 
-	@Test
-	public void test_peer_proxy_disabled() throws Exception {
-		final var nodeAddressing = Addressing.ofNetwork(Network.LOCALNET).forNodes();
-		final var validatorKey = ECKeyPair.generateNew();
-		final var proxyKey = ECKeyPair.generateNew();
+  @Test
+  public void test_peer_proxy_disabled() throws Exception {
+    final var nodeAddressing = Addressing.ofNetwork(Network.LOCALNET).forNodes();
+    final var validatorKey = ECKeyPair.generateNew();
+    final var proxyKey = ECKeyPair.generateNew();
 
-		final var validatorProps = defaultProperties();
-		validatorProps.set("network.p2p.proxy.authorized_proxies", nodeAddressing.of(proxyKey.getPublicKey()));
+    final var validatorProps = defaultProperties();
+    validatorProps.set(
+        "network.p2p.proxy.authorized_proxies", nodeAddressing.of(proxyKey.getPublicKey()));
 
-		final var proxyProps = defaultProperties();
-		// proxied peer is configured, but proxy is not enabled
-		proxyProps.set("network.p2p.proxy.authorized_proxied_nodes", nodeAddressing.of(validatorKey.getPublicKey()));
+    final var proxyProps = defaultProperties();
+    // proxied peer is configured, but proxy is not enabled
+    proxyProps.set(
+        "network.p2p.proxy.authorized_proxied_nodes",
+        nodeAddressing.of(validatorKey.getPublicKey()));
 
-		// a network with 3 nodes: a (hidden) validator, a proxy and a default "external" node
-		setupTestRunner(ImmutableList.of(
-			new NodeProps(validatorKey, validatorProps),
-			new NodeProps(proxyKey, proxyProps),
-			new NodeProps(ECKeyPair.generateNew(), defaultProperties())
-		));
+    // a network with 3 nodes: a (hidden) validator, a proxy and a default "external" node
+    setupTestRunner(
+        ImmutableList.of(
+            new NodeProps(validatorKey, validatorProps),
+            new NodeProps(proxyKey, proxyProps),
+            new NodeProps(ECKeyPair.generateNew(), defaultProperties())));
 
-		// proxy node connects to the validator
-		testNetworkRunner.addressBook(PROXY_NODE).addUncheckedPeers(Set.of(uriOfNode(VALIDATOR_NODE)));
-		testNetworkRunner.peerManager(PROXY_NODE).findOrCreateDirectChannel(nodeIdOf(VALIDATOR_NODE));
+    // proxy node connects to the validator
+    testNetworkRunner.addressBook(PROXY_NODE).addUncheckedPeers(Set.of(uriOfNode(VALIDATOR_NODE)));
+    testNetworkRunner.peerManager(PROXY_NODE).findOrCreateDirectChannel(nodeIdOf(VALIDATOR_NODE));
 
-		// external node connects to the proxy node
-		testNetworkRunner.addressBook(EXTERNAL_NODE).addUncheckedPeers(Set.of(uriOfNode(PROXY_NODE)));
-		testNetworkRunner.peerManager(EXTERNAL_NODE).findOrCreateDirectChannel(nodeIdOf(PROXY_NODE));
+    // external node connects to the proxy node
+    testNetworkRunner.addressBook(EXTERNAL_NODE).addUncheckedPeers(Set.of(uriOfNode(PROXY_NODE)));
+    testNetworkRunner.peerManager(EXTERNAL_NODE).findOrCreateDirectChannel(nodeIdOf(PROXY_NODE));
 
-		processAll();
+    processAll();
 
-		// verify all nodes are connected as expected
-		assertEquals(1L, testNetworkRunner.peerManager(VALIDATOR_NODE).activeChannels().size());
-		assertEquals(2L, testNetworkRunner.peerManager(PROXY_NODE).activeChannels().size());
-		assertEquals(1L, testNetworkRunner.peerManager(EXTERNAL_NODE).activeChannels().size());
+    // verify all nodes are connected as expected
+    assertEquals(1L, testNetworkRunner.peerManager(VALIDATOR_NODE).activeChannels().size());
+    assertEquals(2L, testNetworkRunner.peerManager(PROXY_NODE).activeChannels().size());
+    assertEquals(1L, testNetworkRunner.peerManager(EXTERNAL_NODE).activeChannels().size());
 
-		// verify that the proxy node hasn't processed a received certificate
-		final var receivedCerts =
-			testNetworkRunner.proxyCertManager(PROXY_NODE).getReceivedProxyCertificates();
-		assertEquals(0L, receivedCerts.size());
+    // verify that the proxy node hasn't processed a received certificate
+    final var receivedCerts =
+        testNetworkRunner.proxyCertManager(PROXY_NODE).getReceivedProxyCertificates();
+    assertEquals(0L, receivedCerts.size());
 
-		// verify that the proxy hasn't forwarded the received certificate to an external node
-		final var verifiedProxies = testNetworkRunner.proxyCertManager(EXTERNAL_NODE)
-			.getVerifiedProxiesForNode(nodeIdOf(VALIDATOR_NODE));
-		assertEquals(0L, verifiedProxies.size());
-	}
+    // verify that the proxy hasn't forwarded the received certificate to an external node
+    final var verifiedProxies =
+        testNetworkRunner
+            .proxyCertManager(EXTERNAL_NODE)
+            .getVerifiedProxiesForNode(nodeIdOf(VALIDATOR_NODE));
+    assertEquals(0L, verifiedProxies.size());
+  }
 
-	@Test
-	public void test_use_proxy_if_direct_connection_is_not_allowed() throws Exception {
-		final var nodeAddressing = Addressing.ofNetwork(Network.LOCALNET).forNodes();
-		final var validatorKey = ECKeyPair.generateNew();
-		final var proxyKey = ECKeyPair.generateNew();
+  @Test
+  public void test_use_proxy_if_direct_connection_is_not_allowed() throws Exception {
+    final var nodeAddressing = Addressing.ofNetwork(Network.LOCALNET).forNodes();
+    final var validatorKey = ECKeyPair.generateNew();
+    final var proxyKey = ECKeyPair.generateNew();
 
-		final var validatorProps = defaultProperties();
-		validatorProps.set("network.p2p.proxy.authorized_proxies", nodeAddressing.of(proxyKey.getPublicKey()));
-		// validator can only connect to the proxy node
-		validatorProps.set("network.p2p.peer_whitelist", nodeAddressing.of(proxyKey.getPublicKey()));
+    final var validatorProps = defaultProperties();
+    validatorProps.set(
+        "network.p2p.proxy.authorized_proxies", nodeAddressing.of(proxyKey.getPublicKey()));
+    // validator can only connect to the proxy node
+    validatorProps.set("network.p2p.peer_whitelist", nodeAddressing.of(proxyKey.getPublicKey()));
 
-		final var proxyProps = defaultProperties();
-		proxyProps.set("network.p2p.proxy.enabled", "true");
-		proxyProps.set("network.p2p.proxy.authorized_proxied_nodes", nodeAddressing.of(validatorKey.getPublicKey()));
+    final var proxyProps = defaultProperties();
+    proxyProps.set("network.p2p.proxy.enabled", "true");
+    proxyProps.set(
+        "network.p2p.proxy.authorized_proxied_nodes",
+        nodeAddressing.of(validatorKey.getPublicKey()));
 
-		// a network with 3 nodes: a (hidden) validator, a proxy and a default "external" node
-		setupTestRunner(ImmutableList.of(
-			new NodeProps(validatorKey, validatorProps),
-			new NodeProps(proxyKey, proxyProps),
-			new NodeProps(ECKeyPair.generateNew(), defaultProperties())
-		));
+    // a network with 3 nodes: a (hidden) validator, a proxy and a default "external" node
+    setupTestRunner(
+        ImmutableList.of(
+            new NodeProps(validatorKey, validatorProps),
+            new NodeProps(proxyKey, proxyProps),
+            new NodeProps(ECKeyPair.generateNew(), defaultProperties())));
 
-		// the validator node has both the proxy and the external node in its address book
-		testNetworkRunner.addressBook(VALIDATOR_NODE).addUncheckedPeers(Set.of(uriOfNode(PROXY_NODE)));
-		testNetworkRunner.addressBook(VALIDATOR_NODE).addUncheckedPeers(Set.of(uriOfNode(EXTERNAL_NODE)));
+    // the validator node has both the proxy and the external node in its address book
+    testNetworkRunner.addressBook(VALIDATOR_NODE).addUncheckedPeers(Set.of(uriOfNode(PROXY_NODE)));
+    testNetworkRunner
+        .addressBook(VALIDATOR_NODE)
+        .addUncheckedPeers(Set.of(uriOfNode(EXTERNAL_NODE)));
 
-		// the proxy node has external node in its address book
-		testNetworkRunner.addressBook(PROXY_NODE).addUncheckedPeers(Set.of(uriOfNode(EXTERNAL_NODE)));
+    // the proxy node has external node in its address book
+    testNetworkRunner.addressBook(PROXY_NODE).addUncheckedPeers(Set.of(uriOfNode(EXTERNAL_NODE)));
 
-		// the validator sends a message to the external node
-		testNetworkRunner.messageCentral(VALIDATOR_NODE).send(nodeIdOf(EXTERNAL_NODE), new PeerPingMessage());
+    // the validator sends a message to the external node
+    testNetworkRunner
+        .messageCentral(VALIDATOR_NODE)
+        .send(nodeIdOf(EXTERNAL_NODE), new PeerPingMessage());
 
-		waitForMessagesAndProcessAll();
+    waitForMessagesAndProcessAll();
 
-		// proxy node should forward a single message
-		await()
-			.atMost(Duration.ofSeconds(2))
-			.until(() -> testNetworkRunner.counter(PROXY_NODE, CounterType.NETWORKING_ROUTING_FORWARDED_MESSAGES) == 1L);
+    // proxy node should forward a single message
+    await()
+        .atMost(Duration.ofSeconds(2))
+        .until(
+            () ->
+                testNetworkRunner.counter(
+                        PROXY_NODE, CounterType.NETWORKING_ROUTING_FORWARDED_MESSAGES)
+                    == 1L);
 
-		// validator should only be connected to the proxy node
-		final var connectedPeers = testNetworkRunner.peerManager(VALIDATOR_NODE).activeChannels().stream()
-			.map(PeerChannel::getRemoteNodeId)
-			.collect(Collectors.toSet());
-		assertTrue(connectedPeers.contains(nodeIdOf(PROXY_NODE)));
-		assertFalse(connectedPeers.contains(nodeIdOf(EXTERNAL_NODE)));
-	}
+    // validator should only be connected to the proxy node
+    final var connectedPeers =
+        testNetworkRunner.peerManager(VALIDATOR_NODE).activeChannels().stream()
+            .map(PeerChannel::getRemoteNodeId)
+            .collect(Collectors.toSet());
+    assertTrue(connectedPeers.contains(nodeIdOf(PROXY_NODE)));
+    assertFalse(connectedPeers.contains(nodeIdOf(EXTERNAL_NODE)));
+  }
 
-	private void waitForMessagesAndProcessAll() {
-		// a small hack to wait for the processing thread
-		await()
-			.atMost(Duration.ofSeconds(4))
-			.until(() -> !testNetworkRunner.getDeterministicNetwork().allMessages().isEmpty());
-		processAll();
-	}
+  private void waitForMessagesAndProcessAll() {
+    // a small hack to wait for the processing thread
+    await()
+        .atMost(Duration.ofSeconds(4))
+        .until(() -> !testNetworkRunner.getDeterministicNetwork().allMessages().isEmpty());
+    processAll();
+  }
 }

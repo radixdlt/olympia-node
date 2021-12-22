@@ -78,29 +78,28 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
-
 import java.util.List;
 import java.util.Optional;
 
 public class ProposalSerializeTest extends SerializeObject<Proposal> {
-	public ProposalSerializeTest() {
-		super(Proposal.class, ProposalSerializeTest::get);
-	}
+  public ProposalSerializeTest() {
+    super(Proposal.class, ProposalSerializeTest::get);
+  }
 
-	private static Proposal get() {
-		View view = View.of(1234567891L);
-		HashCode id = HashUtils.random256();
+  private static Proposal get() {
+    View view = View.of(1234567891L);
+    HashCode id = HashUtils.random256();
 
-		LedgerHeader ledgerHeader = LedgerHeader.mocked();
-		BFTHeader header = new BFTHeader(view, id, ledgerHeader);
-		BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
-		VoteData voteData = new VoteData(header, parent, null);
-		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		var txn = Txn.create(new byte[]{0, 1, 2, 3});
+    LedgerHeader ledgerHeader = LedgerHeader.mocked();
+    BFTHeader header = new BFTHeader(view, id, ledgerHeader);
+    BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
+    VoteData voteData = new VoteData(header, parent, null);
+    QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
+    var txn = Txn.create(new byte[] {0, 1, 2, 3});
 
-		// add a particle to ensure atom is valid and has at least one shard
-		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		UnverifiedVertex vertex = UnverifiedVertex.create(qc, view, List.of(txn), author);
-		return new Proposal(vertex, qc, ECDSASignature.zeroSignature(), Optional.empty());
-	}
+    // add a particle to ensure atom is valid and has at least one shard
+    BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
+    UnverifiedVertex vertex = UnverifiedVertex.create(qc, view, List.of(txn), author);
+    return new Proposal(vertex, qc, ECDSASignature.zeroSignature(), Optional.empty());
+  }
 }

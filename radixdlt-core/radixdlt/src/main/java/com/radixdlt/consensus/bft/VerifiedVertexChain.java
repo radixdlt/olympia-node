@@ -70,52 +70,50 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
-/**
- * A chain of vertices verified to be consistent
- */
+/** A chain of vertices verified to be consistent */
 @Immutable
 public final class VerifiedVertexChain {
-	private final ImmutableList<VerifiedVertex> vertices;
+  private final ImmutableList<VerifiedVertex> vertices;
 
-	private VerifiedVertexChain(ImmutableList<VerifiedVertex> vertices) {
-		this.vertices = vertices;
-	}
+  private VerifiedVertexChain(ImmutableList<VerifiedVertex> vertices) {
+    this.vertices = vertices;
+  }
 
-	public static VerifiedVertexChain create(List<VerifiedVertex> vertices) {
-		if (vertices.size() >= 2) {
-			for (int index = 1; index < vertices.size(); index++) {
-				HashCode parentId = vertices.get(index - 1).getId();
-				HashCode parentIdCheck = vertices.get(index).getParentId();
-				if (!parentId.equals(parentIdCheck)) {
-					throw new IllegalArgumentException(String.format("Invalid chain: %s", vertices));
-				}
-			}
-		}
+  public static VerifiedVertexChain create(List<VerifiedVertex> vertices) {
+    if (vertices.size() >= 2) {
+      for (int index = 1; index < vertices.size(); index++) {
+        HashCode parentId = vertices.get(index - 1).getId();
+        HashCode parentIdCheck = vertices.get(index).getParentId();
+        if (!parentId.equals(parentIdCheck)) {
+          throw new IllegalArgumentException(String.format("Invalid chain: %s", vertices));
+        }
+      }
+    }
 
-		return new VerifiedVertexChain(ImmutableList.copyOf(vertices));
-	}
+    return new VerifiedVertexChain(ImmutableList.copyOf(vertices));
+  }
 
-	public ImmutableList<VerifiedVertex> getVertices() {
-		return vertices;
-	}
+  public ImmutableList<VerifiedVertex> getVertices() {
+    return vertices;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{vertices=%s}", this.getClass().getSimpleName(), this.vertices);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{vertices=%s}", this.getClass().getSimpleName(), this.vertices);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hashCode(vertices);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(vertices);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof VerifiedVertexChain)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof VerifiedVertexChain)) {
+      return false;
+    }
 
-		VerifiedVertexChain other = (VerifiedVertexChain) o;
-		return Objects.equals(this.vertices, other.vertices);
-	}
+    VerifiedVertexChain other = (VerifiedVertexChain) o;
+    return Objects.equals(this.vertices, other.vertices);
+  }
 }

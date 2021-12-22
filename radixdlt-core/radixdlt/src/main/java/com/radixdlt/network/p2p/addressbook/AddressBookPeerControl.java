@@ -67,24 +67,23 @@ package com.radixdlt.network.p2p.addressbook;
 import com.google.inject.Inject;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
+import java.time.Duration;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.Duration;
-import java.util.Objects;
-
 public final class AddressBookPeerControl implements PeerControl {
-	private static final Logger log = LogManager.getLogger();
+  private static final Logger log = LogManager.getLogger();
 
-	private final AddressBook addressBook;
+  private final AddressBook addressBook;
 
-	@Inject
-	public AddressBookPeerControl(AddressBook addressBook) {
-		this.addressBook = Objects.requireNonNull(addressBook);
-	}
+  @Inject
+  public AddressBookPeerControl(AddressBook addressBook) {
+    this.addressBook = Objects.requireNonNull(addressBook);
+  }
 
-	public void banPeer(NodeId nodeId, Duration banDuration, String reason) {
-		log.info("Banning peer {} for {} because of {}", nodeId, banDuration, reason);
-		this.addressBook.banPeer(nodeId, banDuration);
-	}
+  public void banPeer(NodeId nodeId, Duration banDuration, String reason) {
+    log.info("Banning peer {} for {} because of {}", nodeId, banDuration, reason);
+    this.addressBook.banPeer(nodeId, banDuration);
+  }
 }

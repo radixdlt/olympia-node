@@ -67,33 +67,32 @@ package com.radixdlt.sync.messages.remote;
 import com.radixdlt.middleware2.network.StatusRequestMessage;
 
 /**
- * A request to get the current status of a remote node.
- * Node should respond with a StatusResponse message.
+ * A request to get the current status of a remote node. Node should respond with a StatusResponse
+ * message.
  */
 public final class StatusRequest {
 
-	public static StatusRequest create() {
-		return new StatusRequest();
-	}
+  public static StatusRequest create() {
+    return new StatusRequest();
+  }
 
-	private StatusRequest() {
-	}
+  private StatusRequest() {}
 
-	@Override
-	public String toString() {
-		return String.format("%s{}", this.getClass().getSimpleName());
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{}", this.getClass().getSimpleName());
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		return (o instanceof StatusRequestMessage);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    return (o instanceof StatusRequestMessage);
+  }
 
-	@Override
-	public int hashCode() {
-		return 1;
-	}
+  @Override
+  public int hashCode() {
+    return 1;
+  }
 }

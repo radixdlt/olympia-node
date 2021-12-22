@@ -66,28 +66,27 @@ package com.radixdlt.network.p2p.liveness;
 
 public final class Ping {
 
-	public static Ping create() {
-		return new Ping();
-	}
+  public static Ping create() {
+    return new Ping();
+  }
 
-	private Ping() {
-	}
+  private Ping() {}
 
-	@Override
-	public String toString() {
-		return String.format("%s{}", this.getClass().getSimpleName());
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{}", this.getClass().getSimpleName());
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		return o instanceof Ping;
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    return o instanceof Ping;
+  }
 
-	@Override
-	public int hashCode() {
-		return 1;
-	}
+  @Override
+  public int hashCode() {
+    return 1;
+  }
 }

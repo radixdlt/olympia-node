@@ -65,9 +65,8 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.serialization.DeserializeException;
-
 import java.nio.ByteBuffer;
 
 public interface KeyDeserializer {
-	Object deserialize(ByteBuffer buf) throws DeserializeException;
+  Object deserialize(ByteBuffer buf) throws DeserializeException;
 }

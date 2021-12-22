@@ -64,73 +64,72 @@
 
 package com.radixdlt.identifiers;
 
+import com.radixdlt.utils.Bits;
+import com.radixdlt.utils.Pair;
+import java.util.function.Function;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
-import com.radixdlt.utils.Bits;
-import com.radixdlt.utils.Pair;
-
-import java.util.function.Function;
-
 /**
- * A Radix resource identifier which encodes addresses with a resource behind them in
- * Bech-32 encoding.
+ * A Radix resource identifier which encodes addresses with a resource behind them in Bech-32
+ * encoding.
  *
- * The human-readable part is the alphanumeric argument provided when creating the
- * resource followed by "_rb" for betanet and "_rr" for mainnet.
+ * <p>The human-readable part is the alphanumeric argument provided when creating the resource
+ * followed by "_rb" for betanet and "_rr" for mainnet.
  *
- * The data part is a conversion of the 1-34 byte Radix Engine address
- * {@link com.radixdlt.identifiers.REAddr} to Base32 similar to specification described
- * in BIP_0173 for converting witness programs.
+ * <p>The data part is a conversion of the 1-34 byte Radix Engine address {@link
+ * com.radixdlt.identifiers.REAddr} to Base32 similar to specification described in BIP_0173 for
+ * converting witness programs.
  */
 public final class ResourceAddressing {
-	private final String hrpSuffix;
+  private final String hrpSuffix;
 
-	private ResourceAddressing(String hrpSuffix) {
-		this.hrpSuffix = hrpSuffix;
-	}
+  private ResourceAddressing(String hrpSuffix) {
+    this.hrpSuffix = hrpSuffix;
+  }
 
-	public static ResourceAddressing bech32(String hrpSuffix) {
-		return new ResourceAddressing(hrpSuffix);
-	}
+  public static ResourceAddressing bech32(String hrpSuffix) {
+    return new ResourceAddressing(hrpSuffix);
+  }
 
-	public String getHrpSuffix() {
-		return hrpSuffix;
-	}
+  public String getHrpSuffix() {
+    return hrpSuffix;
+  }
 
-	private static byte[] toBech32Data(byte[] bytes) {
-		return Bits.convertBits(bytes, 0, bytes.length, 8, 5, true);
-	}
+  private static byte[] toBech32Data(byte[] bytes) {
+    return Bits.convertBits(bytes, 0, bytes.length, 8, 5, true);
+  }
 
-	private static byte[] fromBech32Data(byte[] bytes) {
-		return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
-	}
+  private static byte[] fromBech32Data(byte[] bytes) {
+    return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
+  }
 
-	public <X extends Exception> Pair<String, REAddr> parseOrThrow(String rri, Function<String, X> exceptionSupplier) throws X {
-		Bech32.Bech32Data bech32Data;
-		try {
-			bech32Data = Bech32.decode(rri);
-		} catch (AddressFormatException e) {
-			throw exceptionSupplier.apply("Could not decode");
-		}
+  public <X extends Exception> Pair<String, REAddr> parseOrThrow(
+      String rri, Function<String, X> exceptionSupplier) throws X {
+    Bech32.Bech32Data bech32Data;
+    try {
+      bech32Data = Bech32.decode(rri);
+    } catch (AddressFormatException e) {
+      throw exceptionSupplier.apply("Could not decode");
+    }
 
-		if (!bech32Data.hrp.endsWith(hrpSuffix)) {
-			throw exceptionSupplier.apply("Address hrp suffix must be " + hrpSuffix + "(" + rri + ")");
-		}
+    if (!bech32Data.hrp.endsWith(hrpSuffix)) {
+      throw exceptionSupplier.apply("Address hrp suffix must be " + hrpSuffix + "(" + rri + ")");
+    }
 
-		var symbol = bech32Data.hrp.substring(0, bech32Data.hrp.length() - hrpSuffix.length());
-		var addrBytes = fromBech32Data(bech32Data.data);
-		try {
-			var readdr = REAddr.of(addrBytes);
-			return Pair.of(symbol, readdr);
-		} catch (IllegalArgumentException e) {
-			throw exceptionSupplier.apply(e.getMessage());
-		}
-	}
+    var symbol = bech32Data.hrp.substring(0, bech32Data.hrp.length() - hrpSuffix.length());
+    var addrBytes = fromBech32Data(bech32Data.data);
+    try {
+      var readdr = REAddr.of(addrBytes);
+      return Pair.of(symbol, readdr);
+    } catch (IllegalArgumentException e) {
+      throw exceptionSupplier.apply(e.getMessage());
+    }
+  }
 
-	public String of(String symbol, REAddr addr) {
-		var addrBytes = addr.getBytes();
-		var bech32Data = toBech32Data(addrBytes);
-		return Bech32.encode(symbol + hrpSuffix, bech32Data);
-	}
+  public String of(String symbol, REAddr addr) {
+    var addrBytes = addr.getBytes();
+    var bech32Data = toBech32Data(addrBytes);
+    return Bech32.encode(symbol + hrpSuffix, bech32Data);
+  }
 }

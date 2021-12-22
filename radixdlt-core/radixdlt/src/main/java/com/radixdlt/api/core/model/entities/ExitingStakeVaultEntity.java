@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.api.core.model.entities;
 
+import static com.radixdlt.atom.SubstateTypeId.EXITING_STAKE;
+
 import com.radixdlt.api.core.model.Entity;
 import com.radixdlt.api.core.model.KeyQuery;
 import com.radixdlt.api.core.model.ResourceQuery;
@@ -71,27 +74,26 @@ import com.radixdlt.application.tokens.state.ExitingStake;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import static com.radixdlt.atom.SubstateTypeId.EXITING_STAKE;
+public record ExitingStakeVaultEntity(
+    REAddr accountAddress, ECPublicKey validatorKey, long epochUnlock) implements Entity {
+  @Override
+  public List<ResourceQuery> getResourceQueries() {
+    var buf =
+        ByteBuffer.allocate(2 + Long.BYTES + ECPublicKey.COMPRESSED_BYTES + REAddr.PUB_KEY_BYTES);
+    buf.put(EXITING_STAKE.id());
+    buf.put((byte) 0); // Reserved byte
+    buf.putLong(epochUnlock);
+    buf.put(validatorKey.getCompressedBytes());
+    buf.put(accountAddress.getBytes());
+    var index = SubstateIndex.<ResourceInBucket>create(buf.array(), ExitingStake.class);
+    return List.of(ResourceQuery.from(index));
+  }
 
-public record ExitingStakeVaultEntity(REAddr accountAddress, ECPublicKey validatorKey, long epochUnlock) implements Entity {
-	@Override
-	public List<ResourceQuery> getResourceQueries() {
-		var buf = ByteBuffer.allocate(2 + Long.BYTES + ECPublicKey.COMPRESSED_BYTES + REAddr.PUB_KEY_BYTES);
-		buf.put(EXITING_STAKE.id());
-		buf.put((byte) 0); // Reserved byte
-		buf.putLong(epochUnlock);
-		buf.put(validatorKey.getCompressedBytes());
-		buf.put(accountAddress.getBytes());
-		var index = SubstateIndex.<ResourceInBucket>create(buf.array(), ExitingStake.class);
-		return List.of(ResourceQuery.from(index));
-	}
-
-	@Override
-	public List<KeyQuery> getKeyQueries() {
-		return List.of();
-	}
+  @Override
+  public List<KeyQuery> getKeyQueries() {
+    return List.of();
+  }
 }

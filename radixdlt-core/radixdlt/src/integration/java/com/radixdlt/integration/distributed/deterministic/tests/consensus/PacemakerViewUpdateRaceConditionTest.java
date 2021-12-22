@@ -64,6 +64,8 @@
 
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -86,8 +88,6 @@ import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
 import com.radixdlt.utils.KeyComparator;
 import io.reactivex.rxjava3.schedulers.Timed;
-import org.junit.Test;
-
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -96,101 +96,109 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.Test;
 
 /**
- * This test checks that when race condition is introduced (by delaying ViewUpdate and BFTInsertUpdate messages) then
- * the Pacemaker can form a valid timeout vote for an empty proposal.
+ * This test checks that when race condition is introduced (by delaying ViewUpdate and
+ * BFTInsertUpdate messages) then the Pacemaker can form a valid timeout vote for an empty proposal.
  * Specifically, it checks whether the vertices it inserts use a correct parent.
  */
 public class PacemakerViewUpdateRaceConditionTest {
 
-	private static final Random random = new Random(123456);
+  private static final Random random = new Random(123456);
 
-	private static final int numNodes = 4;
-	private static final int nodeUnderTestIndex = 2; // leader for view 2
-	private static final long pacemakerTimeout = 1000L;
-	private static final long additionalMessageDelay = pacemakerTimeout + 1000L;
+  private static final int numNodes = 4;
+  private static final int nodeUnderTestIndex = 2; // leader for view 2
+  private static final long pacemakerTimeout = 1000L;
+  private static final long additionalMessageDelay = pacemakerTimeout + 1000L;
 
-	@Test
-	public void test_pacemaker_view_update_race_condition() {
-		final DeterministicTest test = DeterministicTest.builder()
-			.numNodes(numNodes)
-			.messageSelector(MessageSelector.randomSelector(random))
-			.messageMutator(messUpMessagesForNodeUnderTest())
-			.pacemakerTimeout(pacemakerTimeout)
-			.overrideWithIncorrectModule(new AbstractModule() {
-				@ProvidesIntoSet
-				@ProcessOnDispatch
-				private EventProcessor<BFTInsertUpdate> bftInsertUpdateProcessor() {
-					final Map<HashCode, PreparedVertex> insertedVertices = new HashMap<>();
-					return bftInsertUpdate -> {
-						final PreparedVertex inserted = bftInsertUpdate.getInserted();
-						insertedVertices.putIfAbsent(inserted.getId(), inserted);
-						final Optional<PreparedVertex> maybeParent =
-							Optional.ofNullable(insertedVertices.get(inserted.getParentId()));
+  @Test
+  public void test_pacemaker_view_update_race_condition() {
+    final DeterministicTest test =
+        DeterministicTest.builder()
+            .numNodes(numNodes)
+            .messageSelector(MessageSelector.randomSelector(random))
+            .messageMutator(messUpMessagesForNodeUnderTest())
+            .pacemakerTimeout(pacemakerTimeout)
+            .overrideWithIncorrectModule(
+                new AbstractModule() {
+                  @ProvidesIntoSet
+                  @ProcessOnDispatch
+                  private EventProcessor<BFTInsertUpdate> bftInsertUpdateProcessor() {
+                    final Map<HashCode, PreparedVertex> insertedVertices = new HashMap<>();
+                    return bftInsertUpdate -> {
+                      final PreparedVertex inserted = bftInsertUpdate.getInserted();
+                      insertedVertices.putIfAbsent(inserted.getId(), inserted);
+                      final Optional<PreparedVertex> maybeParent =
+                          Optional.ofNullable(insertedVertices.get(inserted.getParentId()));
 
-						maybeParent.ifPresent(parent -> {
-							if (parent.getView().equals(inserted.getView())) {
-								throw new IllegalStateException("Vertex can't have the same view as its parent.");
-							}
-						});
-					};
-				}
+                      maybeParent.ifPresent(
+                          parent -> {
+                            if (parent.getView().equals(inserted.getView())) {
+                              throw new IllegalStateException(
+                                  "Vertex can't have the same view as its parent.");
+                            }
+                          });
+                    };
+                  }
 
-				@Provides
-				public ProposerElection proposerElection(BFTValidatorSet validatorSet) {
-					final List<BFTNode> sortedValidators =
-						validatorSet.getValidators().stream()
-							.map(BFTValidator::getNode)
-							.sorted(Comparator.comparing(BFTNode::getKey, KeyComparator.instance().reversed()))
-							.collect(Collectors.toList());
-					return view -> sortedValidators.get(((int) view.number() - 1) % sortedValidators.size());
-				}
-			})
-			.buildWithoutEpochs()
-			.runUntil(nodeUnderTestReachesView(View.of(3)));
+                  @Provides
+                  public ProposerElection proposerElection(BFTValidatorSet validatorSet) {
+                    final List<BFTNode> sortedValidators =
+                        validatorSet.getValidators().stream()
+                            .map(BFTValidator::getNode)
+                            .sorted(
+                                Comparator.comparing(
+                                    BFTNode::getKey, KeyComparator.instance().reversed()))
+                            .collect(Collectors.toList());
+                    return view ->
+                        sortedValidators.get(((int) view.number() - 1) % sortedValidators.size());
+                  }
+                })
+            .buildWithoutEpochs()
+            .runUntil(nodeUnderTestReachesView(View.of(3)));
 
-		final var counters = test.getSystemCounters(nodeUnderTestIndex);
-		assertThat(counters.get(SystemCounters.CounterType.BFT_VOTE_QUORUMS)).isEqualTo(2); // ensure that quorum was formed
-		assertThat(counters.get(SystemCounters.CounterType.BFT_PACEMAKER_TIMEOUTS_SENT)).isEqualTo(2); // ensure that timeouts were processed
-	}
+    final var counters = test.getSystemCounters(nodeUnderTestIndex);
+    assertThat(counters.get(SystemCounters.CounterType.BFT_VOTE_QUORUMS))
+        .isEqualTo(2); // ensure that quorum was formed
+    assertThat(counters.get(SystemCounters.CounterType.BFT_PACEMAKER_TIMEOUTS_SENT))
+        .isEqualTo(2); // ensure that timeouts were processed
+  }
 
-	private static Predicate<Timed<ControlledMessage>> nodeUnderTestReachesView(View view) {
-		return timedMsg -> {
-			final ControlledMessage message = timedMsg.value();
-			if (!(message.message() instanceof ViewUpdate)) {
-				return false;
-			}
-			final ViewUpdate p = (ViewUpdate) message.message();
-			return message.channelId().receiverIndex() == nodeUnderTestIndex
-					&& p.getCurrentView().gte(view);
-		};
-	}
+  private static Predicate<Timed<ControlledMessage>> nodeUnderTestReachesView(View view) {
+    return timedMsg -> {
+      final ControlledMessage message = timedMsg.value();
+      if (!(message.message() instanceof ViewUpdate)) {
+        return false;
+      }
+      final ViewUpdate p = (ViewUpdate) message.message();
+      return message.channelId().receiverIndex() == nodeUnderTestIndex
+          && p.getCurrentView().gte(view);
+    };
+  }
 
-	private static MessageMutator messUpMessagesForNodeUnderTest() {
-		return (message, queue) -> {
-			// we only mess up messages for the test node
-			if (message.channelId().receiverIndex() != nodeUnderTestIndex) {
-				return false;
-			}
+  private static MessageMutator messUpMessagesForNodeUnderTest() {
+    return (message, queue) -> {
+      // we only mess up messages for the test node
+      if (message.channelId().receiverIndex() != nodeUnderTestIndex) {
+        return false;
+      }
 
-			// the unlucky node doesn't receive a Proposal and its next ViewUpdate and BFTInsertUpdate messages are delayed
-			// Proposal is dropped so that the node creates an empty timeout vote, and not a timeout of a previous vote
-			final Object msg = message.message();
-			if (msg instanceof ViewUpdate
-					&& ((ViewUpdate) msg).getCurrentView().equals(View.of(2))) {
-				queue.add(message.withAdditionalDelay(additionalMessageDelay));
-				return true;
-			} else if (msg instanceof BFTInsertUpdate
-					&& ((BFTInsertUpdate) msg).getInserted().getView().equals(View.of(1))) {
-				queue.add(message.withAdditionalDelay(additionalMessageDelay));
-				return true;
-			} else {
-				return msg instanceof Proposal
-					&& ((Proposal) msg).getView().equals(View.of(1));
-			}
-		};
-	}
+      // the unlucky node doesn't receive a Proposal and its next ViewUpdate and BFTInsertUpdate
+      // messages are delayed
+      // Proposal is dropped so that the node creates an empty timeout vote, and not a timeout of a
+      // previous vote
+      final Object msg = message.message();
+      if (msg instanceof ViewUpdate && ((ViewUpdate) msg).getCurrentView().equals(View.of(2))) {
+        queue.add(message.withAdditionalDelay(additionalMessageDelay));
+        return true;
+      } else if (msg instanceof BFTInsertUpdate
+          && ((BFTInsertUpdate) msg).getInserted().getView().equals(View.of(1))) {
+        queue.add(message.withAdditionalDelay(additionalMessageDelay));
+        return true;
+      } else {
+        return msg instanceof Proposal && ((Proposal) msg).getView().equals(View.of(1));
+      }
+    };
+  }
 }

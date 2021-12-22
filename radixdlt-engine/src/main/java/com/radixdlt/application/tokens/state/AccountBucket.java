@@ -65,80 +65,79 @@
 package com.radixdlt.application.tokens.state;
 
 import com.radixdlt.application.tokens.Bucket;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-
 import java.util.Objects;
 
 public final class AccountBucket implements Bucket {
-	private final REAddr resourceAddress;
-	private final REAddr holdingAddress;
+  private final REAddr resourceAddress;
+  private final REAddr holdingAddress;
 
-	private AccountBucket(REAddr resourceAddress, REAddr holdingAddress) {
-		this.resourceAddress = resourceAddress;
-		this.holdingAddress = holdingAddress;
-	}
+  private AccountBucket(REAddr resourceAddress, REAddr holdingAddress) {
+    this.resourceAddress = resourceAddress;
+    this.holdingAddress = holdingAddress;
+  }
 
-	public static AccountBucket from(REAddr resourceAddress, REAddr holdingAddress) {
-		return new AccountBucket(resourceAddress, holdingAddress);
-	}
+  public static AccountBucket from(REAddr resourceAddress, REAddr holdingAddress) {
+    return new AccountBucket(resourceAddress, holdingAddress);
+  }
 
-	@Override
-	public Authorization withdrawAuthorization() {
-		return new Authorization(
-			PermissionLevel.USER,
-			(r, c) -> {
-				try {
-					holdingAddress.verifyWithdrawAuthorization(c.key());
-				} catch (REAddr.BucketWithdrawAuthorizationException e) {
-					throw new AuthorizationException(e.getMessage());
-				}
-			}
-		);
-	}
+  @Override
+  public Authorization withdrawAuthorization() {
+    return new Authorization(
+        PermissionLevel.USER,
+        (r, c) -> {
+          try {
+            holdingAddress.verifyWithdrawAuthorization(c.key());
+          } catch (REAddr.BucketWithdrawAuthorizationException e) {
+            throw new AuthorizationException(e.getMessage());
+          }
+        });
+  }
 
-	@Override
-	public REAddr resourceAddr() {
-		return resourceAddress;
-	}
+  @Override
+  public REAddr resourceAddr() {
+    return resourceAddress;
+  }
 
-	@Override
-	public REAddr getOwner() {
-		return holdingAddress;
-	}
+  @Override
+  public REAddr getOwner() {
+    return holdingAddress;
+  }
 
-	@Override
-	public ECPublicKey getValidatorKey() {
-		return null;
-	}
+  @Override
+  public ECPublicKey getValidatorKey() {
+    return null;
+  }
 
-	@Override
-	public Long getEpochUnlock() {
-		// This should still be null as its a different epoch unlock
-		return null;
-	}
+  @Override
+  public Long getEpochUnlock() {
+    // This should still be null as its a different epoch unlock
+    return null;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{res=%s owner=%s}", this.getClass().getSimpleName(), resourceAddress, holdingAddress);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{res=%s owner=%s}", this.getClass().getSimpleName(), resourceAddress, holdingAddress);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(holdingAddress, resourceAddress);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(holdingAddress, resourceAddress);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof AccountBucket)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof AccountBucket)) {
+      return false;
+    }
 
-		var other = (AccountBucket) o;
-		return Objects.equals(this.holdingAddress, other.holdingAddress)
-			&& Objects.equals(this.resourceAddress, other.resourceAddress);
-	}
+    var other = (AccountBucket) o;
+    return Objects.equals(this.holdingAddress, other.holdingAddress)
+        && Objects.equals(this.resourceAddress, other.resourceAddress);
+  }
 }

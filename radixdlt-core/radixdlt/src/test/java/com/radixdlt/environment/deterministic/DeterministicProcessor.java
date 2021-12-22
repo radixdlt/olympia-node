@@ -70,71 +70,71 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.StartProcessorOnRunner;
-
-import javax.inject.Inject;
 import java.util.Objects;
 import java.util.Set;
+import javax.inject.Inject;
 
 public final class DeterministicProcessor {
-	private final BFTNode self;
-	private final Set<StartProcessorOnRunner> startProcessors;
-	private final Set<EventProcessorOnRunner<?>> processorOnRunners;
-	private final Set<RemoteEventProcessorOnRunner<?>> remoteProcessorOnRunners;
+  private final BFTNode self;
+  private final Set<StartProcessorOnRunner> startProcessors;
+  private final Set<EventProcessorOnRunner<?>> processorOnRunners;
+  private final Set<RemoteEventProcessorOnRunner<?>> remoteProcessorOnRunners;
 
-	@Inject
-	public DeterministicProcessor(
-		@Self BFTNode self,
-		Set<StartProcessorOnRunner> startProcessors,
-		Set<EventProcessorOnRunner<?>> processorOnRunners,
-		Set<RemoteEventProcessorOnRunner<?>> remoteProcessorOnRunners
-	) {
-		this.self = Objects.requireNonNull(self);
-		this.startProcessors = Objects.requireNonNull(startProcessors);
-		this.processorOnRunners = Objects.requireNonNull(processorOnRunners);
-		this.remoteProcessorOnRunners = Objects.requireNonNull(remoteProcessorOnRunners);
-	}
+  @Inject
+  public DeterministicProcessor(
+      @Self BFTNode self,
+      Set<StartProcessorOnRunner> startProcessors,
+      Set<EventProcessorOnRunner<?>> processorOnRunners,
+      Set<RemoteEventProcessorOnRunner<?>> remoteProcessorOnRunners) {
+    this.self = Objects.requireNonNull(self);
+    this.startProcessors = Objects.requireNonNull(startProcessors);
+    this.processorOnRunners = Objects.requireNonNull(processorOnRunners);
+    this.remoteProcessorOnRunners = Objects.requireNonNull(remoteProcessorOnRunners);
+  }
 
-	public BFTNode self() {
-		return self;
-	}
+  public BFTNode self() {
+    return self;
+  }
 
-	public void start() {
-		startProcessors.forEach(p -> p.getProcessor().start());
-	}
+  public void start() {
+    startProcessors.forEach(p -> p.getProcessor().start());
+  }
 
-	@SuppressWarnings("unchecked")
-	private static <T> boolean tryExecute(T event, TypeLiteral<?> msgType, EventProcessorOnRunner<?> processor) {
-		if (msgType != null) {
-			var typeLiteral = (TypeLiteral<T>) msgType;
-			final var maybeProcessor = processor.getProcessor(typeLiteral);
-			maybeProcessor.ifPresent(p -> p.process(event));
-			return maybeProcessor.isPresent();
-		} else {
-			final var eventClass = (Class<T>) event.getClass();
-			final var maybeProcessor = processor.getProcessor(eventClass);
-			maybeProcessor.ifPresent(p -> p.process(event));
-			return maybeProcessor.isPresent();
-		}
-	}
+  @SuppressWarnings("unchecked")
+  private static <T> boolean tryExecute(
+      T event, TypeLiteral<?> msgType, EventProcessorOnRunner<?> processor) {
+    if (msgType != null) {
+      var typeLiteral = (TypeLiteral<T>) msgType;
+      final var maybeProcessor = processor.getProcessor(typeLiteral);
+      maybeProcessor.ifPresent(p -> p.process(event));
+      return maybeProcessor.isPresent();
+    } else {
+      final var eventClass = (Class<T>) event.getClass();
+      final var maybeProcessor = processor.getProcessor(eventClass);
+      maybeProcessor.ifPresent(p -> p.process(event));
+      return maybeProcessor.isPresent();
+    }
+  }
 
-	@SuppressWarnings("unchecked")
-	private static <T> boolean tryExecute(BFTNode origin, T event, RemoteEventProcessorOnRunner<?> processor) {
-		final var eventClass = (Class<T>) event.getClass();
-		final var maybeProcessor = processor.getProcessor(eventClass);
-		maybeProcessor.ifPresent(p -> p.process(origin, event));
-		return maybeProcessor.isPresent();
-	}
+  @SuppressWarnings("unchecked")
+  private static <T> boolean tryExecute(
+      BFTNode origin, T event, RemoteEventProcessorOnRunner<?> processor) {
+    final var eventClass = (Class<T>) event.getClass();
+    final var maybeProcessor = processor.getProcessor(eventClass);
+    maybeProcessor.ifPresent(p -> p.process(origin, event));
+    return maybeProcessor.isPresent();
+  }
 
-	public void handleMessage(BFTNode origin, Object message, TypeLiteral<?> msgType) {
-		boolean messageHandled = false;
-		if (Objects.equals(self, origin)) {
-			for (EventProcessorOnRunner<?> p : processorOnRunners) {
-				messageHandled = tryExecute(message, msgType, p) || messageHandled;
-			}
-		} else {
-			for (RemoteEventProcessorOnRunner<?> p : remoteProcessorOnRunners) {
-				messageHandled = tryExecute(origin, message, p) || messageHandled;
-			}
-		}
-	}
+  public void handleMessage(BFTNode origin, Object message, TypeLiteral<?> msgType) {
+    boolean messageHandled = false;
+    if (Objects.equals(self, origin)) {
+      for (EventProcessorOnRunner<?> p : processorOnRunners) {
+        messageHandled = tryExecute(message, msgType, p) || messageHandled;
+      }
+    } else {
+      for (RemoteEventProcessorOnRunner<?> p : remoteProcessorOnRunners) {
+        messageHandled = tryExecute(origin, message, p) || messageHandled;
+      }
+    }
+  }
 }

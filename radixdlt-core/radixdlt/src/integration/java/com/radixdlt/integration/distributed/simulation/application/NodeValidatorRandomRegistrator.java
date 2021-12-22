@@ -79,54 +79,58 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
-
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Register and unregisters nodes as validators randomly
- */
+/** Register and unregisters nodes as validators randomly */
 public final class NodeValidatorRandomRegistrator implements SimulationTest.SimulationNetworkActor {
-	private Disposable disposable;
-	private final Random random;
+  private Disposable disposable;
+  private final Random random;
 
-	@Inject
-	public NodeValidatorRandomRegistrator(Random random) {
-		this.random = random;
-	}
+  @Inject
+  public NodeValidatorRandomRegistrator(Random random) {
+    this.random = random;
+  }
 
-	@Override
-	public void start(SimulationNodes.RunningNetwork network) {
-		List<BFTNode> nodes = network.getNodes();
-		this.disposable = Observable.interval(1, 1, TimeUnit.SECONDS)
-			// Don't unregister node0/node1 so we are assured validatorSet never becomes empty
-			.map(i -> nodes.get(random.nextInt(nodes.size() - 2) + 2))
-			.subscribe(node -> {
-				var txnConstructionRequest = TxnConstructionRequest.create();
-				if (random.nextBoolean()) {
-					txnConstructionRequest.registerAsValidator(node.getKey());
-				} else {
-					txnConstructionRequest.unregisterAsValidator(node.getKey());
-				}
+  @Override
+  public void start(SimulationNodes.RunningNetwork network) {
+    List<BFTNode> nodes = network.getNodes();
+    this.disposable =
+        Observable.interval(1, 1, TimeUnit.SECONDS)
+            // Don't unregister node0/node1 so we are assured validatorSet never becomes empty
+            .map(i -> nodes.get(random.nextInt(nodes.size() - 2) + 2))
+            .subscribe(
+                node -> {
+                  var txnConstructionRequest = TxnConstructionRequest.create();
+                  if (random.nextBoolean()) {
+                    txnConstructionRequest.registerAsValidator(node.getKey());
+                  } else {
+                    txnConstructionRequest.unregisterAsValidator(node.getKey());
+                  }
 
-				var radixEngine = network.getNodeInjector(node)
-					.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() { }));
-				var radixEngineStateComputer = network.getNodeInjector(node)
-					.getInstance(RadixEngineStateComputer.class);
-				var hashSigner = network.getNodeInjector(node).getInstance(HashSigner.class);
+                  var radixEngine =
+                      network
+                          .getNodeInjector(node)
+                          .getInstance(
+                              Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() {}));
+                  var radixEngineStateComputer =
+                      network.getNodeInjector(node).getInstance(RadixEngineStateComputer.class);
+                  var hashSigner = network.getNodeInjector(node).getInstance(HashSigner.class);
 
-				var txBuilder = radixEngine.construct(txnConstructionRequest.feePayer(REAddr.ofPubKeyAccount(node.getKey())));
-				var txn = txBuilder.signAndBuild(hashSigner::sign);
-				try {
-					radixEngineStateComputer.addToMempool(txn);
-				} catch (MempoolRejectedException ignored) {
-				}
-			});
-	}
+                  var txBuilder =
+                      radixEngine.construct(
+                          txnConstructionRequest.feePayer(REAddr.ofPubKeyAccount(node.getKey())));
+                  var txn = txBuilder.signAndBuild(hashSigner::sign);
+                  try {
+                    radixEngineStateComputer.addToMempool(txn);
+                  } catch (MempoolRejectedException ignored) {
+                  }
+                });
+  }
 
-	@Override
-	public void stop() {
-		this.disposable.dispose();
-	}
+  @Override
+  public void stop() {
+    this.disposable.dispose();
+  }
 }

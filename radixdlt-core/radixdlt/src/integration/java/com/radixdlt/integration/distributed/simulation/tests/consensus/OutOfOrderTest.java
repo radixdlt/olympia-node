@@ -67,12 +67,12 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import java.util.Collection;
 import java.util.List;
 import java.util.LongSummaryStatistics;
@@ -85,54 +85,50 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 /**
- * Test where network does not guarantee ordering of messages.
- * BFT logic including BFT-sync should not be dependent on
- * message ordering so all properties of the system should hold intact.
+ * Test where network does not guarantee ordering of messages. BFT logic including BFT-sync should
+ * not be dependent on message ordering so all properties of the system should hold intact.
  */
 @RunWith(Parameterized.class)
 public final class OutOfOrderTest {
-	private static final Logger logger = LogManager.getLogger();
+  private static final Logger logger = LogManager.getLogger();
 
-	@Parameters
-	public static Collection<Object[]> numNodes() {
-		return List.of(new Object[][] {
-			{4}, {10}
-		});
-	}
+  @Parameters
+  public static Collection<Object[]> numNodes() {
+    return List.of(new Object[][] {{4}, {10}});
+  }
 
-	private final int minLatency = 10;
-	private final int maxLatency = 200;
-	private final Builder bftTestBuilder;
+  private final int minLatency = 10;
+  private final int maxLatency = 200;
+  private final Builder bftTestBuilder;
 
-	public OutOfOrderTest(int numNodes) {
-		this.bftTestBuilder = SimulationTest.builder()
-			.numNodes(numNodes)
-			.networkModules(
-				NetworkOrdering.outOfOrder(),
-				NetworkLatencies.random(minLatency, maxLatency),
-				NetworkDroppers.fRandomProposalsPerViewDropped()
-			)
-			.pacemakerTimeout(5000)
-			.addTestModules(
-				ConsensusMonitors.safety(),
-				ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS),
-				ConsensusMonitors.directParents()
-			);
-	}
+  public OutOfOrderTest(int numNodes) {
+    this.bftTestBuilder =
+        SimulationTest.builder()
+            .numNodes(numNodes)
+            .networkModules(
+                NetworkOrdering.outOfOrder(),
+                NetworkLatencies.random(minLatency, maxLatency),
+                NetworkDroppers.fRandomProposalsPerViewDropped())
+            .pacemakerTimeout(5000)
+            .addTestModules(
+                ConsensusMonitors.safety(),
+                ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS),
+                ConsensusMonitors.directParents());
+  }
 
-	@Test
-	public void out_of_order_messaging_should_not_affect_properties_of_system() {
-		SimulationTest test = bftTestBuilder
-			.build();
+  @Test
+  public void out_of_order_messaging_should_not_affect_properties_of_system() {
+    SimulationTest test = bftTestBuilder.build();
 
-		final var runningTest = test.run();
-		final var checkResults = runningTest.awaitCompletion();
+    final var runningTest = test.run();
+    final var checkResults = runningTest.awaitCompletion();
 
-		LongSummaryStatistics statistics = runningTest.getNetwork().getSystemCounters().values().stream()
-			.map(s -> s.get(CounterType.BFT_SYNC_REQUESTS_SENT))
-			.mapToLong(l -> l)
-			.summaryStatistics();
-		logger.info(statistics);
-		assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
-	}
+    LongSummaryStatistics statistics =
+        runningTest.getNetwork().getSystemCounters().values().stream()
+            .map(s -> s.get(CounterType.BFT_SYNC_REQUESTS_SENT))
+            .mapToLong(l -> l)
+            .summaryStatistics();
+    logger.info(statistics);
+    assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
+  }
 }

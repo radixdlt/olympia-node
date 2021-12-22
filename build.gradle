@@ -151,6 +151,7 @@ allprojects {
             // apply a specific flavor of google-java-format
             googleJavaFormat('1.13.0').reflowLongStrings()
 
+            targetExclude('**/openapitools/**/*.java')
 
             // make sure every file has the following copyright header.
             // optionally, Spotless can set copyright years by digging

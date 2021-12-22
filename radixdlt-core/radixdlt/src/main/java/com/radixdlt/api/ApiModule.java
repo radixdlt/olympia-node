@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -75,73 +76,71 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.util.StatusCodes;
-
 import java.util.Map;
 
 public final class ApiModule extends AbstractModule {
-	private static final int MAXIMUM_CONCURRENT_REQUESTS = Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
-	private static final int QUEUE_SIZE = 2000;
+  private static final int MAXIMUM_CONCURRENT_REQUESTS =
+      Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
+  private static final int QUEUE_SIZE = 2000;
 
-	private final int port;
-	private final String bindAddress;
-	private final boolean enableTransactions;
-	private final boolean enableSign;
+  private final int port;
+  private final String bindAddress;
+  private final boolean enableTransactions;
+  private final boolean enableSign;
 
-	public ApiModule(
-		String bindAddress,
-		int port,
-		boolean enableTransactions,
-		boolean enableSign
-	) {
-		this.bindAddress = bindAddress;
-		this.port = port;
-		this.enableTransactions = enableTransactions;
-		this.enableSign = enableSign;
-	}
+  public ApiModule(String bindAddress, int port, boolean enableTransactions, boolean enableSign) {
+    this.bindAddress = bindAddress;
+    this.port = port;
+    this.enableTransactions = enableTransactions;
+    this.enableSign = enableSign;
+  }
 
-	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class);
-		install(new SystemApiModule());
-		install(new CoreApiModule(enableTransactions, enableSign));
-	}
+  @Override
+  public void configure() {
+    MapBinder.newMapBinder(binder(), String.class, HttpHandler.class);
+    install(new SystemApiModule());
+    install(new CoreApiModule(enableTransactions, enableSign));
+  }
 
-	private static void fallbackHandler(HttpServerExchange exchange) {
-		exchange.setStatusCode(StatusCodes.NOT_FOUND);
-		exchange.getResponseSender().send(
-			"No matching path found for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
-		);
-	}
+  private static void fallbackHandler(HttpServerExchange exchange) {
+    exchange.setStatusCode(StatusCodes.NOT_FOUND);
+    exchange
+        .getResponseSender()
+        .send(
+            "No matching path found for "
+                + exchange.getRequestMethod()
+                + " "
+                + exchange.getRequestPath());
+  }
 
-	private static void invalidMethodHandler(HttpServerExchange exchange) {
-		exchange.setStatusCode(StatusCodes.NOT_ACCEPTABLE);
-		exchange.getResponseSender().send(
-			"Invalid method, path exists for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
-		);
-	}
+  private static void invalidMethodHandler(HttpServerExchange exchange) {
+    exchange.setStatusCode(StatusCodes.NOT_ACCEPTABLE);
+    exchange
+        .getResponseSender()
+        .send(
+            "Invalid method, path exists for "
+                + exchange.getRequestMethod()
+                + " "
+                + exchange.getRequestPath());
+  }
 
-	private HttpHandler configureRoutes(Map<HandlerRoute, HttpHandler> handlers) {
-		var handler = Handlers.routing(true); // add path params to query params with this flag
-		handlers.forEach((r, h) -> handler.add(r.method(), r.path(), h));
-		handler.setFallbackHandler(ApiModule::fallbackHandler);
-		handler.setInvalidMethodHandler(ApiModule::invalidMethodHandler);
-		var exceptionHandler = Handlers.exceptionHandler(handler);
-		exceptionHandler.addExceptionHandler(Exception.class, new UnhandledExceptionHandler());
-		return exceptionHandler;
-	}
+  private HttpHandler configureRoutes(Map<HandlerRoute, HttpHandler> handlers) {
+    var handler = Handlers.routing(true); // add path params to query params with this flag
+    handlers.forEach((r, h) -> handler.add(r.method(), r.path(), h));
+    handler.setFallbackHandler(ApiModule::fallbackHandler);
+    handler.setInvalidMethodHandler(ApiModule::invalidMethodHandler);
+    var exceptionHandler = Handlers.exceptionHandler(handler);
+    exceptionHandler.addExceptionHandler(Exception.class, new UnhandledExceptionHandler());
+    return exceptionHandler;
+  }
 
-	@Provides
-	@Singleton
-	public Undertow undertow(Map<HandlerRoute, HttpHandler> handlers) {
-		var handler = new RequestLimitingHandler(
-			MAXIMUM_CONCURRENT_REQUESTS,
-			QUEUE_SIZE,
-			configureRoutes(handlers)
-		);
+  @Provides
+  @Singleton
+  public Undertow undertow(Map<HandlerRoute, HttpHandler> handlers) {
+    var handler =
+        new RequestLimitingHandler(
+            MAXIMUM_CONCURRENT_REQUESTS, QUEUE_SIZE, configureRoutes(handlers));
 
-		return Undertow.builder()
-			.addHttpListener(port, bindAddress)
-			.setHandler(handler)
-			.build();
-	}
+    return Undertow.builder().addHttpListener(port, bindAddress).setHandler(handler).build();
+  }
 }

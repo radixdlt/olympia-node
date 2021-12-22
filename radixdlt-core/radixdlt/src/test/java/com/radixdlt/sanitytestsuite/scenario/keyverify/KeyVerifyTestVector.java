@@ -64,23 +64,23 @@
 
 package com.radixdlt.sanitytestsuite.scenario.keyverify;
 
-import com.radixdlt.sanitytestsuite.model.SanityTestVector;
-
 import static com.radixdlt.sanitytestsuite.scenario.keyverify.KeyVerifyTestVector.Expected;
 import static com.radixdlt.sanitytestsuite.scenario.keyverify.KeyVerifyTestVector.Input;
 
+import com.radixdlt.sanitytestsuite.model.SanityTestVector;
+
 // CHECKSTYLE:OFF checkstyle:VisibilityModifier
 public final class KeyVerifyTestVector extends SanityTestVector<Input, Expected> {
-	public static final class Input {
-		public String comment;
-		public int wycheProofVectorId;
-		public String msg;
-		public String publicKeyUncompressed;
-		public String signatureDerEncoded;
-	}
+  public static final class Input {
+    public String comment;
+    public int wycheProofVectorId;
+    public String msg;
+    public String publicKeyUncompressed;
+    public String signatureDerEncoded;
+  }
 
-	public static final class Expected {
-		public boolean isValid;
-	}
+  public static final class Expected {
+    public boolean isValid;
+  }
 }
 // CHECKSTYLE:ON checkstyle:VisibilityModifier

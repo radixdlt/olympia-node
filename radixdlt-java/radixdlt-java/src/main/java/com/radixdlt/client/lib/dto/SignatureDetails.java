@@ -68,64 +68,61 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
-
 import java.util.Objects;
 
 public final class SignatureDetails {
-	private final ECPublicKey key;
-	private final String signature;
-	private final long timestamp;
+  private final ECPublicKey key;
+  private final String signature;
+  private final long timestamp;
 
-	private SignatureDetails(ECPublicKey key, String signature, long timestamp) {
-		this.key = key;
-		this.signature = signature;
-		this.timestamp = timestamp;
-	}
+  private SignatureDetails(ECPublicKey key, String signature, long timestamp) {
+    this.key = key;
+    this.signature = signature;
+    this.timestamp = timestamp;
+  }
 
-	@JsonCreator
-	public static SignatureDetails create(
-		@JsonProperty(value = "key", required = true) String key,
-		@JsonProperty(value = "signature", required = true) String signature,
-		@JsonProperty(value = "timestamp", required = true) long timestamp
-	) throws PublicKeyException {
-		return new SignatureDetails(ECPublicKey.fromHex(key), signature, timestamp);
-	}
+  @JsonCreator
+  public static SignatureDetails create(
+      @JsonProperty(value = "key", required = true) String key,
+      @JsonProperty(value = "signature", required = true) String signature,
+      @JsonProperty(value = "timestamp", required = true) long timestamp)
+      throws PublicKeyException {
+    return new SignatureDetails(ECPublicKey.fromHex(key), signature, timestamp);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof SignatureDetails)) {
-			return false;
-		}
+    if (!(o instanceof SignatureDetails)) {
+      return false;
+    }
 
-		var that = (SignatureDetails) o;
-		return timestamp == that.timestamp && key.equals(that.key) && signature.equals(that.signature);
-	}
+    var that = (SignatureDetails) o;
+    return timestamp == that.timestamp && key.equals(that.key) && signature.equals(that.signature);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(key, signature, timestamp);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(key, signature, timestamp);
+  }
 
-	@Override
-	public String toString() {
-		return "{key:" + key.toHex()
-			+ ", signature:" + signature
-			+ ", timestamp:" + timestamp + '}';
-	}
+  @Override
+  public String toString() {
+    return "{key:" + key.toHex() + ", signature:" + signature + ", timestamp:" + timestamp + '}';
+  }
 
-	public ECPublicKey getKey() {
-		return key;
-	}
+  public ECPublicKey getKey() {
+    return key;
+  }
 
-	public String getSignature() {
-		return signature;
-	}
+  public String getSignature() {
+    return signature;
+  }
 
-	public long getTimestamp() {
-		return timestamp;
-	}
+  public long getTimestamp() {
+    return timestamp;
+  }
 }

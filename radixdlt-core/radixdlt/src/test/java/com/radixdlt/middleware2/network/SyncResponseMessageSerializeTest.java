@@ -72,16 +72,16 @@ import com.radixdlt.ledger.DtoTxnsAndProof;
 import org.radix.serialization.SerializeMessageObject;
 
 public class SyncResponseMessageSerializeTest extends SerializeMessageObject<SyncResponseMessage> {
-	public SyncResponseMessageSerializeTest() {
-		super(SyncResponseMessage.class, SyncResponseMessageSerializeTest::get);
-	}
+  public SyncResponseMessageSerializeTest() {
+    super(SyncResponseMessage.class, SyncResponseMessageSerializeTest::get);
+  }
 
-	private static SyncResponseMessage get() {
-		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-		return new SyncResponseMessage(new DtoTxnsAndProof(
-			ImmutableList.of(),
-			LedgerProof.genesis(accumulatorState, null, 0).toDto(),
-			LedgerProof.genesis(accumulatorState, null, 0).toDto()
-		));
-	}
+  private static SyncResponseMessage get() {
+    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    return new SyncResponseMessage(
+        new DtoTxnsAndProof(
+            ImmutableList.of(),
+            LedgerProof.genesis(accumulatorState, null, 0).toDto(),
+            LedgerProof.genesis(accumulatorState, null, 0).toDto()));
+  }
 }

@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,8 @@
 
 package com.radixdlt.api.core.model.entities;
 
+import static com.radixdlt.atom.SubstateTypeId.PREPARED_UNSTAKE;
+
 import com.radixdlt.api.core.model.Entity;
 import com.radixdlt.api.core.model.KeyQuery;
 import com.radixdlt.api.core.model.ResourceQuery;
@@ -75,40 +78,39 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
-
 import java.util.List;
 import java.util.function.Supplier;
 
-import static com.radixdlt.atom.SubstateTypeId.PREPARED_UNSTAKE;
-
 public record PreparedUnstakeVaultEntity(REAddr accountAddress) implements Entity {
-	@Override
-	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
-		throws TxBuilderException {
-		if (!(amount.resource() instanceof StakeUnitResource stakeUnitResource)) {
-			throw new EntityDoesNotSupportResourceDepositException(this, amount.resource());
-		}
-		var stakeOwnershipKey = stakeUnitResource.validatorKey();
-		var substate = new PreparedUnstakeOwnership(stakeOwnershipKey, accountAddress, amount.amount());
-		txBuilder.up(substate);
-	}
+  @Override
+  public void deposit(
+      ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
+      throws TxBuilderException {
+    if (!(amount.resource() instanceof StakeUnitResource stakeUnitResource)) {
+      throw new EntityDoesNotSupportResourceDepositException(this, amount.resource());
+    }
+    var stakeOwnershipKey = stakeUnitResource.validatorKey();
+    var substate = new PreparedUnstakeOwnership(stakeOwnershipKey, accountAddress, amount.amount());
+    txBuilder.up(substate);
+  }
 
-	@Override
-	public List<ResourceQuery> getResourceQueries() {
-		var index = SubstateIndex.<ResourceInBucket>create(
-			PREPARED_UNSTAKE.id(),
-			PreparedUnstakeOwnership.class
-		);
-		var query = ResourceQuery.from(
-			index,
-			r -> r.bucket().resourceAddr() == null && r.bucket().getEpochUnlock().equals(0L)
-				&& r.bucket().getOwner().equals(accountAddress)
-		);
-		return List.of(query);
-	}
+  @Override
+  public List<ResourceQuery> getResourceQueries() {
+    var index =
+        SubstateIndex.<ResourceInBucket>create(
+            PREPARED_UNSTAKE.id(), PreparedUnstakeOwnership.class);
+    var query =
+        ResourceQuery.from(
+            index,
+            r ->
+                r.bucket().resourceAddr() == null
+                    && r.bucket().getEpochUnlock().equals(0L)
+                    && r.bucket().getOwner().equals(accountAddress));
+    return List.of(query);
+  }
 
-	@Override
-	public List<KeyQuery> getKeyQueries() {
-		return List.of();
-	}
+  @Override
+  public List<KeyQuery> getKeyQueries() {
+    return List.of();
+  }
 }

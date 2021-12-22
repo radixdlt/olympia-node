@@ -67,69 +67,70 @@ package com.radixdlt.client.lib.dto;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.lib.api.NodeAddress;
-
 import java.util.List;
 import java.util.Objects;
 
 public final class AddressBookEntry {
-	private final NodeAddress address;
-	private final boolean banned;
-	private final List<KnownAddress> knownAddresses;
+  private final NodeAddress address;
+  private final boolean banned;
+  private final List<KnownAddress> knownAddresses;
 
-	private AddressBookEntry(NodeAddress address, boolean banned, List<KnownAddress> knownAddresses) {
-		this.address = address;
-		this.banned = banned;
-		this.knownAddresses = knownAddresses;
-	}
+  private AddressBookEntry(NodeAddress address, boolean banned, List<KnownAddress> knownAddresses) {
+    this.address = address;
+    this.banned = banned;
+    this.knownAddresses = knownAddresses;
+  }
 
-	@JsonCreator
-	public static AddressBookEntry create(
-		@JsonProperty(value = "address", required = true) NodeAddress address,
-		@JsonProperty(value = "banned", required = true) boolean banned,
-		@JsonProperty(value = "knownAddresses", required = true) List<KnownAddress> knownAddresses
-	) {
-		return new AddressBookEntry(address, banned, knownAddresses);
-	}
+  @JsonCreator
+  public static AddressBookEntry create(
+      @JsonProperty(value = "address", required = true) NodeAddress address,
+      @JsonProperty(value = "banned", required = true) boolean banned,
+      @JsonProperty(value = "knownAddresses", required = true) List<KnownAddress> knownAddresses) {
+    return new AddressBookEntry(address, banned, knownAddresses);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof AddressBookEntry)) {
-			return false;
-		}
+    if (!(o instanceof AddressBookEntry)) {
+      return false;
+    }
 
-		var that = (AddressBookEntry) o;
-		return banned == that.banned
-			&& address.equals(that.address)
-			&& knownAddresses.equals(that.knownAddresses);
-	}
+    var that = (AddressBookEntry) o;
+    return banned == that.banned
+        && address.equals(that.address)
+        && knownAddresses.equals(that.knownAddresses);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(address, banned, knownAddresses);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(address, banned, knownAddresses);
+  }
 
-	@Override
-	public String toString() {
-		return "{"
-			+ "address=" + address
-			+ ", banned=" + banned
-			+ ", addresses=" + knownAddresses
-			+ '}';
-	}
+  @Override
+  public String toString() {
+    return "{"
+        + "address="
+        + address
+        + ", banned="
+        + banned
+        + ", addresses="
+        + knownAddresses
+        + '}';
+  }
 
-	public NodeAddress getAddress() {
-		return address;
-	}
+  public NodeAddress getAddress() {
+    return address;
+  }
 
-	public boolean isBanned() {
-		return banned;
-	}
+  public boolean isBanned() {
+    return banned;
+  }
 
-	public List<KnownAddress> getKnownAddresses() {
-		return knownAddresses;
-	}
+  public List<KnownAddress> getKnownAddresses() {
+    return knownAddresses;
+  }
 }

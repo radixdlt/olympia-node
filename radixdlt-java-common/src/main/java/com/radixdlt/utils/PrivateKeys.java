@@ -67,33 +67,29 @@ package com.radixdlt.utils;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
-
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-/**
- * For testing
- */
+/** For testing */
 public final class PrivateKeys {
-	private PrivateKeys() {
-		throw new IllegalStateException("Cannot instantiate.");
-	}
+  private PrivateKeys() {
+    throw new IllegalStateException("Cannot instantiate.");
+  }
 
-	public static ECKeyPair ofNumeric(int pk) {
-		var privateKey = new byte[ECKeyPair.BYTES];
-		Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
+  public static ECKeyPair ofNumeric(int pk) {
+    var privateKey = new byte[ECKeyPair.BYTES];
+    Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
 
-		try {
-			return ECKeyPair.fromPrivateKey(privateKey);
-		} catch (PrivateKeyException | PublicKeyException e) {
-			throw new IllegalArgumentException("Error while generating public key", e);
-		}
-	}
+    try {
+      return ECKeyPair.fromPrivateKey(privateKey);
+    } catch (PrivateKeyException | PublicKeyException e) {
+      throw new IllegalArgumentException("Error while generating public key", e);
+    }
+  }
 
-	public static Stream<ECKeyPair> numeric(int start) {
-		var nextGeneratedKey = new AtomicInteger(start);
-		return IntStream.generate(() -> nextGeneratedKey.getAndAdd(1))
-			.mapToObj(PrivateKeys::ofNumeric);
-	}
+  public static Stream<ECKeyPair> numeric(int start) {
+    var nextGeneratedKey = new AtomicInteger(start);
+    return IntStream.generate(() -> nextGeneratedKey.getAndAdd(1)).mapToObj(PrivateKeys::ofNumeric);
+  }
 }

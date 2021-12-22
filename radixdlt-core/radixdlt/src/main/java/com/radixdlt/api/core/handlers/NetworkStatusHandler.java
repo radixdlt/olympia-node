@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -83,56 +84,60 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.store.LastProof;
 
-public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatusRequest, NetworkStatusResponse> {
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final LedgerProof lastProof;
-	private final AccumulatorState preGenesisAccumulatorState;
-	private final AccumulatorState genesisAccumulatorState;
-	private final CoreModelMapper coreModelMapper;
-	private final PeersView peersView;
-	private final SystemCounters systemCounters;
+public final class NetworkStatusHandler
+    extends CoreJsonRpcHandler<NetworkStatusRequest, NetworkStatusResponse> {
+  private final RadixEngine<LedgerAndBFTProof> radixEngine;
+  private final LedgerProof lastProof;
+  private final AccumulatorState preGenesisAccumulatorState;
+  private final AccumulatorState genesisAccumulatorState;
+  private final CoreModelMapper coreModelMapper;
+  private final PeersView peersView;
+  private final SystemCounters systemCounters;
 
-	@Inject
-	NetworkStatusHandler(
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		@Genesis VerifiedTxnsAndProof txnsAndProof,
-		@LastProof LedgerProof lastProof,
-		LedgerAccumulator ledgerAccumulator,
-		PeersView peersView,
-		CoreModelMapper coreModelMapper,
-		SystemCounters systemCounters
-	) {
-		super(NetworkStatusRequest.class);
+  @Inject
+  NetworkStatusHandler(
+      RadixEngine<LedgerAndBFTProof> radixEngine,
+      @Genesis VerifiedTxnsAndProof txnsAndProof,
+      @LastProof LedgerProof lastProof,
+      LedgerAccumulator ledgerAccumulator,
+      PeersView peersView,
+      CoreModelMapper coreModelMapper,
+      SystemCounters systemCounters) {
+    super(NetworkStatusRequest.class);
 
-		this.radixEngine = radixEngine;
-		this.lastProof = lastProof;
-		this.preGenesisAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
-		this.genesisAccumulatorState = ledgerAccumulator.accumulate(
-			preGenesisAccumulatorState, txnsAndProof.getTxns().get(0).getId().asHashCode()
-		);
-		this.peersView = peersView;
-		this.coreModelMapper = coreModelMapper;
-		this.systemCounters = systemCounters;
-	}
+    this.radixEngine = radixEngine;
+    this.lastProof = lastProof;
+    this.preGenesisAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    this.genesisAccumulatorState =
+        ledgerAccumulator.accumulate(
+            preGenesisAccumulatorState, txnsAndProof.getTxns().get(0).getId().asHashCode());
+    this.peersView = peersView;
+    this.coreModelMapper = coreModelMapper;
+    this.systemCounters = systemCounters;
+  }
 
-	private LedgerProof getCurrentProof() {
-		var ledgerAndBFTProof = radixEngine.read(RadixEngineReader::getMetadata);
-		return ledgerAndBFTProof == null ? lastProof : ledgerAndBFTProof.getProof();
-	}
+  private LedgerProof getCurrentProof() {
+    var ledgerAndBFTProof = radixEngine.read(RadixEngineReader::getMetadata);
+    return ledgerAndBFTProof == null ? lastProof : ledgerAndBFTProof.getProof();
+  }
 
-	@Override
-	public NetworkStatusResponse handleRequest(NetworkStatusRequest request) throws CoreApiException {
-		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
-		var currentProof = getCurrentProof();
-		var response = new NetworkStatusResponse()
-			.preGenesisStateIdentifier(coreModelMapper.stateIdentifier(preGenesisAccumulatorState))
-			.genesisStateIdentifier(coreModelMapper.stateIdentifier(genesisAccumulatorState))
-			.currentStateIdentifier(coreModelMapper.stateIdentifier(currentProof.getAccumulatorState()))
-			.syncStatus(new SyncStatus()
-				.currentStateVersion(systemCounters.get(SystemCounters.CounterType.LEDGER_STATE_VERSION))
-				.targetStateVersion(systemCounters.get(SystemCounters.CounterType.SYNC_TARGET_STATE_VERSION))
-			);
-		peersView.peers().map(coreModelMapper::peer).forEach(response::addPeersItem);
-		return response;
-	}
+  @Override
+  public NetworkStatusResponse handleRequest(NetworkStatusRequest request) throws CoreApiException {
+    coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
+    var currentProof = getCurrentProof();
+    var response =
+        new NetworkStatusResponse()
+            .preGenesisStateIdentifier(coreModelMapper.stateIdentifier(preGenesisAccumulatorState))
+            .genesisStateIdentifier(coreModelMapper.stateIdentifier(genesisAccumulatorState))
+            .currentStateIdentifier(
+                coreModelMapper.stateIdentifier(currentProof.getAccumulatorState()))
+            .syncStatus(
+                new SyncStatus()
+                    .currentStateVersion(
+                        systemCounters.get(SystemCounters.CounterType.LEDGER_STATE_VERSION))
+                    .targetStateVersion(
+                        systemCounters.get(SystemCounters.CounterType.SYNC_TARGET_STATE_VERSION)));
+    peersView.peers().map(coreModelMapper::peer).forEach(response::addPeersItem);
+    return response;
+  }
 }

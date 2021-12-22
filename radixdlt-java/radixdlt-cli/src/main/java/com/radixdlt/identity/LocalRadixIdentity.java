@@ -68,13 +68,13 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 
 public class LocalRadixIdentity {
-    private final ECKeyPair myKey;
+  private final ECKeyPair myKey;
 
-    LocalRadixIdentity(ECKeyPair myKey) {
-        this.myKey = myKey;
-    }
+  LocalRadixIdentity(ECKeyPair myKey) {
+    this.myKey = myKey;
+  }
 
-    public ECPublicKey getPublicKey() {
-        return myKey.getPublicKey();
-    }
+  public ECPublicKey getPublicKey() {
+    return myKey.getPublicKey();
+  }
 }

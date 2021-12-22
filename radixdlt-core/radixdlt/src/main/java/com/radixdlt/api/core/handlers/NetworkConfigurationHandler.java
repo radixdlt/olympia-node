@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,9 @@
 
 package com.radixdlt.api.core.handlers;
 
+import static org.radix.Radix.SYSTEM_VERSION_KEY;
+import static org.radix.Radix.VERSION_STRING_KEY;
+
 import com.google.inject.Inject;
 import com.radixdlt.api.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.openapitools.model.Bech32HRPs;
@@ -73,39 +77,33 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import org.radix.Radix;
 
-import static org.radix.Radix.SYSTEM_VERSION_KEY;
-import static org.radix.Radix.VERSION_STRING_KEY;
+public class NetworkConfigurationHandler
+    extends CoreJsonRpcHandler<Void, NetworkConfigurationResponse> {
+  private final Network network;
 
-public class NetworkConfigurationHandler extends CoreJsonRpcHandler<Void, NetworkConfigurationResponse> {
-	private final Network network;
+  @Inject
+  NetworkConfigurationHandler(@NetworkId int networkId) {
+    super(Void.class);
+    this.network = Network.ofId(networkId).orElseThrow();
+  }
 
-	@Inject
-	NetworkConfigurationHandler(
-		@NetworkId int networkId
-	) {
-		super(Void.class);
-		this.network = Network.ofId(networkId).orElseThrow();
-	}
-
-	@Override
-	public NetworkConfigurationResponse handleRequest(Void request) {
-		return new NetworkConfigurationResponse()
-			.networkIdentifier(new NetworkIdentifier().network(network.name().toLowerCase()))
-			.bech32HumanReadableParts(
-				new Bech32HRPs()
-					.accountHrp(network.getAccountHrp())
-					.validatorHrp(network.getValidatorHrp())
-					.nodeHrp(network.getNodeHrp())
-					.resourceHrpSuffix(network.getResourceHrpSuffix())
-			)
-			.version(
-				new NetworkConfigurationResponseVersion()
-					.apiVersion("1.0.0")
-					.coreVersion(Radix.systemVersionInfo()
-						.get(SYSTEM_VERSION_KEY)
-						.get(VERSION_STRING_KEY)
-						.toString()
-					)
-			);
-	}
+  @Override
+  public NetworkConfigurationResponse handleRequest(Void request) {
+    return new NetworkConfigurationResponse()
+        .networkIdentifier(new NetworkIdentifier().network(network.name().toLowerCase()))
+        .bech32HumanReadableParts(
+            new Bech32HRPs()
+                .accountHrp(network.getAccountHrp())
+                .validatorHrp(network.getValidatorHrp())
+                .nodeHrp(network.getNodeHrp())
+                .resourceHrpSuffix(network.getResourceHrpSuffix()))
+        .version(
+            new NetworkConfigurationResponseVersion()
+                .apiVersion("1.0.0")
+                .coreVersion(
+                    Radix.systemVersionInfo()
+                        .get(SYSTEM_VERSION_KEY)
+                        .get(VERSION_STRING_KEY)
+                        .toString()));
+  }
 }

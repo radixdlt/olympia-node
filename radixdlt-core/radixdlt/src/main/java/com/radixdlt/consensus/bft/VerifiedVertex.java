@@ -64,118 +64,112 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.google.common.hash.HashCode;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * A vertex which has been verified with hash id
- */
+/** A vertex which has been verified with hash id */
 public final class VerifiedVertex {
-	private final UnverifiedVertex vertex;
-	private final HashCode id;
+  private final UnverifiedVertex vertex;
+  private final HashCode id;
 
-	public VerifiedVertex(UnverifiedVertex vertex, HashCode id) {
-		this.vertex = Objects.requireNonNull(vertex);
-		this.id = Objects.requireNonNull(id);
-	}
+  public VerifiedVertex(UnverifiedVertex vertex, HashCode id) {
+    this.vertex = Objects.requireNonNull(vertex);
+    this.id = Objects.requireNonNull(id);
+  }
 
-	public BFTNode getProposer() {
-		return vertex.getProposer();
-	}
+  public BFTNode getProposer() {
+    return vertex.getProposer();
+  }
 
-	public boolean isTimeout() {
-		return vertex.isTimeout();
-	}
+  public boolean isTimeout() {
+    return vertex.isTimeout();
+  }
 
-	public UnverifiedVertex toSerializable() {
-		return vertex;
-	}
+  public UnverifiedVertex toSerializable() {
+    return vertex;
+  }
 
-	public List<Txn> getTxns() {
-		return vertex.getTxns();
-	}
+  public List<Txn> getTxns() {
+    return vertex.getTxns();
+  }
 
-	public boolean touchesGenesis() {
-		return this.getView().isGenesis()
-			|| this.getParentHeader().getView().isGenesis()
-			|| this.getGrandParentHeader().getView().isGenesis();
-	}
+  public boolean touchesGenesis() {
+    return this.getView().isGenesis()
+        || this.getParentHeader().getView().isGenesis()
+        || this.getGrandParentHeader().getView().isGenesis();
+  }
 
-	public boolean hasDirectParent() {
-		return this.vertex.getView().equals(this.getParentHeader().getView().next());
-	}
+  public boolean hasDirectParent() {
+    return this.vertex.getView().equals(this.getParentHeader().getView().next());
+  }
 
-	public boolean parentHasDirectParent() {
-		return this.getParentHeader().getView().equals(this.getGrandParentHeader().getView().next());
-	}
+  public boolean parentHasDirectParent() {
+    return this.getParentHeader().getView().equals(this.getGrandParentHeader().getView().next());
+  }
 
-	public BFTHeader getParentHeader() {
-		return vertex.getQC().getProposed();
-	}
+  public BFTHeader getParentHeader() {
+    return vertex.getQC().getProposed();
+  }
 
-	public BFTHeader getGrandParentHeader() {
-		return vertex.getQC().getParent();
-	}
+  public BFTHeader getGrandParentHeader() {
+    return vertex.getQC().getParent();
+  }
 
-	public View getView() {
-		return vertex.getView();
-	}
+  public View getView() {
+    return vertex.getView();
+  }
 
-	public QuorumCertificate getQC() {
-		return vertex.getQC();
-	}
+  public QuorumCertificate getQC() {
+    return vertex.getQC();
+  }
 
-	public HashCode getId() {
-		return id;
-	}
+  public HashCode getId() {
+    return id;
+  }
 
-	public HashCode getParentId() {
-		return vertex.getQC().getProposed().getVertexId();
-	}
+  public HashCode getParentId() {
+    return vertex.getQC().getProposed().getVertexId();
+  }
 
+  public interface PreparedVertexBuilder {
+    PreparedVertex andTxns(List<PreparedTxn> preparedTxns, Map<Txn, Exception> txnExceptions);
+  }
 
-	public interface PreparedVertexBuilder {
-		PreparedVertex andTxns(
-			List<PreparedTxn> preparedTxns,
-			Map<Txn, Exception> txnExceptions
-		);
-	}
+  public PreparedVertexBuilder withHeader(LedgerHeader ledgerHeader, long timeOfExecution) {
+    return (success, exceptions) ->
+        new PreparedVertex(this, ledgerHeader, success, exceptions, timeOfExecution);
+  }
 
-	public PreparedVertexBuilder withHeader(LedgerHeader ledgerHeader, long timeOfExecution) {
-		return (success, exceptions) -> new PreparedVertex(this, ledgerHeader, success, exceptions, timeOfExecution);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.vertex, this.id);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.vertex, this.id);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (o instanceof VerifiedVertex) {
+      final var that = (VerifiedVertex) o;
+      return Objects.equals(this.id, that.id) && Objects.equals(this.vertex, that.vertex);
+    }
+    return false;
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (o instanceof VerifiedVertex) {
-			final var that = (VerifiedVertex) o;
-			return Objects.equals(this.id, that.id) && Objects.equals(this.vertex, that.vertex);
-		}
-		return false;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s{epoch=%s view=%s parentView=%s id=%s}",
-			this.getClass().getSimpleName(),
-			this.vertex.getQC().getProposed().getLedgerHeader().getEpoch(),
-			this.vertex.getView(),
-			this.vertex.getQC().getProposed().getView(),
-			this.id
-		);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{epoch=%s view=%s parentView=%s id=%s}",
+        this.getClass().getSimpleName(),
+        this.vertex.getQC().getProposed().getLedgerHeader().getEpoch(),
+        this.vertex.getView(),
+        this.vertex.getQC().getProposed().getView(),
+        this.id);
+  }
 }

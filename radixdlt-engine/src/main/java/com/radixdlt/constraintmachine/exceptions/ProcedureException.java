@@ -65,11 +65,11 @@
 package com.radixdlt.constraintmachine.exceptions;
 
 public class ProcedureException extends Exception {
-	public ProcedureException(Throwable cause) {
-		super(cause);
-	}
+  public ProcedureException(Throwable cause) {
+    super(cause);
+  }
 
-	public ProcedureException(String msg) {
-		super(msg);
-	}
+  public ProcedureException(String msg) {
+    super(msg);
+  }
 }

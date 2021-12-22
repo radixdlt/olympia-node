@@ -80,76 +80,62 @@ import com.radixdlt.network.p2p.liveness.PeerPingTimeout;
 import com.radixdlt.network.p2p.liveness.PeersLivenessCheckTrigger;
 import com.radixdlt.network.p2p.liveness.Ping;
 import com.radixdlt.network.p2p.liveness.Pong;
-
 import java.time.Duration;
 
 public final class PeerLivenessMonitorModule extends AbstractModule {
 
-	@Override
-	protected void configure() {
-		final var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
-			.permitDuplicates();
-		eventBinder.addBinding().toInstance(PeersLivenessCheckTrigger.class);
-		eventBinder.addBinding().toInstance(PeerPingTimeout.class);
+  @Override
+  protected void configure() {
+    final var eventBinder =
+        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
+            .permitDuplicates();
+    eventBinder.addBinding().toInstance(PeersLivenessCheckTrigger.class);
+    eventBinder.addBinding().toInstance(PeerPingTimeout.class);
 
-		bind(PeerLivenessMonitor.class).in(Scopes.SINGLETON);
-	}
+    bind(PeerLivenessMonitor.class).in(Scopes.SINGLETON);
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> peersLivenessCheckTriggerEventProcessor(
-		PeerLivenessMonitor peerLivenessMonitor
-	) {
-		return new EventProcessorOnRunner<>(
-			Runners.P2P_NETWORK,
-			PeersLivenessCheckTrigger.class,
-			peerLivenessMonitor.peersLivenessCheckTriggerEventProcessor()
-		);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> peersLivenessCheckTriggerEventProcessor(
+      PeerLivenessMonitor peerLivenessMonitor) {
+    return new EventProcessorOnRunner<>(
+        Runners.P2P_NETWORK,
+        PeersLivenessCheckTrigger.class,
+        peerLivenessMonitor.peersLivenessCheckTriggerEventProcessor());
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> peerPingTimeoutEventProcessor(
-		PeerLivenessMonitor peerLivenessMonitor
-	) {
-		return new EventProcessorOnRunner<>(
-			Runners.P2P_NETWORK,
-			PeerPingTimeout.class,
-			peerLivenessMonitor.pingTimeoutEventProcessor()
-		);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> peerPingTimeoutEventProcessor(
+      PeerLivenessMonitor peerLivenessMonitor) {
+    return new EventProcessorOnRunner<>(
+        Runners.P2P_NETWORK,
+        PeerPingTimeout.class,
+        peerLivenessMonitor.pingTimeoutEventProcessor());
+  }
 
-	@ProvidesIntoSet
-	private RemoteEventProcessorOnRunner<?> peerPingRemoteEventProcessor(
-		PeerLivenessMonitor peerLivenessMonitor
-	) {
-		return new RemoteEventProcessorOnRunner<>(
-			Runners.P2P_NETWORK,
-			Ping.class,
-			peerLivenessMonitor.pingRemoteEventProcessor()
-		);
-	}
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?> peerPingRemoteEventProcessor(
+      PeerLivenessMonitor peerLivenessMonitor) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.P2P_NETWORK, Ping.class, peerLivenessMonitor.pingRemoteEventProcessor());
+  }
 
-	@ProvidesIntoSet
-	private RemoteEventProcessorOnRunner<?> pongPingRemoteEventProcessor(
-		PeerLivenessMonitor peerLivenessMonitor
-	) {
-		return new RemoteEventProcessorOnRunner<>(
-			Runners.P2P_NETWORK,
-			Pong.class,
-			peerLivenessMonitor.pongRemoteEventProcessor()
-		);
-	}
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?> pongPingRemoteEventProcessor(
+      PeerLivenessMonitor peerLivenessMonitor) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.P2P_NETWORK, Pong.class, peerLivenessMonitor.pongRemoteEventProcessor());
+  }
 
-	@ProvidesIntoSet
-	public ScheduledEventProducerOnRunner<?> peersLivenessCheckTriggerEventProducer(
-		EventDispatcher<PeersLivenessCheckTrigger> peersLivenessCheckTriggerEventDispatcher,
-		P2PConfig config
-	) {
-		return new ScheduledEventProducerOnRunner<>(
-			Runners.P2P_NETWORK,
-			peersLivenessCheckTriggerEventDispatcher,
-			PeersLivenessCheckTrigger::create,
-			Duration.ofMillis(config.peerLivenessCheckInterval()),
-			Duration.ofMillis(config.peerLivenessCheckInterval())
-		);
-	}
+  @ProvidesIntoSet
+  public ScheduledEventProducerOnRunner<?> peersLivenessCheckTriggerEventProducer(
+      EventDispatcher<PeersLivenessCheckTrigger> peersLivenessCheckTriggerEventDispatcher,
+      P2PConfig config) {
+    return new ScheduledEventProducerOnRunner<>(
+        Runners.P2P_NETWORK,
+        peersLivenessCheckTriggerEventDispatcher,
+        PeersLivenessCheckTrigger::create,
+        Duration.ofMillis(config.peerLivenessCheckInterval()),
+        Duration.ofMillis(config.peerLivenessCheckInterval()));
+  }
 }

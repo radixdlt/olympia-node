@@ -64,6 +64,8 @@
 
 package org.radix.network.messages;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
@@ -73,38 +75,36 @@ import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 import org.radix.serialization.SerializeMessageObject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class PeersResponseMessageTest extends SerializeMessageObject<PeersResponseMessage> {
 
-	public PeersResponseMessageTest() {
-		super(PeersResponseMessage.class, () -> new PeersResponseMessage(ImmutableSet.of()));
-	}
+  public PeersResponseMessageTest() {
+    super(PeersResponseMessage.class, () -> new PeersResponseMessage(ImmutableSet.of()));
+  }
 
-	@Test
-	public void sensibleToString() {
-		String s = new PeersResponseMessage(ImmutableSet.of()).toString();
+  @Test
+  public void sensibleToString() {
+    String s = new PeersResponseMessage(ImmutableSet.of()).toString();
 
-		assertThat(s).contains(PeersResponseMessage.class.getSimpleName());
-	}
+    assertThat(s).contains(PeersResponseMessage.class.getSimpleName());
+  }
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(PeersResponseMessage.class)
-			.suppress(Warning.NONFINAL_FIELDS)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(PeersResponseMessage.class)
+        .suppress(Warning.NONFINAL_FIELDS)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 
-	@Test
-	public void deserializationWithNullIsSafe() {
-		var peersResponseMessageWithNull = new PeersResponseMessage(null);
+  @Test
+  public void deserializationWithNullIsSafe() {
+    var peersResponseMessageWithNull = new PeersResponseMessage(null);
 
-		assertThat(peersResponseMessageWithNull.getPeers()).isEqualTo(ImmutableSet.of());
-	}
+    assertThat(peersResponseMessageWithNull.getPeers()).isEqualTo(ImmutableSet.of());
+  }
 
-	@Test(expected = NullPointerException.class)
-	public void deserializationWithNullElementsInSetThrowsException() {
-		new PeersResponseMessage(ImmutableSet.of(null));
-	}
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullElementsInSetThrowsException() {
+    new PeersResponseMessage(ImmutableSet.of(null));
+  }
 }

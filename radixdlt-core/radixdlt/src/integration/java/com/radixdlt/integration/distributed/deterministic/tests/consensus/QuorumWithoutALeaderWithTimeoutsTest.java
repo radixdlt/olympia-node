@@ -64,6 +64,8 @@
 
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters;
@@ -71,66 +73,65 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
+import java.util.Random;
 import org.junit.Test;
 
-import java.util.Random;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
- * When original votes (to next view leader, non timed out) are dropped,
- * nodes should be able to resend those votes to each other (with timeout)
- * and form the quorum themselves.
- * As a result, there should be no timeout (non-QC) quorums and no indirect parents.
+ * When original votes (to next view leader, non timed out) are dropped, nodes should be able to
+ * resend those votes to each other (with timeout) and form the quorum themselves. As a result,
+ * there should be no timeout (non-QC) quorums and no indirect parents.
  */
 public class QuorumWithoutALeaderWithTimeoutsTest {
 
-	private final Random random = new Random(123456);
+  private final Random random = new Random(123456);
 
-	private void run(int numNodes, long numViews) {
-		final DeterministicTest test = DeterministicTest.builder()
-			.numNodes(numNodes)
-			.messageSelector(MessageSelector.randomSelector(random))
-			.messageMutator(dropAllNonTimeoutVotes())
-			.buildWithoutEpochs()
-			.runUntil(DeterministicTest.hasReachedView(View.of(numViews)));
+  private void run(int numNodes, long numViews) {
+    final DeterministicTest test =
+        DeterministicTest.builder()
+            .numNodes(numNodes)
+            .messageSelector(MessageSelector.randomSelector(random))
+            .messageMutator(dropAllNonTimeoutVotes())
+            .buildWithoutEpochs()
+            .runUntil(DeterministicTest.hasReachedView(View.of(numViews)));
 
-		for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
-			final SystemCounters counters = test.getSystemCounters(nodeIndex);
-			final long numberOfIndirectParents = counters.get(CounterType.BFT_VERTEX_STORE_INDIRECT_PARENTS);
-			final long totalNumberOfTimeouts = counters.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT);
-			final long totalNumberOfTimeoutQuorums = counters.get(CounterType.BFT_TIMEOUT_QUORUMS);
-			final long totalNumberOfVoteQuorums = counters.get(CounterType.BFT_VOTE_QUORUMS);
-			assertThat(totalNumberOfTimeoutQuorums).isEqualTo(0); // no TCs
-			assertThat(numberOfIndirectParents).isEqualTo(0); // no indirect parents
-			assertThat(totalNumberOfTimeouts).isEqualTo(numViews - 1); // a timeout for each view
-			assertThat(totalNumberOfVoteQuorums).isBetween(numViews - 2, numViews); // quorum count matches views
-		}
-	}
+    for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
+      final SystemCounters counters = test.getSystemCounters(nodeIndex);
+      final long numberOfIndirectParents =
+          counters.get(CounterType.BFT_VERTEX_STORE_INDIRECT_PARENTS);
+      final long totalNumberOfTimeouts = counters.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT);
+      final long totalNumberOfTimeoutQuorums = counters.get(CounterType.BFT_TIMEOUT_QUORUMS);
+      final long totalNumberOfVoteQuorums = counters.get(CounterType.BFT_VOTE_QUORUMS);
+      assertThat(totalNumberOfTimeoutQuorums).isEqualTo(0); // no TCs
+      assertThat(numberOfIndirectParents).isEqualTo(0); // no indirect parents
+      assertThat(totalNumberOfTimeouts).isEqualTo(numViews - 1); // a timeout for each view
+      assertThat(totalNumberOfVoteQuorums)
+          .isBetween(numViews - 2, numViews); // quorum count matches views
+    }
+  }
 
-	private static MessageMutator dropAllNonTimeoutVotes() {
-		return (message, queue) -> {
-			final Object msg = message.message();
-			if (msg instanceof Vote) {
-				final Vote vote = (Vote) msg;
-				return vote.getTimeoutSignature().isEmpty();
-			}
-			return false;
-		};
-	}
+  private static MessageMutator dropAllNonTimeoutVotes() {
+    return (message, queue) -> {
+      final Object msg = message.message();
+      if (msg instanceof Vote) {
+        final Vote vote = (Vote) msg;
+        return vote.getTimeoutSignature().isEmpty();
+      }
+      return false;
+    };
+  }
 
-	@Test
-	public void when_run_3_correct_nodes_for_50k_views__then_bft_should_be_responsive() {
-		this.run(3, 50_000);
-	}
+  @Test
+  public void when_run_3_correct_nodes_for_50k_views__then_bft_should_be_responsive() {
+    this.run(3, 50_000);
+  }
 
-	@Test
-	public void when_run_10_correct_nodes_with_for_2k_views__then_bft_should_be_responsive() {
-		this.run(10, 2000);
-	}
+  @Test
+  public void when_run_10_correct_nodes_with_for_2k_views__then_bft_should_be_responsive() {
+    this.run(10, 2000);
+  }
 
-	@Test
-	public void when_run_100_correct_nodes_with_for_50_views__then_bft_should_be_responsive() {
-		this.run(100, 50);
-	}
+  @Test
+  public void when_run_100_correct_nodes_with_for_50_views__then_bft_should_be_responsive() {
+    this.run(100, 50);
+  }
 }

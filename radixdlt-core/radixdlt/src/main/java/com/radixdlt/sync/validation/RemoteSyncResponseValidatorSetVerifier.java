@@ -66,29 +66,32 @@ package com.radixdlt.sync.validation;
 
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.sync.messages.remote.SyncResponse;
-
 import java.util.Objects;
 
 /**
- * Verifies the signature set of sync remote responses and checks
- * whether the signatures form a quorum based on a validatorSet.
+ * Verifies the signature set of sync remote responses and checks whether the signatures form a
+ * quorum based on a validatorSet.
  */
 public class RemoteSyncResponseValidatorSetVerifier {
 
-	private final BFTValidatorSet validatorSet;
+  private final BFTValidatorSet validatorSet;
 
-	public RemoteSyncResponseValidatorSetVerifier(BFTValidatorSet validatorSet) {
-		this.validatorSet = Objects.requireNonNull(validatorSet);
-	}
+  public RemoteSyncResponseValidatorSetVerifier(BFTValidatorSet validatorSet) {
+    this.validatorSet = Objects.requireNonNull(validatorSet);
+  }
 
-	public boolean verifyValidatorSet(SyncResponse syncResponse) {
-		final var dtoCommandsAndProof = syncResponse.getTxnsAndProof();
-		final var validationState = validatorSet.newValidationState();
+  public boolean verifyValidatorSet(SyncResponse syncResponse) {
+    final var dtoCommandsAndProof = syncResponse.getTxnsAndProof();
+    final var validationState = validatorSet.newValidationState();
 
-		dtoCommandsAndProof.getTail().getSignatures().getSignatures().forEach((node, signature) ->
-			validationState.addSignature(node, signature.timestamp(), signature.signature())
-		);
+    dtoCommandsAndProof
+        .getTail()
+        .getSignatures()
+        .getSignatures()
+        .forEach(
+            (node, signature) ->
+                validationState.addSignature(node, signature.timestamp(), signature.signature()));
 
-		return validationState.complete();
-	}
+    return validationState.complete();
+  }
 }

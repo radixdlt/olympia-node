@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,55 +64,57 @@
 
 package com.radixdlt.integration.api.actors;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 import com.radixdlt.integration.api.DeterministicActor;
+import java.math.BigInteger;
+import java.util.Random;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.math.BigInteger;
-import java.util.Random;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
- * Verifies that the amount of inflation occurring on the native token
- * matches the rewards per proposal configuration
+ * Verifies that the amount of inflation occurring on the native token matches the rewards per
+ * proposal configuration
  */
 public final class NativeTokenRewardsChecker implements DeterministicActor {
-	private static final Logger logger = LogManager.getLogger();
+  private static final Logger logger = LogManager.getLogger();
 
-	private BigInteger lastNativeTokenCount;
-	private Long lastEpoch;
+  private BigInteger lastNativeTokenCount;
+  private Long lastEpoch;
 
-	@Override
-	public String execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
-		var injector = runner.getNode(0);
-		var nodeClient = injector.getInstance(NodeApiClient.class);
-		var radixEngineReader = injector.getInstance(RadixEngineReader.class);
+  @Override
+  public String execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
+    var injector = runner.getNode(0);
+    var nodeClient = injector.getInstance(NodeApiClient.class);
+    var radixEngineReader = injector.getInstance(RadixEngineReader.class);
 
-		var epochView = nodeClient.getEpochView();
-		var epoch = epochView.getEpoch();
-		var totalNativeTokenCount = radixEngineReader.getTotalNativeTokens();
-		final String result;
-		if (lastEpoch != null) {
-			result = String.format("Okay{total_xrd=%s last_time=%s}", totalNativeTokenCount, lastNativeTokenCount);
-			if (epoch - lastEpoch > 1) {
-				var numEpochs = epoch - lastEpoch;
-				var maxEmissions = BigInteger.valueOf(nodeClient.getRoundsPerEpoch())
-					.multiply(new BigInteger(1, nodeClient.getRewardsPerProposal().toByteArray()))
-					.multiply(BigInteger.valueOf(numEpochs));
-				assertThat(totalNativeTokenCount).isGreaterThan(lastNativeTokenCount);
-				var diff = totalNativeTokenCount.subtract(lastNativeTokenCount);
-				assertThat(diff).isLessThanOrEqualTo(maxEmissions);
-			}
-		} else {
-			result = String.format("Okay{total_xrd=%s}", totalNativeTokenCount);
-			logger.info("total_xrd: {}", totalNativeTokenCount);
-		}
+    var epochView = nodeClient.getEpochView();
+    var epoch = epochView.getEpoch();
+    var totalNativeTokenCount = radixEngineReader.getTotalNativeTokens();
+    final String result;
+    if (lastEpoch != null) {
+      result =
+          String.format(
+              "Okay{total_xrd=%s last_time=%s}", totalNativeTokenCount, lastNativeTokenCount);
+      if (epoch - lastEpoch > 1) {
+        var numEpochs = epoch - lastEpoch;
+        var maxEmissions =
+            BigInteger.valueOf(nodeClient.getRoundsPerEpoch())
+                .multiply(new BigInteger(1, nodeClient.getRewardsPerProposal().toByteArray()))
+                .multiply(BigInteger.valueOf(numEpochs));
+        assertThat(totalNativeTokenCount).isGreaterThan(lastNativeTokenCount);
+        var diff = totalNativeTokenCount.subtract(lastNativeTokenCount);
+        assertThat(diff).isLessThanOrEqualTo(maxEmissions);
+      }
+    } else {
+      result = String.format("Okay{total_xrd=%s}", totalNativeTokenCount);
+      logger.info("total_xrd: {}", totalNativeTokenCount);
+    }
 
-		lastEpoch = epoch;
-		lastNativeTokenCount = totalNativeTokenCount;
+    lastEpoch = epoch;
+    lastNativeTokenCount = totalNativeTokenCount;
 
-		return result;
-	}
+    return result;
+  }
 }

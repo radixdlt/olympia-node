@@ -70,33 +70,33 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 public final class StakeTokens implements TxAction {
-	private final REAddr fromAcct;
-	private final ECPublicKey delegateKey;
-	private final UInt256 amount;
+  private final REAddr fromAcct;
+  private final ECPublicKey delegateKey;
+  private final UInt256 amount;
 
-	public StakeTokens(REAddr fromAcct, ECPublicKey delegateKey, UInt256 amount) {
-		if (amount.isZero()) {
-			throw new IllegalArgumentException("Amount must be > 0.");
-		}
-		this.fromAcct = fromAcct;
-		this.delegateKey = delegateKey;
-		this.amount = amount;
-	}
+  public StakeTokens(REAddr fromAcct, ECPublicKey delegateKey, UInt256 amount) {
+    if (amount.isZero()) {
+      throw new IllegalArgumentException("Amount must be > 0.");
+    }
+    this.fromAcct = fromAcct;
+    this.delegateKey = delegateKey;
+    this.amount = amount;
+  }
 
-	public REAddr from() {
-		return fromAcct;
-	}
+  public REAddr from() {
+    return fromAcct;
+  }
 
-	public ECPublicKey to() {
-		return delegateKey;
-	}
+  public ECPublicKey to() {
+    return delegateKey;
+  }
 
-	public UInt256 amount() {
-		return amount;
-	}
+  public UInt256 amount() {
+    return amount;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{amt=%s}", this.getClass().getSimpleName(), amount);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s{amt=%s}", this.getClass().getSimpleName(), amount);
+  }
 }

@@ -64,7 +64,7 @@
 
 package com.radixdlt.client.lib.addressing;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -84,49 +84,53 @@ import com.radixdlt.client.lib.dto.serializer.ValidatorAddressSerializer;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.UInt256;
-
 import java.util.List;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.Test;
 
 public class AddressSerializationTest {
-	@Test
-	public void variousTypesOfAddressesSerializedAndDeserializedCorrectly() throws JsonProcessingException {
-		var keyPair1 = ECKeyPair.generateNew();
-		var keyPair2 = ECKeyPair.generateNew();
-		var keyPair3 = ECKeyPair.generateNew();
+  @Test
+  public void variousTypesOfAddressesSerializedAndDeserializedCorrectly()
+      throws JsonProcessingException {
+    var keyPair1 = ECKeyPair.generateNew();
+    var keyPair2 = ECKeyPair.generateNew();
+    var keyPair3 = ECKeyPair.generateNew();
 
-		var accountAddress = AccountAddress.create(keyPair1.getPublicKey());
-		var validatorAddress = ValidatorAddress.of(keyPair2.getPublicKey());
-		var nodeAddress = NodeAddress.of(keyPair3.getPublicKey());
+    var accountAddress = AccountAddress.create(keyPair1.getPublicKey());
+    var validatorAddress = ValidatorAddress.of(keyPair2.getPublicKey());
+    var nodeAddress = NodeAddress.of(keyPair3.getPublicKey());
 
-		var action = new StakeAction(accountAddress, validatorAddress, UInt256.EIGHT);
-		var peerDetails = NetworkPeer.create(nodeAddress, List.of());
+    var action = new StakeAction(accountAddress, validatorAddress, UInt256.EIGHT);
+    var peerDetails = NetworkPeer.create(nodeAddress, List.of());
 
-		var module = new SimpleModule();
-		int networkId = 1;
-		var networkAddressing = Addressing.ofNetworkId(networkId);
+    var module = new SimpleModule();
+    int networkId = 1;
+    var networkAddressing = Addressing.ofNetworkId(networkId);
 
-		module.addSerializer(AccountAddress.class, new AccountAddressSerializer(networkAddressing));
-		module.addSerializer(ValidatorAddress.class, new ValidatorAddressSerializer(networkAddressing));
-		module.addSerializer(NodeAddress.class, new NodeAddressSerializer(networkAddressing));
-		module.addDeserializer(AccountAddress.class, new AccountAddressDeserializer(networkAddressing));
-		module.addDeserializer(ValidatorAddress.class, new ValidatorAddressDeserializer(networkAddressing));
-		module.addDeserializer(NodeAddress.class, new NodeAddressDeserializer(networkAddressing));
+    module.addSerializer(AccountAddress.class, new AccountAddressSerializer(networkAddressing));
+    module.addSerializer(ValidatorAddress.class, new ValidatorAddressSerializer(networkAddressing));
+    module.addSerializer(NodeAddress.class, new NodeAddressSerializer(networkAddressing));
+    module.addDeserializer(AccountAddress.class, new AccountAddressDeserializer(networkAddressing));
+    module.addDeserializer(
+        ValidatorAddress.class, new ValidatorAddressDeserializer(networkAddressing));
+    module.addDeserializer(NodeAddress.class, new NodeAddressDeserializer(networkAddressing));
 
-		var objectMapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
-			.registerModule(module);
+    var objectMapper =
+        new ObjectMapper()
+            .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
+            .registerModule(module);
 
-		var result = objectMapper.writeValueAsString(action);
-		assertEquals(action.toJSON(networkId), result);
+    var result = objectMapper.writeValueAsString(action);
+    assertEquals(action.toJSON(networkId), result);
 
-		var restored = objectMapper.readValue(result, StakeAction.class);
-		assertEquals(action, restored);
+    var restored = objectMapper.readValue(result, StakeAction.class);
+    assertEquals(action, restored);
 
-		var peerResult = objectMapper.writeValueAsString(peerDetails);
-		assertEquals(String.format("{\"address\":\"%s\",\"channels\":[]}", nodeAddress.toString(networkId)), peerResult);
+    var peerResult = objectMapper.writeValueAsString(peerDetails);
+    assertEquals(
+        String.format("{\"address\":\"%s\",\"channels\":[]}", nodeAddress.toString(networkId)),
+        peerResult);
 
-		var restoredPeer = objectMapper.readValue(peerResult, NetworkPeer.class);
-		assertEquals(nodeAddress, restoredPeer.getAddress());
-	}
+    var restoredPeer = objectMapper.readValue(peerResult, NetworkPeer.class);
+    assertEquals(nodeAddress, restoredPeer.getAddress());
+  }
 }

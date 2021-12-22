@@ -67,27 +67,27 @@ package com.radixdlt.client.lib.api.token;
 import com.radixdlt.utils.UInt256;
 
 public interface Amount {
-	int SUB_UNITS_POW_10 = 18;
+  int SUB_UNITS_POW_10 = 18;
 
-	static Amount amount(long value) {
-		return () -> UInt256.from(value);
-	}
+  static Amount amount(long value) {
+    return () -> UInt256.from(value);
+  }
 
-	default UInt256 tokens() {
-		return subunits().multiply(UInt256.TEN.pow(SUB_UNITS_POW_10));
-	}
+  default UInt256 tokens() {
+    return subunits().multiply(UInt256.TEN.pow(SUB_UNITS_POW_10));
+  }
 
-	default UInt256 millis() {
-		return subunits().multiply(UInt256.TEN.pow(SUB_UNITS_POW_10 - 3));
-	}
+  default UInt256 millis() {
+    return subunits().multiply(UInt256.TEN.pow(SUB_UNITS_POW_10 - 3));
+  }
 
-	default UInt256 micros() {
-		return subunits().multiply(UInt256.TEN.pow(SUB_UNITS_POW_10 - 6));
-	}
+  default UInt256 micros() {
+    return subunits().multiply(UInt256.TEN.pow(SUB_UNITS_POW_10 - 6));
+  }
 
-	default UInt256 nanos() {
-		return subunits().multiply(UInt256.TEN.pow(SUB_UNITS_POW_10 - 9));
-	}
+  default UInt256 nanos() {
+    return subunits().multiply(UInt256.TEN.pow(SUB_UNITS_POW_10 - 9));
+  }
 
-	UInt256 subunits();
+  UInt256 subunits();
 }

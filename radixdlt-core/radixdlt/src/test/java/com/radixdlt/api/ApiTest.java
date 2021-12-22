@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,6 +64,9 @@
 
 package com.radixdlt.api;
 
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -70,9 +74,9 @@ import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.core.openapitools.JSON;
 import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
-import com.radixdlt.api.core.openapitools.JSON;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
@@ -104,187 +108,199 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ExceptionHandler;
 import io.undertow.util.HeaderMap;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
-
 import java.io.ByteArrayInputStream;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 
 public abstract class ApiTest {
-	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 
-	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
-	@Inject
-	private SingleNodeDeterministicRunner runner;
-	private final Amount totalTokenAmount = Amount.ofTokens(110);
-	private final Amount stakeAmount = Amount.ofTokens(10);
-	private final Amount liquidAmount = Amount.ofSubunits(
-		totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits())
-	);
-	private final int mempoolMaxSize;
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+  @Inject private SingleNodeDeterministicRunner runner;
+  private final Amount totalTokenAmount = Amount.ofTokens(110);
+  private final Amount stakeAmount = Amount.ofTokens(10);
+  private final Amount liquidAmount =
+      Amount.ofSubunits(totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits()));
+  private final int mempoolMaxSize;
 
-	protected ApiTest(int mempoolMaxSize) {
-		this.mempoolMaxSize = mempoolMaxSize;
-	}
+  protected ApiTest(int mempoolMaxSize) {
+    this.mempoolMaxSize = mempoolMaxSize;
+  }
 
-	protected ApiTest() {
-		this.mempoolMaxSize = 10;
-	}
+  protected ApiTest() {
+    this.mempoolMaxSize = 10;
+  }
 
-	@Before
-	public void setup() {
-		var injector = Guice.createInjector(
-			MempoolConfig.asModule(mempoolMaxSize, 10),
-			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(
-				RERulesConfig.testingDefault().overrideFeeTable(FeeTable.create(
-					Amount.ofSubunits(UInt256.ONE),
-					Map.of(ValidatorRegisteredCopy.class, Amount.ofSubunits(UInt256.ONE))
-				))
-			),
-			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 1),
-			new MockedGenesisModule(
-				Set.of(TEST_KEY.getPublicKey()),
-				totalTokenAmount,
-				stakeAmount
-			),
-			new AbstractModule() {
-				@Override
-				protected void configure() {
-					bind(BerkeleyRecoverableProcessedTxnStore.class).in(Scopes.SINGLETON);
-					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-						.addBinding().to(BerkeleyRecoverableProcessedTxnStore.class);
-					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bindConstant().annotatedWith(NetworkId.class).to(99);
-					bind(P2PConfig.class).toInstance(mock(P2PConfig.class));
-					bind(AddressBook.class).in(Scopes.SINGLETON);
-					var selfUri = RadixNodeUri.fromPubKeyAndAddress(99, TEST_KEY.getPublicKey(), "localhost", 23456);
-					bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
-					var addressBookPersistence = mock(AddressBookPersistence.class);
-					when(addressBookPersistence.getAllEntries()).thenReturn(ImmutableList.of());
-					bind(AddressBookPersistence.class).toInstance(addressBookPersistence);
-					var runtimeProperties = mock(RuntimeProperties.class);
-					when(runtimeProperties.get(eq("api.transactions.enable"), anyBoolean())).thenReturn(true);
-					bind(RuntimeProperties.class).toInstance(runtimeProperties);
-				}
-			}
-		);
-		injector.injectMembers(this);
-	}
+  @Before
+  public void setup() {
+    var injector =
+        Guice.createInjector(
+            MempoolConfig.asModule(mempoolMaxSize, 10),
+            new MainnetForkConfigsModule(),
+            new RadixEngineForksLatestOnlyModule(
+                RERulesConfig.testingDefault()
+                    .overrideFeeTable(
+                        FeeTable.create(
+                            Amount.ofSubunits(UInt256.ONE),
+                            Map.of(
+                                ValidatorRegisteredCopy.class, Amount.ofSubunits(UInt256.ONE))))),
+            new ForksModule(),
+            new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 1),
+            new MockedGenesisModule(Set.of(TEST_KEY.getPublicKey()), totalTokenAmount, stakeAmount),
+            new AbstractModule() {
+              @Override
+              protected void configure() {
+                bind(BerkeleyRecoverableProcessedTxnStore.class).in(Scopes.SINGLETON);
+                Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
+                    .addBinding()
+                    .to(BerkeleyRecoverableProcessedTxnStore.class);
+                bindConstant()
+                    .annotatedWith(DatabaseLocation.class)
+                    .to(folder.getRoot().getAbsolutePath());
+                bindConstant().annotatedWith(NetworkId.class).to(99);
+                bind(P2PConfig.class).toInstance(mock(P2PConfig.class));
+                bind(AddressBook.class).in(Scopes.SINGLETON);
+                var selfUri =
+                    RadixNodeUri.fromPubKeyAndAddress(
+                        99, TEST_KEY.getPublicKey(), "localhost", 23456);
+                bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
+                var addressBookPersistence = mock(AddressBookPersistence.class);
+                when(addressBookPersistence.getAllEntries()).thenReturn(ImmutableList.of());
+                bind(AddressBookPersistence.class).toInstance(addressBookPersistence);
+                var runtimeProperties = mock(RuntimeProperties.class);
+                when(runtimeProperties.get(eq("api.transactions.enable"), anyBoolean()))
+                    .thenReturn(true);
+                bind(RuntimeProperties.class).toInstance(runtimeProperties);
+              }
+            });
+    injector.injectMembers(this);
+  }
 
-	protected Amount getStakeAmount() {
-		return stakeAmount;
-	}
+  protected Amount getStakeAmount() {
+    return stakeAmount;
+  }
 
-	protected Amount getLiquidAmount() {
-		return liquidAmount;
-	}
+  protected Amount getLiquidAmount() {
+    return liquidAmount;
+  }
 
-	protected NetworkIdentifier networkIdentifier() {
-		return new NetworkIdentifier().network("localnet");
-	}
+  protected NetworkIdentifier networkIdentifier() {
+    return new NetworkIdentifier().network("localnet");
+  }
 
-	protected ECPublicKey selfKey() {
-		return TEST_KEY.getPublicKey();
-	}
+  protected ECPublicKey selfKey() {
+    return TEST_KEY.getPublicKey();
+  }
 
-	protected final void start() {
-		runner.start();
-	}
+  protected final void start() {
+    runner.start();
+  }
 
-	protected final void runUntilCommitted(AID txnId) {
-		runner.runNextEventsThrough(
-			LedgerUpdate.class,
-			u -> {
-				var output = u.getStateComputerOutput().getInstance(REOutput.class);
-				return output.getProcessedTxns().stream().anyMatch(txn -> txn.getTxn().getId().equals(txnId));
-			}
-		);
-	}
+  protected final void runUntilCommitted(AID txnId) {
+    runner.runNextEventsThrough(
+        LedgerUpdate.class,
+        u -> {
+          var output = u.getStateComputerOutput().getInstance(REOutput.class);
+          return output.getProcessedTxns().stream()
+              .anyMatch(txn -> txn.getTxn().getId().equals(txnId));
+        });
+  }
 
-	private HttpServerExchange exchange(Exception e, Sender sender) {
-		var httpServerExchange = mock(HttpServerExchange.class);
-		when(httpServerExchange.getAttachment(ExceptionHandler.THROWABLE)).thenReturn(e);
-		when(httpServerExchange.isInIoThread()).thenReturn(false);
-		when(httpServerExchange.getResponseHeaders()).thenReturn(new HeaderMap());
-		when(httpServerExchange.getResponseSender()).thenReturn(sender);
-		return httpServerExchange;
-	}
+  private HttpServerExchange exchange(Exception e, Sender sender) {
+    var httpServerExchange = mock(HttpServerExchange.class);
+    when(httpServerExchange.getAttachment(ExceptionHandler.THROWABLE)).thenReturn(e);
+    when(httpServerExchange.isInIoThread()).thenReturn(false);
+    when(httpServerExchange.getResponseHeaders()).thenReturn(new HeaderMap());
+    when(httpServerExchange.getResponseSender()).thenReturn(sender);
+    return httpServerExchange;
+  }
 
-	private HttpServerExchange exchange(byte[] request, Sender sender) {
-		var httpServerExchange = mock(HttpServerExchange.class);
-		when(httpServerExchange.getInputStream()).thenReturn(new ByteArrayInputStream(request));
-		when(httpServerExchange.isInIoThread()).thenReturn(false);
-		when(httpServerExchange.getResponseHeaders()).thenReturn(new HeaderMap());
-		when(httpServerExchange.getResponseSender()).thenReturn(sender);
-		return httpServerExchange;
-	}
+  private HttpServerExchange exchange(byte[] request, Sender sender) {
+    var httpServerExchange = mock(HttpServerExchange.class);
+    when(httpServerExchange.getInputStream()).thenReturn(new ByteArrayInputStream(request));
+    when(httpServerExchange.isInIoThread()).thenReturn(false);
+    when(httpServerExchange.getResponseHeaders()).thenReturn(new HeaderMap());
+    when(httpServerExchange.getResponseSender()).thenReturn(sender);
+    return httpServerExchange;
+  }
 
-	private HttpServerExchange exchange(Sender sender) {
-		return exchange(new byte[0], sender);
-	}
+  private HttpServerExchange exchange(Sender sender) {
+    return exchange(new byte[0], sender);
+  }
 
-	protected String handleRequest(HttpHandler handler) throws Exception {
-		var sender = mock(Sender.class);
-		var response = new AtomicReference<String>();
-		doAnswer(invocation -> {
-			response.set(invocation.getArgument(0));
-			return null;
-		}).when(sender).send(anyString());
-		handler.handleRequest(exchange(sender));
-		return response.get();
-	}
+  protected String handleRequest(HttpHandler handler) throws Exception {
+    var sender = mock(Sender.class);
+    var response = new AtomicReference<String>();
+    doAnswer(
+            invocation -> {
+              response.set(invocation.getArgument(0));
+              return null;
+            })
+        .when(sender)
+        .send(anyString());
+    handler.handleRequest(exchange(sender));
+    return response.get();
+  }
 
-	protected <T> T handleExceptionWithExpectedResponse(HttpHandler handler, Exception e, Class<T> responseClass) throws Exception {
-		var objectMapper = JSON.getDefault().getMapper();
-		var sender = mock(Sender.class);
-		var response = new AtomicReference<String>();
-		doAnswer(invocation -> {
-			response.set(invocation.getArgument(0));
-			return null;
-		}).when(sender).send(anyString());
-		handler.handleRequest(exchange(e, sender));
-		return objectMapper.readValue(response.get(), responseClass);
-	}
+  protected <T> T handleExceptionWithExpectedResponse(
+      HttpHandler handler, Exception e, Class<T> responseClass) throws Exception {
+    var objectMapper = JSON.getDefault().getMapper();
+    var sender = mock(Sender.class);
+    var response = new AtomicReference<String>();
+    doAnswer(
+            invocation -> {
+              response.set(invocation.getArgument(0));
+              return null;
+            })
+        .when(sender)
+        .send(anyString());
+    handler.handleRequest(exchange(e, sender));
+    return objectMapper.readValue(response.get(), responseClass);
+  }
 
-	protected <T> T handleRequestWithExpectedResponse(HttpHandler handler, byte[] requestBytes, Class<T> responseClass) throws Exception {
-		var objectMapper = JSON.getDefault().getMapper();
-		var sender = mock(Sender.class);
-		var response = new AtomicReference<String>();
-		doAnswer(invocation -> {
-			response.set(invocation.getArgument(0));
-			return null;
-		}).when(sender).send(anyString());
-		handler.handleRequest(exchange(requestBytes, sender));
-		var deserializedResponse = objectMapper.readValue(response.get(), responseClass);
-		if (deserializedResponse == null) {
-			throw new IllegalStateException("Unexpected response: " + response.get());
-		}
-		return deserializedResponse;
-	}
+  protected <T> T handleRequestWithExpectedResponse(
+      HttpHandler handler, byte[] requestBytes, Class<T> responseClass) throws Exception {
+    var objectMapper = JSON.getDefault().getMapper();
+    var sender = mock(Sender.class);
+    var response = new AtomicReference<String>();
+    doAnswer(
+            invocation -> {
+              response.set(invocation.getArgument(0));
+              return null;
+            })
+        .when(sender)
+        .send(anyString());
+    handler.handleRequest(exchange(requestBytes, sender));
+    var deserializedResponse = objectMapper.readValue(response.get(), responseClass);
+    if (deserializedResponse == null) {
+      throw new IllegalStateException("Unexpected response: " + response.get());
+    }
+    return deserializedResponse;
+  }
 
-	protected <T> T handleRequestWithExpectedResponse(HttpHandler handler, Object request, Class<T> responseClass) throws Exception {
-		var objectMapper = JSON.getDefault().getMapper();
-		var requestBytes = objectMapper.writeValueAsBytes(request);
-		return handleRequestWithExpectedResponse(handler, requestBytes, responseClass);
-	}
+  protected <T> T handleRequestWithExpectedResponse(
+      HttpHandler handler, Object request, Class<T> responseClass) throws Exception {
+    var objectMapper = JSON.getDefault().getMapper();
+    var requestBytes = objectMapper.writeValueAsBytes(request);
+    return handleRequestWithExpectedResponse(handler, requestBytes, responseClass);
+  }
 
-	protected <T> T handleRequestWithExpectedResponse(HttpHandler handler, Class<T> responseClass) throws Exception {
-		var sender = mock(Sender.class);
-		var response = new AtomicReference<String>();
-		doAnswer(invocation -> {
-			response.set(invocation.getArgument(0));
-			return null;
-		}).when(sender).send(anyString());
-		handler.handleRequest(exchange(sender));
-		return JSON.getDefault().getMapper().readValue(response.get(), responseClass);
-	}
+  protected <T> T handleRequestWithExpectedResponse(HttpHandler handler, Class<T> responseClass)
+      throws Exception {
+    var sender = mock(Sender.class);
+    var response = new AtomicReference<String>();
+    doAnswer(
+            invocation -> {
+              response.set(invocation.getArgument(0));
+              return null;
+            })
+        .when(sender)
+        .send(anyString());
+    handler.handleRequest(exchange(sender));
+    return JSON.getDefault().getMapper().readValue(response.get(), responseClass);
+  }
 }

@@ -67,74 +67,72 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Objects;
 
 public class CreateFixedToken implements TxAction {
-	private final REAddr resourceAddr;
-	private final REAddr accountAddr;
-	private final String symbol;
-	private final String name;
-	private final String description;
-	private final String iconUrl;
-	private final String tokenUrl;
-	private final UInt256 supply;
+  private final REAddr resourceAddr;
+  private final REAddr accountAddr;
+  private final String symbol;
+  private final String name;
+  private final String description;
+  private final String iconUrl;
+  private final String tokenUrl;
+  private final UInt256 supply;
 
-	public CreateFixedToken(
-		REAddr resourceAddr,
-		REAddr accountAddr,
-		String symbol,
-		String name,
-		String description,
-		String iconUrl,
-		String tokenUrl,
-		UInt256 supply
-	) {
-		if (resourceAddr.getType() != REAddr.REAddrType.HASHED_KEY) {
-			throw new IllegalArgumentException("Invalid resource address.");
-		}
-		this.resourceAddr = resourceAddr;
-		this.accountAddr = Objects.requireNonNull(accountAddr);
-		this.symbol = Objects.requireNonNull(symbol);
-		this.name = Objects.requireNonNull(name);
-		this.description = Objects.requireNonNull(description);
-		this.iconUrl = Objects.requireNonNull(iconUrl);
-		this.tokenUrl = Objects.requireNonNull(tokenUrl);
-		if (supply.isZero()) {
-			throw new IllegalArgumentException("Supply must be > 0.");
-		}
-		this.supply = supply;
-	}
+  public CreateFixedToken(
+      REAddr resourceAddr,
+      REAddr accountAddr,
+      String symbol,
+      String name,
+      String description,
+      String iconUrl,
+      String tokenUrl,
+      UInt256 supply) {
+    if (resourceAddr.getType() != REAddr.REAddrType.HASHED_KEY) {
+      throw new IllegalArgumentException("Invalid resource address.");
+    }
+    this.resourceAddr = resourceAddr;
+    this.accountAddr = Objects.requireNonNull(accountAddr);
+    this.symbol = Objects.requireNonNull(symbol);
+    this.name = Objects.requireNonNull(name);
+    this.description = Objects.requireNonNull(description);
+    this.iconUrl = Objects.requireNonNull(iconUrl);
+    this.tokenUrl = Objects.requireNonNull(tokenUrl);
+    if (supply.isZero()) {
+      throw new IllegalArgumentException("Supply must be > 0.");
+    }
+    this.supply = supply;
+  }
 
-	public REAddr getResourceAddr() {
-		return resourceAddr;
-	}
+  public REAddr getResourceAddr() {
+    return resourceAddr;
+  }
 
-	public REAddr getAccountAddr() {
-		return accountAddr;
-	}
+  public REAddr getAccountAddr() {
+    return accountAddr;
+  }
 
-	public UInt256 getSupply() {
-		return supply;
-	}
+  public UInt256 getSupply() {
+    return supply;
+  }
 
-	public String getSymbol() {
-		return symbol;
-	}
+  public String getSymbol() {
+    return symbol;
+  }
 
-	public String getName() {
-		return name;
-	}
+  public String getName() {
+    return name;
+  }
 
-	public String getDescription() {
-		return description;
-	}
+  public String getDescription() {
+    return description;
+  }
 
-	public String getIconUrl() {
-		return iconUrl;
-	}
+  public String getIconUrl() {
+    return iconUrl;
+  }
 
-	public String getTokenUrl() {
-		return tokenUrl;
-	}
+  public String getTokenUrl() {
+    return tokenUrl;
+  }
 }

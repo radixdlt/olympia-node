@@ -69,15 +69,15 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.UnverifiedVertex;
 import org.radix.serialization.SerializeMessageObject;
 
-public class GetVerticesResponseMessageSerializeTest extends SerializeMessageObject<GetVerticesResponseMessage> {
-	public GetVerticesResponseMessageSerializeTest() {
-		super(GetVerticesResponseMessage.class, GetVerticesResponseMessageSerializeTest::get);
-	}
+public class GetVerticesResponseMessageSerializeTest
+    extends SerializeMessageObject<GetVerticesResponseMessage> {
+  public GetVerticesResponseMessageSerializeTest() {
+    super(GetVerticesResponseMessage.class, GetVerticesResponseMessageSerializeTest::get);
+  }
 
-	private static GetVerticesResponseMessage get() {
-		LedgerHeader ledgerHeader = LedgerHeader.mocked();
-		UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(ledgerHeader);
-		return new GetVerticesResponseMessage(ImmutableList.of(genesisVertex));
-	}
-
+  private static GetVerticesResponseMessage get() {
+    LedgerHeader ledgerHeader = LedgerHeader.mocked();
+    UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(ledgerHeader);
+    return new GetVerticesResponseMessage(ImmutableList.of(genesisVertex));
+  }
 }

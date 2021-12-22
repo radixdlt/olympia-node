@@ -66,46 +66,45 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public final class Count {
-	private final long count;
+  private final long count;
 
-	private Count(long count) {
-		this.count = count;
-	}
+  private Count(long count) {
+    this.count = count;
+  }
 
-	@JsonCreator
-	public static Count create(@JsonProperty(value = "count", required = true) long count) {
-		return new Count(count);
-	}
+  @JsonCreator
+  public static Count create(@JsonProperty(value = "count", required = true) long count) {
+    return new Count(count);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof Count)) {
-			return false;
-		}
+    if (!(o instanceof Count)) {
+      return false;
+    }
 
-		var countDTO = (Count) o;
-		return count == countDTO.count;
-	}
+    var countDTO = (Count) o;
+    return count == countDTO.count;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(count);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(count);
+  }
 
-	@Override
-	public String toString() {
-		return "{count:" + count + '}';
-	}
+  @Override
+  public String toString() {
+    return "{count:" + count + '}';
+  }
 
-	public long getCount() {
-		return count;
-	}
+  public long getCount() {
+    return count;
+  }
 }

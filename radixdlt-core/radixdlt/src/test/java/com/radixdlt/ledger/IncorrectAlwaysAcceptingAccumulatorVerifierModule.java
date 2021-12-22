@@ -68,44 +68,43 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
-/**
- * Accumulator verifier which incorrectly always gives false positives.
- */
+/** Accumulator verifier which incorrectly always gives false positives. */
 public class IncorrectAlwaysAcceptingAccumulatorVerifierModule extends AbstractModule {
-	@Provides
-	private LedgerAccumulatorVerifier badVerifier() {
-		return new LedgerAccumulatorVerifier() {
-			@Override
-			public boolean verify(AccumulatorState head, ImmutableList<HashCode> commands, AccumulatorState tail) {
-				return true;
-			}
+  @Provides
+  private LedgerAccumulatorVerifier badVerifier() {
+    return new LedgerAccumulatorVerifier() {
+      @Override
+      public boolean verify(
+          AccumulatorState head, ImmutableList<HashCode> commands, AccumulatorState tail) {
+        return true;
+      }
 
-			@Override
-			public <T> Optional<List<T>> verifyAndGetExtension(
-				AccumulatorState current,
-				List<T> commands,
-				Function<T, HashCode> hashCodeMapper,
-				AccumulatorState tail
-			) {
-				final long firstVersion = tail.getStateVersion() - commands.size() + 1;
-				if (current.getStateVersion() + 1 < firstVersion) {
-					// Missing versions
-					return Optional.empty();
-				}
+      @Override
+      public <T> Optional<List<T>> verifyAndGetExtension(
+          AccumulatorState current,
+          List<T> commands,
+          Function<T, HashCode> hashCodeMapper,
+          AccumulatorState tail) {
+        final long firstVersion = tail.getStateVersion() - commands.size() + 1;
+        if (current.getStateVersion() + 1 < firstVersion) {
+          // Missing versions
+          return Optional.empty();
+        }
 
-				if (commands.isEmpty()) {
-					return (Objects.equals(current, tail)) ? Optional.of(ImmutableList.of()) : Optional.empty();
-				}
+        if (commands.isEmpty()) {
+          return (Objects.equals(current, tail))
+              ? Optional.of(ImmutableList.of())
+              : Optional.empty();
+        }
 
-				final int startIndex = (int) (current.getStateVersion() + 1 - firstVersion);
-				return Optional.of(commands.subList(startIndex, commands.size()));
-			}
-		};
-	}
+        final int startIndex = (int) (current.getStateVersion() + 1 - firstVersion);
+        return Optional.of(commands.subList(startIndex, commands.size()));
+      }
+    };
+  }
 }

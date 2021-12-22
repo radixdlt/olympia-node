@@ -75,23 +75,20 @@ import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvaria
 import com.radixdlt.integration.invariants.SafetyChecker;
 import java.util.Optional;
 
-/**
- * Module which checks for consensus safety and throws exception on failure.
- */
+/** Module which checks for consensus safety and throws exception on failure. */
 public class SafetyCheckerModule extends AbstractModule {
-	@Override
-	public void configure() {
-		bind(SafetyChecker.class).in(Scopes.SINGLETON);
-	}
+  @Override
+  public void configure() {
+    bind(SafetyChecker.class).in(Scopes.SINGLETON);
+  }
 
-	@ProvidesIntoSet
-	public NodeEventProcessor<?> safetyCheckProcessor(SafetyChecker safetyChecker) {
-		return new NodeEventProcessor<>(
-			BFTCommittedUpdate.class,
-			(node, update) -> {
-				Optional<TestInvariantError> maybeError = safetyChecker.process(node, update);
-				assertThat(maybeError).isEmpty();
-			}
-		);
-	}
+  @ProvidesIntoSet
+  public NodeEventProcessor<?> safetyCheckProcessor(SafetyChecker safetyChecker) {
+    return new NodeEventProcessor<>(
+        BFTCommittedUpdate.class,
+        (node, update) -> {
+          Optional<TestInvariantError> maybeError = safetyChecker.process(node, update);
+          assertThat(maybeError).isEmpty();
+        });
+  }
 }

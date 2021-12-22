@@ -69,44 +69,42 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 
-/**
- * An empty BFT event processor
- */
+/** An empty BFT event processor */
 public enum EmptyBFTEventProcessor implements BFTEventProcessor {
-	INSTANCE;
+  INSTANCE;
 
-	@Override
-	public void processVote(Vote vote) {
-		// No-op
-	}
+  @Override
+  public void processVote(Vote vote) {
+    // No-op
+  }
 
-	@Override
-	public void processProposal(Proposal proposal) {
-		// No-op
-	}
+  @Override
+  public void processProposal(Proposal proposal) {
+    // No-op
+  }
 
-	@Override
-	public void processLocalTimeout(ScheduledLocalTimeout timeout) {
-		// No-op
-	}
+  @Override
+  public void processLocalTimeout(ScheduledLocalTimeout timeout) {
+    // No-op
+  }
 
-	@Override
-	public void processBFTUpdate(BFTInsertUpdate update) {
-		// No-op
-	}
+  @Override
+  public void processBFTUpdate(BFTInsertUpdate update) {
+    // No-op
+  }
 
-	@Override
-	public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
-		// No-op
-	}
+  @Override
+  public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
+    // No-op
+  }
 
-	@Override
-	public void start() {
-		// No-op
-	}
+  @Override
+  public void start() {
+    // No-op
+  }
 
-	@Override
-	public void processViewUpdate(ViewUpdate viewUpdate) {
-		// No-op
-	}
+  @Override
+  public void processViewUpdate(ViewUpdate viewUpdate) {
+    // No-op
+  }
 }

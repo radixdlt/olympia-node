@@ -67,7 +67,7 @@ package com.radixdlt.constraintmachine.exceptions;
 import com.radixdlt.identifiers.REAddr;
 
 public class NotAResourceException extends Exception {
-	public NotAResourceException(REAddr addr) {
-		super(addr + " is not a resource");
-	}
+  public NotAResourceException(REAddr addr) {
+    super(addr + " is not a resource");
+  }
 }

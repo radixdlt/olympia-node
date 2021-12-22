@@ -72,31 +72,29 @@ import com.radixdlt.integration.distributed.simulation.MonitorKey;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.monitors.NodeEvents;
 
-/**
- * Monitors which checks things in the ledger module
- */
+/** Monitors which checks things in the ledger module */
 public final class LedgerMonitors {
-    public static Module consensusToLedger() {
-        return new AbstractModule() {
-            @ProvidesIntoMap
-            @MonitorKey(Monitor.CONSENSUS_TO_LEDGER_PROCESSED)
-            TestInvariant ledgerProcessedInvariant(NodeEvents nodeEvents) {
-                return new ConsensusToLedgerCommittedInvariant(nodeEvents);
-            }
-        };
-    }
+  public static Module consensusToLedger() {
+    return new AbstractModule() {
+      @ProvidesIntoMap
+      @MonitorKey(Monitor.CONSENSUS_TO_LEDGER_PROCESSED)
+      TestInvariant ledgerProcessedInvariant(NodeEvents nodeEvents) {
+        return new ConsensusToLedgerCommittedInvariant(nodeEvents);
+      }
+    };
+  }
 
-    public static Module ordered() {
-        return new AbstractModule() {
-            @ProvidesIntoMap
-            @MonitorKey(Monitor.LEDGER_IN_ORDER)
-            TestInvariant ledgerInOrderInvariant() {
-                return new LedgerInOrderInvariant();
-            }
-        };
-    }
+  public static Module ordered() {
+    return new AbstractModule() {
+      @ProvidesIntoMap
+      @MonitorKey(Monitor.LEDGER_IN_ORDER)
+      TestInvariant ledgerInOrderInvariant() {
+        return new LedgerInOrderInvariant();
+      }
+    };
+  }
 
-    private LedgerMonitors() {
-        throw new IllegalStateException("Cannot instantiate.");
-    }
+  private LedgerMonitors() {
+    throw new IllegalStateException("Cannot instantiate.");
+  }
 }

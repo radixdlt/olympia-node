@@ -66,52 +66,51 @@ package com.radixdlt.crypto;
 
 /**
  * Interface for abstract 256-bit and 512-bit cryptographic hash functions.
- * <p>
- * The intent behind this interface is that the actual hash functions can
- * easily be replaced when required.
- * <p>
- * Note that all methods must be thread safe.
+ *
+ * <p>The intent behind this interface is that the actual hash functions can easily be replaced when
+ * required.
+ *
+ * <p>Note that all methods must be thread safe.
  */
 interface HashHandler {
 
-	/**
-	 * Hashes the specified portion of the array, returning a cryptographically secure 256-bit hash
-	 *
-	 * @param data The data to hash
-	 * @param offset The offset within the array to start hashing data
-	 * @param length The number of bytes in the array to hash
-	 * @return The digest by applying the 256-bit/32-byte hash
-	 */
-	byte[] hash256(byte[] data, int offset, int length);
+  /**
+   * Hashes the specified portion of the array, returning a cryptographically secure 256-bit hash
+   *
+   * @param data The data to hash
+   * @param offset The offset within the array to start hashing data
+   * @param length The number of bytes in the array to hash
+   * @return The digest by applying the 256-bit/32-byte hash
+   */
+  byte[] hash256(byte[] data, int offset, int length);
 
-	/**
-	 * Hashes the specified portion of the array, returning a cryptographically secure 512-bit hash.
-	 *
-	 * @param data The data to hash
-	 * @param offset The offset within the array to start hashing data
-	 * @param length The number of bytes in the array to hash
-	 * @return The 512-bit/64-byte hash
-	 */
-	byte[] hash512(byte[] data, int offset, int length);
+  /**
+   * Hashes the specified portion of the array, returning a cryptographically secure 512-bit hash.
+   *
+   * @param data The data to hash
+   * @param offset The offset within the array to start hashing data
+   * @param length The number of bytes in the array to hash
+   * @return The 512-bit/64-byte hash
+   */
+  byte[] hash512(byte[] data, int offset, int length);
 
-	/**
-	 * Hashes the supplied array, returning a cryptographically secure 256-bit hash
-	 *
-	 * @param data The data to hash
-	 * @return The digest by applying the 256-bit/32-byte hash
-	 */
-	default byte[] hash256(byte[] data) {
-		return hash256(data, 0, data.length);
-	}
+  /**
+   * Hashes the supplied array, returning a cryptographically secure 256-bit hash
+   *
+   * @param data The data to hash
+   * @return The digest by applying the 256-bit/32-byte hash
+   */
+  default byte[] hash256(byte[] data) {
+    return hash256(data, 0, data.length);
+  }
 
-	/**
-	 * Hashes the specified portion of the array, returning a cryptographically secure 512-bit hash.
-	 *
-	 * @param data The data to hash
-	 * @return The 512-bit/64-byte hash
-	 */
-	default byte[] hash512(byte[] data) {
-		return hash512(data, 0, data.length);
-	}
-
+  /**
+   * Hashes the specified portion of the array, returning a cryptographically secure 512-bit hash.
+   *
+   * @param data The data to hash
+   * @return The 512-bit/64-byte hash
+   */
+  default byte[] hash512(byte[] data) {
+    return hash512(data, 0, data.length);
+  }
 }

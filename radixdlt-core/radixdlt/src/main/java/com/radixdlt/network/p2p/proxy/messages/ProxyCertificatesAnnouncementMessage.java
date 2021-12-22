@@ -71,45 +71,44 @@ import com.radixdlt.network.messaging.Message;
 import com.radixdlt.network.p2p.proxy.ProxyCertificate;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
-
 import java.util.Objects;
 
 @SerializerId2("p2p.proxy.proxy_certificates_announcement")
 public final class ProxyCertificatesAnnouncementMessage extends Message {
-	@JsonProperty("proxyCertificates")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final ImmutableSet<ProxyCertificate> proxyCertificates;
+  @JsonProperty("proxyCertificates")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final ImmutableSet<ProxyCertificate> proxyCertificates;
 
-	@JsonCreator
-	public ProxyCertificatesAnnouncementMessage(
-		@JsonProperty(value = "proxyCertificates", required = true) ImmutableSet<ProxyCertificate> proxyCertificates
-	) {
-		this.proxyCertificates = Objects.requireNonNull(proxyCertificates);
-		this.proxyCertificates.forEach(Objects::requireNonNull);
-	}
+  @JsonCreator
+  public ProxyCertificatesAnnouncementMessage(
+      @JsonProperty(value = "proxyCertificates", required = true)
+          ImmutableSet<ProxyCertificate> proxyCertificates) {
+    this.proxyCertificates = Objects.requireNonNull(proxyCertificates);
+    this.proxyCertificates.forEach(Objects::requireNonNull);
+  }
 
-	public ImmutableSet<ProxyCertificate> getProxyCertificates() {
-		return proxyCertificates;
-	}
+  public ImmutableSet<ProxyCertificate> getProxyCertificates() {
+    return proxyCertificates;
+  }
 
-	@Override
-	public String toString() {
-		return getClass().getSimpleName();
-	}
+  @Override
+  public String toString() {
+    return getClass().getSimpleName();
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		return (o instanceof ProxyCertificatesAnnouncementMessage that)
-			&& Objects.equals(proxyCertificates, that.getProxyCertificates())
-			&& Objects.equals(getTimestamp(), that.getTimestamp());
-	}
+    return (o instanceof ProxyCertificatesAnnouncementMessage that)
+        && Objects.equals(proxyCertificates, that.getProxyCertificates())
+        && Objects.equals(getTimestamp(), that.getTimestamp());
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(proxyCertificates, getTimestamp());
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(proxyCertificates, getTimestamp());
+  }
 }

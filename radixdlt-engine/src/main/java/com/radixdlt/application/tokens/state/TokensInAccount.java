@@ -72,72 +72,65 @@ import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 
 /**
- *  A particle which represents an amount of transferrable fungible tokens
- *  owned by some key owner and stored in an account.
+ * A particle which represents an amount of transferrable fungible tokens owned by some key owner
+ * and stored in an account.
  */
 public final class TokensInAccount implements ResourceInBucket {
-	private final REAddr holdingAddress;
-	private final REAddr resourceAddr;
-	private final UInt256 amount;
+  private final REAddr holdingAddress;
+  private final REAddr resourceAddr;
+  private final UInt256 amount;
 
-	public TokensInAccount(
-		REAddr holdingAddress,
-		REAddr resourceAddr,
-		UInt256 amount
-	) {
-		this.holdingAddress = Objects.requireNonNull(holdingAddress);
-		this.resourceAddr = Objects.requireNonNull(resourceAddr);
-		this.amount = Objects.requireNonNull(amount);
-	}
+  public TokensInAccount(REAddr holdingAddress, REAddr resourceAddr, UInt256 amount) {
+    this.holdingAddress = Objects.requireNonNull(holdingAddress);
+    this.resourceAddr = Objects.requireNonNull(resourceAddr);
+    this.amount = Objects.requireNonNull(amount);
+  }
 
-	public Tokens toTokens() {
-		return Tokens.create(resourceAddr, amount);
-	}
+  public Tokens toTokens() {
+    return Tokens.create(resourceAddr, amount);
+  }
 
-	@Override
-	public UInt256 getAmount() {
-		return this.amount;
-	}
+  @Override
+  public UInt256 getAmount() {
+    return this.amount;
+  }
 
-	@Override
-	public Bucket bucket() {
-		return AccountBucket.from(resourceAddr, holdingAddress);
-	}
+  @Override
+  public Bucket bucket() {
+    return AccountBucket.from(resourceAddr, holdingAddress);
+  }
 
-	public REAddr getHoldingAddr() {
-		return this.holdingAddress;
-	}
+  public REAddr getHoldingAddr() {
+    return this.holdingAddress;
+  }
 
-	public REAddr getResourceAddr() {
-		return this.resourceAddr;
-	}
+  public REAddr getResourceAddr() {
+    return this.resourceAddr;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{resourceAddr=%s holder=%s amount=%s}",
-			getClass().getSimpleName(),
-			resourceAddr,
-			holdingAddress,
-			amount
-		);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{resourceAddr=%s holder=%s amount=%s}",
+        getClass().getSimpleName(), resourceAddr, holdingAddress, amount);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof TokensInAccount)) {
-			return false;
-		}
-		TokensInAccount that = (TokensInAccount) o;
-		return Objects.equals(holdingAddress, that.holdingAddress)
-			&& Objects.equals(resourceAddr, that.resourceAddr)
-			&& Objects.equals(amount, that.amount);
-	}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof TokensInAccount)) {
+      return false;
+    }
+    TokensInAccount that = (TokensInAccount) o;
+    return Objects.equals(holdingAddress, that.holdingAddress)
+        && Objects.equals(resourceAddr, that.resourceAddr)
+        && Objects.equals(amount, that.amount);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(holdingAddress, resourceAddr, amount);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(holdingAddress, resourceAddr, amount);
+  }
 }

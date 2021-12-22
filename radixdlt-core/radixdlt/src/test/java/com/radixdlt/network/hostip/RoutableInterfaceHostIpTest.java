@@ -64,6 +64,10 @@
 
 package com.radixdlt.network.hostip;
 
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+
+import com.google.common.collect.Iterators;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.UnknownHostException;
@@ -71,122 +75,116 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Vector;
-
 import org.junit.Test;
-
-import com.google.common.collect.Iterators;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
 public class RoutableInterfaceHostIpTest {
 
-	@Test
-	public void testEmpty() {
-		RoutableInterfaceHostIp rihip = make();
-		assertFalse(rihip.hostIp(Collections.emptyIterator()).isPresent());
-	}
+  @Test
+  public void testEmpty() {
+    RoutableInterfaceHostIp rihip = make();
+    assertFalse(rihip.hostIp(Collections.emptyIterator()).isPresent());
+  }
 
-	@Test
-	public void testLoopback() throws UnknownHostException {
-		RoutableInterfaceHostIp rihip = make();
+  @Test
+  public void testLoopback() throws UnknownHostException {
+    RoutableInterfaceHostIp rihip = make();
 
-		InetAddress loopback = InetAddress.getByName("127.0.0.1");
-		Vector<InetAddress> addresses = new Vector<>(List.of(loopback));
+    InetAddress loopback = InetAddress.getByName("127.0.0.1");
+    Vector<InetAddress> addresses = new Vector<>(List.of(loopback));
 
-		NetworkInterface ni = mock(NetworkInterface.class);
-		when(ni.getInetAddresses()).thenReturn(addresses.elements());
+    NetworkInterface ni = mock(NetworkInterface.class);
+    when(ni.getInetAddresses()).thenReturn(addresses.elements());
 
-		assertFalse(rihip.hostIp(Iterators.forArray(ni)).isPresent());
-	}
+    assertFalse(rihip.hostIp(Iterators.forArray(ni)).isPresent());
+  }
 
-	@Test
-	public void testLinkLocal() throws UnknownHostException {
-		RoutableInterfaceHostIp rihip = make();
+  @Test
+  public void testLinkLocal() throws UnknownHostException {
+    RoutableInterfaceHostIp rihip = make();
 
-		InetAddress linklocal = InetAddress.getByName("169.254.0.0");
-		Vector<InetAddress> addresses = new Vector<>(List.of(linklocal));
+    InetAddress linklocal = InetAddress.getByName("169.254.0.0");
+    Vector<InetAddress> addresses = new Vector<>(List.of(linklocal));
 
-		NetworkInterface ni = mock(NetworkInterface.class);
-		when(ni.getInetAddresses()).thenReturn(addresses.elements());
+    NetworkInterface ni = mock(NetworkInterface.class);
+    when(ni.getInetAddresses()).thenReturn(addresses.elements());
 
-		assertFalse(rihip.hostIp(Iterators.forArray(ni)).isPresent());
-	}
+    assertFalse(rihip.hostIp(Iterators.forArray(ni)).isPresent());
+  }
 
-	@Test
-	public void testMulticast() throws UnknownHostException {
-		RoutableInterfaceHostIp rihip = make();
+  @Test
+  public void testMulticast() throws UnknownHostException {
+    RoutableInterfaceHostIp rihip = make();
 
-		InetAddress linklocal = InetAddress.getByName("224.0.0.1");
-		Vector<InetAddress> addresses = new Vector<>(List.of(linklocal));
+    InetAddress linklocal = InetAddress.getByName("224.0.0.1");
+    Vector<InetAddress> addresses = new Vector<>(List.of(linklocal));
 
-		NetworkInterface ni = mock(NetworkInterface.class);
-		when(ni.getInetAddresses()).thenReturn(addresses.elements());
+    NetworkInterface ni = mock(NetworkInterface.class);
+    when(ni.getInetAddresses()).thenReturn(addresses.elements());
 
-		assertFalse(rihip.hostIp(Iterators.forArray(ni)).isPresent());
-	}
+    assertFalse(rihip.hostIp(Iterators.forArray(ni)).isPresent());
+  }
 
-	@Test
-	public void testNonRoutable() throws UnknownHostException {
-		RoutableInterfaceHostIp rihip = make();
+  @Test
+  public void testNonRoutable() throws UnknownHostException {
+    RoutableInterfaceHostIp rihip = make();
 
-		InetAddress nonroutable = InetAddress.getByName("192.168.0.1");
-		Vector<InetAddress> addresses = new Vector<>(List.of(nonroutable));
+    InetAddress nonroutable = InetAddress.getByName("192.168.0.1");
+    Vector<InetAddress> addresses = new Vector<>(List.of(nonroutable));
 
-		NetworkInterface ni = mock(NetworkInterface.class);
-		when(ni.getInetAddresses()).thenReturn(addresses.elements());
+    NetworkInterface ni = mock(NetworkInterface.class);
+    when(ni.getInetAddresses()).thenReturn(addresses.elements());
 
-		Optional<String> result = rihip.hostIp(Iterators.forArray(ni));
-		assertFalse(result.isPresent());
-	}
+    Optional<String> result = rihip.hostIp(Iterators.forArray(ni));
+    assertFalse(result.isPresent());
+  }
 
-	@Test
-	public void testRoutable() throws UnknownHostException {
-		RoutableInterfaceHostIp rihip = make();
+  @Test
+  public void testRoutable() throws UnknownHostException {
+    RoutableInterfaceHostIp rihip = make();
 
-		InetAddress routable = InetAddress.getByName("8.8.8.8");
-		Vector<InetAddress> addresses = new Vector<>(List.of(routable));
+    InetAddress routable = InetAddress.getByName("8.8.8.8");
+    Vector<InetAddress> addresses = new Vector<>(List.of(routable));
 
-		NetworkInterface ni = mock(NetworkInterface.class);
-		when(ni.getInetAddresses()).thenReturn(addresses.elements());
+    NetworkInterface ni = mock(NetworkInterface.class);
+    when(ni.getInetAddresses()).thenReturn(addresses.elements());
 
-		Optional<String> result = rihip.hostIp(Iterators.forArray(ni));
-		assertTrue(result.isPresent());
-		assertEquals("8.8.8.8", result.get());
-	}
+    Optional<String> result = rihip.hostIp(Iterators.forArray(ni));
+    assertTrue(result.isPresent());
+    assertEquals("8.8.8.8", result.get());
+  }
 
-	@Test
-	public void testTooManyAddresses() throws UnknownHostException {
-		RoutableInterfaceHostIp rihip = make();
+  @Test
+  public void testTooManyAddresses() throws UnknownHostException {
+    RoutableInterfaceHostIp rihip = make();
 
-		InetAddress addr1 = InetAddress.getByName("8.8.8.8");
-		InetAddress addr2 = InetAddress.getByName("8.8.4.4");
-		Vector<InetAddress> addresses = new Vector<>(List.of(addr1, addr2));
+    InetAddress addr1 = InetAddress.getByName("8.8.8.8");
+    InetAddress addr2 = InetAddress.getByName("8.8.4.4");
+    Vector<InetAddress> addresses = new Vector<>(List.of(addr1, addr2));
 
-		NetworkInterface ni = mock(NetworkInterface.class);
-		when(ni.getInetAddresses()).thenReturn(addresses.elements());
+    NetworkInterface ni = mock(NetworkInterface.class);
+    when(ni.getInetAddresses()).thenReturn(addresses.elements());
 
-		Optional<String> result = rihip.hostIp(Iterators.forArray(ni));
-		assertFalse(result.isPresent());
-	}
+    Optional<String> result = rihip.hostIp(Iterators.forArray(ni));
+    assertFalse(result.isPresent());
+  }
 
-	@Test
-	public void testInvalidAddress() {
-		// Not sure how this can really happen without a O/S fail
-		RoutableInterfaceHostIp rihip = make();
+  @Test
+  public void testInvalidAddress() {
+    // Not sure how this can really happen without a O/S fail
+    RoutableInterfaceHostIp rihip = make();
 
-		InetAddress badAddr = mock(InetAddress.class);
-		when(badAddr.getHostAddress()).thenReturn("a:b");
-		Vector<InetAddress> addresses = new Vector<>(List.of(badAddr));
+    InetAddress badAddr = mock(InetAddress.class);
+    when(badAddr.getHostAddress()).thenReturn("a:b");
+    Vector<InetAddress> addresses = new Vector<>(List.of(badAddr));
 
-		NetworkInterface ni = mock(NetworkInterface.class);
-		when(ni.getInetAddresses()).thenReturn(addresses.elements());
+    NetworkInterface ni = mock(NetworkInterface.class);
+    when(ni.getInetAddresses()).thenReturn(addresses.elements());
 
-		Optional<String> result = rihip.hostIp(Iterators.forArray(ni));
-		assertFalse(result.isPresent());
-	}
+    Optional<String> result = rihip.hostIp(Iterators.forArray(ni));
+    assertFalse(result.isPresent());
+  }
 
-	private static RoutableInterfaceHostIp make() {
-		return (RoutableInterfaceHostIp) RoutableInterfaceHostIp.create();
-	}
+  private static RoutableInterfaceHostIp make() {
+    return (RoutableInterfaceHostIp) RoutableInterfaceHostIp.create();
+  }
 }

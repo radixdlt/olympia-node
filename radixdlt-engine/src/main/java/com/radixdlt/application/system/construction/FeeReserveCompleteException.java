@@ -68,14 +68,14 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.utils.UInt256;
 
 public class FeeReserveCompleteException extends TxBuilderException {
-	private final UInt256 expectedFee;
+  private final UInt256 expectedFee;
 
-	public FeeReserveCompleteException(UInt256 feePaid, UInt256 expectedFee) {
-		super("Fee paid " + feePaid + " is not enough to cover fees " + expectedFee);
-		this.expectedFee = expectedFee;
-	}
+  public FeeReserveCompleteException(UInt256 feePaid, UInt256 expectedFee) {
+    super("Fee paid " + feePaid + " is not enough to cover fees " + expectedFee);
+    this.expectedFee = expectedFee;
+  }
 
-	public UInt256 getExpectedFee() {
-		return expectedFee;
-	}
+  public UInt256 getExpectedFee() {
+    return expectedFee;
+  }
 }

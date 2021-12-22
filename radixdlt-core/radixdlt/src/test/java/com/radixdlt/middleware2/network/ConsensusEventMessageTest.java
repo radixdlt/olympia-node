@@ -64,6 +64,11 @@
 
 package com.radixdlt.middleware2.network;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
@@ -72,54 +77,45 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-
 public class ConsensusEventMessageTest {
 
-	@Test
-	public void sensibleToStringProposal() {
-		Proposal m = mock(Proposal.class);
-		ConsensusEventMessage msg1 = new ConsensusEventMessage(m);
-		String s1 = msg1.toString();
+  @Test
+  public void sensibleToStringProposal() {
+    Proposal m = mock(Proposal.class);
+    ConsensusEventMessage msg1 = new ConsensusEventMessage(m);
+    String s1 = msg1.toString();
 
-		assertThat(s1)
-			.contains(ConsensusEventMessage.class.getSimpleName())
-			.contains(m.toString());
+    assertThat(s1).contains(ConsensusEventMessage.class.getSimpleName()).contains(m.toString());
 
-		assertTrue(msg1.getConsensusMessage() instanceof Proposal);
-	}
+    assertTrue(msg1.getConsensusMessage() instanceof Proposal);
+  }
 
-	@Test
-	public void sensibleToStringVote() {
-		Vote m = mock(Vote.class);
-		ConsensusEventMessage msg1 = new ConsensusEventMessage(m);
-		String s1 = msg1.toString();
-		assertThat(s1)
-			.contains(ConsensusEventMessage.class.getSimpleName())
-			.contains(m.toString());
+  @Test
+  public void sensibleToStringVote() {
+    Vote m = mock(Vote.class);
+    ConsensusEventMessage msg1 = new ConsensusEventMessage(m);
+    String s1 = msg1.toString();
+    assertThat(s1).contains(ConsensusEventMessage.class.getSimpleName()).contains(m.toString());
 
-		assertTrue(msg1.getConsensusMessage() instanceof Vote);
-	}
+    assertTrue(msg1.getConsensusMessage() instanceof Vote);
+  }
 
-	@Test(expected = IllegalStateException.class)
-	public void failedConsensusMessage() {
-		ConsensusEventMessage msg1 = new ConsensusEventMessage((Proposal) null);
-		assertNotNull(msg1.getConsensusMessage());
-	}
+  @Test(expected = IllegalStateException.class)
+  public void failedConsensusMessage() {
+    ConsensusEventMessage msg1 = new ConsensusEventMessage((Proposal) null);
+    assertNotNull(msg1.getConsensusMessage());
+  }
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(ConsensusEventMessage.class)
-			.suppress(Warning.NONFINAL_FIELDS)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
-	}
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(ConsensusEventMessage.class)
+        .suppress(Warning.NONFINAL_FIELDS)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 
-	@Test(expected = IllegalStateException.class)
-	public void deserializationWithBothNullParametersThrowsException() {
-		new ConsensusEventMessage(null, null);
-	}
+  @Test(expected = IllegalStateException.class)
+  public void deserializationWithBothNullParametersThrowsException() {
+    new ConsensusEventMessage(null, null);
+  }
 }

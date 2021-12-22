@@ -67,12 +67,12 @@ package com.radixdlt.constraintmachine.exceptions;
 import com.radixdlt.identifiers.REAddr;
 
 public final class InvalidResourceException extends Exception {
-	private final REAddr expected;
-	private final REAddr actual;
+  private final REAddr expected;
+  private final REAddr actual;
 
-	public InvalidResourceException(REAddr expected, REAddr actual) {
-		super("Expected resource " + expected + " but was " + actual);
-		this.expected = expected;
-		this.actual = actual;
-	}
+  public InvalidResourceException(REAddr expected, REAddr actual) {
+    super("Expected resource " + expected + " but was " + actual);
+    this.expected = expected;
+    this.actual = actual;
+  }
 }

@@ -79,64 +79,50 @@ import com.radixdlt.network.p2p.discovery.DiscoverPeers;
 import com.radixdlt.network.p2p.discovery.GetPeers;
 import com.radixdlt.network.p2p.discovery.PeerDiscovery;
 import com.radixdlt.network.p2p.discovery.PeersResponse;
-
 import java.time.Duration;
 
 public final class PeerDiscoveryModule extends AbstractModule {
 
-	@Override
-	protected void configure() {
-		final var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
-			.permitDuplicates();
-		eventBinder.addBinding().toInstance(DiscoverPeers.class);
+  @Override
+  protected void configure() {
+    final var eventBinder =
+        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
+            .permitDuplicates();
+    eventBinder.addBinding().toInstance(DiscoverPeers.class);
 
-		bind(PeerDiscovery.class).in(Scopes.SINGLETON);
-	}
+    bind(PeerDiscovery.class).in(Scopes.SINGLETON);
+  }
 
-	@ProvidesIntoSet
-	public ScheduledEventProducerOnRunner<?> discoverPeersEventProducer(
-		EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher,
-		P2PConfig config
-	) {
-		return new ScheduledEventProducerOnRunner<>(
-			Runners.P2P_NETWORK,
-			discoverPeersEventDispatcher,
-			DiscoverPeers::create,
-			Duration.ofMillis(500L),
-			Duration.ofMillis(config.discoveryInterval())
-		);
-	}
+  @ProvidesIntoSet
+  public ScheduledEventProducerOnRunner<?> discoverPeersEventProducer(
+      EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher, P2PConfig config) {
+    return new ScheduledEventProducerOnRunner<>(
+        Runners.P2P_NETWORK,
+        discoverPeersEventDispatcher,
+        DiscoverPeers::create,
+        Duration.ofMillis(500L),
+        Duration.ofMillis(config.discoveryInterval()));
+  }
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> discoverPeersEventProcessor(
-		PeerDiscovery peerDiscovery
-	) {
-		return new EventProcessorOnRunner<>(
-			Runners.P2P_NETWORK,
-			DiscoverPeers.class,
-			peerDiscovery.discoverPeersEventProcessor()
-		);
-	}
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> discoverPeersEventProcessor(PeerDiscovery peerDiscovery) {
+    return new EventProcessorOnRunner<>(
+        Runners.P2P_NETWORK, DiscoverPeers.class, peerDiscovery.discoverPeersEventProcessor());
+  }
 
-	@ProvidesIntoSet
-	private RemoteEventProcessorOnRunner<?> getPeersRemoteEventProcessor(
-		PeerDiscovery peerDiscovery
-	) {
-		return new RemoteEventProcessorOnRunner<>(
-			Runners.P2P_NETWORK,
-			GetPeers.class,
-			peerDiscovery.getPeersRemoteEventProcessor()
-		);
-	}
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?> getPeersRemoteEventProcessor(
+      PeerDiscovery peerDiscovery) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.P2P_NETWORK, GetPeers.class, peerDiscovery.getPeersRemoteEventProcessor());
+  }
 
-	@ProvidesIntoSet
-	private RemoteEventProcessorOnRunner<?> peersResponseRemoteEventProcessor(
-		PeerDiscovery peerDiscovery
-	) {
-		return new RemoteEventProcessorOnRunner<>(
-			Runners.P2P_NETWORK,
-			PeersResponse.class,
-			peerDiscovery.peersResponseRemoteEventProcessor()
-		);
-	}
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?> peersResponseRemoteEventProcessor(
+      PeerDiscovery peerDiscovery) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.P2P_NETWORK,
+        PeersResponse.class,
+        peerDiscovery.peersResponseRemoteEventProcessor());
+  }
 }

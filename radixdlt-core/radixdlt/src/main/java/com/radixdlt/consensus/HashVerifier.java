@@ -68,19 +68,16 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 
-/**
- * Verifies signatures against hashes.
- */
+/** Verifies signatures against hashes. */
 @FunctionalInterface
 public interface HashVerifier {
-	/**
-	 * Verify the specified signature against the specified hash with
-	 * the specified public key.
-	 *
-	 * @param pubKey The public key to verify with
-	 * @param hash The the hash to verify
-	 * @param sig The signature to verify
-	 * @return {@code true} if the signature matches, {@code false} otherwise
-	 */
-	boolean verify(ECPublicKey pubKey, HashCode hash, ECDSASignature sig);
+  /**
+   * Verify the specified signature against the specified hash with the specified public key.
+   *
+   * @param pubKey The public key to verify with
+   * @param hash The the hash to verify
+   * @param sig The signature to verify
+   * @return {@code true} if the signature matches, {@code false} otherwise
+   */
+  boolean verify(ECPublicKey pubKey, HashCode hash, ECDSASignature sig);
 }

@@ -66,58 +66,59 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.List;
 import java.util.Objects;
 
 public final class AccountBalance {
-	private final List<BalanceStakes> stakes;
-	private final List<Balance> tokens;
-	private final List<BalanceStakes> preparedStakes;
+  private final List<BalanceStakes> stakes;
+  private final List<Balance> tokens;
+  private final List<BalanceStakes> preparedStakes;
 
-	private AccountBalance(List<BalanceStakes> stakes, List<Balance> tokens, List<BalanceStakes> preparedStakes) {
-		this.stakes = stakes;
-		this.tokens = tokens;
-		this.preparedStakes = preparedStakes;
-	}
+  private AccountBalance(
+      List<BalanceStakes> stakes, List<Balance> tokens, List<BalanceStakes> preparedStakes) {
+    this.stakes = stakes;
+    this.tokens = tokens;
+    this.preparedStakes = preparedStakes;
+  }
 
-	@JsonCreator
-	public static AccountBalance create(
-		@JsonProperty(value = "stakes", required = true) List<BalanceStakes> stakes,
-		@JsonProperty(value = "preparedStakes", required = true) List<BalanceStakes> preparedStakes,
-		@JsonProperty(value = "tokens", required = true) List<Balance> tokens
-	) {
-		return new AccountBalance(stakes, tokens, preparedStakes);
-	}
+  @JsonCreator
+  public static AccountBalance create(
+      @JsonProperty(value = "stakes", required = true) List<BalanceStakes> stakes,
+      @JsonProperty(value = "preparedStakes", required = true) List<BalanceStakes> preparedStakes,
+      @JsonProperty(value = "tokens", required = true) List<Balance> tokens) {
+    return new AccountBalance(stakes, tokens, preparedStakes);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-		if (!(o instanceof AccountBalance)) {
-			return false;
-		}
+    if (!(o instanceof AccountBalance)) {
+      return false;
+    }
 
-		var that = (AccountBalance) o;
-		return stakes.equals(that.stakes) && tokens.equals(that.tokens) && preparedStakes.equals(that.preparedStakes);
-	}
+    var that = (AccountBalance) o;
+    return stakes.equals(that.stakes)
+        && tokens.equals(that.tokens)
+        && preparedStakes.equals(that.preparedStakes);
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(stakes, tokens, preparedStakes);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(stakes, tokens, preparedStakes);
+  }
 
-	public List<BalanceStakes> getStakes() {
-		return stakes;
-	}
+  public List<BalanceStakes> getStakes() {
+    return stakes;
+  }
 
-	public List<BalanceStakes> getPreparedStakes() {
-		return preparedStakes;
-	}
+  public List<BalanceStakes> getPreparedStakes() {
+    return preparedStakes;
+  }
 
-	public List<Balance> getTokens() {
-		return tokens;
-	}
+  public List<Balance> getTokens() {
+    return tokens;
+  }
 }

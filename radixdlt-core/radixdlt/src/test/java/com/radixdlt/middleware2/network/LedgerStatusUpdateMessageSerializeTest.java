@@ -69,14 +69,14 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
 import org.radix.serialization.SerializeMessageObject;
 
-public class LedgerStatusUpdateMessageSerializeTest extends SerializeMessageObject<LedgerStatusUpdateMessage> {
-	public LedgerStatusUpdateMessageSerializeTest() {
-		super(LedgerStatusUpdateMessage.class, LedgerStatusUpdateMessageSerializeTest::get);
-	}
+public class LedgerStatusUpdateMessageSerializeTest
+    extends SerializeMessageObject<LedgerStatusUpdateMessage> {
+  public LedgerStatusUpdateMessageSerializeTest() {
+    super(LedgerStatusUpdateMessage.class, LedgerStatusUpdateMessageSerializeTest::get);
+  }
 
-	private static LedgerStatusUpdateMessage get() {
-		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-		return new LedgerStatusUpdateMessage(LedgerProof.genesis(accumulatorState, null, 0));
-	}
-
+  private static LedgerStatusUpdateMessage get() {
+    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    return new LedgerStatusUpdateMessage(LedgerProof.genesis(accumulatorState, null, 0));
+  }
 }

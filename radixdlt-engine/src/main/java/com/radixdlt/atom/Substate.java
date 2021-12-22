@@ -65,54 +65,53 @@
 package com.radixdlt.atom;
 
 import com.radixdlt.constraintmachine.Particle;
-
 import java.util.Objects;
 
 /**
- * Application substate which can be booted up or shut down in radix engine
- * through transactions.
+ * Application substate which can be booted up or shut down in radix engine through transactions.
  */
 public final class Substate {
-	private final Particle particle;
-	private final SubstateId substateId;
+  private final Particle particle;
+  private final SubstateId substateId;
 
-	private Substate(Particle particle, SubstateId substateId) {
-		this.particle = particle;
-		this.substateId = substateId;
-	}
+  private Substate(Particle particle, SubstateId substateId) {
+    this.particle = particle;
+    this.substateId = substateId;
+  }
 
-	public static Substate create(Particle particle, SubstateId substateId) {
-		Objects.requireNonNull(particle);
-		Objects.requireNonNull(substateId);
-		return new Substate(particle, substateId);
-	}
+  public static Substate create(Particle particle, SubstateId substateId) {
+    Objects.requireNonNull(particle);
+    Objects.requireNonNull(substateId);
+    return new Substate(particle, substateId);
+  }
 
-	public SubstateId getId() {
-		return substateId;
-	}
+  public SubstateId getId() {
+    return substateId;
+  }
 
-	public Particle getParticle() {
-		return particle;
-	}
+  public Particle getParticle() {
+    return particle;
+  }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(particle, substateId);
-	}
+  @Override
+  public int hashCode() {
+    return Objects.hash(particle, substateId);
+  }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof Substate)) {
-			return false;
-		}
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof Substate)) {
+      return false;
+    }
 
-		var other = (Substate) o;
-		return Objects.equals(this.particle, other.particle)
-			&& Objects.equals(this.substateId, other.substateId);
-	}
+    var other = (Substate) o;
+    return Objects.equals(this.particle, other.particle)
+        && Objects.equals(this.substateId, other.substateId);
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s{raw=%s id=%s}", this.getClass().getSimpleName(), this.particle, this.substateId);
-	}
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{raw=%s id=%s}", this.getClass().getSimpleName(), this.particle, this.substateId);
+  }
 }

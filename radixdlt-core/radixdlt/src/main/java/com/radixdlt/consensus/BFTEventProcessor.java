@@ -72,49 +72,49 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 /**
  * Processor of BFT events.
  *
- * Implementations are not expected to be thread-safe.
+ * <p>Implementations are not expected to be thread-safe.
  */
 public interface BFTEventProcessor {
-	/**
-	 * The initialization call. Must be called first and only once at
-	 * the beginning of the BFT's lifetime.
-	 */
-	void start();
+  /**
+   * The initialization call. Must be called first and only once at the beginning of the BFT's
+   * lifetime.
+   */
+  void start();
 
-	/**
-	 * Process a local view update message.
-	 *
-	 * @param viewUpdate the view update message
-	 */
-	void processViewUpdate(ViewUpdate viewUpdate);
+  /**
+   * Process a local view update message.
+   *
+   * @param viewUpdate the view update message
+   */
+  void processViewUpdate(ViewUpdate viewUpdate);
 
-	/**
-	 * Process a consensus vote message.
-	 *
-	 * @param vote the vote message
-	 */
-	void processVote(Vote vote);
+  /**
+   * Process a consensus vote message.
+   *
+   * @param vote the vote message
+   */
+  void processVote(Vote vote);
 
-	/**
-	 * Process a consensus proposal message.
-	 *
-	 * @param proposal the proposal message
-	 */
-	void processProposal(Proposal proposal);
+  /**
+   * Process a consensus proposal message.
+   *
+   * @param proposal the proposal message
+   */
+  void processProposal(Proposal proposal);
 
-	/**
-	 * Process a local consensus timeout message.
-	 *
-	 * @param scheduledLocalTimeout the view corresponding to the timeout
-	 */
-	void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout);
+  /**
+   * Process a local consensus timeout message.
+   *
+   * @param scheduledLocalTimeout the view corresponding to the timeout
+   */
+  void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout);
 
-	/**
-	 * Process a BFT update.
-	 *
-	 * @param update the BFT update
-	 */
-	void processBFTUpdate(BFTInsertUpdate update);
+  /**
+   * Process a BFT update.
+   *
+   * @param update the BFT update
+   */
+  void processBFTUpdate(BFTInsertUpdate update);
 
-	void processBFTRebuildUpdate(BFTRebuildUpdate update);
+  void processBFTRebuildUpdate(BFTRebuildUpdate update);
 }

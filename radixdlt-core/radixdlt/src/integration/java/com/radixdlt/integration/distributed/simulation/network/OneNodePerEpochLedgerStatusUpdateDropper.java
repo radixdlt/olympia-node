@@ -67,31 +67,32 @@ package com.radixdlt.integration.distributed.simulation.network;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
 
 /**
- * Drops all epoch ledger status update messages from the first node to send an epoch response
- * for a given epoch
+ * Drops all epoch ledger status update messages from the first node to send an epoch response for a
+ * given epoch
  */
 public class OneNodePerEpochLedgerStatusUpdateDropper implements Predicate<MessageInTransit> {
-	private final Map<Long, BFTNode> nodeToDrop = new HashMap<>();
+  private final Map<Long, BFTNode> nodeToDrop = new HashMap<>();
 
-	@Override
-	public boolean test(MessageInTransit messageInTransit) {
-		if (!(messageInTransit.getContent() instanceof LedgerStatusUpdate)) {
-			return false;
-		}
+  @Override
+  public boolean test(MessageInTransit messageInTransit) {
+    if (!(messageInTransit.getContent() instanceof LedgerStatusUpdate)) {
+      return false;
+    }
 
-		final var ledgerStatusUpdate = (LedgerStatusUpdate) messageInTransit.getContent();
+    final var ledgerStatusUpdate = (LedgerStatusUpdate) messageInTransit.getContent();
 
-		final var node = nodeToDrop.putIfAbsent(ledgerStatusUpdate.getHeader().getEpoch(), messageInTransit.getSender());
-		if (node == null) {
-			return true;
-		}
+    final var node =
+        nodeToDrop.putIfAbsent(
+            ledgerStatusUpdate.getHeader().getEpoch(), messageInTransit.getSender());
+    if (node == null) {
+      return true;
+    }
 
-		return messageInTransit.getSender().equals(node);
-	}
+    return messageInTransit.getSender().equals(node);
+  }
 }

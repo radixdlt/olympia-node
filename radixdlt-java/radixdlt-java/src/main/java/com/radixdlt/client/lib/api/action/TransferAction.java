@@ -71,16 +71,16 @@ import com.radixdlt.utils.UInt256;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class TransferAction implements Action {
-	private final ActionType type = ActionType.TRANSFER;
-	private final AccountAddress from;
-	private final AccountAddress to;
-	private final UInt256 amount;
-	private final String rri;
+  private final ActionType type = ActionType.TRANSFER;
+  private final AccountAddress from;
+  private final AccountAddress to;
+  private final UInt256 amount;
+  private final String rri;
 
-	public TransferAction(AccountAddress from, AccountAddress to, UInt256 amount, String rri) {
-		this.from = from;
-		this.to = to;
-		this.amount = amount;
-		this.rri = rri;
-	}
+  public TransferAction(AccountAddress from, AccountAddress to, UInt256 amount, String rri) {
+    this.from = from;
+    this.to = to;
+    this.amount = amount;
+    this.rri = rri;
+  }
 }

@@ -64,151 +64,164 @@
 
 package com.radixdlt.network.messaging;
 
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
+import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
+import static com.radixdlt.utils.functional.Unit.unit;
 
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.network.messaging.router.MessageEnvelope;
 import com.radixdlt.network.messaging.serialization.MessageSerialization;
-import com.radixdlt.network.p2p.PeerConnectionException;
-import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.transport.PeerChannel;
+import com.radixdlt.network.p2p.PeerConnectionException;
 import com.radixdlt.network.p2p.PeerManager;
-
+import com.radixdlt.network.p2p.transport.PeerChannel;
+import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Unit;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
-import static com.radixdlt.utils.functional.Unit.unit;
-
 final class MessageDispatcher {
-	private static final Logger log = LogManager.getLogger();
+  private static final Logger log = LogManager.getLogger();
 
-	private final NodeId self;
-	private final long messageTtlMs;
-	private final SystemCounters counters;
-	private final MessageSerialization messageSerialization;
-	private final TimeSupplier timeSource;
-	private final PeerManager peerManager;
+  private final NodeId self;
+  private final long messageTtlMs;
+  private final SystemCounters counters;
+  private final MessageSerialization messageSerialization;
+  private final TimeSupplier timeSource;
+  private final PeerManager peerManager;
 
-	MessageDispatcher(
-		NodeId self,
-		SystemCounters counters,
-		MessageCentralConfiguration config,
-		MessageSerialization messageSerialization,
-		TimeSupplier timeSource,
-		PeerManager peerManager
-	) {
-		this.self = Objects.requireNonNull(self);
-		this.messageTtlMs = Objects.requireNonNull(config).messagingTimeToLive(30_000L);
-		this.counters = Objects.requireNonNull(counters);
-		this.messageSerialization = Objects.requireNonNull(messageSerialization);
-		this.timeSource = Objects.requireNonNull(timeSource);
-		this.peerManager = Objects.requireNonNull(peerManager);
-	}
+  MessageDispatcher(
+      NodeId self,
+      SystemCounters counters,
+      MessageCentralConfiguration config,
+      MessageSerialization messageSerialization,
+      TimeSupplier timeSource,
+      PeerManager peerManager) {
+    this.self = Objects.requireNonNull(self);
+    this.messageTtlMs = Objects.requireNonNull(config).messagingTimeToLive(30_000L);
+    this.counters = Objects.requireNonNull(counters);
+    this.messageSerialization = Objects.requireNonNull(messageSerialization);
+    this.timeSource = Objects.requireNonNull(timeSource);
+    this.peerManager = Objects.requireNonNull(peerManager);
+  }
 
-	CompletableFuture<Result<Unit>> send(final OutboundMessageEvent outboundMessage) {
-		final var message = outboundMessage.message();
-		final var receiver = outboundMessage.receiver();
+  CompletableFuture<Result<Unit>> send(final OutboundMessageEvent outboundMessage) {
+    final var message = outboundMessage.message();
+    final var receiver = outboundMessage.receiver();
 
-		if (timeSource.currentTime() - message.getTimestamp() > messageTtlMs) {
-			String msg = String.format("TTL for %s message to %s has expired", message.getClass().getSimpleName(), receiver);
-			log.warn(msg);
-			this.counters.increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
-			return CompletableFuture.completedFuture(MESSAGE_EXPIRED.result());
-		}
+    if (timeSource.currentTime() - message.getTimestamp() > messageTtlMs) {
+      String msg =
+          String.format(
+              "TTL for %s message to %s has expired", message.getClass().getSimpleName(), receiver);
+      log.warn(msg);
+      this.counters.increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
+      return CompletableFuture.completedFuture(MESSAGE_EXPIRED.result());
+    }
 
-		/* first, we try to send the message directly to the receiver */
-		return sendDirectly(outboundMessage.receiver(), outboundMessage.message())
-			/* if no direct channel is available, we try using a configured proxy node */
-			.exceptionallyCompose(ex ->
-				// we want to try a non-direct channels only if the connection attempt failed
-				// for a known reason (PeerChannelException), not to miss unexpected errors
-				// the exception might be wrapped in future's wrapper exception (hence we also check ex.getCause())
-				(ex instanceof PeerConnectionException || ex.getCause() instanceof PeerConnectionException)
-					? sendViaConfiguredProxy(outboundMessage.receiver(), outboundMessage.message())
-					: CompletableFuture.failedFuture(ex)
-			)
-			/* if no configured proxy is available, we try through a certified proxy node */
-			.exceptionallyCompose(ex ->
-				(ex instanceof PeerConnectionException || ex.getCause() instanceof PeerConnectionException)
-					? sendViaCertifiedProxy(outboundMessage.receiver(), outboundMessage.message())
-					: CompletableFuture.failedFuture(ex)
-			)
-			/* update the counter if any of above send attempts succeeded and map to Result */
-			.thenApply(res -> {
-				this.counters.increment(CounterType.MESSAGES_OUTBOUND_SENT);
-				return Result.ok(res);
-			})
-			/* log an error when message send fails */
-			.exceptionally(ex -> logSendError(ex, outboundMessage.receiver(), outboundMessage.message()))
-			/* recover any Result.failure from the wrapper exception or create a new Failure obj */
-			.exceptionallyCompose(ex -> ex instanceof FailureException failureException
-				? CompletableFuture.completedFuture(failureException.failure.result())
-				: CompletableFuture.completedFuture(Result.fail(Failure.failure(1, ex.getMessage())))
-			)
-			/* in either success or failure case, update the "processed" counter */
-			.whenComplete((unused1, unused2) -> this.counters.increment(CounterType.MESSAGES_OUTBOUND_PROCESSED));
-	}
+    /* first, we try to send the message directly to the receiver */
+    return sendDirectly(outboundMessage.receiver(), outboundMessage.message())
+        /* if no direct channel is available, we try using a configured proxy node */
+        .exceptionallyCompose(
+            ex ->
+                // we want to try a non-direct channels only if the connection attempt failed
+                // for a known reason (PeerChannelException), not to miss unexpected errors
+                // the exception might be wrapped in future's wrapper exception (hence we also check
+                // ex.getCause())
+                (ex instanceof PeerConnectionException
+                        || ex.getCause() instanceof PeerConnectionException)
+                    ? sendViaConfiguredProxy(outboundMessage.receiver(), outboundMessage.message())
+                    : CompletableFuture.failedFuture(ex))
+        /* if no configured proxy is available, we try through a certified proxy node */
+        .exceptionallyCompose(
+            ex ->
+                (ex instanceof PeerConnectionException
+                        || ex.getCause() instanceof PeerConnectionException)
+                    ? sendViaCertifiedProxy(outboundMessage.receiver(), outboundMessage.message())
+                    : CompletableFuture.failedFuture(ex))
+        /* update the counter if any of above send attempts succeeded and map to Result */
+        .thenApply(
+            res -> {
+              this.counters.increment(CounterType.MESSAGES_OUTBOUND_SENT);
+              return Result.ok(res);
+            })
+        /* log an error when message send fails */
+        .exceptionally(
+            ex -> logSendError(ex, outboundMessage.receiver(), outboundMessage.message()))
+        /* recover any Result.failure from the wrapper exception or create a new Failure obj */
+        .exceptionallyCompose(
+            ex ->
+                ex instanceof FailureException failureException
+                    ? CompletableFuture.completedFuture(failureException.failure.result())
+                    : CompletableFuture.completedFuture(
+                        Result.fail(Failure.failure(1, ex.getMessage()))))
+        /* in either success or failure case, update the "processed" counter */
+        .whenComplete(
+            (unused1, unused2) -> this.counters.increment(CounterType.MESSAGES_OUTBOUND_PROCESSED));
+  }
 
-	private CompletableFuture<Unit> sendDirectly(NodeId receiver, Message message) {
-		return peerManager.findOrCreateDirectChannel(receiver)
-			.thenCompose(channel -> serializeAndSend(channel, message));
-	}
+  private CompletableFuture<Unit> sendDirectly(NodeId receiver, Message message) {
+    return peerManager
+        .findOrCreateDirectChannel(receiver)
+        .thenCompose(channel -> serializeAndSend(channel, message));
+  }
 
-	private CompletableFuture<Unit> sendViaCertifiedProxy(NodeId receiver, Message message) {
-		return peerManager.findOrCreateProxyChannel(receiver)
-			.thenCompose(channel -> wrapWithEnvelopeAndSend(channel, receiver, message));
-	}
+  private CompletableFuture<Unit> sendViaCertifiedProxy(NodeId receiver, Message message) {
+    return peerManager
+        .findOrCreateProxyChannel(receiver)
+        .thenCompose(channel -> wrapWithEnvelopeAndSend(channel, receiver, message));
+  }
 
-	private CompletableFuture<Unit> sendViaConfiguredProxy(NodeId receiver, Message message) {
-		return peerManager.findOrCreateConfiguredProxyChannel()
-			.thenComposeAsync(channel -> wrapWithEnvelopeAndSend(channel, receiver, message));
-	}
+  private CompletableFuture<Unit> sendViaConfiguredProxy(NodeId receiver, Message message) {
+    return peerManager
+        .findOrCreateConfiguredProxyChannel()
+        .thenComposeAsync(channel -> wrapWithEnvelopeAndSend(channel, receiver, message));
+  }
 
-	private CompletableFuture<Unit> wrapWithEnvelopeAndSend(PeerChannel channel, NodeId receiver, Message message) {
-		final var messageToSend = message instanceof MessageEnvelope
-			? message
-			: MessageEnvelope.create(self, receiver, message);
-		return serializeAndSend(channel, messageToSend);
-	}
+  private CompletableFuture<Unit> wrapWithEnvelopeAndSend(
+      PeerChannel channel, NodeId receiver, Message message) {
+    final var messageToSend =
+        message instanceof MessageEnvelope
+            ? message
+            : MessageEnvelope.create(self, receiver, message);
+    return serializeAndSend(channel, messageToSend);
+  }
 
-	private CompletableFuture<Unit> serializeAndSend(PeerChannel channel, Message message) {
-		return toFuture(messageSerialization.serialize(message))
-			.thenCompose(serializedMessage -> {
-				this.counters.add(CounterType.NETWORKING_BYTES_SENT, serializedMessage.length);
-				return toFuture(channel.send(serializedMessage));
-			});
-	}
+  private CompletableFuture<Unit> serializeAndSend(PeerChannel channel, Message message) {
+    return toFuture(messageSerialization.serialize(message))
+        .thenCompose(
+            serializedMessage -> {
+              this.counters.add(CounterType.NETWORKING_BYTES_SENT, serializedMessage.length);
+              return toFuture(channel.send(serializedMessage));
+            });
+  }
 
-	private Result<Unit> logSendError(Throwable ex, NodeId receiver, Message message) {
-		final var msg = String.format("Send %s to %s failed", message.getClass().getSimpleName(), receiver);
-		log.warn("{}: {}", msg, ex.getMessage());
-		return Result.ok(unit());
-	}
+  private Result<Unit> logSendError(Throwable ex, NodeId receiver, Message message) {
+    final var msg =
+        String.format("Send %s to %s failed", message.getClass().getSimpleName(), receiver);
+    log.warn("{}: {}", msg, ex.getMessage());
+    return Result.ok(unit());
+  }
 
-	private <T> CompletableFuture<T> toFuture(Result<T> res) {
-		return res.fold(
-			failure -> CompletableFuture.failedFuture(new FailureException(failure)),
-			CompletableFuture::completedFuture
-		);
-	}
+  private <T> CompletableFuture<T> toFuture(Result<T> res) {
+    return res.fold(
+        failure -> CompletableFuture.failedFuture(new FailureException(failure)),
+        CompletableFuture::completedFuture);
+  }
 
-	/**
-	 * Local helper class for dealing with the trichotomy of
-	 * Result.ok, Result.failure and CompletableFuture exception.
-	 * Makes it easier to work only with exceptions when composing futures
-	 * and then recover back to the Result with a correct Failure at the end.
-	 */
-	private static final class FailureException extends Exception {
-		final Failure failure;
-		FailureException(Failure failure) {
-			this.failure = failure;
-		}
-	}
+  /**
+   * Local helper class for dealing with the trichotomy of Result.ok, Result.failure and
+   * CompletableFuture exception. Makes it easier to work only with exceptions when composing
+   * futures and then recover back to the Result with a correct Failure at the end.
+   */
+  private static final class FailureException extends Exception {
+    final Failure failure;
+
+    FailureException(Failure failure) {
+      this.failure = failure;
+    }
+  }
 }

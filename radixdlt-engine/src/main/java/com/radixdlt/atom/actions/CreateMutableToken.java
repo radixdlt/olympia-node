@@ -70,69 +70,67 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 
 public final class CreateMutableToken implements TxAction {
-	private final REAddr resourceAddress;
-	private final String symbol;
-	private final String name;
-	private final String description;
-	private final String iconUrl;
-	private final String tokenUrl;
-	private final ECPublicKey owner;
+  private final REAddr resourceAddress;
+  private final String symbol;
+  private final String name;
+  private final String description;
+  private final String iconUrl;
+  private final String tokenUrl;
+  private final ECPublicKey owner;
 
-	public CreateMutableToken(MutableTokenDefinition def) {
-		this(
-			def.getResourceAddress(),
-			def.getSymbol(),
-			def.getName(),
-			def.getDescription(),
-			def.getIconUrl(),
-			def.getTokenUrl(),
-			def.getOwner()
-		);
-	}
+  public CreateMutableToken(MutableTokenDefinition def) {
+    this(
+        def.getResourceAddress(),
+        def.getSymbol(),
+        def.getName(),
+        def.getDescription(),
+        def.getIconUrl(),
+        def.getTokenUrl(),
+        def.getOwner());
+  }
 
-	public CreateMutableToken(
-		REAddr resourceAddress,
-		String symbol,
-		String name,
-		String description,
-		String iconUrl,
-		String tokenUrl,
-		ECPublicKey owner
-	) {
-		this.resourceAddress = resourceAddress;
-		this.symbol = symbol.toLowerCase();
-		this.name = name;
-		this.description = description;
-		this.iconUrl = iconUrl;
-		this.tokenUrl = tokenUrl;
-		this.owner = owner;
-	}
+  public CreateMutableToken(
+      REAddr resourceAddress,
+      String symbol,
+      String name,
+      String description,
+      String iconUrl,
+      String tokenUrl,
+      ECPublicKey owner) {
+    this.resourceAddress = resourceAddress;
+    this.symbol = symbol.toLowerCase();
+    this.name = name;
+    this.description = description;
+    this.iconUrl = iconUrl;
+    this.tokenUrl = tokenUrl;
+    this.owner = owner;
+  }
 
-	public ECPublicKey getOwner() {
-		return owner;
-	}
+  public ECPublicKey getOwner() {
+    return owner;
+  }
 
-	public REAddr getResourceAddress() {
-		return resourceAddress;
-	}
+  public REAddr getResourceAddress() {
+    return resourceAddress;
+  }
 
-	public String getSymbol() {
-		return symbol;
-	}
+  public String getSymbol() {
+    return symbol;
+  }
 
-	public String getName() {
-		return name == null ? "" : name;
-	}
+  public String getName() {
+    return name == null ? "" : name;
+  }
 
-	public String getDescription() {
-		return description == null ? "" : description;
-	}
+  public String getDescription() {
+    return description == null ? "" : description;
+  }
 
-	public String getIconUrl() {
-		return iconUrl == null ? "" : iconUrl;
-	}
+  public String getIconUrl() {
+    return iconUrl == null ? "" : iconUrl;
+  }
 
-	public String getTokenUrl() {
-		return tokenUrl == null ? "" : tokenUrl;
-	}
+  public String getTokenUrl() {
+    return tokenUrl == null ? "" : tokenUrl;
+  }
 }

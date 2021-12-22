@@ -64,9 +64,6 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.radixdlt.network.p2p.discovery.messages.GetPeersMessage;
-import com.radixdlt.network.p2p.discovery.messages.PeersResponseMessage;
-
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
@@ -74,57 +71,59 @@ import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.discovery.GetPeers;
 import com.radixdlt.network.p2p.discovery.PeersResponse;
-
-import java.util.Objects;
-
+import com.radixdlt.network.p2p.discovery.messages.GetPeersMessage;
+import com.radixdlt.network.p2p.discovery.messages.PeersResponseMessage;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
+import java.util.Objects;
 import javax.inject.Inject;
 
-/**
- * Network interface for peer discovery messages the MessageCentral
- */
+/** Network interface for peer discovery messages the MessageCentral */
 public final class MessageCentralPeerDiscovery {
-	private final MessageCentral messageCentral;
+  private final MessageCentral messageCentral;
 
-	@Inject
-	public MessageCentralPeerDiscovery(MessageCentral messageCentral) {
-		this.messageCentral = Objects.requireNonNull(messageCentral);
-	}
+  @Inject
+  public MessageCentralPeerDiscovery(MessageCentral messageCentral) {
+    this.messageCentral = Objects.requireNonNull(messageCentral);
+  }
 
-	public Flowable<RemoteEvent<GetPeers>> getPeersEvents() {
-		return this.messageCentral.messagesOf(GetPeersMessage.class)
-			.toFlowable(BackpressureStrategy.BUFFER)
-			.map(m -> {
-				final var node = BFTNode.create(m.getSource().getPublicKey());
-				return RemoteEvent.create(node, GetPeers.create());
-			});
-	}
+  public Flowable<RemoteEvent<GetPeers>> getPeersEvents() {
+    return this.messageCentral
+        .messagesOf(GetPeersMessage.class)
+        .toFlowable(BackpressureStrategy.BUFFER)
+        .map(
+            m -> {
+              final var node = BFTNode.create(m.getSource().getPublicKey());
+              return RemoteEvent.create(node, GetPeers.create());
+            });
+  }
 
-	public Flowable<RemoteEvent<PeersResponse>> peersResponses() {
-		return this.messageCentral.messagesOf(PeersResponseMessage.class)
-			.toFlowable(BackpressureStrategy.BUFFER)
-			.map(m -> {
-				final var node = BFTNode.create(m.getSource().getPublicKey());
-				return RemoteEvent.create(node, PeersResponse.create(m.getMessage().getPeers()));
-			});
-	}
+  public Flowable<RemoteEvent<PeersResponse>> peersResponses() {
+    return this.messageCentral
+        .messagesOf(PeersResponseMessage.class)
+        .toFlowable(BackpressureStrategy.BUFFER)
+        .map(
+            m -> {
+              final var node = BFTNode.create(m.getSource().getPublicKey());
+              return RemoteEvent.create(node, PeersResponse.create(m.getMessage().getPeers()));
+            });
+  }
 
-	public RemoteEventDispatcher<GetPeers> getPeersDispatcher() {
-		return this::sendGetPeers;
-	}
+  public RemoteEventDispatcher<GetPeers> getPeersDispatcher() {
+    return this::sendGetPeers;
+  }
 
-	private void sendGetPeers(BFTNode node, GetPeers getPeers) {
-		final var msg = new GetPeersMessage();
-		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
-	}
+  private void sendGetPeers(BFTNode node, GetPeers getPeers) {
+    final var msg = new GetPeersMessage();
+    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+  }
 
-	public RemoteEventDispatcher<PeersResponse> peersResponseDispatcher() {
-		return this::sendPeersResponse;
-	}
+  public RemoteEventDispatcher<PeersResponse> peersResponseDispatcher() {
+    return this::sendPeersResponse;
+  }
 
-	private void sendPeersResponse(BFTNode node, PeersResponse peersResponse) {
-		final var msg = new PeersResponseMessage(peersResponse.getPeers());
-		this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
-	}
+  private void sendPeersResponse(BFTNode node, PeersResponse peersResponse) {
+    final var msg = new PeersResponseMessage(peersResponse.getPeers());
+    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+  }
 }

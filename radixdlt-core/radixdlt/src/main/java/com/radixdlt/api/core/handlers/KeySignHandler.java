@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -68,9 +69,9 @@ import com.google.inject.Provider;
 import com.radixdlt.api.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.CoreModelMapper;
-import com.radixdlt.api.core.openapitools.model.PublicKeyNotSupportedError;
 import com.radixdlt.api.core.openapitools.model.KeySignRequest;
 import com.radixdlt.api.core.openapitools.model.KeySignResponse;
+import com.radixdlt.api.core.openapitools.model.PublicKeyNotSupportedError;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.HashSigner;
@@ -83,54 +84,51 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Bytes;
 
 public final class KeySignHandler extends CoreJsonRpcHandler<KeySignRequest, KeySignResponse> {
-	private final ECPublicKey self;
-	private final HashSigner hashSigner;
-	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
-	private final CoreModelMapper coreModelMapper;
+  private final ECPublicKey self;
+  private final HashSigner hashSigner;
+  private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
+  private final CoreModelMapper coreModelMapper;
 
-	@Inject
-	KeySignHandler(
-		@Self ECPublicKey self,
-		@LocalSigner HashSigner hashSigner,
-		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
-		CoreModelMapper coreModelMapper
-	) {
-		super(KeySignRequest.class);
+  @Inject
+  KeySignHandler(
+      @Self ECPublicKey self,
+      @LocalSigner HashSigner hashSigner,
+      Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
+      CoreModelMapper coreModelMapper) {
+    super(KeySignRequest.class);
 
-		this.self = self;
-		this.hashSigner = hashSigner;
-		this.radixEngineProvider = radixEngineProvider;
-		this.coreModelMapper = coreModelMapper;
-	}
+    this.self = self;
+    this.hashSigner = hashSigner;
+    this.radixEngineProvider = radixEngineProvider;
+    this.coreModelMapper = coreModelMapper;
+  }
 
-	@Override
-	public KeySignResponse handleRequest(KeySignRequest request) throws CoreApiException {
-		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
+  @Override
+  public KeySignResponse handleRequest(KeySignRequest request) throws CoreApiException {
+    coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var pubKey = coreModelMapper.ecPublicKey(request.getPublicKey());
-		if (!self.equals(pubKey)) {
-			throw CoreApiException.notSupported(
-				new PublicKeyNotSupportedError()
-					.unsupportedPublicKey(request.getPublicKey())
-					.type(PublicKeyNotSupportedError.class.getSimpleName())
-			);
-		}
+    var pubKey = coreModelMapper.ecPublicKey(request.getPublicKey());
+    if (!self.equals(pubKey)) {
+      throw CoreApiException.notSupported(
+          new PublicKeyNotSupportedError()
+              .unsupportedPublicKey(request.getPublicKey())
+              .type(PublicKeyNotSupportedError.class.getSimpleName()));
+    }
 
-		// Verify this is a valid transaction and not anything more malicious
-		var bytes = coreModelMapper.bytes(request.getUnsignedTransaction());
-		var txn = Txn.create(bytes);
-		try {
-			radixEngineProvider.get().getParser().parse(txn);
-		} catch (TxnParseException e) {
-			throw coreModelMapper.parseException(e);
-		}
+    // Verify this is a valid transaction and not anything more malicious
+    var bytes = coreModelMapper.bytes(request.getUnsignedTransaction());
+    var txn = Txn.create(bytes);
+    try {
+      radixEngineProvider.get().getParser().parse(txn);
+    } catch (TxnParseException e) {
+      throw coreModelMapper.parseException(e);
+    }
 
-		var builder = TxLowLevelBuilder.newBuilder(bytes);
-		var hash = builder.hashToSign();
-		var signature = this.hashSigner.sign(hash);
-		var signedTransaction = builder.sig(signature).blob();
+    var builder = TxLowLevelBuilder.newBuilder(bytes);
+    var hash = builder.hashToSign();
+    var signature = this.hashSigner.sign(hash);
+    var signedTransaction = builder.sig(signature).blob();
 
-		return new KeySignResponse()
-			.signedTransaction(Bytes.toHexString(signedTransaction));
-	}
+    return new KeySignResponse().signedTransaction(Bytes.toHexString(signedTransaction));
+  }
 }

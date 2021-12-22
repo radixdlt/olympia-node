@@ -68,37 +68,36 @@ import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 
 /**
- * A helper class which contains remote event and the
- * origin node.
+ * A helper class which contains remote event and the origin node.
  *
  * @param <T> the event class
  */
 public final class RemoteEvent<T> {
-	private final T event;
-	private final BFTNode origin;
+  private final T event;
+  private final BFTNode origin;
 
-	private RemoteEvent(BFTNode origin, T event) {
-		this.origin = origin;
-		this.event = event;
-	}
+  private RemoteEvent(BFTNode origin, T event) {
+    this.origin = origin;
+    this.event = event;
+  }
 
-	public static <T> RemoteEvent<T> create(BFTNode origin, T event) {
-		Objects.requireNonNull(origin);
-		Objects.requireNonNull(event);
+  public static <T> RemoteEvent<T> create(BFTNode origin, T event) {
+    Objects.requireNonNull(origin);
+    Objects.requireNonNull(event);
 
-		return new RemoteEvent<>(origin, event);
-	}
+    return new RemoteEvent<>(origin, event);
+  }
 
-	public BFTNode getOrigin() {
-		return origin;
-	}
+  public BFTNode getOrigin() {
+    return origin;
+  }
 
-	public T getEvent() {
-		return event;
-	}
+  public T getEvent() {
+    return event;
+  }
 
-	@Override
-	public String toString() {
-		return String.format("%s[%s->%s]", getClass().getSimpleName(), this.origin, this.event);
-	}
+  @Override
+  public String toString() {
+    return String.format("%s[%s->%s]", getClass().getSimpleName(), this.origin, this.event);
+  }
 }

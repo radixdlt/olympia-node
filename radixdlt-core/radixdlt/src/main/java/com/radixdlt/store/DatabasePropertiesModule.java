@@ -68,28 +68,26 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.properties.RuntimeProperties;
 
-/**
- * Manages conversion of runtime properties to guice type properties
- */
+/** Manages conversion of runtime properties to guice type properties */
 public final class DatabasePropertiesModule extends AbstractModule {
-    private final long maxMemory = Runtime.getRuntime().maxMemory();
-    private final long minCacheSizeLimit = Math.max(50_000_000L, (long) (maxMemory * 0.1));
-    private final long maxCacheSizeLimit = (long) (maxMemory * 0.25);
-    private final long defaultCacheSize = (long) (maxMemory * 0.125);
+  private final long maxMemory = Runtime.getRuntime().maxMemory();
+  private final long minCacheSizeLimit = Math.max(50_000_000L, (long) (maxMemory * 0.1));
+  private final long maxCacheSizeLimit = (long) (maxMemory * 0.25);
+  private final long defaultCacheSize = (long) (maxMemory * 0.125);
 
-    @Provides
-    @DatabaseLocation
-    String databaseLocation(RuntimeProperties properties) {
-        return properties.get("db.location", ".//RADIXDB");
-    }
+  @Provides
+  @DatabaseLocation
+  String databaseLocation(RuntimeProperties properties) {
+    return properties.get("db.location", ".//RADIXDB");
+  }
 
-    @Provides
-    @DatabaseCacheSize
-    long databaseCacheSize(RuntimeProperties properties) {
-        var minCacheSize = properties.get("db.cache_size.min", minCacheSizeLimit);
-        var maxCacheSize = properties.get("db.cache_size.max", maxCacheSizeLimit);
-        var cacheSize = properties.get("db.cache_size", defaultCacheSize);
+  @Provides
+  @DatabaseCacheSize
+  long databaseCacheSize(RuntimeProperties properties) {
+    var minCacheSize = properties.get("db.cache_size.min", minCacheSizeLimit);
+    var maxCacheSize = properties.get("db.cache_size.max", maxCacheSizeLimit);
+    var cacheSize = properties.get("db.cache_size", defaultCacheSize);
 
-        return Math.min(Math.max(cacheSize, minCacheSize), maxCacheSize);
-    }
+    return Math.min(Math.max(cacheSize, minCacheSize), maxCacheSize);
+  }
 }

@@ -65,11 +65,11 @@
 package com.radixdlt.crypto.exception;
 
 public class KeyStoreException extends CryptoException {
-    public KeyStoreException(String errorMessage) {
-        super(errorMessage);
-    }
+  public KeyStoreException(String errorMessage) {
+    super(errorMessage);
+  }
 
-    public KeyStoreException(String errorMessage, Throwable throwable) {
-        super(errorMessage, throwable);
-    }
+  public KeyStoreException(String errorMessage, Throwable throwable) {
+    super(errorMessage, throwable);
+  }
 }
