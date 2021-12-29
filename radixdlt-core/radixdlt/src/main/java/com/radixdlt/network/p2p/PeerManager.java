@@ -263,7 +263,7 @@ public final class PeerManager {
       return PEER_BANNED.result();
     }
 
-    if (!this.config.peerWhitelist().contains(nodeId) && !this.config.peerWhitelist().isEmpty()) {
+    if (this.config.usePeerAllowList() && !this.config.peerAllowList().contains(nodeId)) {
       return PEER_CONNECTION_FORBIDDEN.result();
     }
 
@@ -371,15 +371,14 @@ public final class PeerManager {
           addressing.forNodes().of(nodeId.getPublicKey()));
     }
 
-    final var isWhitelisted =
-        config.peerWhitelist().isEmpty() || config.peerWhitelist().contains(nodeId);
-    if (!isWhitelisted) {
+    final var isAllowed = !config.usePeerAllowList() || config.peerAllowList().contains(nodeId);
+    if (!isAllowed) {
       log.info(
-          "Dropping inbound connection from peer {}: peer is not whitelisted",
+          "Dropping inbound connection from peer {}: peer is not allowed",
           addressing.forNodes().of(nodeId.getPublicKey()));
     }
 
-    return !isBanned && !limitReached && isWhitelisted;
+    return !isBanned && !limitReached && isAllowed;
   }
 
   private void handlePeerDisconnected(PeerDisconnected peerDisconnected) {

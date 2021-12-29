@@ -250,7 +250,8 @@ public final class PeerProxyTest extends DeterministicP2PNetworkTest {
     validatorProps.set(
         "network.p2p.proxy.authorized_proxies", nodeAddressing.of(proxyKey.getPublicKey()));
     // validator can only connect to the proxy node
-    validatorProps.set("network.p2p.peer_whitelist", nodeAddressing.of(proxyKey.getPublicKey()));
+    validatorProps.set("network.p2p.use_peer_allow_list", "true");
+    validatorProps.set("network.p2p.peer_allow_list", nodeAddressing.of(proxyKey.getPublicKey()));
 
     final var proxyProps = defaultProperties();
     proxyProps.set("network.p2p.proxy.enabled", "true");
@@ -290,13 +291,36 @@ public final class PeerProxyTest extends DeterministicP2PNetworkTest {
                         PROXY_NODE, CounterType.NETWORKING_ROUTING_FORWARDED_MESSAGES)
                     == 1L);
 
+    waitForMessagesAndProcessAll();
+
     // validator should only be connected to the proxy node
-    final var connectedPeers =
+    final var validatorConnectedPeers =
         testNetworkRunner.peerManager(VALIDATOR_NODE).activeChannels().stream()
             .map(PeerChannel::getRemoteNodeId)
             .collect(Collectors.toSet());
-    assertTrue(connectedPeers.contains(nodeIdOf(PROXY_NODE)));
-    assertFalse(connectedPeers.contains(nodeIdOf(EXTERNAL_NODE)));
+    assertTrue(validatorConnectedPeers.contains(nodeIdOf(PROXY_NODE)));
+    assertFalse(validatorConnectedPeers.contains(nodeIdOf(EXTERNAL_NODE)));
+
+    // external node should be connected to the proxy node
+    final var externalNodePeers =
+        testNetworkRunner.peerManager(EXTERNAL_NODE).activeChannels().stream()
+            .map(PeerChannel::getRemoteNodeId)
+            .collect(Collectors.toSet());
+    assertTrue(externalNodePeers.contains(nodeIdOf(PROXY_NODE)));
+
+    // the external node sends a message to the validator
+    testNetworkRunner
+        .messageCentral(EXTERNAL_NODE)
+        .send(nodeIdOf(VALIDATOR_NODE), new PeerPingMessage());
+
+    // proxy node should forward one more message
+    await()
+        .atMost(Duration.ofSeconds(2))
+        .until(
+            () ->
+                testNetworkRunner.counter(
+                        PROXY_NODE, CounterType.NETWORKING_ROUTING_FORWARDED_MESSAGES)
+                    == 2L);
   }
 
   private void waitForMessagesAndProcessAll() {

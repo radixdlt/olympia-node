@@ -220,13 +220,14 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
   }
 
   @Test
-  public void should_respect_peer_whitelist_config() throws Exception {
+  public void should_respect_peer_allow_list_config() throws Exception {
     final var nodeAddressing = Addressing.ofNetwork(Network.LOCALNET).forNodes();
 
     // first test node is only allowed to connect to some random peer, not to the other test node
     final var testNodeProps = defaultProperties();
+    testNodeProps.set("network.p2p.use_peer_allow_list", "true");
     testNodeProps.set(
-        "network.p2p.peer_whitelist", nodeAddressing.of(ECKeyPair.generateNew().getPublicKey()));
+        "network.p2p.peer_allow_list", nodeAddressing.of(ECKeyPair.generateNew().getPublicKey()));
 
     setupTestRunner(
         ImmutableList.of(

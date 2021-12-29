@@ -73,6 +73,7 @@ import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DeserializeException;
 import java.time.Duration;
 import java.util.Arrays;
+import org.apache.logging.log4j.LogManager;
 
 /** Static configuration data for P2P layer. */
 public interface P2PConfig {
@@ -145,8 +146,14 @@ public interface P2PConfig {
    */
   Duration issuedProxyCertificateValidityDuration();
 
-  /** Specifies a list of peers that this node can connect to. If empty, all peers are allowed. */
-  ImmutableSet<NodeId> peerWhitelist();
+  /** Specifies whether the peer allow list should be used. */
+  boolean usePeerAllowList();
+
+  /**
+   * Specifies a list of peers that this node can connect to. Only valid if usePeerAllowList is
+   * true.
+   */
+  ImmutableSet<NodeId> peerAllowList();
 
   /** Specifies a list of peers that will not be exposed to other peers. */
   ImmutableSet<NodeId> privatePeers();
@@ -158,130 +165,149 @@ public interface P2PConfig {
    * @return The configuration
    */
   static P2PConfig fromRuntimeProperties(Addressing addressing, RuntimeProperties properties) {
-    return new P2PConfig() {
-      @Override
-      public ImmutableList<String> seedNodes() {
-        return Arrays.stream(properties.get("network.p2p.seed_nodes", "").split(","))
-            .map(String::trim)
-            .filter(hn -> !hn.isEmpty())
-            .collect(ImmutableList.toImmutableList());
-      }
+    final var config =
+        new P2PConfig() {
+          @Override
+          public ImmutableList<String> seedNodes() {
+            return Arrays.stream(properties.get("network.p2p.seed_nodes", "").split(","))
+                .map(String::trim)
+                .filter(hn -> !hn.isEmpty())
+                .collect(ImmutableList.toImmutableList());
+          }
 
-      @Override
-      public int defaultPort() {
-        return properties.get("network.p2p.default_port", 30000);
-      }
+          @Override
+          public int defaultPort() {
+            return properties.get("network.p2p.default_port", 30000);
+          }
 
-      @Override
-      public long discoveryInterval() {
-        return properties.get("network.p2p.discovery_interval", 30_000);
-      }
+          @Override
+          public long discoveryInterval() {
+            return properties.get("network.p2p.discovery_interval", 30_000);
+          }
 
-      @Override
-      public String listenAddress() {
-        return properties.get("network.p2p.listen_address", "0.0.0.0");
-      }
+          @Override
+          public String listenAddress() {
+            return properties.get("network.p2p.listen_address", "0.0.0.0");
+          }
 
-      @Override
-      public int listenPort() {
-        return properties.get("network.p2p.listen_port", 30000);
-      }
+          @Override
+          public int listenPort() {
+            return properties.get("network.p2p.listen_port", 30000);
+          }
 
-      @Override
-      public boolean useProxyProtocol() {
-        return properties.get("network.p2p.use_proxy_protocol", false);
-      }
+          @Override
+          public boolean useProxyProtocol() {
+            return properties.get("network.p2p.use_proxy_protocol", false);
+          }
 
-      @Override
-      public int broadcastPort() {
-        return properties.get("network.p2p.broadcast_port", listenPort());
-      }
+          @Override
+          public int broadcastPort() {
+            return properties.get("network.p2p.broadcast_port", listenPort());
+          }
 
-      @Override
-      public int peerConnectionTimeout() {
-        return properties.get("network.p2p.peer_connection_timeout", 5000);
-      }
+          @Override
+          public int peerConnectionTimeout() {
+            return properties.get("network.p2p.peer_connection_timeout", 5000);
+          }
 
-      @Override
-      public int maxInboundChannels() {
-        return properties.get("network.p2p.max_inbound_channels", 1024);
-      }
+          @Override
+          public int maxInboundChannels() {
+            return properties.get("network.p2p.max_inbound_channels", 1024);
+          }
 
-      @Override
-      public int maxOutboundChannels() {
-        return properties.get("network.p2p.max_outbound_channels", 1024);
-      }
+          @Override
+          public int maxOutboundChannels() {
+            return properties.get("network.p2p.max_outbound_channels", 1024);
+          }
 
-      @Override
-      public int channelBufferSize() {
-        return properties.get("network.p2p.channel_buffer_size", 255);
-      }
+          @Override
+          public int channelBufferSize() {
+            return properties.get("network.p2p.channel_buffer_size", 255);
+          }
 
-      @Override
-      public long peerLivenessCheckInterval() {
-        return properties.get("network.p2p.peer_liveness_check_interval", 10000);
-      }
+          @Override
+          public long peerLivenessCheckInterval() {
+            return properties.get("network.p2p.peer_liveness_check_interval", 10000);
+          }
 
-      @Override
-      public long pingTimeout() {
-        return properties.get("network.p2p.ping_timeout", 5000);
-      }
+          @Override
+          public long pingTimeout() {
+            return properties.get("network.p2p.ping_timeout", 5000);
+          }
 
-      @Override
-      public boolean proxyEnabled() {
-        return properties.get("network.p2p.proxy.enabled", false);
-      }
+          @Override
+          public boolean proxyEnabled() {
+            return properties.get("network.p2p.proxy.enabled", false);
+          }
 
-      @Override
-      public ImmutableSet<NodeId> authorizedProxies() {
-        final var rawList = properties.get("network.p2p.proxy.authorized_proxies", "");
-        return Arrays.stream(rawList.split(","))
-            .filter(not(String::isEmpty))
-            .map(this::parseNodeId)
-            .collect(ImmutableSet.toImmutableSet());
-      }
+          @Override
+          public ImmutableSet<NodeId> authorizedProxies() {
+            final var rawList = properties.get("network.p2p.proxy.authorized_proxies", "");
+            return Arrays.stream(rawList.split(","))
+                .filter(not(String::isEmpty))
+                .map(this::parseNodeId)
+                .collect(ImmutableSet.toImmutableSet());
+          }
 
-      @Override
-      public ImmutableSet<NodeId> authorizedProxiedPeers() {
-        final var rawList = properties.get("network.p2p.proxy.authorized_proxied_nodes", "");
-        return Arrays.stream(rawList.split(","))
-            .filter(not(String::isEmpty))
-            .map(this::parseNodeId)
-            .collect(ImmutableSet.toImmutableSet());
-      }
+          @Override
+          public ImmutableSet<NodeId> authorizedProxiedPeers() {
+            final var rawList = properties.get("network.p2p.proxy.authorized_proxied_nodes", "");
+            return Arrays.stream(rawList.split(","))
+                .filter(not(String::isEmpty))
+                .map(this::parseNodeId)
+                .collect(ImmutableSet.toImmutableSet());
+          }
 
-      @Override
-      public Duration issuedProxyCertificateValidityDuration() {
-        final var valueMs =
-            properties.get("network.p2p.proxy.issued_certificate_validity_duration_ms", 3600000);
-        return Duration.ofMillis(valueMs);
-      }
+          @Override
+          public Duration issuedProxyCertificateValidityDuration() {
+            final var valueMs =
+                properties.get(
+                    "network.p2p.proxy.issued_certificate_validity_duration_ms", 3600000);
+            return Duration.ofMillis(valueMs);
+          }
 
-      @Override
-      public ImmutableSet<NodeId> peerWhitelist() {
-        final var rawList = properties.get("network.p2p.peer_whitelist", "");
-        return Arrays.stream(rawList.split(","))
-            .filter(not(String::isEmpty))
-            .map(this::parseNodeId)
-            .collect(ImmutableSet.toImmutableSet());
-      }
+          @Override
+          public boolean usePeerAllowList() {
+            return properties.get("network.p2p.use_peer_allow_list", false);
+          }
 
-      @Override
-      public ImmutableSet<NodeId> privatePeers() {
-        final var rawList = properties.get("network.p2p.private_peers", "");
-        return Arrays.stream(rawList.split(","))
-            .filter(not(String::isEmpty))
-            .map(this::parseNodeId)
-            .collect(ImmutableSet.toImmutableSet());
-      }
+          @Override
+          public ImmutableSet<NodeId> peerAllowList() {
+            final var rawList = properties.get("network.p2p.peer_allow_list", "");
+            return Arrays.stream(rawList.split(","))
+                .filter(not(String::isEmpty))
+                .map(this::parseNodeId)
+                .collect(ImmutableSet.toImmutableSet());
+          }
 
-      private NodeId parseNodeId(String s) {
-        try {
-          return NodeId.fromPublicKey(addressing.forNodes().parse(s));
-        } catch (DeserializeException e) {
-          throw new IllegalArgumentException("Can't parse node ID from " + s, e);
-        }
-      }
-    };
+          @Override
+          public ImmutableSet<NodeId> privatePeers() {
+            final var rawList = properties.get("network.p2p.private_peers", "");
+            return Arrays.stream(rawList.split(","))
+                .filter(not(String::isEmpty))
+                .map(this::parseNodeId)
+                .collect(ImmutableSet.toImmutableSet());
+          }
+
+          private NodeId parseNodeId(String s) {
+            try {
+              return NodeId.fromPublicKey(addressing.forNodes().parse(s));
+            } catch (DeserializeException e) {
+              throw new IllegalArgumentException("Can't parse node ID from " + s, e);
+            }
+          }
+        };
+
+    if (config.usePeerAllowList() && config.peerAllowList().isEmpty()) {
+      throw new IllegalArgumentException("peerAllowList can't be empty if usePeerAllowList is set");
+    }
+
+    final var log = LogManager.getLogger();
+    if (!config.usePeerAllowList() && !config.peerAllowList().isEmpty()) {
+      log.warn(
+          "peerAllowList is non empty but will be ignored because usePeerAllowList is not set");
+    }
+
+    return config;
   }
 }
