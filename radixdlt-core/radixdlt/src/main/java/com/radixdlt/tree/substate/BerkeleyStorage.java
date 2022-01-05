@@ -62,44 +62,70 @@
  * permissions under this License.
  */
 
-package com.radixdlt.tree;
+package com.radixdlt.tree.substate;
 
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.tree.storage.InMemoryPMTStorage;
+import com.radixdlt.tree.storage.PMTStorage;
+import com.sleepycat.je.Database;
+import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.Transaction;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
-public class SubStateTree {
+public class BerkeleyStorage implements PMTStorage {
 
-  // How to re-use existing up/down?
-  public enum Value {
-    UP,
-    DOWN
-  }
+  public static record Entry(byte[] key, byte[] data) {
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
 
-  private PMT pmt;
+      Entry entry = (Entry) o;
 
-  public SubStateTree() {
-    var storage = new InMemoryPMTStorage();
-    pmt = new PMT(storage);
-  }
-
-  public Boolean put(SubstateId key, Value value) {
-    var val = new byte[1];
-
-    // Proposal for value structure:
-    // for DOWN: 1 + TxId + Tokens
-    // for UP: 0 + Tokens
-
-    switch (value) {
-      case UP:
-        val[0] = 0;
-        break;
-      case DOWN:
-        val[0] = 1;
-        break;
+      if (!Arrays.equals(key, entry.key)) return false;
+      return Arrays.equals(data, entry.data);
     }
 
-    var root = pmt.add(key.asBytes(), val);
+    @Override
+    public int hashCode() {
+      int result = Arrays.hashCode(key);
+      result = 31 * result + Arrays.hashCode(data);
+      return result;
+    }
 
-    return true;
+    @Override
+    public String toString() {
+      return "Entry{" + "key=" + Arrays.toString(key) + ", data=" + Arrays.toString(data) + '}';
+    }
+  }
+
+  private List<Entry> entries;
+  private Database database;
+
+  public BerkeleyStorage(Database database) {
+    Objects.requireNonNull(database);
+    this.database = database;
+    this.entries = new ArrayList<>();
+  }
+
+  @Override
+  public void save(byte[] serialisedNodeHash, byte[] serialisedNode) {
+    entries.add(new Entry(serialisedNode, serialisedNode));
+  }
+
+  @Override
+  public byte[] read(byte[] serialisedNodeHash) {
+    var key = new DatabaseEntry(serialisedNodeHash);
+    var value = new DatabaseEntry();
+    this.database.get(null, key, value, null);
+    return value.getData();
+  }
+
+  public void flushToTransaction(Transaction dbTx) {
+    this.entries.forEach(
+        entry ->
+            database.put(dbTx, new DatabaseEntry(entry.key()), new DatabaseEntry(entry.data())));
+    this.entries.clear();
   }
 }
