@@ -64,6 +64,7 @@
 
 package com.radixdlt.network.messaging;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -71,6 +72,7 @@ import static org.mockito.Mockito.when;
 import com.google.inject.Provider;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.middleware2.network.ConsensusEventMessage;
 import com.radixdlt.network.messaging.serialization.CompressedMessageSerialization;
 import com.radixdlt.network.p2p.NodeId;
@@ -156,6 +158,7 @@ public class MessageCentralImplTest {
             proxyCertificateManager,
             timeSupplier,
             outboundEventQueueFactory,
+            rmock(EventDispatcher.class),
             systemCounters,
             peerControl);
 

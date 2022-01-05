@@ -62,53 +62,48 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.messaging;
+package com.radixdlt.network.messaging.proxy;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.network.messaging.router.MessageRouter;
-import com.radixdlt.network.messaging.serialization.CompressedMessageSerialization;
-import com.radixdlt.network.messaging.serialization.MessageSerialization;
-import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.serialization.Serialization;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.middleware2.network.SyncRequestMessage;
+import com.radixdlt.network.messaging.MessageCentral;
+import com.radixdlt.network.messaging.proxy.guard.ProxyGuard;
+import com.radixdlt.network.messaging.proxy.guard.RateLimitingGuard;
+import com.radixdlt.network.messaging.router.MessageRouter.RoutingResult;
+import com.radixdlt.network.p2p.P2PConfig;
+
 import java.util.Objects;
 
-/** Guice configuration for {@link MessageCentral} that includes a UDP transport. */
-public final class MessageCentralModule extends AbstractModule {
+/** This class is responsible for handling the messages that are to be forwarded to another node. */
+public final class MessageProxyProcessor {
+  private static final ImmutableList<ProxyGuard> DEFAULT_GUARDS = ImmutableList.of(
+      new RateLimitingGuard<>(SyncRequestMessage.class, 2.0)
+  );
 
-  private final MessageCentralConfiguration config;
+  private final MessageCentral messageCentral;
+  private final SystemCounters counters;
+  private final P2PConfig p2PConfig;
+  private final ImmutableList<ProxyGuard> guards;
 
-  public MessageCentralModule(RuntimeProperties properties) {
-    this(MessageCentralConfiguration.fromRuntimeProperties(properties));
+  @Inject
+  public MessageProxyProcessor(MessageCentral messageCentral, SystemCounters counters, P2PConfig p2PConfig) {
+    this.messageCentral = Objects.requireNonNull(messageCentral);
+    this.counters = Objects.requireNonNull(counters);
+    this.p2PConfig = Objects.requireNonNull(p2PConfig);
+    this.guards = DEFAULT_GUARDS;
   }
 
-  MessageCentralModule(MessageCentralConfiguration config) {
-    this.config = Objects.requireNonNull(config);
-  }
-
-  @Override
-  protected void configure() {
-    // The main target
-    bind(new TypeLiteral<EventQueueFactory<OutboundMessageEvent>>() {})
-        .toInstance(SimplePriorityBlockingQueue::new);
-
-    bind(MessageCentral.class).to(MessageCentralImpl.class).in(Singleton.class);
-
-    // MessageCentral dependencies
-    bind(MessageCentralConfiguration.class).toInstance(this.config);
-
-    final var localEventsBinder =
-        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
-            .permitDuplicates();
-    localEventsBinder.addBinding().toInstance(MessageRouter.RoutingResult.Forward.class);
-  }
-
-  @Provides
-  public MessageSerialization messageSerialization(Serialization serialization) {
-    return new CompressedMessageSerialization(serialization);
+  public EventProcessor<RoutingResult.Forward> forwardRoutingResultEventProcessor() {
+    return forwardResult -> {
+      if (p2PConfig.proxyGuardEnabled() && guards.stream().allMatch(g -> g.shouldForward(forwardResult))) {
+        counters.increment(SystemCounters.CounterType.NETWORKING_ROUTING_FORWARDED_MESSAGES);
+        messageCentral.send(forwardResult.forwardTo(), forwardResult.messageEnvelope());
+      } else {
+        counters.increment(SystemCounters.CounterType.NETWORKING_ROUTING_DROPPED_MESSAGES);
+      }
+    };
   }
 }

@@ -151,12 +151,12 @@ public final class MessageRouter {
 
     // a message from an authorized peer
     if (config.authorizedProxiedPeers().contains(sender)) {
-      return new RoutingResult.Forward(messageEnvelope.getRecipient(), messageEnvelope);
+      return new RoutingResult.Forward(sender, messageEnvelope.getRecipient(), messageEnvelope);
     }
 
     // or a message to an authorized peer
     if (config.authorizedProxiedPeers().contains(messageEnvelope.getRecipient())) {
-      return new RoutingResult.Forward(messageEnvelope.getRecipient(), messageEnvelope);
+      return new RoutingResult.Forward(sender, messageEnvelope.getRecipient(), messageEnvelope);
     }
 
     return new RoutingResult.Drop(messageEnvelope);
@@ -165,7 +165,8 @@ public final class MessageRouter {
   public interface RoutingResult {
     record Process(MessageFromPeer<Message> messageFromPeer) implements RoutingResult {}
 
-    record Forward(NodeId forwardTo, MessageEnvelope messageEnvelope) implements RoutingResult {}
+    record Forward(NodeId sender, NodeId forwardTo, MessageEnvelope messageEnvelope)
+        implements RoutingResult {}
 
     record Drop(MessageEnvelope messageEnvelope) implements RoutingResult {}
   }

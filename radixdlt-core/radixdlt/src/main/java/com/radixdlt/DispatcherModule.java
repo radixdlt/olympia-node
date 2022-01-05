@@ -109,6 +109,7 @@ import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.mempoolfiller.ScheduledMempoolFill;
+import com.radixdlt.network.messaging.router.MessageRouter;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
 import com.radixdlt.network.p2p.discovery.DiscoverPeers;
@@ -320,6 +321,9 @@ public class DispatcherModule extends AbstractModule {
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<EventDispatcher<RenewIssuedProxyCertificatesTrigger>>() {})
         .toProvider(Dispatchers.dispatcherProvider(RenewIssuedProxyCertificatesTrigger.class))
+        .in(Scopes.SINGLETON);
+    bind(new TypeLiteral<EventDispatcher<MessageRouter.RoutingResult.Forward>>() {})
+        .toProvider(Dispatchers.dispatcherProvider(MessageRouter.RoutingResult.Forward.class))
         .in(Scopes.SINGLETON);
   }
 

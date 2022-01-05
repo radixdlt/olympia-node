@@ -158,6 +158,10 @@ public interface P2PConfig {
   /** Specifies a list of peers that will not be exposed to other peers. */
   ImmutableSet<NodeId> privatePeers();
 
+
+  /** Specifies whether the proxy should filter the messages. Only valid if proxyEnabled is true. */
+  boolean proxyGuardEnabled();
+
   /**
    * Create a configuration from specified {@link RuntimeProperties}.
    *
@@ -289,7 +293,12 @@ public interface P2PConfig {
                 .collect(ImmutableSet.toImmutableSet());
           }
 
-          private NodeId parseNodeId(String s) {
+            @Override
+            public boolean proxyGuardEnabled() {
+                return properties.get("network.p2p.proxy.guard.enabled", false);
+            }
+
+            private NodeId parseNodeId(String s) {
             try {
               return NodeId.fromPublicKey(addressing.forNodes().parse(s));
             } catch (DeserializeException e) {

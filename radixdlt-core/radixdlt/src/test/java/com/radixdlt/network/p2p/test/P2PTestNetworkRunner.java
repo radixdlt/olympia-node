@@ -90,6 +90,7 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageCentralModule;
+import com.radixdlt.network.messaging.proxy.MessageProxyProcessorModule;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.P2PModule;
 import com.radixdlt.network.p2p.PeerDiscoveryModule;
@@ -195,6 +196,7 @@ public final class P2PTestNetworkRunner {
         new PeerLivenessMonitorModule(),
         new DispatcherModule(),
         new MessageCentralModule(properties),
+        new MessageProxyProcessorModule(),
         new AbstractModule() {
           @Override
           protected void configure() {

@@ -62,53 +62,10 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.messaging;
+package com.radixdlt.network.messaging.proxy.guard;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.network.messaging.router.MessageRouter;
-import com.radixdlt.network.messaging.serialization.CompressedMessageSerialization;
-import com.radixdlt.network.messaging.serialization.MessageSerialization;
-import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.serialization.Serialization;
-import java.util.Objects;
+import com.radixdlt.network.messaging.router.MessageRouter.RoutingResult;
 
-/** Guice configuration for {@link MessageCentral} that includes a UDP transport. */
-public final class MessageCentralModule extends AbstractModule {
-
-  private final MessageCentralConfiguration config;
-
-  public MessageCentralModule(RuntimeProperties properties) {
-    this(MessageCentralConfiguration.fromRuntimeProperties(properties));
-  }
-
-  MessageCentralModule(MessageCentralConfiguration config) {
-    this.config = Objects.requireNonNull(config);
-  }
-
-  @Override
-  protected void configure() {
-    // The main target
-    bind(new TypeLiteral<EventQueueFactory<OutboundMessageEvent>>() {})
-        .toInstance(SimplePriorityBlockingQueue::new);
-
-    bind(MessageCentral.class).to(MessageCentralImpl.class).in(Singleton.class);
-
-    // MessageCentral dependencies
-    bind(MessageCentralConfiguration.class).toInstance(this.config);
-
-    final var localEventsBinder =
-        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
-            .permitDuplicates();
-    localEventsBinder.addBinding().toInstance(MessageRouter.RoutingResult.Forward.class);
-  }
-
-  @Provides
-  public MessageSerialization messageSerialization(Serialization serialization) {
-    return new CompressedMessageSerialization(serialization);
-  }
+public interface ProxyGuard {
+  boolean shouldForward(RoutingResult.Forward routingResult);
 }
