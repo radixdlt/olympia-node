@@ -70,4 +70,6 @@ public interface PMTNodeSerializer {
   byte[] serialize(PMTNode node);
 
   PMTNode deserialize(byte[] serializedNode);
+
+  byte[] emptyTree();
 }

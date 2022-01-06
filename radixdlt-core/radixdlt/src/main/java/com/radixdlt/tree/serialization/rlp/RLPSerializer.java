@@ -10,6 +10,8 @@ import static com.radixdlt.tree.PMTBranch.NUMBER_OF_NIBBLES;
 
 public class RLPSerializer implements PMTNodeSerializer {
 
+    protected static final byte[] EMPTY_TREE = RLP.encodeElement(new byte[0]);
+
     @Override
     public byte[] serialize(PMTNode node) {
         if (node instanceof PMTBranch) {
@@ -61,6 +63,11 @@ public class RLPSerializer implements PMTNodeSerializer {
             }
             return new PMTBranch(children, asBytes(result[NUMBER_OF_NIBBLES]));
         }
+    }
+
+    @Override
+    public byte[] emptyTree() {
+        return EMPTY_TREE;
     }
 
     private static PMTKey getPmtKey(byte[] prefixedNibbles, byte firstNibble, int evenPrefix, int oddPrefix) {
