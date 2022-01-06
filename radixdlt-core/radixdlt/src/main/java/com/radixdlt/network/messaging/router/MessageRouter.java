@@ -74,14 +74,14 @@ import java.util.Objects;
 
 public final class MessageRouter {
   private final NodeId self;
-  private final P2PConfig config;
+  private final P2PConfig.ProxyConfig config;
   private final ProxyCertificateManager proxyCertificateManager;
 
   private final Observable<RoutingResult> routedMessages;
 
   public MessageRouter(
       NodeId self,
-      P2PConfig config,
+      P2PConfig.ProxyConfig config,
       ProxyCertificateManager proxyCertificateManager,
       Observable<MessageFromPeer<Message>> messages) {
     this.self = Objects.requireNonNull(self);

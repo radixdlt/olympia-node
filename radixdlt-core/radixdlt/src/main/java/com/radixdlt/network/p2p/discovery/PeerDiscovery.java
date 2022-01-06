@@ -102,7 +102,7 @@ public final class PeerDiscovery {
   private static final int MAX_REQUESTS_SENT_AT_ONCE = 5;
 
   private final RadixNodeUri selfUri;
-  private final P2PConfig config;
+  private final P2PConfig.PeerDiscoveryConfig config;
   private final PeerManager peerManager;
   private final AddressBook addressBook;
   private final PeerControl peerControl;
@@ -115,7 +115,7 @@ public final class PeerDiscovery {
   @Inject
   public PeerDiscovery(
       @Self RadixNodeUri selfUri,
-      P2PConfig config,
+      P2PConfig.PeerDiscoveryConfig config,
       PeerManager peerManager,
       AddressBook addressBook,
       PeerControl peerControl,

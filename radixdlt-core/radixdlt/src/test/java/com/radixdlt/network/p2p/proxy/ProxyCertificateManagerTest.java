@@ -91,7 +91,7 @@ import org.junit.Test;
 
 public final class ProxyCertificateManagerTest {
   private ECKeyPair selfKey;
-  private P2PConfig config;
+  private P2PConfig.ProxyConfig config;
   private PeersView peersView;
   private PeerControl peerControl;
   private AddressBook addressBook;
@@ -102,7 +102,7 @@ public final class ProxyCertificateManagerTest {
   @Before
   public void setup() {
     this.selfKey = ECKeyPair.generateNew();
-    this.config = mock(P2PConfig.class);
+    this.config = mock(P2PConfig.ProxyConfig.class);
     this.peersView = mock(PeersView.class);
     this.peerControl = mock(PeerControl.class);
     this.addressBook = mock(AddressBook.class);

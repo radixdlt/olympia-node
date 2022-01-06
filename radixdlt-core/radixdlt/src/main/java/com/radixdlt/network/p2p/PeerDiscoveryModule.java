@@ -95,7 +95,8 @@ public final class PeerDiscoveryModule extends AbstractModule {
 
   @ProvidesIntoSet
   public ScheduledEventProducerOnRunner<?> discoverPeersEventProducer(
-      EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher, P2PConfig config) {
+      EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher,
+      P2PConfig.PeerDiscoveryConfig config) {
     return new ScheduledEventProducerOnRunner<>(
         Runners.P2P_NETWORK,
         discoverPeersEventDispatcher,

@@ -182,7 +182,8 @@ public final class MessageCentralImpl implements MessageCentral {
             .map(Optional::get);
 
     final var messageRouter =
-        new MessageRouter(self, p2pConfig, proxyCertificateManager, processedMessages);
+        new MessageRouter(
+            self, p2pConfig.proxyConfig(), proxyCertificateManager, processedMessages);
 
     this.peerMessages =
         messageRouter.messagesToProcess().map(MessageRouter.RoutingResult.Process::messageFromPeer);

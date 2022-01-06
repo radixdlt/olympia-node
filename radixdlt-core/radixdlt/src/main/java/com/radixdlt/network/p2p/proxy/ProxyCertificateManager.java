@@ -100,7 +100,7 @@ public final class ProxyCertificateManager {
   private static final Logger log = LogManager.getLogger();
 
   private final NodeId self;
-  private final P2PConfig config;
+  private final P2PConfig.ProxyConfig config;
   private final int networkId;
   private final Addressing addressing;
   private final ECKeyOps ecKeyOps;
@@ -125,7 +125,7 @@ public final class ProxyCertificateManager {
   @Inject
   public ProxyCertificateManager(
       @Self NodeId self,
-      P2PConfig config,
+      P2PConfig.ProxyConfig config,
       @NetworkId int networkId,
       Addressing addressing,
       ECKeyOps ecKeyOps,

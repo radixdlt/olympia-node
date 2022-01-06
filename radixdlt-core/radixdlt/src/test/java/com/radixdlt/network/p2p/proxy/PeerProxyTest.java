@@ -284,9 +284,7 @@ public final class PeerProxyTest extends DeterministicP2PNetworkTest {
         .messageCentral(VALIDATOR_NODE)
         .send(nodeIdOf(EXTERNAL_NODE), new PeerPingMessage());
 
-    waitForMessagesAndProcessAll();
-
-    waitForMessagesAndProcessAll();
+    waitForMessagesAndProcessAll(2);
 
     // proxy node should forward a single message
     await()
@@ -332,10 +330,16 @@ public final class PeerProxyTest extends DeterministicP2PNetworkTest {
   }
 
   private void waitForMessagesAndProcessAll() {
+    waitForMessagesAndProcessAll(1);
+  }
+
+  private void waitForMessagesAndProcessAll(int times) {
     // a small hack to wait for the processing thread
-    await()
-        .atMost(Duration.ofSeconds(4))
-        .until(() -> !testNetworkRunner.getDeterministicNetwork().allMessages().isEmpty());
-    processAll();
+    for (int i = 0; i < times; i++) {
+      await()
+          .atMost(Duration.ofSeconds(4))
+          .until(() -> !testNetworkRunner.getDeterministicNetwork().allMessages().isEmpty());
+      processAll();
+    }
   }
 }

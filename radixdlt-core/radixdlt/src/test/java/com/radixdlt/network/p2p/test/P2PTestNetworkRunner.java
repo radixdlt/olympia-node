@@ -184,10 +184,15 @@ public final class P2PTestNetworkRunner {
                   protected void configure() {
                     bind(PeerOutboundBootstrap.class)
                         .toInstance(uri -> p2pNetwork.createChannel(selfNodeIndex, uri));
-                    bind(P2PConfig.class)
-                        .toInstance(
-                            P2PConfig.fromRuntimeProperties(
-                                Addressing.ofNetwork(Network.LOCALNET), properties));
+                    final var p2pConfig =
+                        P2PConfig.fromRuntimeProperties(
+                            Addressing.ofNetwork(Network.LOCALNET), properties);
+                    bind(P2PConfig.class).toInstance(p2pConfig);
+                    bind(P2PConfig.ProxyConfig.class).toInstance(p2pConfig.proxyConfig());
+                    bind(P2PConfig.PeerDiscoveryConfig.class)
+                        .toInstance(p2pConfig.peerDiscoveryConfig());
+                    bind(P2PConfig.PeerLivenessConfig.class)
+                        .toInstance(p2pConfig.peerLivenessConfig());
                     bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
                     bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
                   }

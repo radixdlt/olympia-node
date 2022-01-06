@@ -186,6 +186,21 @@ public final class P2PModule extends AbstractModule {
   }
 
   @Provides
+  public P2PConfig.ProxyConfig proxyConfig(P2PConfig config) {
+    return config.proxyConfig();
+  }
+
+  @Provides
+  public P2PConfig.PeerLivenessConfig peerLivenessConfig(P2PConfig config) {
+    return config.peerLivenessConfig();
+  }
+
+  @Provides
+  public P2PConfig.PeerDiscoveryConfig peerDiscoveryConfig(P2PConfig config) {
+    return config.peerDiscoveryConfig();
+  }
+
+  @Provides
   @Self
   public NodeId selfNodeId(@Self ECPublicKey selfKey) {
     return NodeId.fromPublicKey(selfKey);
@@ -197,7 +212,7 @@ public final class P2PModule extends AbstractModule {
       @NetworkId int networkId, @Self ECPublicKey selfKey, HostIp hostIp, P2PConfig p2pConfig) {
     final var host =
         hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
-    final var port = p2pConfig.broadcastPort();
+    final var port = p2pConfig.networkConfig().broadcastPort();
     return RadixNodeUri.fromPubKeyAndAddress(networkId, selfKey, host, port);
   }
 }

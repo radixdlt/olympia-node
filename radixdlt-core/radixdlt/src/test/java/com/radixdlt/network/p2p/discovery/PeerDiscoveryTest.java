@@ -150,7 +150,7 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
     final var selfUri =
         RadixNodeUri.fromPubKeyAndAddress(1, selfKey.getPublicKey(), "127.0.0.1", 3000);
 
-    final var config = mock(P2PConfig.class);
+    final var config = mock(P2PConfig.PeerDiscoveryConfig.class);
     final var addressBook = mock(AddressBook.class);
     final RemoteEventDispatcher<PeersResponse> peersResponseDispatcher =
         rmock(RemoteEventDispatcher.class);

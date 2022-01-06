@@ -85,7 +85,7 @@ import javax.inject.Inject;
  * fires a PeerLostLiveness event.
  */
 public final class PeerLivenessMonitor {
-  private final P2PConfig config;
+  private final P2PConfig.PeerLivenessConfig config;
   private final PeersView peersView;
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
   private final RemoteEventDispatcher<Ping> pingEventDispatcher;
@@ -96,7 +96,7 @@ public final class PeerLivenessMonitor {
 
   @Inject
   public PeerLivenessMonitor(
-      P2PConfig config,
+      P2PConfig.PeerLivenessConfig config,
       PeersView peersView,
       EventDispatcher<PeerEvent> peerEventDispatcher,
       RemoteEventDispatcher<Ping> pingEventDispatcher,
@@ -139,9 +139,7 @@ public final class PeerLivenessMonitor {
   }
 
   public RemoteEventProcessor<Ping> pingRemoteEventProcessor() {
-    return (sender, ping) -> {
-      this.pongEventDispatcher.dispatch(sender, Pong.create());
-    };
+    return (sender, ping) -> this.pongEventDispatcher.dispatch(sender, Pong.create());
   }
 
   public RemoteEventProcessor<Pong> pongRemoteEventProcessor() {

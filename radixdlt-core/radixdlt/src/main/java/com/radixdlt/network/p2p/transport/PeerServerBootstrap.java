@@ -126,7 +126,8 @@ public final class PeerServerBootstrap {
         .group(serverGroup, workerGroup)
         .channel(NioServerSocketChannel.class)
         .option(ChannelOption.SO_BACKLOG, BACKLOG_SIZE)
-        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.peerConnectionTimeout())
+        .option(
+            ChannelOption.CONNECT_TIMEOUT_MILLIS, config.channelConfig().peerConnectionTimeout())
         .childHandler(
             new PeerChannelInitializer(
                 config,
@@ -140,6 +141,8 @@ public final class PeerServerBootstrap {
                 peerEventDispatcher,
                 Optional.empty()));
 
-    serverBootstrap.bind(config.listenAddress(), config.listenPort()).sync();
+    serverBootstrap
+        .bind(config.networkConfig().listenAddress(), config.networkConfig().listenPort())
+        .sync();
   }
 }

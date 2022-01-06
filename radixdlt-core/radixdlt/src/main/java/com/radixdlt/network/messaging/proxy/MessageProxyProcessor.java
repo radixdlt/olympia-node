@@ -74,14 +74,12 @@ import com.radixdlt.network.messaging.proxy.guard.ProxyGuard;
 import com.radixdlt.network.messaging.proxy.guard.RateLimitingGuard;
 import com.radixdlt.network.messaging.router.MessageRouter.RoutingResult;
 import com.radixdlt.network.p2p.P2PConfig;
-
 import java.util.Objects;
 
 /** This class is responsible for handling the messages that are to be forwarded to another node. */
 public final class MessageProxyProcessor {
-  private static final ImmutableList<ProxyGuard> DEFAULT_GUARDS = ImmutableList.of(
-      new RateLimitingGuard<>(SyncRequestMessage.class, 2.0)
-  );
+  private static final ImmutableList<ProxyGuard> DEFAULT_GUARDS =
+      ImmutableList.of(new RateLimitingGuard<>(SyncRequestMessage.class, 2.0));
 
   private final MessageCentral messageCentral;
   private final SystemCounters counters;
@@ -89,7 +87,8 @@ public final class MessageProxyProcessor {
   private final ImmutableList<ProxyGuard> guards;
 
   @Inject
-  public MessageProxyProcessor(MessageCentral messageCentral, SystemCounters counters, P2PConfig p2PConfig) {
+  public MessageProxyProcessor(
+      MessageCentral messageCentral, SystemCounters counters, P2PConfig p2PConfig) {
     this.messageCentral = Objects.requireNonNull(messageCentral);
     this.counters = Objects.requireNonNull(counters);
     this.p2PConfig = Objects.requireNonNull(p2PConfig);
@@ -98,12 +97,20 @@ public final class MessageProxyProcessor {
 
   public EventProcessor<RoutingResult.Forward> forwardRoutingResultEventProcessor() {
     return forwardResult -> {
-      if (p2PConfig.proxyGuardEnabled() && guards.stream().allMatch(g -> g.shouldForward(forwardResult))) {
-        counters.increment(SystemCounters.CounterType.NETWORKING_ROUTING_FORWARDED_MESSAGES);
-        messageCentral.send(forwardResult.forwardTo(), forwardResult.messageEnvelope());
+      if (p2PConfig.proxyConfig().guardEnabled()) {
+        if (guards.stream().allMatch(g -> g.shouldForward(forwardResult))) {
+          doForward(forwardResult);
+        } else {
+          counters.increment(SystemCounters.CounterType.NETWORKING_ROUTING_DROPPED_MESSAGES);
+        }
       } else {
-        counters.increment(SystemCounters.CounterType.NETWORKING_ROUTING_DROPPED_MESSAGES);
+        doForward(forwardResult);
       }
     };
+  }
+
+  private void doForward(RoutingResult.Forward forwardResult) {
+    counters.increment(SystemCounters.CounterType.NETWORKING_ROUTING_FORWARDED_MESSAGES);
+    messageCentral.send(forwardResult.forwardTo(), forwardResult.messageEnvelope());
   }
 }
