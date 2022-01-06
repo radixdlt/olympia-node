@@ -64,18 +64,18 @@
 
 package com.radixdlt.tree;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertArrayEquals;
 
 import com.radixdlt.tree.hash.Keccak256;
 import com.radixdlt.tree.serialization.rlp.RLPSerializer;
 import com.radixdlt.tree.storage.InMemoryPMTStorage;
+import com.radixdlt.utils.Bytes;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class TreeAPITest {
@@ -93,7 +93,7 @@ public class TreeAPITest {
     tree.add(sub1, val1);
 
     var val1back = tree.get(sub1);
-    assertEquals(val1, val1back);
+    assertArrayEquals(val1, val1back);
   }
 
   @Test
@@ -106,37 +106,31 @@ public class TreeAPITest {
     String verbValue = "verb";
     tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
 
-    Assert.assertArrayEquals(
-        tree.get(Hex.decode(verbKey)), verbValue.getBytes(StandardCharsets.UTF_8));
+    assertArrayEquals(tree.get(Hex.decode(verbKey)), verbValue.getBytes(StandardCharsets.UTF_8));
 
     String puppyKey = "646f67";
     String puppyValue = "puppy";
     tree.add(Hex.decode(puppyKey), puppyValue.getBytes(StandardCharsets.UTF_8));
 
-    Assert.assertArrayEquals(
-        tree.get(Hex.decode(puppyKey)), puppyValue.getBytes(StandardCharsets.UTF_8));
+    assertArrayEquals(tree.get(Hex.decode(puppyKey)), puppyValue.getBytes(StandardCharsets.UTF_8));
 
     String coinKey = "646f6765";
     String coinValue = "coin";
     tree.add(Hex.decode(coinKey), coinValue.getBytes(StandardCharsets.UTF_8));
 
-    Assert.assertArrayEquals(
-        tree.get(Hex.decode(coinKey)), coinValue.getBytes(StandardCharsets.UTF_8));
+    assertArrayEquals(tree.get(Hex.decode(coinKey)), coinValue.getBytes(StandardCharsets.UTF_8));
 
     String stallionKey = "686f727365";
     String stallionValue = "stallion";
     tree.add(Hex.decode(stallionKey), stallionValue.getBytes(StandardCharsets.UTF_8));
 
-    Assert.assertArrayEquals(
-        tree.get(Hex.decode(verbKey)), verbValue.getBytes(StandardCharsets.UTF_8));
+    assertArrayEquals(tree.get(Hex.decode(verbKey)), verbValue.getBytes(StandardCharsets.UTF_8));
 
-    Assert.assertArrayEquals(
-        tree.get(Hex.decode(puppyKey)), puppyValue.getBytes(StandardCharsets.UTF_8));
+    assertArrayEquals(tree.get(Hex.decode(puppyKey)), puppyValue.getBytes(StandardCharsets.UTF_8));
 
-    Assert.assertArrayEquals(
-        tree.get(Hex.decode(coinKey)), coinValue.getBytes(StandardCharsets.UTF_8));
+    assertArrayEquals(tree.get(Hex.decode(coinKey)), coinValue.getBytes(StandardCharsets.UTF_8));
 
-    Assert.assertArrayEquals(
+    assertArrayEquals(
         tree.get(Hex.decode(stallionKey)), stallionValue.getBytes(StandardCharsets.UTF_8));
   }
 
@@ -153,10 +147,9 @@ public class TreeAPITest {
 
     var rootAfter = tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
 
-    Assert.assertArrayEquals(rootBefore, rootAfter);
+    assertArrayEquals(rootBefore, rootAfter);
 
-    Assert.assertArrayEquals(
-        tree.get(Hex.decode(verbKey)), verbValue.getBytes(StandardCharsets.UTF_8));
+    assertArrayEquals(tree.get(Hex.decode(verbKey)), verbValue.getBytes(StandardCharsets.UTF_8));
 
     String puppyKey = "646f67";
     String puppyValue = "puppy";
@@ -165,9 +158,37 @@ public class TreeAPITest {
 
     rootAfter = tree.add(Hex.decode(puppyKey), puppyValue.getBytes(StandardCharsets.UTF_8));
 
-    Assert.assertArrayEquals(rootBefore, rootAfter);
+    assertArrayEquals(rootBefore, rootAfter);
 
-    Assert.assertArrayEquals(
-        tree.get(Hex.decode(puppyKey)), puppyValue.getBytes(StandardCharsets.UTF_8));
+    assertArrayEquals(tree.get(Hex.decode(puppyKey)), puppyValue.getBytes(StandardCharsets.UTF_8));
+  }
+
+  @Test
+  public void when_tree_is_empty_and_rlp_and_keccak256_are_used__then_correct_hash_is_returned() {
+    var rlpKeccak256EmptyArray = "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421";
+
+    var storage = new InMemoryPMTStorage();
+    var tree =
+        new PMT(storage, new Keccak256(), new RLPSerializer(), Duration.of(10, ChronoUnit.MINUTES));
+
+    assertArrayEquals(Bytes.fromHexString(rlpKeccak256EmptyArray), tree.getRootHash());
+  }
+
+  @Test
+  public void when_new_tree_uses_same_db__then_current_root_should_be_used() {
+    var storage = new InMemoryPMTStorage();
+    var tree =
+        new PMT(storage, new Keccak256(), new RLPSerializer(), Duration.of(10, ChronoUnit.MINUTES));
+
+    String verbKey = "646f";
+    String verbValue = "verb";
+    final var rootHash = tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
+
+    tree =
+        new PMT(storage, new Keccak256(), new RLPSerializer(), Duration.of(10, ChronoUnit.MINUTES));
+
+    assertArrayEquals("Tree does not have the right root hash", rootHash, tree.getRootHash());
+
+    assertArrayEquals(tree.get(Hex.decode(verbKey)), verbValue.getBytes(StandardCharsets.UTF_8));
   }
 }
