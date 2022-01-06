@@ -68,64 +68,29 @@ import com.radixdlt.tree.storage.PMTStorage;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Transaction;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 
 public class BerkeleyStorage implements PMTStorage {
 
-  public static record Entry(byte[] key, byte[] data) {
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+  private final Database database;
+  private final Transaction tx;
 
-      Entry entry = (Entry) o;
-
-      if (!Arrays.equals(key, entry.key)) return false;
-      return Arrays.equals(data, entry.data);
-    }
-
-    @Override
-    public int hashCode() {
-      int result = Arrays.hashCode(key);
-      result = 31 * result + Arrays.hashCode(data);
-      return result;
-    }
-
-    @Override
-    public String toString() {
-      return "Entry{" + "key=" + Arrays.toString(key) + ", data=" + Arrays.toString(data) + '}';
-    }
-  }
-
-  private List<Entry> entries;
-  private Database database;
-
-  public BerkeleyStorage(Database database) {
+  public BerkeleyStorage(Database database, Transaction tx) {
     Objects.requireNonNull(database);
     this.database = database;
-    this.entries = new ArrayList<>();
+    this.tx = tx;
   }
 
   @Override
   public void save(byte[] serialisedNodeHash, byte[] serialisedNode) {
-    entries.add(new Entry(serialisedNode, serialisedNode));
+    database.put(this.tx, new DatabaseEntry(serialisedNodeHash), new DatabaseEntry(serialisedNode));
   }
 
   @Override
   public byte[] read(byte[] serialisedNodeHash) {
     var key = new DatabaseEntry(serialisedNodeHash);
     var value = new DatabaseEntry();
-    this.database.get(null, key, value, null);
+    this.database.get(this.tx, key, value, null);
     return value.getData();
-  }
-
-  public void flushToTransaction(Transaction dbTx) {
-    this.entries.forEach(
-        entry ->
-            database.put(dbTx, new DatabaseEntry(entry.key()), new DatabaseEntry(entry.data())));
-    this.entries.clear();
   }
 }

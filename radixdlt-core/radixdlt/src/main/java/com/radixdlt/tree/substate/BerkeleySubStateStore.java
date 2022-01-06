@@ -86,7 +86,6 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
 
   private static final Logger logger = LogManager.getLogger();
 
-  private SubStateTree subStateTree;
   private Database database;
 
   @Override
@@ -102,7 +101,6 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
                     .setTransactional(true)
                     .setKeyPrefixing(true)
                     .setBtreeComparator(lexicographicalComparator()));
-    this.subStateTree = new SubStateTree(database);
   }
 
   @Override
@@ -118,10 +116,10 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
       Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
     boolean isEpochChange = false;
     byte[] rootHash = new byte[0];
+    final var subStateTree = new SubStateTree(database, dbTxn);
     for (REStateUpdate stateUpdate : txn.stateUpdates().toList()) {
       rootHash =
-          subStateTree.put(
-              dbTxn, stateUpdate.getId(), SubStateTree.getValue(stateUpdate.isBootUp()));
+          subStateTree.put(stateUpdate.getId(), SubStateTree.getValue(stateUpdate.isBootUp()));
       if (stateUpdate.getParsed() instanceof EpochData) {
         isEpochChange = true;
       }
@@ -131,7 +129,7 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
     }
   }
 
-  public SubStateTree getSubStateTree() {
-    return subStateTree;
+  public Database getDatabase() {
+    return database;
   }
 }

@@ -147,7 +147,7 @@ public class BerkeleySubStateStoreTest {
       when_substate_store_process_state_updates__then_tree_must_contain_the_latest_state_of_each_substate() {
     runner.start();
 
-    SubStateTree subStateTree = this.berkeleySubStateStore.getSubStateTree();
+    SubStateTree subStateTree = new SubStateTree(this.berkeleySubStateStore.getDatabase(), null);
     for (REStateUpdate rEStateUpdate : this.berkeleySubStateStore.getREStateUpdateList()) {
       byte[] value = subStateTree.get(rEStateUpdate.getId());
       Assert.assertArrayEquals(SubStateTree.getValue(rEStateUpdate.isBootUp()), value);
