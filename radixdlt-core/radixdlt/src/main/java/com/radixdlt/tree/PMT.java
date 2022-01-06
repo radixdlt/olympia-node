@@ -70,6 +70,7 @@ import com.radixdlt.tree.serialization.PMTNodeSerializer;
 import com.radixdlt.tree.serialization.rlp.RLPSerializer;
 import com.radixdlt.tree.storage.PMTCache;
 import com.radixdlt.tree.storage.PMTStorage;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
@@ -80,12 +81,14 @@ public class PMT {
 
   private static final Logger log = LogManager.getLogger();
   public static final int CACHE_MAXIMUM_SIZE = 1000;
+  private static final byte[] CURRENT_ROOT_KEY =
+      "current_root_key".getBytes(StandardCharsets.UTF_8);
 
   private final PMTStorage db;
   private final PMTCache cache;
   private final HashFunction hashFunction;
   private final PMTNodeSerializer pmtNodeSerializer;
-  private PMTNode root;
+  private final byte[] emptyTreeHash;
 
   // API:
   // add
@@ -110,6 +113,7 @@ public class PMT {
     this.cache = new PMTCache(CACHE_MAXIMUM_SIZE, cacheExpiryAfter, this::nodeLoader);
     this.hashFunction = hashFunction;
     this.pmtNodeSerializer = pmtNodeSerializer;
+    this.emptyTreeHash = hashFunction.hash(pmtNodeSerializer.emptyTree());
   }
 
   public byte[] represent(PMTNode node) {
@@ -132,22 +136,27 @@ public class PMT {
   }
 
   public byte[] get(byte[] key) {
+    var root = getRoot();
     var pmtKey = new PMTKey(PMTPath.intoNibbles(key));
 
-    if (this.root != null) {
-      var acc = this.root.getValue(pmtKey, new PMTAcc(), this::read);
+    if (root != null) {
+      var acc = root.getValue(pmtKey, new PMTAcc(), this::read);
       if (acc.notFound()) {
-        log.debug(
-            "Not found key: {} for root: {}",
-            TreeUtils.toHexString(key),
-            TreeUtils.toHexString(root == null ? null : represent(root)));
+        if (log.isDebugEnabled()) {
+          log.debug(
+              "Not found key: {} for root: {}",
+              TreeUtils.toHexString(key),
+              TreeUtils.toHexString(represent(root)));
+        }
         // TODO XXX: what shall we return for not found? Maybe lets wrap everything in Option?
         return new byte[0];
       } else {
         return acc.getRetVal().getValue();
       }
     } else {
-      log.debug("Tree empty when key: {}", TreeUtils.toHexString(key));
+      if (log.isDebugEnabled()) {
+        log.debug("Tree empty when key: {}", TreeUtils.toHexString(key));
+      }
       // TODO XXX: what shall we return for empty Maybe lets wrap everything in Option?
       return null;
     }
@@ -155,28 +164,34 @@ public class PMT {
 
   public byte[] add(byte[] key, byte[] val) {
 
+    final var root = getRoot();
     try {
       var pmtKey = new PMTKey(PMTPath.intoNibbles(key));
 
-      if (this.root != null) {
-        var acc = this.root.insertNode(pmtKey, val, new PMTAcc(), this::represent, this::read);
-        this.root = acc.getTip();
+      if (root != null) {
+        var acc = root.insertNode(pmtKey, val, new PMTAcc(), this::represent, this::read);
+        final var newRoot = acc.getTip();
         acc.getNewNodes().stream()
             .filter(Objects::nonNull)
             .forEach(
                 sanitizedAcc -> {
                   this.cache.put(represent(sanitizedAcc), sanitizedAcc);
                   byte[] serialisedNode = this.pmtNodeSerializer.serialize(sanitizedAcc);
-                  if (sanitizedAcc == this.root || hasDbRepresentation(serialisedNode)) {
+                  if (sanitizedAcc == newRoot || hasDbRepresentation(serialisedNode)) {
                     this.db.save(hash(serialisedNode), serialisedNode);
+                    if (sanitizedAcc == newRoot) {
+                      this.db.save(CURRENT_ROOT_KEY, serialisedNode);
+                    }
                   }
                 });
+        return newRoot == null ? emptyTreeHash : hash(newRoot);
       } else {
         PMTNode nodeRoot = new PMTLeaf(pmtKey, val);
-        this.root = nodeRoot;
-        byte[] serialisedNode = this.pmtNodeSerializer.serialize(nodeRoot);
+        byte[] serialisedNodeRoot = this.pmtNodeSerializer.serialize(nodeRoot);
         this.cache.put(represent(nodeRoot), nodeRoot);
-        this.db.save(hash(nodeRoot), serialisedNode);
+        this.db.save(hash(nodeRoot), serialisedNodeRoot);
+        this.db.save(CURRENT_ROOT_KEY, serialisedNodeRoot);
+        return hash(nodeRoot);
       }
     } catch (Exception e) {
       log.error(
@@ -184,10 +199,19 @@ public class PMT {
           e.getMessage(),
           TreeUtils.toHexString(key),
           TreeUtils.toHexString(val),
-          TreeUtils.toHexString(root == null ? null : hash(root)));
+          TreeUtils.toHexString(root == null ? emptyTreeHash : hash(root)));
       throw e;
     }
-    return root == null ? null : hash(root);
+  }
+
+  public PMTNode getRoot() {
+    byte[] root = db.read(CURRENT_ROOT_KEY);
+    return root == null ? null : pmtNodeSerializer.deserialize(root);
+  }
+
+  public byte[] getRootHash() {
+    var root = getRoot();
+    return root == null ? emptyTreeHash : hash(root);
   }
 
   private PMTNode read(byte[] key) {
