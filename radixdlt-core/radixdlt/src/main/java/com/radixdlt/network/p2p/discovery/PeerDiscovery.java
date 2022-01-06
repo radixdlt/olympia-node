@@ -98,7 +98,7 @@ import org.apache.logging.log4j.Logger;
 public final class PeerDiscovery {
   private static final Logger log = LogManager.getLogger();
 
-  private static final int MAX_PEERS_IN_RESPONSE = 50;
+  private static final long MAX_PEERS_IN_RESPONSE = 50;
   private static final int MAX_REQUESTS_SENT_AT_ONCE = 5;
 
   private final RadixNodeUri selfUri;
