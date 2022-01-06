@@ -365,14 +365,14 @@ public final class PeerManager {
     }
 
     final var limitReached = this.activeChannels.size() > config.maxInboundChannels();
-    if (limitReached) {
+    if (limitReached && log.isInfoEnabled()) {
       log.info(
           "Dropping inbound connection from peer {}: no more inbound channels allowed",
           addressing.forNodes().of(nodeId.getPublicKey()));
     }
 
     final var isAllowed = !config.usePeerAllowList() || config.peerAllowList().contains(nodeId);
-    if (!isAllowed) {
+    if (!isAllowed && log.isInfoEnabled()) {
       log.info(
           "Dropping inbound connection from peer {}: peer is not allowed",
           addressing.forNodes().of(nodeId.getPublicKey()));
