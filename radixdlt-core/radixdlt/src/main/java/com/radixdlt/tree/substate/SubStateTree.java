@@ -74,15 +74,13 @@ public class SubStateTree {
   private final PMT pmt;
   private final BerkeleyStorage berkeleyStorage;
 
-  public SubStateTree(Database database) {
-    this.berkeleyStorage = new BerkeleyStorage(database);
+  public SubStateTree(Database database, Transaction tx) {
+    this.berkeleyStorage = new BerkeleyStorage(database, tx);
     pmt = new PMT(this.berkeleyStorage);
   }
 
-  public byte[] put(Transaction dbTx, SubstateId key, byte[] val) {
-    var root = pmt.add(key.asBytes(), val);
-    this.berkeleyStorage.flushToTransaction(dbTx);
-    return root;
+  public byte[] put(SubstateId key, byte[] val) {
+    return pmt.add(key.asBytes(), val);
   }
 
   public byte[] get(SubstateId key) {
