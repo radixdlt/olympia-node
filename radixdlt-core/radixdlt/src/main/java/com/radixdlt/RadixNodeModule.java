@@ -102,6 +102,7 @@ import com.radixdlt.statecomputer.forks.StokenetForkConfigsModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.tree.substate.SubStateTreeModule;
 import com.radixdlt.utils.Bytes;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -287,5 +288,11 @@ public final class RadixNodeModule extends AbstractModule {
     boolean enableTransactions = properties.get("api.transactions.enable", false);
     boolean enableSign = properties.get("api.sign.enable", false);
     install(new ApiModule(bindAddress, port, enableTransactions, enableSign));
+
+    // SubState Tree
+    if (properties.get("tree.substate.enable", false)) {
+      log.info("Enabling SubState Tree");
+      install(new SubStateTreeModule());
+    }
   }
 }
