@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2022 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,111 +62,69 @@
  * permissions under this License.
  */
 
-package com.radixdlt.tree.substate;
+package com.radixdlt.integration.api.actors;
 
-import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.base.Stopwatch;
-import com.radixdlt.application.system.state.EpochData;
-import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.constraintmachine.REStateUpdate;
-import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.store.DatabaseEnvironment;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
+import com.radixdlt.integration.api.DeterministicActor;
+import com.radixdlt.tree.substate.BerkeleySubStateStore;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Longs;
+import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.Transaction;
-import java.util.Optional;
-import java.util.function.Function;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
-
+public final class TreeOfSubstatesChecker implements DeterministicActor {
   private static final Logger logger = LogManager.getLogger();
 
-  private Database substateTreeDatabase;
-  private Database epochRootHashDatabase;
-
-  private Stopwatch watch = Stopwatch.createUnstarted();
-
   @Override
-  public void open(DatabaseEnvironment dbEnv) {
-    this.substateTreeDatabase =
-        dbEnv
-            .getEnvironment()
-            .openDatabase(
-                null,
-                "radix.substate_tree",
-                new DatabaseConfig()
-                    .setAllowCreate(true)
-                    .setTransactional(true)
-                    .setKeyPrefixing(true)
-                    .setBtreeComparator(lexicographicalComparator()));
-    this.epochRootHashDatabase =
-        dbEnv
-            .getEnvironment()
-            .openDatabase(
-                null,
-                "radix.epoch_root_hash",
-                new DatabaseConfig()
-                    .setAllowCreate(true)
-                    .setTransactional(true)
-                    .setKeyPrefixing(true)
-                    .setBtreeComparator(lexicographicalComparator()));
-  }
+  public String execute(MultiNodeDeterministicRunner runner, Random random) throws Exception {
 
-  @Override
-  public void close() {
-    this.substateTreeDatabase.close();
-    this.epochRootHashDatabase.close();
-  }
+    Long highestEpoch = 0L;
+    Map<Long, byte[]> hashesAtEpochNumber = new HashMap<>();
 
-  @Override
-  public void process(
-      Transaction dbTxn,
-      REProcessedTxn txn,
-      long stateVersion,
-      Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
-    watch.start();
-    boolean isEpochChange = false;
-    Long epoch = null;
-    byte[] rootHash = new byte[0];
-    final var subStateTree = new SubStateTree(substateTreeDatabase, dbTxn);
-    for (REStateUpdate stateUpdate : txn.stateUpdates().toList()) {
-      rootHash =
-          subStateTree.put(stateUpdate.getId(), SubStateTree.getValue(stateUpdate.isBootUp()));
-      if (stateUpdate.getParsed() instanceof EpochData epochData) {
-        if (stateUpdate.isBootUp()) {
-          epoch = epochData.getEpoch();
+    for (int i = 0; i < runner.getSize(); i++) {
+      var injector = runner.getNode(i);
+
+      var berkeleySubStateStore = injector.getInstance(BerkeleySubStateStore.class);
+      Database epochRootHashDatabase = berkeleySubStateStore.getEpochRootHashDatabase();
+      Cursor cursor = epochRootHashDatabase.openCursor(null, null);
+      var key = new DatabaseEntry();
+      var value = new DatabaseEntry();
+      cursor.getLast(key, value, null);
+      Long epochNumber = Longs.fromByteArray(key.getData());
+      Long lastEpochNumber;
+
+      do {
+        lastEpochNumber = epochNumber;
+        var rootHash = value.getData();
+        var rootHashAtHeight = hashesAtEpochNumber.get(epochNumber);
+        if (rootHashAtHeight != null) {
+          logger.info(
+              "Epoch Number for node {} is {} and root: {} vs local {}",
+              i,
+              epochNumber,
+              Bytes.toHexString(rootHash),
+              Bytes.toHexString(rootHashAtHeight));
+          assertThat(Arrays.equals(rootHashAtHeight, rootHash)).isTrue();
+          break;
+        } else {
+          hashesAtEpochNumber.put(epochNumber, rootHash);
         }
-        isEpochChange = true;
-      }
-    }
-    watch.stop();
-    if (isEpochChange) {
-      epochRootHashDatabase.put(
-          dbTxn, new DatabaseEntry(Longs.toByteArray(epoch)), new DatabaseEntry(rootHash));
-      if (logger.isInfoEnabled()) {
-        logger.info(
-            "SubState Tree Root hash: {} for epoch {}. Time spent since last epoch: {} s.",
-            Bytes.toHexString(rootHash),
-            epoch,
-            watch.elapsed().toSeconds());
-      }
-      watch.reset();
-    }
-  }
+        cursor.getPrev(key, value, null);
+        epochNumber = Longs.fromByteArray(key.getData());
+        highestEpoch = Long.max(epochNumber, highestEpoch);
+      } while (epochNumber < lastEpochNumber);
 
-  public Database getSubstateTreeDatabase() {
-    return substateTreeDatabase;
-  }
-
-  public Database getEpochRootHashDatabase() {
-    return epochRootHashDatabase;
+      cursor.close();
+    }
+    return String.format("No conflicts and the highest epoch encountered is: {}", highestEpoch);
   }
 }

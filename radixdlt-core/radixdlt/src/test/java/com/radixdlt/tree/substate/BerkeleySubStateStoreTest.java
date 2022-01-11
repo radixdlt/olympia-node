@@ -165,8 +165,6 @@ public class BerkeleySubStateStoreTest {
     var value = new DatabaseEntry();
     cursor.getLast(key, value, null);
     long expectedEpochNumber = 1L;
-    long actualEpochNumber = Longs.fromByteArray(key.getData());
-    cursor.close();
-    Assert.assertEquals(expectedEpochNumber, actualEpochNumber);
+    Assert.assertEquals(expectedEpochNumber, Longs.fromByteArray(key.getData()));
   }
 }

@@ -98,6 +98,7 @@ import com.radixdlt.integration.api.actors.ApiTxnSubmitter;
 import com.radixdlt.integration.api.actors.BalanceReconciler;
 import com.radixdlt.integration.api.actors.NativeTokenRewardsChecker;
 import com.radixdlt.integration.api.actors.RandomNodeRestarter;
+import com.radixdlt.integration.api.actors.TreeOfSubstatesChecker;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
@@ -116,6 +117,8 @@ import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.tree.substate.BerkeleySubStateStore;
+import com.radixdlt.tree.substate.SubStateTreeModule;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.*;
 import java.util.function.Supplier;
@@ -149,7 +152,8 @@ public class ApiTest {
           new ActorConfiguration(BalanceReconciler::new, 1, 10),
           new ActorConfiguration(RandomNodeRestarter::new, 1, 10),
           new ActorConfiguration(NativeTokenRewardsChecker::new, 1, 100),
-          new ActorConfiguration(ApiBalanceToRadixEngineChecker::new, 1, 200));
+          new ActorConfiguration(ApiBalanceToRadixEngineChecker::new, 1, 200),
+          new ActorConfiguration(TreeOfSubstatesChecker::new, 1, 100));
 
   @Parameterized.Parameters
   public static Collection<Object[]> forksModule() {
@@ -257,12 +261,17 @@ public class ApiTest {
             Amount.ofTokens(1000)),
         MempoolConfig.asModule(10, 10),
         reConfig,
+        new SubStateTreeModule(),
         new PersistedNodeForTestingModule(),
         new LastEventsModule(LedgerUpdate.class),
         FailOnEvent.asModule(InvalidProposedTxn.class),
         new AbstractModule() {
           @Override
           protected void configure() {
+            bind(BerkeleySubStateStore.class).in(Scopes.SINGLETON);
+            Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
+                .addBinding()
+                .to(BerkeleySubStateStore.class);
             bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
             bind(Environment.class)
                 .toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
