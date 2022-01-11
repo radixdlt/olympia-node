@@ -75,8 +75,10 @@ import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
+import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Transaction;
 import java.util.Optional;
 import java.util.function.Function;
@@ -87,13 +89,14 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
 
   private static final Logger logger = LogManager.getLogger();
 
-  private Database database;
+  private Database substateTreeDatabase;
+  private Database epochRootHashDatabase;
 
   private Stopwatch watch = Stopwatch.createUnstarted();
 
   @Override
   public void open(DatabaseEnvironment dbEnv) {
-    this.database =
+    this.substateTreeDatabase =
         dbEnv
             .getEnvironment()
             .openDatabase(
@@ -104,11 +107,23 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
                     .setTransactional(true)
                     .setKeyPrefixing(true)
                     .setBtreeComparator(lexicographicalComparator()));
+    this.epochRootHashDatabase =
+        dbEnv
+            .getEnvironment()
+            .openDatabase(
+                null,
+                "radix.epoch_root_hash",
+                new DatabaseConfig()
+                    .setAllowCreate(true)
+                    .setTransactional(true)
+                    .setKeyPrefixing(true)
+                    .setBtreeComparator(lexicographicalComparator()));
   }
 
   @Override
   public void close() {
-    this.database.close();
+    this.substateTreeDatabase.close();
+    this.epochRootHashDatabase.close();
   }
 
   @Override
@@ -119,26 +134,38 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
       Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
     watch.start();
     boolean isEpochChange = false;
+    Long epoch = null;
     byte[] rootHash = new byte[0];
-    final var subStateTree = new SubStateTree(database, dbTxn);
+    final var subStateTree = new SubStateTree(substateTreeDatabase, dbTxn);
     for (REStateUpdate stateUpdate : txn.stateUpdates().toList()) {
       rootHash =
           subStateTree.put(stateUpdate.getId(), SubStateTree.getValue(stateUpdate.isBootUp()));
-      if (stateUpdate.getParsed() instanceof EpochData) {
+      if (stateUpdate.getParsed() instanceof EpochData epochData) {
+        if (stateUpdate.isBootUp()) {
+          epoch = epochData.getEpoch();
+        }
         isEpochChange = true;
       }
     }
     watch.stop();
-    if (isEpochChange && logger.isInfoEnabled()) {
-      logger.info(
-          "SubState Tree Root hash: {}. Time spent since last epoch: {} s.",
-          Bytes.toHexString(rootHash),
-          watch.elapsed().toSeconds());
+    if (isEpochChange) {
+      epochRootHashDatabase.put(
+          dbTxn, new DatabaseEntry(Longs.toByteArray(epoch)), new DatabaseEntry(rootHash));
+      if (logger.isInfoEnabled()) {
+        logger.info(
+            "SubState Tree Root hash: {}. Time spent since last epoch: {} s.",
+            Bytes.toHexString(rootHash),
+            watch.elapsed().toSeconds());
+      }
       watch.reset();
     }
   }
 
-  public Database getDatabase() {
-    return database;
+  public Database getSubstateTreeDatabase() {
+    return substateTreeDatabase;
+  }
+
+  public Database getEpochRootHashDatabase() {
+    return epochRootHashDatabase;
   }
 }
