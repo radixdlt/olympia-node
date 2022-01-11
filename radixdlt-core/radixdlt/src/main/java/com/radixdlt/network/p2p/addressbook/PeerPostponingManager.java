@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2022 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,124 +62,76 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p;
+package com.radixdlt.network.p2p.addressbook;
 
-import static java.util.Objects.requireNonNull;
+import com.radixdlt.network.p2p.RadixNodeUri;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.NodeAddressing;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.serialization.DeserializeException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.util.Objects;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
-public final class RadixNodeUri implements Comparable<RadixNodeUri>{
-  private final String host;
-  private final int port;
-  private final String networkNodeHrp;
-  private final NodeId nodeId;
+/**
+ * Maintain information about peers connections to which should be postponed.
+ *
+ * <p>Class implements simple exponential backoff strategy, doubling postpone time for every
+ * recorded failure.
+ */
+final class PeerPostponingManager {
+  private final Map<RadixNodeUri, PostponeInfo> postponedPeers = new HashMap<>();
+  private final Clock clock;
+  private final Duration initialPostpone;
+  private final Duration maxPostpone;
 
-  @JsonCreator
-  public static RadixNodeUri deserialize(byte[] uri)
-      throws URISyntaxException, DeserializeException {
-    return fromUri(new URI(new String(requireNonNull(uri))));
+  public PeerPostponingManager(Clock clock, Duration initialPostpone, Duration maxPostpone) {
+    this.clock = clock;
+    this.initialPostpone = initialPostpone;
+    this.maxPostpone = maxPostpone;
   }
 
-  public static RadixNodeUri fromPubKeyAndAddress(
-      int networkId, ECPublicKey publicKey, String host, int port) {
-    var hrp = Addressing.ofNetworkId(networkId).forNodes().getHrp();
-    return new RadixNodeUri(host, port, hrp, NodeId.fromPublicKey(publicKey));
+  public boolean recordFailure(RadixNodeUri uri) {
+    return postponedPeers.compute(uri, (key, postponeInfo) -> computePostponeInfo(postponeInfo))
+        != null;
   }
 
-  public static RadixNodeUri fromUri(URI uri) throws DeserializeException {
-    var hrpAndKey = NodeAddressing.parseUnknownHrp(uri.getUserInfo());
-    return new RadixNodeUri(
-        uri.getHost(),
-        uri.getPort(),
-        hrpAndKey.getFirst(),
-        NodeId.fromPublicKey(hrpAndKey.getSecond()));
+  private PostponeInfo computePostponeInfo(PostponeInfo postponeInfo) {
+    return postponeInfo == null
+        ? new PostponeInfo()
+        : postponeInfo.survivesFailure() ? postponeInfo : null;
   }
 
-  private RadixNodeUri(String host, int port, String networkNodeHrp, NodeId nodeId) {
-    if (port <= 0) {
-      throw new RuntimeException("Port must be a positive integer");
-    }
-    this.host = requireNonNull(host);
-    this.port = port;
-    this.networkNodeHrp = networkNodeHrp;
-    this.nodeId = requireNonNull(nodeId);
+  public void recordSuccess(RadixNodeUri uri) {
+    postponedPeers.remove(uri);
   }
 
-  public String getHost() {
-    return host;
+  public boolean shouldIgnore(RadixNodeUri uri) {
+    return Optional.ofNullable(postponedPeers.get(uri))
+        .map(PostponeInfo::shouldIgnore)
+        .orElse(false);
   }
 
-  public int getPort() {
-    return port;
+  private Instant now() {
+    return clock.instant();
   }
 
-  public NodeId getNodeId() {
-    return nodeId;
-  }
+  private final class PostponeInfo {
+    private final Instant firstFailure;
+    private Duration postponeDuration;
 
-  @JsonValue
-  private byte[] getSerializedValue() {
-    return getUriString().getBytes(StandardCharsets.UTF_8);
-  }
-
-  private String getUriString() {
-    return String.format("radix://%s@%s:%s", nodeAddress(), host, port);
-  }
-
-  public String nodeAddress() {
-    return NodeAddressing.of(networkNodeHrp, nodeId.getPublicKey());
-  }
-
-  public String getNetworkNodeHrp() {
-    return this.networkNodeHrp;
-  }
-
-  @Override
-  public String toString() {
-    return getUriString();
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final var that = (RadixNodeUri) o;
-    return port == that.port
-        && Objects.equals(host, that.host)
-        && Objects.equals(nodeId, that.nodeId)
-        && Objects.equals(networkNodeHrp, that.networkNodeHrp);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(host, port, nodeId, networkNodeHrp);
-  }
-
-  @Override
-  public int compareTo(RadixNodeUri other) {
-    int compare = nodeAddress().compareTo(other.nodeAddress());
-
-    if (compare == 0) {
-      compare = host.compareTo(other.host);
+    PostponeInfo() {
+      this.firstFailure = now();
+      this.postponeDuration = initialPostpone;
     }
 
-    if (compare == 0) {
-      compare = Integer.compare(port, other.port);
+    boolean survivesFailure() {
+      this.postponeDuration = postponeDuration.plus(postponeDuration);
+      return postponeDuration.compareTo(maxPostpone) <= 0;
     }
 
-    return compare;
+    boolean shouldIgnore() {
+      return firstFailure.plus(postponeDuration).compareTo(now()) >= 0;
+    }
   }
 }
