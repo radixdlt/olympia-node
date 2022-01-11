@@ -66,6 +66,7 @@ package com.radixdlt.tree.substate;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 
+import com.google.common.base.Stopwatch;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
@@ -87,6 +88,8 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
   private static final Logger logger = LogManager.getLogger();
 
   private Database database;
+
+  private Stopwatch watch = Stopwatch.createUnstarted();
 
   @Override
   public void open(DatabaseEnvironment dbEnv) {
@@ -114,6 +117,7 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
       REProcessedTxn txn,
       long stateVersion,
       Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
+    watch.start();
     boolean isEpochChange = false;
     byte[] rootHash = new byte[0];
     final var subStateTree = new SubStateTree(database, dbTxn);
@@ -124,8 +128,13 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
         isEpochChange = true;
       }
     }
-    if (isEpochChange && logger.isDebugEnabled()) {
-      logger.debug(Bytes.toHexString(rootHash));
+    watch.stop();
+    if (isEpochChange && logger.isInfoEnabled()) {
+      logger.info(
+          "SubState Tree Root hash: {}. Time spent since last epoch: {} s.",
+          Bytes.toHexString(rootHash),
+          watch.elapsed().toSeconds());
+      watch.reset();
     }
   }
 
