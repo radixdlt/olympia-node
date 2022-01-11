@@ -64,7 +64,12 @@
 
 package com.radixdlt.network.p2p.addressbook;
 
-import org.junit.Test;
+import static com.radixdlt.utils.TypedMocks.rmock;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECKeyPair;
@@ -74,20 +79,12 @@ import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.proxy.ProxyCertificate;
 import com.radixdlt.network.p2p.proxy.ProxyCertificateData;
-
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import static com.radixdlt.utils.TypedMocks.rmock;
+import org.junit.Test;
 
 public final class AddressBookTest {
 
@@ -220,7 +217,8 @@ public final class AddressBookTest {
   }
 
   private AddressBook createAddressBook(RadixNodeUri self) {
-    return new AddressBook(self, rmock(EventDispatcher.class), new InMemoryAddressBookPersistence(), createClock());
+    return new AddressBook(
+        self, rmock(EventDispatcher.class), new InMemoryAddressBookPersistence(), createClock());
   }
 
   private static RadixNodeUri createNodeUri(int network, String host) {

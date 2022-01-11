@@ -65,7 +65,6 @@
 package com.radixdlt.network.p2p.addressbook;
 
 import com.radixdlt.network.p2p.RadixNodeUri;
-
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;

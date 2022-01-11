@@ -77,7 +77,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-public final class RadixNodeUri implements Comparable<RadixNodeUri>{
+public final class RadixNodeUri implements Comparable<RadixNodeUri> {
   private final String host;
   private final int port;
   private final String networkNodeHrp;

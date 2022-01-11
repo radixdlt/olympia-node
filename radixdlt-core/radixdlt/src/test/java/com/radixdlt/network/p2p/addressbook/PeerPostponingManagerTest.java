@@ -64,18 +64,17 @@
 
 package com.radixdlt.network.p2p.addressbook;
 
-import org.junit.Test;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.p2p.RadixNodeUri;
-
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.junit.Test;
 
 public class PeerPostponingManagerTest {
   private final RadixNodeUri peer1 = createNodeUri("1.1.1.1");
@@ -92,9 +91,13 @@ public class PeerPostponingManagerTest {
 
     when(clock.instant()).thenReturn(time0, time1, time2, time3);
 
-    assertTrue(manager.recordFailure(peer1)); //First time it should survive, record is missing
-    assertTrue(manager.recordFailure(peer1)); //Second time it should survive, computed duration now is 2 min
-    assertFalse(manager.recordFailure(peer1)); //Should not survive, computed duration (4 min) is above limit (3 min)
+    assertTrue(manager.recordFailure(peer1)); // First time it should survive, record is missing
+    assertTrue(
+        manager.recordFailure(
+            peer1)); // Second time it should survive, computed duration now is 2 min
+    assertFalse(
+        manager.recordFailure(
+            peer1)); // Should not survive, computed duration (4 min) is above limit (3 min)
   }
 
   @Test
@@ -114,6 +117,7 @@ public class PeerPostponingManagerTest {
   }
 
   private static RadixNodeUri createNodeUri(String host) {
-    return RadixNodeUri.fromPubKeyAndAddress(1, ECKeyPair.generateNew().getPublicKey(), host, 30000);
+    return RadixNodeUri.fromPubKeyAndAddress(
+        1, ECKeyPair.generateNew().getPublicKey(), host, 30000);
   }
 }

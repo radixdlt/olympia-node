@@ -64,6 +64,8 @@
 
 package com.radixdlt.network.p2p.addressbook;
 
+import static java.util.function.Predicate.not;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
@@ -77,7 +79,6 @@ import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
 import com.radixdlt.network.p2p.proxy.VerifiedProxyCertificate;
 import com.radixdlt.utils.Pair;
-
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -87,8 +88,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
-
-import static java.util.function.Predicate.not;
 
 /** Manages known peers network addresses and their metadata. */
 public final class AddressBook {
