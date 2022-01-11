@@ -70,7 +70,8 @@ public enum MessagingErrors implements Failure {
   MESSAGE_EXPIRED(1, "Message expired"),
   IO_ERROR(2, "IO Error"),
   SELF_CONNECTION_ATTEMPT(3, "Attempt to connect to self"),
-  PEER_BANNED(4, "Peer is banned");
+  PEER_BANNED(4, "Peer is banned"),
+  PEER_CONNECTION_FORBIDDEN(5, "Peer connection forbidden");
 
   private final int code;
   private final String message;

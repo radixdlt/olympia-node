@@ -67,9 +67,14 @@ package com.radixdlt.network.p2p;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.messaging.serialization.MessageSerialization;
 import com.radixdlt.network.p2p.liveness.messages.PeerPingMessage;
 import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
+import com.radixdlt.network.p2p.test.P2PTestNetworkRunner;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import java.time.Duration;
 import java.util.Set;
 import org.junit.After;
@@ -210,6 +215,34 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
     processAll();
 
     // assert connection closed
+    assertEquals(0L, testNetworkRunner.peerManager(0).activeChannels().size());
+    assertEquals(0L, testNetworkRunner.peerManager(1).activeChannels().size());
+  }
+
+  @Test
+  public void should_respect_peer_allow_list_config() throws Exception {
+    final var nodeAddressing = Addressing.ofNetwork(Network.LOCALNET).forNodes();
+
+    // first test node is only allowed to connect to some random peer, not to the other test node
+    final var testNodeProps = defaultProperties();
+    testNodeProps.set("network.p2p.use_peer_allow_list", "true");
+    testNodeProps.set(
+        "network.p2p.peer_allow_list", nodeAddressing.of(ECKeyPair.generateNew().getPublicKey()));
+
+    setupTestRunner(
+        ImmutableList.of(
+            new P2PTestNetworkRunner.NodeProps(ECKeyPair.generateNew(), testNodeProps),
+            new P2PTestNetworkRunner.NodeProps(ECKeyPair.generateNew(), defaultProperties())));
+
+    testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(uriOfNode(1)));
+
+    final var channel1Future =
+        testNetworkRunner.peerManager(0).findOrCreateDirectChannel(uriOfNode(1).getNodeId());
+
+    processAll();
+
+    // the connection should fail
+    assertTrue(channel1Future.isCompletedExceptionally());
     assertEquals(0L, testNetworkRunner.peerManager(0).activeChannels().size());
     assertEquals(0L, testNetworkRunner.peerManager(1).activeChannels().size());
   }

@@ -65,6 +65,7 @@
 package com.radixdlt.network.p2p;
 
 import static com.radixdlt.network.messaging.MessagingErrors.PEER_BANNED;
+import static com.radixdlt.network.messaging.MessagingErrors.PEER_CONNECTION_FORBIDDEN;
 import static com.radixdlt.network.messaging.MessagingErrors.SELF_CONNECTION_ATTEMPT;
 import static java.util.function.Predicate.not;
 
@@ -262,6 +263,10 @@ public final class PeerManager {
       return PEER_BANNED.result();
     }
 
+    if (this.config.usePeerAllowList() && !this.config.peerAllowList().contains(nodeId)) {
+      return PEER_CONNECTION_FORBIDDEN.result();
+    }
+
     return Result.ok(new Object());
   }
 
@@ -353,7 +358,6 @@ public final class PeerManager {
   private boolean shouldAcceptInboundPeer(NodeId nodeId) {
     final var isBanned =
         this.addressBook.get().findById(nodeId).map(AddressBookEntry::isBanned).orElse(false);
-
     if (isBanned) {
       log.info(
           "Dropping inbound connection from peer {}: peer is banned",
@@ -361,13 +365,20 @@ public final class PeerManager {
     }
 
     final var limitReached = this.activeChannels.size() > config.maxInboundChannels();
-    if (limitReached) {
+    if (limitReached && log.isInfoEnabled()) {
       log.info(
           "Dropping inbound connection from peer {}: no more inbound channels allowed",
           addressing.forNodes().of(nodeId.getPublicKey()));
     }
 
-    return !isBanned && !limitReached;
+    final var isAllowed = !config.usePeerAllowList() || config.peerAllowList().contains(nodeId);
+    if (!isAllowed && log.isInfoEnabled()) {
+      log.info(
+          "Dropping inbound connection from peer {}: peer is not allowed",
+          addressing.forNodes().of(nodeId.getPublicKey()));
+    }
+
+    return !isBanned && !limitReached && isAllowed;
   }
 
   private void handlePeerDisconnected(PeerDisconnected peerDisconnected) {

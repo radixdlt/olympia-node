@@ -73,6 +73,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;
 import com.radixdlt.network.p2p.RadixNodeUri;
@@ -97,10 +98,11 @@ import org.apache.logging.log4j.Logger;
 public final class PeerDiscovery {
   private static final Logger log = LogManager.getLogger();
 
-  private static final int MAX_PEERS_IN_RESPONSE = 50;
+  private static final long MAX_PEERS_IN_RESPONSE = 50;
   private static final int MAX_REQUESTS_SENT_AT_ONCE = 5;
 
   private final RadixNodeUri selfUri;
+  private final P2PConfig config;
   private final PeerManager peerManager;
   private final AddressBook addressBook;
   private final PeerControl peerControl;
@@ -113,6 +115,7 @@ public final class PeerDiscovery {
   @Inject
   public PeerDiscovery(
       @Self RadixNodeUri selfUri,
+      P2PConfig config,
       PeerManager peerManager,
       AddressBook addressBook,
       PeerControl peerControl,
@@ -120,6 +123,7 @@ public final class PeerDiscovery {
       RemoteEventDispatcher<GetPeers> getPeersRemoteEventDispatcher,
       RemoteEventDispatcher<PeersResponse> peersResponseRemoteEventDispatcher) {
     this.selfUri = Objects.requireNonNull(selfUri);
+    this.config = Objects.requireNonNull(config);
     this.peerManager = Objects.requireNonNull(peerManager);
     this.addressBook = Objects.requireNonNull(addressBook);
     this.peerControl = Objects.requireNonNull(peerControl);
@@ -154,6 +158,7 @@ public final class PeerDiscovery {
     final var remainingSlots = this.peerManager.getRemainingOutboundSlots();
     final var maxSlotsToUse =
         Math.max(0, (remainingSlots / 2) - 2); // let's always leave some free slots
+
     this.addressBook
         .bestCandidatesToConnect()
         .filter(not(e -> peerManager.isPeerConnected(e.getNodeId())))
@@ -184,10 +189,17 @@ public final class PeerDiscovery {
       final var peers =
           Stream.concat(
                   Stream.of(selfUri),
-                  this.addressBook.bestCandidatesToConnect().limit(MAX_PEERS_IN_RESPONSE - 1))
+                  this.addressBook
+                      .bestCandidatesToConnect()
+                      .filter(this::shouldExposePeerUri)
+                      .limit(MAX_PEERS_IN_RESPONSE - 1))
               .collect(ImmutableSet.toImmutableSet());
 
       peersResponseRemoteEventDispatcher.dispatch(sender, PeersResponse.create(peers));
     };
+  }
+
+  private boolean shouldExposePeerUri(RadixNodeUri uri) {
+    return !config.privatePeers().contains(uri.getNodeId());
   }
 }
