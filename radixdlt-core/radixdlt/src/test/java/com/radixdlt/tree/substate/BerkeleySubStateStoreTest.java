@@ -64,6 +64,7 @@
 
 package com.radixdlt.tree.substate;
 
+import com.google.common.primitives.Longs;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -89,6 +90,9 @@ import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
+import com.sleepycat.je.Cursor;
+import com.sleepycat.je.Database;
+import com.sleepycat.je.DatabaseEntry;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Assert;
@@ -147,10 +151,22 @@ public class BerkeleySubStateStoreTest {
       when_substate_store_process_state_updates__then_tree_must_contain_the_latest_state_of_each_substate() {
     runner.start();
 
-    SubStateTree subStateTree = new SubStateTree(this.berkeleySubStateStore.getDatabase(), null);
+    SubStateTree subStateTree =
+        new SubStateTree(this.berkeleySubStateStore.getSubstateTreeDatabase(), null);
     for (REStateUpdate rEStateUpdate : this.berkeleySubStateStore.getREStateUpdateList()) {
       byte[] value = subStateTree.get(rEStateUpdate.getId());
       Assert.assertArrayEquals(SubStateTree.getValue(rEStateUpdate.isBootUp()), value);
     }
+
+    Database epochRootHashDatabase = this.berkeleySubStateStore.getEpochRootHashDatabase();
+    Cursor cursor = epochRootHashDatabase.openCursor(null, null);
+
+    var key = new DatabaseEntry();
+    var value = new DatabaseEntry();
+    cursor.getLast(key, value, null);
+    long expectedEpochNumber = 1L;
+    long actualEpochNumber = Longs.fromByteArray(key.getData());
+    cursor.close();
+    Assert.assertEquals(expectedEpochNumber, actualEpochNumber);
   }
 }
