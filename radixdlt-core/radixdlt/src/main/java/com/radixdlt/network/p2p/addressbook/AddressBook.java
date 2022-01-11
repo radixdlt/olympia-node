@@ -105,6 +105,13 @@ public final class AddressBook {
   public AddressBook(
       @Self RadixNodeUri self,
       EventDispatcher<PeerEvent> peerEventDispatcher,
+      AddressBookPersistence persistence) {
+    this(self, peerEventDispatcher, persistence, Clock.systemUTC());
+  }
+
+  public AddressBook(
+      RadixNodeUri self,
+      EventDispatcher<PeerEvent> peerEventDispatcher,
       AddressBookPersistence persistence,
       Clock clock) {
     this.self = Objects.requireNonNull(self);
