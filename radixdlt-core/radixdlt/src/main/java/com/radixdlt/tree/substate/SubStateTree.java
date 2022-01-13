@@ -87,6 +87,10 @@ public class SubStateTree {
     return this.pmt.get(key.asBytes());
   }
 
+  public byte[] getHash() {
+    return this.pmt.getRootHash();
+  }
+
   public static byte[] getValue(boolean isBootUp) {
     return isBootUp ? new byte[] {0} : new byte[] {1};
   }
