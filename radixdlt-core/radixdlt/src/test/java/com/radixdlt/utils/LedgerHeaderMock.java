@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2022 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,33 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.utils;
 
-import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.utils.LedgerHeaderMock;
-import java.util.Optional;
-import org.radix.serialization.SerializeMessageObject;
 
-public class GetVerticesErrorResponseMessageSerializeTest
-    extends SerializeMessageObject<GetVerticesErrorResponseMessage> {
-  public GetVerticesErrorResponseMessageSerializeTest() {
-    super(GetVerticesErrorResponseMessage.class, GetVerticesErrorResponseMessageSerializeTest::get);
-  }
-
-  private static GetVerticesErrorResponseMessage get() {
-    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    LedgerHeader ledgerHeader = LedgerHeaderMock.mocked();
-    VerifiedVertex verifiedVertex =
-        new VerifiedVertex(UnverifiedVertex.createGenesis(ledgerHeader), HashUtils.zero256());
-    QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, ledgerHeader);
-    HighQC highQC = HighQC.from(qc, qc, Optional.empty());
-    final var request = new GetVerticesRequestMessage(HashUtils.random256(), 3);
-    return new GetVerticesErrorResponseMessage(highQC, request);
+public class LedgerHeaderMock {
+  public static LedgerHeader mocked() {
+    return LedgerHeader.create(0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0);
   }
 }

@@ -65,8 +65,6 @@
 package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSet.Builder;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
@@ -354,22 +352,17 @@ public final class VertexStore {
         });
   }
 
-  private void removeVertexAndPruneInternal(
-      HashCode vertexId, HashCode skip, Builder<HashCode> prunedVerticesBuilder) {
+  private void removeVertexAndPruneInternal(HashCode vertexId, HashCode skip) {
     vertices.remove(vertexId);
 
     if (this.rootVertex.getId().equals(vertexId)) {
       return;
     }
 
-    if (skip != null) {
-      prunedVerticesBuilder.add(vertexId);
-    }
-
-    Set<HashCode> children = vertexChildren.remove(vertexId);
+    var children = vertexChildren.remove(vertexId);
     for (HashCode child : children) {
       if (!child.equals(skip)) {
-        removeVertexAndPruneInternal(child, null, prunedVerticesBuilder);
+        removeVertexAndPruneInternal(child, null);
       }
     }
   }
@@ -393,18 +386,15 @@ public final class VertexStore {
 
     this.rootVertex = tipVertex;
     this.highestCommittedQC = commitQC;
-    Builder<HashCode> prunedSetBuilder = ImmutableSet.builder();
-    final ImmutableList<PreparedVertex> path =
-        ImmutableList.copyOf(getPathFromRoot(tipVertex.getId()));
+    final var path = ImmutableList.copyOf(getPathFromRoot(tipVertex.getId()));
     HashCode prev = null;
     for (int i = path.size() - 1; i >= 0; i--) {
-      this.removeVertexAndPruneInternal(path.get(i).getId(), prev, prunedSetBuilder);
+      this.removeVertexAndPruneInternal(path.get(i).getId(), prev);
       prev = path.get(i).getId();
     }
 
     VerifiedVertexStoreState vertexStoreState = getState();
-    ImmutableSet<HashCode> pruned = prunedSetBuilder.build();
-    this.bftCommittedDispatcher.dispatch(BFTCommittedUpdate.create(pruned, path, vertexStoreState));
+    this.bftCommittedDispatcher.dispatch(BFTCommittedUpdate.create(path, vertexStoreState));
   }
 
   public LinkedList<PreparedVertex> getPathFromRoot(HashCode vertexId) {
