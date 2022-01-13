@@ -92,6 +92,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.integration.FailOnEvent;
+import com.radixdlt.integration.Slow;
 import com.radixdlt.integration.api.actors.ApiBalanceToRadixEngineChecker;
 import com.radixdlt.integration.api.actors.ApiTxnSubmitter;
 import com.radixdlt.integration.api.actors.BalanceReconciler;
@@ -129,6 +130,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -137,6 +139,7 @@ import org.junit.runners.Parameterized;
  * Test which runs a 20 node consensus network. Random transactions are submitted and nodes are
  * rebooted while checks occur on the api to make sure that invariants are not broken.
  */
+@Category(Slow.class)
 @RunWith(Parameterized.class)
 public class ApiTest {
   private static final Logger logger = LogManager.getLogger();

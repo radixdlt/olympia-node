@@ -92,6 +92,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.integration.Slow;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.mempoolfiller.MempoolFillerModule;
@@ -120,11 +121,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /** Mempool should periodically relay its unprocessed messages to other nodes. */
+@Category(Slow.class)
 @RunWith(Parameterized.class)
 public class MempoolRelayTest {
   private static final int MEMPOOL_FILLER_NODE = 0;
