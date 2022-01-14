@@ -21,10 +21,6 @@ jobs:
         with:
           repository: radixdlt/radixdlt-network-gateway
           path: gateway-api-spec.yaml
-      - run: |
-          ls ${{ github.workspace }}
-      - run: |
-          ls
       - name: Setup Postman credentials
         uses: DamianReeves/write-file-action@v1.0
         with:
@@ -33,9 +29,11 @@ jobs:
           write-mode: append
       #- name: Rename OpenApi spec name for rcnet
       #  run: sed -i 's/(network-name)/(rcnet)/' openapi-spec.json
+      - run: |
+          ls
       - name: Generate rcnet collection
         run: |
-          npx @apideck/portman -l .${{ github.workspace }}/gateway-api-spec.yaml -o /tmp/collection.postman.json --envFile .env-rcnet --syncPostman true \
+          npx @apideck/portman -l ./gateway-api-spec.yaml -o /tmp/collection.postman.json --envFile .env-rcnet --syncPostman true \
             -b https://rcnet.radixdlt.com
       - name: Setup localnet credentials
         uses: DamianReeves/write-file-action@v1.0
