@@ -43,7 +43,7 @@ jobs:
           repository: radixdlt/radixdlt
           path: core
       - name: Change OpenApi version in the Core API spec
-        run: sed -i 's/(3.0.0)/(3.1.0)/' core/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/api.yaml
+        run: sed -i 's/3.1.0/3.0.0/' core/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/api.yaml
       - name: Create Portman configuration for Core API
         uses: DamianReeves/write-file-action@v1.0
         with:

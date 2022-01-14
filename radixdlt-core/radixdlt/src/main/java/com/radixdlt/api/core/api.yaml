@@ -1,4 +1,4 @@
-openapi: 3.1.0
+openapi: 3.0.0
 info:
   version: 1.0.0
   title: Radix Core API
@@ -66,7 +66,7 @@ info:
     See https://openapi-generator.tech/ for more details.
 
     The OpenAPI generator only supports openapi version 3.0.0 at present, but you can
-    change 3.1.0 to 3.0.0 in the first line of the spec without affecting generation.
+    change 3.0.0 to 3.0.0 in the first line of the spec without affecting generation.
 
     # Data API Flow
 
@@ -481,7 +481,7 @@ tags:
                 },
                 "substate": {
                   "substate_identifier": {
-                    "identifier": "65f61dba3ed40a438c4694e8947f73530c1c6ca6b8115371c05c6565f9fb6a4900000000"
+                    "identifier": "65f61dba3ed40a438c4694e8947f73530c1c6ca6b81153.0.05c6565f9fb6a4900000000"
                   },
                   "substate_operation": "BOOTUP"
                 },
@@ -504,7 +504,7 @@ tags:
                 },
                 "substate": {
                   "substate_identifier": {
-                    "identifier": "65f61dba3ed40a438c4694e8947f73530c1c6ca6b8115371c05c6565f9fb6a4900000000"
+                    "identifier": "65f61dba3ed40a438c4694e8947f73530c1c6ca6b81153.0.05c6565f9fb6a4900000000"
                   },
                   "substate_operation": "SHUTDOWN"
                 },
@@ -526,7 +526,7 @@ tags:
                 },
                 "substate": {
                   "substate_identifier": {
-                    "identifier": "65f61dba3ed40a438c4694e8947f73530c1c6ca6b8115371c05c6565f9fb6a4900000001"
+                    "identifier": "65f61dba3ed40a438c4694e8947f73530c1c6ca6b81153.0.05c6565f9fb6a4900000001"
                   },
                   "substate_operation": "BOOTUP"
                 },
@@ -548,7 +548,7 @@ tags:
                 },
                 "substate": {
                   "substate_identifier": {
-                    "identifier": "65f61dba3ed40a438c4694e8947f73530c1c6ca6b8115371c05c6565f9fb6a4900000002"
+                    "identifier": "65f61dba3ed40a438c4694e8947f73530c1c6ca6b81153.0.05c6565f9fb6a4900000002"
                   },
                   "substate_operation": "BOOTUP"
                 },
@@ -3584,4 +3584,4 @@ components:
         data_object:
           round: 0
           type: RoundData
-          timestamp: 1627330381600
+          timestamp: 16273303.0.00
