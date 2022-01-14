@@ -33,6 +33,10 @@ jobs:
           path: cliopts.json
           contents: '{"postmanWorkspaceName":"Team Workspace","collectionName":"Gateway (develop)"}'
           write-mode: append
+      - run: |
+          ls
+      - run: |
+          cat cliopts.json
       - name: Generate and sync Postman's Gateway collection
         run: |
           npx @apideck/portman -l ./gateway/gateway-api-spec.yaml --syncPostman true --envFile .env -cliOptionsFile cliopts.json \
