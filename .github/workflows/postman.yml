@@ -35,7 +35,7 @@ jobs:
       #  run: sed -i 's/(network-name)/(rcnet)/' openapi-spec.json
       - name: Generate rcnet collection
         run: |
-          npx @apideck/portman -l ./${{ github.workspace }}/gateway-api-spec.yaml -o /tmp/collection.postman.json --envFile .env-rcnet --syncPostman true \
+          npx @apideck/portman -l .${{ github.workspace }}/gateway-api-spec.yaml -o /tmp/collection.postman.json --envFile .env-rcnet --syncPostman true \
             -b https://rcnet.radixdlt.com
       - name: Setup localnet credentials
         uses: DamianReeves/write-file-action@v1.0
