@@ -45,8 +45,9 @@ jobs:
       #- name: Rename OpenApi spec name for localnet
       #  run: sed -i 's/(rcnet)/(localnet)/' openapi-spec.json
       - name: Generate localnet collection
-        npx @apideck/portman -l ./gateway/gateway-api-spec.yaml --envFile .env-local --syncPostman true \
-          --collectionName 'Gateway API (localnet)' \
-          -b http://localhost:5308
+        run: |
+          npx @apideck/portman -l ./gateway/gateway-api-spec.yaml --envFile .env-local --syncPostman true \
+            --collectionName 'Gateway API (localnet)' \
+            -b http://localhost:5308
       - name: Validate rcnet collection w/ newman
         run: newman run /tmp/collection.postman.json
