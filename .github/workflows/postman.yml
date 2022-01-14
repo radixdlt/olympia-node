@@ -12,7 +12,7 @@ jobs:
         with:
           access_token: ${{ github.token }}
   generate:
-    name: Sync Postman collections w/ spec from latest develop
+    name: Sync Postman collections w/ latest develop
     environment: Postman
     runs-on: ubuntu-20.04
     steps:
@@ -22,24 +22,38 @@ jobs:
           path: .env
           contents: POSTMAN_API_KEY=${{ secrets.POSTMAN_API_TOKEN }}
           write-mode: append
-      - name: Checkout gateway's openapi spec
-        uses: actions/checkout@v2
-        with:
-          repository: radixdlt/radixdlt-network-gateway
-          path: gateway
-      - name: Setup Postman's Gateway config
+      - name: Create Portman configuration for Gateway API
         uses: DamianReeves/write-file-action@v1.0
         with:
           path: cliopts.json
-          contents: '{"postmanWorkspaceName":"Team Workspace","collectionName":"Gateway (develop)"}'
+          contents: '{"postmanWorkspaceName":"Team Workspace","collectionName":"Gateway API (develop)"}'
           write-mode: append
-      - run: |
-          ls
-      - run: |
-          cat cliopts.json
-      - name: Generate and sync Postman's Gateway collection
+      - name: Generate and upload Postman's Gateway API collection
         run: |
-          npx @apideck/portman -l ./gateway/gateway-api-spec.yaml --syncPostman true --envFile .env --cliOptionsFile cliopts.json \
-            --postmanUid 14449947-5d6c29d7-673a-482b-8fac-c2fa8f3adb4a -b https://rcnet-gateway.radixdlt.com
-      #- name: Validate rcnet collection w/ newman
-      #  run: newman run /tmp/collection.postman.json
+          npx @apideck/portman -u https://raw.githubusercontent.com/radixdlt/radixdlt-network-gateway/develop/gateway-api-spec.yaml \
+            --postmanUid 14449947-5d6c29d7-673a-482b-8fac-c2fa8f3adb4a \
+            --syncPostman true --envFile .env --cliOptionsFile cliopts.json
+      - name: Create Portman configuration for Core API
+        uses: DamianReeves/write-file-action@v1.0
+        with:
+          path: cliopts.json
+          contents: '{"postmanWorkspaceName":"Team Workspace","collectionName":"Core API (develop)"}'
+          write-mode: append
+      - name: Generate and upload Postman's Core API collection
+        run: |
+          npx @apideck/portman \
+            -u https://raw.githubusercontent.com/radixdlt/radixdlt/develop/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/api.yaml \
+            --postmanUid 14449947-fb9a194f-6341-41d7-a826-8c701f0fbf57 \
+            --syncPostman true --envFile .env --cliOptionsFile cliopts.json
+      - name: Create Portman configuration for Core API
+        uses: DamianReeves/write-file-action@v1.0
+        with:
+          path: cliopts.json
+          contents: '{"postmanWorkspaceName":"Team Workspace","collectionName":"System API (develop)"}'
+          write-mode: append
+      - name: Generate and upload Postman's System API collection
+        run: |
+          npx @apideck/portman \
+            -u https://raw.githubusercontent.com/radixdlt/radixdlt/develop/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/system/api.yaml \
+            --postmanUid 14449947-cbede7fb-7361-4d91-becc-e1e10e0b2454 \
+            --syncPostman true --envFile .env --cliOptionsFile cliopts.json
