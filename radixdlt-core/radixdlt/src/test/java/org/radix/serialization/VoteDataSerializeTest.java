@@ -78,7 +78,7 @@ public class VoteDataSerializeTest extends SerializeObject<VoteData> {
 
   private static VoteData get() {
     View view = View.of(1234567890L);
-    LedgerHeader ledgerHeader = LedgerHeaderMock.mocked();
+    LedgerHeader ledgerHeader = LedgerHeaderMock.get();
     BFTHeader committed = new BFTHeader(view, HashUtils.random256(), ledgerHeader);
     BFTHeader parent = new BFTHeader(view.next(), HashUtils.random256(), ledgerHeader);
     BFTHeader proposed = new BFTHeader(view.next().next(), HashUtils.random256(), ledgerHeader);

@@ -84,7 +84,7 @@ public class HighQCTest extends SerializeObject<HighQC> {
   private static HighQC get() {
     View view = View.of(1234567891L);
     HashCode id = HashUtils.random256();
-    LedgerHeader ledgerHeader = LedgerHeaderMock.mocked();
+    LedgerHeader ledgerHeader = LedgerHeaderMock.get();
     BFTHeader header = new BFTHeader(view, id, ledgerHeader);
     BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
     BFTHeader commit = new BFTHeader(View.of(1234567889L), HashUtils.random256(), ledgerHeader);

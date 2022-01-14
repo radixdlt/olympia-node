@@ -83,7 +83,7 @@ public class GetVerticesErrorResponseMessageSerializeTest
 
   private static GetVerticesErrorResponseMessage get() {
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    LedgerHeader ledgerHeader = LedgerHeaderMock.mocked();
+    LedgerHeader ledgerHeader = LedgerHeaderMock.get();
     VerifiedVertex verifiedVertex =
         new VerifiedVertex(UnverifiedVertex.createGenesis(ledgerHeader), HashUtils.zero256());
     QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, ledgerHeader);

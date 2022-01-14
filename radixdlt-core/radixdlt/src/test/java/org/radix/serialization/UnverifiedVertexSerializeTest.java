@@ -84,7 +84,7 @@ public class UnverifiedVertexSerializeTest extends SerializeObject<UnverifiedVer
 
   private static UnverifiedVertex get() {
     View view = View.of(1234567891L);
-    LedgerHeader ledgerHeader = LedgerHeaderMock.mocked();
+    LedgerHeader ledgerHeader = LedgerHeaderMock.get();
     BFTHeader header = new BFTHeader(view, HashUtils.random256(), ledgerHeader);
     BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
     VoteData voteData = new VoteData(header, parent, null);
