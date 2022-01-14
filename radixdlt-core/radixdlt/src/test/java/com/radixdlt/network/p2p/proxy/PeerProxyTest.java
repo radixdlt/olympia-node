@@ -102,6 +102,7 @@ public final class PeerProxyTest extends DeterministicP2PNetworkTest {
     final var proxyKey = ECKeyPair.generateNew();
 
     final var validatorProps = defaultProperties();
+    validatorProps.set("network.p2p.proxy.use_proxies", "true");
     validatorProps.set(
         "network.p2p.proxy.authorized_proxies", nodeAddressing.of(proxyKey.getPublicKey()));
 
@@ -196,6 +197,7 @@ public final class PeerProxyTest extends DeterministicP2PNetworkTest {
     final var proxyKey = ECKeyPair.generateNew();
 
     final var validatorProps = defaultProperties();
+    validatorProps.set("network.p2p.proxy.use_proxies", "true");
     validatorProps.set(
         "network.p2p.proxy.authorized_proxies", nodeAddressing.of(proxyKey.getPublicKey()));
 
@@ -247,6 +249,7 @@ public final class PeerProxyTest extends DeterministicP2PNetworkTest {
     final var proxyKey = ECKeyPair.generateNew();
 
     final var validatorProps = defaultProperties();
+    validatorProps.set("network.p2p.proxy.use_proxies", "true");
     validatorProps.set(
         "network.p2p.proxy.authorized_proxies", nodeAddressing.of(proxyKey.getPublicKey()));
     // validator can only connect to the proxy node

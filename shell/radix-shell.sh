@@ -1,7 +1,8 @@
 INIT=$(cat << EOM
 import static org.radix.utils.shell.RadixShell.*;
 import org.radix.*;
-import org.radix.network.messages.*;
+import com.radixdlt.network.p2p.liveness.messages.*;
+import com.radixdlt.network.p2p.discovery.messages.*;
 import com.radixdlt.network.p2p.*;
 import com.radixdlt.network.p2p.transport.*;
 import com.radixdlt.ModuleRunner;
@@ -20,6 +21,12 @@ import java.net.URI;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.networks.Addressing;
+import org.radix.utils.shell.RadixShell;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 
 System.out.println("\nWelcome to RadixShell!");
 EOM

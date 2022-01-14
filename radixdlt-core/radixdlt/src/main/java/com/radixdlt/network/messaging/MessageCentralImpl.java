@@ -136,7 +136,7 @@ public final class MessageCentralImpl implements MessageCentral {
       P2PConfig p2pConfig,
       MessageSerialization messageSerialization,
       PeerManager peerManager,
-      ProxyCertificateManager proxyCertificateManager,
+      Provider<ProxyCertificateManager> proxyCertificateManager,
       TimeSupplier timeSource,
       EventQueueFactory<OutboundMessageEvent> outboundEventQueueFactory,
       SystemCounters counters,

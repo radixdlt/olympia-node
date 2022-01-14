@@ -134,6 +134,8 @@ public interface P2PConfig {
   /** Specifies whether this node should act as a proxy. */
   boolean proxyEnabled();
 
+  boolean useProxies();
+
   /** A list of authorized proxy nodes. */
   ImmutableSet<NodeId> authorizedProxies();
 
@@ -241,6 +243,11 @@ public interface P2PConfig {
           }
 
           @Override
+          public boolean useProxies() {
+            return properties.get("network.p2p.proxy.use_proxies", false);
+          }
+
+          @Override
           public ImmutableSet<NodeId> authorizedProxies() {
             final var rawList = properties.get("network.p2p.proxy.authorized_proxies", "");
             return Arrays.stream(rawList.split(","))
@@ -306,6 +313,14 @@ public interface P2PConfig {
     if (!config.usePeerAllowList() && !config.peerAllowList().isEmpty()) {
       log.warn(
           "peerAllowList is non empty but will be ignored because usePeerAllowList is not set");
+    }
+
+    if (config.useProxies() && config.authorizedProxies().isEmpty()) {
+      throw new IllegalArgumentException("authorizedProxies can't be empty if useProxies is true");
+    }
+
+    if (!config.useProxies() && !config.authorizedProxies().isEmpty()) {
+      throw new IllegalArgumentException("authorizedProxies can't be set if useProxies is false");
     }
 
     return config;

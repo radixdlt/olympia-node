@@ -102,7 +102,7 @@ public class MessageCentralImplTest {
 
   @Mock private PeerManager peerManager;
 
-  @Mock private ProxyCertificateManager proxyCertificateManager;
+  @Mock private Provider<ProxyCertificateManager> proxyCertificateManager;
 
   @Mock private InboundMessage inboundMessage;
 
