@@ -21,6 +21,10 @@ jobs:
         with:
           repository: radixdlt/radixdlt-network-gateway
           path: gateway-api-spec.yaml
+      - run: |
+          ls ${{ github.workspace }}
+      - run: |
+          ls
       - name: Setup Postman credentials
         uses: DamianReeves/write-file-action@v1.0
         with:
