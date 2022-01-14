@@ -48,7 +48,8 @@ jobs:
           path: cliopts.json
           contents: '{"postmanWorkspaceName":"Team Workspace","collectionName":"Core API (develop)"}'
           write-mode: overwrite
-      - run: cat cliopts.json
+      - name: Change OpenApi version in the Core API spec
+        run: sed -i 's/(3.0.0)/(3.1.0)/' radixdlt/radixdlt/develop/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/api.yaml
       - name: Generate and upload Postman's Core API collection
         run: |
           npx @apideck/portman -l radixdlt/radixdlt/develop/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/api.yaml \
