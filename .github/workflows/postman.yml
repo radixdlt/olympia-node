@@ -12,42 +12,30 @@ jobs:
         with:
           access_token: ${{ github.token }}
   generate:
-    name: Sync postman collections
+    name: Sync Postman collections w/ spec from latest develop
     environment: Postman
     runs-on: ubuntu-20.04
     steps:
+      - name: Setup Postman credentials
+        uses: DamianReeves/write-file-action@v1.0
+        with:
+          path: .env
+          contents: POSTMAN_API_KEY=${{ secrets.POSTMAN_API_TOKEN }}
+          write-mode: append
       - name: Checkout gateway's openapi spec
         uses: actions/checkout@v2
         with:
           repository: radixdlt/radixdlt-network-gateway
           path: gateway
-      - name: Setup Postman credentials
+      - name: Setup Postman's Gateway config
         uses: DamianReeves/write-file-action@v1.0
         with:
-          path: .env-rcnet
-          contents: POSTMAN_API_KEY=${{ secrets.POSTMAN_API_TOKEN }}
+          path: cliopts.json
+          contents: {"postmanWorkspaceName":"Team Workspace","collectionName":"Gateway (develop)"}
           write-mode: append
-      #- name: Rename OpenApi spec name for rcnet
-      #  run: sed -i 's/(network-name)/(rcnet)/' openapi-spec.json
-      - run: |
-          cat .env-rcnet
-      - name: Generate rcnet collection
+      - name: Generate and sync Postman's Gateway collection
         run: |
-          npx @apideck/portman -l ./gateway/gateway-api-spec.yaml -o /tmp/collection.postman.json --envFile .env-rcnet --syncPostman true \
-            --collectionName 'Gateway API (rcnet)' \
+          npx @apideck/portman -l ./gateway/gateway-api-spec.yaml --syncPostman true --envFile .env -cliOptionsFile cliopts.json \
             -b https://rcnet-gateway.radixdlt.com
-      - name: Setup localnet credentials
-        uses: DamianReeves/write-file-action@v1.0
-        with:
-          path: .env-local
-          contents: POSTMAN_API_KEY=${{ secrets.POSTMAN_API_TOKEN }}
-          write-mode: append
-      #- name: Rename OpenApi spec name for localnet
-      #  run: sed -i 's/(rcnet)/(localnet)/' openapi-spec.json
-      - name: Generate localnet collection
-        run: |
-          npx @apideck/portman -l ./gateway/gateway-api-spec.yaml --envFile .env-local --syncPostman true \
-            --collectionName 'Gateway API (localnet)' \
-            -b http://localhost:5308
-      - name: Validate rcnet collection w/ newman
-        run: newman run /tmp/collection.postman.json
+      #- name: Validate rcnet collection w/ newman
+      #  run: newman run /tmp/collection.postman.json
