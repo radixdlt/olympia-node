@@ -110,9 +110,11 @@ final class PeerPostponingManager {
   }
 
   private PostponeInfo computePostpone(RadixNodeUri ignoredKey, PostponeInfo postponeInfo) {
-    return postponeInfo == null
-        ? new PostponeInfo()
-        : postponeInfo.survivesFailure() ? postponeInfo : null;
+    return postponeInfo == null ? new PostponeInfo() : checkSurvival(postponeInfo);
+  }
+
+  private static PostponeInfo checkSurvival(PostponeInfo postponeInfo) {
+    return postponeInfo.survivesFailure() ? postponeInfo : null;
   }
 
   public void recordSuccess(RadixNodeUri uri) {
@@ -129,18 +131,14 @@ final class PeerPostponingManager {
         .forEach(postponedPeers::remove);
   }
 
-  private boolean isExpiredAlias(NodeId nodeId, Entry<RadixNodeUri, PostponeInfo> entry) {
-    return entry.getKey().getNodeId().equals(nodeId) && entry.getValue().isExpired();
-  }
-
   public boolean shouldIgnore(RadixNodeUri uri) {
     return Optional.ofNullable(postponedPeers.get(uri))
         .map(PostponeInfo::shouldIgnore)
         .orElse(false);
   }
 
-  private Instant now() {
-    return clock.instant();
+  private static boolean isExpiredAlias(NodeId nodeId, Entry<RadixNodeUri, PostponeInfo> entry) {
+    return entry.getKey().getNodeId().equals(nodeId) && entry.getValue().isExpired();
   }
 
   private final class PostponeInfo {
@@ -163,6 +161,10 @@ final class PeerPostponingManager {
 
     boolean isExpired() {
       return firstFailure.plus(maxPostpone).isBefore(now());
+    }
+
+    private Instant now() {
+      return clock.instant();
     }
   }
 }
