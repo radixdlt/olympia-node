@@ -42,17 +42,17 @@ jobs:
         with:
           repository: radixdlt/radixdlt
           path: core
+      - name: Change OpenApi version in the Core API spec
+        run: sed -i 's/(3.0.0)/(3.1.0)/' core/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/api.yaml
       - name: Create Portman configuration for Core API
         uses: DamianReeves/write-file-action@v1.0
         with:
           path: cliopts.json
           contents: '{"postmanWorkspaceName":"Team Workspace","collectionName":"Core API (develop)"}'
           write-mode: overwrite
-      - name: Change OpenApi version in the Core API spec
-        run: sed -i 's/(3.0.0)/(3.1.0)/' radixdlt/radixdlt/develop/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/api.yaml
       - name: Generate and upload Postman's Core API collection
         run: |
-          npx @apideck/portman -l radixdlt/radixdlt/develop/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/api.yaml \
+          npx @apideck/portman -l core/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/api.yaml \
             --postmanUid 14449947-fb9a194f-6341-41d7-a826-8c701f0fbf57 \
             --syncPostman true --envFile .env --cliOptionsFile cliopts.json
       - name: Create Portman configuration for Core API
@@ -63,6 +63,6 @@ jobs:
           write-mode: overwrite
       - name: Generate and upload Postman's System API collection
         run: |
-          npx @apideck/portman -l radixdlt/radixdlt/develop/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/system/api.yaml \
+          npx @apideck/portman -l core/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/system/api.yaml \
             --postmanUid 14449947-cbede7fb-7361-4d91-becc-e1e10e0b2454 \
             --syncPostman true --envFile .env --cliOptionsFile cliopts.json
