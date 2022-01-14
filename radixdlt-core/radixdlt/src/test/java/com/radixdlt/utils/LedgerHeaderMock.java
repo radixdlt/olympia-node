@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2022 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,45 +62,15 @@
  * permissions under this License.
  */
 
-package org.radix.serialization;
+package com.radixdlt.utils;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.utils.LedgerHeaderMock;
-import java.util.List;
-import java.util.Optional;
+import com.radixdlt.ledger.AccumulatorState;
 
-public class ProposalSerializeTest extends SerializeObject<Proposal> {
-  public ProposalSerializeTest() {
-    super(Proposal.class, ProposalSerializeTest::get);
-  }
-
-  private static Proposal get() {
-    View view = View.of(1234567891L);
-    HashCode id = HashUtils.random256();
-
-    LedgerHeader ledgerHeader = LedgerHeaderMock.get();
-    BFTHeader header = new BFTHeader(view, id, ledgerHeader);
-    BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
-    VoteData voteData = new VoteData(header, parent, null);
-    QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-    var txn = Txn.create(new byte[] {0, 1, 2, 3});
-
-    // add a particle to ensure atom is valid and has at least one shard
-    BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-    UnverifiedVertex vertex = UnverifiedVertex.create(qc, view, List.of(txn), author);
-    return new Proposal(vertex, qc, ECDSASignature.zeroSignature(), Optional.empty());
+public class LedgerHeaderMock {
+  public static LedgerHeader get() {
+    return LedgerHeader.create(0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0);
   }
 }

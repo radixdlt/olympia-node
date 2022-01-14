@@ -102,7 +102,7 @@ public class LivenessInvariant implements TestInvariant {
                   BFTHighQCUpdate.class);
               nodeEvents.addListener(
                   (node, committed) -> {
-                    emitter.onNext(committed.getVertexStoreState().getHighQC().highestQC());
+                    emitter.onNext(committed.vertexStoreState().getHighQC().highestQC());
                   },
                   BFTCommittedUpdate.class);
             })

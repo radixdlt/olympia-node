@@ -155,7 +155,7 @@ public final class SafetyChecker {
   }
 
   public Optional<TestInvariantError> process(BFTNode node, BFTCommittedUpdate committedUpdate) {
-    ImmutableList<PreparedVertex> vertices = committedUpdate.getCommitted();
+    ImmutableList<PreparedVertex> vertices = committedUpdate.committed();
     for (PreparedVertex vertex : vertices) {
       Optional<TestInvariantError> maybeError = process(node, vertex.getVertex());
       if (maybeError.isPresent()) {
