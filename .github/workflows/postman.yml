@@ -39,8 +39,8 @@ jobs:
         with:
           path: cliopts.json
           contents: '{"postmanWorkspaceName":"Team Workspace","collectionName":"Core API (develop)"}'
-          write-mode: append
-      - run: ls
+          write-mode: overwrite
+      - run: cat cliopts.json
       - name: Generate and upload Postman's Core API collection
         run: |
           npx @apideck/portman \
@@ -52,7 +52,7 @@ jobs:
         with:
           path: cliopts.json
           contents: '{"postmanWorkspaceName":"Team Workspace","collectionName":"System API (develop)"}'
-          write-mode: append
+          write-mode: overwrite
       - name: Generate and upload Postman's System API collection
         run: |
           npx @apideck/portman \
