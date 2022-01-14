@@ -34,6 +34,7 @@ jobs:
       - name: Generate rcnet collection
         run: |
           npx @apideck/portman -l ./gateway/gateway-api-spec.yaml -o /tmp/collection.postman.json --envFile .env-rcnet --syncPostman true \
+            --collectionName 'Gateway API (rcnet)' \
             -b https://rcnet-gateway.radixdlt.com
       - name: Setup localnet credentials
         uses: DamianReeves/write-file-action@v1.0
@@ -44,7 +45,8 @@ jobs:
       #- name: Rename OpenApi spec name for localnet
       #  run: sed -i 's/(rcnet)/(localnet)/' openapi-spec.json
       - name: Generate localnet collection
-        run: |
-          npx @apideck/portman -l openapi-spec.json -o /tmp/collection.postman.json --envFile .env-local --syncPostman true
+        npx @apideck/portman -l ./gateway/gateway-api-spec.yaml --envFile .env-local --syncPostman true \
+          --collectionName 'Gateway API (localnet)' \
+          -b http://localhost:5308
       - name: Validate rcnet collection w/ newman
         run: newman run /tmp/collection.postman.json
