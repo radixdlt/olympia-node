@@ -64,12 +64,14 @@
 
 package com.radixdlt.network.p2p.addressbook;
 
+import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 
 /**
@@ -91,11 +93,23 @@ final class PeerPostponingManager {
   }
 
   public boolean recordFailure(RadixNodeUri uri) {
-    return postponedPeers.compute(uri, (key, postponeInfo) -> computePostponeInfo(postponeInfo))
-        != null;
+    boolean survived = postponedPeers.compute(uri, this::computePostpone) != null;
+
+    if (!survived) {
+      removeAliases(uri.getNodeId());
+    }
+
+    return survived;
   }
 
-  private PostponeInfo computePostponeInfo(PostponeInfo postponeInfo) {
+  private void removeAliases(NodeId nodeId) {
+    postponedPeers.keySet().stream()
+        .filter(uri -> uri.getNodeId().equals(nodeId))
+        .toList() // "materialize" to avoid in place removal
+        .forEach(postponedPeers::remove);
+  }
+
+  private PostponeInfo computePostpone(RadixNodeUri ignoredKey, PostponeInfo postponeInfo) {
     return postponeInfo == null
         ? new PostponeInfo()
         : postponeInfo.survivesFailure() ? postponeInfo : null;
@@ -103,6 +117,20 @@ final class PeerPostponingManager {
 
   public void recordSuccess(RadixNodeUri uri) {
     postponedPeers.remove(uri);
+    // Remove other addresses which belong to same peer but already expired
+    cleanupExpired(uri);
+  }
+
+  private void cleanupExpired(RadixNodeUri uri) {
+    postponedPeers.entrySet().stream()
+        .filter(entry -> isExpiredAlias(uri.getNodeId(), entry))
+        .map(Entry::getKey)
+        .toList() // "materialize" to avoid in place removal
+        .forEach(postponedPeers::remove);
+  }
+
+  private boolean isExpiredAlias(NodeId nodeId, Entry<RadixNodeUri, PostponeInfo> entry) {
+    return entry.getKey().getNodeId().equals(nodeId) && entry.getValue().isExpired();
   }
 
   public boolean shouldIgnore(RadixNodeUri uri) {
@@ -131,6 +159,10 @@ final class PeerPostponingManager {
 
     boolean shouldIgnore() {
       return firstFailure.plus(postponeDuration).compareTo(now()) >= 0;
+    }
+
+    boolean isExpired() {
+      return firstFailure.plus(maxPostpone).isBefore(now());
     }
   }
 }

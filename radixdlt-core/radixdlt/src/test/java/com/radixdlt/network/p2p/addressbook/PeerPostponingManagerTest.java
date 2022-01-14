@@ -70,10 +70,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 
 public class PeerPostponingManagerTest {
@@ -81,34 +83,21 @@ public class PeerPostponingManagerTest {
 
   @Test
   public void peerCanRecordFailure() {
-    var time0 = Instant.now();
-    var time1 = time0.plus(Duration.ofMinutes(1));
-    var time2 = time1.plus(Duration.ofMinutes(1));
-    var time3 = time2.plus(Duration.ofMinutes(1));
+    var manager =
+        new PeerPostponingManager(createClock(), Duration.ofMinutes(1), Duration.ofMinutes(3));
 
-    var clock = mock(Clock.class);
-    var manager = new PeerPostponingManager(clock, Duration.ofMinutes(1), Duration.ofMinutes(3));
-
-    when(clock.instant()).thenReturn(time0, time1, time2, time3);
-
-    assertTrue(manager.recordFailure(peer1)); // First time it should survive, record is missing
-    assertTrue(
-        manager.recordFailure(
-            peer1)); // Second time it should survive, computed duration now is 2 min
-    assertFalse(
-        manager.recordFailure(
-            peer1)); // Should not survive, computed duration (4 min) is above limit (3 min)
+    // First time it should survive, record is missing
+    assertTrue(manager.recordFailure(peer1));
+    // Second time it should survive, computed duration now is 2 min
+    assertTrue(manager.recordFailure(peer1));
+    // Should not survive, computed duration (4 min) is above limit (3 min)
+    assertFalse(manager.recordFailure(peer1));
   }
 
   @Test
   public void successMakesPeerAccessible() {
-    var time0 = Instant.now();
-    var time1 = time0.plus(Duration.ofMinutes(1));
-
-    var clock = mock(Clock.class);
-    var manager = new PeerPostponingManager(clock, Duration.ofMinutes(1), Duration.ofMinutes(3));
-
-    when(clock.instant()).thenReturn(time0, time1);
+    var manager =
+        new PeerPostponingManager(createClock(), Duration.ofMinutes(1), Duration.ofMinutes(3));
 
     assertTrue(manager.recordFailure(peer1));
     assertTrue(manager.shouldIgnore(peer1));
@@ -116,8 +105,51 @@ public class PeerPostponingManagerTest {
     assertFalse(manager.shouldIgnore(peer1));
   }
 
+  @Test
+  public void aliasesAreRemovedOnSuccessIfTheyAreExpired() {
+    var publicKey = ECKeyPair.generateNew().getPublicKey();
+    var peer1 = createNodeUri(publicKey, "1.1.1.1");
+    var peer2 = createNodeUri(publicKey, "1.1.1.2");
+
+    var manager =
+        new PeerPostponingManager(createClock(), Duration.ofMinutes(1), Duration.ofMinutes(3));
+
+    manager.recordFailure(peer1);
+    manager.recordFailure(peer2);
+
+    // Both addresses are postponed now
+    assertTrue(manager.shouldIgnore(peer1));
+    assertTrue(manager.shouldIgnore(peer2));
+
+    manager.recordSuccess(peer1);
+
+    // Both addresses are available now
+    assertFalse(manager.shouldIgnore(peer1));
+    assertFalse(manager.shouldIgnore(peer2));
+  }
+
+  private Clock createClock() {
+    var clock = mock(Clock.class);
+    final var time = new AtomicReference<>(Instant.now());
+
+    when(clock.instant())
+        .thenAnswer(
+            __ -> {
+              var newTime = time.get().plus(Duration.ofSeconds(30));
+              time.set(newTime);
+              return newTime;
+            });
+
+    return clock;
+  }
+
   private static RadixNodeUri createNodeUri(String host) {
-    return RadixNodeUri.fromPubKeyAndAddress(
-        1, ECKeyPair.generateNew().getPublicKey(), host, 30000);
+    var publicKey = ECKeyPair.generateNew().getPublicKey();
+
+    return createNodeUri(publicKey, host);
+  }
+
+  private static RadixNodeUri createNodeUri(ECPublicKey publicKey, String host) {
+    return RadixNodeUri.fromPubKeyAndAddress(1, publicKey, host, 30000);
   }
 }

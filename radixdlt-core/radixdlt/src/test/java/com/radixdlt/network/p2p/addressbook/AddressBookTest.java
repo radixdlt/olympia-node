@@ -139,6 +139,7 @@ public final class AddressBookTest {
 
     sut.addOrUpdatePeerWithSuccessfulConnection(addr4);
     final var bestAddr5 = sut.findBestKnownAddressById(peerId).orElseThrow();
+    System.out.println(bestAddr5);
     assertTrue(bestAddr5 == addr3 || bestAddr5 == addr4);
   }
 
