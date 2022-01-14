@@ -137,8 +137,29 @@ public class MempoolRelayTest {
     return List.of(
         new Object[][] {
           {2, 1}, // 2 validators, 1 full node
-          {5, 2} // 5 validators, 2 full nodes
         });
+  }
+
+  // The following class is created as a workaround as gradle cannot run the tests inside a test
+  // class in parallel. We can achieve some level of parallelism splitting the tests across
+  // different test classes.
+
+  @Category(Slow.class)
+  @RunWith(Parameterized.class)
+  public static class MempoolRelayTest2 extends MempoolRelayTest {
+    private static final int MEMPOOL_FILLER_NODE = 0;
+
+    @Parameterized.Parameters
+    public static Collection<Object[]> parameters() {
+      return List.of(
+          new Object[][] {
+            {5, 2} // 5 validators, 2 full nodes
+          });
+    }
+
+    public MempoolRelayTest2(int numValidators, int numFullNodes) {
+      super(numValidators, numFullNodes);
+    }
   }
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();

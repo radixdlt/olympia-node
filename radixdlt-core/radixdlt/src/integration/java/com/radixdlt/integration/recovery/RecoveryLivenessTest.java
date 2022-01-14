@@ -139,7 +139,53 @@ public class RecoveryLivenessTest {
 
   @Parameters
   public static Collection<Object[]> numNodes() {
-    return List.of(new Object[][] {{1, 88L}, {2, 88L}, {3, 88L}, {4, 88L}, {2, 1L}, {10, 100L}});
+    return List.of(new Object[][] {{1, 88L}});
+  }
+
+  // The following classes are created as a workaround as gradle cannot run the tests inside a test
+  // class in parallel. We can achieve some level of parallelism splitting the tests across
+  // different test classes.
+
+  @Category(Slow.class)
+  @RunWith(Parameterized.class)
+  public static class RecoveryLivenessTest2 extends RecoveryLivenessTest {
+
+    @Parameters
+    public static Collection<Object[]> numNodes() {
+      return List.of(new Object[][] {{2, 88L}});
+    }
+
+    public RecoveryLivenessTest2(int numNodes, long epochCeilingView) {
+      super(numNodes, epochCeilingView);
+    }
+  }
+
+  @Category(Slow.class)
+  @RunWith(Parameterized.class)
+  public static class RecoveryLivenessTest3 extends RecoveryLivenessTest {
+
+    @Parameters
+    public static Collection<Object[]> numNodes() {
+      return List.of(new Object[][] {{3, 88L}, {4, 88L}});
+    }
+
+    public RecoveryLivenessTest3(int numNodes, long epochCeilingView) {
+      super(numNodes, epochCeilingView);
+    }
+  }
+
+  @Category(Slow.class)
+  @RunWith(Parameterized.class)
+  public static class RecoveryLivenessTest4 extends RecoveryLivenessTest {
+
+    @Parameters
+    public static Collection<Object[]> numNodes() {
+      return List.of(new Object[][] {{2, 1L}, {10, 100L}});
+    }
+
+    public RecoveryLivenessTest4(int numNodes, long epochCeilingView) {
+      super(numNodes, epochCeilingView);
+    }
   }
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();

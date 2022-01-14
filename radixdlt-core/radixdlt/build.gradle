@@ -116,6 +116,17 @@ task integrationTest(type: Test) {
     mustRunAfter(test)
 }
 
+task slowIntegrationTest(type: Test) {
+    useJUnit {
+        includeCategories 'com.radixdlt.integration.Slow'
+    }
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    // We're using all available processors here for now because we want to run all classes at the same time and they don't seem to be cpu intensive
+    maxParallelForks = Runtime.runtime.availableProcessors()
+    mustRunAfter(test)
+}
+
 versionFile {
     mustRunAfter(processResources)
     // Path to the file to be written
@@ -132,27 +143,10 @@ jar {
     }
 }
 
-test {
-    testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat "full"
-        outputs.upToDateWhen { false }
-        showStandardStreams true
-    }
-    systemProperty "java.security.egd", "file:/dev/urandom"
-}
-
 integrationTest {
     useJUnit {
         excludeCategories 'com.radixdlt.integration.Slow'
     }
-    testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat "full"
-        outputs.upToDateWhen { false }
-        showStandardStreams true
-    }
-    systemProperty "java.security.egd", "file:/dev/urandom"
     jacoco {
         // We don't want integration tests included in code coverage.
         enabled false
