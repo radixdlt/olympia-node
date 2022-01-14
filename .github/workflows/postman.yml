@@ -28,6 +28,7 @@ jobs:
           path: cliopts.json
           contents: '{"postmanWorkspaceName":"Team Workspace","collectionName":"Gateway API (develop)"}'
           write-mode: append
+      - run: ls
       - name: Generate and upload Postman's Gateway API collection
         run: |
           npx @apideck/portman -u https://raw.githubusercontent.com/radixdlt/radixdlt-network-gateway/develop/gateway-api-spec.yaml \
@@ -39,6 +40,7 @@ jobs:
           path: cliopts.json
           contents: '{"postmanWorkspaceName":"Team Workspace","collectionName":"Core API (develop)"}'
           write-mode: append
+      - run: ls
       - name: Generate and upload Postman's Core API collection
         run: |
           npx @apideck/portman \
