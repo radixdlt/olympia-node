@@ -1,0 +1,47 @@
+name: Postman flow
+
+on: [push]
+
+jobs:
+  cancel_running_workflows:
+    name: Cancel running workflows
+    runs-on: ubuntu-20.04
+    steps:
+      - name: cancel running workflows
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+  generate:
+    name: Sync postman collections
+    environment: Postman
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout openapi spec
+        uses: actions/checkout@v2
+        with:
+          repository: Theoklitos/openapi-spec
+      - name: Setup rcnet credentials
+        uses: DamianReeves/write-file-action@v1.0
+        with:
+          path: .env-rcnet
+          contents: POSTMAN_API_KEY=${{ secrets.POSTMAN_API_TOKEN }}
+          write-mode: append
+      - name: Rename OpenApi spec name for rcnet
+        run: sed -i 's/(network-name)/(rcnet)/' openapi-spec.json
+      - name: Generate rcnet collection
+        run: |
+          npx @apideck/portman -l openapi-spec.json -o /tmp/collection.postman.json --envFile .env-rcnet --syncPostman true \
+            -b https://rcnet.radixdlt.com
+      - name: Setup localnet credentials
+        uses: DamianReeves/write-file-action@v1.0
+        with:
+          path: .env-local
+          contents: POSTMAN_API_KEY=${{ secrets.POSTMAN_API_TOKEN }}
+          write-mode: append
+      - name: Rename OpenApi spec name for localnet
+        run: sed -i 's/(rcnet)/(localnet)/' openapi-spec.json
+      - name: Generate localnet collection
+        run: |
+          npx @apideck/portman -l openapi-spec.json -o /tmp/collection.postman.json --envFile .env-local --syncPostman true
+      - name: Validate rcnet collection w/ newman
+        run: newman run /tmp/collection.postman.json
