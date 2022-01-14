@@ -67,7 +67,8 @@ package com.radixdlt.consensus.bft;
 import com.google.common.collect.ImmutableList;
 
 /** Vertex Store update of committed vertices */
-public record BFTCommittedUpdate(ImmutableList<PreparedVertex> committed, VerifiedVertexStoreState vertexStoreState) {
+public record BFTCommittedUpdate(
+    ImmutableList<PreparedVertex> committed, VerifiedVertexStoreState vertexStoreState) {
   public int vertexStoreSize() {
     return vertexStoreState.getVertices().size();
   }
