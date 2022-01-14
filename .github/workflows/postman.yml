@@ -16,11 +16,12 @@ jobs:
     environment: Postman
     runs-on: ubuntu-20.04
     steps:
-      - name: Checkout openapi spec
+      - name: Checkout gateway's openapi spec
         uses: actions/checkout@v2
         with:
-          repository: Theoklitos/openapi-spec
-      - name: Setup rcnet credentials
+          repository: radixdlt/radixdlt-network-gateway
+          path: gateway-api-spec.yaml
+      - name: Setup Postman credentials
         uses: DamianReeves/write-file-action@v1.0
         with:
           path: .env-rcnet
