@@ -65,33 +65,10 @@
 package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableList;
-import java.util.Objects;
 
 /** Vertex Store update of committed vertices */
-public final class BFTCommittedUpdate {
-  private final ImmutableList<PreparedVertex> committed;
-  private final VerifiedVertexStoreState vertexStoreState;
-
-  private BFTCommittedUpdate(
-      ImmutableList<PreparedVertex> committed, VerifiedVertexStoreState vertexStoreState) {
-    this.committed = Objects.requireNonNull(committed);
-    this.vertexStoreState = Objects.requireNonNull(vertexStoreState);
-  }
-
-  public static BFTCommittedUpdate create(
-      ImmutableList<PreparedVertex> committed, VerifiedVertexStoreState vertexStoreState) {
-    return new BFTCommittedUpdate(committed, vertexStoreState);
-  }
-
-  public int getVertexStoreSize() {
+public record BFTCommittedUpdate(ImmutableList<PreparedVertex> committed, VerifiedVertexStoreState vertexStoreState) {
+  public int vertexStoreSize() {
     return vertexStoreState.getVertices().size();
-  }
-
-  public ImmutableList<PreparedVertex> getCommitted() {
-    return committed;
-  }
-
-  public VerifiedVertexStoreState getVertexStoreState() {
-    return vertexStoreState;
   }
 }

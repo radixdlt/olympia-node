@@ -394,7 +394,7 @@ public final class VertexStore {
     }
 
     VerifiedVertexStoreState vertexStoreState = getState();
-    this.bftCommittedDispatcher.dispatch(BFTCommittedUpdate.create(path, vertexStoreState));
+    this.bftCommittedDispatcher.dispatch(new BFTCommittedUpdate(path, vertexStoreState));
   }
 
   public LinkedList<PreparedVertex> getPathFromRoot(HashCode vertexId) {

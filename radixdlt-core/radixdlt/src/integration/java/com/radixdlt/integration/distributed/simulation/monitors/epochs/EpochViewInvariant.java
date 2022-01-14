@@ -90,7 +90,7 @@ public class EpochViewInvariant implements TestInvariant {
                     (node, commit) -> emitter.onNext(commit), BFTCommittedUpdate.class))
         .serialize()
         .concatMap(
-            committedUpdate -> Observable.fromStream(committedUpdate.getCommitted().stream()))
+            committedUpdate -> Observable.fromStream(committedUpdate.committed().stream()))
         .flatMap(
             vertex -> {
               final View view = vertex.getView();
