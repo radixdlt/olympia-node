@@ -31,7 +31,7 @@ jobs:
         uses: DamianReeves/write-file-action@v1.0
         with:
           path: cliopts.json
-          contents: {"postmanWorkspaceName":"Team Workspace","collectionName":"Gateway (develop)"}
+          contents: '{"postmanWorkspaceName":"Team Workspace","collectionName":"Gateway (develop)"}'
           write-mode: append
       - name: Generate and sync Postman's Gateway collection
         run: |
