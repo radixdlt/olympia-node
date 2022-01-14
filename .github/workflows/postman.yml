@@ -36,6 +36,6 @@ jobs:
       - name: Generate and sync Postman's Gateway collection
         run: |
           npx @apideck/portman -l ./gateway/gateway-api-spec.yaml --syncPostman true --envFile .env -cliOptionsFile cliopts.json \
-            -b https://rcnet-gateway.radixdlt.com
+            --postmanUid 14449947-5d6c29d7-673a-482b-8fac-c2fa8f3adb4a -b https://rcnet-gateway.radixdlt.com
       #- name: Validate rcnet collection w/ newman
       #  run: newman run /tmp/collection.postman.json
