@@ -29,6 +29,8 @@ jobs:
           write-mode: append
       #- name: Rename OpenApi spec name for rcnet
       #  run: sed -i 's/(network-name)/(rcnet)/' openapi-spec.json
+      - run: |
+          cat .env-rcnet
       - name: Generate rcnet collection
         run: |
           npx @apideck/portman -l ./gateway/gateway-api-spec.yaml -o /tmp/collection.postman.json --envFile .env-rcnet --syncPostman true \
