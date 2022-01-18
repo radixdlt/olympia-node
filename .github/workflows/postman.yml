@@ -1,9 +1,9 @@
 name: sync-postman-collections
 
-on:
-  push:
-    branches:
-      - develop
+on: [push]
+#  push:
+#    branches:
+#      - develop
 
 jobs:
   cancel_running_workflows:
@@ -14,8 +14,8 @@ jobs:
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
-  sync_postman_collections:
-    name: Sync Postman collections w/ latest develop
+  sync_core_collection:
+    name: Sync Postman Core collection w/ latest develop
     environment: Postman
     runs-on: ubuntu-20.04
     steps:
@@ -24,20 +24,8 @@ jobs:
         with:
           path: .env
           contents: POSTMAN_API_KEY=${{ secrets.POSTMAN_API_TOKEN }}
-          write-mode: append
-      - name: Create Portman configuration for Gateway API
-        uses: DamianReeves/write-file-action@v1.0
-        with:
-          path: cliopts.json
-          contents: '{"postmanWorkspaceName":"Team Workspace","collectionName":"Gateway API (develop)"}'
-          write-mode: append
-      - run: ls
-      - name: Generate and upload Postman's Gateway API collection
-        run: |
-          npx @apideck/portman -u https://raw.githubusercontent.com/radixdlt/radixdlt-network-gateway/develop/gateway-api-spec.yaml \
-            --postmanUid 14449947-5d6c29d7-673a-482b-8fac-c2fa8f3adb4a \
-            --syncPostman true --envFile .env --cliOptionsFile cliopts.json
-      - name: Checkout core
+          write-mode: overwrite
+      - name: Checkout core repo
         uses: actions/checkout@v2
         with:
           repository: radixdlt/radixdlt
@@ -48,21 +36,38 @@ jobs:
         uses: DamianReeves/write-file-action@v1.0
         with:
           path: cliopts.json
-          contents: '{"postmanWorkspaceName":"Team Workspace","collectionName":"Core API (develop)"}'
+          contents: '{"postmanWorkspaceName":"Team Workspace"}'
           write-mode: overwrite
-      - name: Generate and upload Postman's Core API collection
+      - name: Replace hardcoded values with variables
+        run: |
+          sed -i 's/mainnet/"{{network}}"/g' core/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/api.yaml
+      - name: Update Postman's Core API collection from the spec
         run: |
           npx @apideck/portman -l core/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/api.yaml \
             --postmanUid 14449947-fb9a194f-6341-41d7-a826-8c701f0fbf57 \
             --syncPostman true --envFile .env --cliOptionsFile cliopts.json
-      - name: Create Portman configuration for Core API
-        uses: DamianReeves/write-file-action@v1.0
-        with:
-          path: cliopts.json
-          contents: '{"postmanWorkspaceName":"Team Workspace","collectionName":"System API (develop)"}'
-          write-mode: overwrite
-      - name: Generate and upload Postman's System API collection
+      - name: Download the collection
         run: |
-          npx @apideck/portman -l core/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/system/api.yaml \
-            --postmanUid 14449947-cbede7fb-7361-4d91-becc-e1e10e0b2454 \
-            --syncPostman true --envFile .env --cliOptionsFile cliopts.json
+          curl -X GET -H "X-API-KEY:${{secrets.POSTMAN_API_TOKEN}}" https://api.getpostman.com/collections/14449947-fb9a194f-6341-41d7-a826-8c701f0fbf57 > tmp.core.collection.json
+      - name: Add a timestamp to the name
+        run: |
+          sed -i 's/"name":".*","description":"This API/"name":"Core API (develop) ${{steps.date.outputs.date}} UTC","description":"This API/' tmp.core.collection.json
+      - name: Change the baseUrl variable name
+        run: |
+          sed -i 's/{{baseUrl}}/{{coreBaseUrl}}/g' tmp.core.collection.json
+      - name: Update the collection
+        run: |
+          curl -X PUT -H "X-API-KEY:${{secrets.POSTMAN_API_TOKEN}}" -H "Content-Type: application/json" \
+             https://api.getpostman.com/collections/14449947-fb9a194f-6341-41d7-a826-8c701f0fbf57 --data "@tmp.core.collection.json"
+
+#      - name: Create Portman configuration for System API
+#        uses: DamianReeves/write-file-action@v1.0
+#        with:
+#          path: cliopts.json
+#          contents: '{"postmanWorkspaceName":"Team Workspace"}'
+#          write-mode: overwrite
+#      - name: Generate and upload Postman's System API collection
+#        run: |
+#          npx @apideck/portman -l core/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/system/api.yaml \
+#            --postmanUid 14449947-cbede7fb-7361-4d91-becc-e1e10e0b2454 \
+#            --syncPostman true --envFile .env --cliOptionsFile cliopts.json
