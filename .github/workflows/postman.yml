@@ -72,7 +72,7 @@ jobs:
           curl -X GET -H "X-API-KEY:${{secrets.POSTMAN_API_TOKEN}}" https://api.getpostman.com/collections/14449947-573cde3b-1504-4ba0-a865-ada778e08c74 > tmp.system.collection.json
       - name: Add a timestamp to the name
         run: |
-          sed -i 's/"name":".*","description":"This API/"name":"System API (develop) ${{steps.date.outputs.date}} UTC","description":"This API/' tmp.system.collection.json
+          sed -i 's/"name":".*","schema"/"name":"System API (develop) ${{steps.date.outputs.date}} UTC","schema"/' tmp.system.collection.json
       - name: Change the baseUrl variable name
         run: |
           sed -i 's/{{baseUrl}}/{{systembaseUrl}}/g' tmp.system.collection.json
