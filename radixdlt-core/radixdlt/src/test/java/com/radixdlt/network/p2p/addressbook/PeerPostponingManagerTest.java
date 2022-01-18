@@ -1,4 +1,4 @@
-/* Copyright 2022 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -66,16 +66,11 @@ package com.radixdlt.network.p2p.addressbook;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.p2p.RadixNodeUri;
-import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 
 public class PeerPostponingManagerTest {
@@ -83,25 +78,35 @@ public class PeerPostponingManagerTest {
 
   @Test
   public void peerCanRecordFailure() {
-    var manager =
-        new PeerPostponingManager(createClock(), Duration.ofMinutes(1), Duration.ofMinutes(3));
+    var clock = new ControlledClock();
+    var manager = new PeerPostponingManager(clock, Duration.ofMinutes(1), Duration.ofMinutes(3));
 
     // First time it should survive, record is missing
     assertTrue(manager.recordFailure(peer1));
+
     // Second time it should survive, computed duration now is 2 min
+    clock.next(Duration.ofSeconds(30));
     assertTrue(manager.recordFailure(peer1));
+
     // Should not survive, computed duration (4 min) is above limit (3 min)
+    clock.next(Duration.ofSeconds(30));
     assertFalse(manager.recordFailure(peer1));
   }
 
   @Test
   public void successMakesPeerAccessible() {
-    var manager =
-        new PeerPostponingManager(createClock(), Duration.ofMinutes(1), Duration.ofMinutes(3));
+    var clock = new ControlledClock();
+    var manager = new PeerPostponingManager(clock, Duration.ofMinutes(1), Duration.ofMinutes(3));
 
     assertTrue(manager.recordFailure(peer1));
+
+    clock.next(Duration.ofSeconds(30));
     assertTrue(manager.shouldIgnore(peer1));
+
+    clock.next(Duration.ofSeconds(30));
     manager.recordSuccess(peer1);
+
+    clock.next(Duration.ofSeconds(30));
     assertFalse(manager.shouldIgnore(peer1));
   }
 
@@ -111,36 +116,30 @@ public class PeerPostponingManagerTest {
     var peer1 = createNodeUri(publicKey, "1.1.1.1");
     var peer2 = createNodeUri(publicKey, "1.1.1.2");
 
-    var manager =
-        new PeerPostponingManager(createClock(), Duration.ofMinutes(1), Duration.ofMinutes(3));
+    var clock = new ControlledClock();
+    var manager = new PeerPostponingManager(clock, Duration.ofMinutes(1), Duration.ofMinutes(3));
 
     manager.recordFailure(peer1);
+
+    clock.next(Duration.ofSeconds(30));
     manager.recordFailure(peer2);
 
     // Both addresses are postponed now
+    clock.next(Duration.ofSeconds(30));
     assertTrue(manager.shouldIgnore(peer1));
+
+    clock.next(Duration.ofSeconds(30));
     assertTrue(manager.shouldIgnore(peer2));
 
+    clock.next(Duration.ofSeconds(30));
     manager.recordSuccess(peer1);
 
     // Both addresses are available now
+    clock.next(Duration.ofSeconds(30));
     assertFalse(manager.shouldIgnore(peer1));
+
+    clock.next(Duration.ofSeconds(30));
     assertFalse(manager.shouldIgnore(peer2));
-  }
-
-  private Clock createClock() {
-    var clock = mock(Clock.class);
-    final var time = new AtomicReference<>(Instant.now());
-
-    when(clock.instant())
-        .thenAnswer(
-            __ -> {
-              var newTime = time.get().plus(Duration.ofSeconds(30));
-              time.set(newTime);
-              return newTime;
-            });
-
-    return clock;
   }
 
   private static RadixNodeUri createNodeUri(String host) {

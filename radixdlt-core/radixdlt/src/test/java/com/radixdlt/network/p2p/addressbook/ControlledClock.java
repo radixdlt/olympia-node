@@ -64,108 +64,32 @@
 
 package com.radixdlt.network.p2p.addressbook;
 
-import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.RadixNodeUri;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Optional;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 
-/**
- * Maintain information about peers connections to which should be postponed.
- *
- * <p>Class implements simple exponential backoff strategy, doubling postpone time for every
- * recorded failure.
- */
-final class PeerPostponingManager {
-  private final Map<RadixNodeUri, PostponeInfo> postponedPeers = new HashMap<>();
-  private final Clock clock;
-  private final Duration initialPostpone;
-  private final Duration maxPostpone;
+/** Clock which should be manually advanced. */
+public final class ControlledClock extends Clock {
+  private Instant now = Clock.systemUTC().instant();
 
-  public PeerPostponingManager(Clock clock, Duration initialPostpone, Duration maxPostpone) {
-    this.clock = clock;
-    this.initialPostpone = initialPostpone;
-    this.maxPostpone = maxPostpone;
+  @Override
+  public ZoneId getZone() {
+    return ZoneOffset.UTC;
   }
 
-  public boolean recordFailure(RadixNodeUri uri) {
-    boolean survived = postponedPeers.compute(uri, this::computePostpone) != null;
-
-    if (!survived) {
-      removeAliases(uri.getNodeId());
-    }
-
-    return survived;
+  @Override
+  public Clock withZone(ZoneId zone) {
+    return this;
   }
 
-  private void removeAliases(NodeId nodeId) {
-    postponedPeers.keySet().stream()
-        .filter(uri -> uri.getNodeId().equals(nodeId))
-        .toList() // "materialize" to avoid in place removal
-        .forEach(postponedPeers::remove);
+  @Override
+  public Instant instant() {
+    return now;
   }
 
-  private PostponeInfo computePostpone(RadixNodeUri ignoredKey, PostponeInfo postponeInfo) {
-    return postponeInfo == null ? new PostponeInfo() : checkSurvival(postponeInfo);
-  }
-
-  private static PostponeInfo checkSurvival(PostponeInfo postponeInfo) {
-    return postponeInfo.survivesFailure() ? postponeInfo : null;
-  }
-
-  public void recordSuccess(RadixNodeUri uri) {
-    postponedPeers.remove(uri);
-    // Remove other addresses which belong to same peer but already expired
-    cleanupExpired(uri);
-  }
-
-  private void cleanupExpired(RadixNodeUri uri) {
-    postponedPeers.entrySet().stream()
-        .filter(entry -> isExpiredAlias(uri.getNodeId(), entry))
-        .map(Entry::getKey)
-        .toList() // "materialize" to avoid in place removal
-        .forEach(postponedPeers::remove);
-  }
-
-  public boolean shouldIgnore(RadixNodeUri uri) {
-    return Optional.ofNullable(postponedPeers.get(uri))
-        .map(PostponeInfo::shouldIgnore)
-        .orElse(false);
-  }
-
-  private static boolean isExpiredAlias(NodeId nodeId, Entry<RadixNodeUri, PostponeInfo> entry) {
-    return entry.getKey().getNodeId().equals(nodeId) && entry.getValue().isExpired();
-  }
-
-  private final class PostponeInfo {
-    private final Instant firstFailure;
-    private Duration postponeDuration;
-
-    PostponeInfo() {
-      this.firstFailure = now();
-      this.postponeDuration = initialPostpone;
-    }
-
-    boolean survivesFailure() {
-      this.postponeDuration = postponeDuration.plus(postponeDuration);
-      return postponeDuration.compareTo(maxPostpone) <= 0;
-    }
-
-    boolean shouldIgnore() {
-      return firstFailure.plus(postponeDuration).compareTo(now()) >= 0;
-    }
-
-    boolean isExpired() {
-      return firstFailure.plus(maxPostpone).isBefore(now());
-    }
-
-    private Instant now() {
-      return Objects.requireNonNull(clock.instant());
-    }
+  public void next(Duration duration) {
+    now = now.plus(duration);
   }
 }

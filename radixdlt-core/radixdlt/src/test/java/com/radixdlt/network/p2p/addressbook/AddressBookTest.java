@@ -139,12 +139,11 @@ public final class AddressBookTest {
 
     sut.addOrUpdatePeerWithSuccessfulConnection(addr4);
     final var bestAddr5 = sut.findBestKnownAddressById(peerId).orElseThrow();
-    System.out.println(bestAddr5);
     assertTrue(bestAddr5 == addr3 || bestAddr5 == addr4);
   }
 
   @Test
-  public void address_book_should_not_show_failed_connection_uris_while_they_postponed() {
+  public void address_book_should_not_show_failed_connection_uris_while_they_are_postponed() {
     final var peerKey = ECKeyPair.generateNew().getPublicKey();
     final var peerId = NodeId.fromPublicKey(peerKey);
 
