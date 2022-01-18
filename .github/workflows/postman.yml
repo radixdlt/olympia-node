@@ -75,7 +75,7 @@ jobs:
           sed -i 's/"name":".*","schema"/"name":"System API (develop) ${{steps.date.outputs.date}} UTC","schema"/' tmp.system.collection.json
       - name: Change the baseUrl variable name
         run: |
-          sed -i 's/{{baseUrl}}/{{systembaseUrl}}/g' tmp.system.collection.json
+          sed -i 's/{{baseUrl}}/{{systemBaseUrl}}/g' tmp.system.collection.json
       - name: Update the System API collection
         run: |
           curl -X PUT -H "X-API-KEY:${{secrets.POSTMAN_API_TOKEN}}" -H "Content-Type: application/json" \
