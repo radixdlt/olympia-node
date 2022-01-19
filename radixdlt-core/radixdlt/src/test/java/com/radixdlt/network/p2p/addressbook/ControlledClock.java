@@ -62,124 +62,34 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p;
+package com.radixdlt.network.p2p.addressbook;
 
-import static java.util.Objects.requireNonNull;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.NodeAddressing;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.serialization.DeserializeException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.util.Objects;
+/** Clock which should be manually advanced. */
+public final class ControlledClock extends Clock {
+  private Instant now = Clock.systemUTC().instant();
 
-public final class RadixNodeUri implements Comparable<RadixNodeUri> {
-  private final String host;
-  private final int port;
-  private final String networkNodeHrp;
-  private final NodeId nodeId;
-
-  @JsonCreator
-  public static RadixNodeUri deserialize(byte[] uri)
-      throws URISyntaxException, DeserializeException {
-    return fromUri(new URI(new String(requireNonNull(uri))));
-  }
-
-  public static RadixNodeUri fromPubKeyAndAddress(
-      int networkId, ECPublicKey publicKey, String host, int port) {
-    var hrp = Addressing.ofNetworkId(networkId).forNodes().getHrp();
-    return new RadixNodeUri(host, port, hrp, NodeId.fromPublicKey(publicKey));
-  }
-
-  public static RadixNodeUri fromUri(URI uri) throws DeserializeException {
-    var hrpAndKey = NodeAddressing.parseUnknownHrp(uri.getUserInfo());
-    return new RadixNodeUri(
-        uri.getHost(),
-        uri.getPort(),
-        hrpAndKey.getFirst(),
-        NodeId.fromPublicKey(hrpAndKey.getSecond()));
-  }
-
-  private RadixNodeUri(String host, int port, String networkNodeHrp, NodeId nodeId) {
-    if (port <= 0) {
-      throw new RuntimeException("Port must be a positive integer");
-    }
-    this.host = requireNonNull(host);
-    this.port = port;
-    this.networkNodeHrp = networkNodeHrp;
-    this.nodeId = requireNonNull(nodeId);
-  }
-
-  public String getHost() {
-    return host;
-  }
-
-  public int getPort() {
-    return port;
-  }
-
-  public NodeId getNodeId() {
-    return nodeId;
-  }
-
-  @JsonValue
-  private byte[] getSerializedValue() {
-    return getUriString().getBytes(StandardCharsets.UTF_8);
-  }
-
-  private String getUriString() {
-    return String.format("radix://%s@%s:%s", nodeAddress(), host, port);
-  }
-
-  public String nodeAddress() {
-    return NodeAddressing.of(networkNodeHrp, nodeId.getPublicKey());
-  }
-
-  public String getNetworkNodeHrp() {
-    return this.networkNodeHrp;
+  @Override
+  public ZoneId getZone() {
+    return ZoneOffset.UTC;
   }
 
   @Override
-  public String toString() {
-    return getUriString();
+  public Clock withZone(ZoneId zone) {
+    return this;
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final var that = (RadixNodeUri) o;
-    return port == that.port
-        && Objects.equals(host, that.host)
-        && Objects.equals(nodeId, that.nodeId)
-        && Objects.equals(networkNodeHrp, that.networkNodeHrp);
+  public Instant instant() {
+    return now;
   }
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(host, port, nodeId, networkNodeHrp);
-  }
-
-  @Override
-  public int compareTo(RadixNodeUri other) {
-    int compare = nodeAddress().compareTo(other.nodeAddress());
-
-    if (compare == 0) {
-      compare = host.compareTo(other.host);
-    }
-
-    if (compare == 0) {
-      compare = Integer.compare(port, other.port);
-    }
-
-    return compare;
+  public void next(Duration duration) {
+    now = now.plus(duration);
   }
 }

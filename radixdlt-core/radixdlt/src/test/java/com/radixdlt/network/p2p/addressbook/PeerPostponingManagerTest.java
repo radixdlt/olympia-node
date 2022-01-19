@@ -62,124 +62,93 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p;
+package com.radixdlt.network.p2p.addressbook;
 
-import static java.util.Objects.requireNonNull;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.NodeAddressing;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.serialization.DeserializeException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.util.Objects;
+import com.radixdlt.network.p2p.RadixNodeUri;
+import java.time.Duration;
+import org.junit.Test;
 
-public final class RadixNodeUri implements Comparable<RadixNodeUri> {
-  private final String host;
-  private final int port;
-  private final String networkNodeHrp;
-  private final NodeId nodeId;
+public class PeerPostponingManagerTest {
+  private final RadixNodeUri peer1 = createNodeUri("1.1.1.1");
 
-  @JsonCreator
-  public static RadixNodeUri deserialize(byte[] uri)
-      throws URISyntaxException, DeserializeException {
-    return fromUri(new URI(new String(requireNonNull(uri))));
+  @Test
+  public void peerCanRecordFailure() {
+    var clock = new ControlledClock();
+    var manager = new PeerPostponingManager(clock, Duration.ofMinutes(1), Duration.ofMinutes(3));
+
+    // First time it should survive, record is missing
+    assertTrue(manager.recordFailureAndCheckRecordPreservingStatus(peer1));
+
+    // Second time it should survive, computed duration now is 2 min
+    clock.next(Duration.ofSeconds(30));
+    assertTrue(manager.recordFailureAndCheckRecordPreservingStatus(peer1));
+
+    // Should not survive, computed duration (4 min) is above limit (3 min)
+    clock.next(Duration.ofSeconds(30));
+    assertFalse(manager.recordFailureAndCheckRecordPreservingStatus(peer1));
   }
 
-  public static RadixNodeUri fromPubKeyAndAddress(
-      int networkId, ECPublicKey publicKey, String host, int port) {
-    var hrp = Addressing.ofNetworkId(networkId).forNodes().getHrp();
-    return new RadixNodeUri(host, port, hrp, NodeId.fromPublicKey(publicKey));
+  @Test
+  public void successMakesPeerAccessible() {
+    var clock = new ControlledClock();
+    var manager = new PeerPostponingManager(clock, Duration.ofMinutes(1), Duration.ofMinutes(3));
+
+    assertTrue(manager.recordFailureAndCheckRecordPreservingStatus(peer1));
+
+    clock.next(Duration.ofSeconds(30));
+    assertTrue(manager.shouldIgnore(peer1));
+
+    clock.next(Duration.ofSeconds(30));
+    manager.recordSuccess(peer1);
+
+    clock.next(Duration.ofSeconds(30));
+    assertFalse(manager.shouldIgnore(peer1));
   }
 
-  public static RadixNodeUri fromUri(URI uri) throws DeserializeException {
-    var hrpAndKey = NodeAddressing.parseUnknownHrp(uri.getUserInfo());
-    return new RadixNodeUri(
-        uri.getHost(),
-        uri.getPort(),
-        hrpAndKey.getFirst(),
-        NodeId.fromPublicKey(hrpAndKey.getSecond()));
+  @Test
+  public void aliasesAreRemovedOnSuccessIfTheyAreExpired() {
+    var publicKey = ECKeyPair.generateNew().getPublicKey();
+    var peer1 = createNodeUri(publicKey, "1.1.1.1");
+    var peer2 = createNodeUri(publicKey, "1.1.1.2");
+
+    var clock = new ControlledClock();
+    var manager = new PeerPostponingManager(clock, Duration.ofMinutes(1), Duration.ofMinutes(3));
+
+    manager.recordFailureAndCheckRecordPreservingStatus(peer1);
+
+    clock.next(Duration.ofSeconds(30));
+    manager.recordFailureAndCheckRecordPreservingStatus(peer2);
+
+    // Both addresses are postponed now
+    clock.next(Duration.ofSeconds(30));
+    assertTrue(manager.shouldIgnore(peer1));
+
+    clock.next(Duration.ofSeconds(30));
+    assertTrue(manager.shouldIgnore(peer2));
+
+    clock.next(Duration.ofSeconds(30));
+    manager.recordSuccess(peer1);
+
+    // Both addresses are available now
+    clock.next(Duration.ofSeconds(30));
+    assertFalse(manager.shouldIgnore(peer1));
+
+    clock.next(Duration.ofSeconds(30));
+    assertFalse(manager.shouldIgnore(peer2));
   }
 
-  private RadixNodeUri(String host, int port, String networkNodeHrp, NodeId nodeId) {
-    if (port <= 0) {
-      throw new RuntimeException("Port must be a positive integer");
-    }
-    this.host = requireNonNull(host);
-    this.port = port;
-    this.networkNodeHrp = networkNodeHrp;
-    this.nodeId = requireNonNull(nodeId);
+  private static RadixNodeUri createNodeUri(String host) {
+    var publicKey = ECKeyPair.generateNew().getPublicKey();
+
+    return createNodeUri(publicKey, host);
   }
 
-  public String getHost() {
-    return host;
-  }
-
-  public int getPort() {
-    return port;
-  }
-
-  public NodeId getNodeId() {
-    return nodeId;
-  }
-
-  @JsonValue
-  private byte[] getSerializedValue() {
-    return getUriString().getBytes(StandardCharsets.UTF_8);
-  }
-
-  private String getUriString() {
-    return String.format("radix://%s@%s:%s", nodeAddress(), host, port);
-  }
-
-  public String nodeAddress() {
-    return NodeAddressing.of(networkNodeHrp, nodeId.getPublicKey());
-  }
-
-  public String getNetworkNodeHrp() {
-    return this.networkNodeHrp;
-  }
-
-  @Override
-  public String toString() {
-    return getUriString();
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final var that = (RadixNodeUri) o;
-    return port == that.port
-        && Objects.equals(host, that.host)
-        && Objects.equals(nodeId, that.nodeId)
-        && Objects.equals(networkNodeHrp, that.networkNodeHrp);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(host, port, nodeId, networkNodeHrp);
-  }
-
-  @Override
-  public int compareTo(RadixNodeUri other) {
-    int compare = nodeAddress().compareTo(other.nodeAddress());
-
-    if (compare == 0) {
-      compare = host.compareTo(other.host);
-    }
-
-    if (compare == 0) {
-      compare = Integer.compare(port, other.port);
-    }
-
-    return compare;
+  private static RadixNodeUri createNodeUri(ECPublicKey publicKey, String host) {
+    return RadixNodeUri.fromPubKeyAndAddress(1, publicKey, host, 30000);
   }
 }
