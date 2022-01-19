@@ -82,15 +82,15 @@ public class PeerPostponingManagerTest {
     var manager = new PeerPostponingManager(clock, Duration.ofMinutes(1), Duration.ofMinutes(3));
 
     // First time it should survive, record is missing
-    assertTrue(manager.recordFailure(peer1));
+    assertTrue(manager.recordFailureAndCheckRecordPreservingStatus(peer1));
 
     // Second time it should survive, computed duration now is 2 min
     clock.next(Duration.ofSeconds(30));
-    assertTrue(manager.recordFailure(peer1));
+    assertTrue(manager.recordFailureAndCheckRecordPreservingStatus(peer1));
 
     // Should not survive, computed duration (4 min) is above limit (3 min)
     clock.next(Duration.ofSeconds(30));
-    assertFalse(manager.recordFailure(peer1));
+    assertFalse(manager.recordFailureAndCheckRecordPreservingStatus(peer1));
   }
 
   @Test
@@ -98,7 +98,7 @@ public class PeerPostponingManagerTest {
     var clock = new ControlledClock();
     var manager = new PeerPostponingManager(clock, Duration.ofMinutes(1), Duration.ofMinutes(3));
 
-    assertTrue(manager.recordFailure(peer1));
+    assertTrue(manager.recordFailureAndCheckRecordPreservingStatus(peer1));
 
     clock.next(Duration.ofSeconds(30));
     assertTrue(manager.shouldIgnore(peer1));
@@ -119,10 +119,10 @@ public class PeerPostponingManagerTest {
     var clock = new ControlledClock();
     var manager = new PeerPostponingManager(clock, Duration.ofMinutes(1), Duration.ofMinutes(3));
 
-    manager.recordFailure(peer1);
+    manager.recordFailureAndCheckRecordPreservingStatus(peer1);
 
     clock.next(Duration.ofSeconds(30));
-    manager.recordFailure(peer2);
+    manager.recordFailureAndCheckRecordPreservingStatus(peer2);
 
     // Both addresses are postponed now
     clock.next(Duration.ofSeconds(30));

@@ -210,7 +210,7 @@ public final class AddressBook {
   public void addOrUpdatePeerWithFailedConnection(RadixNodeUri radixNodeUri) {
     this.addOrUpdatePeerWithLatestConnectionStatus(radixNodeUri, LatestConnectionStatus.FAILURE);
 
-    if (!this.postponingManager.recordFailure(radixNodeUri)) {
+    if (!this.postponingManager.recordFailureAndCheckRecordPreservingStatus(radixNodeUri)) {
       synchronized (lock) {
         this.knownPeers.remove(radixNodeUri.getNodeId());
         this.persistence.removeEntry(radixNodeUri.getNodeId());

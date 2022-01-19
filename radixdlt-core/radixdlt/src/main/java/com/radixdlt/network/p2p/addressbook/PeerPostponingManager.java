@@ -93,7 +93,7 @@ final class PeerPostponingManager {
     this.maxPostpone = maxPostpone;
   }
 
-  public boolean recordFailure(RadixNodeUri uri) {
+  public boolean recordFailureAndCheckRecordPreservingStatus(RadixNodeUri uri) {
     boolean survived = postponedPeers.compute(uri, this::computePostpone) != null;
 
     if (!survived) {
@@ -115,7 +115,7 @@ final class PeerPostponingManager {
   }
 
   private static PostponeInfo checkSurvival(PostponeInfo postponeInfo) {
-    return postponeInfo.survivesFailure() ? postponeInfo : null;
+    return postponeInfo.doublePostponeAndCheckIfStillShouldLive() ? postponeInfo : null;
   }
 
   public void recordSuccess(RadixNodeUri uri) {
@@ -151,7 +151,7 @@ final class PeerPostponingManager {
       this.postponeDuration = initialPostpone;
     }
 
-    boolean survivesFailure() {
+    boolean doublePostponeAndCheckIfStillShouldLive() {
       this.postponeDuration = postponeDuration.plus(postponeDuration);
       return postponeDuration.compareTo(maxPostpone) <= 0;
     }
