@@ -92,6 +92,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.integration.FailOnEvent;
+import com.radixdlt.integration.Slow;
 import com.radixdlt.integration.api.actors.ApiBalanceToRadixEngineChecker;
 import com.radixdlt.integration.api.actors.ApiTxnSubmitter;
 import com.radixdlt.integration.api.actors.BalanceReconciler;
@@ -116,11 +117,7 @@ import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.utils.PrivateKeys;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Random;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -129,6 +126,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -137,6 +135,7 @@ import org.junit.runners.Parameterized;
  * Test which runs a 20 node consensus network. Random transactions are submitted and nodes are
  * rebooted while checks occur on the api to make sure that invariants are not broken.
  */
+@Category(Slow.class)
 @RunWith(Parameterized.class)
 public class ApiTest {
   private static final Logger logger = LogManager.getLogger();
@@ -161,20 +160,40 @@ public class ApiTest {
           {
             new ForkOverwritesWithShorterEpochsModule(config),
             new ForkOverwritesWithShorterEpochsModule(config.removeSigsPerRoundLimit())
-          },
-          {
-            new RadixEngineForksLatestOnlyModule(
-                config
-                    .overrideMaxRounds(100)
-                    .overrideFeeTable(FeeTable.create(PER_BYTE_FEE, Map.of()))),
-            null
-          },
-          {
-            new ForkOverwritesWithShorterEpochsModule(
-                config.overrideFeeTable(FeeTable.create(PER_BYTE_FEE, Map.of()))),
-            null
-          },
+          }
         });
+  }
+
+  // The following class is created as a workaround as gradle cannot run the tests inside a test
+  // class in parallel. We can achieve some level of parallelism splitting the tests across
+  // different test classes.
+
+  @Category(Slow.class)
+  @RunWith(Parameterized.class)
+  public static class ApiTest2 extends ApiTest {
+
+    @Parameterized.Parameters
+    public static Collection<Object[]> forksModule() {
+      return List.of(
+          new Object[][] {
+            {
+              new RadixEngineForksLatestOnlyModule(
+                  config
+                      .overrideMaxRounds(100)
+                      .overrideFeeTable(FeeTable.create(PER_BYTE_FEE, Map.of()))),
+              null
+            },
+            {
+              new ForkOverwritesWithShorterEpochsModule(
+                  config.overrideFeeTable(FeeTable.create(PER_BYTE_FEE, Map.of()))),
+              null
+            },
+          });
+    }
+
+    public ApiTest2(Module forkModule, Module byzantineModule) {
+      super(forkModule, byzantineModule);
+    }
   }
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
