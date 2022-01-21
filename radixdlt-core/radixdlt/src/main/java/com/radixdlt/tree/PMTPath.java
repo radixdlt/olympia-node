@@ -67,6 +67,7 @@ package com.radixdlt.tree;
 import static com.radixdlt.tree.PMTPath.RemainingSubtree.EXISTING;
 import static com.radixdlt.tree.PMTPath.RemainingSubtree.NEW;
 
+import java.io.ByteArrayOutputStream;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -138,28 +139,20 @@ public class PMTPath {
       byte[] incomingNibs = incoming.getRaw();
 
       var shorter = Math.min(currentNibs.length, incomingNibs.length);
+      var longest = Math.max(currentNibs.length, incomingNibs.length);
 
-      // TODO: * rewrite into streams to avoid two loops
-      //       * doesn't work with primitive ints?
-      //       * maybe move to PMTKey?
+      ByteArrayOutputStream commonElementsStream = new ByteArrayOutputStream();
+
       var commonLength = 0;
       for (int i = 0; i < shorter; i++) {
         if (currentNibs[i] == incomingNibs[i]) {
           commonLength += 1;
+          commonElementsStream.write(currentNibs, i, 1);
         } else {
           break;
         }
       }
-
-      byte[] commonElements;
-      if (commonLength > 0) {
-        commonElements = new byte[commonLength];
-        for (int i = 0; i < commonLength; i++) {
-          commonElements[i] = currentNibs[i];
-        }
-      } else {
-        commonElements = new byte[0];
-      }
+      byte[] commonElements = commonElementsStream.toByteArray();
 
       byte[] currentRem;
       if (commonLength < currentNibs.length) {
