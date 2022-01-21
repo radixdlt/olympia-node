@@ -69,6 +69,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.api.node.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
@@ -83,7 +84,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.sync.SyncConfig;
 import java.util.Optional;
@@ -102,9 +103,7 @@ public class MempoolFillTest {
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
           .fullFunctionNodes(SyncConfig.of(800L, 10, 5000L))
           .addRadixEngineConfigModules(
-              new MainnetForkConfigsModule(),
-              new RadixEngineForksLatestOnlyModule(),
-              new ForksModule())
+              new MainnetForksModule(), new RadixEngineForksLatestOnlyModule(), new ForksModule())
           .addNodeModule(
               new AbstractModule() {
                 @Override
@@ -153,7 +152,7 @@ public class MempoolFillTest {
   @Ignore("Travis not playing nicely with timeouts so disable for now until fixed.")
   public void filler_should_overwhelm_unratelimited_mempool() {
     SimulationTest simulationTest =
-        bftTestBuilder.overrideWithIncorrectModule(MempoolConfig.asModule(100, 0)).build();
+        bftTestBuilder.addOverrideModuleToAll(MempoolConfig.asModule(100, 0)).build();
 
     final var results = simulationTest.run().awaitCompletion();
     assertThat(results).hasValueSatisfying(new Condition<>(Optional::isPresent, "Error exists"));

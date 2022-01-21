@@ -803,12 +803,17 @@ public final class CoreModelMapper {
   }
 
   public Fork fork(ForkConfig forkConfig) {
+    return null;
+    // TODO(luk): fixme
+    /*
     return new Fork()
         .forkIdentifier(
             new ForkIdentifier().epoch(forkConfig.getEpoch()).fork(forkConfig.getName()))
         .engineIdentifier(
             new EngineIdentifier().engine(forkConfig.getVersion().name().toLowerCase()))
         .engineConfiguration(engineConfiguration(forkConfig.getConfig()));
+
+     */
   }
 
   public DataObject tokenData(TokenResource tokenResource) {

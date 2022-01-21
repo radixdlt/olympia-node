@@ -62,50 +62,41 @@
  * permissions under this License.
  */
 
-package com.radixdlt.utils;
+package com.radixdlt.statecomputer;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import java.nio.ByteBuffer;
-import java.util.Objects;
+import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.engine.PostProcessor;
+import com.radixdlt.engine.PostProcessorException;
+import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.statecomputer.forks.CandidateForkConfig;
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.store.EngineStore;
+import java.util.List;
 
-public class POW {
-  private final int magic;
-  private final HashCode seed;
-  private final long nonce;
-  private final ByteBuffer buffer = ByteBuffer.allocate(32 + 4 + Long.BYTES);
+/**
+ * Checks whether the engine should switch to the next candidate fork. If so, adds nextForkHash to
+ * result metadata.
+ */
+public final class NextCandidateForkPostProcessor implements PostProcessor<LedgerAndBFTProof> {
+  private final REParser reParser;
+  private final CandidateForkConfig nextFork;
 
-  public POW(int magic, HashCode seed) {
-    this(magic, seed, Long.MIN_VALUE);
+  public NextCandidateForkPostProcessor(REParser reParser, CandidateForkConfig nextFork) {
+    this.reParser = reParser;
+    this.nextFork = nextFork;
   }
 
-  public POW(int magic, HashCode seed, long nonce) {
-    Objects.requireNonNull(seed);
-
-    this.magic = magic;
-    this.seed = seed;
-    this.nonce = nonce;
-  }
-
-  public int getMagic() {
-    return magic;
-  }
-
-  public HashCode getSeed() {
-    return seed;
-  }
-
-  public long getNonce() {
-    return nonce;
-  }
-
-  public synchronized HashCode getHash() {
-    buffer.clear();
-    buffer.putInt(magic);
-    buffer.put(seed.asBytes());
-    buffer.putLong(nonce);
-    buffer.flip();
-
-    return HashUtils.sha256(buffer.array());
+  @Override
+  public LedgerAndBFTProof process(
+      LedgerAndBFTProof metadata,
+      EngineStore<LedgerAndBFTProof> engineStore,
+      List<REProcessedTxn> txns)
+      throws PostProcessorException {
+    if (metadata.getProof().getNextValidatorSet().isPresent()
+        && Forks.testCandidate(nextFork, reParser, metadata)) {
+      return metadata.withNextForkHash(nextFork.hash());
+    } else {
+      return metadata;
+    }
   }
 }

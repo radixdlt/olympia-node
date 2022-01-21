@@ -80,7 +80,7 @@ import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.Rad
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.UInt256;
@@ -120,7 +120,6 @@ public class SanityTest {
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
             .fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
             .addRadixEngineConfigModules(
-                new MainnetForkConfigsModule(),
                 new ForkOverwritesWithShorterEpochsModule(
                     new RERulesConfig(
                         Set.of("xrd"),
@@ -135,7 +134,8 @@ public class SanityTest {
                         Amount.ofTokens(10),
                         9800,
                         10)),
-                new ForksModule())
+                new ForksModule(),
+                new MainnetForksModule())
             .addNodeModule(MempoolConfig.asModule(1000, 10))
             .addTestModules(
                 ConsensusMonitors.safety(),

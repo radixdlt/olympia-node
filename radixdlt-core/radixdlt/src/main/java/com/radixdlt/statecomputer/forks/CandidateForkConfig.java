@@ -62,19 +62,61 @@
  * permissions under this License.
  */
 
-package com.radixdlt.crypto;
+package com.radixdlt.statecomputer.forks;
 
-public enum SignatureScheme {
+import com.google.common.hash.HashCode;
+import com.radixdlt.engine.PostProcessor;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
-  /**
-   * Elliptic Curve Digital Signature Algorithm, or ECDSA for short. A good introduction is to be
-   * found <a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">here
-   * on wikipedia</a>.
-   */
-  ECDSA;
+public final class CandidateForkConfig implements ForkConfig {
+  private final String name;
+  private final HashCode hash;
+  private final RERules reRules;
+  private int requiredStake;
+  private long minEpoch;
+
+  public CandidateForkConfig(
+      String name, HashCode hash, RERules reRules, int requiredStake, long minEpoch) {
+    this.name = name;
+    this.hash = hash;
+    this.reRules = reRules;
+    this.requiredStake = requiredStake;
+    this.minEpoch = minEpoch;
+  }
+
+  public long minEpoch() {
+    return minEpoch;
+  }
+
+  public int requiredStake() {
+    return requiredStake;
+  }
+
+  @Override
+  public String name() {
+    return name;
+  }
+
+  @Override
+  public HashCode hash() {
+    return hash;
+  }
+
+  @Override
+  public RERules engineRules() {
+    return reRules;
+  }
+
+  @Override
+  public CandidateForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
+    return new CandidateForkConfig(
+        name, hash, reRules.addPostProcessor(newPostProcessor), requiredStake, minEpoch);
+  }
 
   @Override
   public String toString() {
-    return this.name().toLowerCase();
+    return String.format(
+        "%s[%s:%s, min_epoch=%s, required_stake=%s]",
+        getClass().getSimpleName(), name(), hash(), minEpoch, requiredStake);
   }
 }

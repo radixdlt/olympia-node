@@ -13,12 +13,11 @@
 
 package com.radixdlt.api.system.openapitools.model;
 
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.annotations.ApiModelProperty;
-
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
@@ -34,7 +33,7 @@ import java.util.Objects;
   BFTMetrics.JSON_PROPERTY_SYNC,
   BFTMetrics.JSON_PROPERTY_VERTEX_STORE
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T18:26:53.100586-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-01-20T22:11:26.095756951+01:00[Europe/Warsaw]")
 public class BFTMetrics {
   public static final String JSON_PROPERTY_EVENTS_RECEIVED = "events_received";
   private Long eventsReceived;
@@ -59,7 +58,6 @@ public class BFTMetrics {
 
   public static final String JSON_PROPERTY_VERTEX_STORE = "vertex_store";
   private BFTVertexStoreMetrics vertexStore;
-
 
   public BFTMetrics eventsReceived(Long eventsReceived) {
     this.eventsReceived = eventsReceived;

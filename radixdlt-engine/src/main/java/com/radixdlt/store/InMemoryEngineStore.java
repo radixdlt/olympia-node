@@ -65,6 +65,7 @@
 package com.radixdlt.store;
 
 import com.google.common.primitives.UnsignedBytes;
+import com.google.inject.Inject;
 import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.tokens.state.TokenResource;
@@ -90,11 +91,24 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 public final class InMemoryEngineStore<M> implements EngineStore<M> {
+  public static final class Store<M> {
+    private final Map<SubstateId, REStateUpdate> storedState = new HashMap<>();
+    private final Map<REAddr, Supplier<ByteBuffer>> resources = new HashMap<>();
+    private final Map<SystemMapKey, RawSubstateBytes> maps = new HashMap<>();
+    private M metadata = null;
+  }
+
   private final Object lock = new Object();
-  private final Map<SubstateId, REStateUpdate> storedState = new HashMap<>();
-  private final Map<REAddr, Supplier<ByteBuffer>> resources = new HashMap<>();
-  private final Map<SystemMapKey, RawSubstateBytes> maps = new HashMap<>();
-  private M metadata;
+  private final Store<M> store;
+
+  @Inject
+  public InMemoryEngineStore(Store<M> store) {
+    this.store = store;
+  }
+
+  public InMemoryEngineStore() {
+    this.store = new Store<>();
+  }
 
   @Override
   public <R> R transaction(TransactionEngineStoreConsumer<M, R> consumer)
@@ -107,27 +121,27 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
               txn.stateUpdates()
                   .forEach(
                       update -> {
-                        storedState.put(update.getId(), update);
+                        store.storedState.put(update.getId(), update);
 
                         // FIXME: Superhack
                         if (update.isBootUp()) {
                           if (update.getParsed() instanceof TokenResource) {
                             var tokenDef = (TokenResource) update.getParsed();
-                            resources.put(tokenDef.getAddr(), update::getStateBuf);
+                            store.resources.put(tokenDef.getAddr(), update::getStateBuf);
                           } else if (update.getParsed() instanceof VirtualParent) {
                             var p = (VirtualParent) update.getParsed();
                             var typeByte = p.getData()[0];
                             var mapKey = SystemMapKey.ofSystem(typeByte);
-                            maps.put(mapKey, update.getRawSubstateBytes());
+                            store.maps.put(mapKey, update.getRawSubstateBytes());
                           } else if (update.getParsed() instanceof ValidatorData) {
                             var data = (ValidatorData) update.getParsed();
                             var mapKey =
                                 SystemMapKey.ofSystem(
                                     update.typeByte(), data.getValidatorKey().getCompressedBytes());
-                            maps.put(mapKey, update.getRawSubstateBytes());
+                            store.maps.put(mapKey, update.getRawSubstateBytes());
                           } else if (update.getParsed() instanceof SystemData) {
                             var mapKey = SystemMapKey.ofSystem(update.typeByte());
-                            maps.put(mapKey, update.getRawSubstateBytes());
+                            store.maps.put(mapKey, update.getRawSubstateBytes());
                           }
                         } else if (update.isShutDown()) {
                           if (update.getParsed() instanceof ValidatorData) {
@@ -135,10 +149,10 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
                             var mapKey =
                                 SystemMapKey.ofSystem(
                                     update.typeByte(), data.getValidatorKey().getCompressedBytes());
-                            maps.remove(mapKey);
+                            store.maps.remove(mapKey);
                           } else if (update.getParsed() instanceof SystemData) {
                             var mapKey = SystemMapKey.ofSystem(update.typeByte());
-                            maps.remove(mapKey);
+                            store.maps.remove(mapKey);
                           }
                         }
                       });
@@ -147,7 +161,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 
           @Override
           public void storeMetadata(M metadata) {
-            InMemoryEngineStore.this.metadata = metadata;
+            store.metadata = metadata;
           }
 
           @Override
@@ -155,12 +169,12 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
               throws VirtualSubstateAlreadyDownException, VirtualParentStateDoesNotExist {
             synchronized (lock) {
               var parent = substateId.getVirtualParent().orElseThrow();
-              var update = storedState.get(parent);
+              var update = store.storedState.get(parent);
               if (update == null || !(update.getParsed() instanceof VirtualParent)) {
                 throw new VirtualParentStateDoesNotExist(parent);
               }
 
-              var inst = storedState.get(substateId);
+              var inst = store.storedState.get(substateId);
               if (inst != null && inst.isShutDown()) {
                 throw new VirtualSubstateAlreadyDownException(substateId);
               }
@@ -172,7 +186,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
           @Override
           public Optional<ByteBuffer> loadSubstate(SubstateId substateId) {
             synchronized (lock) {
-              var inst = storedState.get(substateId);
+              var inst = store.storedState.get(substateId);
               if (inst == null || !inst.isBootUp()) {
                 return Optional.empty();
               }
@@ -189,7 +203,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
           @Override
           public Optional<ByteBuffer> loadResource(REAddr addr) {
             synchronized (lock) {
-              var supplier = resources.get(addr);
+              var supplier = store.resources.get(addr);
               return supplier == null ? Optional.empty() : Optional.of(supplier.get());
             }
           }
@@ -198,14 +212,14 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 
   @Override
   public M getMetadata() {
-    return metadata;
+    return store.metadata;
   }
 
   @Override
   public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
     final List<RawSubstateBytes> substates = new ArrayList<>();
     synchronized (lock) {
-      for (var i : storedState.values()) {
+      for (var i : store.storedState.values()) {
         if (!i.isBootUp()) {
           continue;
         }
@@ -224,13 +238,17 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 
   @Override
   public Optional<RawSubstateBytes> get(SystemMapKey key) {
-    return Optional.ofNullable(maps.get(key));
+    return Optional.ofNullable(store.maps.get(key));
   }
 
   public boolean contains(SubstateId substateId) {
     synchronized (lock) {
-      var inst = storedState.get(substateId);
+      var inst = store.storedState.get(substateId);
       return inst != null;
     }
+  }
+
+  public Store getStore() {
+    return store;
   }
 }

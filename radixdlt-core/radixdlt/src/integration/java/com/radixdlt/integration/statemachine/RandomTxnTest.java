@@ -80,7 +80,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
@@ -107,9 +107,9 @@ public class RandomTxnTest {
   private Injector createInjector() {
     return Guice.createInjector(
         MempoolConfig.asModule(1000, 10),
-        new MainnetForkConfigsModule(),
         new RadixEngineForksLatestOnlyModule(),
         new ForksModule(),
+        new MainnetForksModule(),
         new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
         new MockedGenesisModule(
             Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(100000), Amount.ofTokens(1000)),

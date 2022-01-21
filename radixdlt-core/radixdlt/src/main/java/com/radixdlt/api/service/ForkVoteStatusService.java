@@ -62,59 +62,103 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.forks;
+package com.radixdlt.api.service;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.application.tokens.state.PreparedStake;
-import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
-import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.ValidatorFeeCopy;
-import com.radixdlt.application.validators.state.ValidatorMetaData;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import java.util.Map;
-import java.util.OptionalInt;
-import java.util.Set;
-import java.util.regex.Pattern;
+import com.google.common.collect.Streams;
+import com.google.inject.Inject;
+import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.InitialForkConfig;
+import com.radixdlt.store.EngineStore;
+import java.util.Objects;
 
-public final class StokenetForkConfigsModule extends AbstractModule {
-  private static final Set<String> RESERVED_SYMBOLS =
-      Set.of("xrd", "xrds", "exrd", "exrds", "rad", "rads", "rdx", "rdxs", "radix");
+public class ForkVoteStatusService {
 
-  @ProvidesIntoSet
-  ForkConfig stokenet() {
-    return new ForkConfig(
-        0L,
-        "stokenet",
-        RERulesVersion.OLYMPIA_V1,
-        new RERulesConfig(
-            RESERVED_SYMBOLS,
-            Pattern.compile("[a-z0-9]+"),
-            FeeTable.create(
-                Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
-                Map.of(
-                    TokenResource.class, Amount.ofTokens(100), // 100XRD per resource
-                    ValidatorRegisteredCopy.class, Amount.ofTokens(5), // 5XRD per validator update
-                    ValidatorFeeCopy.class, Amount.ofTokens(5), // 5XRD per register update
-                    ValidatorOwnerCopy.class, Amount.ofTokens(5), // 5XRD per register update
-                    ValidatorMetaData.class, Amount.ofTokens(5), // 5XRD per register update
-                    AllowDelegationFlag.class, Amount.ofTokens(5), // 5XRD per register update
-                    PreparedStake.class, Amount.ofMilliTokens(500), // 0.5XRD per stake
-                    PreparedUnstakeOwnership.class, Amount.ofMilliTokens(500) // 0.5XRD per unstake
-                    )),
-            (long) 1024 * 1024, // 1MB max user transaction size
-            OptionalInt.of(50), // 50 Txns per round
-            10_000, // Rounds per epoch
-            500, // Two weeks worth of epochs
-            Amount.ofTokens(90), // Minimum stake
-            500, // Two weeks worth of epochs
-            Amount.ofMicroTokens(2307700), // Rewards per proposal
-            9800, // 98.00% threshold for completed proposals to get any rewards,
-            100 // 100 max validators
-            ));
+  public enum ForkVoteStatus {
+    VOTE_REQUIRED,
+    NO_ACTION_NEEDED
+  }
+
+  private final BFTNode self;
+  private final EngineStore<LedgerAndBFTProof> engineStore;
+  private final Forks forks;
+  private ForkConfig currentForkConfig;
+
+  @Inject
+  public ForkVoteStatusService(
+      @Self BFTNode self,
+      EngineStore<LedgerAndBFTProof> engineStore,
+      Forks forks,
+      @InitialForkConfig ForkConfig initialForkConfig) {
+    this.self = Objects.requireNonNull(self);
+    this.engineStore = Objects.requireNonNull(engineStore);
+    this.forks = Objects.requireNonNull(forks);
+    this.currentForkConfig = Objects.requireNonNull(initialForkConfig);
+  }
+
+  public ForkConfig currentForkConfig() {
+    return currentForkConfig;
+  }
+
+  public ForkVoteStatus forkVoteStatus() {
+    final var currentFork = currentForkConfig;
+
+    if (forks.getCandidateFork().isEmpty()
+        || forks.getCandidateFork().get().hash().equals(currentFork.hash())) {
+      return ForkVoteStatus.NO_ACTION_NEEDED;
+    }
+
+    final var expectedCandidateForkVoteHash =
+        ForkConfig.voteHash(self.getKey(), forks.getCandidateFork().get());
+
+    final var substateDeserialization =
+        currentFork.engineRules().getParser().getSubstateDeserialization();
+
+    // TODO: this could be optimized
+    try (var validatorMetadataCursor =
+        engineStore.openIndexedCursor(
+            SubstateIndex.create(
+                SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class))) {
+
+      final var maybeSelfForkVoteHash =
+          Streams.stream(validatorMetadataCursor)
+              .map(
+                  s -> {
+                    try {
+                      return (ValidatorSystemMetadata)
+                          substateDeserialization.deserialize(s.getData());
+                    } catch (DeserializeException e) {
+                      throw new IllegalStateException(
+                          "Failed to deserialize ValidatorMetaData substate");
+                    }
+                  })
+              .filter(vm -> vm.getValidatorKey().equals(self.getKey()))
+              .findAny()
+              .map(ValidatorSystemMetadata::getAsHash);
+
+      return maybeSelfForkVoteHash.filter(expectedCandidateForkVoteHash::equals).isPresent()
+          ? ForkVoteStatus.NO_ACTION_NEEDED
+          : ForkVoteStatus.VOTE_REQUIRED;
+    }
+  }
+
+  public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
+    return ledgerUpdate -> {
+      final var ledgerAndBftProof =
+          (LedgerAndBFTProof) ledgerUpdate.getStateComputerOutput().get(LedgerAndBFTProof.class);
+      ledgerAndBftProof
+          .getNextForkHash()
+          .flatMap(forks::getByHash)
+          .ifPresent(nextFork -> currentForkConfig = nextFork);
+    };
   }
 }

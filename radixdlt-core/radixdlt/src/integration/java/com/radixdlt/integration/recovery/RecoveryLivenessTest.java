@@ -97,7 +97,6 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -203,7 +202,6 @@ public class RecoveryLivenessTest {
             Amount.ofTokens(100000),
             Amount.ofTokens(1000)),
         MempoolConfig.asModule(10, 10),
-        new MainnetForkConfigsModule(),
         new RadixEngineForksLatestOnlyModule(
             new RERulesConfig(
                 Set.of("xrd"),
@@ -219,6 +217,7 @@ public class RecoveryLivenessTest {
                 9800,
                 10)),
         new ForksModule(),
+        new MainnetForksModule(),
         new PersistedNodeForTestingModule(),
         new LastEventsModule(EpochViewUpdate.class),
         new AbstractModule() {

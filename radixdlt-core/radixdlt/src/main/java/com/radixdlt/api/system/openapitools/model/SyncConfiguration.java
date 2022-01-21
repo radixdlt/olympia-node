@@ -13,13 +13,12 @@
 
 package com.radixdlt.api.system.openapitools.model;
 
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.annotations.ApiModelProperty;
-
 import java.math.BigDecimal;
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
@@ -32,7 +31,7 @@ import java.util.Objects;
   SyncConfiguration.JSON_PROPERTY_LEDGER_STATUS_UPDATE_MAX_PEERS_TO_NOTIFY,
   SyncConfiguration.JSON_PROPERTY_MAX_LEDGER_UPDATES_RATE
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T15:21:53.191235-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-01-20T22:11:26.095756951+01:00[Europe/Warsaw]")
 public class SyncConfiguration {
   public static final String JSON_PROPERTY_SYNC_CHECK_INTERVAL = "sync_check_interval";
   private Long syncCheckInterval;
@@ -48,7 +47,6 @@ public class SyncConfiguration {
 
   public static final String JSON_PROPERTY_MAX_LEDGER_UPDATES_RATE = "max_ledger_updates_rate";
   private BigDecimal maxLedgerUpdatesRate;
-
 
   public SyncConfiguration syncCheckInterval(Long syncCheckInterval) {
     this.syncCheckInterval = syncCheckInterval;

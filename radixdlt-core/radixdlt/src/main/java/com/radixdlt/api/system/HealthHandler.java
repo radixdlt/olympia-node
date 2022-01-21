@@ -65,28 +65,90 @@
 package com.radixdlt.api.system;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.service.ForkVoteStatusService;
+import com.radixdlt.api.service.PeersForksHashesInfoService;
 import com.radixdlt.api.system.health.HealthInfoService;
+import com.radixdlt.api.system.openapitools.model.ExecutedFork;
 import com.radixdlt.api.system.openapitools.model.HealthResponse;
+import com.radixdlt.api.system.openapitools.model.HealthResponseUnknownReportedForksHashes;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.statecomputer.forks.CandidateForkConfig;
+import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
+import java.util.List;
+import java.util.stream.Collectors;
 
 final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
   private final HealthInfoService healthInfoService;
+  private final ForkVoteStatusService forkVoteStatusService;
+  private final PeersForksHashesInfoService peersForksHashesInfoService;
+  private final ForksEpochStore forksEpochStore;
+  private final Addressing addressing;
 
   @Inject
-  HealthHandler(HealthInfoService healthInfoService) {
+  HealthHandler(
+      HealthInfoService healthInfoService,
+      ForkVoteStatusService forkVoteStatusService,
+      PeersForksHashesInfoService peersForksHashesInfoService,
+      ForksEpochStore forksEpochStore,
+      Addressing addressing) {
     this.healthInfoService = healthInfoService;
+    this.forkVoteStatusService = forkVoteStatusService;
+    this.peersForksHashesInfoService = peersForksHashesInfoService;
+    this.forksEpochStore = forksEpochStore;
+    this.addressing = addressing;
   }
 
   @Override
   public HealthResponse handleRequest() {
-    var nodeStatus = healthInfoService.nodeStatus();
-    var status =
-        switch (nodeStatus) {
-          case UP -> HealthResponse.StatusEnum.UP;
-          case BOOTING -> HealthResponse.StatusEnum.BOOTING;
-          case SYNCING -> HealthResponse.StatusEnum.SYNCING;
-          case STALLED -> HealthResponse.StatusEnum.STALLED;
-          case OUT_OF_SYNC -> HealthResponse.StatusEnum.OUT_OF_SYNC;
+    final var networkStatus =
+        switch (healthInfoService.nodeStatus()) {
+          case UP -> HealthResponse.NetworkStatusEnum.UP;
+          case BOOTING -> HealthResponse.NetworkStatusEnum.BOOTING;
+          case SYNCING -> HealthResponse.NetworkStatusEnum.SYNCING;
+          case STALLED -> HealthResponse.NetworkStatusEnum.STALLED;
+          case OUT_OF_SYNC -> HealthResponse.NetworkStatusEnum.OUT_OF_SYNC;
         };
-    return new HealthResponse().status(status);
+    final var forkVoteStatus =
+        switch (forkVoteStatusService.forkVoteStatus()) {
+          case VOTE_REQUIRED -> HealthResponse.ForkVoteStatusEnum.VOTE_REQUIRED;
+          case NO_ACTION_NEEDED -> HealthResponse.ForkVoteStatusEnum.NO_ACTION_NEEDED;
+        };
+    return new HealthResponse()
+        .networkStatus(networkStatus)
+        .currentFork(toModelForkConfig(forkVoteStatusService.currentForkConfig()))
+        .executedForks(prepareExecutedForks())
+        .forkVoteStatus(forkVoteStatus)
+        .unknownReportedForksHashes(prepareUnknownReportedForksHashes());
+  }
+
+  private com.radixdlt.api.system.openapitools.model.ForkConfig toModelForkConfig(
+      ForkConfig forkConfig) {
+    return new com.radixdlt.api.system.openapitools.model.ForkConfig()
+        .name(forkConfig.name())
+        .hash(forkConfig.hash().toString())
+        .isCandidate(forkConfig instanceof CandidateForkConfig)
+        .version(forkConfig.engineRules().getVersion().name());
+  }
+
+  private List<ExecutedFork> prepareExecutedForks() {
+    return forksEpochStore.getEpochsForkHashes().entrySet().stream()
+        .map(e -> new ExecutedFork().epoch(e.getKey()).forkHash(e.getValue().toString()))
+        .collect(Collectors.toList());
+  }
+
+  private List<HealthResponseUnknownReportedForksHashes> prepareUnknownReportedForksHashes() {
+    return peersForksHashesInfoService.getUnknownReportedForksHashes().entrySet().stream()
+        .map(
+            e -> {
+              final var reportedByList =
+                  e.getValue().stream()
+                      .map(addressing.forValidators()::of)
+                      .collect(Collectors.toList());
+              return new HealthResponseUnknownReportedForksHashes()
+                  .forkHash(e.getKey().toString())
+                  .reportedBy(reportedByList);
+            })
+        .collect(Collectors.toList());
   }
 }

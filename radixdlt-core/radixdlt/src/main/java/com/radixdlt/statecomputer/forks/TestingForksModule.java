@@ -62,18 +62,42 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.statecomputer.forks;
 
-import com.google.common.hash.HashCode;
+import com.google.inject.AbstractModule;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+import java.nio.charset.StandardCharsets;
 
-public class AtomsRemovedFromMempoolTest {
-  @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(TxnsRemovedFromMempool.class)
-        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-        .verify();
+public final class TestingForksModule extends AbstractModule {
+  @ProvidesIntoSet
+  ForkBuilder fork1() {
+    return new ForkBuilder(
+        "testing-fork-genesis",
+        HashUtils.sha256("testing-fork-genesis".getBytes(StandardCharsets.UTF_8)),
+        0L,
+        RERulesVersion.OLYMPIA_V1,
+        RERulesConfig.testingDefault());
+  }
+
+  @ProvidesIntoSet
+  ForkBuilder fork2() {
+    return new ForkBuilder(
+        "testing-fork-v2",
+        HashUtils.sha256("testing-fork-v2".getBytes(StandardCharsets.UTF_8)),
+        2L,
+        RERulesVersion.OLYMPIA_V1,
+        RERulesConfig.testingDefault());
+  }
+
+  @ProvidesIntoSet
+  ForkBuilder fork3() {
+    return new ForkBuilder(
+        "testing-fork-v3",
+        HashUtils.sha256("testing-fork-v3".getBytes(StandardCharsets.UTF_8)),
+        5L,
+        5500, // 55%
+        RERulesVersion.OLYMPIA_V1,
+        RERulesConfig.testingDefault());
   }
 }

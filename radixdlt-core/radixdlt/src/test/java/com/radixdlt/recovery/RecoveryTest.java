@@ -102,7 +102,7 @@ import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -184,7 +184,6 @@ public class RecoveryTest {
     return Guice.createInjector(
         new MockedGenesisModule(
             Set.of(ecKeyPair.getPublicKey()), Amount.ofTokens(1000), Amount.ofTokens(100)),
-        new MainnetForkConfigsModule(),
         new RadixEngineForksLatestOnlyModule(
             new RERulesConfig(
                 Set.of("xrd"),
@@ -200,6 +199,7 @@ public class RecoveryTest {
                 9800,
                 10)),
         new ForksModule(),
+        new MainnetForksModule(),
         MempoolConfig.asModule(10, 10),
         new LastEventsModule(EpochViewUpdate.class, Vote.class),
         new AbstractModule() {

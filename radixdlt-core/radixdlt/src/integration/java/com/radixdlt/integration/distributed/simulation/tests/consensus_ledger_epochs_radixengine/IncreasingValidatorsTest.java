@@ -76,7 +76,7 @@ import com.radixdlt.integration.distributed.simulation.monitors.consensus.Consen
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import java.util.concurrent.TimeUnit;
@@ -89,13 +89,14 @@ public class IncreasingValidatorsTest {
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
           .pacemakerTimeout(3000)
           .numNodes(
-              50, 2) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware
+              10) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware /*
+          // TODO(luk): bylo 50 - sprawdzic i zmienic */
           // pacemaker
           .addRadixEngineConfigModules(
-              new MainnetForkConfigsModule(),
               new RadixEngineForksLatestOnlyModule(
                   RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
-              new ForksModule())
+              new ForksModule(),
+              new MainnetForksModule())
           .ledgerAndRadixEngineWithEpochHighView()
           .addTestModules(
               ConsensusMonitors.safety(),

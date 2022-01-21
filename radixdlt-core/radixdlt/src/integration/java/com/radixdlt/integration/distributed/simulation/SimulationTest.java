@@ -66,6 +66,7 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
@@ -99,6 +100,7 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.integration.distributed.MockedPeersViewModule;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
@@ -128,8 +130,8 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
+import com.radixdlt.statecomputer.forks.MockedForksEpochStoreModule;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.MockedCommittedReaderModule;
@@ -164,25 +166,22 @@ public class SimulationTest {
     void stop();
   }
 
-  private final ImmutableList<ECKeyPair> nodes;
+  private final ImmutableList<ECKeyPair> initialNodes;
   private final SimulationNetwork simulationNetwork;
   private final Module testModule;
   private final Module baseNodeModule;
-  private final Module overrideModule;
-  private final Map<ECKeyPair, Module> byzantineNodeModules;
+  private final ImmutableMultimap<ECPublicKey, Module> overrideModules;
 
   private SimulationTest(
-      ImmutableList<ECKeyPair> nodes,
+      ImmutableList<ECKeyPair> initialNodes,
       SimulationNetwork simulationNetwork,
       Module baseNodeModule,
-      Module overrideModule,
-      Map<ECKeyPair, Module> byzantineNodeModules,
+      ImmutableMultimap<ECPublicKey, Module> overrideModules,
       Module testModule) {
-    this.nodes = nodes;
+    this.initialNodes = initialNodes;
     this.simulationNetwork = simulationNetwork;
     this.baseNodeModule = baseNodeModule;
-    this.overrideModule = overrideModule;
-    this.byzantineNodeModules = byzantineNodeModules;
+    this.overrideModules = overrideModules;
     this.testModule = testModule;
   }
 
@@ -226,44 +225,33 @@ public class SimulationTest {
       }
     }
 
-    private ImmutableList<ECKeyPair> nodes = ImmutableList.of(ECKeyPair.generateNew());
+    private ImmutableList<ECKeyPair> initialNodes = ImmutableList.of(ECKeyPair.generateNew());
     private long pacemakerTimeout = 12 * SimulationNetwork.DEFAULT_LATENCY;
     private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
 
     private Module initialNodesModule;
     private final ImmutableList.Builder<Module> testModules = ImmutableList.builder();
     private final ImmutableList.Builder<Module> modules = ImmutableList.builder();
+    private final ImmutableMultimap.Builder<ECPublicKey, Module> overrideModules =
+        ImmutableMultimap.builder();
     private Module networkModule;
-    private Module overrideModule = null;
-    private Function<ImmutableList<ECKeyPair>, ImmutableMap<ECKeyPair, Module>>
-        byzantineModuleCreator = i -> ImmutableMap.of();
-    private ImmutableMap<Integer, ImmutableList<Integer>> addressBookNodes;
-
-    // TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some
-    // point
-    // TODO: Specifically, simulation test with engine, epochs and mempool gets stuck on a single
-    // validator
-    private final int minValidators = 2;
+    private ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> addressBookNodes;
 
     private Builder() {}
 
-    public Builder addSingleByzantineModule(Module byzantineModule) {
-      this.byzantineModuleCreator = nodes -> ImmutableMap.of(nodes.get(0), byzantineModule);
+    public Builder addNodesOverrideModule(
+        Function<ImmutableList<ECKeyPair>, ImmutableList<ECPublicKey>> nodesSelector,
+        Module overrideModule) {
+      final var nodes = nodesSelector.apply(this.initialNodes);
+      nodes.forEach(node -> overrideModules.put(node, overrideModule));
       return this;
     }
 
-    public Builder addByzantineModuleToAll(Module byzantineModule) {
-      this.byzantineModuleCreator =
+    public Builder addOverrideModuleToAll(Module overrideModule) {
+      addNodesOverrideModule(
           nodes ->
-              nodes.stream()
-                  .collect(
-                      ImmutableMap.<ECKeyPair, ECKeyPair, Module>toImmutableMap(
-                          n -> n, n -> byzantineModule));
-      return this;
-    }
-
-    public Builder overrideWithIncorrectModule(Module module) {
-      this.overrideModule = module;
+              nodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()),
+          overrideModule);
       return this;
     }
 
@@ -286,28 +274,24 @@ public class SimulationTest {
      * A mapping from a node index to a list of other nodes indices. If key is not present, then
      * address book for that node contains all other nodes.
      */
-    public Builder addressBook(ImmutableMap<Integer, ImmutableList<Integer>> addressBookNodes) {
-      this.addressBookNodes = addressBookNodes;
+    public Builder addressBook(
+        Function<ImmutableList<ECKeyPair>, ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>>>
+            addressBookNodesFn) {
+      this.addressBookNodes = addressBookNodesFn.apply(this.initialNodes);
       return this;
     }
 
-    public Builder numNodes(
-        int numNodes, int numInitialValidators, Iterable<UInt256> initialStakes) {
-      this.nodes =
+    public Builder numNodes(int numNodes, Iterable<UInt256> initialStakes) {
+      this.initialNodes =
           Stream.generate(ECKeyPair::generateNew)
               .limit(numNodes)
               .collect(ImmutableList.toImmutableList());
 
       final var stakesIterator = repeatLast(initialStakes);
       final var initialStakesMap =
-          nodes.stream()
+          initialNodes.stream()
               .collect(
                   ImmutableMap.toImmutableMap(ECKeyPair::getPublicKey, k -> stakesIterator.next()));
-
-      var initialVset =
-          BFTValidatorSet.from(
-              initialStakesMap.entrySet().stream()
-                  .map(e -> BFTValidator.from(BFTNode.create(e.getKey()), e.getValue())));
 
       final var bftNodes =
           initialStakesMap.keySet().stream()
@@ -339,12 +323,8 @@ public class SimulationTest {
       return this;
     }
 
-    public Builder numNodes(int numNodes, int numInitialValidators) {
-      return numNodes(numNodes, numInitialValidators, ImmutableList.of(UInt256.ONE));
-    }
-
     public Builder numNodes(int numNodes) {
-      return numNodes(numNodes, numNodes);
+      return numNodes(numNodes, ImmutableList.of(UInt256.ONE));
     }
 
     public Builder ledgerAndEpochs(
@@ -363,7 +343,7 @@ public class SimulationTest {
                   indices ->
                       BFTValidatorSet.from(
                           indices
-                              .mapToObj(nodes::get)
+                              .mapToObj(initialNodes::get)
                               .map(node -> BFTNode.create(node.getPublicKey()))
                               .map(node -> BFTValidator.from(node, UInt256.ONE))
                               .collect(Collectors.toList())));
@@ -423,7 +403,7 @@ public class SimulationTest {
                   indices ->
                       BFTValidatorSet.from(
                           indices
-                              .mapToObj(nodes::get)
+                              .mapToObj(initialNodes::get)
                               .map(node -> BFTNode.create(node.getPublicKey()))
                               .map(node -> BFTValidator.from(node, UInt256.ONE))
                               .collect(Collectors.toList())));
@@ -468,6 +448,7 @@ public class SimulationTest {
               };
             }
           });
+      this.modules.add(new MockedForksEpochStoreModule());
 
       return this;
     }
@@ -521,7 +502,6 @@ public class SimulationTest {
           });
       return this;
     }
-    ;
 
     public SimulationTest build() {
       final NodeEvents nodeEvents = new NodeEvents();
@@ -567,7 +547,7 @@ public class SimulationTest {
         modules.add(new MockedRadixEngineStoreModule());
         modules.add(
             new MockedGenesisModule(
-                nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
+                initialNodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
                 Amount.ofTokens(1000000),
                 Amount.ofTokens(10000)));
         modules.add(new LedgerRecoveryModule());
@@ -577,18 +557,22 @@ public class SimulationTest {
         testModules.add(
             new AbstractModule() {
               public void configure() {
-                install(new MockedCryptoModule());
                 install(new RadixEngineModule());
+                install(new MockedRadixEngineStoreModule());
+                install(new MockedCryptoModule());
                 install(
                     new MockedGenesisModule(
-                        nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
+                        initialNodes.stream()
+                            .map(ECKeyPair::getPublicKey)
+                            .collect(Collectors.toSet()),
                         Amount.ofTokens(1000000),
                         Amount.ofTokens(10000)));
                 bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
                 bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {})
-                    .toInstance(new InMemoryEngineStore<>());
+                    .toInstance(new InMemoryEngineStore<>()); /* TODO(luk): is this needed? */
                 bind(SystemCounters.class).toInstance(new SystemCountersImpl());
                 bind(CommittedReader.class).toInstance(CommittedReader.mocked());
+                bind(ForksEpochStore.class).toInstance(ForksEpochStore.mocked());
               }
 
               @Genesis
@@ -601,7 +585,7 @@ public class SimulationTest {
         modules.add(new MockedRecoveryModule());
         var initialVset =
             BFTValidatorSet.from(
-                nodes.stream()
+                initialNodes.stream()
                     .map(e -> BFTValidator.from(BFTNode.create(e.getPublicKey()), UInt256.ONE)));
         modules.add(
             new AbstractModule() {
@@ -620,7 +604,7 @@ public class SimulationTest {
             @Override
             protected void configure() {
               Multibinder.newSetBinder(binder(), SimulationNetworkActor.class);
-              bind(Key.get(new TypeLiteral<List<ECKeyPair>>() {})).toInstance(nodes);
+              bind(Key.get(new TypeLiteral<List<ECKeyPair>>() {})).toInstance(initialNodes);
               bind(NodeEvents.class).toInstance(nodeEvents);
             }
           });
@@ -634,14 +618,14 @@ public class SimulationTest {
       modules.add(new RxEnvironmentModule());
       if (ledgerType.hasLedger && ledgerType.hasSync) {
         modules.add(new MockedCommittedReaderModule());
+        modules.add(new MockedForksEpochStoreModule());
       }
 
       return new SimulationTest(
-          nodes,
+          initialNodes,
           simulationNetwork,
           Modules.combine(modules.build()),
-          overrideModule,
-          byzantineModuleCreator.apply(this.nodes),
+          overrideModules.build(),
           Modules.combine(testModules.build()));
     }
   }
@@ -725,16 +709,20 @@ public class SimulationTest {
         .orElse(DEFAULT_TEST_DURATION);
   }
 
+  public ImmutableList<ECKeyPair> getInitialNodes() {
+    return initialNodes;
+  }
+
   /**
    * Runs the test for a given time. Returns either once the duration has passed or if a check has
    * failed. Returns a map from the check name to the result.
    *
    * @param duration duration to run test for
-   * @param disabledModuleRunners a list of disabled module runners by node index
+   * @param disabledModuleRunners a list of disabled module runners by node key
    * @return test results
    */
   public RunningSimulationTest run(
-      Duration duration, ImmutableMap<Integer, ImmutableSet<String>> disabledModuleRunners) {
+      Duration duration, ImmutableMap<BFTNode, ImmutableSet<String>> disabledModuleRunners) {
     Injector testInjector = Guice.createInjector(testModule);
     var runners =
         testInjector.getInstance(Key.get(new TypeLiteral<Set<SimulationNetworkActor>>() {}));
@@ -742,8 +730,7 @@ public class SimulationTest {
         testInjector.getInstance(Key.get(new TypeLiteral<Map<Monitor, TestInvariant>>() {}));
 
     SimulationNodes bftNetwork =
-        new SimulationNodes(
-            nodes, simulationNetwork, baseNodeModule, overrideModule, byzantineNodeModules);
+        new SimulationNodes(initialNodes, simulationNetwork, baseNodeModule, overrideModules);
     RunningNetwork runningNetwork = bftNetwork.start(disabledModuleRunners);
 
     final var resultObservable =
@@ -751,7 +738,7 @@ public class SimulationTest {
             .doFinally(
                 () -> {
                   runners.forEach(SimulationNetworkActor::stop);
-                  bftNetwork.stop();
+                  runningNetwork.stop();
                 });
 
     return new RunningSimulationTest(resultObservable, runningNetwork);

@@ -99,7 +99,6 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -175,7 +174,8 @@ public class OneNodeAlwaysAliveSafetyTest {
             new AbstractModule() {
               @Override
               protected void configure() {
-                bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(allNodes);
+                bind(new TypeLiteral<ImmutableSet<BFTNode>>() {})
+                    .toInstance(ImmutableSet.copyOf(allNodes));
               }
 
               @ProvidesIntoSet
@@ -225,7 +225,6 @@ public class OneNodeAlwaysAliveSafetyTest {
             Amount.ofTokens(1000000),
             Amount.ofTokens(10000)),
         MempoolConfig.asModule(10, 10),
-        new MainnetForkConfigsModule(),
         new RadixEngineForksLatestOnlyModule(
             new RERulesConfig(
                 Set.of("xrd"),
@@ -241,6 +240,7 @@ public class OneNodeAlwaysAliveSafetyTest {
                 9800,
                 10)),
         new ForksModule(),
+        new MainnetForksModule(),
         new PersistedNodeForTestingModule(),
         new AbstractModule() {
           @Override

@@ -107,7 +107,7 @@ import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -187,7 +187,7 @@ public class ApiTest {
   public ApiTest(Module forkModule, Module byzantineModule) {
     this.nodeKeys = PrivateKeys.numeric(1).limit(20).collect(ImmutableList.toImmutableList());
     this.radixEngineConfiguration =
-        Modules.combine(new MainnetForkConfigsModule(), new ForksModule(), forkModule);
+        Modules.combine(new MainnetForksModule(), new ForksModule(), forkModule);
     this.byzantineModule = byzantineModule;
   }
 

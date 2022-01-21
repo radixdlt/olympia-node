@@ -66,7 +66,6 @@ package com.radixdlt.api.core.model;
 
 import com.google.common.base.Suppliers;
 import com.radixdlt.api.core.openapitools.model.Data;
-import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.engine.RadixEngine;
@@ -79,9 +78,9 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
-  private final Forks forks;
   private final List<List<EntityOperation>> operationGroups;
   private final String message;
+  private final Forks forks;
 
   public OperationTxBuilder(
       String message, List<List<EntityOperation>> operationGroups, Forks forks) {
@@ -150,12 +149,12 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
 
   @Override
   public void execute(TxBuilder txBuilder) throws TxBuilderException {
-
-    var configSupplier =
+    final var configSupplier =
         Suppliers.memoize(
             () -> {
-              var epochData = txBuilder.findSystem(EpochData.class);
-              return forks.get(epochData.getEpoch()).getConfig();
+              //          var epochData = txBuilder.findSystem(EpochData.class);
+              //          return forks.get(epochData.getEpoch()).getConfig();
+              return forks.latestFork().engineRules().getConfig(); // TODO(luk): fixme
             });
 
     for (var operationGroup : this.operationGroups) {

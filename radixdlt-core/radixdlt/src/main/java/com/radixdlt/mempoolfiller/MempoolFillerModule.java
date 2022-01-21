@@ -74,6 +74,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.environment.Runners;
 import com.radixdlt.identifiers.REAddr;
 
 /** Module responsible for the mempool filler chaos attack */
@@ -97,13 +98,17 @@ public final class MempoolFillerModule extends AbstractModule {
   @ProvidesIntoSet
   public EventProcessorOnRunner<?> mempoolFillerUpdateProcessor(MempoolFiller mempoolFiller) {
     return new EventProcessorOnRunner<>(
-        "Mempool", MempoolFillerUpdate.class, mempoolFiller.mempoolFillerUpdateEventProcessor());
+        Runners.MEMPOOL,
+        MempoolFillerUpdate.class,
+        mempoolFiller.mempoolFillerUpdateEventProcessor());
   }
 
   @ProvidesIntoSet
   public EventProcessorOnRunner<?> scheduledMessageFloodEventProcessor(
       MempoolFiller mempoolFiller) {
     return new EventProcessorOnRunner<>(
-        "Mempool", ScheduledMempoolFill.class, mempoolFiller.scheduledMempoolFillEventProcessor());
+        Runners.MEMPOOL,
+        ScheduledMempoolFill.class,
+        mempoolFiller.scheduledMempoolFillEventProcessor());
   }
 }

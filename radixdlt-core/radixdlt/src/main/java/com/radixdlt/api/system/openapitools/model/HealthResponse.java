@@ -13,28 +13,33 @@
 
 package com.radixdlt.api.system.openapitools.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.annotations.ApiModelProperty;
-
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
  * HealthResponse
  */
 @JsonPropertyOrder({
-  HealthResponse.JSON_PROPERTY_STATUS
+  HealthResponse.JSON_PROPERTY_NETWORK_STATUS,
+  HealthResponse.JSON_PROPERTY_CURRENT_FORK,
+  HealthResponse.JSON_PROPERTY_EXECUTED_FORKS,
+  HealthResponse.JSON_PROPERTY_FORK_VOTE_STATUS,
+  HealthResponse.JSON_PROPERTY_UNKNOWN_REPORTED_FORKS_HASHES
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T15:21:53.191235-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-01-20T22:11:26.095756951+01:00[Europe/Warsaw]")
 public class HealthResponse {
   /**
-   * Gets or Sets status
+   * Gets or Sets networkStatus
    */
-  public enum StatusEnum {
+  public enum NetworkStatusEnum {
     BOOTING("BOOTING"),
     
     SYNCING("SYNCING"),
@@ -47,7 +52,7 @@ public class HealthResponse {
 
     private String value;
 
-    StatusEnum(String value) {
+    NetworkStatusEnum(String value) {
       this.value = value;
     }
 
@@ -62,8 +67,8 @@ public class HealthResponse {
     }
 
     @JsonCreator
-    public static StatusEnum fromValue(String value) {
-      for (StatusEnum b : StatusEnum.values()) {
+    public static NetworkStatusEnum fromValue(String value) {
+      for (NetworkStatusEnum b : NetworkStatusEnum.values()) {
         if (b.value.equals(value)) {
           return b;
         }
@@ -72,33 +77,193 @@ public class HealthResponse {
     }
   }
 
-  public static final String JSON_PROPERTY_STATUS = "status";
-  private StatusEnum status;
+  public static final String JSON_PROPERTY_NETWORK_STATUS = "network_status";
+  private NetworkStatusEnum networkStatus;
 
+  public static final String JSON_PROPERTY_CURRENT_FORK = "current_fork";
+  private ForkConfig currentFork;
 
-  public HealthResponse status(StatusEnum status) {
-    this.status = status;
+  public static final String JSON_PROPERTY_EXECUTED_FORKS = "executed_forks";
+  private List<ExecutedFork> executedForks = new ArrayList<>();
+
+  /**
+   * Gets or Sets forkVoteStatus
+   */
+  public enum ForkVoteStatusEnum {
+    VOTE_REQUIRED("VOTE_REQUIRED"),
+    
+    NO_ACTION_NEEDED("NO_ACTION_NEEDED");
+
+    private String value;
+
+    ForkVoteStatusEnum(String value) {
+      this.value = value;
+    }
+
+    @JsonValue
+    public String getValue() {
+      return value;
+    }
+
+    @Override
+    public String toString() {
+      return String.valueOf(value);
+    }
+
+    @JsonCreator
+    public static ForkVoteStatusEnum fromValue(String value) {
+      for (ForkVoteStatusEnum b : ForkVoteStatusEnum.values()) {
+        if (b.value.equals(value)) {
+          return b;
+        }
+      }
+      throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    }
+  }
+
+  public static final String JSON_PROPERTY_FORK_VOTE_STATUS = "fork_vote_status";
+  private ForkVoteStatusEnum forkVoteStatus;
+
+  public static final String JSON_PROPERTY_UNKNOWN_REPORTED_FORKS_HASHES = "unknown_reported_forks_hashes";
+  private List<HealthResponseUnknownReportedForksHashes> unknownReportedForksHashes = new ArrayList<>();
+
+  public HealthResponse networkStatus(NetworkStatusEnum networkStatus) {
+    this.networkStatus = networkStatus;
     return this;
   }
 
    /**
-   * Get status
-   * @return status
+   * Get networkStatus
+   * @return networkStatus
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_STATUS)
+  @JsonProperty(JSON_PROPERTY_NETWORK_STATUS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public StatusEnum getStatus() {
-    return status;
+  public NetworkStatusEnum getNetworkStatus() {
+    return networkStatus;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_STATUS)
+  @JsonProperty(JSON_PROPERTY_NETWORK_STATUS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setStatus(StatusEnum status) {
-    this.status = status;
+  public void setNetworkStatus(NetworkStatusEnum networkStatus) {
+    this.networkStatus = networkStatus;
+  }
+
+
+  public HealthResponse currentFork(ForkConfig currentFork) {
+    this.currentFork = currentFork;
+    return this;
+  }
+
+   /**
+   * Get currentFork
+   * @return currentFork
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_CURRENT_FORK)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public ForkConfig getCurrentFork() {
+    return currentFork;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_CURRENT_FORK)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setCurrentFork(ForkConfig currentFork) {
+    this.currentFork = currentFork;
+  }
+
+
+  public HealthResponse executedForks(List<ExecutedFork> executedForks) {
+    this.executedForks = executedForks;
+    return this;
+  }
+
+  public HealthResponse addExecutedForksItem(ExecutedFork executedForksItem) {
+    this.executedForks.add(executedForksItem);
+    return this;
+  }
+
+   /**
+   * Get executedForks
+   * @return executedForks
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_EXECUTED_FORKS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<ExecutedFork> getExecutedForks() {
+    return executedForks;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_EXECUTED_FORKS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setExecutedForks(List<ExecutedFork> executedForks) {
+    this.executedForks = executedForks;
+  }
+
+
+  public HealthResponse forkVoteStatus(ForkVoteStatusEnum forkVoteStatus) {
+    this.forkVoteStatus = forkVoteStatus;
+    return this;
+  }
+
+   /**
+   * Get forkVoteStatus
+   * @return forkVoteStatus
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_FORK_VOTE_STATUS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public ForkVoteStatusEnum getForkVoteStatus() {
+    return forkVoteStatus;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_FORK_VOTE_STATUS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setForkVoteStatus(ForkVoteStatusEnum forkVoteStatus) {
+    this.forkVoteStatus = forkVoteStatus;
+  }
+
+
+  public HealthResponse unknownReportedForksHashes(List<HealthResponseUnknownReportedForksHashes> unknownReportedForksHashes) {
+    this.unknownReportedForksHashes = unknownReportedForksHashes;
+    return this;
+  }
+
+  public HealthResponse addUnknownReportedForksHashesItem(HealthResponseUnknownReportedForksHashes unknownReportedForksHashesItem) {
+    this.unknownReportedForksHashes.add(unknownReportedForksHashesItem);
+    return this;
+  }
+
+   /**
+   * Get unknownReportedForksHashes
+   * @return unknownReportedForksHashes
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_UNKNOWN_REPORTED_FORKS_HASHES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<HealthResponseUnknownReportedForksHashes> getUnknownReportedForksHashes() {
+    return unknownReportedForksHashes;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_UNKNOWN_REPORTED_FORKS_HASHES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setUnknownReportedForksHashes(List<HealthResponseUnknownReportedForksHashes> unknownReportedForksHashes) {
+    this.unknownReportedForksHashes = unknownReportedForksHashes;
   }
 
 
@@ -114,19 +279,27 @@ public class HealthResponse {
       return false;
     }
     HealthResponse healthResponse = (HealthResponse) o;
-    return Objects.equals(this.status, healthResponse.status);
+    return Objects.equals(this.networkStatus, healthResponse.networkStatus) &&
+        Objects.equals(this.currentFork, healthResponse.currentFork) &&
+        Objects.equals(this.executedForks, healthResponse.executedForks) &&
+        Objects.equals(this.forkVoteStatus, healthResponse.forkVoteStatus) &&
+        Objects.equals(this.unknownReportedForksHashes, healthResponse.unknownReportedForksHashes);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(status);
+    return Objects.hash(networkStatus, currentFork, executedForks, forkVoteStatus, unknownReportedForksHashes);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class HealthResponse {\n");
-    sb.append("    status: ").append(toIndentedString(status)).append("\n");
+    sb.append("    networkStatus: ").append(toIndentedString(networkStatus)).append("\n");
+    sb.append("    currentFork: ").append(toIndentedString(currentFork)).append("\n");
+    sb.append("    executedForks: ").append(toIndentedString(executedForks)).append("\n");
+    sb.append("    forkVoteStatus: ").append(toIndentedString(forkVoteStatus)).append("\n");
+    sb.append("    unknownReportedForksHashes: ").append(toIndentedString(unknownReportedForksHashes)).append("\n");
     sb.append("}");
     return sb.toString();
   }

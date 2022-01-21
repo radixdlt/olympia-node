@@ -67,7 +67,6 @@ package com.radixdlt.statecomputer.forks;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
-import java.util.Comparator;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 
@@ -75,24 +74,23 @@ import java.util.function.UnaryOperator;
 public class RadixEngineForksLatestOnlyModule extends AbstractModule {
   private final RERulesConfig config;
 
-  public RadixEngineForksLatestOnlyModule(RERulesConfig config) {
-    this.config = config;
-  }
-
   public RadixEngineForksLatestOnlyModule() {
     this(RERulesConfig.testingDefault());
   }
 
+  public RadixEngineForksLatestOnlyModule(RERulesConfig config) {
+    this.config = config;
+  }
+
   @Override
   protected void configure() {
-    OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkConfig>>>() {})
+    OptionalBinder.newOptionalBinder(
+            binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() {})
         .setBinding()
         .toInstance(
-            m ->
-                Set.of(
-                    m.stream()
-                        .max(Comparator.comparingLong(ForkConfig::getEpoch))
-                        .map(f -> new ForkConfig(0L, f.getName(), f.getVersion(), config))
-                        .orElseThrow()));
+            m -> {
+              final var latestFork = m.stream().max((a, b) -> (int) (a.epoch() - b.epoch()));
+              return Set.of(latestFork.get().withEngineRulesConfig(config).atFixedEpoch(0L));
+            });
   }
 }

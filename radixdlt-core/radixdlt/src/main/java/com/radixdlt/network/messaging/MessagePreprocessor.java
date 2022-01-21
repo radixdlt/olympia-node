@@ -73,6 +73,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.TimeSupplier;
@@ -93,18 +94,21 @@ final class MessagePreprocessor {
   private final TimeSupplier timeSource;
   private final Serialization serialization;
   private final Provider<PeerControl> peerControl;
+  private final Addressing addressing;
 
   MessagePreprocessor(
       SystemCounters counters,
       MessageCentralConfiguration config,
       TimeSupplier timeSource,
       Serialization serialization,
-      Provider<PeerControl> peerControl) {
+      Provider<PeerControl> peerControl,
+      Addressing addressing) {
     this.messageTtlMs = Objects.requireNonNull(config).messagingTimeToLive(30_000L);
     this.counters = Objects.requireNonNull(counters);
     this.timeSource = Objects.requireNonNull(timeSource);
     this.serialization = Objects.requireNonNull(serialization);
     this.peerControl = Objects.requireNonNull(peerControl);
+    this.addressing = Objects.requireNonNull(addressing);
   }
 
   Result<MessageFromPeer<Message>> process(InboundMessage inboundMessage) {
@@ -138,7 +142,10 @@ final class MessagePreprocessor {
           IO_ERROR, ofNullable(serialization.fromDson(uncompressed, Message.class)));
     } catch (IOException e) {
       log.error(
-          String.format("Failed to deserialize message from peer %s", inboundMessage.source()), e);
+          String.format(
+              "Failed to deserialize message from peer %s",
+              addressing.forNodes().of(inboundMessage.source().getPublicKey())),
+          e);
       peerControl
           .get()
           .banPeer(

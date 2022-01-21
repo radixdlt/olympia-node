@@ -77,7 +77,7 @@ import com.radixdlt.integration.distributed.simulation.monitors.consensus.Consen
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import java.util.OptionalInt;
@@ -91,10 +91,9 @@ import org.junit.Test;
 public class RandomValidatorsTest {
   private final Builder bftTestBuilder =
       SimulationTest.builder()
-          .numNodes(10, 2)
+          .numNodes(10)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
           .addRadixEngineConfigModules(
-              new MainnetForkConfigsModule(),
               new RadixEngineForksLatestOnlyModule(
                   new RERulesConfig(
                       Set.of("xrd"),
@@ -109,7 +108,8 @@ public class RandomValidatorsTest {
                       Amount.ofTokens(10),
                       9800,
                       50)),
-              new ForksModule())
+              new ForksModule(),
+              new MainnetForksModule())
           .ledgerAndRadixEngineWithEpochHighView()
           .addTestModules(
               ConsensusMonitors.safety(),

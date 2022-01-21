@@ -67,7 +67,6 @@ package com.radixdlt.statecomputer.forks;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
-import java.util.Comparator;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.UnaryOperator;
@@ -83,15 +82,17 @@ public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
   @Override
   protected void configure() {
     var epoch = new AtomicLong(0);
-    OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkConfig>>>() {})
+    OptionalBinder.newOptionalBinder(
+            binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() {})
         .setBinding()
         .toInstance(
             s ->
                 s.stream()
-                    .sorted(Comparator.comparingLong(ForkConfig::getEpoch))
                     .map(
-                        c ->
-                            new ForkConfig(epoch.getAndAdd(5), c.getName(), c.getVersion(), config))
+                        fork -> {
+                          final var forkEpoch = epoch.getAndAdd(5);
+                          return fork.atFixedEpoch(forkEpoch).withEngineRulesConfig(config);
+                        })
                     .collect(Collectors.toSet()));
   }
 }

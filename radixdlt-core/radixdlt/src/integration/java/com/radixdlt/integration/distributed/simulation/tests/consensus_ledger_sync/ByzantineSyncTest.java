@@ -104,7 +104,7 @@ public class ByzantineSyncTest {
                 NetworkOrdering.inOrder(),
                 NetworkLatencies.fixed(10),
                 NetworkDroppers.fNodesAllReceivedProposalsDropped())
-            .addByzantineModuleToAll(
+            .addOverrideModuleToAll(
                 new AbstractModule() {
                   @Override
                   protected void configure() {
@@ -154,7 +154,7 @@ public class ByzantineSyncTest {
       given_a_sometimes_byzantine_sync_layer_with_incorrect_accumulator_verifier__sanity_tests_should_not_pass() {
     SimulationTest simulationTest =
         bftTestBuilder
-            .overrideWithIncorrectModule(new IncorrectAlwaysAcceptingAccumulatorVerifierModule())
+            .addOverrideModuleToAll(new IncorrectAlwaysAcceptingAccumulatorVerifierModule())
             .build();
     final var runningTest = simulationTest.run();
     final var checkResults = runningTest.awaitCompletion();

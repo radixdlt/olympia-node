@@ -72,6 +72,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
+import java.util.Optional;
 
 @SerializerId2("message.handshake.auth_response")
 public final class AuthResponseMessage {
@@ -88,16 +89,23 @@ public final class AuthResponseMessage {
   @DsonOutput(DsonOutput.Output.ALL)
   private final HashCode nonce;
 
+  private final Optional<HashCode> latestForkHash;
+
   @JsonCreator
   public static AuthResponseMessage deserialize(
       @JsonProperty(value = "ephemeralPublicKey", required = true) HashCode ephemeralPublicKey,
-      @JsonProperty(value = "nonce", required = true) HashCode nonce) {
-    return new AuthResponseMessage(ephemeralPublicKey, nonce);
+      @JsonProperty(value = "nonce", required = true) HashCode nonce,
+      @JsonProperty("latestForkHash") HashCode rawLatestForkHash) {
+    final var latestForkHash =
+        rawLatestForkHash == null ? Optional.<HashCode>empty() : Optional.of(rawLatestForkHash);
+    return new AuthResponseMessage(ephemeralPublicKey, nonce, latestForkHash);
   }
 
-  public AuthResponseMessage(HashCode ephemeralPublicKey, HashCode nonce) {
+  public AuthResponseMessage(
+      HashCode ephemeralPublicKey, HashCode nonce, Optional<HashCode> latestForkHash) {
     this.ephemeralPublicKey = ephemeralPublicKey;
     this.nonce = nonce;
+    this.latestForkHash = latestForkHash;
   }
 
   public HashCode getEphemeralPublicKey() {
@@ -108,6 +116,16 @@ public final class AuthResponseMessage {
     return nonce;
   }
 
+  public Optional<HashCode> getLatestForkHash() {
+    return latestForkHash;
+  }
+
+  @JsonProperty("latestForkHash")
+  @DsonOutput(DsonOutput.Output.ALL)
+  public HashCode rawLatestForkHash() {
+    return this.latestForkHash.orElse(null);
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -116,11 +134,12 @@ public final class AuthResponseMessage {
 
     return (o instanceof AuthResponseMessage that)
         && Objects.equals(ephemeralPublicKey, that.ephemeralPublicKey)
-        && Objects.equals(nonce, that.nonce);
+        && Objects.equals(nonce, that.nonce)
+        && Objects.equals(latestForkHash, that.latestForkHash);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ephemeralPublicKey, nonce);
+    return Objects.hash(ephemeralPublicKey, nonce, latestForkHash);
   }
 }

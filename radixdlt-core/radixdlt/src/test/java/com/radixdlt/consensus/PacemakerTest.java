@@ -84,7 +84,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.PrivateKeys;
@@ -107,8 +107,8 @@ public class PacemakerTest {
   private Injector createRunner() {
     return Guice.createInjector(
         MempoolConfig.asModule(10, 10),
-        new MainnetForkConfigsModule(),
         new ForksModule(),
+        new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(),
         new MockedGenesisModule(
             Set.of(PrivateKeys.ofNumeric(1).getPublicKey()),

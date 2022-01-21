@@ -83,6 +83,6 @@ public class HealthHandlerTest extends ApiTest {
     var response = handleRequestWithExpectedResponse(sut, HealthResponse.class);
 
     // Assert
-    assertThat(response.getStatus()).isNotNull();
+    assertThat(response.getNetworkStatus()).isNotNull();
   }
 }

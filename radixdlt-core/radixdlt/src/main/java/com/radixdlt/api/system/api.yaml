@@ -129,9 +129,13 @@ components:
     HealthResponse:
       type: object
       required:
-        - status
+        - network_status
+        - current_fork
+        - executed_forks
+        - fork_vote_status
+        - unknown_reported_forks_hashes
       properties:
-        status:
+        network_status:
           type: string
           enum:
             - BOOTING
@@ -139,6 +143,31 @@ components:
             - UP
             - STALLED
             - OUT_OF_SYNC
+        current_fork:
+          $ref: "#/components/schemas/ForkConfig"
+        executed_forks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExecutedFork"
+        fork_vote_status:
+          type: string
+          enum:
+            - VOTE_REQUIRED
+            - NO_ACTION_NEEDED
+        unknown_reported_forks_hashes:
+          type: array
+          items:
+            type: object
+            required:
+              - fork_hash
+              - reported_by
+            properties:
+              fork_hash:
+                type: string
+              reported_by:
+                type: array
+                items:
+                  type: string
     SystemConfigurationResponse:
       type: object
       required:
@@ -543,4 +572,32 @@ components:
           type: integer
           format: int32
         message:
+          type: string
+    ForkConfig:
+      type: object
+      required:
+        - name
+        - hash
+        - is_candidate
+        - version
+        - rules_config
+      properties:
+        name:
+          type: string
+        hash:
+          type: string
+        is_candidate:
+          type: boolean
+        version:
+          type: string
+    ExecutedFork:
+      type: object
+      required:
+        - epoch
+        - fork_hash
+      properties:
+        epoch:
+          type: integer
+          format: int64
+        fork_hash:
           type: string

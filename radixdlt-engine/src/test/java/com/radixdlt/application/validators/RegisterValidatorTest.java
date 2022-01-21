@@ -73,6 +73,7 @@ import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.validators.construction.RegisterValidatorConstructor;
 import com.radixdlt.application.validators.construction.UpdateRakeConstructor;
 import com.radixdlt.application.validators.construction.UpdateValidatorMetadataConstructor;
+import com.radixdlt.application.validators.construction.UpdateValidatorSystemMetadataConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
@@ -82,12 +83,14 @@ import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.atom.actions.UpdateValidatorMetadata;
+import com.radixdlt.atom.actions.UpdateValidatorSystemMetadata;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.store.EngineStore;
@@ -127,6 +130,9 @@ public class RegisterValidatorTest {
                 .put(RegisterValidator.class, new RegisterValidatorConstructor())
                 .put(CreateSystem.class, new CreateSystemConstructorV2())
                 .put(UpdateValidatorMetadata.class, new UpdateValidatorMetadataConstructor())
+                .put(
+                    UpdateValidatorSystemMetadata.class,
+                    new UpdateValidatorSystemMetadataConstructor())
                 .put(UpdateValidatorFee.class, new UpdateRakeConstructor(2, 2000))
                 .build(),
             cm,
@@ -174,6 +180,9 @@ public class RegisterValidatorTest {
                     .action(
                         new UpdateValidatorMetadata(
                             key.getPublicKey(), "some_name", "http://test.com"))
+                    .action(
+                        new UpdateValidatorSystemMetadata(
+                            key.getPublicKey(), HashUtils.random(32).asBytes()))
                     .action(new UpdateValidatorFee(key.getPublicKey(), 2000)))
             .signAndBuild(key::sign);
     this.engine.execute(List.of(txn));
