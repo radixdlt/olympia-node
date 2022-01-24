@@ -67,8 +67,10 @@ package com.radixdlt.tree;
 import static com.radixdlt.tree.PMTPath.RemainingSubtree.EXISTING;
 import static com.radixdlt.tree.PMTPath.RemainingSubtree.NEW;
 
-import java.io.ByteArrayOutputStream;
+import com.google.common.primitives.Bytes;
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 public class PMTPath {
@@ -134,49 +136,42 @@ public class PMTPath {
     // INFO: Branch key doesn't exist
     if (current == null || current.isEmpty() || incoming.isEmpty()) {
       return new PMTPath(current, incoming, new PMTKey(new byte[0]));
-    } else {
-      byte[] currentNibs = current.getRaw();
-      byte[] incomingNibs = incoming.getRaw();
-
-      var shorter = Math.min(currentNibs.length, incomingNibs.length);
-      var longest = Math.max(currentNibs.length, incomingNibs.length);
-
-      ByteArrayOutputStream commonElementsStream = new ByteArrayOutputStream();
-
-      var commonLength = 0;
-      for (int i = 0; i < shorter; i++) {
-        if (currentNibs[i] == incomingNibs[i]) {
-          commonLength += 1;
-          commonElementsStream.write(currentNibs, i, 1);
-        } else {
-          break;
-        }
-      }
-      byte[] commonElements = commonElementsStream.toByteArray();
-
-      byte[] currentRem;
-      if (commonLength < currentNibs.length) {
-        currentRem = new byte[currentNibs.length - commonLength];
-        for (int i = 0; i < currentRem.length; i++) {
-          currentRem[i] = currentNibs[commonLength + i];
-        }
-      } else {
-        currentRem = new byte[0];
-      }
-
-      byte[] incomingRem;
-      if (commonLength < incomingNibs.length) {
-        incomingRem = new byte[incomingNibs.length - commonLength];
-        for (int i = 0; i < incomingRem.length; i++) {
-          incomingRem[i] = incomingNibs[commonLength + i];
-        }
-      } else {
-        incomingRem = new byte[0];
-      }
-
-      return new PMTPath(
-          new PMTKey(currentRem), new PMTKey(incomingRem), new PMTKey(commonElements));
     }
+
+    byte[] currentNibs = current.getRaw();
+    byte[] incomingNibs = incoming.getRaw();
+
+    var shorter = Math.min(currentNibs.length, incomingNibs.length);
+
+    List<Byte> commonElements = new ArrayList<>();
+    for (int i = 0; i < shorter; i++) {
+      if (currentNibs[i] == incomingNibs[i]) {
+        commonElements.add(currentNibs[i]);
+      } else {
+        break;
+      }
+    }
+
+    var commonLength = commonElements.size();
+
+    byte[] currentRem;
+    if (commonLength < currentNibs.length) {
+      currentRem = new byte[currentNibs.length - commonLength];
+      System.arraycopy(currentNibs, commonLength, currentRem, 0, currentRem.length);
+    } else {
+      currentRem = new byte[0];
+    }
+
+    byte[] incomingRem;
+    if (commonLength < incomingNibs.length) {
+      incomingRem = new byte[incomingNibs.length - commonLength];
+      System.arraycopy(incomingNibs, commonLength, incomingRem, 0, incomingRem.length);
+    } else {
+      incomingRem = new byte[0];
+    }
+
+    return new PMTPath(
+        new PMTKey(currentRem), new PMTKey(incomingRem), new PMTKey(Bytes.toArray(commonElements)));
   }
 
   public static byte[] intoNibbles(byte[] bytes) {
