@@ -46,6 +46,8 @@ jobs:
         with:
           is_release: ${{ steps.set_environment.outputs.is_release }}
           gradle_command: clean build -x test
+          GPR_USER: ${{ secrets.GPR_USER }}
+          GPR_TOKEN: ${{ secrets.GPR_TOKEN }}
       - name: Prepare Dockerfile context
         run: |
           unzip radixdlt-core/radixdlt/build/distributions/radixdlt-${{ steps.get_version.outputs.radixdlt_version }}.zip
