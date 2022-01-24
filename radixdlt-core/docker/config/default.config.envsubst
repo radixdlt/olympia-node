@@ -16,3 +16,5 @@ db.location=$RADIXDLT_DB_LOCATION
 api.port=$RADIXDLT_API_PORT
 api.bind.address=$RADIXDLT_HTTP_BIND_ADDRESS
 api.transactions.enable=$RADIXDLT_TRANSACTIONS_API_ENABLE
+
+tree.substate.enable=$RADIXDLT_SUBSTATE_TREE_ENABLE
