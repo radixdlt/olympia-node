@@ -147,7 +147,7 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
         isEpochChange = true;
       }
     }
-    watch.stop();
+
     if (isEpochChange) {
       epochRootHashDatabase.put(
           dbTxn, new DatabaseEntry(Longs.toByteArray(epoch)), new DatabaseEntry(rootHash));
@@ -159,6 +159,9 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
             watch.elapsed().toSeconds());
       }
       watch.reset();
+    }
+    if (watch.isRunning()) {
+      watch.stop();
     }
   }
 
