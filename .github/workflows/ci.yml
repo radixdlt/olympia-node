@@ -6,7 +6,6 @@ on:
     branches:
       - develop
       - release\/*
-      - DO-342-debug-rcnet-tests
 jobs:
   cancel_running_workflows:
     name: Cancel running workflows
