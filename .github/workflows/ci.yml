@@ -35,8 +35,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # SonarCloud access token should be generated from https://sonarcloud.io/account/security/
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          GPR_USER: ${{ secrets.GPR_USER }}
-          GPR_TOKEN: ${{ secrets.GPR_TOKEN }}
   integration:
     name: Integration tests
     runs-on: ubuntu-20.04
