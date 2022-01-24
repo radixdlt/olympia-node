@@ -6,6 +6,7 @@ on:
     branches:
       - develop
       - release\/*
+      - DO-342-debug-rcnet-tests
 jobs:
   cancel_running_workflows:
     name: Cancel running workflows
@@ -79,7 +80,7 @@ jobs:
         run: ./gradlew slowIntegrationTest --refresh-dependencies
   rcnet-testing:
     name: RCNet live network testing
-    if: github.ref == 'refs/heads/develop'
+    # if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -101,4 +102,5 @@ jobs:
           RADIXDLT_JSON_RPC_API_ROOT_URL: https://rcnet.radixdlt.com
           RADIXDLT_FAUCET_URL: https://rcnet-faucet.radixdlt.com
           RADIXDLT_BASIC_AUTH: ${{ secrets.BASIC_AUTH_RCNET_ADMIN }}
-
+          GPR_USER: ${{ secrets.GPR_USER }}
+          GPR_TOKEN: ${{ secrets.GPR_TOKEN }}
