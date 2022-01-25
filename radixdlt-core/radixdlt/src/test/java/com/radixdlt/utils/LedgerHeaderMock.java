@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2022 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,18 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.acceptance.transaction_lookup;
+package com.radixdlt.utils;
 
-import io.cucumber.junit.Cucumber;
-import io.cucumber.junit.CucumberOptions;
-import io.cucumber.junit.CucumberOptions.SnippetType;
-import org.junit.runner.RunWith;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.ledger.AccumulatorState;
 
-@RunWith(Cucumber.class)
-@CucumberOptions(
-    snippets = SnippetType.UNDERSCORE,
-    monochrome = true,
-    plugin = {"pretty"})
-public class RunTransactionLookup {
-  // Stub for running cucumber tests
+public class LedgerHeaderMock {
+  public static LedgerHeader get() {
+    return LedgerHeader.create(0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0);
+  }
 }

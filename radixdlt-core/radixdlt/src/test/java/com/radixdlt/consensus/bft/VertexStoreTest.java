@@ -234,8 +234,8 @@ public class VertexStoreTest {
         .dispatch(
             argThat(
                 u ->
-                    u.getCommitted().size() == 1
-                        && u.getCommitted().get(0).getVertex().equals(vertices.get(0))));
+                    u.committed().size() == 1
+                        && u.committed().get(0).getVertex().equals(vertices.get(0))));
   }
 
   @Test

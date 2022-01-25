@@ -78,6 +78,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.utils.LedgerHeaderMock;
 import java.util.List;
 import java.util.Optional;
 
@@ -90,7 +91,7 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
     View view = View.of(1234567891L);
     HashCode id = HashUtils.random256();
 
-    LedgerHeader ledgerHeader = LedgerHeader.mocked();
+    LedgerHeader ledgerHeader = LedgerHeaderMock.get();
     BFTHeader header = new BFTHeader(view, id, ledgerHeader);
     BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
     VoteData voteData = new VoteData(header, parent, null);
