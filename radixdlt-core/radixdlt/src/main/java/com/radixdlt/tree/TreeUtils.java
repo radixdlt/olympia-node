@@ -74,15 +74,6 @@ public class TreeUtils {
 
   private TreeUtils() {}
 
-  public static byte[] getFirstNibble(byte[] hash) {
-    byte[] nibble = new byte[4];
-    for (int i = 0; i <= 4; ++i) {
-      nibble[i] = hash[i];
-    }
-    // should we set it in a cache field for re-use?
-    return nibble;
-  }
-
   public static String toHexString(byte[] byteBuffer) {
     return IntStream.range(0, byteBuffer.length)
         .map(i -> byteBuffer[i] & 0xff)
