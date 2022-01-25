@@ -71,7 +71,6 @@ import com.radixdlt.harness.simulation.*;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -92,13 +91,13 @@ public class StaticValidatorsTest {
               LedgerMonitors.consensusToLedger(),
               LedgerMonitors.ordered());
 
-
-  private Map<Monitor, Optional<TestInvariant.TestInvariantError>> runTest(long epochRounds, long epochRoundsCheck) {
+  private Map<Monitor, Optional<TestInvariant.TestInvariantError>> runTest(
+      long epochRounds, long epochRoundsCheck) {
     SimulationTest bftTest =
-            bftTestBuilder
-                    .ledgerAndEpochs(View.of(epochRounds), e -> IntStream.range(0, 4))
-                    .addTestModules(ConsensusMonitors.epochCeilingView(View.of(epochRoundsCheck)))
-                    .build();
+        bftTestBuilder
+            .ledgerAndEpochs(View.of(epochRounds), e -> IntStream.range(0, 4))
+            .addTestModules(ConsensusMonitors.epochCeilingView(View.of(epochRoundsCheck)))
+            .build();
 
     return bftTest.run().awaitCompletion();
   }

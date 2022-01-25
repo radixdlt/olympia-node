@@ -108,9 +108,13 @@ public final class MaxLedgerSyncLagInvariant implements TestInvariant {
                           Observable.just(
                               new TestInvariantError(
                                   String.format(
-                                      "Node %s ledger sync lag (%s) at version %s exceeded maximum of %s state"
-                                          + " versions",
-                                      e.getKey(), maxStateVersion - e.getValue().get(CounterType.LEDGER_STATE_VERSION), e.getValue().get(CounterType.LEDGER_STATE_VERSION), maxLag))))
+                                      "Node %s ledger sync lag (%s) at version %s exceeded maximum"
+                                          + " of %s state versions",
+                                      e.getKey(),
+                                      maxStateVersion
+                                          - e.getValue().get(CounterType.LEDGER_STATE_VERSION),
+                                      e.getValue().get(CounterType.LEDGER_STATE_VERSION),
+                                      maxLag))))
                   .orElse(Observable.empty());
             });
   }
