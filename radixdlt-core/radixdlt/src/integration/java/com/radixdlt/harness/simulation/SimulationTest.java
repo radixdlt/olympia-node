@@ -101,6 +101,7 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.harness.MockedPeersViewModule;
+import com.radixdlt.harness.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.harness.simulation.application.BFTValidatorSetNodeSelector;
 import com.radixdlt.harness.simulation.application.EpochsNodeSelector;
 import com.radixdlt.harness.simulation.application.LocalMempoolPeriodicSubmitter;
@@ -648,12 +649,12 @@ public class SimulationTest {
     return new Builder();
   }
 
-  private Observable<Pair<Monitor, Optional<TestInvariant.TestInvariantError>>> runChecks(
+  private Observable<Pair<Monitor, Optional<TestInvariantError>>> runChecks(
       Set<SimulationNetworkActor> runners,
       Map<Monitor, TestInvariant> checkers,
       SimulationNodes.RunningNetwork runningNetwork,
       Duration duration) {
-    List<Pair<Monitor, Observable<Pair<Monitor, TestInvariant.TestInvariantError>>>> assertions =
+    List<Pair<Monitor, Observable<Pair<Monitor, TestInvariantError>>>> assertions =
         checkers.keySet().stream()
             .map(
                 name -> {
@@ -673,7 +674,7 @@ public class SimulationTest {
             .firstOrError()
             .map(Pair::getFirst);
 
-    List<Single<Pair<Monitor, Optional<TestInvariant.TestInvariantError>>>> results =
+    List<Single<Pair<Monitor, Optional<TestInvariantError>>>> results =
         assertions.stream()
             .map(
                 assertion ->
@@ -780,12 +781,11 @@ public class SimulationTest {
 
   public static final class RunningSimulationTest {
 
-    private final Observable<Pair<Monitor, Optional<TestInvariant.TestInvariantError>>>
-        resultObservable;
+    private final Observable<Pair<Monitor, Optional<TestInvariantError>>> resultObservable;
     private final SimulationNodes.RunningNetwork network;
 
     private RunningSimulationTest(
-        Observable<Pair<Monitor, Optional<TestInvariant.TestInvariantError>>> resultObservable,
+        Observable<Pair<Monitor, Optional<TestInvariantError>>> resultObservable,
         SimulationNodes.RunningNetwork network) {
       this.resultObservable = resultObservable;
       this.network = network;
@@ -795,7 +795,7 @@ public class SimulationTest {
       return network;
     }
 
-    public Map<Monitor, Optional<TestInvariant.TestInvariantError>> awaitCompletion() {
+    public Map<Monitor, Optional<TestInvariantError>> awaitCompletion() {
       return this.resultObservable
           .blockingStream()
           .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
