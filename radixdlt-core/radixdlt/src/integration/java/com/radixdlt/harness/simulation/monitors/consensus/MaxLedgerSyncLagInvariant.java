@@ -88,11 +88,11 @@ public final class MaxLedgerSyncLagInvariant implements TestInvariant {
         .ledgerUpdates()
         .flatMap(
             unused -> {
-              final var maxStateVersion =
+              final long maxStateVersion =
                   network.getSystemCounters().values().stream()
                       .map(sc -> sc.get(SystemCounters.CounterType.LEDGER_STATE_VERSION))
                       .max(Long::compareTo)
-                      .get();
+                      .orElse(0L);
 
               final var maybeTooMuchLag =
                   network.getSystemCounters().entrySet().stream()
@@ -108,9 +108,9 @@ public final class MaxLedgerSyncLagInvariant implements TestInvariant {
                           Observable.just(
                               new TestInvariantError(
                                   String.format(
-                                      "Node %s ledger sync lag exceeded maximum of %s state"
+                                      "Node %s ledger sync lag (%s) at version %s exceeded maximum of %s state"
                                           + " versions",
-                                      e.getKey(), maxLag))))
+                                      e.getKey(), maxStateVersion - e.getValue().get(CounterType.LEDGER_STATE_VERSION), e.getValue().get(CounterType.LEDGER_STATE_VERSION), maxLag))))
                   .orElse(Observable.empty());
             });
   }

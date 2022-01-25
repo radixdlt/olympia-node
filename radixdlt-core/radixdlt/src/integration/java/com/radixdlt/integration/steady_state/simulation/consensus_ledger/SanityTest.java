@@ -84,6 +84,7 @@ public class SanityTest {
       SimulationTest.builder()
           .numNodes(4)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .pacemakerTimeout(1000)
           .ledger()
           .addTestModules(
               ConsensusMonitors.safety(),

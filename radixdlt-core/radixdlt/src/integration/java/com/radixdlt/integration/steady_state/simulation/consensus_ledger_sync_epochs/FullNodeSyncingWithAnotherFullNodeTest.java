@@ -95,7 +95,7 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
   private static final ImmutableList<Integer> VALIDATORS = ImmutableList.of(0, 1);
   private static final int NON_VALIDATOR_SYNC_NODE = 2;
   private static final int NODE_UNDER_TEST = 3;
-  private static final int MAX_LEDGER_SYNC_LAG = 300;
+  private static final int MAX_LEDGER_SYNC_LAG = 500;
 
   private final Builder testBuilder;
 
