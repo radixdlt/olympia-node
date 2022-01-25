@@ -76,21 +76,18 @@ import com.radixdlt.api.core.openapitools.model.StateIdentifier;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.utils.Bytes;
-import java.util.TreeMap;
 
 public final class EngineConfigurationHandler
     extends CoreJsonRpcHandler<EngineConfigurationRequest, EngineConfigurationResponse> {
-  private final TreeMap<Long, ForkConfig> forks;
+  private final Forks forks;
   private final CoreModelMapper modelMapper;
   private final VerifiedTxnsAndProof genesis;
 
   @Inject
   public EngineConfigurationHandler(
-      @Genesis VerifiedTxnsAndProof genesis,
-      TreeMap<Long, ForkConfig> forks,
-      CoreModelMapper modelMapper) {
+      @Genesis VerifiedTxnsAndProof genesis, Forks forks, CoreModelMapper modelMapper) {
     super(EngineConfigurationRequest.class);
     this.genesis = genesis;
     this.forks = forks;
@@ -103,7 +100,7 @@ public final class EngineConfigurationHandler
     modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
     var response = new EngineConfigurationResponse();
-    forks.forEach((epoch, config) -> response.addForksItem(modelMapper.fork(config)));
+    forks.forkConfigs().forEach(forkConfig -> response.addForksItem(modelMapper.fork(forkConfig)));
     response.addCheckpointsItem(genesisCheckpoint());
     return response;
   }

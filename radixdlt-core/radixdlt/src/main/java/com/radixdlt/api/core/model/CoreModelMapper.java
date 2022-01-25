@@ -129,8 +129,9 @@ import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
+import com.radixdlt.statecomputer.forks.CandidateForkConfig;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
@@ -154,13 +155,14 @@ public final class CoreModelMapper {
   private static final ECPublicKey MOCK_PUBLIC_KEY = PrivateKeys.ofNumeric(1).getPublicKey();
   private final Addressing addressing;
   private final Network network;
-  private final Forks forks;
+  private final CurrentForkView currentForkView;
 
   @Inject
-  CoreModelMapper(@NetworkId int networkId, Addressing addressing, Forks forks) {
+  CoreModelMapper(
+      @NetworkId int networkId, Addressing addressing, CurrentForkView currentForkView) {
     this.network = Network.ofId(networkId).orElseThrow();
     this.addressing = addressing;
-    this.forks = forks;
+    this.currentForkView = currentForkView;
   }
 
   public void verifyNetwork(NetworkIdentifier networkIdentifier) throws CoreApiException {
@@ -471,7 +473,7 @@ public final class CoreModelMapper {
       entityOperationGroups.add(entityOperationGroup);
     }
 
-    return new OperationTxBuilder(message, entityOperationGroups, forks);
+    return new OperationTxBuilder(message, entityOperationGroups, currentForkView);
   }
 
   public Txn txn(String hex) throws CoreApiException {
@@ -803,17 +805,14 @@ public final class CoreModelMapper {
   }
 
   public Fork fork(ForkConfig forkConfig) {
-    return null;
-    // TODO(luk): fixme
-    /*
     return new Fork()
-        .forkIdentifier(
-            new ForkIdentifier().epoch(forkConfig.getEpoch()).fork(forkConfig.getName()))
+        .name(forkConfig.name())
+        .hash(forkConfig.hash().toString())
+        .isCandidate(forkConfig instanceof CandidateForkConfig)
         .engineIdentifier(
-            new EngineIdentifier().engine(forkConfig.getVersion().name().toLowerCase()))
-        .engineConfiguration(engineConfiguration(forkConfig.getConfig()));
-
-     */
+            new EngineIdentifier()
+                .engine(forkConfig.engineRules().getVersion().name().toLowerCase()))
+        .engineConfiguration(engineConfiguration(forkConfig.engineRules().getConfig()));
   }
 
   public DataObject tokenData(TokenResource tokenResource) {

@@ -67,28 +67,41 @@ package com.radixdlt.statecomputer;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.environment.EventProcessorOnRunner;
+import com.radixdlt.environment.Runners;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksEpochStore;
-import com.radixdlt.statecomputer.forks.InitialForkConfig;
 import com.radixdlt.statecomputer.forks.LatestForkConfig;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
+import java.util.Map;
 import java.util.OptionalInt;
 
 /** Module which manages execution of commands */
 public class RadixEngineModule extends AbstractModule {
   @Provides
   @Singleton
-  @InitialForkConfig
-  private ForkConfig initialForkConfig(
+  private CurrentForkView currentForkView(
       CommittedReader committedReader, ForksEpochStore forksEpochStore, Forks forks) {
     forks.init(committedReader, forksEpochStore);
-    return forks.getCurrentFork(forksEpochStore.getEpochsForkHashes());
+
+    final var maybeLatestForkHash =
+        forksEpochStore.getEpochsForkHashes().entrySet().stream()
+            .max((a, b) -> (int) (a.getKey() - b.getKey()))
+            .map(Map.Entry::getValue);
+
+    final var initialForkConfig =
+        maybeLatestForkHash.flatMap(forks::getByHash).orElseGet(forks::genesisFork);
+
+    return new CurrentForkView(forks, initialForkConfig);
   }
 
   @Provides
@@ -101,39 +114,39 @@ public class RadixEngineModule extends AbstractModule {
   // TODO: Remove
   @Provides
   @Singleton
-  private REParser parser(@InitialForkConfig ForkConfig forkConfig) {
-    return forkConfig.engineRules().getParser();
+  private REParser parser(CurrentForkView currentForkView) {
+    return currentForkView.currentForkConfig().engineRules().getParser();
   }
 
   // TODO: Remove
   @Provides
   @Singleton
   @MaxSigsPerRound
-  private OptionalInt maxSigsPerRound(@InitialForkConfig ForkConfig forkConfig) {
-    return forkConfig.engineRules().getMaxSigsPerRound();
+  private OptionalInt maxSigsPerRound(CurrentForkView currentForkView) {
+    return currentForkView.currentForkConfig().engineRules().getMaxSigsPerRound();
   }
 
   // TODO: Remove
   @Provides
   @Singleton
   @EpochCeilingView
-  private View epochCeilingHighView(@InitialForkConfig ForkConfig forkConfig) {
-    return forkConfig.engineRules().getMaxRounds();
+  private View epochCeilingHighView(CurrentForkView currentForkView) {
+    return currentForkView.currentForkConfig().engineRules().getMaxRounds();
   }
 
   // TODO: Remove
   @Provides
   @Singleton
   @MaxValidators
-  private int maxValidators(@InitialForkConfig ForkConfig forkConfig) {
-    return forkConfig.engineRules().getMaxValidators();
+  private int maxValidators(CurrentForkView currentForkView) {
+    return currentForkView.currentForkConfig().engineRules().getMaxValidators();
   }
 
   @Provides
   @Singleton
   private RadixEngine<LedgerAndBFTProof> getRadixEngine(
-      EngineStore<LedgerAndBFTProof> engineStore, @InitialForkConfig ForkConfig forkConfig) {
-    final var rules = forkConfig.engineRules();
+      EngineStore<LedgerAndBFTProof> engineStore, CurrentForkView currentForkView) {
+    final var rules = currentForkView.currentForkConfig().engineRules();
     final var cmConfig = rules.getConstraintMachineConfig();
     var cm =
         new ConstraintMachine(
@@ -148,5 +161,13 @@ public class RadixEngineModule extends AbstractModule {
         cm,
         engineStore,
         rules.getPostProcessor());
+  }
+
+  @ProvidesIntoSet
+  public EventProcessorOnRunner<?> ledgerUpdateEventProcessorCurrentForkView(
+      CurrentForkView currentForkView) {
+    return new EventProcessorOnRunner<>(
+        // TODO: does it require a new runner?
+        Runners.SYNC, LedgerUpdate.class, currentForkView.ledgerUpdateEventProcessor());
   }
 }

@@ -64,8 +64,8 @@
 
 package com.radixdlt.api.service;
 
-import static com.radixdlt.api.service.ForkVoteStatusService.ForkVoteStatus.NO_ACTION_NEEDED;
-import static com.radixdlt.api.service.ForkVoteStatusService.ForkVoteStatus.VOTE_REQUIRED;
+import static com.radixdlt.api.system.health.ForkVoteStatusService.ForkVoteStatus.NO_ACTION_NEEDED;
+import static com.radixdlt.api.system.health.ForkVoteStatusService.ForkVoteStatus.VOTE_REQUIRED;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -73,17 +73,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.hash.HashCode;
+import com.radixdlt.api.system.health.ForkVoteStatusService;
 import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.CloseableCursor;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.CandidateForkConfig;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
@@ -92,7 +90,6 @@ import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RERulesVersion;
 import com.radixdlt.store.EngineStore;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.Set;
 import org.junit.Test;
 
@@ -111,11 +108,15 @@ public final class ForkVoteStatusServiceTest {
         new CandidateForkConfig("fork2", HashCode.fromInt(2), reRules, 5100, 2L);
     final var forks = Forks.create(Set.of(initialFork, candidateFork));
 
-    final var forkVoteStatusService =
-        new ForkVoteStatusService(self, engineStore, forks, initialFork);
+    final var currentForkView = mock(CurrentForkView.class);
+    when(currentForkView.currentForkConfig()).thenReturn(initialFork);
 
     when(engineStore.openIndexedCursor(any()))
         .thenAnswer(unused -> votesOf(candidateFork, otherNode));
+
+    final var forkVoteStatusService =
+        new ForkVoteStatusService(self, engineStore, forks, currentForkView);
+
     assertEquals(VOTE_REQUIRED, forkVoteStatusService.forkVoteStatus());
 
     when(engineStore.openIndexedCursor(any()))
@@ -132,37 +133,14 @@ public final class ForkVoteStatusServiceTest {
     final var nextFork = new FixedEpochForkConfig("fork2", HashCode.fromInt(2), reRules, 2L);
     final var forks = Forks.create(Set.of(initialFork, nextFork));
 
+    final var currentForkView = mock(CurrentForkView.class);
+    when(currentForkView.currentForkConfig()).thenReturn(initialFork);
+
     final var forkVoteStatusService =
-        new ForkVoteStatusService(self, engineStore, forks, initialFork);
+        new ForkVoteStatusService(self, engineStore, forks, currentForkView);
 
     assertEquals(NO_ACTION_NEEDED, forkVoteStatusService.forkVoteStatus());
     verifyNoInteractions(engineStore);
-  }
-
-  @Test
-  public void should_keep_track_of_current_fork_config() {
-    final var self = BFTNode.random();
-    @SuppressWarnings("unchecked")
-    final var engineStore = (EngineStore<LedgerAndBFTProof>) rmock(EngineStore.class);
-    final var initialFork = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), reRules, 0L);
-    final var nextFork = new FixedEpochForkConfig("fork2", HashCode.fromInt(2), reRules, 2L);
-    final var forks = Forks.create(Set.of(initialFork, nextFork));
-
-    final var forkVoteStatusService =
-        new ForkVoteStatusService(self, engineStore, forks, initialFork);
-
-    assertEquals("fork1", forkVoteStatusService.currentForkConfig().name());
-
-    final var ledgerAndBftProof =
-        LedgerAndBFTProof.create(
-            mock(LedgerProof.class), null, Optional.of(HashCode.fromInt(2)), Optional.empty());
-    final var ledgerUpdate =
-        new LedgerUpdate(
-            mock(VerifiedTxnsAndProof.class),
-            ImmutableClassToInstanceMap.of(LedgerAndBFTProof.class, ledgerAndBftProof));
-    forkVoteStatusService.ledgerUpdateEventProcessor().process(ledgerUpdate);
-
-    assertEquals("fork2", forkVoteStatusService.currentForkConfig().name());
   }
 
   private CloseableCursor<RawSubstateBytes> votesOf(ForkConfig forkConfig, BFTNode... nodes) {

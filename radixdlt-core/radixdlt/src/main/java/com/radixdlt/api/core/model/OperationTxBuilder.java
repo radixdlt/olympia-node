@@ -69,7 +69,7 @@ import com.radixdlt.api.core.openapitools.model.Data;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
@@ -80,13 +80,15 @@ import java.util.function.Supplier;
 public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
   private final List<List<EntityOperation>> operationGroups;
   private final String message;
-  private final Forks forks;
+  private final CurrentForkView currentForkView;
 
   public OperationTxBuilder(
-      String message, List<List<EntityOperation>> operationGroups, Forks forks) {
+      String message,
+      List<List<EntityOperation>> operationGroups,
+      CurrentForkView currentForkView) {
     this.message = message;
     this.operationGroups = operationGroups;
-    this.forks = forks;
+    this.currentForkView = currentForkView;
   }
 
   private void executeResourceOperation(
@@ -150,13 +152,7 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
   @Override
   public void execute(TxBuilder txBuilder) throws TxBuilderException {
     final var configSupplier =
-        Suppliers.memoize(
-            () -> {
-              //          var epochData = txBuilder.findSystem(EpochData.class);
-              //          return forks.get(epochData.getEpoch()).getConfig();
-              return forks.latestFork().engineRules().getConfig(); // TODO(luk): fixme
-            });
-
+        Suppliers.memoize(() -> currentForkView.currentForkConfig().engineRules().getConfig());
     for (var operationGroup : this.operationGroups) {
       for (var operation : operationGroup) {
         execute(operation, txBuilder, configSupplier);

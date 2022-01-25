@@ -92,6 +92,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.integration.distributed.simulation.NodeNetworkMessagesModule;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.InMemoryForksEpochStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.sync.InMemoryCommittedReader;
@@ -125,8 +126,6 @@ public class SimulationNodes {
     this.baseModule = baseModule;
     this.overrideModules = overrideModules;
     this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
-    this.nodeInstances =
-        nodes.stream().map(this::createBFTInstance).collect(ImmutableList.toImmutableList());
   }
 
   private Module createBFTModule(ECKeyPair self) {
@@ -339,9 +338,12 @@ public class SimulationNodes {
                     new AbstractModule() {
                       @Override
                       protected void configure() {
-                        bind(InMemoryEngineStore.Store.class)
+                        bind(new TypeLiteral<InMemoryEngineStore.Store<LedgerAndBFTProof>>() {})
                             .toInstance(
-                                existingNode.getInstance(InMemoryEngineStore.class).getStore());
+                                existingNode
+                                    .getInstance(
+                                        new Key<InMemoryEngineStore<LedgerAndBFTProof>>() {})
+                                    .getStore());
                         bind(InMemoryCommittedReader.Store.class)
                             .toInstance(
                                 existingNode.getInstance(InMemoryCommittedReader.class).getStore());

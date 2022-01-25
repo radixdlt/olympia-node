@@ -67,20 +67,20 @@ package com.radixdlt.store;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.serialization.Serialization;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 public class MockedRadixEngineStoreModule extends AbstractModule {
   @Override
   public void configure() {
-    bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
-    bind(InMemoryEngineStore.Store.class).toInstance(new InMemoryEngineStore.Store());
+    bind(new TypeLiteral<InMemoryEngineStore.Store<LedgerAndBFTProof>>() {})
+        .toInstance(new InMemoryEngineStore.Store<>());
   }
 
   @Provides
   @Singleton
-  private EngineStore<LedgerAndBFTProof> engineStore(InMemoryEngineStore.Store store) {
+  private EngineStore<LedgerAndBFTProof> engineStore(
+      InMemoryEngineStore.Store<LedgerAndBFTProof> store) {
     return new InMemoryEngineStore<>(store);
   }
 }

@@ -65,25 +65,32 @@
 package com.radixdlt.api.system;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.service.ForkVoteStatusService;
-import com.radixdlt.api.service.PeersForksHashesInfoService;
+import com.radixdlt.api.system.health.ForkVoteStatusService;
 import com.radixdlt.api.system.health.HealthInfoService;
+import com.radixdlt.api.system.health.PeersForksHashesInfoService;
 import com.radixdlt.api.system.openapitools.model.ExecutedFork;
 import com.radixdlt.api.system.openapitools.model.HealthResponse;
 import com.radixdlt.api.system.openapitools.model.HealthResponseUnknownReportedForksHashes;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.statecomputer.forks.CandidateForkConfig;
-import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForksEpochStore;
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.radix.time.Time;
 
 final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
+  private static final Duration FORK_VOTE_STATUS_REFRESH_INTERVAL = Duration.ofSeconds(5);
+
   private final HealthInfoService healthInfoService;
   private final ForkVoteStatusService forkVoteStatusService;
   private final PeersForksHashesInfoService peersForksHashesInfoService;
   private final ForksEpochStore forksEpochStore;
+  private final CurrentForkView currentForkView;
   private final Addressing addressing;
+
+  private ForkVoteStatusService.ForkVoteStatus cachedForkVoteStatus;
+  private Long latestForkVoteStatusRefreshTime;
 
   @Inject
   HealthHandler(
@@ -91,11 +98,13 @@ final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
       ForkVoteStatusService forkVoteStatusService,
       PeersForksHashesInfoService peersForksHashesInfoService,
       ForksEpochStore forksEpochStore,
+      CurrentForkView currentForkView,
       Addressing addressing) {
     this.healthInfoService = healthInfoService;
     this.forkVoteStatusService = forkVoteStatusService;
     this.peersForksHashesInfoService = peersForksHashesInfoService;
     this.forksEpochStore = forksEpochStore;
+    this.currentForkView = currentForkView;
     this.addressing = addressing;
   }
 
@@ -109,31 +118,31 @@ final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
           case STALLED -> HealthResponse.NetworkStatusEnum.STALLED;
           case OUT_OF_SYNC -> HealthResponse.NetworkStatusEnum.OUT_OF_SYNC;
         };
+
+    // just a small cache so that we don't access the DB on every call
+    final var now = Time.currentTimestamp();
+    if (cachedForkVoteStatus == null
+        || now - latestForkVoteStatusRefreshTime > FORK_VOTE_STATUS_REFRESH_INTERVAL.toMillis()) {
+      this.cachedForkVoteStatus = forkVoteStatusService.forkVoteStatus();
+      this.latestForkVoteStatusRefreshTime = now;
+    }
+
     final var forkVoteStatus =
-        switch (forkVoteStatusService.forkVoteStatus()) {
+        switch (cachedForkVoteStatus) {
           case VOTE_REQUIRED -> HealthResponse.ForkVoteStatusEnum.VOTE_REQUIRED;
           case NO_ACTION_NEEDED -> HealthResponse.ForkVoteStatusEnum.NO_ACTION_NEEDED;
         };
     return new HealthResponse()
         .networkStatus(networkStatus)
-        .currentFork(toModelForkConfig(forkVoteStatusService.currentForkConfig()))
+        .currentForkHash(currentForkView.currentForkConfig().hash().toString())
         .executedForks(prepareExecutedForks())
         .forkVoteStatus(forkVoteStatus)
         .unknownReportedForksHashes(prepareUnknownReportedForksHashes());
   }
 
-  private com.radixdlt.api.system.openapitools.model.ForkConfig toModelForkConfig(
-      ForkConfig forkConfig) {
-    return new com.radixdlt.api.system.openapitools.model.ForkConfig()
-        .name(forkConfig.name())
-        .hash(forkConfig.hash().toString())
-        .isCandidate(forkConfig instanceof CandidateForkConfig)
-        .version(forkConfig.engineRules().getVersion().name());
-  }
-
   private List<ExecutedFork> prepareExecutedForks() {
     return forksEpochStore.getEpochsForkHashes().entrySet().stream()
-        .map(e -> new ExecutedFork().epoch(e.getKey()).forkHash(e.getValue().toString()))
+        .map(e -> new ExecutedFork().epoch(e.getKey()).hash(e.getValue().toString()))
         .collect(Collectors.toList());
   }
 
@@ -146,7 +155,7 @@ final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
                       .map(addressing.forValidators()::of)
                       .collect(Collectors.toList());
               return new HealthResponseUnknownReportedForksHashes()
-                  .forkHash(e.getKey().toString())
+                  .hash(e.getKey().toString())
                   .reportedBy(reportedByList);
             })
         .collect(Collectors.toList());

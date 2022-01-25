@@ -88,10 +88,10 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.GenesisProvider;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForkBuilder;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.InitialForkConfig;
 import com.radixdlt.statecomputer.forks.LatestForkConfig;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.utils.Bytes;
@@ -186,18 +186,19 @@ public final class GenerateUniverses {
                         new AbstractModule() {
                           @Provides
                           @Singleton
-                          private Forks forks(@InitialForkConfig ForkConfig initialForkConfig) {
+                          private Forks forks(Set<ForkBuilder> forkBuilders) {
+                            final var initialForkConfig =
+                                forkBuilders.stream()
+                                    .min((a, b) -> (int) (a.epoch() - b.epoch()))
+                                    .get()
+                                    .build();
                             return Forks.create(Set.of(initialForkConfig));
                           }
 
                           @Provides
                           @Singleton
-                          @InitialForkConfig
-                          private ForkConfig initialForkConfig(Set<ForkBuilder> forkBuilders) {
-                            return forkBuilders.stream()
-                                .min((a, b) -> (int) (a.epoch() - b.epoch()))
-                                .get()
-                                .build();
+                          private CurrentForkView currentForkView(Forks forks) {
+                            return new CurrentForkView(forks, forks.genesisFork());
                           }
 
                           @Provides

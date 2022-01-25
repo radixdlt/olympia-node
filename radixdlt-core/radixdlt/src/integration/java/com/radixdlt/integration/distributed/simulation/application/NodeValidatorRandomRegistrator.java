@@ -64,6 +64,7 @@
 
 package com.radixdlt.integration.distributed.simulation.application;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
@@ -108,13 +109,11 @@ public final class NodeValidatorRandomRegistrator implements SimulationTest.Simu
                   }
 
                   var radixEngine =
-                      network
-                          .getNodeInjector(node)
-                          .getInstance(
-                              Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() {}));
+                      network.getInstance(
+                          Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() {}), node);
                   var radixEngineStateComputer =
-                      network.getNodeInjector(node).getInstance(RadixEngineStateComputer.class);
-                  var hashSigner = network.getNodeInjector(node).getInstance(HashSigner.class);
+                      network.getInstance(RadixEngineStateComputer.class, node);
+                  var hashSigner = network.getInstance(HashSigner.class, node);
 
                   var txBuilder =
                       radixEngine.construct(

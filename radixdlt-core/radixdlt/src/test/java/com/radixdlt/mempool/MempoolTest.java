@@ -96,9 +96,8 @@ import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.InitialForkConfig;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
@@ -125,7 +124,7 @@ public class MempoolTest {
   @Inject private RadixEngineStateComputer stateComputer;
   @Inject private SystemCounters systemCounters;
   @Inject private PeersView peersView;
-  @Inject @InitialForkConfig private ForkConfig forkConfig;
+  @Inject private CurrentForkView currentForkView;
   @Inject @MempoolRelayInitialDelay private long initialDelay;
   @Inject @MempoolRelayRepeatDelay private long repeatDelay;
 
@@ -155,7 +154,8 @@ public class MempoolTest {
 
   private Txn createTxn(ECKeyPair keyPair, int numMutexes) throws Exception {
     TxLowLevelBuilder atomBuilder =
-        TxLowLevelBuilder.newBuilder(forkConfig.engineRules().getSerialization());
+        TxLowLevelBuilder.newBuilder(
+            currentForkView.currentForkConfig().engineRules().getSerialization());
     for (int i = 0; i < numMutexes; i++) {
       var symbol = "test" + (char) ('c' + i);
       var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);

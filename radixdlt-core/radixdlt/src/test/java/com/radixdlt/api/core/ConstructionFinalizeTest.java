@@ -91,7 +91,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
@@ -110,7 +110,7 @@ public class ConstructionFinalizeTest extends ApiTest {
   @Inject private CoreModelMapper coreModelMapper;
   @Inject @Self private ECPublicKey self;
   @Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
-  @Inject private Forks forks;
+  @Inject private CurrentForkView currentForkView;
 
   private UnsignedTxnData buildUnsignedTransferTxn(REAddr from, REAddr to) throws Exception {
     final UInt256 toTransfer =
@@ -126,7 +126,7 @@ public class ConstructionFinalizeTest extends ApiTest {
                     new AccountVaultEntity(to),
                     ResourceOperation.deposit(
                         new TokenResource("xrd", REAddr.ofNativeToken()), toTransfer))));
-    var operationTxBuilder = new OperationTxBuilder(null, entityOperationGroups, forks);
+    var operationTxBuilder = new OperationTxBuilder(null, entityOperationGroups, currentForkView);
     var builder =
         radixEngine.constructWithFees(
             operationTxBuilder, false, from, NotEnoughNativeTokensForFeesException::new);

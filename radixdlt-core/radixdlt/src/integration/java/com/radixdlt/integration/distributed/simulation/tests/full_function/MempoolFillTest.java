@@ -69,7 +69,6 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.api.node.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;

@@ -78,7 +78,6 @@ import com.radixdlt.statecomputer.NextCandidateForkPostProcessor;
 import com.radixdlt.statecomputer.NextFixedEpochForkPostProcessor;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.UInt256;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -392,15 +391,6 @@ public final class Forks {
                         e.getValue(), e.getKey()));
               }
             });
-  }
-
-  public ForkConfig getCurrentFork(ImmutableMap<Long, HashCode> storedForks) {
-    final var maybeLatestForkHash =
-        storedForks.entrySet().stream()
-            .max((a, b) -> (int) (a.getKey() - b.getKey()))
-            .map(Map.Entry::getValue);
-
-    return maybeLatestForkHash.flatMap(this::getByHash).orElseGet(this::genesisFork);
   }
 
   public static boolean testCandidate(

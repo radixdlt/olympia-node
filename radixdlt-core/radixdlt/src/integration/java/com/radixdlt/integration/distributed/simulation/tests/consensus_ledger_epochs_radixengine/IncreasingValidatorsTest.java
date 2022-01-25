@@ -88,9 +88,7 @@ public class IncreasingValidatorsTest {
       SimulationTest.builder()
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
           .pacemakerTimeout(3000)
-          .numNodes(
-              10) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware /*
-          // TODO(luk): bylo 50 - sprawdzic i zmienic */
+          .numNodes(50) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware
           // pacemaker
           .addRadixEngineConfigModules(
               new RadixEngineForksLatestOnlyModule(

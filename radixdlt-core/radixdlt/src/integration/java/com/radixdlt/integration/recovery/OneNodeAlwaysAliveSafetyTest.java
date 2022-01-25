@@ -64,6 +64,7 @@
 
 package com.radixdlt.integration.recovery;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -99,6 +100,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;

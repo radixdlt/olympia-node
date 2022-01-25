@@ -72,6 +72,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.hash.HashCode;
+import com.radixdlt.api.system.health.PeersForksHashesInfoService;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;

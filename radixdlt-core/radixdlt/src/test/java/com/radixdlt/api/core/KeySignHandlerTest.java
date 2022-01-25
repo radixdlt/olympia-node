@@ -84,7 +84,7 @@ import com.radixdlt.api.core.openapitools.model.UnexpectedError;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
@@ -93,7 +93,7 @@ import org.junit.Test;
 
 public class KeySignHandlerTest extends ApiTest {
   @Inject private KeySignHandler sut;
-  @Inject private Forks forks;
+  @Inject private CurrentForkView currentForkView;
   @Inject private CoreModelMapper mapper;
   @Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
 
@@ -109,7 +109,7 @@ public class KeySignHandlerTest extends ApiTest {
                     new AccountVaultEntity(to),
                     ResourceOperation.deposit(
                         new TokenResource("xrd", REAddr.ofNativeToken()), UInt256.ONE))));
-    var operationTxBuilder = new OperationTxBuilder(null, entityOperationGroups, forks);
+    var operationTxBuilder = new OperationTxBuilder(null, entityOperationGroups, currentForkView);
     var builder =
         radixEngine.constructWithFees(
             operationTxBuilder, false, from, NotEnoughNativeTokensForFeesException::new);

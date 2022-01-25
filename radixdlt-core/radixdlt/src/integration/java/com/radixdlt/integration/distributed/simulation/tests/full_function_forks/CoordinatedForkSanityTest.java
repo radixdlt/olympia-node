@@ -68,11 +68,14 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.application.NodeApplicationRequest;
+import com.google.inject.Key;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -82,9 +85,12 @@ import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMon
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.UInt256;
@@ -98,14 +104,13 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public final class CoordinatedForkSanityTest {
+  private static final int NUM_VALIDATORS = 4;
   private final Builder bftTestBuilder;
-
-  private final int numValidators = 4;
 
   public CoordinatedForkSanityTest() {
     bftTestBuilder =
         SimulationTest.builder()
-            .numNodes(numValidators, Collections.nCopies(numValidators, UInt256.ONE))
+            .numNodes(NUM_VALIDATORS, Collections.nCopies(NUM_VALIDATORS, UInt256.ONE))
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
             .fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
             .addRadixEngineConfigModules(new MockedForksModule(2), new ForksModule())
@@ -213,23 +218,29 @@ public final class CoordinatedForkSanityTest {
     final var forks = network.getInstance(Forks.class, node);
     final var maybeForkVoteHash =
         forks.getCandidateFork().map(f -> ForkConfig.voteHash(node.getKey(), f));
-    final var txRequest =
-        TxnConstructionRequest.create()
-            .updateValidatorSystemMetadata(
-                node.getKey(), maybeForkVoteHash.orElseGet(HashUtils::zero256));
-    network
-        .getDispatcher(NodeApplicationRequest.class, node)
-        .dispatch(NodeApplicationRequest.create(txRequest));
+    final var keyPair = network.getInstance(ECKeyPair.class, node);
+    try {
+      final var txRequest =
+          network
+              .getInstance(new Key<RadixEngine<LedgerAndBFTProof>>() {}, node)
+              .construct(
+                  TxnConstructionRequest.create()
+                      .updateValidatorSystemMetadata(
+                          node.getKey(), maybeForkVoteHash.orElseGet(HashUtils::zero256)))
+              .signAndBuild(keyPair::sign);
+      network.getInstance(RadixEngineStateComputer.class, node).addToMempool(txRequest);
+    } catch (TxBuilderException | MempoolRejectedException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private boolean verifyCurrentFork(RunningNetwork network, ForkConfig forkConfig) {
     return network.getNodes().stream()
         .allMatch(
             node -> {
-              final var forks = network.getInstance(Forks.class, node);
-              final var epochsForks =
-                  network.getInstance(ForksEpochStore.class, node).getEpochsForkHashes();
-              return forks.getCurrentFork(epochsForks).hash().equals(forkConfig.hash());
+              final var nodeFork =
+                  network.getInstance(CurrentForkView.class, node).currentForkConfig();
+              return nodeFork.hash().equals(forkConfig.hash());
             });
   }
 }

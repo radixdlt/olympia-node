@@ -248,7 +248,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
     }
   }
 
-  public Store getStore() {
+  public Store<M> getStore() {
     return store;
   }
 }

@@ -126,7 +126,6 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.recovery.MockedRecoveryModule;
 import com.radixdlt.statecomputer.EpochCeilingView;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
@@ -155,7 +154,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /** High level BFT Simulation Test Runner */
-public class SimulationTest {
+public final class SimulationTest {
   private static final String ENVIRONMENT_VAR_NAME =
       "TEST_DURATION"; // Same as used by regression test suite
   private static final Duration DEFAULT_TEST_DURATION = Duration.ofSeconds(30);
@@ -568,8 +567,6 @@ public class SimulationTest {
                         Amount.ofTokens(1000000),
                         Amount.ofTokens(10000)));
                 bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-                bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {})
-                    .toInstance(new InMemoryEngineStore<>()); /* TODO(luk): is this needed? */
                 bind(SystemCounters.class).toInstance(new SystemCountersImpl());
                 bind(CommittedReader.class).toInstance(CommittedReader.mocked());
                 bind(ForksEpochStore.class).toInstance(ForksEpochStore.mocked());

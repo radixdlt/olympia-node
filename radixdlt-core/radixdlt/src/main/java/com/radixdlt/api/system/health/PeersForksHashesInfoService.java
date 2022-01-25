@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.service;
+package com.radixdlt.api.system.health;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;

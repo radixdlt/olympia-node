@@ -82,8 +82,8 @@ public class RadixEngineStoreModule extends AbstractModule {
     bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {})
         .to(BerkeleyLedgerEntryStore.class)
         .in(Scopes.SINGLETON);
-    bind(CommittedReader.class).to(BerkeleyLedgerEntryStore.class);
-    bind(ForksEpochStore.class).to(BerkeleyLedgerEntryStore.class);
+    bind(CommittedReader.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
+    bind(ForksEpochStore.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
     Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
   }
 }

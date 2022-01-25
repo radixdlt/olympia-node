@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2022 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -64,16 +64,41 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import java.util.Optional;
+import java.util.Set;
+import org.junit.Test;
 
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface InitialForkConfig {}
+public final class CurrentForkViewTest {
+  private final RERules reRules = RERulesVersion.OLYMPIA_V1.create(RERulesConfig.testingDefault());
+
+  @Test
+  public void should_keep_track_of_current_fork_config() {
+    final var initialFork = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), reRules, 0L);
+    final var nextFork = new FixedEpochForkConfig("fork2", HashCode.fromInt(2), reRules, 2L);
+    final var forks = Forks.create(Set.of(initialFork, nextFork));
+
+    final var currentForkView = new CurrentForkView(forks, initialFork);
+
+    assertEquals("fork1", currentForkView.currentForkConfig().name());
+
+    final var ledgerAndBftProof =
+        LedgerAndBFTProof.create(
+            mock(LedgerProof.class), null, Optional.of(HashCode.fromInt(2)), Optional.empty());
+    final var ledgerUpdate =
+        new LedgerUpdate(
+            mock(VerifiedTxnsAndProof.class),
+            ImmutableClassToInstanceMap.of(LedgerAndBFTProof.class, ledgerAndBftProof));
+    currentForkView.ledgerUpdateEventProcessor().process(ledgerUpdate);
+
+    assertEquals("fork2", currentForkView.currentForkConfig().name());
+  }
+}

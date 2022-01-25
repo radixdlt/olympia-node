@@ -73,8 +73,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.InitialForkConfig;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -84,7 +83,7 @@ import java.nio.charset.StandardCharsets;
 public class RadixEngineUniqueGenerator implements TxnGenerator {
   @Inject private REParser parser;
 
-  @Inject @InitialForkConfig private ForkConfig forkConfig;
+  @Inject private CurrentForkView currentForkView;
 
   @Inject @Genesis private Txn genesis;
 
@@ -94,7 +93,8 @@ public class RadixEngineUniqueGenerator implements TxnGenerator {
     var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "smthng");
     var builder =
         TxBuilder.newBuilder(
-                parser.getSubstateDeserialization(), forkConfig.engineRules().getSerialization())
+                parser.getSubstateDeserialization(),
+                currentForkView.currentForkConfig().engineRules().getSerialization())
             .toLowLevelBuilder()
             .syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
             .virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())

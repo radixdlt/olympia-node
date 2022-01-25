@@ -129,10 +129,9 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
-import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.InitialForkConfig;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
@@ -159,7 +158,7 @@ public class RadixEngineStateComputerTest {
 
   @Inject private RadixEngineStateComputer sut;
 
-  @Inject @InitialForkConfig private ForkConfig forkConfig;
+  @Inject private CurrentForkView currentForkView;
 
   @Inject private ProposerElection proposerElection;
 
@@ -246,7 +245,7 @@ public class RadixEngineStateComputerTest {
     }
     radixEngine.execute(
         genesisTxns.getTxns(),
-        LedgerAndBFTProof.create(genesisLedgerHeader, null),
+        LedgerAndBFTProof.create(genesisLedgerHeader),
         PermissionLevel.SYSTEM);
   }
 
@@ -378,7 +377,8 @@ public class RadixEngineStateComputerTest {
                 new NextRound(1, false, 0, i -> proposerElection.getProposer(View.of(i)).getKey()))
             .buildWithoutSignature();
     var illegalTxn =
-        TxLowLevelBuilder.newBuilder(forkConfig.engineRules().getSerialization())
+        TxLowLevelBuilder.newBuilder(
+                currentForkView.currentForkConfig().engineRules().getSerialization())
             .down(SubstateId.ofSubstate(txn.getId(), 1))
             .up(new RoundData(2, 0))
             .end()

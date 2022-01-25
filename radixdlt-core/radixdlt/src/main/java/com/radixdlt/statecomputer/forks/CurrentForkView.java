@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2022 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,93 +62,24 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.service;
+package com.radixdlt.statecomputer.forks;
 
-import com.google.common.collect.Streams;
-import com.google.inject.Inject;
-import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.InitialForkConfig;
-import com.radixdlt.store.EngineStore;
 import java.util.Objects;
 
-public class ForkVoteStatusService {
-
-  public enum ForkVoteStatus {
-    VOTE_REQUIRED,
-    NO_ACTION_NEEDED
-  }
-
-  private final BFTNode self;
-  private final EngineStore<LedgerAndBFTProof> engineStore;
+public final class CurrentForkView {
   private final Forks forks;
   private ForkConfig currentForkConfig;
 
-  @Inject
-  public ForkVoteStatusService(
-      @Self BFTNode self,
-      EngineStore<LedgerAndBFTProof> engineStore,
-      Forks forks,
-      @InitialForkConfig ForkConfig initialForkConfig) {
-    this.self = Objects.requireNonNull(self);
-    this.engineStore = Objects.requireNonNull(engineStore);
+  public CurrentForkView(Forks forks, ForkConfig initialForkConfig) {
     this.forks = Objects.requireNonNull(forks);
     this.currentForkConfig = Objects.requireNonNull(initialForkConfig);
   }
 
   public ForkConfig currentForkConfig() {
     return currentForkConfig;
-  }
-
-  public ForkVoteStatus forkVoteStatus() {
-    final var currentFork = currentForkConfig;
-
-    if (forks.getCandidateFork().isEmpty()
-        || forks.getCandidateFork().get().hash().equals(currentFork.hash())) {
-      return ForkVoteStatus.NO_ACTION_NEEDED;
-    }
-
-    final var expectedCandidateForkVoteHash =
-        ForkConfig.voteHash(self.getKey(), forks.getCandidateFork().get());
-
-    final var substateDeserialization =
-        currentFork.engineRules().getParser().getSubstateDeserialization();
-
-    // TODO: this could be optimized
-    try (var validatorMetadataCursor =
-        engineStore.openIndexedCursor(
-            SubstateIndex.create(
-                SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class))) {
-
-      final var maybeSelfForkVoteHash =
-          Streams.stream(validatorMetadataCursor)
-              .map(
-                  s -> {
-                    try {
-                      return (ValidatorSystemMetadata)
-                          substateDeserialization.deserialize(s.getData());
-                    } catch (DeserializeException e) {
-                      throw new IllegalStateException(
-                          "Failed to deserialize ValidatorMetaData substate");
-                    }
-                  })
-              .filter(vm -> vm.getValidatorKey().equals(self.getKey()))
-              .findAny()
-              .map(ValidatorSystemMetadata::getAsHash);
-
-      return maybeSelfForkVoteHash.filter(expectedCandidateForkVoteHash::equals).isPresent()
-          ? ForkVoteStatus.NO_ACTION_NEEDED
-          : ForkVoteStatus.VOTE_REQUIRED;
-    }
   }
 
   public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {

@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2022 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,84 +62,85 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.system.health;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import com.google.common.collect.Streams;
 import com.google.inject.Inject;
-import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.core.handlers.MempoolHandler;
-import com.radixdlt.api.core.model.CoreModelMapper;
-import com.radixdlt.api.core.model.EntityOperation;
-import com.radixdlt.api.core.model.NotEnoughNativeTokensForFeesException;
-import com.radixdlt.api.core.model.OperationTxBuilder;
-import com.radixdlt.api.core.model.ResourceOperation;
-import com.radixdlt.api.core.model.TokenResource;
-import com.radixdlt.api.core.model.entities.AccountVaultEntity;
-import com.radixdlt.api.core.openapitools.model.MempoolRequest;
-import com.radixdlt.api.core.openapitools.model.MempoolResponse;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineMempool;
 import com.radixdlt.statecomputer.forks.CurrentForkView;
-import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
-import java.util.List;
-import org.junit.Test;
+import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.store.EngineStore;
+import java.util.Objects;
 
-public final class MempoolHandlerTest extends ApiTest {
-  @Inject private MempoolHandler sut;
-  @Inject private CoreModelMapper coreModelMapper;
-  @Inject @LocalSigner private HashSigner hashSigner;
-  @Inject @Self private ECPublicKey self;
-  @Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
-  @Inject private CurrentForkView currentForkView;
-  @Inject private RadixEngineMempool mempool;
-
-  private Txn buildSignedTxn(REAddr from, REAddr to) throws Exception {
-    final UInt256 toTransfer =
-        getLiquidAmount().toSubunits().subtract(Amount.ofTokens(1).toSubunits());
-
-    var entityOperationGroups =
-        List.of(
-            List.of(
-                EntityOperation.from(
-                    new AccountVaultEntity(from),
-                    ResourceOperation.withdraw(
-                        new TokenResource("xrd", REAddr.ofNativeToken()), toTransfer)),
-                EntityOperation.from(
-                    new AccountVaultEntity(to),
-                    ResourceOperation.deposit(
-                        new TokenResource("xrd", REAddr.ofNativeToken()), toTransfer))));
-    var operationTxBuilder = new OperationTxBuilder(null, entityOperationGroups, currentForkView);
-    var builder =
-        radixEngine.constructWithFees(
-            operationTxBuilder, false, from, NotEnoughNativeTokensForFeesException::new);
-    return builder.signAndBuild(hashSigner::sign);
+public final class ForkVoteStatusService {
+  public enum ForkVoteStatus {
+    VOTE_REQUIRED,
+    NO_ACTION_NEEDED
   }
 
-  @Test
-  public void transaction_in_mempool_should_be_seen() throws Exception {
-    // Arrange
-    start();
-    var accountAddress = REAddr.ofPubKeyAccount(self);
-    var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
-    var signedTxn = buildSignedTxn(accountAddress, otherAddress);
-    mempool.add(signedTxn);
+  private final BFTNode self;
+  private final EngineStore<LedgerAndBFTProof> engineStore;
+  private final Forks forks;
+  private final CurrentForkView currentForkView;
 
-    // Act
-    var request = new MempoolRequest().networkIdentifier(networkIdentifier());
-    var response = handleRequestWithExpectedResponse(sut, request, MempoolResponse.class);
+  @Inject
+  public ForkVoteStatusService(
+      @Self BFTNode self,
+      EngineStore<LedgerAndBFTProof> engineStore,
+      Forks forks,
+      CurrentForkView currentForkView) {
+    this.self = Objects.requireNonNull(self);
+    this.engineStore = Objects.requireNonNull(engineStore);
+    this.forks = Objects.requireNonNull(forks);
+    this.currentForkView = Objects.requireNonNull(currentForkView);
+  }
 
-    // Assert
-    assertThat(response.getTransactionIdentifiers())
-        .containsExactly(coreModelMapper.transactionIdentifier(signedTxn.getId()));
+  public ForkVoteStatus forkVoteStatus() {
+    final var currentFork = currentForkView.currentForkConfig();
+
+    if (forks.getCandidateFork().isEmpty()
+        || forks.getCandidateFork().get().hash().equals(currentFork.hash())) {
+      return ForkVoteStatus.NO_ACTION_NEEDED;
+    }
+
+    final var expectedCandidateForkVoteHash =
+        ForkConfig.voteHash(self.getKey(), forks.getCandidateFork().get());
+
+    final var substateDeserialization =
+        currentFork.engineRules().getParser().getSubstateDeserialization();
+
+    // TODO: this could be optimized
+    try (var validatorMetadataCursor =
+        engineStore.openIndexedCursor(
+            SubstateIndex.create(
+                SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class))) {
+
+      final var maybeSelfForkVoteHash =
+          Streams.stream(validatorMetadataCursor)
+              .map(
+                  s -> {
+                    try {
+                      return (ValidatorSystemMetadata)
+                          substateDeserialization.deserialize(s.getData());
+                    } catch (DeserializeException e) {
+                      throw new IllegalStateException(
+                          "Failed to deserialize ValidatorMetaData substate");
+                    }
+                  })
+              .filter(vm -> vm.getValidatorKey().equals(self.getKey()))
+              .findAny()
+              .map(ValidatorSystemMetadata::getAsHash);
+
+      return maybeSelfForkVoteHash.filter(expectedCandidateForkVoteHash::equals).isPresent()
+          ? ForkVoteStatus.NO_ACTION_NEEDED
+          : ForkVoteStatus.VOTE_REQUIRED;
+    }
   }
 }

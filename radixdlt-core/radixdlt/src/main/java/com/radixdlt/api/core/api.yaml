@@ -2343,12 +2343,18 @@ components:
     Fork:
       type: object
       required:
-        - fork_identifier
+        - name
+        - hash
+        - is_candidate
         - engine_identifier
         - engine_configuration
       properties:
-        fork_identifier:
-          "$ref": "#/components/schemas/ForkIdentifier"
+        name:
+          type: string
+        hash:
+          type: string
+        is_candidate:
+          type: boolean
         engine_identifier:
           "$ref": "#/components/schemas/EngineIdentifier"
         engine_configuration:
@@ -2443,16 +2449,6 @@ components:
         - engine
       properties:
         engine:
-          type: string
-    ForkIdentifier:
-      type: object
-      required:
-        - epoch
-        - fork
-      properties:
-        epoch:
-          "$ref": "#/components/schemas/LongNumber"
-        fork:
           type: string
     Transaction:
       type: object
