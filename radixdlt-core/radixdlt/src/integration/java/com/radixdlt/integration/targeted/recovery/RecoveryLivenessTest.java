@@ -180,7 +180,6 @@ public class RecoveryLivenessTest {
     }
   }
 
-
   public static class RecoveryLivenessTest5 extends RecoveryLivenessTest {
 
     @Parameters

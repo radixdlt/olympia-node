@@ -67,7 +67,6 @@ package com.radixdlt.harness.deterministic;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -83,6 +82,8 @@ public class NodeEventsModule extends AbstractModule {
   public Map<Class<?>, Set<NodeEvents.NodeEventProcessor<?>>> safetyCheckProcessor(
       Set<NodeEvents.NodeEventProcessor<?>> processors) {
     return processors.stream()
-        .collect(Collectors.groupingBy(NodeEvents.NodeEventProcessor::getEventClass, Collectors.toSet()));
+        .collect(
+            Collectors.groupingBy(
+                NodeEvents.NodeEventProcessor::getEventClass, Collectors.toSet()));
   }
 }

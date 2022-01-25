@@ -77,7 +77,9 @@ public final class NetworkOrdering {
     return new AbstractModule() {
       @Override
       protected void configure() {
-        bind(SimulationNetwork.ChannelCommunication.class).to(InOrderChannels.class).in(Scopes.SINGLETON);
+        bind(SimulationNetwork.ChannelCommunication.class)
+            .to(InOrderChannels.class)
+            .in(Scopes.SINGLETON);
       }
     };
   }
@@ -86,7 +88,9 @@ public final class NetworkOrdering {
     return new AbstractModule() {
       @Override
       protected void configure() {
-        bind(SimulationNetwork.ChannelCommunication.class).to(OutOfOrderChannels.class).in(Scopes.SINGLETON);
+        bind(SimulationNetwork.ChannelCommunication.class)
+            .to(OutOfOrderChannels.class)
+            .in(Scopes.SINGLETON);
       }
     };
   }

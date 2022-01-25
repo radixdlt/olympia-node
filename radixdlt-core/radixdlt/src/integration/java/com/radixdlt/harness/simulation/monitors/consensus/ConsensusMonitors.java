@@ -78,7 +78,6 @@ import com.radixdlt.harness.simulation.monitors.EventNeverOccursInvariant;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.monitors.epochs.EpochViewInvariant;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
-
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 

@@ -69,9 +69,9 @@ import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.radixdlt.harness.simulation.Monitor;
 import com.radixdlt.harness.simulation.MonitorKey;
+import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.application.LocalMempoolPeriodicSubmitter;
 import com.radixdlt.harness.simulation.application.NodeValidatorRegistrator;
-import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.utils.Pair;
 
@@ -97,7 +97,7 @@ public final class ApplicationMonitors {
       @ProvidesIntoMap
       @MonitorKey(Monitor.MEMPOOL_COMMITTED)
       TestInvariant mempoolCommitted(
-              LocalMempoolPeriodicSubmitter mempoolSubmitter, NodeEvents nodeEvents) {
+          LocalMempoolPeriodicSubmitter mempoolSubmitter, NodeEvents nodeEvents) {
         return new CommittedChecker(mempoolSubmitter.issuedTxns().map(Pair::getFirst), nodeEvents);
       }
     };

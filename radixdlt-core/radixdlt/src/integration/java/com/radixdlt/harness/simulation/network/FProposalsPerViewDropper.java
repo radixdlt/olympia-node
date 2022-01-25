@@ -70,7 +70,6 @@ import com.google.common.collect.Lists;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;

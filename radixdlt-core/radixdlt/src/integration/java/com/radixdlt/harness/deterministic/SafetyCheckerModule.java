@@ -70,10 +70,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.harness.invariants.SafetyChecker;
 import com.radixdlt.harness.deterministic.NodeEvents.NodeEventProcessor;
+import com.radixdlt.harness.invariants.SafetyChecker;
 import com.radixdlt.harness.simulation.TestInvariant.TestInvariantError;
-
 import java.util.Optional;
 
 /** Module which checks for consensus safety and throws exception on failure. */

@@ -79,7 +79,8 @@ public final class InOrderChannels implements SimulationNetwork.ChannelCommunica
     this.latencyProvider = Objects.requireNonNull(latencyProvider);
   }
 
-  private SimulationNetwork.MessageInTransit addLatencyIfNotToSelf(SimulationNetwork.MessageInTransit msg, BFTNode receiver) {
+  private SimulationNetwork.MessageInTransit addLatencyIfNotToSelf(
+      SimulationNetwork.MessageInTransit msg, BFTNode receiver) {
     if (msg.getSender().equals(receiver)) {
       return msg;
     } else {
@@ -88,7 +89,8 @@ public final class InOrderChannels implements SimulationNetwork.ChannelCommunica
   }
 
   public static Timed<SimulationNetwork.MessageInTransit> delayCarryover(
-          Timed<SimulationNetwork.MessageInTransit> prev, Timed<SimulationNetwork.MessageInTransit> next) {
+      Timed<SimulationNetwork.MessageInTransit> prev,
+      Timed<SimulationNetwork.MessageInTransit> next) {
     int delayCarryover = (int) Math.max(prev.time() + prev.value().getDelay() - next.time(), 0);
     int additionalDelay = (int) (next.value().getDelay() - delayCarryover);
     if (additionalDelay > 0) {

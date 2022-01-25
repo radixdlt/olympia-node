@@ -65,7 +65,6 @@
 package com.radixdlt.harness.simulation.network;
 
 import com.radixdlt.consensus.Vote;
-
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Predicate;

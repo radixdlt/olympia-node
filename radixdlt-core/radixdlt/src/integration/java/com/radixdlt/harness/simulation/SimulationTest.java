@@ -101,15 +101,15 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.harness.MockedPeersViewModule;
-import com.radixdlt.harness.simulation.monitors.NodeEvents;
-import com.radixdlt.harness.simulation.monitors.SimulationNodeEventsModule;
-import com.radixdlt.harness.simulation.network.SimulationNetwork;
-import com.radixdlt.harness.simulation.network.SimulationNodes;
 import com.radixdlt.harness.simulation.application.BFTValidatorSetNodeSelector;
 import com.radixdlt.harness.simulation.application.EpochsNodeSelector;
 import com.radixdlt.harness.simulation.application.LocalMempoolPeriodicSubmitter;
 import com.radixdlt.harness.simulation.application.NodeSelector;
 import com.radixdlt.harness.simulation.application.TxnGenerator;
+import com.radixdlt.harness.simulation.monitors.NodeEvents;
+import com.radixdlt.harness.simulation.monitors.SimulationNodeEventsModule;
+import com.radixdlt.harness.simulation.network.SimulationNetwork;
+import com.radixdlt.harness.simulation.network.SimulationNodes;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
@@ -780,7 +780,8 @@ public class SimulationTest {
 
   public static final class RunningSimulationTest {
 
-    private final Observable<Pair<Monitor, Optional<TestInvariant.TestInvariantError>>> resultObservable;
+    private final Observable<Pair<Monitor, Optional<TestInvariant.TestInvariantError>>>
+        resultObservable;
     private final SimulationNodes.RunningNetwork network;
 
     private RunningSimulationTest(
