@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.statemachine;
+package com.radixdlt.integration.targeted.statemachine;
 
 import com.google.common.base.Stopwatch;
 import com.google.inject.AbstractModule;

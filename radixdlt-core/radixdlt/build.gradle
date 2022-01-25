@@ -127,6 +127,14 @@ task slowIntegrationTest(type: Test) {
     mustRunAfter(test)
 }
 
+task allIntegrationTest(type: Test) {
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    // We're using all available processors here for now because we want to run all classes at the same time and they don't seem to be cpu intensive
+    maxParallelForks = Runtime.runtime.availableProcessors()
+    mustRunAfter(test)
+}
+
 versionFile {
     mustRunAfter(processResources)
     // Path to the file to be written

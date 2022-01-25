@@ -62,7 +62,9 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.statemachine;
+package com.radixdlt.integration.targeted.mempool;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -70,49 +72,56 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.deterministic.DeterministicProcessor;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
+import com.radixdlt.integration.Slow;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.mempoolfiller.MempoolFillerModule;
+import com.radixdlt.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.utils.PrivateKeys;
-import java.util.List;
-import java.util.Random;
 import java.util.Set;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 
-public class RandomTxnTest {
+/**
+ * Test which fills a mempool and then empties it checking to make sure there are no stragglers left
+ * behind.
+ */
+@Category(Slow.class)
+public final class MempoolFillAndEmptyTest {
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-  private static final Logger logger = LogManager.getLogger();
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  @Inject private RadixEngine<LedgerAndBFTProof> engine;
-
-  // FIXME: Hack, need this in order to cause provider for genesis to be stored
-  @Inject @LastStoredProof private LedgerProof ledgerProof;
+  @Inject private DeterministicProcessor processor;
+  @Inject private DeterministicNetwork network;
+  @Inject private EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher;
+  @Inject private EventDispatcher<ScheduledMempoolFill> scheduledMempoolFillEventDispatcher;
+  @Inject private SystemCounters systemCounters;
 
   private Injector createInjector() {
     return Guice.createInjector(
         MempoolConfig.asModule(1000, 10),
         new MainnetForkConfigsModule(),
-        new RadixEngineForksLatestOnlyModule(),
+        new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
         new ForksModule(),
         new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
         new MockedGenesisModule(
-            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(100000), Amount.ofTokens(1000)),
+            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(1000)),
+        new MempoolFillerModule(),
         new AbstractModule() {
           @Override
           protected void configure() {
@@ -123,30 +132,39 @@ public class RandomTxnTest {
         });
   }
 
-  @Test
-  public void poor_mans_fuzz_test() {
-    var random = new Random(12345678);
-
-    // Arrange
-    createInjector().injectMembers(this);
-    final var count = 1000000;
-
-    for (int i = 0; i < count; i++) {
-      int len = random.nextInt(512);
-      var payload = new byte[len];
-      random.nextBytes(payload);
-      for (int j = 0; j < len; j++) {
-        payload[j] = random.nextBoolean() ? (byte) random.nextInt(10) : payload[j];
-      }
-      var txns = List.of(Txn.create(payload));
-      if (i % 1000 == 0) {
-        logger.info(i + "/" + count);
-      }
-      try {
-        engine.execute(txns, null, PermissionLevel.SYSTEM);
-      } catch (RadixEngineException e) {
-        // ignore
+  private void fillAndEmptyMempool() {
+    while (systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE) < 1000) {
+      ControlledMessage msg = network.nextMessage().value();
+      processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
+      if (msg.message() instanceof EpochViewUpdate) {
+        scheduledMempoolFillEventDispatcher.dispatch(ScheduledMempoolFill.create());
       }
     }
+
+    for (int i = 0; i < 10000; i++) {
+      ControlledMessage msg = network.nextMessage().value();
+      processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
+      if (systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE) == 0) {
+        break;
+      }
+    }
+
+    assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
+  }
+
+  @Test
+  public void check_that_full_mempool_empties_itself() {
+    createInjector().injectMembers(this);
+    processor.start();
+
+    mempoolFillerUpdateEventDispatcher.dispatch(MempoolFillerUpdate.enable(50, true));
+
+    for (int i = 0; i < 10; i++) {
+      fillAndEmptyMempool();
+    }
+
+    assertThat(
+            systemCounters.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS))
+        .isZero();
   }
 }

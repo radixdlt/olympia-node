@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.recovery;
+package com.radixdlt.integration.targeted.recovery;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -161,12 +161,11 @@ public class RecoveryLivenessTest {
   }
 
   @Category(Slow.class)
-  @RunWith(Parameterized.class)
   public static class RecoveryLivenessTest3 extends RecoveryLivenessTest {
 
     @Parameters
     public static Collection<Object[]> numNodes() {
-      return List.of(new Object[][] {{3, 88L}, {4, 88L}});
+      return List.of(new Object[][] {{2, 88L}});
     }
 
     public RecoveryLivenessTest3(int numNodes, long epochCeilingView) {
@@ -175,15 +174,41 @@ public class RecoveryLivenessTest {
   }
 
   @Category(Slow.class)
-  @RunWith(Parameterized.class)
   public static class RecoveryLivenessTest4 extends RecoveryLivenessTest {
 
     @Parameters
     public static Collection<Object[]> numNodes() {
-      return List.of(new Object[][] {{2, 1L}, {10, 100L}});
+      return List.of(new Object[][] {{4, 88L}});
     }
 
     public RecoveryLivenessTest4(int numNodes, long epochCeilingView) {
+      super(numNodes, epochCeilingView);
+    }
+  }
+
+
+  @Category(Slow.class)
+  public static class RecoveryLivenessTest5 extends RecoveryLivenessTest {
+
+    @Parameters
+    public static Collection<Object[]> numNodes() {
+      return List.of(new Object[][] {{2, 1L}});
+    }
+
+    public RecoveryLivenessTest5(int numNodes, long epochCeilingView) {
+      super(numNodes, epochCeilingView);
+    }
+  }
+
+  @Category(Slow.class)
+  public static class RecoveryLivenessTest6 extends RecoveryLivenessTest {
+
+    @Parameters
+    public static Collection<Object[]> numNodes() {
+      return List.of(new Object[][] {{10, 100L}});
+    }
+
+    public RecoveryLivenessTest6(int numNodes, long epochCeilingView) {
       super(numNodes, epochCeilingView);
     }
   }

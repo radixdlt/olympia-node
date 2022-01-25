@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.serialization;
+package com.radixdlt.integration.targeted.serialization;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;

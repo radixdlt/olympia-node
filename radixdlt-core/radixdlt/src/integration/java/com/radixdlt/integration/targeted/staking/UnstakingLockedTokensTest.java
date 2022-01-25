@@ -62,9 +62,9 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.mempool;
+package com.radixdlt.integration.targeted.staking;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -72,18 +72,28 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
-import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.integration.Slow;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.mempoolfiller.MempoolFillerModule;
-import com.radixdlt.mempoolfiller.MempoolFillerUpdate;
-import com.radixdlt.mempoolfiller.ScheduledMempoolFill;
+import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.REOutput;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
@@ -91,26 +101,53 @@ import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.PrivateKeys;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-/**
- * Test which fills a mempool and then empties it checking to make sure there are no stragglers left
- * behind.
- */
-@Category(Slow.class)
-public final class MempoolFillAndEmptyTest {
+@RunWith(Parameterized.class)
+public class UnstakingLockedTokensTest {
+  @Parameterized.Parameters
+  public static Collection<Object[]> parameters() {
+    return List.of(
+        new Object[][] {
+          {1, 2, 3, false},
+          {1, 2, 4, true},
+          {3, 4, 5, false},
+          {3, 4, 6, true},
+        });
+  }
+
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  @Inject private DeterministicProcessor processor;
-  @Inject private DeterministicNetwork network;
-  @Inject private EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher;
-  @Inject private EventDispatcher<ScheduledMempoolFill> scheduledMempoolFillEventDispatcher;
-  @Inject private SystemCounters systemCounters;
+  @Inject @LocalSigner private HashSigner hashSigner;
+  @Inject @Self private ECPublicKey self;
+  @Inject private SingleNodeDeterministicRunner runner;
+  @Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
+  @Inject private RadixEngineStateComputer radixEngineStateComputer;
+  private final long stakingEpoch;
+  private final long unstakingEpoch;
+  private final long transferEpoch;
+  private final boolean shouldSucceed;
+
+  public UnstakingLockedTokensTest(
+      long stakingEpoch, long unstakingEpoch, long transferEpoch, boolean shouldSucceed) {
+    if (stakingEpoch < 1) {
+      throw new IllegalArgumentException();
+    }
+
+    this.stakingEpoch = stakingEpoch;
+    this.unstakingEpoch = unstakingEpoch;
+    this.transferEpoch = transferEpoch;
+    this.shouldSucceed = shouldSucceed;
+  }
 
   private Injector createInjector() {
     return Guice.createInjector(
@@ -120,8 +157,7 @@ public final class MempoolFillAndEmptyTest {
         new ForksModule(),
         new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
         new MockedGenesisModule(
-            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(1000)),
-        new MempoolFillerModule(),
+            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(110), Amount.ofTokens(100)),
         new AbstractModule() {
           @Override
           protected void configure() {
@@ -132,39 +168,83 @@ public final class MempoolFillAndEmptyTest {
         });
   }
 
-  private void fillAndEmptyMempool() {
-    while (systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE) < 1000) {
-      ControlledMessage msg = network.nextMessage().value();
-      processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-      if (msg.message() instanceof EpochViewUpdate) {
-        scheduledMempoolFillEventDispatcher.dispatch(ScheduledMempoolFill.create());
-      }
-    }
+  public REProcessedTxn waitForCommit(AID txnId) {
+    var committed =
+        runner.runNextEventsThrough(
+            LedgerUpdate.class,
+            u -> {
+              var output = u.getStateComputerOutput().getInstance(REOutput.class);
+              return output.getProcessedTxns().stream()
+                  .anyMatch(txn -> txn.getTxn().getId().equals(txnId));
+            });
 
-    for (int i = 0; i < 10000; i++) {
-      ControlledMessage msg = network.nextMessage().value();
-      processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-      if (systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE) == 0) {
-        break;
-      }
-    }
+    return committed
+        .getStateComputerOutput()
+        .getInstance(REOutput.class)
+        .getProcessedTxns()
+        .stream()
+        .filter(t -> t.getTxn().getId().equals(txnId))
+        .findFirst()
+        .orElseThrow();
+  }
 
-    assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
+  public REProcessedTxn dispatchAndWaitForCommit(TxAction action) throws Exception {
+    var request = TxnConstructionRequest.create().action(action);
+    var txBuilder = radixEngine.construct(request.feePayer(REAddr.ofPubKeyAccount(self)));
+    var txn = txBuilder.signAndBuild(hashSigner::sign);
+    radixEngineStateComputer.addToMempool(txn);
+    return waitForCommit(txn.getId());
   }
 
   @Test
-  public void check_that_full_mempool_empties_itself() {
+  public void test_stake_unlocking() throws Exception {
     createInjector().injectMembers(this);
-    processor.start();
 
-    mempoolFillerUpdateEventDispatcher.dispatch(MempoolFillerUpdate.enable(50, true));
+    runner.start();
 
-    for (int i = 0; i < 10; i++) {
-      fillAndEmptyMempool();
+    if (stakingEpoch > 1) {
+      runner.runNextEventsThrough(
+          LedgerUpdate.class,
+          e -> {
+            var epochChange = e.getStateComputerOutput().getInstance(EpochChange.class);
+            return epochChange != null && epochChange.getEpoch() == stakingEpoch;
+          });
     }
 
-    assertThat(
-            systemCounters.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS))
-        .isZero();
+    var accountAddr = REAddr.ofPubKeyAccount(self);
+    var stakeTxn =
+        dispatchAndWaitForCommit(
+            new StakeTokens(accountAddr, self, Amount.ofTokens(10).toSubunits()));
+    runner.runNextEventsThrough(
+        LedgerUpdate.class,
+        e -> {
+          var epochChange = e.getStateComputerOutput().getInstance(EpochChange.class);
+          return epochChange != null && epochChange.getEpoch() == unstakingEpoch;
+        });
+    var unstakeTxn =
+        dispatchAndWaitForCommit(
+            new UnstakeTokens(self, accountAddr, Amount.ofTokens(10).toSubunits()));
+
+    if (transferEpoch > unstakingEpoch) {
+      runner.runNextEventsThrough(
+          LedgerUpdate.class,
+          e -> {
+            var epochChange = e.getStateComputerOutput().getInstance(EpochChange.class);
+            return epochChange != null && epochChange.getEpoch() == transferEpoch;
+          });
+    }
+
+    var otherAddr = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
+    var transferAction =
+        new TransferToken(
+            REAddr.ofNativeToken(), accountAddr, otherAddr, Amount.ofTokens(10).toSubunits());
+
+    // Build transaction through radix engine
+    if (shouldSucceed) {
+      radixEngine.construct(transferAction);
+    } else {
+      assertThatThrownBy(() -> radixEngine.construct(transferAction))
+          .isInstanceOf(TxBuilderException.class);
+    }
   }
 }

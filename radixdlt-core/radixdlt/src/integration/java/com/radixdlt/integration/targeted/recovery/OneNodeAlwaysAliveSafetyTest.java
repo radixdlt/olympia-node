@@ -62,43 +62,41 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.mempool;
+package com.radixdlt.integration.targeted.recovery;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.PersistedNodeForTestingModule;
+import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.ViewQuorumReached;
+import com.radixdlt.consensus.bft.ViewVotingResult.FormedQC;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventProcessorOnDispatch;
+import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.integration.Slow;
+import com.radixdlt.integration.distributed.deterministic.NodeEvents;
+import com.radixdlt.integration.distributed.deterministic.NodeEvents.NodeEventProcessor;
+import com.radixdlt.integration.distributed.deterministic.NodeEventsModule;
+import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.mempool.MempoolRelayTrigger;
-import com.radixdlt.mempoolfiller.MempoolFillerModule;
-import com.radixdlt.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
@@ -107,153 +105,106 @@ import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.KeyComparator;
 import io.reactivex.rxjava3.schedulers.Timed;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.OptionalInt;
+import java.util.Set;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-/** Mempool should periodically relay its unprocessed messages to other nodes. */
-@Category(Slow.class)
 @RunWith(Parameterized.class)
-public class MempoolRelayTest {
-  private static final int MEMPOOL_FILLER_NODE = 0;
+public class OneNodeAlwaysAliveSafetyTest {
+  private static final Logger logger = LogManager.getLogger();
 
-  @Parameterized.Parameters
-  public static Collection<Object[]> parameters() {
-    return List.of(
-        new Object[][] {
-          {2, 1}, // 2 validators, 1 full node
-        });
-  }
-
-  // The following class is created as a workaround as gradle cannot run the tests inside a test
-  // class in parallel. We can achieve some level of parallelism splitting the tests across
-  // different test classes.
-
-  @Category(Slow.class)
-  @RunWith(Parameterized.class)
-  public static class MempoolRelayTest2 extends MempoolRelayTest {
-    private static final int MEMPOOL_FILLER_NODE = 0;
-
-    @Parameterized.Parameters
-    public static Collection<Object[]> parameters() {
-      return List.of(
-          new Object[][] {
-            {5, 2} // 5 validators, 2 full nodes
-          });
-    }
-
-    public MempoolRelayTest2(int numValidators, int numFullNodes) {
-      super(numValidators, numFullNodes);
-    }
+  @Parameters
+  public static Collection<Object[]> numNodes() {
+    return List.of(new Object[][] {{5}});
   }
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private final ImmutableList<Integer> validators;
-  private final ImmutableList<Integer> fullNodes;
   private DeterministicNetwork network;
-  private ImmutableList<ECKeyPair> nodeKeys;
-  private ImmutableList<Injector> nodes;
+  private List<Supplier<Injector>> nodeCreators;
+  private List<Injector> nodes = new ArrayList<>();
+  private final List<ECKeyPair> nodeKeys;
 
-  public MempoolRelayTest(int numValidators, int numFullNodes) {
-    this.validators =
-        IntStream.range(0, numValidators).boxed().collect(ImmutableList.toImmutableList());
-    this.fullNodes =
-        IntStream.range(numValidators, numValidators + numFullNodes)
-            .boxed()
-            .collect(ImmutableList.toImmutableList());
-  }
+  @Inject private NodeEvents nodeEvents;
 
-  @Before
-  public void setup() {
-    final var numNodes = this.validators.size() + this.fullNodes.size();
+  private int lastNodeToCommit;
 
+  public OneNodeAlwaysAliveSafetyTest(int numNodes) {
     this.nodeKeys =
         Stream.generate(ECKeyPair::generateNew)
             .limit(numNodes)
             .sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
-            .collect(ImmutableList.toImmutableList());
+            .collect(Collectors.toList());
+  }
 
-    final var bftNodes =
+  @Before
+  public void setup() {
+    List<BFTNode> allNodes =
         nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
 
     this.network =
         new DeterministicNetwork(
-            bftNodes, MessageSelector.firstSelector(), MessageMutator.nothing());
+            allNodes,
+            MessageSelector.firstSelector(),
+            (message, queue) ->
+                message.message() instanceof GetVerticesRequest
+                    || message.message() instanceof LocalSyncRequest);
 
-    this.nodes =
+    Guice.createInjector(
+            new AbstractModule() {
+              @Override
+              protected void configure() {
+                bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(allNodes);
+              }
+
+              @ProvidesIntoSet
+              public NodeEventProcessor<?> updateChecker() {
+                return new NodeEventProcessor<>(
+                    ViewQuorumReached.class,
+                    (node, viewQuorumReached) -> {
+                      if (viewQuorumReached.votingResult() instanceof FormedQC
+                          && ((FormedQC) viewQuorumReached.votingResult())
+                              .getQC()
+                              .getCommitted()
+                              .isPresent()) {
+                        lastNodeToCommit = network.lookup(node);
+                      }
+                    });
+              }
+            },
+            new SafetyCheckerModule(),
+            new NodeEventsModule())
+        .injectMembers(this);
+
+    this.nodeCreators =
         nodeKeys.stream()
-            .<Supplier<Injector>>map(k -> () -> createRunner(k, bftNodes))
-            .map(Supplier::get)
-            .collect(ImmutableList.toImmutableList());
+            .<Supplier<Injector>>map(k -> () -> createRunner(k, allNodes))
+            .collect(Collectors.toList());
 
-    this.nodes.forEach(i -> i.getInstance(DeterministicProcessor.class).start());
-  }
-
-  private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
-    final var validatorsKeys =
-        this.validators.stream()
-            .map(nodeKeys::get)
-            .map(ECKeyPair::getPublicKey)
-            .collect(Collectors.toSet());
-
-    return Guice.createInjector(
-        new MockedGenesisModule(validatorsKeys, Amount.ofTokens(1000), Amount.ofTokens(1000)),
-        MempoolConfig.asModule(500, 100, 10, 10, 10),
-        new MainnetForkConfigsModule(),
-        new RadixEngineForksLatestOnlyModule(
-            RERulesConfig.testingDefault().overrideMaxSigsPerRound(50)),
-        new ForksModule(),
-        new PersistedNodeForTestingModule(),
-        new MempoolFillerModule(),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
-            bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(allNodes);
-            bind(Environment.class)
-                .toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
-            bindConstant()
-                .annotatedWith(DatabaseLocation.class)
-                .to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
-          }
-
-          @Provides
-          private PeersView peersView(@Self BFTNode self) {
-            return () ->
-                allNodes.stream().filter(n -> !self.equals(n)).map(PeersView.PeerInfo::fromBftNode);
-          }
-
-          @Provides
-          @Genesis
-          private List<TxAction> mempoolFillerIssuance(@Self ECPublicKey self) {
-            return List.of(
-                new MintToken(
-                    REAddr.ofNativeToken(),
-                    REAddr.ofPubKeyAccount(nodeKeys.get(MEMPOOL_FILLER_NODE).getPublicKey()),
-                    Amount.ofTokens(10000000000L).toSubunits()));
-          }
-        });
-  }
-
-  @After
-  public void teardown() {
-    this.nodes.forEach(this::stopDatabase);
+    for (Supplier<Injector> nodeCreator : nodeCreators) {
+      this.nodes.add(nodeCreator.get());
+    }
   }
 
   private void stopDatabase(Injector injector) {
@@ -262,61 +213,136 @@ public class MempoolRelayTest {
     injector.getInstance(DatabaseEnvironment.class).stop();
   }
 
+  @After
+  public void teardown() {
+    this.nodes.forEach(this::stopDatabase);
+  }
+
+  private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
+    return Guice.createInjector(
+        new MockedGenesisModule(
+            nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
+            Amount.ofTokens(1000000),
+            Amount.ofTokens(10000)),
+        MempoolConfig.asModule(10, 10),
+        new MainnetForkConfigsModule(),
+        new RadixEngineForksLatestOnlyModule(
+            new RERulesConfig(
+                Set.of("xrd"),
+                Pattern.compile("[a-z0-9]+"),
+                FeeTable.noFees(),
+                1024 * 1024,
+                OptionalInt.of(50),
+                88,
+                2,
+                Amount.ofTokens(10),
+                1,
+                Amount.ofTokens(10),
+                9800,
+                10)),
+        new ForksModule(),
+        new PersistedNodeForTestingModule(),
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
+            bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(allNodes);
+            bind(PeersView.class).toInstance(Stream::of);
+            bind(Environment.class)
+                .toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
+            bindConstant()
+                .annotatedWith(DatabaseLocation.class)
+                .to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
+          }
+
+          @ProvidesIntoSet
+          @ProcessOnDispatch
+          private EventProcessor<BFTCommittedUpdate> committedUpdateEventProcessor(
+              @Self BFTNode node) {
+            return nodeEvents.processor(node, BFTCommittedUpdate.class);
+          }
+
+          @ProvidesIntoSet
+          private EventProcessorOnDispatch<?> viewQuorumReachedEventProcessor(@Self BFTNode node) {
+            return nodeEvents.processorOnDispatch(node, ViewQuorumReached.class);
+          }
+        });
+  }
+
+  private void restartNode(int index) {
+    this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
+    Injector injector = nodeCreators.get(index).get();
+    this.nodes.set(index, injector);
+  }
+
+  private void startNode(int index) {
+    Injector injector = nodes.get(index);
+    ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
+    try {
+      injector.getInstance(DeterministicProcessor.class).start();
+    } finally {
+      ThreadContext.remove("self");
+    }
+  }
+
+  private void processNext() {
+    Timed<ControlledMessage> msg = this.network.nextMessage();
+    logger.debug("Processing message {}", msg);
+
+    int nodeIndex = msg.value().channelId().receiverIndex();
+    Injector injector = this.nodes.get(nodeIndex);
+    ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
+    try {
+      injector
+          .getInstance(DeterministicProcessor.class)
+          .handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral());
+    } finally {
+      ThreadContext.remove("self");
+    }
+  }
+
+  private void processUntilNextCommittedUpdate() {
+    lastNodeToCommit = -1;
+
+    while (lastNodeToCommit == -1) {
+      processNext();
+    }
+  }
+
   private void processForCount(int messageCount) {
     for (int i = 0; i < messageCount; i++) {
       processNext();
     }
   }
 
-  private Timed<ControlledMessage> processNext() {
-    final var msg = this.network.nextMessage();
-    final var nodeIndex = msg.value().channelId().receiverIndex();
-    final var injector = this.nodes.get(nodeIndex);
-    withThreadCtx(
-        injector,
-        () ->
-            injector
-                .getInstance(DeterministicProcessor.class)
-                .handleMessage(
-                    msg.value().origin(), msg.value().message(), msg.value().typeLiteral()));
-    return msg;
-  }
-
-  private void withThreadCtx(Injector injector, Runnable r) {
-    ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
-    try {
-      r.run();
-    } finally {
-      ThreadContext.remove("self");
-    }
-  }
-
-  private long getCounter(int nodeIndex, CounterType counterType) {
-    return this.nodes.get(nodeIndex).getInstance(SystemCounters.class).get(counterType);
-  }
-
-  private <T> void dispatch(int nodeIndex, Class<T> clazz, T event) {
-    network.createSender(nodeIndex).getDispatcher(clazz).dispatch(event);
-  }
-
   @Test
-  public void full_node_should_relay_mempool_messages_so_they_can_be_processed_by_validator() {
-    dispatch(MEMPOOL_FILLER_NODE, MempoolFillerUpdate.class, MempoolFillerUpdate.enable(500, true));
-    processForCount(100000);
-    dispatch(MEMPOOL_FILLER_NODE, MempoolFillerUpdate.class, MempoolFillerUpdate.disable());
-    processForCount(100000);
+  public void dropper_and_crasher_adversares_should_not_cause_safety_failures() {
+    // Start
+    for (int i = 0; i < nodes.size(); i++) {
+      this.startNode(i);
+    }
 
-    // assert that validators have an empty mempool, but not the full nodes
-    this.validators.forEach(n -> assertEquals(0L, getCounter(n, CounterType.MEMPOOL_CURRENT_SIZE)));
-    this.fullNodes.forEach(n -> assertTrue(getCounter(n, CounterType.MEMPOOL_CURRENT_SIZE) >= 1L));
+    // Drop first proposal so view 2 will be committed
+    this.network.dropMessages(m -> m.message() instanceof Proposal);
 
-    // trigger mempool relay on the full nodes and process some more messages
-    this.fullNodes.forEach(
-        n -> dispatch(n, MempoolRelayTrigger.class, MempoolRelayTrigger.create()));
-    processForCount(10000);
+    // process until view 2 committed
+    this.processUntilNextCommittedUpdate();
 
-    // at this point all mempools should be empty
-    this.validators.forEach(n -> assertEquals(0L, getCounter(n, CounterType.MEMPOOL_CURRENT_SIZE)));
-    this.fullNodes.forEach(n -> assertEquals(0L, getCounter(n, CounterType.MEMPOOL_CURRENT_SIZE)));
+    // Restart all except last committed
+    logger.info("Restarting...");
+    for (int i = 0; i < nodes.size(); i++) {
+      if (i != this.lastNodeToCommit) {
+        this.restartNode(i);
+      }
+    }
+    for (int i = 0; i < nodes.size(); i++) {
+      if (i != this.lastNodeToCommit) {
+        this.startNode(i);
+      }
+    }
+
+    // If nodes restart with correct safety precautions then view 1 should be skipped
+    // otherwise, this will cause failure
+    this.processForCount(5000);
   }
 }

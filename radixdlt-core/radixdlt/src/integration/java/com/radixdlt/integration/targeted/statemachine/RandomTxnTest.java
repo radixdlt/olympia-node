@@ -62,9 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.staking;
-
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+package com.radixdlt.integration.targeted.statemachine;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -72,92 +70,49 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.REOutput;
-import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.utils.PrivateKeys;
-import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-@RunWith(Parameterized.class)
-public class UnstakingLockedTokensTest {
-  @Parameterized.Parameters
-  public static Collection<Object[]> parameters() {
-    return List.of(
-        new Object[][] {
-          {1, 2, 3, false},
-          {1, 2, 4, true},
-          {3, 4, 5, false},
-          {3, 4, 6, true},
-        });
-  }
-
+public class RandomTxnTest {
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-
+  private static final Logger logger = LogManager.getLogger();
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  @Inject @LocalSigner private HashSigner hashSigner;
-  @Inject @Self private ECPublicKey self;
-  @Inject private SingleNodeDeterministicRunner runner;
-  @Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
-  @Inject private RadixEngineStateComputer radixEngineStateComputer;
-  private final long stakingEpoch;
-  private final long unstakingEpoch;
-  private final long transferEpoch;
-  private final boolean shouldSucceed;
+  @Inject private RadixEngine<LedgerAndBFTProof> engine;
 
-  public UnstakingLockedTokensTest(
-      long stakingEpoch, long unstakingEpoch, long transferEpoch, boolean shouldSucceed) {
-    if (stakingEpoch < 1) {
-      throw new IllegalArgumentException();
-    }
-
-    this.stakingEpoch = stakingEpoch;
-    this.unstakingEpoch = unstakingEpoch;
-    this.transferEpoch = transferEpoch;
-    this.shouldSucceed = shouldSucceed;
-  }
+  // FIXME: Hack, need this in order to cause provider for genesis to be stored
+  @Inject @LastStoredProof private LedgerProof ledgerProof;
 
   private Injector createInjector() {
     return Guice.createInjector(
         MempoolConfig.asModule(1000, 10),
         new MainnetForkConfigsModule(),
-        new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
+        new RadixEngineForksLatestOnlyModule(),
         new ForksModule(),
         new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
         new MockedGenesisModule(
-            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(110), Amount.ofTokens(100)),
+            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(100000), Amount.ofTokens(1000)),
         new AbstractModule() {
           @Override
           protected void configure() {
@@ -168,83 +123,30 @@ public class UnstakingLockedTokensTest {
         });
   }
 
-  public REProcessedTxn waitForCommit(AID txnId) {
-    var committed =
-        runner.runNextEventsThrough(
-            LedgerUpdate.class,
-            u -> {
-              var output = u.getStateComputerOutput().getInstance(REOutput.class);
-              return output.getProcessedTxns().stream()
-                  .anyMatch(txn -> txn.getTxn().getId().equals(txnId));
-            });
-
-    return committed
-        .getStateComputerOutput()
-        .getInstance(REOutput.class)
-        .getProcessedTxns()
-        .stream()
-        .filter(t -> t.getTxn().getId().equals(txnId))
-        .findFirst()
-        .orElseThrow();
-  }
-
-  public REProcessedTxn dispatchAndWaitForCommit(TxAction action) throws Exception {
-    var request = TxnConstructionRequest.create().action(action);
-    var txBuilder = radixEngine.construct(request.feePayer(REAddr.ofPubKeyAccount(self)));
-    var txn = txBuilder.signAndBuild(hashSigner::sign);
-    radixEngineStateComputer.addToMempool(txn);
-    return waitForCommit(txn.getId());
-  }
-
   @Test
-  public void test_stake_unlocking() throws Exception {
+  public void poor_mans_fuzz_test() {
+    var random = new Random(12345678);
+
+    // Arrange
     createInjector().injectMembers(this);
+    final var count = 1000000;
 
-    runner.start();
-
-    if (stakingEpoch > 1) {
-      runner.runNextEventsThrough(
-          LedgerUpdate.class,
-          e -> {
-            var epochChange = e.getStateComputerOutput().getInstance(EpochChange.class);
-            return epochChange != null && epochChange.getEpoch() == stakingEpoch;
-          });
-    }
-
-    var accountAddr = REAddr.ofPubKeyAccount(self);
-    var stakeTxn =
-        dispatchAndWaitForCommit(
-            new StakeTokens(accountAddr, self, Amount.ofTokens(10).toSubunits()));
-    runner.runNextEventsThrough(
-        LedgerUpdate.class,
-        e -> {
-          var epochChange = e.getStateComputerOutput().getInstance(EpochChange.class);
-          return epochChange != null && epochChange.getEpoch() == unstakingEpoch;
-        });
-    var unstakeTxn =
-        dispatchAndWaitForCommit(
-            new UnstakeTokens(self, accountAddr, Amount.ofTokens(10).toSubunits()));
-
-    if (transferEpoch > unstakingEpoch) {
-      runner.runNextEventsThrough(
-          LedgerUpdate.class,
-          e -> {
-            var epochChange = e.getStateComputerOutput().getInstance(EpochChange.class);
-            return epochChange != null && epochChange.getEpoch() == transferEpoch;
-          });
-    }
-
-    var otherAddr = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
-    var transferAction =
-        new TransferToken(
-            REAddr.ofNativeToken(), accountAddr, otherAddr, Amount.ofTokens(10).toSubunits());
-
-    // Build transaction through radix engine
-    if (shouldSucceed) {
-      radixEngine.construct(transferAction);
-    } else {
-      assertThatThrownBy(() -> radixEngine.construct(transferAction))
-          .isInstanceOf(TxBuilderException.class);
+    for (int i = 0; i < count; i++) {
+      int len = random.nextInt(512);
+      var payload = new byte[len];
+      random.nextBytes(payload);
+      for (int j = 0; j < len; j++) {
+        payload[j] = random.nextBoolean() ? (byte) random.nextInt(10) : payload[j];
+      }
+      var txns = List.of(Txn.create(payload));
+      if (i % 1000 == 0) {
+        logger.info(i + "/" + count);
+      }
+      try {
+        engine.execute(txns, null, PermissionLevel.SYSTEM);
+      } catch (RadixEngineException e) {
+        // ignore
+      }
     }
   }
 }

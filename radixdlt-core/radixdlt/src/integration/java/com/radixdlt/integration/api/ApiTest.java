@@ -135,9 +135,7 @@ import org.junit.runners.Parameterized;
  * Test which runs a 20 node consensus network. Random transactions are submitted and nodes are
  * rebooted while checks occur on the api to make sure that invariants are not broken.
  */
-@Category(Slow.class)
-@RunWith(Parameterized.class)
-public class ApiTest {
+public abstract class ApiTest {
   private static final Logger logger = LogManager.getLogger();
   private static final int ACTION_ROUNDS = 5000;
   private static final RERulesConfig config =
@@ -151,50 +149,58 @@ public class ApiTest {
           new ActorConfiguration(NativeTokenRewardsChecker::new, 1, 100),
           new ActorConfiguration(ApiBalanceToRadixEngineChecker::new, 1, 200));
 
-  @Parameterized.Parameters
-  public static Collection<Object[]> forksModule() {
-    return List.of(
-        new Object[][] {
-          {new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100)), null},
-          {new ForkOverwritesWithShorterEpochsModule(config), null},
-          {
-            new ForkOverwritesWithShorterEpochsModule(config),
-            new ForkOverwritesWithShorterEpochsModule(config.removeSigsPerRoundLimit())
-          }
-        });
-  }
-
   // The following class is created as a workaround as gradle cannot run the tests inside a test
   // class in parallel. We can achieve some level of parallelism splitting the tests across
   // different test classes.
 
   @Category(Slow.class)
-  @RunWith(Parameterized.class)
-  public static class ApiTest2 extends ApiTest {
-
-    @Parameterized.Parameters
-    public static Collection<Object[]> forksModule() {
-      return List.of(
-          new Object[][] {
-            {
-              new RadixEngineForksLatestOnlyModule(
-                  config
-                      .overrideMaxRounds(100)
-                      .overrideFeeTable(FeeTable.create(PER_BYTE_FEE, Map.of()))),
-              null
-            },
-            {
-              new ForkOverwritesWithShorterEpochsModule(
-                  config.overrideFeeTable(FeeTable.create(PER_BYTE_FEE, Map.of()))),
-              null
-            },
-          });
-    }
-
-    public ApiTest2(Module forkModule, Module byzantineModule) {
-      super(forkModule, byzantineModule);
+  public static class ApiTest0 extends ApiTest {
+    public ApiTest0() {
+      super(new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100)), null);
     }
   }
+
+
+  @Category(Slow.class)
+  public static class ApiTest1 extends ApiTest {
+    public ApiTest1() {
+      super(new RadixEngineForksLatestOnlyModule(config), null);
+    }
+  }
+
+  @Category(Slow.class)
+  public static class ApiTest2 extends ApiTest {
+    public ApiTest2() {
+      super(
+              new ForkOverwritesWithShorterEpochsModule(config),
+              new ForkOverwritesWithShorterEpochsModule(config.removeSigsPerRoundLimit())
+      );
+    }
+  }
+
+
+  @Category(Slow.class)
+  public static class ApiTest3 extends ApiTest {
+    public ApiTest3() {
+      super(
+              new RadixEngineForksLatestOnlyModule(
+                      config
+                              .overrideMaxRounds(100)
+                              .overrideFeeTable(FeeTable.create(PER_BYTE_FEE, Map.of()))),
+              null);
+    }
+  }
+
+  @Category(Slow.class)
+  public static class ApiTest4 extends ApiTest {
+    public ApiTest4() {
+      super(
+              new ForkOverwritesWithShorterEpochsModule(
+                      config.overrideFeeTable(FeeTable.create(PER_BYTE_FEE, Map.of()))),
+              null);
+    }
+  }
+
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
   private DeterministicNetwork network;
@@ -311,15 +317,14 @@ public class ApiTest {
     }
   }
 
-  /** TODO: Figure out why if run for long enough, # of validators trends to minimum. */
   @Test
-  public void api_test() throws Exception {
+  public void run() throws Exception {
     var random = new Random(12345);
 
     var actors =
         ACTOR_CONFIGURATIONS.stream()
             .map(c -> new RunningActor(c.createActor(), c.getNumerator(), c.getDenominator()))
-            .collect(Collectors.toList());
+            .toList();
 
     for (int i = 0; i < ACTION_ROUNDS; i++) {
       deterministicRunner.processForCount(100);
