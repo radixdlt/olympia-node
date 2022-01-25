@@ -38,7 +38,8 @@ jobs:
               "ref": "${{ github.ref }}",
                "release_tag": "${{ github.event.release.tag_name }}",
                "release_url": "${{ github.event.release.html_url }}",
-              "release_job_url": "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}"
+               "release_job_url": "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}",
+               "is_prerelease": "${{ github.event.release.prerelease }}"
             }
   start_radixdlt_node_runner:
     name: Start node-runner release ${{ github.event.release.tag_name }}
@@ -56,7 +57,8 @@ jobs:
               "ref": "${{ github.ref }}",
               "release_tag": "${{ github.event.release.tag_name }}",
               "release_url": "${{ github.event.release.html_url }}",
-              "release_job_url": "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}"
+              "release_job_url": "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}",
+              "is_prerelease": "${{ github.event.release.prerelease }}"
             }
 
   start_radixdlt_metrics_exporter:
