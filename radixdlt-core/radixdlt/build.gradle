@@ -110,6 +110,9 @@ configurations {
 }
 
 task integrationTest(type: Test) {
+    filter {
+        includeTestsMatching "com.radixdlt.integration.steady_state.*"
+    }
     testClassesDirs = sourceSets.integrationTest.output.classesDirs
     classpath = sourceSets.integrationTest.runtimeClasspath
     maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1 //A greater number was tried, but the tests either failed or there was no gain in performance.
@@ -117,8 +120,8 @@ task integrationTest(type: Test) {
 }
 
 task slowIntegrationTest(type: Test) {
-    useJUnit {
-        includeCategories 'com.radixdlt.integration.Slow'
+    filter {
+        includeTestsMatching "com.radixdlt.integration.targeted.*"
     }
     testClassesDirs = sourceSets.integrationTest.output.classesDirs
     classpath = sourceSets.integrationTest.runtimeClasspath
@@ -152,9 +155,6 @@ jar {
 }
 
 integrationTest {
-    useJUnit {
-        excludeCategories 'com.radixdlt.integration.Slow'
-    }
     jacoco {
         // We don't want integration tests included in code coverage.
         enabled false

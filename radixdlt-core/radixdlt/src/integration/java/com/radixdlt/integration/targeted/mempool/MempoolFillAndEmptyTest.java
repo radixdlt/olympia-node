@@ -79,7 +79,6 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.integration.Slow;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.mempoolfiller.MempoolFillerUpdate;
@@ -94,14 +93,12 @@ import com.radixdlt.utils.PrivateKeys;
 import java.util.Set;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 
 /**
  * Test which fills a mempool and then empties it checking to make sure there are no stragglers left
  * behind.
  */
-@Category(Slow.class)
 public final class MempoolFillAndEmptyTest {
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
   @Rule public TemporaryFolder folder = new TemporaryFolder();

@@ -100,7 +100,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.integration.Slow;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -125,10 +124,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 
-@Category(Slow.class)
 public class LargeEpochChangeTest {
   private static final int NUM_ROUNDS = 10000;
   private static final Logger logger = LogManager.getLogger();

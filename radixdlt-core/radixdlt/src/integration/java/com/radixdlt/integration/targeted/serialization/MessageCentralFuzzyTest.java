@@ -75,7 +75,6 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.integration.Slow;
 import com.radixdlt.network.messaging.EventQueueFactory;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.messaging.MessageCentralConfiguration;
@@ -94,12 +93,10 @@ import java.util.Comparator;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.radix.network.messages.PeerPingMessage;
 import org.radix.network.messaging.Message;
 import org.radix.time.Time;
 
-@Category(Slow.class)
 public class MessageCentralFuzzyTest {
   private static final int MIN_MESSAGE_LEN = 1;
   private static final int MAX_MESSAGE_LEN = 1024 * 1024;
