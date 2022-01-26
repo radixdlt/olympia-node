@@ -74,6 +74,7 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.utils.LedgerHeaderMock;
 import java.util.List;
 
 public class UnverifiedVertexSerializeTest extends SerializeObject<UnverifiedVertex> {
@@ -83,7 +84,7 @@ public class UnverifiedVertexSerializeTest extends SerializeObject<UnverifiedVer
 
   private static UnverifiedVertex get() {
     View view = View.of(1234567891L);
-    LedgerHeader ledgerHeader = LedgerHeader.mocked();
+    LedgerHeader ledgerHeader = LedgerHeaderMock.get();
     BFTHeader header = new BFTHeader(view, HashUtils.random256(), ledgerHeader);
     BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
     VoteData voteData = new VoteData(header, parent, null);
