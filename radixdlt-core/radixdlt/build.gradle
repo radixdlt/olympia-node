@@ -119,7 +119,7 @@ task integrationTest(type: Test) {
     mustRunAfter(test)
 }
 
-task slowIntegrationTest(type: Test) {
+task targetedIntegrationTest(type: Test) {
     filter {
         includeTestsMatching "com.radixdlt.integration.targeted.*"
     }
