@@ -192,7 +192,7 @@ public final class PMTBranch extends PMTNode {
   public PMTBranch(byte[] value, PMTBranchChild... nextNode) {
     this.children = new byte[NUMBER_OF_NIBBLES][];
     Arrays.fill(children, new byte[0]);
-    Arrays.stream(nextNode).forEach(l -> setNibble(l));
+    Arrays.stream(nextNode).forEach(this::setNibble);
     if (value != null) {
       this.value = value;
     }
@@ -219,5 +219,23 @@ public final class PMTBranch extends PMTNode {
     } catch (CloneNotSupportedException e) {
       throw new IllegalStateException("Can't clone branch for edits", e);
     }
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
+
+    PMTBranch pmtBranch = (PMTBranch) o;
+
+    return Arrays.deepEquals(getChildren(), pmtBranch.getChildren());
+  }
+
+  @Override
+  public int hashCode() {
+    int result = super.hashCode();
+    result = 31 * result + Arrays.deepHashCode(getChildren());
+    return result;
   }
 }
