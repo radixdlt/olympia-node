@@ -36,7 +36,7 @@ jobs:
           # SonarCloud access token should be generated from https://sonarcloud.io/account/security/
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
   integration:
-    name: Integration tests
+    name: Steady state integration tests
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -57,7 +57,7 @@ jobs:
       - name: integration tests
         run: ./gradlew integrationTest --refresh-dependencies
   slow-integration:
-    name: Slow integration tests
+    name: Targeted integration tests
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -76,7 +76,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: integration tests
-        run: ./gradlew slowIntegrationTest --refresh-dependencies
+        run: ./gradlew targetedIntegrationTest --refresh-dependencies
   rcnet-testing:
     name: RCNet live network testing
     if: github.ref == 'refs/heads/develop'
