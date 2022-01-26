@@ -148,7 +148,6 @@ public class PMT {
               TreeUtils.toHexString(key),
               TreeUtils.toHexString(represent(root)));
         }
-        // TODO XXX: what shall we return for not found? Maybe lets wrap everything in Option?
         return new byte[0];
       } else {
         return acc.getRetVal().getValue();
@@ -157,8 +156,7 @@ public class PMT {
       if (log.isDebugEnabled()) {
         log.debug("Tree empty when key: {}", TreeUtils.toHexString(key));
       }
-      // TODO XXX: what shall we return for empty Maybe lets wrap everything in Option?
-      return null;
+      return new byte[0];
     }
   }
 

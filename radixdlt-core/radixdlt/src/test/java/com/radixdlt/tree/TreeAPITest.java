@@ -73,13 +73,10 @@ import com.radixdlt.utils.Bytes;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
 
 public class TreeAPITest {
-  private static final Logger logger = LogManager.getLogger();
 
   @Test
   public void simpleAddGet() {
@@ -190,5 +187,37 @@ public class TreeAPITest {
     assertArrayEquals("Tree does not have the right root hash", rootHash, tree.getRootHash());
 
     assertArrayEquals(tree.get(Hex.decode(verbKey)), verbValue.getBytes(StandardCharsets.UTF_8));
+  }
+
+  @Test
+  public void when_tree_is_empty__then_empty_array_should_be_returned() {
+    var storage = new InMemoryPMTStorage();
+    var tree =
+        new PMT(storage, new Keccak256(), new RLPSerializer(), Duration.of(10, ChronoUnit.MINUTES));
+
+    String verbKey = "646f";
+
+    assertArrayEquals(
+        "Get should return empty array when tree is empty",
+        new byte[0],
+        tree.get(verbKey.getBytes(StandardCharsets.UTF_8)));
+  }
+
+  @Test
+  public void when_tree_does_not_contain_key__then_empty_array_should_be_returned() {
+    var storage = new InMemoryPMTStorage();
+    var tree =
+        new PMT(storage, new Keccak256(), new RLPSerializer(), Duration.of(10, ChronoUnit.MINUTES));
+
+    String verbKey = "646f";
+    String verbValue = "verb";
+    final var rootHash = tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
+
+    String nonExistingKey = "non_existing_key";
+
+    assertArrayEquals(
+        "Get should return empty array when key is not found",
+        new byte[0],
+        tree.get(nonExistingKey.getBytes(StandardCharsets.UTF_8)));
   }
 }
