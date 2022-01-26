@@ -217,8 +217,7 @@ public final class PMTBranch extends PMTNode {
     try {
       return (PMTBranch) this.clone();
     } catch (CloneNotSupportedException e) {
-      e.printStackTrace();
-      throw new IllegalStateException("Can't clone branch for edits");
+      throw new IllegalStateException("Can't clone branch for edits", e);
     }
   }
 }
