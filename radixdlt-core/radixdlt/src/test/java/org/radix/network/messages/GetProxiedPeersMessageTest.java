@@ -62,87 +62,36 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p;
+package org.radix.network.messages;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.RemoteEventProcessorOnRunner;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.environment.ScheduledEventProducerOnRunner;
-import com.radixdlt.network.p2p.discovery.DiscoverPeers;
-import com.radixdlt.network.p2p.discovery.GetPeers;
-import com.radixdlt.network.p2p.discovery.GetProxiedPeers;
-import com.radixdlt.network.p2p.discovery.PeerDiscovery;
-import com.radixdlt.network.p2p.discovery.PeersResponse;
-import com.radixdlt.network.p2p.discovery.ProxiedPeersResponse;
-import java.time.Duration;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public final class PeerDiscoveryModule extends AbstractModule {
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.network.p2p.discovery.messages.GetProxiedPeersMessage;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+import org.junit.Test;
+import org.radix.serialization.SerializeMessageObject;
 
-  @Override
-  protected void configure() {
-    final var eventBinder =
-        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
-            .permitDuplicates();
-    eventBinder.addBinding().toInstance(DiscoverPeers.class);
+public class GetProxiedPeersMessageTest extends SerializeMessageObject<GetProxiedPeersMessage> {
 
-    bind(PeerDiscovery.class).in(Scopes.SINGLETON);
+  public GetProxiedPeersMessageTest() {
+    super(GetProxiedPeersMessage.class, GetProxiedPeersMessage::new);
   }
 
-  @ProvidesIntoSet
-  public ScheduledEventProducerOnRunner<?> discoverPeersEventProducer(
-      EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher, P2PConfig config) {
-    return new ScheduledEventProducerOnRunner<>(
-        Runners.P2P_NETWORK,
-        discoverPeersEventDispatcher,
-        DiscoverPeers::create,
-        Duration.ofMillis(500L),
-        Duration.ofMillis(config.discoveryInterval()));
+  @Test
+  public void sensibleToString() {
+    String s = new GetProxiedPeersMessage().toString();
+
+    assertThat(s).contains(GetProxiedPeersMessage.class.getSimpleName());
   }
 
-  @ProvidesIntoSet
-  private EventProcessorOnRunner<?> discoverPeersEventProcessor(PeerDiscovery peerDiscovery) {
-    return new EventProcessorOnRunner<>(
-        Runners.P2P_NETWORK, DiscoverPeers.class, peerDiscovery.discoverPeersEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> getPeersRemoteEventProcessor(
-      PeerDiscovery peerDiscovery) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.P2P_NETWORK, GetPeers.class, peerDiscovery.getPeersRemoteEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> getProxiedPeersRemoteEventProcessor(
-      PeerDiscovery peerDiscovery) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.P2P_NETWORK,
-        GetProxiedPeers.class,
-        peerDiscovery.getProxiedPeersRemoteEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> peersResponseRemoteEventProcessor(
-      PeerDiscovery peerDiscovery) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.P2P_NETWORK,
-        PeersResponse.class,
-        peerDiscovery.peersResponseRemoteEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> proxiedPeersResponseRemoteEventProcessor(
-      PeerDiscovery peerDiscovery) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.P2P_NETWORK,
-        ProxiedPeersResponse.class,
-        peerDiscovery.proxiedPeersResponseRemoteEventProcessor());
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(GetProxiedPeersMessage.class)
+        .suppress(Warning.NONFINAL_FIELDS)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
   }
 }

@@ -64,6 +64,7 @@
 
 package com.radixdlt.network.p2p.discovery;
 
+import static com.radixdlt.utils.TypedMocks.cmock;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -76,6 +77,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
@@ -92,6 +94,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.Test;
 
+// TODO: add proxied peers discovery tests
 public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
 
   @Test
@@ -124,7 +127,7 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
 
     final var unexpectedSender = BFTNode.random();
     final var peersResponse =
-        PeersResponse.create(
+        new PeersResponse(
             ImmutableSet.of(
                 RadixNodeUri.fromPubKeyAndAddress(
                     0, ECKeyPair.generateNew().getPublicKey(), "127.0.0.1", 1234)));
@@ -152,8 +155,10 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
 
     final var config = mock(P2PConfig.class);
     final var addressBook = mock(AddressBook.class);
-    final RemoteEventDispatcher<PeersResponse> peersResponseDispatcher =
-        rmock(RemoteEventDispatcher.class);
+    final var peersResponseDispatcher =
+        cmock(new TypeLiteral<RemoteEventDispatcher<PeersResponse>>() {});
+    final var proxiedPeersResponseDispatcher =
+        cmock(new TypeLiteral<RemoteEventDispatcher<ProxiedPeersResponse>>() {});
 
     final var sut =
         new PeerDiscovery(
@@ -164,7 +169,9 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
             mock(PeerControl.class),
             mock(SeedNodesConfigParser.class),
             rmock(RemoteEventDispatcher.class),
-            peersResponseDispatcher);
+            rmock(RemoteEventDispatcher.class),
+            peersResponseDispatcher,
+            proxiedPeersResponseDispatcher);
 
     final var peer1 = randomNodeUri();
     final var peer2 = randomNodeUri();
@@ -187,8 +194,64 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
             (BFTNode) any(),
             argThat(
                 response ->
-                    response.getPeers().containsAll(Set.of(peer1, peer2, peer4, peer5, peer6))
-                        && !response.getPeers().contains(peer3)));
+                    response.peers().containsAll(Set.of(peer1, peer2, peer4, peer5, peer6))
+                        && !response.peers().contains(peer3)));
+  }
+
+  @Test
+  public void when_behind_the_proxy_ask_proxy_for_peers() {
+    final var selfKey = ECKeyPair.generateNew();
+    final var selfUri =
+        RadixNodeUri.fromPubKeyAndAddress(1, selfKey.getPublicKey(), "127.0.0.1", 3000);
+
+    final var proxyId = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
+    final var config = mock(P2PConfig.class);
+
+    when(config.usePeerAllowList()).thenReturn(true);
+    when(config.peerAllowList()).thenReturn(ImmutableSet.of(proxyId));
+
+    final var addressBook = mock(AddressBook.class);
+    final var peersResponseDispatcher =
+        cmock(new TypeLiteral<RemoteEventDispatcher<PeersResponse>>() {});
+    final var proxiedPeersResponseDispatcher =
+        cmock(new TypeLiteral<RemoteEventDispatcher<ProxiedPeersResponse>>() {});
+
+    final var sut =
+        new PeerDiscovery(
+            selfUri,
+            config,
+            mock(PeerManager.class),
+            addressBook,
+            mock(PeerControl.class),
+            mock(SeedNodesConfigParser.class),
+            rmock(RemoteEventDispatcher.class),
+            rmock(RemoteEventDispatcher.class),
+            peersResponseDispatcher,
+            proxiedPeersResponseDispatcher);
+
+    final var peer1 = randomNodeUri();
+    final var peer2 = randomNodeUri();
+    final var peer3 = randomNodeUri();
+    final var peer4 = randomNodeUri();
+    final var peer5 = randomNodeUri();
+    final var peer6 = randomNodeUri();
+
+    // peer3 is included in the address book
+    when(addressBook.bestCandidatesToConnect())
+        .thenReturn(Stream.of(peer1, peer2, peer3, peer4, peer5, peer6));
+
+    // peer3 shouldn't be returned in discovery response
+    when(config.privatePeers()).thenReturn(ImmutableSet.of(peer3.getNodeId()));
+
+    sut.getProxiedPeersRemoteEventProcessor().process(BFTNode.random(), GetProxiedPeers.create());
+
+    verify(proxiedPeersResponseDispatcher, times(1))
+        .dispatch(
+            (BFTNode) any(),
+            argThat(
+                response ->
+                    response.peers().containsAll(Set.of(peer1, peer2, peer4, peer5, peer6))
+                        && !response.peers().contains(peer3)));
   }
 
   private RadixNodeUri randomNodeUri() {

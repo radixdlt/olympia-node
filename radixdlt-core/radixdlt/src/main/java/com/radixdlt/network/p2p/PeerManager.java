@@ -90,6 +90,7 @@ import com.radixdlt.network.p2p.proxy.ProxyCertificateManager;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
+import com.radixdlt.utils.functional.Unit;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.Collection;
@@ -253,7 +254,7 @@ public final class PeerManager {
     }
   }
 
-  private Result<Object> canConnectTo(NodeId nodeId) {
+  private Result<Unit> canConnectTo(NodeId nodeId) {
     if (nodeId.equals(self)) {
       log.info("Ignoring self connection attempt");
       return SELF_CONNECTION_ATTEMPT.result();
@@ -267,7 +268,7 @@ public final class PeerManager {
       return PEER_CONNECTION_FORBIDDEN.result();
     }
 
-    return Result.ok(new Object());
+    return Unit.success();
   }
 
   private Optional<PeerChannel> channelFor(NodeId nodeId) {

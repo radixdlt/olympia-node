@@ -88,7 +88,9 @@ import com.radixdlt.middleware2.network.MessageCentralPeerLiveness;
 import com.radixdlt.middleware2.network.MessageCentralPeerProxy;
 import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.network.p2p.discovery.GetPeers;
+import com.radixdlt.network.p2p.discovery.GetProxiedPeers;
 import com.radixdlt.network.p2p.discovery.PeersResponse;
+import com.radixdlt.network.p2p.discovery.ProxiedPeersResponse;
 import com.radixdlt.network.p2p.liveness.Ping;
 import com.radixdlt.network.p2p.liveness.Pong;
 import com.radixdlt.network.p2p.proxy.GrantedProxyCertificate;
@@ -213,10 +215,24 @@ public final class MessagingModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
+  private RxRemoteDispatcher<?> getProxiedPeersDispatcher(
+      MessageCentralPeerDiscovery messageCentralPeerDiscovery) {
+    return RxRemoteDispatcher.create(
+        GetProxiedPeers.class, messageCentralPeerDiscovery.getProxiedPeersDispatcher());
+  }
+
+  @ProvidesIntoSet
   private RxRemoteDispatcher<?> peersResponseDispatcher(
       MessageCentralPeerDiscovery messageCentralPeerDiscovery) {
     return RxRemoteDispatcher.create(
         PeersResponse.class, messageCentralPeerDiscovery.peersResponseDispatcher());
+  }
+
+  @ProvidesIntoSet
+  private RxRemoteDispatcher<?> proxiedPeersResponseDispatcher(
+      MessageCentralPeerDiscovery messageCentralPeerDiscovery) {
+    return RxRemoteDispatcher.create(
+        ProxiedPeersResponse.class, messageCentralPeerDiscovery.proxiedPeersResponseDispatcher());
   }
 
   @ProvidesIntoSet
@@ -284,8 +300,12 @@ public final class MessagingModule extends AbstractModule {
           return messageCentralPeerLiveness.pongs().map(m -> (RemoteEvent<T>) m);
         } else if (remoteEventClass == GetPeers.class) {
           return messageCentralPeerDiscovery.getPeersEvents().map(m -> (RemoteEvent<T>) m);
+        } else if (remoteEventClass == GetProxiedPeers.class) {
+          return messageCentralPeerDiscovery.getProxiedPeersEvents().map(m -> (RemoteEvent<T>) m);
         } else if (remoteEventClass == PeersResponse.class) {
           return messageCentralPeerDiscovery.peersResponses().map(m -> (RemoteEvent<T>) m);
+        } else if (remoteEventClass == ProxiedPeersResponse.class) {
+          return messageCentralPeerDiscovery.proxiedPeersResponses().map(m -> (RemoteEvent<T>) m);
         } else if (remoteEventClass == GrantedProxyCertificate.class) {
           return messageCentralPeerProxy.grantedProxyCertificates().map(m -> (RemoteEvent<T>) m);
         } else if (remoteEventClass == ProxyCertificatesAnnouncement.class) {

@@ -82,11 +82,11 @@ public final class PeerManagerPeersView implements PeersView {
 
   @Override
   public Stream<PeerInfo> peers() {
-    final var grouppedByNodeId =
+    final var groupedByNodeId =
         this.peerManager.activeChannels().stream()
             .collect(groupingBy(PeerChannel::getRemoteNodeId));
 
-    return grouppedByNodeId.entrySet().stream()
+    return groupedByNodeId.entrySet().stream()
         .map(
             e -> {
               final var channelsInfo =

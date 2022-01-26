@@ -70,9 +70,13 @@ import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.discovery.GetPeers;
+import com.radixdlt.network.p2p.discovery.GetProxiedPeers;
 import com.radixdlt.network.p2p.discovery.PeersResponse;
+import com.radixdlt.network.p2p.discovery.ProxiedPeersResponse;
 import com.radixdlt.network.p2p.discovery.messages.GetPeersMessage;
+import com.radixdlt.network.p2p.discovery.messages.GetProxiedPeersMessage;
 import com.radixdlt.network.p2p.discovery.messages.PeersResponseMessage;
+import com.radixdlt.network.p2p.discovery.messages.ProxiedPeersResponseMessage;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import java.util.Objects;
@@ -98,6 +102,17 @@ public final class MessageCentralPeerDiscovery {
             });
   }
 
+  public Flowable<RemoteEvent<GetProxiedPeers>> getProxiedPeersEvents() {
+    return this.messageCentral
+        .messagesOf(GetProxiedPeersMessage.class)
+        .toFlowable(BackpressureStrategy.BUFFER)
+        .map(
+            m -> {
+              final var node = BFTNode.create(m.getSource().getPublicKey());
+              return RemoteEvent.create(node, GetProxiedPeers.create());
+            });
+  }
+
   public Flowable<RemoteEvent<PeersResponse>> peersResponses() {
     return this.messageCentral
         .messagesOf(PeersResponseMessage.class)
@@ -105,7 +120,18 @@ public final class MessageCentralPeerDiscovery {
         .map(
             m -> {
               final var node = BFTNode.create(m.getSource().getPublicKey());
-              return RemoteEvent.create(node, PeersResponse.create(m.getMessage().getPeers()));
+              return RemoteEvent.create(node, new PeersResponse(m.getMessage().getPeers()));
+            });
+  }
+
+  public Flowable<RemoteEvent<ProxiedPeersResponse>> proxiedPeersResponses() {
+    return this.messageCentral
+        .messagesOf(PeersResponseMessage.class)
+        .toFlowable(BackpressureStrategy.BUFFER)
+        .map(
+            m -> {
+              final var node = BFTNode.create(m.getSource().getPublicKey());
+              return RemoteEvent.create(node, new ProxiedPeersResponse(m.getMessage().getPeers()));
             });
   }
 
@@ -113,8 +139,17 @@ public final class MessageCentralPeerDiscovery {
     return this::sendGetPeers;
   }
 
+  public RemoteEventDispatcher<GetProxiedPeers> getProxiedPeersDispatcher() {
+    return this::sendGetProxiedPeers;
+  }
+
   private void sendGetPeers(BFTNode node, GetPeers getPeers) {
     final var msg = new GetPeersMessage();
+    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+  }
+
+  private void sendGetProxiedPeers(BFTNode node, GetProxiedPeers getPeers) {
+    final var msg = new GetProxiedPeersMessage();
     this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
   }
 
@@ -122,8 +157,17 @@ public final class MessageCentralPeerDiscovery {
     return this::sendPeersResponse;
   }
 
+  public RemoteEventDispatcher<ProxiedPeersResponse> proxiedPeersResponseDispatcher() {
+    return this::sendProxiedPeersResponse;
+  }
+
   private void sendPeersResponse(BFTNode node, PeersResponse peersResponse) {
-    final var msg = new PeersResponseMessage(peersResponse.getPeers());
+    final var msg = new PeersResponseMessage(peersResponse.peers());
+    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+  }
+
+  private void sendProxiedPeersResponse(BFTNode node, ProxiedPeersResponse peersResponse) {
+    final var msg = new ProxiedPeersResponseMessage(peersResponse.peers());
     this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
   }
 }

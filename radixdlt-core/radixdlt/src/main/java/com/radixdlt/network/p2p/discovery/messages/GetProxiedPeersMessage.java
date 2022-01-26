@@ -62,87 +62,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p;
+package com.radixdlt.network.p2p.discovery.messages;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.RemoteEventProcessorOnRunner;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.environment.ScheduledEventProducerOnRunner;
-import com.radixdlt.network.p2p.discovery.DiscoverPeers;
-import com.radixdlt.network.p2p.discovery.GetPeers;
-import com.radixdlt.network.p2p.discovery.GetProxiedPeers;
-import com.radixdlt.network.p2p.discovery.PeerDiscovery;
-import com.radixdlt.network.p2p.discovery.PeersResponse;
-import com.radixdlt.network.p2p.discovery.ProxiedPeersResponse;
-import java.time.Duration;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.radixdlt.network.messaging.Message;
+import com.radixdlt.serialization.SerializerId2;
+import java.util.Objects;
 
-public final class PeerDiscoveryModule extends AbstractModule {
+@SerializerId2("p2p.discovery.get_proxied_peers")
+public final class GetProxiedPeersMessage extends Message {
+  @JsonCreator
+  public GetProxiedPeersMessage() {}
 
   @Override
-  protected void configure() {
-    final var eventBinder =
-        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
-            .permitDuplicates();
-    eventBinder.addBinding().toInstance(DiscoverPeers.class);
-
-    bind(PeerDiscovery.class).in(Scopes.SINGLETON);
+  public String toString() {
+    return getClass().getSimpleName();
   }
 
-  @ProvidesIntoSet
-  public ScheduledEventProducerOnRunner<?> discoverPeersEventProducer(
-      EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher, P2PConfig config) {
-    return new ScheduledEventProducerOnRunner<>(
-        Runners.P2P_NETWORK,
-        discoverPeersEventDispatcher,
-        DiscoverPeers::create,
-        Duration.ofMillis(500L),
-        Duration.ofMillis(config.discoveryInterval()));
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    return (o instanceof GetProxiedPeersMessage that)
+        && Objects.equals(getTimestamp(), that.getTimestamp());
   }
 
-  @ProvidesIntoSet
-  private EventProcessorOnRunner<?> discoverPeersEventProcessor(PeerDiscovery peerDiscovery) {
-    return new EventProcessorOnRunner<>(
-        Runners.P2P_NETWORK, DiscoverPeers.class, peerDiscovery.discoverPeersEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> getPeersRemoteEventProcessor(
-      PeerDiscovery peerDiscovery) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.P2P_NETWORK, GetPeers.class, peerDiscovery.getPeersRemoteEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> getProxiedPeersRemoteEventProcessor(
-      PeerDiscovery peerDiscovery) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.P2P_NETWORK,
-        GetProxiedPeers.class,
-        peerDiscovery.getProxiedPeersRemoteEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> peersResponseRemoteEventProcessor(
-      PeerDiscovery peerDiscovery) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.P2P_NETWORK,
-        PeersResponse.class,
-        peerDiscovery.peersResponseRemoteEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> proxiedPeersResponseRemoteEventProcessor(
-      PeerDiscovery peerDiscovery) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.P2P_NETWORK,
-        ProxiedPeersResponse.class,
-        peerDiscovery.proxiedPeersResponseRemoteEventProcessor());
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(getTimestamp());
   }
 }

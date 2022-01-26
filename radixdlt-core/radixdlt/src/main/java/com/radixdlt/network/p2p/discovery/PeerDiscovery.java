@@ -108,9 +108,13 @@ public final class PeerDiscovery {
   private final PeerControl peerControl;
   private final SeedNodesConfigParser seedNodesConfigParser;
   private final RemoteEventDispatcher<GetPeers> getPeersRemoteEventDispatcher;
+  private final RemoteEventDispatcher<GetProxiedPeers> getProxiedPeersRemoteEventDispatcher;
   private final RemoteEventDispatcher<PeersResponse> peersResponseRemoteEventDispatcher;
+  private final RemoteEventDispatcher<ProxiedPeersResponse>
+      proxiedPeersResponseRemoteEventDispatcher;
 
   private final Set<NodeId> peersAsked = new HashSet<>();
+  private final Set<NodeId> proxiesAsked = new HashSet<>();
 
   @Inject
   public PeerDiscovery(
@@ -121,7 +125,9 @@ public final class PeerDiscovery {
       PeerControl peerControl,
       SeedNodesConfigParser seedNodesConfigParser,
       RemoteEventDispatcher<GetPeers> getPeersRemoteEventDispatcher,
-      RemoteEventDispatcher<PeersResponse> peersResponseRemoteEventDispatcher) {
+      RemoteEventDispatcher<GetProxiedPeers> getProxiedPeersRemoteEventDispatcher,
+      RemoteEventDispatcher<PeersResponse> peersResponseRemoteEventDispatcher,
+      RemoteEventDispatcher<ProxiedPeersResponse> proxiedPeersResponseRemoteEventDispatcher) {
     this.selfUri = Objects.requireNonNull(selfUri);
     this.config = Objects.requireNonNull(config);
     this.peerManager = Objects.requireNonNull(peerManager);
@@ -131,27 +137,47 @@ public final class PeerDiscovery {
     this.getPeersRemoteEventDispatcher = Objects.requireNonNull(getPeersRemoteEventDispatcher);
     this.peersResponseRemoteEventDispatcher =
         Objects.requireNonNull(peersResponseRemoteEventDispatcher);
+    this.getProxiedPeersRemoteEventDispatcher = getProxiedPeersRemoteEventDispatcher;
+    this.proxiedPeersResponseRemoteEventDispatcher = proxiedPeersResponseRemoteEventDispatcher;
   }
 
   public EventProcessor<DiscoverPeers> discoverPeersEventProcessor() {
-    return unused -> {
-      final var seedNodes = seedNodesConfigParser.getResolvedSeedNodes();
-      this.addressBook.addUncheckedPeers(seedNodes);
+    return config.usePeerAllowList()
+        ? (unused -> discoverProxiedPeers())
+        : (unused -> discoverDirectPeers());
+  }
 
-      final var channels = new ArrayList<>(this.peerManager.activeChannels());
-      Collections.shuffle(channels);
-      channels.stream()
-          .filter(not(c -> peersAsked.contains(c.getRemoteNodeId())))
-          .limit(MAX_REQUESTS_SENT_AT_ONCE)
-          .forEach(
-              peer -> {
-                peersAsked.add(peer.getRemoteNodeId());
-                getPeersRemoteEventDispatcher.dispatch(
-                    BFTNode.create(peer.getRemoteNodeId().getPublicKey()), GetPeers.create());
-              });
+  private void discoverProxiedPeers() {
+    var proxies = new ArrayList<>(config.peerAllowList());
+    Collections.shuffle(proxies);
+    proxies.stream()
+        .filter(not(proxiesAsked::contains))
+        .limit(MAX_REQUESTS_SENT_AT_ONCE)
+        .forEach(
+            nodeId -> {
+              proxiesAsked.add(nodeId);
+              getProxiedPeersRemoteEventDispatcher.dispatch(
+                  BFTNode.create(nodeId.getPublicKey()), GetProxiedPeers.create());
+            });
+    this.tryConnectToSomeKnownPeers();
+  }
 
-      this.tryConnectToSomeKnownPeers();
-    };
+  private void discoverDirectPeers() {
+    final var seedNodes = seedNodesConfigParser.getResolvedSeedNodes();
+    this.addressBook.addUncheckedPeers(seedNodes);
+
+    final var channels = new ArrayList<>(this.peerManager.activeChannels());
+    Collections.shuffle(channels);
+    channels.stream()
+        .filter(not(c -> peersAsked.contains(c.getRemoteNodeId())))
+        .limit(MAX_REQUESTS_SENT_AT_ONCE)
+        .forEach(
+            peer -> {
+              peersAsked.add(peer.getRemoteNodeId());
+              getPeersRemoteEventDispatcher.dispatch(
+                  BFTNode.create(peer.getRemoteNodeId().getPublicKey()), GetPeers.create());
+            });
+    this.tryConnectToSomeKnownPeers();
   }
 
   private void tryConnectToSomeKnownPeers() {
@@ -169,15 +195,33 @@ public final class PeerDiscovery {
   public RemoteEventProcessor<PeersResponse> peersResponseRemoteEventProcessor() {
     return (sender, peersResponse) -> {
       final var senderNodeId = NodeId.fromPublicKey(sender.getKey());
-      if (!peersAsked.contains(senderNodeId)) {
+
+      if (!this.peersAsked.remove(senderNodeId)) {
         log.warn("Received unexpected peers response from {}", senderNodeId);
         this.peerControl.banPeer(senderNodeId, Duration.ofMinutes(15), "Unexpected peers response");
         return;
       }
 
-      this.peersAsked.remove(senderNodeId);
       final var peersUpToLimit =
-          peersResponse.getPeers().stream()
+          peersResponse.peers().stream()
+              .limit(MAX_PEERS_IN_RESPONSE)
+              .collect(ImmutableSet.toImmutableSet());
+      this.addressBook.addUncheckedPeers(peersUpToLimit);
+    };
+  }
+
+  public RemoteEventProcessor<ProxiedPeersResponse> proxiedPeersResponseRemoteEventProcessor() {
+    return (sender, proxiedPeersResponse) -> {
+      final var senderNodeId = NodeId.fromPublicKey(sender.getKey());
+
+      if (!this.proxiesAsked.remove(senderNodeId)) {
+        log.warn("Received unexpected proxied peers response from {}", senderNodeId);
+        this.peerControl.banPeer(senderNodeId, Duration.ofMinutes(15), "Unexpected peers response");
+        return;
+      }
+
+      final var peersUpToLimit =
+          proxiedPeersResponse.peers().stream()
               .limit(MAX_PEERS_IN_RESPONSE)
               .collect(ImmutableSet.toImmutableSet());
       this.addressBook.addUncheckedPeers(peersUpToLimit);
@@ -195,7 +239,21 @@ public final class PeerDiscovery {
                       .limit(MAX_PEERS_IN_RESPONSE - 1))
               .collect(ImmutableSet.toImmutableSet());
 
-      peersResponseRemoteEventDispatcher.dispatch(sender, PeersResponse.create(peers));
+      peersResponseRemoteEventDispatcher.dispatch(sender, new PeersResponse(peers));
+    };
+  }
+
+  public RemoteEventProcessor<GetProxiedPeers> getProxiedPeersRemoteEventProcessor() {
+    return (sender, unused) -> {
+      final var peers =
+          // TODO: check which filtering is necessary
+          this.addressBook
+              .bestCandidatesToConnect()
+              .filter(this::shouldExposePeerUri)
+              .limit(MAX_PEERS_IN_RESPONSE - 1)
+              .collect(ImmutableSet.toImmutableSet());
+
+      proxiedPeersResponseRemoteEventDispatcher.dispatch(sender, new ProxiedPeersResponse(peers));
     };
   }
 

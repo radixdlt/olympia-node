@@ -68,6 +68,7 @@ public final class Unit {
   private Unit() {}
 
   private static final Unit UNIT = new Unit();
+  private static final Result<Unit> UNIT_RESULT = Result.ok(UNIT);
 
   public static Unit unit() {
     return UNIT;
@@ -75,6 +76,10 @@ public final class Unit {
 
   public static <T> Unit unit(final T ignored) {
     return UNIT;
+  }
+
+  public static Result<Unit> success() {
+    return UNIT_RESULT;
   }
 
   @Override
