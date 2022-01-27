@@ -84,7 +84,7 @@ import java.util.Optional;
  * check: the service is waiting for StatusResponses; it also processes local messages and timeouts
  * - syncing: the service is waiting for SyncResponse; it also processes local messages and timeouts
  */
-public interface SyncState {
+public sealed interface SyncState {
 
   /** Gets the current header. */
   LedgerProof getCurrentHeader();
