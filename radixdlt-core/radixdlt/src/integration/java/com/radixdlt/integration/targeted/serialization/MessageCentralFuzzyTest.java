@@ -89,7 +89,6 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
 import io.reactivex.rxjava3.subjects.PublishSubject;
-import java.security.SecureRandom;
 import java.util.Comparator;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
@@ -105,7 +104,7 @@ public class MessageCentralFuzzyTest {
   private static final int MAX_MESSAGE_LEN = 1024 * 1024;
   private static final int NUM_TEST_MESSAGES = 1000;
 
-  private final Random random = new SecureRandom();
+  private final Random random = new Random();
   private final Serialization serialization = DefaultSerialization.getInstance();
 
   @Test
