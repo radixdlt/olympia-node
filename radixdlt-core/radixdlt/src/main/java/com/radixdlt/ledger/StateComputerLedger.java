@@ -276,15 +276,15 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
   public EventProcessor<BFTCommittedUpdate> bftCommittedUpdateEventProcessor() {
     return committedUpdate -> {
       final ImmutableList<Txn> txns =
-          committedUpdate.getCommitted().stream()
+          committedUpdate.committed().stream()
               .flatMap(PreparedVertex::successfulCommands)
               .map(PreparedTxn::txn)
               .collect(ImmutableList.toImmutableList());
-      var proof = committedUpdate.getVertexStoreState().getRootHeader();
+      var proof = committedUpdate.vertexStoreState().getRootHeader();
       var verifiedTxnsAndProof = VerifiedTxnsAndProof.create(txns, proof);
 
       // TODO: Make these two atomic (RPNV1-827)
-      this.commit(verifiedTxnsAndProof, committedUpdate.getVertexStoreState());
+      this.commit(verifiedTxnsAndProof, committedUpdate.vertexStoreState());
     };
   }
 
