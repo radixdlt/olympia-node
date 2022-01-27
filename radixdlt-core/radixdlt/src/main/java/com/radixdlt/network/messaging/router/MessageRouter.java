@@ -64,6 +64,7 @@
 
 package com.radixdlt.network.messaging.router;
 
+import com.google.inject.Provider;
 import com.radixdlt.network.messaging.Message;
 import com.radixdlt.network.messaging.MessageFromPeer;
 import com.radixdlt.network.p2p.NodeId;
@@ -75,14 +76,14 @@ import java.util.Objects;
 public final class MessageRouter {
   private final NodeId self;
   private final P2PConfig config;
-  private final ProxyCertificateManager proxyCertificateManager;
+  private final Provider<ProxyCertificateManager> proxyCertificateManager;
 
   private final Observable<RoutingResult> routedMessages;
 
   public MessageRouter(
       NodeId self,
       P2PConfig config,
-      ProxyCertificateManager proxyCertificateManager,
+      Provider<ProxyCertificateManager> proxyCertificateManager,
       Observable<MessageFromPeer<Message>> messages) {
     this.self = Objects.requireNonNull(self);
     this.config = Objects.requireNonNull(config);
@@ -138,6 +139,7 @@ public final class MessageRouter {
             .authorizedProxies()
             .contains(sender) // message received from "our" authorized proxy
         || this.proxyCertificateManager
+            .get()
             .getVerifiedProxiesForNode(messageEnvelope.getAuthor())
             .contains(sender); // message received from author's authorized proxy
   }

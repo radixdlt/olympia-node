@@ -135,7 +135,7 @@ public class MessageCentralFuzzyTest {
             p2pConfig,
             serialization,
             peerManager,
-            proxyCertificateManager,
+            () -> proxyCertificateManager,
             Time::currentTimestamp,
             queueFactory,
             new SystemCountersImpl(),
