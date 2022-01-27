@@ -80,7 +80,8 @@ public final class PMTExt extends PMTNode {
     }
   }
 
-  public PMTAcc insertNode(
+  // This method is expected to mutate PMTAcc.
+  public void insertNode(
       PMTKey key,
       byte[] val,
       PMTAcc acc,
@@ -89,22 +90,22 @@ public final class PMTExt extends PMTNode {
     final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
     switch (commonPath.whichRemainderIsLeft()) {
       case EXISTING:
-        acc = handleOnlyExistingRemainderIsLeft(this, val, acc, commonPath, represent);
+        handleOnlyExistingRemainderIsLeft(this, val, acc, commonPath, represent);
         break;
       case NEW, NONE:
-        acc = handleNoRemainderIsLeft(this, val, acc, commonPath, represent, read);
+        handleNoRemainderIsLeft(this, val, acc, commonPath, represent, read);
         break;
       case EXISTING_AND_NEW:
-        acc = handleBothExistingAndNewRemainders(this, val, acc, commonPath, represent);
+        handleBothExistingAndNewRemainders(this, val, acc, commonPath, represent);
         break;
       default:
         throw new IllegalStateException(
             String.format("Unexpected subtree: %s", commonPath.whichRemainderIsLeft()));
     }
-    return acc;
   }
 
-  private PMTAcc handleBothExistingAndNewRemainders(
+  // This method is expected to mutate PMTAcc.
+  private void handleBothExistingAndNewRemainders(
       PMTNode current,
       byte[] val,
       PMTAcc acc,
@@ -127,13 +128,13 @@ public final class PMTExt extends PMTNode {
             null,
             new PMTBranch.PMTBranchChild(remainderNew.getFirstNibble(), represent.apply(newLeaf)),
             new PMTBranch.PMTBranchChild(remainderOld.getFirstNibble(), sliceVal));
-    acc = computeAndSetTip(commonPath, newBranch, acc, represent);
+    computeAndSetTip(commonPath, newBranch, acc, represent);
     acc.add(newBranch, newLeaf);
     acc.mark(current);
-    return acc;
   }
 
-  private PMTAcc handleNoRemainderIsLeft(
+  // This method is expected to mutate PMTAcc.
+  private void handleNoRemainderIsLeft(
       PMTNode current,
       byte[] val,
       PMTAcc acc,
@@ -144,17 +145,17 @@ public final class PMTExt extends PMTNode {
     var nextHash = current.getValue();
     var nextNode = read.apply(nextHash);
     // INFO: for NONE, the NEW will be empty
-    acc = nextNode.insertNode(newRemainder, val, acc, represent, read);
+    nextNode.insertNode(newRemainder, val, acc, represent, read);
     var subTip = acc.getTip();
     // INFO: for NEW or NONE, the commonPrefix can't be null as it existed here
     var newExt = new PMTExt(commonPath.getCommonPrefix(), represent.apply(subTip));
     acc.setTip(newExt);
     acc.add(newExt);
     acc.mark(current);
-    return acc;
   }
 
-  private PMTAcc handleOnlyExistingRemainderIsLeft(
+  // This method is expected to mutate PMTAcc.
+  private void handleOnlyExistingRemainderIsLeft(
       PMTNode current,
       byte[] val,
       PMTAcc acc,
@@ -171,20 +172,20 @@ public final class PMTExt extends PMTNode {
     }
     var newBranch =
         new PMTBranch(val, new PMTBranch.PMTBranchChild(remainder.getFirstNibble(), sliceVal));
-    acc = computeAndSetTip(commonPath, newBranch, acc, represent);
+    computeAndSetTip(commonPath, newBranch, acc, represent);
     acc.add(newBranch);
     acc.mark(current);
-    return acc;
   }
 
-  public PMTAcc getValue(PMTKey key, PMTAcc acc, Function<byte[], PMTNode> read) {
+  // This method is expected to mutate PMTAcc.
+  public void getValue(PMTKey key, PMTAcc acc, Function<byte[], PMTNode> read) {
     final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
     switch (commonPath.whichRemainderIsLeft()) {
       case NEW, NONE:
         acc.mark(this);
         var nextHash = this.getValue();
         var nextNode = read.apply(nextHash);
-        acc = nextNode.getValue(commonPath.getRemainder(PMTPath.RemainingSubtree.NEW), acc, read);
+        nextNode.getValue(commonPath.getRemainder(PMTPath.RemainingSubtree.NEW), acc, read);
         break;
       case EXISTING_AND_NEW, EXISTING:
         acc.mark(this);
@@ -194,6 +195,5 @@ public final class PMTExt extends PMTNode {
         throw new IllegalStateException(
             String.format("Unexpected subtree: %s", commonPath.whichRemainderIsLeft()));
     }
-    return acc;
   }
 }

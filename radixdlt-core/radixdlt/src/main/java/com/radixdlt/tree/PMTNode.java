@@ -93,25 +93,26 @@ public abstract sealed class PMTNode implements Cloneable permits PMTBranch, PMT
     return this;
   }
 
-  public abstract PMTAcc insertNode(
+  // This method is expected to mutate PMTAcc.
+  public abstract void insertNode(
       PMTKey key,
       byte[] val,
       PMTAcc acc,
       Function<PMTNode, byte[]> represent,
       Function<byte[], PMTNode> read);
 
-  public abstract PMTAcc getValue(PMTKey key, PMTAcc acc, Function<byte[], PMTNode> read);
+  // This method is expected to mutate PMTAcc.
+  public abstract void getValue(PMTKey key, PMTAcc acc, Function<byte[], PMTNode> read);
 
-  public PMTAcc computeAndSetTip(
+  // This method is expected to mutate PMTAcc.
+  public void computeAndSetTip(
       PMTPath pmtPath, PMTBranch branch, PMTAcc acc, Function<PMTNode, byte[]> represent) {
     if (pmtPath.getCommonPrefix().isEmpty()) {
       acc.setTip(branch);
-      return acc;
     } else {
       var newExt = new PMTExt(pmtPath.getCommonPrefix(), represent.apply(branch));
       acc.setTip(newExt);
       acc.add(newExt);
-      return acc;
     }
   }
 

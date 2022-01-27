@@ -140,7 +140,8 @@ public class PMT {
     var pmtKey = new PMTKey(PMTPath.intoNibbles(key));
 
     if (root != null) {
-      var acc = root.getValue(pmtKey, new PMTAcc(), this::read);
+      var acc = new PMTAcc();
+      root.getValue(pmtKey, acc, this::read);
       if (acc.notFound()) {
         if (log.isDebugEnabled()) {
           log.debug(
@@ -167,7 +168,8 @@ public class PMT {
       var pmtKey = new PMTKey(PMTPath.intoNibbles(key));
 
       if (root != null) {
-        var acc = root.insertNode(pmtKey, val, new PMTAcc(), this::represent, this::read);
+        var acc = new PMTAcc();
+        root.insertNode(pmtKey, val, acc, this::represent, this::read);
         final var newRoot = acc.getTip();
         acc.getNewNodes().stream()
             .filter(Objects::nonNull)

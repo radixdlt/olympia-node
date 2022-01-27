@@ -107,7 +107,8 @@ public final class PMTBranch extends PMTNode {
     }
   }
 
-  public PMTAcc insertNode(
+  // This method is expected to mutate PMTAcc.
+  public void insertNode(
       PMTKey key,
       byte[] val,
       PMTAcc acc,
@@ -116,26 +117,26 @@ public final class PMTBranch extends PMTNode {
     // INFO: OLD branch always has empty key and remainder
     final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
     if (commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NONE) {
-      acc = handleNoRemainder(val, acc);
+      handleNoRemainder(val, acc);
     } else if (commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NEW) {
-      acc = handleNewRemainder(key, val, acc, represent, read);
+      handleNewRemainder(key, val, acc, represent, read);
     } else {
       throw new IllegalStateException(
           String.format("Unexpected subtree: %s", commonPath.whichRemainderIsLeft()));
     }
-    return acc;
   }
 
-  private PMTAcc handleNoRemainder(byte[] val, PMTAcc acc) {
+  // This method is expected to mutate PMTAcc.
+  private void handleNoRemainder(byte[] val, PMTAcc acc) {
     var modifiedBranch = cloneBranch(this);
     modifiedBranch.setValue(val);
     acc.setTip(modifiedBranch);
     acc.add(modifiedBranch);
     acc.mark(this);
-    return acc;
   }
 
-  private PMTAcc handleNewRemainder(
+  // This method is expected to mutate PMTAcc.
+  private void handleNewRemainder(
       PMTKey key,
       byte[] val,
       PMTAcc acc,
@@ -149,7 +150,7 @@ public final class PMTBranch extends PMTNode {
       subTip = newLeaf;
     } else {
       var nextNode = read.apply(nextHash);
-      acc = nextNode.insertNode(key.getTailNibbles(), val, acc, represent, read);
+      nextNode.insertNode(key.getTailNibbles(), val, acc, represent, read);
       subTip = acc.getTip();
     }
     var branchWithNext = cloneBranch(this);
@@ -157,10 +158,10 @@ public final class PMTBranch extends PMTNode {
     acc.setTip(branchWithNext);
     acc.add(branchWithNext);
     acc.mark(this);
-    return acc;
   }
 
-  public PMTAcc getValue(PMTKey key, PMTAcc acc, Function<byte[], PMTNode> read) {
+  // This method is expected to mutate PMTAcc.
+  public void getValue(PMTKey key, PMTAcc acc, Function<byte[], PMTNode> read) {
     final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
     if (commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NONE) {
       acc.setRetVal(this);
@@ -171,13 +172,12 @@ public final class PMTBranch extends PMTNode {
         acc.setNotFound();
       } else {
         var nextNode = read.apply(nextHash);
-        acc = nextNode.getValue(key.getTailNibbles(), acc, read);
+        nextNode.getValue(key.getTailNibbles(), acc, read);
       }
     } else {
       throw new IllegalStateException(
           String.format("Unexpected subtree: %s", commonPath.whichRemainderIsLeft()));
     }
-    return acc;
   }
 
   PMTBranch cloneBranch(PMTBranch currentBranch) {
