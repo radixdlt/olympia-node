@@ -483,7 +483,7 @@ public final class BerkeleyLedgerEntryStore
     final var key = new DatabaseEntry(Longs.toByteArray(epoch));
     final var entry = new DatabaseEntry(forkHash.asBytes());
     if (forkConfigDatabase.putNoOverwrite(dbTxn, key, entry) != SUCCESS) {
-      throw new BerkeleyStoreException("Duplicate fork hash store for epoch " + epoch);
+      throw new BerkeleyStoreException("Duplicate fork hash stored for epoch " + epoch);
     }
   }
 
