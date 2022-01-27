@@ -181,14 +181,14 @@ public final class VerifiedVertexStoreState {
             ImmutableList.of(
                 idToVertex.get(highQC.highestQC().getParent().getVertexId()),
                 idToVertex.get(highQC.highestQC().getProposed().getVertexId()));
-        var idToVertex =
+        var idToVertexMap =
             ImmutableMap.of(
                 highQC.highestQC().getParent().getVertexId(), newVertices.get(0),
                 highQC.highestQC().getProposed().getVertexId(), newVertices.get(1));
         var newHighQC = HighQC.from(highQC.highestQC());
         var proof = newHeaders.getSecond();
         return new VerifiedVertexStoreState(
-            newHighQC, proof, newRoot, idToVertex, newVertices, highestTC);
+            newHighQC, proof, newRoot, idToVertexMap, newVertices, highestTC);
       }
     }
 
