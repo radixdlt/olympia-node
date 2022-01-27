@@ -152,9 +152,7 @@ public abstract class DeterministicActorsTest {
 
     this.network =
         new DeterministicNetwork(
-            allNodes,
-            MessageSelector.firstSelector(),
-            MessageMutator.nothing());
+            allNodes, MessageSelector.firstSelector(), MessageMutator.nothing());
 
     var nodeCreators =
         Streams.mapWithIndex(
