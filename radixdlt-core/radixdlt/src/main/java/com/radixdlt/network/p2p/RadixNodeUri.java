@@ -77,7 +77,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-public final class RadixNodeUri {
+public final class RadixNodeUri implements Comparable<RadixNodeUri> {
   private final String host;
   private final int port;
   private final String networkNodeHrp;
@@ -166,5 +166,20 @@ public final class RadixNodeUri {
   @Override
   public int hashCode() {
     return Objects.hash(host, port, nodeId, networkNodeHrp);
+  }
+
+  @Override
+  public int compareTo(RadixNodeUri other) {
+    int compare = nodeAddress().compareTo(other.nodeAddress());
+
+    if (compare == 0) {
+      compare = host.compareTo(other.host);
+    }
+
+    if (compare == 0) {
+      compare = Integer.compare(port, other.port);
+    }
+
+    return compare;
   }
 }
