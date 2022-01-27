@@ -171,8 +171,9 @@ public final class VerifiedVertexStoreState {
   }
 
   public VerifiedVertexStoreState prune(Hasher hasher) {
-    if (highQC.highestQC().getCommittedAndLedgerStateProof(hasher).isPresent()) {
-      var newHeaders = highQC.highestQC().getCommittedAndLedgerStateProof(hasher).get();
+    var stateProof = highQC.highestQC().getCommittedAndLedgerStateProof(hasher);
+    if (stateProof.isPresent()) {
+      var newHeaders = stateProof.get();
       var header = newHeaders.getFirst();
 
       if (header.getView().gt(root.getView())) {
