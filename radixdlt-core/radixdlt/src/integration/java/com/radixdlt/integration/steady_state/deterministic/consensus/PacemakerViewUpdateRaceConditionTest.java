@@ -95,7 +95,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.junit.Test;
 
 /**
@@ -150,7 +149,7 @@ public class PacemakerViewUpdateRaceConditionTest {
                             .sorted(
                                 Comparator.comparing(
                                     BFTNode::getKey, KeyComparator.instance().reversed()))
-                            .collect(Collectors.toList());
+                            .toList();
                     return view ->
                         sortedValidators.get(((int) view.number() - 1) % sortedValidators.size());
                   }

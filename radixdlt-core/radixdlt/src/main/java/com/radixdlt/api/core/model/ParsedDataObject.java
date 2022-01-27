@@ -67,18 +67,7 @@ package com.radixdlt.api.core.model;
 import com.google.common.collect.ClassToInstanceMap;
 import com.radixdlt.api.core.openapitools.model.DataObject;
 
-public final class ParsedDataObject {
-  private final DataObject dataObject;
-  private final ClassToInstanceMap<Object> parsedData;
-
-  public ParsedDataObject(DataObject dataObject, ClassToInstanceMap<Object> parsedData) {
-    this.dataObject = dataObject;
-    this.parsedData = parsedData;
-  }
-
-  public DataObject getDataObject() {
-    return dataObject;
-  }
+public record ParsedDataObject(DataObject dataObject, ClassToInstanceMap<Object> parsedData) {
 
   public <T> T getParsed(Class<T> parsedClass) {
     return parsedData.getInstance(parsedClass);

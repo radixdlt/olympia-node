@@ -213,7 +213,7 @@ public class SimulationNodes {
     final List<BFTNode> bftNodes =
         this.nodeInstances.stream()
             .map(i -> i.getInstance(Key.get(BFTNode.class, Self.class)))
-            .collect(Collectors.toList());
+            .toList();
 
     return new RunningNetwork() {
       @Override

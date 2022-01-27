@@ -365,7 +365,7 @@ public class SimulationTest {
                               .mapToObj(nodes::get)
                               .map(node -> BFTNode.create(node.getPublicKey()))
                               .map(node -> BFTValidator.from(node, UInt256.ONE))
-                              .collect(Collectors.toList())));
+                              .toList()));
             }
           });
 
@@ -425,7 +425,7 @@ public class SimulationTest {
                               .mapToObj(nodes::get)
                               .map(node -> BFTNode.create(node.getPublicKey()))
                               .map(node -> BFTValidator.from(node, UInt256.ONE))
-                              .collect(Collectors.toList())));
+                              .toList()));
             }
           });
       return this;
@@ -667,10 +667,10 @@ public class SimulationTest {
                           .publish()
                           .autoConnect(2));
                 })
-            .collect(Collectors.toList());
+            .toList();
 
     Single<Monitor> firstErrorSignal =
-        Observable.merge(assertions.stream().map(Pair::getSecond).collect(Collectors.toList()))
+        Observable.merge(assertions.stream().map(Pair::getSecond).toList())
             .firstOrError()
             .map(Pair::getFirst);
 
@@ -691,7 +691,7 @@ public class SimulationTest {
                         .map(e -> Optional.of(e.getSecond()))
                         .first(Optional.empty())
                         .map(result -> Pair.of(assertion.getFirst(), result)))
-            .collect(Collectors.toList());
+            .toList();
 
     return Single.merge(results)
         .toObservable()

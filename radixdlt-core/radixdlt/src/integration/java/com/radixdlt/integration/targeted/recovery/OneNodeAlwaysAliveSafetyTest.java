@@ -155,13 +155,12 @@ public class OneNodeAlwaysAliveSafetyTest {
         Stream.generate(ECKeyPair::generateNew)
             .limit(numNodes)
             .sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
-            .collect(Collectors.toList());
+            .toList();
   }
 
   @Before
   public void setup() {
-    List<BFTNode> allNodes =
-        nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
+    List<BFTNode> allNodes = nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).toList();
 
     this.network =
         new DeterministicNetwork(
@@ -198,9 +197,7 @@ public class OneNodeAlwaysAliveSafetyTest {
         .injectMembers(this);
 
     this.nodeCreators =
-        nodeKeys.stream()
-            .<Supplier<Injector>>map(k -> () -> createRunner(k, allNodes))
-            .collect(Collectors.toList());
+        nodeKeys.stream().<Supplier<Injector>>map(k -> () -> createRunner(k, allNodes)).toList();
 
     for (Supplier<Injector> nodeCreator : nodeCreators) {
       this.nodes.add(nodeCreator.get());

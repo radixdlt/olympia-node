@@ -80,7 +80,6 @@ import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import java.util.Objects;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 import org.radix.network.messaging.Message;
 
 /** Network interface for syncing vertices using the MessageCentral */
@@ -113,10 +112,7 @@ public class MessageCentralValidatorSync {
   }
 
   private void sendGetVerticesResponse(BFTNode node, GetVerticesResponse response) {
-    var rawVertices =
-        response.getVertices().stream()
-            .map(VerifiedVertex::toSerializable)
-            .collect(Collectors.toList());
+    var rawVertices = response.getVertices().stream().map(VerifiedVertex::toSerializable).toList();
     var msg = new GetVerticesResponseMessage(rawVertices);
     this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
   }

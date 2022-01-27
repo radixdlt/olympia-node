@@ -149,19 +149,16 @@ public abstract class DeterministicActorsTest {
   public void setup() {
     this.network =
         new DeterministicNetwork(
-            nodeKeys.stream()
-                .map(k -> BFTNode.create(k.getPublicKey()))
-                .collect(Collectors.toList()),
+            nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).toList(),
             MessageSelector.firstSelector(),
             MessageMutator.nothing());
 
-    List<BFTNode> allNodes =
-        nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
+    List<BFTNode> allNodes = nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).toList();
     var nodeCreators =
         Streams.mapWithIndex(
                 nodeKeys.stream(),
                 (k, i) -> (Supplier<Injector>) () -> createRunner(i == 1, k, allNodes))
-            .collect(Collectors.toList());
+            .toList();
 
     deterministicRunner =
         new MultiNodeDeterministicRunner(nodeCreators, this::stopDatabase, network);

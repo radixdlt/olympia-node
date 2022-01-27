@@ -68,7 +68,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class JsonRpcRequest {
@@ -87,8 +86,7 @@ public class JsonRpcRequest {
   }
 
   public static JsonRpcRequest create(RpcMethod method, Long id, Object... parameters) {
-    var list =
-        Stream.of(parameters).filter(JsonRpcRequest::isNotEmpty).collect(Collectors.toList());
+    var list = Stream.of(parameters).filter(JsonRpcRequest::isNotEmpty).toList();
 
     return new JsonRpcRequest(VERSION, id.toString(), method, list);
   }

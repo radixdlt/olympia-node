@@ -78,7 +78,6 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.assertj.core.api.Condition;
@@ -105,7 +104,7 @@ public class RandomValidatorsTest {
   private static Function<Long, IntStream> randomEpochToNodesMapper(
       Function<Long, Random> randomSupplier) {
     return epoch -> {
-      List<Integer> indices = IntStream.range(0, numNodes).boxed().collect(Collectors.toList());
+      List<Integer> indices = IntStream.range(0, numNodes).boxed().toList();
       Random random = randomSupplier.apply(epoch);
       for (long i = 0; i < epoch; i++) {
         random.nextInt(numNodes);

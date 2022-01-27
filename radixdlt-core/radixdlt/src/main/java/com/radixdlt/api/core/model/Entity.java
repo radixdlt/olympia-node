@@ -70,10 +70,11 @@ import com.radixdlt.api.core.model.entities.EntityDoesNotSupportResourceWithdraw
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
+import java.io.Serializable;
 import java.util.List;
 import java.util.function.Supplier;
 
-public interface Entity {
+public interface Entity extends Serializable {
   // Read
   List<ResourceQuery> getResourceQueries();
 

@@ -226,19 +226,14 @@ public class RecoveryLivenessTest {
     this.messageMutator = MessageMutator.nothing();
     this.network =
         new DeterministicNetwork(
-            nodeKeys.stream()
-                .map(k -> BFTNode.create(k.getPublicKey()))
-                .collect(Collectors.toList()),
+            nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).toList(),
             MessageSelector.firstSelector(),
             this::mutate);
 
-    List<BFTNode> allNodes =
-        nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
+    List<BFTNode> allNodes = nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).toList();
 
     this.nodeCreators =
-        nodeKeys.stream()
-            .<Supplier<Injector>>map(k -> () -> createRunner(k, allNodes))
-            .collect(Collectors.toList());
+        nodeKeys.stream().<Supplier<Injector>>map(k -> () -> createRunner(k, allNodes)).toList();
 
     for (Supplier<Injector> nodeCreator : nodeCreators) {
       this.nodes.add(nodeCreator.get());

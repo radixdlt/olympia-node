@@ -72,12 +72,10 @@ import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.assertj.core.util.Sets;
@@ -121,7 +119,7 @@ public class FProposalDropperResponsiveTest {
     runFProposalDropperResponsiveTest(
         numNodes,
         v -> {
-          List<Integer> nodes = IntStream.range(0, numNodes).boxed().collect(Collectors.toList());
+          var nodes = IntStream.range(0, numNodes).boxed().toList();
           Collections.shuffle(nodes, random);
           return Sets.newHashSet(nodes.subList(0, (numNodes - 1) / 3));
         });

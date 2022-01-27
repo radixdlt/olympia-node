@@ -78,7 +78,6 @@ import com.radixdlt.utils.UInt256;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -150,7 +149,7 @@ public class SyncRadixApiHistoryPaginationTest {
                     v.getSentAt().getInstant().getEpochSecond(),
                     v.getSentAt().getInstant().getNano(),
                     v.getFee()))
-        .collect(Collectors.toList());
+        .toList();
   }
 
   private void addTransaction(RadixApi client, int count) {
