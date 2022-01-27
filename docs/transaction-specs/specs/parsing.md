@@ -173,7 +173,7 @@ Substates are serialized and deserialized based on the following protocol:
 
 | **Name**      | **Type**          | **Description**                              |
 |---------------|-------------------|----------------------------------------------|
-| `type`        | `u8`              | Reserved, always `0`                         |
+| `reserved`    | `u8`              | Reserved, always `0`                         |
 | `resource`    | `address`         | The resource address                         |
 | `granularity` | `u256`            | The token granularity, must be `1` as of now |
 | `is_mutable`  | `opt<boolean>`    | (Optional) Whether it's mutable              |
@@ -224,7 +224,7 @@ Substates are serialized and deserialized based on the following protocol:
 |-------------|--------------|--------------------------|
 | `reserved`  | `u8`         | Reserved, always `0`     |
 | `validator` | `public_key` | The validator public key |
-| `owner`     | `u256`       | The owner                |
+| `owner`     | `address`    | The owner                |
 | `amount`    | `u256`       | The stake amount         |
 
 #### `EXITING_STAKE`
@@ -234,7 +234,7 @@ Substates are serialized and deserialized based on the following protocol:
 | `reserved`       | `u8`         | Reserved, always `0`     |
 | `epoch_unlocked` | `u64`        | The unlocking epoch      |
 | `validator`      | `public_key` | The validator public key |
-| `owner`          | `u256`       | The owner                |
+| `owner`          | `address`    | The owner                |
 | `amount`         | `u256`       | The stake amount         |
 
 #### `VALIDATOR_META_DATA`
