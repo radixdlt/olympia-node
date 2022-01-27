@@ -122,7 +122,7 @@ public class MessageCentralFuzzyTest {
     when(p2pConfig.proxyConfig())
         .thenReturn(
             new P2PConfig.ProxyConfig(
-                false, ImmutableSet.of(), ImmutableSet.of(), Duration.ofMinutes(1), false));
+                false, false, ImmutableSet.of(), ImmutableSet.of(), Duration.ofMinutes(1), false));
     var peerControl = mock(PeerControl.class);
     var peerManager = mock(PeerManager.class);
     var proxyCertificateManager = mock(ProxyCertificateManager.class);
