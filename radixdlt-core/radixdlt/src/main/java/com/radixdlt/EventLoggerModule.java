@@ -200,6 +200,10 @@ public final class EventLoggerModule extends AbstractModule {
   }
 
   private void logLedgerUpdate(LedgerUpdate ledgerUpdate, long userTxns, Level logLevel) {
+    if (!logger.isEnabled(logLevel)) {
+      return;
+    }
+
     logger.log(
         logLevel,
         "lgr_commit{epoch={} round={} version={} hash={} user_txns={}}",
@@ -221,6 +225,11 @@ public final class EventLoggerModule extends AbstractModule {
       BFTNode self, Function<ECPublicKey, String> nodeString, REEvent e) {
     if (e instanceof ValidatorBFTDataEvent event) {
       var level = event.getMissedProposals() > 0 ? Level.WARN : Level.INFO;
+
+      if (!logger.isEnabled(level)) {
+        return;
+      }
+
       logger.log(
           level,
           "vdr_epochr{validator={} completed_proposals={} missed_proposals={}}",
@@ -230,6 +239,11 @@ public final class EventLoggerModule extends AbstractModule {
     } else if (e instanceof ValidatorMissedProposalsEvent event) {
       var you = event.getValidatorKey().equals(self.getKey());
       var level = you ? Level.ERROR : Level.WARN;
+
+      if (!logger.isEnabled(level)) {
+        return;
+      }
+
       logger.log(
           level,
           "{}_failed{validator={} missed_proposals={}}",

@@ -141,8 +141,6 @@ public final class VerifiedVertexStoreState {
       seen.put(vertex.getId(), vertex);
     }
 
-    var idToVertex = ImmutableMap.copyOf(seen);
-
     if (seen.keySet().stream()
         .noneMatch(highQC.highestCommittedQC().getProposed().getVertexId()::equals)) {
       throw new IllegalStateException(
@@ -169,7 +167,7 @@ public final class VerifiedVertexStoreState {
     }
 
     return new VerifiedVertexStoreState(
-        highQC, headers.getSecond(), root, idToVertex, vertices, highestTC);
+        highQC, headers.getSecond(), root, ImmutableMap.copyOf(seen), vertices, highestTC);
   }
 
   public VerifiedVertexStoreState prune(Hasher hasher) {

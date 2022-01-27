@@ -255,7 +255,10 @@ public final class RadixEngineStateComputer implements StateComputer {
   public List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
     synchronized (lock) {
       var cmds =
-          prepared.stream().map(p -> (RadixEngineTxn) p).map(RadixEngineTxn::processedTxn).toList();
+          prepared.stream()
+              .map(RadixEngineTxn.class::cast)
+              .map(RadixEngineTxn::processedTxn)
+              .toList();
 
       // TODO: only return commands which will not cause a missing dependency error
       return mempool.getTxns(maxSigsPerRound.orElse(50), cmds);

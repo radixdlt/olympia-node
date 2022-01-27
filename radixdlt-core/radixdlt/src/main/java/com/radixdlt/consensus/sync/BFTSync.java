@@ -231,7 +231,6 @@ public final class BFTSync implements BFTSyncer {
   public SyncResult syncToQC(HighQC highQC, @Nullable BFTNode author) {
     this.runOnThreads.add(Thread.currentThread().getName());
     final var qc = highQC.highestQC();
-    final var vertexId = qc.getProposed().getVertexId();
 
     if (qc.getProposed().getView().compareTo(vertexStore.getRoot().getView()) < 0) {
       return SyncResult.INVALID;
@@ -259,7 +258,7 @@ public final class BFTSync implements BFTSyncer {
 
     log.trace("SYNC_TO_QC: Need sync: {}", highQC);
 
-    if (syncing.containsKey(vertexId)) {
+    if (syncing.containsKey(qc.getProposed().getVertexId())) {
       return SyncResult.IN_PROGRESS;
     }
 
