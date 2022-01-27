@@ -96,17 +96,15 @@ public final class MessageProxyProcessor {
   }
 
   public EventProcessor<RoutingResult.Forward> forwardRoutingResultEventProcessor() {
-    return forwardResult -> {
-      if (p2PConfig.proxyConfig().guardEnabled()) {
-        if (guards.stream().allMatch(g -> g.shouldForward(forwardResult))) {
-          doForward(forwardResult);
-        } else {
-          counters.increment(SystemCounters.CounterType.NETWORKING_ROUTING_DROPPED_MESSAGES);
-        }
-      } else {
-        doForward(forwardResult);
-      }
-    };
+    return p2PConfig.proxyConfig().guardEnabled() ? this::doGuardedForward : this::doForward;
+  }
+
+  private void doGuardedForward(RoutingResult.Forward forwardResult) {
+    if (guards.stream().allMatch(g -> g.shouldForward(forwardResult))) {
+      doForward(forwardResult);
+    } else {
+      counters.increment(SystemCounters.CounterType.NETWORKING_ROUTING_DROPPED_MESSAGES);
+    }
   }
 
   private void doForward(RoutingResult.Forward forwardResult) {
