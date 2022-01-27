@@ -74,6 +74,7 @@ import com.radixdlt.serialization.DeserializeException;
 import java.time.Duration;
 import java.util.Arrays;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public record P2PConfig(
     NetworkConfig networkConfig,
@@ -83,6 +84,8 @@ public record P2PConfig(
     ProxyConfig proxyConfig,
     boolean usePeerAllowList,
     ImmutableSet<NodeId> peerAllowList) {
+
+  private static final Logger log = LogManager.getLogger();
 
   public static record ChannelConfig(
       boolean useProxyProtocol,
@@ -147,6 +150,7 @@ public record P2PConfig(
 
   public static record ProxyConfig(
       boolean proxyEnabled,
+      boolean useProxies,
       ImmutableSet<NodeId> authorizedProxies,
       ImmutableSet<NodeId> authorizedProxiedPeers,
       Duration issuedProxyCertificateValidityDuration,
@@ -165,13 +169,27 @@ public record P2PConfig(
               .map(n -> P2PConfig.parseNodeId(addressing, n))
               .collect(ImmutableSet.toImmutableSet());
 
-      return new ProxyConfig(
-          properties.get("network.p2p.proxy.enabled", false),
-          authorizedProxies,
-          authorizedProxiedNodes,
-          Duration.ofMillis(
-              properties.get("network.p2p.proxy.issued_certificate_validity_duration_ms", 3600000)),
-          properties.get("network.p2p.proxy.guard.enabled", false));
+      final var config =
+          new ProxyConfig(
+              properties.get("network.p2p.proxy.enabled", false),
+              properties.get("network.p2p.proxy.use_proxies", false),
+              authorizedProxies,
+              authorizedProxiedNodes,
+              Duration.ofMillis(
+                  properties.get(
+                      "network.p2p.proxy.issued_certificate_validity_duration_ms", 3600000)),
+              properties.get("network.p2p.proxy.guard.enabled", false));
+
+      if (config.useProxies() && config.authorizedProxies().isEmpty()) {
+        throw new IllegalArgumentException(
+            "authorizedProxies can't be empty if useProxies is true");
+      }
+
+      if (!config.useProxies() && !config.authorizedProxies().isEmpty()) {
+        log.warn("authorizedProxies config will be ignored because useProxies is false");
+      }
+
+      return config;
     }
   }
 
@@ -198,7 +216,6 @@ public record P2PConfig(
       throw new IllegalArgumentException("peerAllowList can't be empty if usePeerAllowList is set");
     }
 
-    final var log = LogManager.getLogger();
     if (!config.usePeerAllowList() && !config.peerAllowList().isEmpty()) {
       log.warn(
           "peerAllowList is non empty but will be ignored because usePeerAllowList is not set");

@@ -64,11 +64,13 @@
 
 package com.radixdlt.network.messaging.router;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.inject.Provider;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.messaging.Message;
 import com.radixdlt.network.messaging.MessageFromPeer;
@@ -96,10 +98,14 @@ public final class MessageRouterTest {
 
     messages = PublishSubject.create();
     proxyCertificateManager = mock(ProxyCertificateManager.class);
-
+    final Provider<ProxyCertificateManager> proxyCertificateManagerProvider = rmock(Provider.class);
+    when(proxyCertificateManagerProvider.get()).thenReturn(proxyCertificateManager);
     sut =
         new MessageRouter(
-            NodeId.fromPublicKey(self.getPublicKey()), config, proxyCertificateManager, messages);
+            NodeId.fromPublicKey(self.getPublicKey()),
+            config,
+            proxyCertificateManagerProvider,
+            messages);
   }
 
   @Test

@@ -150,7 +150,7 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
     final var selfUri =
         RadixNodeUri.fromPubKeyAndAddress(1, selfKey.getPublicKey(), "127.0.0.1", 3000);
 
-    final var config = mock(P2PConfig.PeerDiscoveryConfig.class);
+    final var config = mock(P2PConfig.class);
     final var addressBook = mock(AddressBook.class);
     final RemoteEventDispatcher<PeersResponse> peersResponseDispatcher =
         rmock(RemoteEventDispatcher.class);
@@ -178,7 +178,12 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
         .thenReturn(Stream.of(peer1, peer2, peer3, peer4, peer5, peer6));
 
     // peer3 shouldn't be returned in discovery response
-    when(config.privatePeers()).thenReturn(ImmutableSet.of(peer3.getNodeId()));
+    final var peerDiscoveryConfig = mock(P2PConfig.PeerDiscoveryConfig.class);
+    when(config.peerDiscoveryConfig()).thenReturn(peerDiscoveryConfig);
+    when(peerDiscoveryConfig.privatePeers()).thenReturn(ImmutableSet.of(peer3.getNodeId()));
+    final var peerProxyConfig = mock(P2PConfig.ProxyConfig.class);
+    when(peerProxyConfig.useProxies()).thenReturn(false);
+    when(config.proxyConfig()).thenReturn(peerProxyConfig);
 
     sut.getPeersRemoteEventProcessor().process(BFTNode.random(), GetPeers.create());
 

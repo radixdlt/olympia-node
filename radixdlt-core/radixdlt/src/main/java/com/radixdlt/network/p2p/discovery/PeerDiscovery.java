@@ -102,7 +102,7 @@ public final class PeerDiscovery {
   private static final int MAX_REQUESTS_SENT_AT_ONCE = 5;
 
   private final RadixNodeUri selfUri;
-  private final P2PConfig.PeerDiscoveryConfig config;
+  private final P2PConfig config;
   private final PeerManager peerManager;
   private final AddressBook addressBook;
   private final PeerControl peerControl;
@@ -115,7 +115,7 @@ public final class PeerDiscovery {
   @Inject
   public PeerDiscovery(
       @Self RadixNodeUri selfUri,
-      P2PConfig.PeerDiscoveryConfig config,
+      P2PConfig config,
       PeerManager peerManager,
       AddressBook addressBook,
       PeerControl peerControl,
@@ -187,19 +187,21 @@ public final class PeerDiscovery {
   public RemoteEventProcessor<GetPeers> getPeersRemoteEventProcessor() {
     return (sender, unused) -> {
       final var peers =
-          Stream.concat(
-                  Stream.of(selfUri),
-                  this.addressBook
-                      .bestCandidatesToConnect()
-                      .filter(this::shouldExposePeerUri)
-                      .limit(MAX_PEERS_IN_RESPONSE - 1))
+          Stream.concat(Stream.of(selfUri), this.addressBook.bestCandidatesToConnect())
+              .filter(uri -> shouldExposePeerUri(NodeId.fromPublicKey(sender.getKey()), uri))
+              .limit(MAX_PEERS_IN_RESPONSE - 1)
               .collect(ImmutableSet.toImmutableSet());
 
       peersResponseRemoteEventDispatcher.dispatch(sender, PeersResponse.create(peers));
     };
   }
 
-  private boolean shouldExposePeerUri(RadixNodeUri uri) {
-    return !config.privatePeers().contains(uri.getNodeId());
+  private boolean shouldExposePeerUri(NodeId sender, RadixNodeUri uri) {
+    final var isSelfToFilter =
+        config.proxyConfig().useProxies()
+            && uri.equals(selfUri)
+            && !config.proxyConfig().authorizedProxies().contains(sender);
+    final var isPrivatePeer = config.peerDiscoveryConfig().privatePeers().contains(uri.getNodeId());
+    return !isSelfToFilter && !isPrivatePeer;
   }
 }
