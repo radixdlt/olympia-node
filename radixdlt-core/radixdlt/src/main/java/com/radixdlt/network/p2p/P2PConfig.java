@@ -320,7 +320,7 @@ public interface P2PConfig {
     }
 
     if (!config.useProxies() && !config.authorizedProxies().isEmpty()) {
-      throw new IllegalArgumentException("authorizedProxies can't be set if useProxies is false");
+      log.warn("authorizedProxies config will be ignored because useProxies is false");
     }
 
     return config;
