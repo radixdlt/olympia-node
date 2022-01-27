@@ -119,7 +119,7 @@ public final class InMemorySystemInfo {
 
   public EventProcessor<BFTCommittedUpdate> bftCommittedUpdateEventProcessor() {
     return update -> {
-      this.highQC.set(update.getVertexStoreState().getHighQC().highestQC());
+      this.highQC.set(update.vertexStoreState().getHighQC().highestQC());
     };
   }
 

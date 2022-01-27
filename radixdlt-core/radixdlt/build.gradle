@@ -110,9 +110,31 @@ configurations {
 }
 
 task integrationTest(type: Test) {
+    filter {
+        includeTestsMatching "com.radixdlt.integration.steady_state.*"
+    }
     testClassesDirs = sourceSets.integrationTest.output.classesDirs
     classpath = sourceSets.integrationTest.runtimeClasspath
-    maxParallelForks = Runtime.runtime.availableProcessors() / 2 //A greater number was tried, but the tests either failed or there was no gain in performance.
+    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1 //A greater number was tried, but the tests either failed or there was no gain in performance.
+    mustRunAfter(test)
+}
+
+task targetedIntegrationTest(type: Test) {
+    filter {
+        includeTestsMatching "com.radixdlt.integration.targeted.*"
+    }
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    // We're using all available processors here for now because we want to run all classes at the same time and they don't seem to be cpu intensive
+    maxParallelForks = Runtime.runtime.availableProcessors()
+    mustRunAfter(test)
+}
+
+task allIntegrationTest(type: Test) {
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    // We're using all available processors here for now because we want to run all classes at the same time and they don't seem to be cpu intensive
+    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
     mustRunAfter(test)
 }
 
@@ -132,24 +154,7 @@ jar {
     }
 }
 
-test {
-    testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat "full"
-        outputs.upToDateWhen { false }
-        showStandardStreams true
-    }
-    systemProperty "java.security.egd", "file:/dev/urandom"
-}
-
 integrationTest {
-    testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat "full"
-        outputs.upToDateWhen { false }
-        showStandardStreams true
-    }
-    systemProperty "java.security.egd", "file:/dev/urandom"
     jacoco {
         // We don't want integration tests included in code coverage.
         enabled false

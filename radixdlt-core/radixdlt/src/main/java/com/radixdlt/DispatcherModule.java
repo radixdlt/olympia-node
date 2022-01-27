@@ -444,15 +444,15 @@ public class DispatcherModule extends AbstractModule {
       SystemCounters systemCounters) {
     if (asyncProcessors.isEmpty()) {
       return commit -> {
-        systemCounters.add(CounterType.BFT_COMMITTED_VERTICES, commit.getCommitted().size());
-        systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, commit.getVertexStoreSize());
+        systemCounters.add(CounterType.BFT_COMMITTED_VERTICES, commit.committed().size());
+        systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, commit.vertexStoreSize());
         processors.forEach(e -> e.process(commit));
       };
     } else {
       var dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
       return commit -> {
-        systemCounters.add(CounterType.BFT_COMMITTED_VERTICES, commit.getCommitted().size());
-        systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, commit.getVertexStoreSize());
+        systemCounters.add(CounterType.BFT_COMMITTED_VERTICES, commit.committed().size());
+        systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, commit.vertexStoreSize());
         processors.forEach(e -> e.process(commit));
         dispatcher.dispatch(commit);
       };

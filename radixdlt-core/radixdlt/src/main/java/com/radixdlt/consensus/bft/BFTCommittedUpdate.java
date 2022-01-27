@@ -65,42 +65,11 @@
 package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.hash.HashCode;
-import java.util.Objects;
 
 /** Vertex Store update of committed vertices */
-public final class BFTCommittedUpdate {
-  private final ImmutableSet<HashCode>
-      pruned; // TODO: remove unused https://radixdlt.atlassian.net/browse/NT-5
-  private final ImmutableList<PreparedVertex> committed;
-  private final VerifiedVertexStoreState vertexStoreState;
-
-  private BFTCommittedUpdate(
-      ImmutableSet<HashCode> pruned,
-      ImmutableList<PreparedVertex> committed,
-      VerifiedVertexStoreState vertexStoreState) {
-    this.pruned = Objects.requireNonNull(pruned);
-    this.committed = Objects.requireNonNull(committed);
-    this.vertexStoreState = Objects.requireNonNull(vertexStoreState);
-  }
-
-  public static BFTCommittedUpdate create(
-      ImmutableSet<HashCode> pruned,
-      ImmutableList<PreparedVertex> committed,
-      VerifiedVertexStoreState vertexStoreState) {
-    return new BFTCommittedUpdate(pruned, committed, vertexStoreState);
-  }
-
-  public int getVertexStoreSize() {
+public record BFTCommittedUpdate(
+    ImmutableList<PreparedVertex> committed, VerifiedVertexStoreState vertexStoreState) {
+  public int vertexStoreSize() {
     return vertexStoreState.getVertices().size();
-  }
-
-  public ImmutableList<PreparedVertex> getCommitted() {
-    return committed;
-  }
-
-  public VerifiedVertexStoreState getVertexStoreState() {
-    return vertexStoreState;
   }
 }
