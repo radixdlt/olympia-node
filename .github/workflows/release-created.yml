@@ -61,23 +61,3 @@ jobs:
               "release_job_url": "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}",
               "is_prerelease": "${{ github.event.release.prerelease }}"
             }
-
-  start_radixdlt_metrics_exporter:
-    name: Start metrics exporter release ${{ github.event.release.tag_name }}
-    runs-on: ubuntu-latest
-    environment: publish-artifacts
-    steps:
-      - name: Trigger radixdlt/metrics-exporter release ${{ github.event.release.tag_name }}
-        uses: peter-evans/repository-dispatch@v1
-        with:
-          token: ${{ secrets.RADIXBOT_GITHUB_REPO_PACKAGES_TOKEN }}
-          repository: radixdlt/metrics-exporter
-          event-type: start_release
-          client-payload: |
-            {
-              "ref": "${{ github.ref }}",
-              "release_tag": "${{ github.event.release.tag_name }}",
-              "release_url": "${{ github.event.release.html_url }}",
-              "release_job_url": "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}",
-              "is_prerelease": "${{ github.event.release.prerelease }}"
-            }
