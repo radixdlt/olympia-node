@@ -139,10 +139,6 @@ public enum Network {
     return id;
   }
 
-  public boolean sameAs(int id) {
-    return this.id == id;
-  }
-
   public Optional<String> genesisTxn() {
     return Optional.ofNullable(genesisTxn);
   }

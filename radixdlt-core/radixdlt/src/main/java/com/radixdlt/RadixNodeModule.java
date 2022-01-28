@@ -203,7 +203,7 @@ public final class RadixNodeModule extends AbstractModule {
     bindConstant().annotatedWith(NetworkId.class).to(networkId);
     bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
 
-    if (Network.MAINNET.sameAs(networkId)) {
+    if (networkId == Network.MAINNET.getId()) {
       install(new MainnetForkConfigsModule());
     } else {
       install(new StokenetForkConfigsModule());
