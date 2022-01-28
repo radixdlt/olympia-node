@@ -69,9 +69,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -111,7 +109,7 @@ public final class MultiNodeDeterministicRunner {
   }
 
   public void start() {
-    for (Supplier<Injector> nodeCreator : nodeCreators) {
+    for (var nodeCreator : nodeCreators) {
       this.nodes.add(nodeCreator.get());
     }
     this.nodes.forEach(i -> i.getInstance(DeterministicProcessor.class).start());
@@ -134,12 +132,13 @@ public final class MultiNodeDeterministicRunner {
   }
 
   public void processNext() {
-    Timed<ControlledMessage> msg = this.network.nextMessage();
+    var msg = this.network.nextMessage();
     logger.debug("Processing message {}", msg);
 
     int nodeIndex = msg.value().channelId().receiverIndex();
-    Injector injector = this.nodes.get(nodeIndex);
+    var injector = this.nodes.get(nodeIndex);
     ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
+
     try {
       injector
           .getInstance(DeterministicProcessor.class)
