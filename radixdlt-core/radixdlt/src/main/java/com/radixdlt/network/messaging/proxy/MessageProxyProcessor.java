@@ -62,68 +62,53 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p;
+package com.radixdlt.network.messaging.proxy;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.RemoteEventProcessorOnRunner;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.environment.ScheduledEventProducerOnRunner;
-import com.radixdlt.network.p2p.discovery.DiscoverPeers;
-import com.radixdlt.network.p2p.discovery.GetPeers;
-import com.radixdlt.network.p2p.discovery.PeerDiscovery;
-import com.radixdlt.network.p2p.discovery.PeersResponse;
-import java.time.Duration;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.middleware2.network.SyncRequestMessage;
+import com.radixdlt.network.messaging.MessageCentral;
+import com.radixdlt.network.messaging.proxy.guard.ProxyGuard;
+import com.radixdlt.network.messaging.proxy.guard.RateLimitingGuard;
+import com.radixdlt.network.messaging.router.MessageRouter.RoutingResult;
+import com.radixdlt.network.p2p.P2PConfig;
+import java.util.Objects;
 
-public final class PeerDiscoveryModule extends AbstractModule {
+/** This class is responsible for handling the messages that are to be forwarded to another node. */
+public final class MessageProxyProcessor {
+  private static final ImmutableList<ProxyGuard> DEFAULT_GUARDS =
+      ImmutableList.of(new RateLimitingGuard<>(SyncRequestMessage.class, 2.0));
 
-  @Override
-  protected void configure() {
-    final var eventBinder =
-        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
-            .permitDuplicates();
-    eventBinder.addBinding().toInstance(DiscoverPeers.class);
+  private final MessageCentral messageCentral;
+  private final SystemCounters counters;
+  private final P2PConfig p2PConfig;
+  private final ImmutableList<ProxyGuard> guards;
 
-    bind(PeerDiscovery.class).in(Scopes.SINGLETON);
+  @Inject
+  public MessageProxyProcessor(
+      MessageCentral messageCentral, SystemCounters counters, P2PConfig p2PConfig) {
+    this.messageCentral = Objects.requireNonNull(messageCentral);
+    this.counters = Objects.requireNonNull(counters);
+    this.p2PConfig = Objects.requireNonNull(p2PConfig);
+    this.guards = DEFAULT_GUARDS;
   }
 
-  @ProvidesIntoSet
-  public ScheduledEventProducerOnRunner<?> discoverPeersEventProducer(
-      EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher,
-      P2PConfig.PeerDiscoveryConfig config) {
-    return new ScheduledEventProducerOnRunner<>(
-        Runners.P2P_NETWORK,
-        discoverPeersEventDispatcher,
-        DiscoverPeers::create,
-        Duration.ofMillis(500L),
-        Duration.ofMillis(config.discoveryInterval()));
+  public EventProcessor<RoutingResult.Forward> forwardRoutingResultEventProcessor() {
+    return p2PConfig.proxyConfig().guardEnabled() ? this::doGuardedForward : this::doForward;
   }
 
-  @ProvidesIntoSet
-  private EventProcessorOnRunner<?> discoverPeersEventProcessor(PeerDiscovery peerDiscovery) {
-    return new EventProcessorOnRunner<>(
-        Runners.P2P_NETWORK, DiscoverPeers.class, peerDiscovery.discoverPeersEventProcessor());
+  private void doGuardedForward(RoutingResult.Forward forwardResult) {
+    if (guards.stream().allMatch(g -> g.shouldForward(forwardResult))) {
+      doForward(forwardResult);
+    } else {
+      counters.increment(SystemCounters.CounterType.NETWORKING_ROUTING_DROPPED_MESSAGES);
+    }
   }
 
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> getPeersRemoteEventProcessor(
-      PeerDiscovery peerDiscovery) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.P2P_NETWORK, GetPeers.class, peerDiscovery.getPeersRemoteEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> peersResponseRemoteEventProcessor(
-      PeerDiscovery peerDiscovery) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.P2P_NETWORK,
-        PeersResponse.class,
-        peerDiscovery.peersResponseRemoteEventProcessor());
+  private void doForward(RoutingResult.Forward forwardResult) {
+    counters.increment(SystemCounters.CounterType.NETWORKING_ROUTING_FORWARDED_MESSAGES);
+    messageCentral.send(forwardResult.forwardTo(), forwardResult.messageEnvelope());
   }
 }

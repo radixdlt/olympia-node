@@ -130,7 +130,7 @@ public final class PeerLivenessMonitorModule extends AbstractModule {
   @ProvidesIntoSet
   public ScheduledEventProducerOnRunner<?> peersLivenessCheckTriggerEventProducer(
       EventDispatcher<PeersLivenessCheckTrigger> peersLivenessCheckTriggerEventDispatcher,
-      P2PConfig config) {
+      P2PConfig.PeerLivenessConfig config) {
     return new ScheduledEventProducerOnRunner<>(
         Runners.P2P_NETWORK,
         peersLivenessCheckTriggerEventDispatcher,

@@ -198,8 +198,10 @@ public final class PeerDiscovery {
 
   private boolean shouldExposePeerUri(NodeId sender, RadixNodeUri uri) {
     final var isSelfToFilter =
-        config.useProxies() && uri.equals(selfUri) && !config.authorizedProxies().contains(sender);
-    final var isPrivatePeer = config.privatePeers().contains(uri.getNodeId());
+        config.proxyConfig().useProxies()
+            && uri.equals(selfUri)
+            && !config.proxyConfig().authorizedProxies().contains(sender);
+    final var isPrivatePeer = config.peerDiscoveryConfig().privatePeers().contains(uri.getNodeId());
     return !isSelfToFilter && !isPrivatePeer;
   }
 }

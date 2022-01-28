@@ -79,7 +79,13 @@ import org.json.JSONObject;
  * <p>They combine a set of persisted properties, with a set of command line properties.
  */
 public final class RuntimeProperties extends PersistedProperties {
+  public static final RuntimeProperties EMPTY = new RuntimeProperties();
+
   private final CommandLine commandLine;
+
+  private RuntimeProperties() {
+    this.commandLine = new CommandLine() {};
+  }
 
   public RuntimeProperties(JSONObject commandLineConfig, String[] commandLineArguments)
       throws ParseException {

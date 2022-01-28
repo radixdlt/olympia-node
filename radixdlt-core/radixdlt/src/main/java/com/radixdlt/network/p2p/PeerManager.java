@@ -200,7 +200,7 @@ public final class PeerManager {
   public CompletableFuture<PeerChannel> findOrCreateConfiguredProxyChannel() {
     synchronized (lock) {
       final var maybeActiveChannel =
-          config.authorizedProxies().stream()
+          config.proxyConfig().authorizedProxies().stream()
               .map(this::channelFor)
               .filter(Optional::isPresent)
               .map(Optional::get)
@@ -209,7 +209,7 @@ public final class PeerManager {
         return CompletableFuture.completedFuture(maybeActiveChannel.get());
       } else {
         final var maybeAddress =
-            this.addressBook.get().findBestKnownAddressOf(config.authorizedProxies());
+            this.addressBook.get().findBestKnownAddressOf(config.proxyConfig().authorizedProxies());
         if (maybeAddress.isPresent()) {
           return connect(maybeAddress.get());
         } else {
@@ -364,7 +364,8 @@ public final class PeerManager {
           addressing.forNodes().of(nodeId.getPublicKey()));
     }
 
-    final var limitReached = this.activeChannels.size() > config.maxInboundChannels();
+    final var limitReached =
+        this.activeChannels.size() > config.channelConfig().maxInboundChannels();
     if (limitReached && log.isInfoEnabled()) {
       log.info(
           "Dropping inbound connection from peer {}: no more inbound channels allowed",
@@ -422,7 +423,7 @@ public final class PeerManager {
             .filter(not(PeerChannel::isInbound))
             .count();
 
-    return (int) (config.maxOutboundChannels() - numChannels);
+    return (int) (config.channelConfig().maxOutboundChannels() - numChannels);
   }
 
   private void handlePeerBanned(PeerBanned event) {

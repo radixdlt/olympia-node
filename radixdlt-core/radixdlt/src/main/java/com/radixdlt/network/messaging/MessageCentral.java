@@ -81,7 +81,7 @@ public interface MessageCentral {
   void send(NodeId receiver, Message message);
 
   /**
-   * Returns a Flowable of inbound peer messages of specified type.
+   * Returns an Observable of inbound peer messages of specified type.
    *
    * @param messageType the message type
    * @return a Flowable of inbound peer messages

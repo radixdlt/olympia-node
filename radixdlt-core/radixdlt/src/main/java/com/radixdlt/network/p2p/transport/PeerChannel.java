@@ -173,7 +173,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 
     this.inboundMessages =
         inboundMessageSink.onBackpressureBuffer(
-            config.channelBufferSize(),
+            config.channelConfig().channelBufferSize(),
             () -> {
               this.counters.increment(SystemCounters.CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
               final var logLevel =

@@ -91,6 +91,8 @@ import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.REOutput;
@@ -162,7 +164,14 @@ public abstract class ApiTest {
                     .annotatedWith(DatabaseLocation.class)
                     .to(folder.getRoot().getAbsolutePath());
                 bindConstant().annotatedWith(NetworkId.class).to(99);
-                bind(P2PConfig.class).toInstance(mock(P2PConfig.class));
+                final var p2pConfig =
+                    P2PConfig.fromRuntimeProperties(
+                        Addressing.ofNetwork(Network.LOCALNET), RuntimeProperties.EMPTY);
+                bind(P2PConfig.class).toInstance(p2pConfig);
+                bind(P2PConfig.PeerDiscoveryConfig.class)
+                    .toInstance(p2pConfig.peerDiscoveryConfig());
+                bind(P2PConfig.PeerLivenessConfig.class).toInstance(p2pConfig.peerLivenessConfig());
+                bind(P2PConfig.ProxyConfig.class).toInstance(p2pConfig.proxyConfig());
                 bind(AddressBook.class).in(Scopes.SINGLETON);
                 var selfUri =
                     RadixNodeUri.fromPubKeyAndAddress(

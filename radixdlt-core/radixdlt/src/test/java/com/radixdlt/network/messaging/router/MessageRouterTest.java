@@ -86,7 +86,7 @@ import org.junit.Test;
 
 public final class MessageRouterTest {
   private ECKeyPair self;
-  private P2PConfig config;
+  private P2PConfig.ProxyConfig config;
   private PublishSubject<MessageFromPeer<Message>> messages;
   private ProxyCertificateManager proxyCertificateManager;
   private MessageRouter sut;
@@ -94,7 +94,7 @@ public final class MessageRouterTest {
   @Before
   public void setup() throws ParseException {
     self = ECKeyPair.generateNew();
-    config = mock(P2PConfig.class);
+    config = mock(P2PConfig.ProxyConfig.class);
 
     messages = PublishSubject.create();
     proxyCertificateManager = mock(ProxyCertificateManager.class);

@@ -68,6 +68,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.network.messaging.router.MessageRouter;
 import com.radixdlt.network.messaging.serialization.CompressedMessageSerialization;
 import com.radixdlt.network.messaging.serialization.MessageSerialization;
 import com.radixdlt.properties.RuntimeProperties;
@@ -97,6 +100,11 @@ public final class MessageCentralModule extends AbstractModule {
 
     // MessageCentral dependencies
     bind(MessageCentralConfiguration.class).toInstance(this.config);
+
+    final var localEventsBinder =
+        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
+            .permitDuplicates();
+    localEventsBinder.addBinding().toInstance(MessageRouter.RoutingResult.Forward.class);
   }
 
   @Provides
