@@ -78,18 +78,18 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.utils.Bytes;
-import java.util.TreeMap;
+import java.util.NavigableMap;
 
 public final class EngineConfigurationHandler
     extends CoreJsonRpcHandler<EngineConfigurationRequest, EngineConfigurationResponse> {
-  private final TreeMap<Long, ForkConfig> forks;
+  private final NavigableMap<Long, ForkConfig> forks;
   private final CoreModelMapper modelMapper;
   private final VerifiedTxnsAndProof genesis;
 
   @Inject
   public EngineConfigurationHandler(
       @Genesis VerifiedTxnsAndProof genesis,
-      TreeMap<Long, ForkConfig> forks,
+      NavigableMap<Long, ForkConfig> forks,
       CoreModelMapper modelMapper) {
     super(EngineConfigurationRequest.class);
     this.genesis = genesis;

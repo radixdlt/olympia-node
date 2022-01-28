@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.radixdlt.api.core.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -64,7 +65,7 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = TransactionNotFoundError.class, name = "TransactionNotFoundError"),
 })
 
-public class CoreError {
+public class CoreError implements Serializable {
   public static final String JSON_PROPERTY_TYPE = "type";
   private String type;
 

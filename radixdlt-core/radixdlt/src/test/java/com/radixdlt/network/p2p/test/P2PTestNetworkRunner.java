@@ -105,7 +105,6 @@ import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import java.io.IOException;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.commons.cli.ParseException;
 import org.json.JSONObject;
@@ -130,9 +129,7 @@ public final class P2PTestNetworkRunner {
 
     final var network =
         new DeterministicNetwork(
-            nodesKeys.stream()
-                .map(key -> BFTNode.create(key.getPublicKey()))
-                .collect(Collectors.toList()),
+            nodesKeys.stream().map(key -> BFTNode.create(key.getPublicKey())).toList(),
             MessageSelector.firstSelector(),
             MessageMutator.nothing());
 

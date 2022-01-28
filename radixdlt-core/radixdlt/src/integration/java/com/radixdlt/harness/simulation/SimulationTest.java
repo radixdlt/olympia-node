@@ -365,7 +365,7 @@ public class SimulationTest {
                               .mapToObj(nodes::get)
                               .map(node -> BFTNode.create(node.getPublicKey()))
                               .map(node -> BFTValidator.from(node, UInt256.ONE))
-                              .collect(Collectors.toList())));
+                              .toList()));
             }
           });
 
@@ -425,7 +425,7 @@ public class SimulationTest {
                               .mapToObj(nodes::get)
                               .map(node -> BFTNode.create(node.getPublicKey()))
                               .map(node -> BFTValidator.from(node, UInt256.ONE))
-                              .collect(Collectors.toList())));
+                              .toList()));
             }
           });
       return this;
@@ -654,7 +654,7 @@ public class SimulationTest {
       Map<Monitor, TestInvariant> checkers,
       SimulationNodes.RunningNetwork runningNetwork,
       Duration duration) {
-    List<Pair<Monitor, Observable<Pair<Monitor, TestInvariantError>>>> assertions =
+    var assertions =
         checkers.keySet().stream()
             .map(
                 name -> {
@@ -667,14 +667,14 @@ public class SimulationTest {
                           .publish()
                           .autoConnect(2));
                 })
-            .collect(Collectors.toList());
+            .toList();
 
-    Single<Monitor> firstErrorSignal =
-        Observable.merge(assertions.stream().map(Pair::getSecond).collect(Collectors.toList()))
+    var firstErrorSignal =
+        Observable.merge(assertions.stream().map(Pair::getSecond).toList())
             .firstOrError()
             .map(Pair::getFirst);
 
-    List<Single<Pair<Monitor, Optional<TestInvariantError>>>> results =
+    var results =
         assertions.stream()
             .map(
                 assertion ->
@@ -691,7 +691,7 @@ public class SimulationTest {
                         .map(e -> Optional.of(e.getSecond()))
                         .first(Optional.empty())
                         .map(result -> Pair.of(assertion.getFirst(), result)))
-            .collect(Collectors.toList());
+            .toList();
 
     return Single.merge(results)
         .toObservable()

@@ -102,14 +102,15 @@ public class PrometheusService {
 
   private static final List<CounterType> EXPORT_LIST = Arrays.asList(CounterType.values());
 
+  public static final String USAGE = "Usage";
   private static final List<JmxMetric> JMX_METRICS =
       List.of(
-          jmxMetric("java.lang:type=MemoryPool,name=G1 Eden Space", "Usage"),
-          jmxMetric("java.lang:type=MemoryPool,name=G1 Survivor Space", "Usage"),
-          jmxMetric("java.lang:type=MemoryPool,name=G1 Old Gen", "Usage"),
-          jmxMetric("java.lang:type=MemoryPool,name=Metaspace", "Usage"),
-          jmxMetric("java.lang:type=GarbageCollector,name=G1 Old Generation", "Usage"),
-          jmxMetric("java.lang:type=GarbageCollector,name=G1 Young Generation", "Usage"),
+          jmxMetric("java.lang:type=MemoryPool,name=G1 Eden Space", USAGE),
+          jmxMetric("java.lang:type=MemoryPool,name=G1 Survivor Space", USAGE),
+          jmxMetric("java.lang:type=MemoryPool,name=G1 Old Gen", USAGE),
+          jmxMetric("java.lang:type=MemoryPool,name=Metaspace", USAGE),
+          jmxMetric("java.lang:type=GarbageCollector,name=G1 Old Generation", USAGE),
+          jmxMetric("java.lang:type=GarbageCollector,name=G1 Young Generation", USAGE),
           jmxMetric(
               "java.lang:type=OperatingSystem",
               "SystemCpuLoad",
@@ -296,7 +297,7 @@ public class PrometheusService {
         for (var attribute : attributes) {
           var name = attribute.getName();
 
-          if (name.equals("Usage")) {
+          if (name.equals(USAGE)) {
             name = objectName.getKeyProperty("name");
           }
 

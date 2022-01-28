@@ -230,7 +230,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
         .filter(e -> predicate.test(e.getSecond()))
         .peek(e -> operator.accept(e.getSecond()))
         .map(e -> e.getFirst().getTxn())
-        .collect(Collectors.toList());
+        .toList();
   }
 
   public int getCount() {

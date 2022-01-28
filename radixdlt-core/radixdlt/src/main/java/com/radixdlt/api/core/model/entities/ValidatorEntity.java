@@ -101,7 +101,7 @@ public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
   public void overwriteDataObject(
       ParsedDataObject parsedDataObject, TxBuilder builder, Supplier<RERulesConfig> config)
       throws TxBuilderException {
-    var dataObject = parsedDataObject.getDataObject();
+    var dataObject = parsedDataObject.dataObject();
     if (dataObject instanceof PreparedValidatorRegistered preparedValidatorRegistered) {
       updateRegistered(builder, preparedValidatorRegistered);
     } else if (dataObject instanceof PreparedValidatorOwner) {

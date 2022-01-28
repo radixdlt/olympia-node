@@ -86,7 +86,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -103,15 +102,7 @@ public final class ModuleRunnerImpl implements ModuleRunner {
   private final List<Subscription<?>> subscriptions;
   private final ImmutableList<Consumer<ScheduledExecutorService>> onStart;
 
-  private static class Subscription<T> {
-    final Observable<T> o;
-    final EventProcessor<T> p;
-
-    Subscription(Observable<T> o, EventProcessor<T> p) {
-      this.o = o;
-      this.p = p;
-    }
-
+  private record Subscription<T>(Observable<T> o, EventProcessor<T> p) {
     Disposable subscribe(Scheduler s) {
       return o.observeOn(s)
           .subscribe(
@@ -119,7 +110,9 @@ public final class ModuleRunnerImpl implements ModuleRunner {
               e -> {
                 // TODO: Implement better error handling especially against Byzantine nodes.
                 // TODO: Exit process for now.
-                e.printStackTrace();
+                logger.error(
+                    "Unhandled exception in the event processing loop. Shutting down the node. ",
+                    e);
                 Thread.sleep(1000);
                 System.exit(-1);
               });
@@ -210,9 +203,7 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 
       this.executorService.submit(() -> startProcessors.forEach(StartProcessor::start));
       final var disposables =
-          this.subscriptions.stream()
-              .map(s -> s.subscribe(singleThreadScheduler))
-              .collect(Collectors.toList());
+          this.subscriptions.stream().map(s -> s.subscribe(singleThreadScheduler)).toList();
       this.compositeDisposable = new CompositeDisposable(disposables);
 
       this.onStart.forEach(f -> f.accept(this.executorService));
