@@ -143,7 +143,7 @@ final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
   private List<ExecutedFork> prepareExecutedForks() {
     return forksEpochStore.getEpochsForkHashes().entrySet().stream()
         .map(e -> new ExecutedFork().epoch(e.getKey()).hash(e.getValue().toString()))
-        .collect(Collectors.toList());
+        .toList();
   }
 
   private List<HealthResponseUnknownReportedForksHashes> prepareUnknownReportedForksHashes() {
@@ -153,11 +153,11 @@ final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
               final var reportedByList =
                   e.getValue().stream()
                       .map(addressing.forValidators()::of)
-                      .collect(Collectors.toList());
+                      .toList();
               return new HealthResponseUnknownReportedForksHashes()
                   .hash(e.getKey().toString())
                   .reportedBy(reportedByList);
             })
-        .collect(Collectors.toList());
+        .toList();
   }
 }

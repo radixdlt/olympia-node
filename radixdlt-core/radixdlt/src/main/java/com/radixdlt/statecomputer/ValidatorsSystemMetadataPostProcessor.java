@@ -113,7 +113,7 @@ public final class ValidatorsSystemMetadataPostProcessor
                   final var key = ECPublicKey.fromBytes(keyBytes);
                   return validatorSet.containsNode(key);
                 } catch (PublicKeyException ex) {
-                  throw new RuntimeException(ex);
+                  throw new IllegalStateException(ex);
                 }
               })
           .collect(ImmutableList.toImmutableList());

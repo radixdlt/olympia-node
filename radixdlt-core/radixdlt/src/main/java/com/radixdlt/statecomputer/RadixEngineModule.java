@@ -167,7 +167,6 @@ public class RadixEngineModule extends AbstractModule {
   public EventProcessorOnRunner<?> ledgerUpdateEventProcessorCurrentForkView(
       CurrentForkView currentForkView) {
     return new EventProcessorOnRunner<>(
-        // TODO: does it require a new runner?
-        Runners.SYNC, LedgerUpdate.class, currentForkView.ledgerUpdateEventProcessor());
+        Runners.SYSTEM_INFO, LedgerUpdate.class, currentForkView.ledgerUpdateEventProcessor());
   }
 }
