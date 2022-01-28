@@ -230,7 +230,7 @@ public class RecoveryLivenessTest {
             MessageSelector.firstSelector(),
             this::mutate);
 
-    List<BFTNode> allNodes = nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).toList();
+    var allNodes = nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).toList();
 
     this.nodeCreators =
         nodeKeys.stream().<Supplier<Injector>>map(k -> () -> createRunner(k, allNodes)).toList();
@@ -303,7 +303,7 @@ public class RecoveryLivenessTest {
 
   private void restartNode(int index) {
     this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
-    Injector injector = nodeCreators.get(index).get();
+    var injector = nodeCreators.get(index).get();
     stopDatabase(this.nodes.set(index, injector));
     withThreadCtx(injector, () -> injector.getInstance(DeterministicProcessor.class).start());
   }
@@ -332,11 +332,11 @@ public class RecoveryLivenessTest {
   }
 
   private Timed<ControlledMessage> processNext() {
-    Timed<ControlledMessage> msg = this.network.nextMessage();
+    var msg = this.network.nextMessage();
     logger.debug("Processing message {}", msg);
 
     int nodeIndex = msg.value().channelId().receiverIndex();
-    Injector injector = this.nodes.get(nodeIndex);
+    var injector = this.nodes.get(nodeIndex);
     ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
     try {
       injector
@@ -372,7 +372,7 @@ public class RecoveryLivenessTest {
   }
 
   private int processUntilNextCommittedEmitted(int maxSteps) {
-    EpochView lastCommitted = this.lastCommitViewEmitted().orElse(new EpochView(0, View.genesis()));
+    var lastCommitted = this.lastCommitViewEmitted().orElse(new EpochView(0, View.genesis()));
     int count = 0;
     int senderIndex;
     do {
@@ -380,7 +380,7 @@ public class RecoveryLivenessTest {
         throw new IllegalStateException("Already lost liveness");
       }
 
-      Timed<ControlledMessage> msg = processNext();
+      var msg = processNext();
       senderIndex = msg.value().channelId().senderIndex();
       count++;
     } while (this.lastCommitViewEmitted().stream().noneMatch(v -> v.compareTo(lastCommitted) > 0));
@@ -400,12 +400,12 @@ public class RecoveryLivenessTest {
    */
   @Test
   public void liveness_check_when_restart_all_but_one_node() {
-    EpochView epochView = this.latestEpochView();
+    var epochView = this.latestEpochView();
 
     for (int restart = 0; restart < 5; restart++) {
       processForCount(5000);
 
-      EpochView nextEpochView = latestEpochView();
+      var nextEpochView = latestEpochView();
       assertThat(nextEpochView).isGreaterThan(epochView);
       epochView = nextEpochView;
 
@@ -421,12 +421,12 @@ public class RecoveryLivenessTest {
 
   @Test
   public void liveness_check_when_restart_node_on_view_update_with_commit() {
-    EpochView epochView = this.latestEpochView();
+    var epochView = this.latestEpochView();
 
     for (int restart = 0; restart < 5; restart++) {
       processForCount(5000);
 
-      EpochView nextEpochView = latestEpochView();
+      var nextEpochView = latestEpochView();
       assertThat(nextEpochView).isGreaterThan(epochView);
       epochView = nextEpochView;
 
@@ -446,12 +446,12 @@ public class RecoveryLivenessTest {
 
   @Test
   public void liveness_check_when_restart_all_nodes() {
-    EpochView epochView = this.latestEpochView();
+    var epochView = this.latestEpochView();
 
     for (int restart = 0; restart < 5; restart++) {
       processForCount(5000);
 
-      EpochView nextEpochView = latestEpochView();
+      var nextEpochView = latestEpochView();
       assertThat(nextEpochView).isGreaterThan(epochView);
       epochView = nextEpochView;
 
@@ -481,12 +481,12 @@ public class RecoveryLivenessTest {
         (message, queue) ->
             message.channelId().receiverIndex() < f || message.channelId().senderIndex() < f;
 
-    EpochView epochView = this.latestEpochView();
+    var epochView = this.latestEpochView();
 
     for (int restart = 0; restart < 5; restart++) {
       processForCount(5000);
 
-      EpochView nextEpochView = latestEpochView();
+      var nextEpochView = latestEpochView();
       assertThat(nextEpochView).isGreaterThan(epochView);
       epochView = nextEpochView;
 

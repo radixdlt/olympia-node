@@ -654,7 +654,7 @@ public class SimulationTest {
       Map<Monitor, TestInvariant> checkers,
       SimulationNodes.RunningNetwork runningNetwork,
       Duration duration) {
-    List<Pair<Monitor, Observable<Pair<Monitor, TestInvariantError>>>> assertions =
+    var assertions =
         checkers.keySet().stream()
             .map(
                 name -> {
@@ -669,12 +669,12 @@ public class SimulationTest {
                 })
             .toList();
 
-    Single<Monitor> firstErrorSignal =
+    var firstErrorSignal =
         Observable.merge(assertions.stream().map(Pair::getSecond).toList())
             .firstOrError()
             .map(Pair::getFirst);
 
-    List<Single<Pair<Monitor, Optional<TestInvariantError>>>> results =
+    var results =
         assertions.stream()
             .map(
                 assertion ->

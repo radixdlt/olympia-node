@@ -88,6 +88,7 @@ import com.radixdlt.sync.messages.remote.SyncResponse;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -197,7 +198,7 @@ public final class RemoteSyncService {
 
     final var statusUpdate = LedgerStatusUpdate.create(header);
 
-    final var currentPeers = this.peersView.peers().toList();
+    final var currentPeers = this.peersView.peers().collect(Collectors.toList());
     Collections.shuffle(currentPeers);
 
     currentPeers.stream()

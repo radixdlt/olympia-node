@@ -88,7 +88,6 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.NodeEvents;
@@ -107,7 +106,6 @@ import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.KeyComparator;
-import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -160,7 +158,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 
   @Before
   public void setup() {
-    List<BFTNode> allNodes = nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).toList();
+    var allNodes = nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).toList();
 
     this.network =
         new DeterministicNetwork(
@@ -199,7 +197,7 @@ public class OneNodeAlwaysAliveSafetyTest {
     this.nodeCreators =
         nodeKeys.stream().<Supplier<Injector>>map(k -> () -> createRunner(k, allNodes)).toList();
 
-    for (Supplier<Injector> nodeCreator : nodeCreators) {
+    for (var nodeCreator : nodeCreators) {
       this.nodes.add(nodeCreator.get());
     }
   }
@@ -268,12 +266,12 @@ public class OneNodeAlwaysAliveSafetyTest {
 
   private void restartNode(int index) {
     this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
-    Injector injector = nodeCreators.get(index).get();
+    var injector = nodeCreators.get(index).get();
     this.nodes.set(index, injector);
   }
 
   private void startNode(int index) {
-    Injector injector = nodes.get(index);
+    var injector = nodes.get(index);
     ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
     try {
       injector.getInstance(DeterministicProcessor.class).start();
@@ -283,11 +281,11 @@ public class OneNodeAlwaysAliveSafetyTest {
   }
 
   private void processNext() {
-    Timed<ControlledMessage> msg = this.network.nextMessage();
+    var msg = this.network.nextMessage();
     logger.debug("Processing message {}", msg);
 
     int nodeIndex = msg.value().channelId().receiverIndex();
-    Injector injector = this.nodes.get(nodeIndex);
+    var injector = this.nodes.get(nodeIndex);
     ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
     try {
       injector

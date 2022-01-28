@@ -79,6 +79,7 @@ import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -109,7 +110,7 @@ public class OneNodeNeverSendEpochResponseTest {
 
   private static Function<Long, IntStream> randomEpochToNodesMapper() {
     return epoch -> {
-      final var indices = IntStream.range(0, numNodes).boxed().toList();
+      final var indices = IntStream.range(0, numNodes).boxed().collect(Collectors.toList());
       final var random = new Random(epoch);
       Collections.shuffle(indices, random);
       final var numValidators = minValidators + random.nextInt(numNodes - minValidators + 1);
