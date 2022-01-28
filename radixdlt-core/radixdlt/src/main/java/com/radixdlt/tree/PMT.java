@@ -140,7 +140,8 @@ public class PMT {
     var pmtKey = new PMTKey(PMTPath.intoNibbles(key));
 
     if (root != null) {
-      var acc = root.getValue(pmtKey, new PMTAcc(), this::read);
+      var acc = new PMTAcc();
+      root.getValue(pmtKey, acc, this::read);
       if (acc.notFound()) {
         if (log.isDebugEnabled()) {
           log.debug(
@@ -148,7 +149,6 @@ public class PMT {
               TreeUtils.toHexString(key),
               TreeUtils.toHexString(represent(root)));
         }
-        // TODO XXX: what shall we return for not found? Maybe lets wrap everything in Option?
         return new byte[0];
       } else {
         return acc.getRetVal().getValue();
@@ -157,8 +157,7 @@ public class PMT {
       if (log.isDebugEnabled()) {
         log.debug("Tree empty when key: {}", TreeUtils.toHexString(key));
       }
-      // TODO XXX: what shall we return for empty Maybe lets wrap everything in Option?
-      return null;
+      return new byte[0];
     }
   }
 
@@ -169,7 +168,8 @@ public class PMT {
       var pmtKey = new PMTKey(PMTPath.intoNibbles(key));
 
       if (root != null) {
-        var acc = root.insertNode(pmtKey, val, new PMTAcc(), this::represent, this::read);
+        var acc = new PMTAcc();
+        root.insertNode(pmtKey, val, acc, this::represent, this::read);
         final var newRoot = acc.getTip();
         acc.getNewNodes().stream()
             .filter(Objects::nonNull)

@@ -303,19 +303,4 @@ public class ByteUtil {
         // we return false when all bytes are 0 again
         return (i >= startIndex || bytes[startIndex] != 0);
     }
-
-    /**
-     * Utility function to copy a byte array into a new byte array with given size.
-     * If the src length is smaller than the given size, the result will be left-padded
-     * with zeros.
-     *
-     * @param value - a BigInteger with a maximum value of 2^256-1
-     * @return Byte array of given size with a copy of the <code>src</code>
-     */
-    public static byte[] copyToArray(BigInteger value) {
-        byte[] src = ByteUtil.bigIntegerToBytes(value);
-        byte[] dest = ByteBuffer.allocate(32).array();
-        System.arraycopy(src, 0, dest, dest.length - src.length, src.length);
-        return dest;
-    }
 }

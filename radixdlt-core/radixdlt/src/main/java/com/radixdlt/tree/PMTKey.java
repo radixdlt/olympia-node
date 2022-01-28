@@ -69,7 +69,7 @@ import java.util.Objects;
 
 public class PMTKey {
 
-  private byte[] key;
+  private final byte[] key;
   private PMTKey firstNibble;
   private PMTKey tailNibbles;
 
@@ -79,7 +79,7 @@ public class PMTKey {
 
   public PMTKey getFirstNibble() {
     if (firstNibble == null) {
-      var first = new PMTKey(new byte[] {key[0]}); // TODO: perf, mem?
+      var first = new PMTKey(new byte[] {key[0]});
       firstNibble = first;
       return first;
     } else {
@@ -94,7 +94,7 @@ public class PMTKey {
   public PMTKey getTailNibbles() {
     if (tailNibbles == null) {
       if (key.length > 1) {
-        var tail = new PMTKey(Arrays.copyOfRange(key, 1, key.length)); // TODO: perf, mem?
+        var tail = new PMTKey(Arrays.copyOfRange(key, 1, key.length));
         tailNibbles = tail;
         return tail;
       } else {
@@ -133,6 +133,6 @@ public class PMTKey {
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, firstNibble, tailNibbles);
+    return Objects.hash(Arrays.hashCode(key), firstNibble, tailNibbles);
   }
 }

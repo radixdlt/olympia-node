@@ -70,12 +70,8 @@ import java.util.List;
 
 public class PMTAcc {
 
-  // TODO maybe make this class immutable?
   private List<PMTNode> visitedAcc = new ArrayList<>();
-  ;
   private List<PMTNode> addedAcc = new ArrayList<>();
-
-  public PMTAcc() {}
 
   private PMTNode tip;
   // INFO: it can be Leaf or Branch (as these are the only terminating nodes in PMT algo)
@@ -102,7 +98,6 @@ public class PMTAcc {
     this.notFound = true;
   }
 
-  // TODO try to improve this
   public boolean notFound() {
     return this.notFound;
   }

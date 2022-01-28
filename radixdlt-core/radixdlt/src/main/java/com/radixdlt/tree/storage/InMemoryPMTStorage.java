@@ -75,7 +75,6 @@ public class InMemoryPMTStorage implements PMTStorage {
   }
 
   public void save(byte[] serialisedNodeHash, byte[] serialisedNode) {
-    // TODO: introduce better key for local cache to enable removal (e.g. with round number)
     this.localDb.put(ByteArrayWrapper.from(serialisedNodeHash), serialisedNode);
   }
 

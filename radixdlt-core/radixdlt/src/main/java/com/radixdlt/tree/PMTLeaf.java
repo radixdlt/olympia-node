@@ -77,7 +77,8 @@ public final class PMTLeaf extends PMTNode {
     this.value = newValue;
   }
 
-  public PMTAcc insertNode(
+  // This method is expected to mutate PMTAcc.
+  public void insertNode(
       PMTKey key,
       byte[] val,
       PMTAcc acc,
@@ -86,25 +87,25 @@ public final class PMTLeaf extends PMTNode {
     final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
     switch (commonPath.whichRemainderIsLeft()) {
       case EXISTING:
-        acc = handleExistingRemainder(val, acc, represent, commonPath);
+        handleExistingRemainder(val, acc, represent, commonPath);
         break;
       case NEW:
-        acc = handleNewRemainder(val, acc, represent, commonPath);
+        handleNewRemainder(val, acc, represent, commonPath);
         break;
       case EXISTING_AND_NEW:
-        acc = handleBothExistingAndNewRemainder(val, acc, represent, commonPath);
+        handleBothExistingAndNewRemainder(val, acc, represent, commonPath);
         break;
       case NONE:
-        acc = handleNoRemainder(key, val, acc);
+        handleNoRemainder(key, val, acc);
         break;
       default:
         throw new IllegalStateException(
             String.format("Unexpected subtree: %s", commonPath.whichRemainderIsLeft()));
     }
-    return acc;
   }
 
-  private PMTAcc handleNoRemainder(PMTKey key, byte[] val, PMTAcc acc) {
+  // This method is expected to mutate PMTAcc.
+  private void handleNoRemainder(PMTKey key, byte[] val, PMTAcc acc) {
     if (Arrays.equals(val, this.getValue())) {
       acc.setTip(this);
     } else {
@@ -114,10 +115,10 @@ public final class PMTLeaf extends PMTNode {
       acc.add(newLeaf);
       acc.mark(this);
     }
-    return acc;
   }
 
-  private PMTAcc handleBothExistingAndNewRemainder(
+  // This method is expected to mutate PMTAcc.
+  private void handleBothExistingAndNewRemainder(
       byte[] val, PMTAcc acc, Function<PMTNode, byte[]> represent, PMTPath commonPath) {
     PMTBranch newBranch;
     var remainderNew = commonPath.getRemainder(PMTPath.RemainingSubtree.NEW);
@@ -131,13 +132,13 @@ public final class PMTLeaf extends PMTNode {
                 remainderNew.getFirstNibble(), represent.apply(newLeafNew)),
             new PMTBranch.PMTBranchChild(
                 remainderOld.getFirstNibble(), represent.apply(newLeafOld)));
-    acc = computeAndSetTip(commonPath, newBranch, acc, represent);
+    computeAndSetTip(commonPath, newBranch, acc, represent);
     acc.add(newLeafNew, newLeafOld, newBranch);
     acc.mark(this);
-    return acc;
   }
 
-  private PMTAcc handleNewRemainder(
+  // This method is expected to mutate PMTAcc.
+  private void handleNewRemainder(
       byte[] val, PMTAcc acc, Function<PMTNode, byte[]> represent, PMTPath commonPath) {
     PMTKey remainder;
     PMTBranch newBranch;
@@ -148,13 +149,13 @@ public final class PMTLeaf extends PMTNode {
         new PMTBranch(
             this.getValue(),
             new PMTBranch.PMTBranchChild(remainder.getFirstNibble(), represent.apply(newLeaf)));
-    acc = computeAndSetTip(commonPath, newBranch, acc, represent);
+    computeAndSetTip(commonPath, newBranch, acc, represent);
     acc.add(newLeaf, newBranch);
     acc.mark(this);
-    return acc;
   }
 
-  private PMTAcc handleExistingRemainder(
+  // This method is expected to mutate PMTAcc.
+  private void handleExistingRemainder(
       byte[] val, PMTAcc acc, Function<PMTNode, byte[]> represent, PMTPath commonPath) {
     var remainder = commonPath.getRemainder(PMTPath.RemainingSubtree.EXISTING);
     var newLeaf = new PMTLeaf(remainder.getTailNibbles(), this.getValue());
@@ -162,13 +163,13 @@ public final class PMTLeaf extends PMTNode {
         new PMTBranch(
             val,
             new PMTBranch.PMTBranchChild(remainder.getFirstNibble(), represent.apply(newLeaf)));
-    acc = computeAndSetTip(commonPath, newBranch, acc, represent);
+    computeAndSetTip(commonPath, newBranch, acc, represent);
     acc.add(newLeaf, newBranch);
     acc.mark(this);
-    return acc;
   }
 
-  public PMTAcc getValue(PMTKey key, PMTAcc acc, Function<byte[], PMTNode> read) {
+  // This method is expected to mutate PMTAcc.
+  public void getValue(PMTKey key, PMTAcc acc, Function<byte[], PMTNode> read) {
     final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
     switch (commonPath.whichRemainderIsLeft()) {
       case NONE:
@@ -182,6 +183,5 @@ public final class PMTLeaf extends PMTNode {
         throw new IllegalStateException(
             String.format("Unexpected subtree: %s", commonPath.whichRemainderIsLeft()));
     }
-    return acc;
   }
 }
