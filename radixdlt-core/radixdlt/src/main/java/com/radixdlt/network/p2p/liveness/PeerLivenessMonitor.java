@@ -133,21 +133,16 @@ public final class PeerLivenessMonitor {
     return timeout -> {
       final var waitingForPeer = this.waitingForPong.remove(timeout.getNodeId());
       if (waitingForPeer) {
-        this.peerEventDispatcher.dispatch(PeerLostLiveness.create(timeout.getNodeId()));
+        this.peerEventDispatcher.dispatch(new PeerLostLiveness(timeout.getNodeId()));
       }
     };
   }
 
   public RemoteEventProcessor<Ping> pingRemoteEventProcessor() {
-    return (sender, ping) -> {
-      this.pongEventDispatcher.dispatch(sender, Pong.create());
-    };
+    return (sender, ping) -> this.pongEventDispatcher.dispatch(sender, Pong.create());
   }
 
   public RemoteEventProcessor<Pong> pongRemoteEventProcessor() {
-    return (sender, pong) -> {
-      final var nodeId = NodeId.fromPublicKey(sender.getKey());
-      this.waitingForPong.remove(nodeId);
-    };
+    return (sender, pong) -> this.waitingForPong.remove(NodeId.fromPublicKey(sender.getKey()));
   }
 }

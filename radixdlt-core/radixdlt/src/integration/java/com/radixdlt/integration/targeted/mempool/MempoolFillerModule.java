@@ -62,13 +62,57 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempoolfiller;
+package com.radixdlt.integration.targeted.mempool;
 
-/** Scheduled event for filling the mempool */
-public enum ScheduledMempoolFill {
-  INSTANCE;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.environment.*;
+import com.radixdlt.identifiers.REAddr;
 
-  public static ScheduledMempoolFill create() {
-    return INSTANCE;
+/** Module responsible for the mempool filler chaos attack */
+public final class MempoolFillerModule extends AbstractModule {
+  @Override
+  public void configure() {
+    bind(MempoolFiller.class).in(Scopes.SINGLETON);
+    var eventBinder =
+        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
+            .permitDuplicates();
+    eventBinder.addBinding().toInstance(MempoolFillerUpdate.class);
+    eventBinder.addBinding().toInstance(ScheduledMempoolFill.class);
+
+    bind(new TypeLiteral<EventDispatcher<MempoolFillerUpdate>>() {})
+        .toProvider(Dispatchers.dispatcherProvider(MempoolFillerUpdate.class))
+        .in(Scopes.SINGLETON);
+    bind(new TypeLiteral<EventDispatcher<ScheduledMempoolFill>>() {})
+        .toProvider(Dispatchers.dispatcherProvider(ScheduledMempoolFill.class))
+        .in(Scopes.SINGLETON);
+    bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMempoolFill>>() {})
+        .toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMempoolFill.class))
+        .in(Scopes.SINGLETON);
+  }
+
+  @Provides
+  @Self
+  private REAddr addr(@Self ECPublicKey self) {
+    return REAddr.ofPubKeyAccount(self);
+  }
+
+  @ProvidesIntoSet
+  public EventProcessorOnRunner<?> mempoolFillerUpdateProcessor(MempoolFiller mempoolFiller) {
+    return new EventProcessorOnRunner<>(
+        "Mempool", MempoolFillerUpdate.class, mempoolFiller.mempoolFillerUpdateEventProcessor());
+  }
+
+  @ProvidesIntoSet
+  public EventProcessorOnRunner<?> scheduledMessageFloodEventProcessor(
+      MempoolFiller mempoolFiller) {
+    return new EventProcessorOnRunner<>(
+        "Mempool", ScheduledMempoolFill.class, mempoolFiller.scheduledMempoolFillEventProcessor());
   }
 }

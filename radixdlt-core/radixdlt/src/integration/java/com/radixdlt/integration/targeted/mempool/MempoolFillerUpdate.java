@@ -62,83 +62,85 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempoolfiller;
+package com.radixdlt.integration.targeted.mempool;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.concurrent.CompletableFuture;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.utils.PrivateKeys;
-import java.util.Set;
-import org.assertj.core.api.Condition;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+/** An update event to the mempool filler */
+public final class MempoolFillerUpdate {
+  private final int parallelTransactions;
+  private final boolean sendToSelf;
+  private final CompletableFuture<Void> completableFuture;
 
-public class MempoolFillerTest {
-  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  @Inject @Self private BFTNode self;
-  @Inject private Hasher hasher;
-  @Inject private DeterministicProcessor processor;
-  @Inject private DeterministicNetwork network;
-  @Inject private RadixEngineStateComputer stateComputer;
-  @Inject private SystemCounters systemCounters;
-  @Inject private PeersView peersView;
-
-  private Injector getInjector() {
-    return Guice.createInjector(
-        new RadixEngineForksLatestOnlyModule(),
-        MempoolConfig.asModule(10, 10),
-        new MainnetForkConfigsModule(),
-        new ForksModule(),
-        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
-        new MockedGenesisModule(
-            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(100)),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            install(new MempoolFillerModule());
-            bindConstant()
-                .annotatedWith(DatabaseLocation.class)
-                .to(folder.getRoot().getAbsolutePath());
-          }
-        });
+  private MempoolFillerUpdate(
+      int parallelTransactions, boolean sendToSelf, CompletableFuture<Void> completableFuture) {
+    this.parallelTransactions = parallelTransactions;
+    this.sendToSelf = sendToSelf;
+    this.completableFuture = completableFuture;
   }
 
-  @Test
-  public void mempool_fill_starts_filling_mempool() {
-    // Arrange
-    getInjector().injectMembers(this);
+  public static MempoolFillerUpdate enable(int parallelTransactions, boolean sendToSelf) {
+    return new MempoolFillerUpdate(parallelTransactions, sendToSelf, null);
+  }
 
-    // Act
-    processor.handleMessage(self, MempoolFillerUpdate.enable(15, true), null);
-    processor.handleMessage(self, ScheduledMempoolFill.create(), null);
+  public static MempoolFillerUpdate enable(
+      int parallelTransactions, boolean sendToSelf, CompletableFuture<Void> completableFuture) {
+    if (parallelTransactions < 0) {
+      throw new IllegalArgumentException("parallelTransactions must be > 0.");
+    }
+    Objects.requireNonNull(completableFuture);
+    return new MempoolFillerUpdate(parallelTransactions, sendToSelf, completableFuture);
+  }
 
-    // Assert
-    assertThat(network.allMessages())
-        .areAtLeast(1, new Condition<>(m -> m.message() instanceof MempoolAdd, "Has mempool add"));
+  public static MempoolFillerUpdate disable() {
+    return new MempoolFillerUpdate(-1, false, null);
+  }
+
+  public static MempoolFillerUpdate disable(CompletableFuture<Void> completableFuture) {
+    Objects.requireNonNull(completableFuture);
+    return new MempoolFillerUpdate(-1, false, completableFuture);
+  }
+
+  public void onSuccess() {
+    if (completableFuture != null) {
+      completableFuture.complete(null);
+    }
+  }
+
+  public void onError(String error) {
+    if (completableFuture != null) {
+      completableFuture.completeExceptionally(new RuntimeException(error));
+    }
+  }
+
+  public boolean enabled() {
+    return parallelTransactions > 0;
+  }
+
+  public OptionalInt numTransactions() {
+    return parallelTransactions > 0 ? OptionalInt.of(parallelTransactions) : OptionalInt.empty();
+  }
+
+  public Optional<Boolean> sendToSelf() {
+    return parallelTransactions > 0 ? Optional.of(sendToSelf) : Optional.empty();
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(parallelTransactions, sendToSelf);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof MempoolFillerUpdate)) {
+      return false;
+    }
+
+    MempoolFillerUpdate other = (MempoolFillerUpdate) o;
+    return this.parallelTransactions == other.parallelTransactions
+        && this.sendToSelf == other.sendToSelf;
   }
 }

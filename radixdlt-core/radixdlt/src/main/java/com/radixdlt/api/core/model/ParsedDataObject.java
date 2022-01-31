@@ -66,8 +66,10 @@ package com.radixdlt.api.core.model;
 
 import com.google.common.collect.ClassToInstanceMap;
 import com.radixdlt.api.core.openapitools.model.DataObject;
+import java.io.Serializable;
 
-public record ParsedDataObject(DataObject dataObject, ClassToInstanceMap<Object> parsedData) {
+public record ParsedDataObject(DataObject dataObject, ClassToInstanceMap<Object> parsedData)
+    implements Serializable {
 
   public <T> T getParsed(Class<T> parsedClass) {
     return parsedData.getInstance(parsedClass);

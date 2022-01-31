@@ -183,7 +183,8 @@ public final class EpochManager {
     this.syncErrorResponseProcessors =
         isValidator ? Set.of(initialBFTSync.errorResponseProcessor()) : Set.of();
     this.bftUpdateProcessors =
-        isValidator
+        isValidator // FIXME: initialBFTSync::processBFTUpdate does nothing, do we actually need it
+            // here?
             ? Set.of(initialBFTSync::processBFTUpdate, initialBFTEventProcessor::processBFTUpdate)
             : Set.of();
     this.bftRebuildProcessors =
@@ -270,7 +271,8 @@ public final class EpochManager {
     this.syncErrorResponseProcessors = Set.of(bftSync.errorResponseProcessor());
     this.syncRequestProcessors = Set.of(bftSyncRequestProcessorFactory.create(vertexStore));
     this.bftRebuildProcessors = ImmutableSet.of(bftEventProcessor::processBFTRebuildUpdate);
-    this.bftUpdateProcessors =
+    this.bftUpdateProcessors = // FIXME: bftSync::processBFTUpdate does nothing, do we actually
+        // need it here?
         ImmutableSet.of(bftSync::processBFTUpdate, bftEventProcessor::processBFTUpdate);
   }
 

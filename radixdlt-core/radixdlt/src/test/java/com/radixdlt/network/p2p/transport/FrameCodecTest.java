@@ -130,6 +130,6 @@ public final class FrameCodecTest {
         (AuthHandshakeSuccess)
             handshaker1.handleResponseMessage(Unpooled.wrappedBuffer(responseMessage));
 
-    return Pair.of(handshaker1Result.getSecrets(), handshaker2Result.getSecrets());
+    return Pair.of(handshaker1Result.secrets(), handshaker2Result.secrets());
   }
 }

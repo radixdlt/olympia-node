@@ -62,48 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempoolfiller;
+package com.radixdlt.integration.targeted.mempool;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.identifiers.REAddr;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/** Module responsible for the mempool filler chaos attack */
-public final class MempoolFillerModule extends AbstractModule {
-  @Override
-  public void configure() {
-    bind(MempoolFiller.class).in(Scopes.SINGLETON);
-    var eventBinder =
-        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
-            .permitDuplicates();
-    eventBinder.addBinding().toInstance(MempoolFillerUpdate.class);
-    eventBinder.addBinding().toInstance(ScheduledMempoolFill.class);
-  }
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  @Provides
-  @Self
-  private REAddr addr(@Self ECPublicKey self) {
-    return REAddr.ofPubKeyAccount(self);
-  }
-
-  @ProvidesIntoSet
-  public EventProcessorOnRunner<?> mempoolFillerUpdateProcessor(MempoolFiller mempoolFiller) {
-    return new EventProcessorOnRunner<>(
-        "Mempool", MempoolFillerUpdate.class, mempoolFiller.mempoolFillerUpdateEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  public EventProcessorOnRunner<?> scheduledMessageFloodEventProcessor(
-      MempoolFiller mempoolFiller) {
-    return new EventProcessorOnRunner<>(
-        "Mempool", ScheduledMempoolFill.class, mempoolFiller.scheduledMempoolFillEventProcessor());
-  }
-}
+/** Key for the mempool filler */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface MempoolFillerKey {}

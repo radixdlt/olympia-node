@@ -232,8 +232,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
     }
 
     switch (this.pendingVotes.insertVote(vote, this.validatorSet)) {
-      case VoteAccepted voteAccepted -> log.trace(
-          "Vote has been processed but didn't form a quorum");
+      case VoteAccepted ignored -> log.trace("Vote has been processed but didn't form a quorum");
       case VoteRejected voteRejected -> log.trace(
           "Vote has been rejected because of: {}", voteRejected.getReason());
       case QuorumReached quorumReached -> {

@@ -66,20 +66,9 @@ package com.radixdlt.environment;
 
 import java.util.Objects;
 
-public class StartProcessorOnRunner {
-  private final String runnerName;
-  private final StartProcessor processor;
-
-  public StartProcessorOnRunner(String runnerName, StartProcessor processor) {
-    this.runnerName = Objects.requireNonNull(runnerName);
-    this.processor = Objects.requireNonNull(processor);
-  }
-
-  public String getRunnerName() {
-    return runnerName;
-  }
-
-  public StartProcessor getProcessor() {
-    return processor;
+public record StartProcessorOnRunner(String runnerName, StartProcessor processor) {
+  public StartProcessorOnRunner {
+    Objects.requireNonNull(runnerName);
+    Objects.requireNonNull(processor);
   }
 }
