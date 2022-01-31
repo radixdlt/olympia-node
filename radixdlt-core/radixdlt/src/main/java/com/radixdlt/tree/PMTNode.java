@@ -64,8 +64,10 @@
 
 package com.radixdlt.tree;
 
+import com.radixdlt.tree.storage.PMTTransaction;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public abstract sealed class PMTNode implements Cloneable permits PMTBranch, PMTExt, PMTLeaf {
@@ -98,11 +100,16 @@ public abstract sealed class PMTNode implements Cloneable permits PMTBranch, PMT
       PMTKey key,
       byte[] val,
       PMTAcc acc,
+      PMTTransaction transaction,
       Function<PMTNode, byte[]> represent,
-      Function<byte[], PMTNode> read);
+      BiFunction<byte[], PMTTransaction, PMTNode> read);
 
   // This method is expected to mutate PMTAcc.
-  public abstract void getValue(PMTKey key, PMTAcc acc, Function<byte[], PMTNode> read);
+  public abstract void getValue(
+      PMTKey key,
+      PMTAcc acc,
+      PMTTransaction pmtTransaction,
+      BiFunction<byte[], PMTTransaction, PMTNode> read);
 
   // This method is expected to mutate PMTAcc.
   public void computeAndSetTip(

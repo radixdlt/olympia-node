@@ -152,9 +152,9 @@ public class BerkeleySubStateStoreTest {
     runner.start();
 
     SubStateTree subStateTree =
-        new SubStateTree(this.berkeleySubStateStore.getSubstateTreeDatabase(), null);
+        new SubStateTree(new BerkeleyStorage(this.berkeleySubStateStore.getSubstateTreeDatabase()));
     for (REStateUpdate rEStateUpdate : this.berkeleySubStateStore.getREStateUpdateList()) {
-      byte[] value = subStateTree.get(rEStateUpdate.getId());
+      byte[] value = subStateTree.get(rEStateUpdate.getId(), new BerkeleyTransaction(null));
       Assert.assertArrayEquals(SubStateTree.getValue(rEStateUpdate.isBootUp()), value);
     }
 

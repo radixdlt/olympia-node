@@ -64,6 +64,8 @@
 
 package com.radixdlt.tree;
 
+import com.radixdlt.tree.storage.PMTTransaction;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public final class PMTExt extends PMTNode {
@@ -85,15 +87,16 @@ public final class PMTExt extends PMTNode {
       PMTKey key,
       byte[] val,
       PMTAcc acc,
+      PMTTransaction pmtTransaction,
       Function<PMTNode, byte[]> represent,
-      Function<byte[], PMTNode> read) {
+      BiFunction<byte[], PMTTransaction, PMTNode> read) {
     final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
     switch (commonPath.whichRemainderIsLeft()) {
       case EXISTING:
         handleOnlyExistingRemainderIsLeft(this, val, acc, commonPath, represent);
         break;
       case NEW, NONE:
-        handleNoRemainderIsLeft(this, val, acc, commonPath, represent, read);
+        handleNoRemainderIsLeft(this, val, acc, pmtTransaction, commonPath, represent, read);
         break;
       case EXISTING_AND_NEW:
         handleBothExistingAndNewRemainders(this, val, acc, commonPath, represent);
@@ -138,14 +141,15 @@ public final class PMTExt extends PMTNode {
       PMTNode current,
       byte[] val,
       PMTAcc acc,
+      PMTTransaction pmtTransaction,
       PMTPath commonPath,
       Function<PMTNode, byte[]> represent,
-      Function<byte[], PMTNode> read) {
+      BiFunction<byte[], PMTTransaction, PMTNode> read) {
     var newRemainder = commonPath.getRemainder(PMTPath.RemainingSubtree.NEW);
     var nextHash = current.getValue();
-    var nextNode = read.apply(nextHash);
+    var nextNode = read.apply(nextHash, pmtTransaction);
     // INFO: for NONE, the NEW will be empty
-    nextNode.insertNode(newRemainder, val, acc, represent, read);
+    nextNode.insertNode(newRemainder, val, acc, pmtTransaction, represent, read);
     var subTip = acc.getTip();
     // INFO: for NEW or NONE, the commonPrefix can't be null as it existed here
     var newExt = new PMTExt(commonPath.getCommonPrefix(), represent.apply(subTip));
@@ -178,14 +182,19 @@ public final class PMTExt extends PMTNode {
   }
 
   // This method is expected to mutate PMTAcc.
-  public void getValue(PMTKey key, PMTAcc acc, Function<byte[], PMTNode> read) {
+  public void getValue(
+      PMTKey key,
+      PMTAcc acc,
+      PMTTransaction pmtTransaction,
+      BiFunction<byte[], PMTTransaction, PMTNode> read) {
     final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
     switch (commonPath.whichRemainderIsLeft()) {
       case NEW, NONE:
         acc.mark(this);
         var nextHash = this.getValue();
-        var nextNode = read.apply(nextHash);
-        nextNode.getValue(commonPath.getRemainder(PMTPath.RemainingSubtree.NEW), acc, read);
+        var nextNode = read.apply(nextHash, pmtTransaction);
+        nextNode.getValue(
+            commonPath.getRemainder(PMTPath.RemainingSubtree.NEW), acc, pmtTransaction, read);
         break;
       case EXISTING_AND_NEW, EXISTING:
         acc.mark(this);

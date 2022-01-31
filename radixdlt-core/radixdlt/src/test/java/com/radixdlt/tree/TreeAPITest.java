@@ -66,158 +66,181 @@ package com.radixdlt.tree;
 
 import static org.junit.Assert.assertArrayEquals;
 
+import com.radixdlt.tree.hash.HashFunction;
 import com.radixdlt.tree.hash.Keccak256;
 import com.radixdlt.tree.serialization.rlp.RLPSerializer;
 import com.radixdlt.tree.storage.InMemoryPMTStorage;
+import com.radixdlt.tree.storage.PMTCache;
+import com.radixdlt.tree.storage.PMTStorage;
+import com.radixdlt.tree.storage.PMTTransaction;
 import com.radixdlt.utils.Bytes;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import org.bouncycastle.util.encoders.Hex;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TreeAPITest {
 
+  public static final int CACHE_MAXIMUM_SIZE = 100000;
+  private static final HashFunction KECCAK_256 = new Keccak256();
+  private static final RLPSerializer RLP_SERIALIZER = new RLPSerializer();
+  public static final PMTTransaction PMT_TRANSACTION = null;
+
+  private PMTStorage storage;
+  private PMT tree;
+
+  @Before
+  public void createTree() {
+    storage = new InMemoryPMTStorage();
+    tree = createTree2();
+  }
+
+  public PMT createTree2() {
+    return new PMT(
+        storage,
+        KECCAK_256,
+        RLP_SERIALIZER,
+        new PMTCache(CACHE_MAXIMUM_SIZE, Duration.of(10, ChronoUnit.MINUTES)));
+  }
+
   @Test
   public void simpleAddGet() {
-
-    var storage = new InMemoryPMTStorage();
-    var tree = new PMT(storage);
     var sub1 =
         "300126433882d547b3fbb20ca1935879e03a4f75b474546ccf39b4cd03edbe1600000000".getBytes();
     var val1 = "1000000000".getBytes();
 
-    tree.add(sub1, val1);
+    tree.add(sub1, val1, PMT_TRANSACTION);
 
-    var val1back = tree.get(sub1);
+    var val1back = tree.get(sub1, PMT_TRANSACTION);
     assertArrayEquals(val1, val1back);
   }
 
   @Test
   public void when_tree_contains_extension_nodes__then_values_can_be_added_and_retrieved() {
-    var storage = new InMemoryPMTStorage();
-    var tree =
-        new PMT(storage, new Keccak256(), new RLPSerializer(), Duration.of(10, ChronoUnit.MINUTES));
-
     String verbKey = "646f";
     String verbValue = "verb";
-    tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
+    tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8), PMT_TRANSACTION);
 
-    assertArrayEquals(tree.get(Hex.decode(verbKey)), verbValue.getBytes(StandardCharsets.UTF_8));
+    assertArrayEquals(
+        tree.get(Hex.decode(verbKey), PMT_TRANSACTION), verbValue.getBytes(StandardCharsets.UTF_8));
 
     String puppyKey = "646f67";
     String puppyValue = "puppy";
-    tree.add(Hex.decode(puppyKey), puppyValue.getBytes(StandardCharsets.UTF_8));
+    tree.add(Hex.decode(puppyKey), puppyValue.getBytes(StandardCharsets.UTF_8), PMT_TRANSACTION);
 
-    assertArrayEquals(tree.get(Hex.decode(puppyKey)), puppyValue.getBytes(StandardCharsets.UTF_8));
+    assertArrayEquals(
+        tree.get(Hex.decode(puppyKey), PMT_TRANSACTION),
+        puppyValue.getBytes(StandardCharsets.UTF_8));
 
     String coinKey = "646f6765";
     String coinValue = "coin";
-    tree.add(Hex.decode(coinKey), coinValue.getBytes(StandardCharsets.UTF_8));
+    tree.add(Hex.decode(coinKey), coinValue.getBytes(StandardCharsets.UTF_8), PMT_TRANSACTION);
 
-    assertArrayEquals(tree.get(Hex.decode(coinKey)), coinValue.getBytes(StandardCharsets.UTF_8));
+    assertArrayEquals(
+        tree.get(Hex.decode(coinKey), PMT_TRANSACTION), coinValue.getBytes(StandardCharsets.UTF_8));
 
     String stallionKey = "686f727365";
     String stallionValue = "stallion";
-    tree.add(Hex.decode(stallionKey), stallionValue.getBytes(StandardCharsets.UTF_8));
-
-    assertArrayEquals(tree.get(Hex.decode(verbKey)), verbValue.getBytes(StandardCharsets.UTF_8));
-
-    assertArrayEquals(tree.get(Hex.decode(puppyKey)), puppyValue.getBytes(StandardCharsets.UTF_8));
-
-    assertArrayEquals(tree.get(Hex.decode(coinKey)), coinValue.getBytes(StandardCharsets.UTF_8));
+    tree.add(
+        Hex.decode(stallionKey), stallionValue.getBytes(StandardCharsets.UTF_8), PMT_TRANSACTION);
 
     assertArrayEquals(
-        tree.get(Hex.decode(stallionKey)), stallionValue.getBytes(StandardCharsets.UTF_8));
+        tree.get(Hex.decode(verbKey), PMT_TRANSACTION), verbValue.getBytes(StandardCharsets.UTF_8));
+
+    assertArrayEquals(
+        tree.get(Hex.decode(puppyKey), PMT_TRANSACTION),
+        puppyValue.getBytes(StandardCharsets.UTF_8));
+
+    assertArrayEquals(
+        tree.get(Hex.decode(coinKey), PMT_TRANSACTION), coinValue.getBytes(StandardCharsets.UTF_8));
+
+    assertArrayEquals(
+        tree.get(Hex.decode(stallionKey), PMT_TRANSACTION),
+        stallionValue.getBytes(StandardCharsets.UTF_8));
   }
 
   @Test
   public void when_same_key_and_value_are_added_twice__then_root_hash_does_not_change() {
-    var storage = new InMemoryPMTStorage();
-    var tree =
-        new PMT(storage, new Keccak256(), new RLPSerializer(), Duration.of(10, ChronoUnit.MINUTES));
-
     String verbKey = "646f";
     String verbValue = "verb";
 
-    var rootBefore = tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
+    var rootBefore =
+        tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8), PMT_TRANSACTION);
 
-    var rootAfter = tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
+    var rootAfter =
+        tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8), PMT_TRANSACTION);
 
     assertArrayEquals(rootBefore, rootAfter);
 
-    assertArrayEquals(tree.get(Hex.decode(verbKey)), verbValue.getBytes(StandardCharsets.UTF_8));
+    assertArrayEquals(
+        tree.get(Hex.decode(verbKey), PMT_TRANSACTION), verbValue.getBytes(StandardCharsets.UTF_8));
 
     String puppyKey = "646f67";
     String puppyValue = "puppy";
 
-    rootBefore = tree.add(Hex.decode(puppyKey), puppyValue.getBytes(StandardCharsets.UTF_8));
+    rootBefore =
+        tree.add(
+            Hex.decode(puppyKey), puppyValue.getBytes(StandardCharsets.UTF_8), PMT_TRANSACTION);
 
-    rootAfter = tree.add(Hex.decode(puppyKey), puppyValue.getBytes(StandardCharsets.UTF_8));
+    rootAfter =
+        tree.add(
+            Hex.decode(puppyKey), puppyValue.getBytes(StandardCharsets.UTF_8), PMT_TRANSACTION);
 
     assertArrayEquals(rootBefore, rootAfter);
 
-    assertArrayEquals(tree.get(Hex.decode(puppyKey)), puppyValue.getBytes(StandardCharsets.UTF_8));
+    assertArrayEquals(
+        tree.get(Hex.decode(puppyKey), PMT_TRANSACTION),
+        puppyValue.getBytes(StandardCharsets.UTF_8));
   }
 
   @Test
   public void when_tree_is_empty_and_rlp_and_keccak256_are_used__then_correct_hash_is_returned() {
     var rlpKeccak256EmptyArray = "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421";
 
-    var storage = new InMemoryPMTStorage();
-    var tree =
-        new PMT(storage, new Keccak256(), new RLPSerializer(), Duration.of(10, ChronoUnit.MINUTES));
-
-    assertArrayEquals(Bytes.fromHexString(rlpKeccak256EmptyArray), tree.getRootHash());
+    assertArrayEquals(
+        Bytes.fromHexString(rlpKeccak256EmptyArray), tree.getRootHash(PMT_TRANSACTION));
   }
 
   @Test
   public void when_new_tree_uses_same_db__then_current_root_should_be_used() {
-    var storage = new InMemoryPMTStorage();
-    var tree =
-        new PMT(storage, new Keccak256(), new RLPSerializer(), Duration.of(10, ChronoUnit.MINUTES));
-
     String verbKey = "646f";
     String verbValue = "verb";
-    final var rootHash = tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
+    final var rootHash =
+        tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8), PMT_TRANSACTION);
 
-    tree =
-        new PMT(storage, new Keccak256(), new RLPSerializer(), Duration.of(10, ChronoUnit.MINUTES));
+    tree = createTree2();
 
-    assertArrayEquals("Tree does not have the right root hash", rootHash, tree.getRootHash());
+    assertArrayEquals(
+        "Tree does not have the right root hash", rootHash, tree.getRootHash(PMT_TRANSACTION));
 
-    assertArrayEquals(tree.get(Hex.decode(verbKey)), verbValue.getBytes(StandardCharsets.UTF_8));
+    assertArrayEquals(
+        tree.get(Hex.decode(verbKey), PMT_TRANSACTION), verbValue.getBytes(StandardCharsets.UTF_8));
   }
 
   @Test
   public void when_tree_is_empty__then_empty_array_should_be_returned() {
-    var storage = new InMemoryPMTStorage();
-    var tree =
-        new PMT(storage, new Keccak256(), new RLPSerializer(), Duration.of(10, ChronoUnit.MINUTES));
-
     String verbKey = "646f";
 
     assertArrayEquals(
         "Get should return empty array when tree is empty",
         new byte[0],
-        tree.get(verbKey.getBytes(StandardCharsets.UTF_8)));
+        tree.get(verbKey.getBytes(StandardCharsets.UTF_8), PMT_TRANSACTION));
   }
 
   @Test
   public void when_tree_does_not_contain_key__then_empty_array_should_be_returned() {
-    var storage = new InMemoryPMTStorage();
-    var tree =
-        new PMT(storage, new Keccak256(), new RLPSerializer(), Duration.of(10, ChronoUnit.MINUTES));
-
     String verbKey = "646f";
     String verbValue = "verb";
-    final var rootHash = tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
+    final var rootHash =
+        tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8), PMT_TRANSACTION);
 
     String nonExistingKey = "non_existing_key";
 
     assertArrayEquals(
         "Get should return empty array when key is not found",
         new byte[0],
-        tree.get(nonExistingKey.getBytes(StandardCharsets.UTF_8)));
+        tree.get(nonExistingKey.getBytes(StandardCharsets.UTF_8), PMT_TRANSACTION));
   }
 }

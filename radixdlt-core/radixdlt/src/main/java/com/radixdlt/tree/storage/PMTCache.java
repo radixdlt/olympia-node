@@ -64,30 +64,16 @@
 
 package com.radixdlt.tree.storage;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import com.google.common.cache.*;
 import com.radixdlt.tree.PMTNode;
 import java.time.Duration;
-import java.util.function.Function;
 
 public class PMTCache {
 
-  private final LoadingCache<ByteArrayWrapper, PMTNode> cache;
+  private final Cache<ByteArrayWrapper, PMTNode> cache;
 
-  public PMTCache(
-      int maximumSize, Duration expireAfter, Function<byte[], ? extends PMTNode> loader) {
-    this.cache =
-        CacheBuilder.newBuilder()
-            .expireAfterAccess(expireAfter)
-            .maximumSize(maximumSize)
-            .build(
-                new CacheLoader<>() {
-                  @Override
-                  public PMTNode load(ByteArrayWrapper key) {
-                    return loader.apply(key.getData());
-                  }
-                });
+  public PMTCache(int maximumSize) {
+    this.cache = CacheBuilder.newBuilder().maximumSize(maximumSize).recordStats().build();
   }
 
   public void put(byte[] key, PMTNode node) {
@@ -95,6 +81,10 @@ public class PMTCache {
   }
 
   public PMTNode get(byte[] key) {
-    return this.cache.getUnchecked(ByteArrayWrapper.from(key));
+    return this.cache.getIfPresent(ByteArrayWrapper.from(key));
+  }
+
+  public CacheStats getCacheStats() {
+    return this.cache.stats();
   }
 }

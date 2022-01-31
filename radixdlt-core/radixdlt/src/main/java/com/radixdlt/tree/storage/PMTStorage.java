@@ -65,7 +65,7 @@
 package com.radixdlt.tree.storage;
 
 public interface PMTStorage {
-  void save(byte[] serialisedNodeHash, byte[] serialisedNode);
+  void save(byte[] serialisedNodeHash, byte[] serialisedNode, PMTTransaction pmtTransaction);
 
-  byte[] read(byte[] serialisedNodeHash);
+  byte[] read(byte[] serialisedNodeHash, PMTTransaction pmtTransaction);
 }

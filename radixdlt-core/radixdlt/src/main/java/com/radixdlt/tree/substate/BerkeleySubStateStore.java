@@ -92,6 +92,8 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
   private Database substateTreeDatabase;
   private Database epochRootHashDatabase;
 
+  private SubStateTree subStateTree;
+
   private Stopwatch watch = Stopwatch.createUnstarted();
 
   @Override
@@ -118,6 +120,7 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
                     .setTransactional(true)
                     .setKeyPrefixing(true)
                     .setBtreeComparator(lexicographicalComparator()));
+    this.subStateTree = new SubStateTree(new BerkeleyStorage(this.substateTreeDatabase));
   }
 
   @Override
@@ -136,10 +139,12 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
     boolean isEpochChange = false;
     Long epoch = null;
     byte[] rootHash = new byte[0];
-    final var subStateTree = new SubStateTree(substateTreeDatabase, dbTxn);
     for (REStateUpdate stateUpdate : txn.stateUpdates().toList()) {
       rootHash =
-          subStateTree.put(stateUpdate.getId(), SubStateTree.getValue(stateUpdate.isBootUp()));
+          subStateTree.put(
+              stateUpdate.getId(),
+              SubStateTree.getValue(stateUpdate.isBootUp()),
+              new BerkeleyTransaction(dbTxn));
       if (stateUpdate.getParsed() instanceof EpochData epochData) {
         if (stateUpdate.isBootUp()) {
           epoch = epochData.getEpoch();
@@ -157,6 +162,7 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
             Bytes.toHexString(rootHash),
             epoch,
             watch.elapsed().toSeconds());
+        logger.info(this.subStateTree.getCacheStats());
       }
       watch.reset();
     }

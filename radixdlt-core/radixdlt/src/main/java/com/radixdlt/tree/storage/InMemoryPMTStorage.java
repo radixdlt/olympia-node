@@ -68,17 +68,18 @@ import java.util.HashMap;
 
 public class InMemoryPMTStorage implements PMTStorage {
 
-  private HashMap<ByteArrayWrapper, byte[]> localDb; // mock for final persistent DB API
+  private final HashMap<ByteArrayWrapper, byte[]> localDb; // mock for final persistent DB API
 
   public InMemoryPMTStorage() {
     localDb = new HashMap<>();
   }
 
-  public void save(byte[] serialisedNodeHash, byte[] serialisedNode) {
+  public void save(
+      byte[] serialisedNodeHash, byte[] serialisedNode, PMTTransaction pmtTransaction) {
     this.localDb.put(ByteArrayWrapper.from(serialisedNodeHash), serialisedNode);
   }
 
-  public byte[] read(byte[] serialisedNodeHash) {
+  public byte[] read(byte[] serialisedNodeHash, PMTTransaction pmtTransaction) {
     return this.localDb.get(ByteArrayWrapper.from(serialisedNodeHash));
   }
 }

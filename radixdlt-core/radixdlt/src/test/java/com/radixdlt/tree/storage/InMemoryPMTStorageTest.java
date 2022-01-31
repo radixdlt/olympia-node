@@ -72,6 +72,8 @@ import org.junit.Test;
 
 public class InMemoryPMTStorageTest {
 
+  public static final PMTTransaction PMT_TRANSACTION = null;
+
   @Test
   public void when_key_value_has_been_inserted__then_it_can_be_retrieved() {
     // given
@@ -79,10 +81,13 @@ public class InMemoryPMTStorageTest {
     String key = "key";
     String value = "value";
     inMemoryPMTStorage.save(
-        key.getBytes(StandardCharsets.UTF_8), value.getBytes(StandardCharsets.UTF_8));
+        key.getBytes(StandardCharsets.UTF_8),
+        value.getBytes(StandardCharsets.UTF_8),
+        PMT_TRANSACTION);
 
     // when
-    byte[] retrievedValue = inMemoryPMTStorage.read(key.getBytes(StandardCharsets.UTF_8));
+    byte[] retrievedValue =
+        inMemoryPMTStorage.read(key.getBytes(StandardCharsets.UTF_8), PMT_TRANSACTION);
 
     // then
     assertArrayEquals(value.getBytes(StandardCharsets.UTF_8), retrievedValue);
@@ -94,7 +99,7 @@ public class InMemoryPMTStorageTest {
     PMTStorage inMemoryPMTStorage = new InMemoryPMTStorage();
 
     // when
-    byte[] value = inMemoryPMTStorage.read("key".getBytes(StandardCharsets.UTF_8));
+    byte[] value = inMemoryPMTStorage.read("key".getBytes(StandardCharsets.UTF_8), PMT_TRANSACTION);
 
     // then
     assertNull(value);

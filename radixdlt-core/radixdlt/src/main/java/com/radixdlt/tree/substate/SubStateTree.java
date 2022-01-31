@@ -64,34 +64,50 @@
 
 package com.radixdlt.tree.substate;
 
+import com.google.common.cache.CacheStats;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.tree.PMT;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.Transaction;
+import com.radixdlt.tree.hash.HashFunction;
+import com.radixdlt.tree.hash.SHA256;
+import com.radixdlt.tree.serialization.rlp.RLPSerializer;
+import com.radixdlt.tree.storage.PMTCache;
+import com.radixdlt.tree.storage.PMTStorage;
+import com.radixdlt.tree.storage.PMTTransaction;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 
 public class SubStateTree {
 
+  public static final int CACHE_MAXIMUM_SIZE = 4_000_000;
+
+  private static final HashFunction hashFunction = new SHA256();
+  public static final RLPSerializer serializer = new RLPSerializer();
+
   private final PMT pmt;
-  private final BerkeleyStorage berkeleyStorage;
+  private final PMTCache cache;
 
-  public SubStateTree(Database database, Transaction tx) {
-    this.berkeleyStorage = new BerkeleyStorage(database, tx);
-    pmt = new PMT(this.berkeleyStorage);
+  public SubStateTree(PMTStorage storage) {
+    this.cache = new PMTCache(CACHE_MAXIMUM_SIZE);
+    this.pmt = new PMT(storage, hashFunction, serializer, cache);
   }
 
-  public byte[] put(SubstateId key, byte[] val) {
-    return pmt.add(key.asBytes(), val);
+  public byte[] put(SubstateId key, byte[] val, PMTTransaction pmtTransaction) {
+    return pmt.add(key.asBytes(), val, pmtTransaction);
   }
 
-  public byte[] get(SubstateId key) {
-    return this.pmt.get(key.asBytes());
+  public byte[] get(SubstateId key, PMTTransaction pmtTransaction) {
+    return this.pmt.get(key.asBytes(), pmtTransaction);
   }
 
-  public byte[] getHash() {
-    return this.pmt.getRootHash();
+  public byte[] getHash(PMTTransaction pmtTransaction) {
+    return this.pmt.getRootHash(pmtTransaction);
   }
 
   public static byte[] getValue(boolean isBootUp) {
     return isBootUp ? new byte[] {0} : new byte[] {1};
+  }
+
+  public CacheStats getCacheStats() {
+    return this.cache.getCacheStats();
   }
 }

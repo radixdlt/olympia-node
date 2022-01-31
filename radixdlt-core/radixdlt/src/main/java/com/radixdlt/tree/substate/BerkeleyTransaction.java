@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2022 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -64,35 +64,18 @@
 
 package com.radixdlt.tree.substate;
 
-import com.radixdlt.tree.storage.PMTStorage;
 import com.radixdlt.tree.storage.PMTTransaction;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseEntry;
-import java.util.Objects;
+import com.sleepycat.je.Transaction;
 
-public class BerkeleyStorage implements PMTStorage {
+public class BerkeleyTransaction implements PMTTransaction {
 
-  private final Database database;
+  private Transaction tx;
 
-  public BerkeleyStorage(Database database) {
-    Objects.requireNonNull(database);
-    this.database = database;
+  protected BerkeleyTransaction(Transaction tx) {
+    this.tx = tx;
   }
 
-  @Override
-  public void save(
-      byte[] serialisedNodeHash, byte[] serialisedNode, PMTTransaction pmtTransaction) {
-    database.put(
-        ((BerkeleyTransaction) pmtTransaction).getTx(),
-        new DatabaseEntry(serialisedNodeHash),
-        new DatabaseEntry(serialisedNode));
-  }
-
-  @Override
-  public byte[] read(byte[] serialisedNodeHash, PMTTransaction pmtTransaction) {
-    var key = new DatabaseEntry(serialisedNodeHash);
-    var value = new DatabaseEntry();
-    this.database.get(((BerkeleyTransaction) pmtTransaction).getTx(), key, value, null);
-    return value.getData();
+  public Transaction getTx() {
+    return tx;
   }
 }

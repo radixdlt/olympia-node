@@ -64,13 +64,17 @@
 
 package com.radixdlt.tree;
 
+import com.radixdlt.tree.storage.PMTTransaction;
 import java.util.Arrays;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public final class PMTLeaf extends PMTNode {
 
   public static final int EVEN_PREFIX = 2;
   public static final int ODD_PREFIX = 3;
+
+  public static final PMTLeaf EMPTY = new PMTLeaf(new PMTKey(new byte[0]), new byte[0]);
 
   public PMTLeaf(PMTKey keyNibbles, byte[] newValue) {
     this.keyNibbles = keyNibbles;
@@ -82,8 +86,9 @@ public final class PMTLeaf extends PMTNode {
       PMTKey key,
       byte[] val,
       PMTAcc acc,
+      PMTTransaction pmtTransaction,
       Function<PMTNode, byte[]> represent,
-      Function<byte[], PMTNode> read) {
+      BiFunction<byte[], PMTTransaction, PMTNode> read) {
     final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
     switch (commonPath.whichRemainderIsLeft()) {
       case EXISTING:
@@ -169,7 +174,11 @@ public final class PMTLeaf extends PMTNode {
   }
 
   // This method is expected to mutate PMTAcc.
-  public void getValue(PMTKey key, PMTAcc acc, Function<byte[], PMTNode> read) {
+  public void getValue(
+      PMTKey key,
+      PMTAcc acc,
+      PMTTransaction pmtTransaction,
+      BiFunction<byte[], PMTTransaction, PMTNode> read) {
     final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
     switch (commonPath.whichRemainderIsLeft()) {
       case NONE:

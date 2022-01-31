@@ -80,13 +80,7 @@ public class PMTCacheTest {
   public void
       when_key_value_has_been_inserted_and_has_not_expired__then_it_can_be_retrieved_without_loading() {
     // given
-    PMTCache pmtCache =
-        new PMTCache(
-            1,
-            Duration.of(1, ChronoUnit.MINUTES),
-            key -> {
-              throw new IllegalStateException();
-            });
+    PMTCache pmtCache = new PMTCache(1, Duration.of(1, ChronoUnit.MINUTES));
 
     String key = "key";
     String value = "value";
@@ -110,7 +104,7 @@ public class PMTCacheTest {
   @Test
   public void when_key_value_has_not_been_inserted_and_cannot_be_load__then_exception_is_thrown() {
     // given
-    PMTCache pmtCache = new PMTCache(1, Duration.of(1, ChronoUnit.MINUTES), key -> null);
+    PMTCache pmtCache = new PMTCache(1, Duration.of(1, ChronoUnit.MINUTES));
 
     // when - then
     Assert.assertThrows(
@@ -124,14 +118,7 @@ public class PMTCacheTest {
     // given
     String key = "key";
     String value = "value";
-    PMTCache pmtCache =
-        new PMTCache(
-            1,
-            Duration.of(1, ChronoUnit.NANOS),
-            k ->
-                new PMTLeaf(
-                    new PMTKey(key.getBytes(StandardCharsets.UTF_8)),
-                    value.getBytes(StandardCharsets.UTF_8)));
+    PMTCache pmtCache = new PMTCache(1, Duration.of(1, ChronoUnit.NANOS));
 
     pmtCache.put(
         key.getBytes(StandardCharsets.UTF_8),
