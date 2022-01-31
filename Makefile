@@ -8,7 +8,7 @@ all:
 
 .PHONY: build
 build-core:
-	./gradlew deb4docker
+	./gradlew clean deb4docker
 
 .PHONY: package
 package: build-core
