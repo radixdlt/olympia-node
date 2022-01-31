@@ -8,11 +8,11 @@ all:
 
 .PHONY: build
 build-core:
-	cd ../ && ./gradlew clean deb4docker
+	./gradlew clean deb4docker
 
 .PHONY: package
 package: build-core
-	docker-compose -f docker/node-1.yml build
+	docker-compose -f radixdlt-core/docker/node-1.yml build
 	docker tag radixdlt/radixdlt-core:develop $(CORE_REPO):$(TAG)
 
 .PHONY: publish
