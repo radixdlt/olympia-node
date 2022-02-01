@@ -181,8 +181,7 @@ public class PMT {
           throw new IllegalStateException(
               String.format(
                   "Unexpected null PMT root when inserting key %s and value %s",
-                  TreeUtils.toHexString(key),
-                  TreeUtils.toHexString(val)));
+                  TreeUtils.toHexString(key), TreeUtils.toHexString(val)));
         }
         for (PMTNode sanitizedAcc : acc.getNewNodes().stream().filter(Objects::nonNull).toList()) {
           byte[] serialisedNode = this.pmtNodeSerializer.serialize(sanitizedAcc);
