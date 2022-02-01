@@ -93,7 +93,7 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
 
   private static final Logger logger = LogManager.getLogger();
   public static final int CACHE_MAXIMUM_SIZE = 1_000_000;
-  public static final byte[] CURRENT_ROOT_KEY = "current_root_key".getBytes(StandardCharsets.UTF_8);
+  protected static final byte[] CURRENT_ROOT_KEY = "current_root_key".getBytes(StandardCharsets.UTF_8);
 
   private Database subStateTreeDatabase;
   private Database epochRootHashDatabase;

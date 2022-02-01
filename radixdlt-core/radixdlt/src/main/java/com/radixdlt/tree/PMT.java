@@ -180,7 +180,7 @@ public class PMT {
         if (newRoot == null) {
           throw new IllegalStateException(
               String.format(
-                  "Unexpected null PMT root when inserting key {} and value {}",
+                  "Unexpected null PMT root when inserting key %s and value %s",
                   TreeUtils.toHexString(key),
                   TreeUtils.toHexString(val)));
         }
