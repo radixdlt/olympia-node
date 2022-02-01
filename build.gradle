@@ -173,27 +173,26 @@ allprojects {
         maven { url 'https://jitpack.io' }
     }
 
-    gradle.projectsEvaluated {
-        tasks.withType(JavaCompile) {
-            options.release = 17
-            options.encoding = "UTF-8"
-            options.compilerArgs << "--enable-preview"
-            options.compilerArgs << "-Xlint:all"
+    tasks.withType(JavaCompile) {
+        options.release = 17
+        options.encoding = "UTF-8"
+        options.compilerArgs << "--enable-preview"
+        options.compilerArgs << "-Xlint:all"
 
-            //TODO: uncomment once warnings will be cleared
-            //options.compilerArgs << "-Werror"
+        //TODO: uncomment once warnings will be cleared
+        //options.compilerArgs << "-Werror"
 
-            options.compilerArgs << "-Xlint:-processing"    // Not really a useful warning
-            options.compilerArgs << "-Xlint:-serial"        //TODO: fix code to remove these warnings
-            options.compilerArgs << "-Xlint:-deprecation"   //TODO: fix code to remove these warnings
-            options.compilerArgs << "-Xlint:-unchecked"     //TODO: fix code to remove these warnings
-            options.compilerArgs << "-Xlint:-rawtypes"      //TODO: fix code to remove these warnings
-        }
+        options.compilerArgs << "-Xlint:-processing"    // Not really a useful warning
+        options.compilerArgs << "-Xlint:-serial"        //TODO: fix code to remove these warnings
+        options.compilerArgs << "-Xlint:-deprecation"   //TODO: fix code to remove these warnings
+        options.compilerArgs << "-Xlint:-unchecked"     //TODO: fix code to remove these warnings
+        options.compilerArgs << "-Xlint:-rawtypes"      //TODO: fix code to remove these warnings
+        options.compilerArgs << "-Xlint:-preview"
+    }
 
-        tasks.withType(Test) {
-            systemProperty "file.encoding", "UTF-8"
-            jvmArgs("--enable-preview")
-        }
+    tasks.withType(Test) {
+        systemProperty "file.encoding", "UTF-8"
+        jvmArgs("--enable-preview")
     }
 }
 
