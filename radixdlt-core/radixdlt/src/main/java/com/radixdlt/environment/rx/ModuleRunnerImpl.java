@@ -64,6 +64,8 @@
 
 package com.radixdlt.environment.rx;
 
+import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.environment.EventDispatcher;
@@ -81,7 +83,6 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -92,7 +93,6 @@ import org.apache.logging.log4j.Logger;
 /** Executes chaos related events */
 public final class ModuleRunnerImpl implements ModuleRunner {
   private static final Logger logger = LogManager.getLogger();
-  private Scheduler singleThreadScheduler;
   private ScheduledExecutorService executorService;
   private final String threadName;
   private final Object startLock = new Object();
@@ -131,9 +131,10 @@ public final class ModuleRunnerImpl implements ModuleRunner {
   }
 
   public static class Builder {
-    private HashSet<StartProcessor> startProcessors = new HashSet<>();
-    private ImmutableList.Builder<Subscription<?>> subscriptionsBuilder = ImmutableList.builder();
-    private ImmutableList.Builder<Consumer<ScheduledExecutorService>> onStartBuilder =
+    private final HashSet<StartProcessor> startProcessors = new HashSet<>();
+    private final ImmutableList.Builder<Subscription<?>> subscriptionsBuilder =
+        ImmutableList.builder();
+    private final ImmutableList.Builder<Consumer<ScheduledExecutorService>> onStartBuilder =
         new ImmutableList.Builder<>();
 
     public Builder add(StartProcessor startProcessor) {
@@ -196,8 +197,8 @@ public final class ModuleRunnerImpl implements ModuleRunner {
       }
 
       this.executorService =
-          Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads(threadName));
-      this.singleThreadScheduler = Schedulers.from(this.executorService);
+          newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads(threadName));
+      var singleThreadScheduler = Schedulers.from(this.executorService);
 
       logger.info("Starting Runner: {}", this.threadName);
 
@@ -230,7 +231,7 @@ public final class ModuleRunnerImpl implements ModuleRunner {
         this.executorService.shutdownNow(); // Cancel currently executing tasks
         // Wait a while for tasks to respond to being cancelled
         if (!this.executorService.awaitTermination(2, TimeUnit.SECONDS)) {
-          System.err.println("Pool " + this.threadName + " did not terminate");
+          logger.error("Pool {}  did not terminate", this.threadName);
         }
       }
     } catch (InterruptedException ie) {

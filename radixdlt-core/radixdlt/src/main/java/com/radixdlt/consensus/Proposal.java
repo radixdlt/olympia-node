@@ -81,6 +81,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /** Represents a proposal made by a leader in a round of consensus */
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 @SerializerId2("consensus.proposal")
 @Immutable // author cannot be but is effectively final because of serializer
 public final class Proposal implements ConsensusEvent {
@@ -171,13 +172,11 @@ public final class Proposal implements ConsensusEvent {
     if (o == this) {
       return true;
     }
-    if (o instanceof Proposal) {
-      Proposal other = (Proposal) o;
-      return Objects.equals(this.vertex, other.vertex)
-          && Objects.equals(this.signature, other.signature)
-          && Objects.equals(this.committedQC, other.committedQC)
-          && Objects.equals(this.highestTC, other.highestTC);
-    }
-    return false;
+
+    return (o instanceof Proposal other)
+        && Objects.equals(this.vertex, other.vertex)
+        && Objects.equals(this.signature, other.signature)
+        && Objects.equals(this.committedQC, other.committedQC)
+        && Objects.equals(this.highestTC, other.highestTC);
   }
 }

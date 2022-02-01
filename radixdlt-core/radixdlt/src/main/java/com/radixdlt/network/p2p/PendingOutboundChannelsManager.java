@@ -81,9 +81,8 @@ public final class PendingOutboundChannelsManager {
   private final PeerOutboundBootstrap peerOutboundBootstrap;
   private final ScheduledEventDispatcher<PeerOutboundConnectionTimeout> timeoutEventDispatcher;
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
-
   private final Object lock = new Object();
-  private Map<NodeId, CompletableFuture<PeerChannel>> pendingChannels = new HashMap<>();
+  private final Map<NodeId, CompletableFuture<PeerChannel>> pendingChannels = new HashMap<>();
 
   @Inject
   public PendingOutboundChannelsManager(
@@ -116,17 +115,17 @@ public final class PendingOutboundChannelsManager {
 
   public EventProcessor<PeerEvent> peerEventProcessor() {
     return peerEvent -> {
-      if (peerEvent instanceof PeerEvent.PeerConnected) {
-        this.handlePeerConnected((PeerEvent.PeerConnected) peerEvent);
-      } else if (peerEvent instanceof PeerEvent.PeerHandshakeFailed) {
-        this.handlePeerHandshakeFailed((PeerEvent.PeerHandshakeFailed) peerEvent);
+      if (peerEvent instanceof PeerEvent.PeerConnected peerConnected) {
+        this.handlePeerConnected(peerConnected);
+      } else if (peerEvent instanceof PeerEvent.PeerHandshakeFailed peerHandshakeFailed) {
+        this.handlePeerHandshakeFailed(peerHandshakeFailed);
       }
     };
   }
 
   private void handlePeerConnected(PeerEvent.PeerConnected peerConnected) {
     synchronized (lock) {
-      final var channel = peerConnected.getChannel();
+      final var channel = peerConnected.channel();
       final var maybeFuture = this.pendingChannels.remove(channel.getRemoteNodeId());
       if (maybeFuture != null) {
         maybeFuture.complete(channel);
@@ -137,7 +136,7 @@ public final class PendingOutboundChannelsManager {
   private void handlePeerHandshakeFailed(PeerEvent.PeerHandshakeFailed peerHandshakeFailed) {
     synchronized (lock) {
       peerHandshakeFailed
-          .getChannel()
+          .channel()
           .getUri()
           .ifPresent(
               uri -> {
@@ -153,41 +152,14 @@ public final class PendingOutboundChannelsManager {
       peerOutboundConnectionTimeoutEventProcessor() {
     return timeout -> {
       synchronized (lock) {
-        final var maybeFuture = this.pendingChannels.remove(timeout.getUri().getNodeId());
+        final var maybeFuture = this.pendingChannels.remove(timeout.uri().getNodeId());
         if (maybeFuture != null) {
           maybeFuture.completeExceptionally(new IOException("Peer connection timeout"));
-          peerEventDispatcher.dispatch(PeerEvent.PeerConnectionTimeout.create(timeout.getUri()));
+          peerEventDispatcher.dispatch(new PeerEvent.PeerConnectionTimeout(timeout.uri()));
         }
       }
     };
   }
 
-  public static final class PeerOutboundConnectionTimeout {
-    private final RadixNodeUri uri;
-
-    public PeerOutboundConnectionTimeout(RadixNodeUri uri) {
-      this.uri = uri;
-    }
-
-    public RadixNodeUri getUri() {
-      return uri;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      final var that = (PeerOutboundConnectionTimeout) o;
-      return Objects.equals(uri, that.uri);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(uri);
-    }
-  }
+  public record PeerOutboundConnectionTimeout(RadixNodeUri uri) {}
 }

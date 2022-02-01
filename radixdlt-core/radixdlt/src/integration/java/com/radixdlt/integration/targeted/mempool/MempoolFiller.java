@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempoolfiller;
+package com.radixdlt.integration.targeted.mempool;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
@@ -135,19 +135,19 @@ public final class MempoolFiller {
   }
 
   public EventProcessor<MempoolFillerUpdate> mempoolFillerUpdateEventProcessor() {
-    return u -> {
-      u.numTransactions().ifPresent(numTx -> this.numTransactions = numTx);
-      u.sendToSelf().ifPresent(sendToSelf -> this.sendToSelf = sendToSelf);
+    return update -> {
+      update.numTransactions().ifPresent(numTx -> this.numTransactions = numTx);
+      update.sendToSelf().ifPresent(sndToSelf -> this.sendToSelf = sndToSelf);
 
-      if (u.enabled() == enabled) {
-        u.onError("Already " + (enabled ? "enabled." : "disabled."));
+      if (update.enabled() == enabled) {
+        update.onError("Already " + (enabled ? "enabled." : "disabled."));
         return;
       }
 
-      logger.info("Mempool Filler: Updating " + u.enabled());
-      u.onSuccess();
+      logger.info("Mempool Filler: Updating {}", update.enabled());
+      update.onSuccess();
 
-      if (u.enabled()) {
+      if (update.enabled()) {
         enabled = true;
         mempoolFillDispatcher.dispatch(ScheduledMempoolFill.create(), 50);
       } else {
@@ -157,7 +157,7 @@ public final class MempoolFiller {
   }
 
   public EventProcessor<ScheduledMempoolFill> scheduledMempoolFillEventProcessor() {
-    return p -> {
+    return ignored -> {
       if (!enabled) {
         return;
       }

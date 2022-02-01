@@ -470,12 +470,10 @@ public final class BFTSync implements BFTSyncer {
       syncState.setSyncStage(SyncStage.LEDGER_SYNC);
       ledgerSyncing.compute(
           syncState.committedProof.getRaw(),
-          (header, syncing) -> {
-            if (syncing == null) {
-              syncing = new ArrayList<>();
-            }
-            syncing.add(syncState.localSyncId);
-            return syncing;
+          (header, existingList) -> {
+            var list = (existingList == null) ? new ArrayList<HashCode>() : existingList;
+            list.add(syncState.localSyncId);
+            return list;
           });
       var signers = syncState.committedProof.getSignersWithout(self);
       var localSyncRequest = new LocalSyncRequest(syncState.committedProof, signers);
@@ -573,8 +571,6 @@ public final class BFTSync implements BFTSyncer {
       }
     }
   }
-
-  public void processBFTUpdate(BFTInsertUpdate update) {}
 
   public EventProcessor<LedgerUpdate> baseLedgerUpdateEventProcessor() {
     return this::processLedgerUpdate;

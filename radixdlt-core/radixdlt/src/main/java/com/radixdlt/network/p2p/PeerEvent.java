@@ -67,100 +67,15 @@ package com.radixdlt.network.p2p;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 
 public sealed interface PeerEvent {
+  record PeerConnected(PeerChannel channel) implements PeerEvent {}
 
-  final class PeerConnected implements PeerEvent {
-    private final PeerChannel channel;
+  record PeerDisconnected(PeerChannel channel) implements PeerEvent {}
 
-    public static PeerConnected create(PeerChannel channel) {
-      return new PeerConnected(channel);
-    }
+  record PeerLostLiveness(NodeId nodeId) implements PeerEvent {}
 
-    private PeerConnected(PeerChannel channel) {
-      this.channel = channel;
-    }
+  record PeerBanned(NodeId nodeId) implements PeerEvent {}
 
-    public PeerChannel getChannel() {
-      return this.channel;
-    }
-  }
+  record PeerConnectionTimeout(RadixNodeUri uri) implements PeerEvent {}
 
-  final class PeerDisconnected implements PeerEvent {
-    private final PeerChannel channel;
-
-    public static PeerDisconnected create(PeerChannel channel) {
-      return new PeerDisconnected(channel);
-    }
-
-    private PeerDisconnected(PeerChannel channel) {
-      this.channel = channel;
-    }
-
-    public PeerChannel getChannel() {
-      return this.channel;
-    }
-  }
-
-  final class PeerLostLiveness implements PeerEvent {
-    private final NodeId nodeId;
-
-    public static PeerLostLiveness create(NodeId nodeId) {
-      return new PeerLostLiveness(nodeId);
-    }
-
-    private PeerLostLiveness(NodeId nodeId) {
-      this.nodeId = nodeId;
-    }
-
-    public NodeId getNodeId() {
-      return this.nodeId;
-    }
-  }
-
-  final class PeerBanned implements PeerEvent {
-    private final NodeId nodeId;
-
-    public static PeerBanned create(NodeId nodeId) {
-      return new PeerBanned(nodeId);
-    }
-
-    private PeerBanned(NodeId nodeId) {
-      this.nodeId = nodeId;
-    }
-
-    public NodeId getNodeId() {
-      return this.nodeId;
-    }
-  }
-
-  final class PeerConnectionTimeout implements PeerEvent {
-    private final RadixNodeUri uri;
-
-    public static PeerConnectionTimeout create(RadixNodeUri uri) {
-      return new PeerConnectionTimeout(uri);
-    }
-
-    private PeerConnectionTimeout(RadixNodeUri uri) {
-      this.uri = uri;
-    }
-
-    public RadixNodeUri getUri() {
-      return this.uri;
-    }
-  }
-
-  final class PeerHandshakeFailed implements PeerEvent {
-    private final PeerChannel channel;
-
-    public static PeerHandshakeFailed create(PeerChannel channel) {
-      return new PeerHandshakeFailed(channel);
-    }
-
-    private PeerHandshakeFailed(PeerChannel channel) {
-      this.channel = channel;
-    }
-
-    public PeerChannel getChannel() {
-      return this.channel;
-    }
-  }
+  record PeerHandshakeFailed(PeerChannel channel) implements PeerEvent {}
 }
