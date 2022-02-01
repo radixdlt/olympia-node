@@ -72,23 +72,19 @@ public class SubStateTree {
 
   private final PMT pmt;
 
-  public SubStateTree(PMTStorage storage) {
-    this(storage, null);
+  public SubStateTree(PMT pmt) {
+    this.pmt = pmt;
   }
 
-  public SubStateTree(PMTStorage storage, byte[] currentRoot) {
-    pmt = new PMT(storage, currentRoot);
-  }
-
-  public PMT.RootAndHash put(SubstateId key, byte[] val) {
-    return pmt.add(key.asBytes(), val);
+  public SubStateTree put(SubstateId key, byte[] val) {
+    return new SubStateTree(this.pmt.add(key.asBytes(), val));
   }
 
   public byte[] get(SubstateId key) {
     return this.pmt.get(key.asBytes());
   }
 
-  public byte[] getHash() {
+  public byte[] getRootHash() {
     return this.pmt.getRootHash();
   }
 

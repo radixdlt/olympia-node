@@ -78,7 +78,7 @@ import org.junit.Test;
 
 public class TreeAPITest {
 
-  public static final int CACHE_MAXIMUM_SIZE = 1_000_000;
+  public static final int CACHE_MAXIMUM_SIZE = 1_000;
 
   @Test
   public void simpleAddGet() {
@@ -89,7 +89,7 @@ public class TreeAPITest {
         "300126433882d547b3fbb20ca1935879e03a4f75b474546ccf39b4cd03edbe1600000000".getBytes();
     var val1 = "1000000000".getBytes();
 
-    tree.add(sub1, val1);
+    tree = tree.add(sub1, val1);
 
     var val1back = tree.get(sub1);
     assertArrayEquals(val1, val1back);
@@ -102,25 +102,25 @@ public class TreeAPITest {
 
     String verbKey = "646f";
     String verbValue = "verb";
-    tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
+    tree = tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
 
     assertArrayEquals(tree.get(Hex.decode(verbKey)), verbValue.getBytes(StandardCharsets.UTF_8));
 
     String puppyKey = "646f67";
     String puppyValue = "puppy";
-    tree.add(Hex.decode(puppyKey), puppyValue.getBytes(StandardCharsets.UTF_8));
+    tree = tree.add(Hex.decode(puppyKey), puppyValue.getBytes(StandardCharsets.UTF_8));
 
     assertArrayEquals(tree.get(Hex.decode(puppyKey)), puppyValue.getBytes(StandardCharsets.UTF_8));
 
     String coinKey = "646f6765";
     String coinValue = "coin";
-    tree.add(Hex.decode(coinKey), coinValue.getBytes(StandardCharsets.UTF_8));
+    tree = tree.add(Hex.decode(coinKey), coinValue.getBytes(StandardCharsets.UTF_8));
 
     assertArrayEquals(tree.get(Hex.decode(coinKey)), coinValue.getBytes(StandardCharsets.UTF_8));
 
     String stallionKey = "686f727365";
     String stallionValue = "stallion";
-    tree.add(Hex.decode(stallionKey), stallionValue.getBytes(StandardCharsets.UTF_8));
+    tree = tree.add(Hex.decode(stallionKey), stallionValue.getBytes(StandardCharsets.UTF_8));
 
     assertArrayEquals(tree.get(Hex.decode(verbKey)), verbValue.getBytes(StandardCharsets.UTF_8));
 
@@ -140,24 +140,13 @@ public class TreeAPITest {
     String verbKey = "646f";
     String verbValue = "verb";
 
-    var rootBefore = tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
+    var treeBefore = tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
 
-    var rootAfter = tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
+    var treeAfter = treeBefore.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
 
-    assertArrayEquals(rootBefore.rootHash(), rootAfter.rootHash());
+    assertArrayEquals(treeBefore.getRootHash(), treeAfter.getRootHash());
 
-    assertArrayEquals(tree.get(Hex.decode(verbKey)), verbValue.getBytes(StandardCharsets.UTF_8));
-
-    String puppyKey = "646f67";
-    String puppyValue = "puppy";
-
-    rootBefore = tree.add(Hex.decode(puppyKey), puppyValue.getBytes(StandardCharsets.UTF_8));
-
-    rootAfter = tree.add(Hex.decode(puppyKey), puppyValue.getBytes(StandardCharsets.UTF_8));
-
-    assertArrayEquals(rootBefore.rootHash(), rootAfter.rootHash());
-
-    assertArrayEquals(tree.get(Hex.decode(puppyKey)), puppyValue.getBytes(StandardCharsets.UTF_8));
+    assertArrayEquals(treeAfter.get(Hex.decode(verbKey)), verbValue.getBytes(StandardCharsets.UTF_8));
   }
 
   @Test
@@ -177,13 +166,13 @@ public class TreeAPITest {
 
     String verbKey = "646f";
     String verbValue = "verb";
-    final var rootAndHash =
+    tree =
         tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
 
-    tree = new PMT(storage, rootAndHash.serializedRoot(), new Keccak256(), new RLPSerializer());
+    var newTree = new PMT(storage, storage.read(tree.getRootHash()), new Keccak256(), new RLPSerializer());
 
     assertArrayEquals(
-        "Tree does not have the right root hash", rootAndHash.rootHash(), tree.getRootHash());
+        "Tree does not have the right root hash", newTree.getRootHash(), tree.getRootHash());
 
     assertArrayEquals(tree.get(Hex.decode(verbKey)), verbValue.getBytes(StandardCharsets.UTF_8));
   }
