@@ -81,12 +81,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class SeedNodesConfigParserTest {
-  private P2PConfig p2pConfig;
+  private P2PConfig.PeerDiscoveryConfig config;
 
   @Before
   public void setUp() throws IOException {
-    p2pConfig = mock(P2PConfig.class);
-    when(p2pConfig.defaultPort()).thenReturn(30000);
+    config = mock(P2PConfig.PeerDiscoveryConfig.class);
+    when(config.defaultPort()).thenReturn(30000);
   }
 
   @Test
@@ -97,11 +97,11 @@ public class SeedNodesConfigParserTest {
                     "radix://%s@1.1.1.1",
                     NodeAddressing.of(
                         Network.LOCALNET.getNodeHrp(), ECKeyPair.generateNew().getPublicKey()))))
-        .when(p2pConfig)
+        .when(config)
         .seedNodes();
     final var testSubject =
         new SeedNodesConfigParser(
-            p2pConfig, Network.LOCALNET.getId(), Addressing.ofNetwork(Network.LOCALNET));
+            config, Network.LOCALNET.getId(), Addressing.ofNetwork(Network.LOCALNET));
     assertEquals(1, testSubject.getResolvedSeedNodes().size());
   }
 }

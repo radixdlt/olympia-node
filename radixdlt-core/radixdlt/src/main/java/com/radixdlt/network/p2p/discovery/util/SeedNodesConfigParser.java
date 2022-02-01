@@ -88,7 +88,8 @@ public final class SeedNodesConfigParser {
   private final int networkId;
 
   @Inject
-  public SeedNodesConfigParser(P2PConfig config, @NetworkId int networkId, Addressing addressing) {
+  public SeedNodesConfigParser(
+      P2PConfig.PeerDiscoveryConfig config, @NetworkId int networkId, Addressing addressing) {
     this.networkId = networkId;
     this.addressing = addressing;
     this.defaultPort = config.defaultPort();

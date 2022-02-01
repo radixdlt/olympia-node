@@ -85,6 +85,7 @@ import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.network.hostip.HostIpModule;
 import com.radixdlt.network.messaging.MessageCentralModule;
 import com.radixdlt.network.messaging.MessagingModule;
+import com.radixdlt.network.messaging.proxy.MessageProxyProcessorModule;
 import com.radixdlt.network.p2p.P2PModule;
 import com.radixdlt.network.p2p.PeerDiscoveryModule;
 import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
@@ -284,6 +285,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Network
     install(new MessagingModule());
+    install(new MessageProxyProcessorModule());
     install(new MessageCentralModule(properties));
     install(new HostIpModule(properties));
     install(new P2PModule(properties));

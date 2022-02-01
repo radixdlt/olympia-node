@@ -106,7 +106,7 @@ public final class PendingOutboundChannelsManager {
         this.pendingChannels.put(remoteNodeId, channelFuture);
         this.peerOutboundBootstrap.initOutboundConnection(uri);
         this.timeoutEventDispatcher.dispatch(
-            new PeerOutboundConnectionTimeout(uri), config.peerConnectionTimeout());
+            new PeerOutboundConnectionTimeout(uri), config.channelConfig().peerConnectionTimeout());
         return channelFuture;
       }
     }

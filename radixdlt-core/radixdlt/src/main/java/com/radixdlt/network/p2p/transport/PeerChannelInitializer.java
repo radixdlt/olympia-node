@@ -152,7 +152,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 
     uri.ifPresent(u -> log.trace("Initializing peer channel to {}", u));
 
-    if (uri.isEmpty() && this.config.useProxyProtocol()) {
+    if (uri.isEmpty() && this.config.channelConfig().useProxyProtocol()) {
       /* If the node is configured to support the PROXY protocol, we add a dedicated
       pipeline that decodes a single header packet (with host's real ip address and port), and then
       replaces this one-time pipeline with the main one (which forwards to PeerChannel). */

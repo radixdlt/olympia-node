@@ -75,6 +75,7 @@ import com.radixdlt.ModuleRunner;
 import com.radixdlt.RadixNodeModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
 import com.radixdlt.environment.Environment;
@@ -380,6 +381,10 @@ public final class RadixShell {
           getInstance(Key.get(new TypeLiteral<EventDispatcher<VerifiedTxnsAndProof>>() {})));
       final var time = System.currentTimeMillis() - start;
       System.out.printf("Restore finished. Took %ss%n", time / 1000);
+    }
+
+    public long counter(SystemCounters.CounterType counterType) {
+      return getInstance(SystemCounters.class).get(counterType);
     }
 
     @Override

@@ -72,6 +72,7 @@ import com.radixdlt.api.system.health.MovingAverage;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.messaging.router.MessageRouter;
 import com.radixdlt.network.messaging.serialization.MessageSerialization;
 import com.radixdlt.network.p2p.NodeId;
@@ -136,9 +137,10 @@ public final class MessageCentralImpl implements MessageCentral {
       P2PConfig p2pConfig,
       MessageSerialization messageSerialization,
       PeerManager peerManager,
-      ProxyCertificateManager proxyCertificateManager,
+      Provider<ProxyCertificateManager> proxyCertificateManager,
       TimeSupplier timeSource,
       EventQueueFactory<OutboundMessageEvent> outboundEventQueueFactory,
+      EventDispatcher<MessageRouter.RoutingResult.Forward> forwardEventDispatcher,
       SystemCounters counters,
       Provider<PeerControl> peerControl) {
     this.counters = Objects.requireNonNull(counters);
@@ -180,7 +182,9 @@ public final class MessageCentralImpl implements MessageCentral {
             .map(Optional::get);
 
     final var messageRouter =
-        new MessageRouter(self, p2pConfig, proxyCertificateManager, processedMessages);
+        new MessageRouter(
+            self, p2pConfig.proxyConfig(), proxyCertificateManager, processedMessages);
+
     this.peerMessages =
         messageRouter.messagesToProcess().map(MessageRouter.RoutingResult.Process::messageFromPeer);
 
@@ -188,11 +192,7 @@ public final class MessageCentralImpl implements MessageCentral {
         messageRouter
             .messagesToForward()
             .observeOn(inboundProcessorScheduler)
-            .subscribe(
-                routingResult -> {
-                  this.counters.increment(CounterType.NETWORKING_ROUTING_FORWARDED_MESSAGES);
-                  this.send(routingResult.forwardTo(), routingResult.messageEnvelope());
-                });
+            .subscribe(forwardEventDispatcher::dispatch);
 
     final var dropDisposable =
         messageRouter

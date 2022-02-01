@@ -64,6 +64,7 @@
 
 package com.radixdlt.integration.targeted.serialization;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -72,9 +73,11 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.integration.Slow;
 import com.radixdlt.network.messaging.EventQueueFactory;
 import com.radixdlt.network.messaging.InboundMessage;
@@ -93,6 +96,7 @@ import com.radixdlt.network.p2p.liveness.messages.PeerPingMessage;
 import com.radixdlt.network.p2p.proxy.ProxyCertificateManager;
 import com.radixdlt.utils.Compress;
 import io.reactivex.rxjava3.subjects.PublishSubject;
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
@@ -117,6 +121,10 @@ public class MessageCentralFuzzyTest {
     var inboundMessages = PublishSubject.<InboundMessage>create();
     var messageCentralConfig = mock(MessageCentralConfiguration.class);
     var p2pConfig = mock(P2PConfig.class);
+    when(p2pConfig.proxyConfig())
+        .thenReturn(
+            new P2PConfig.ProxyConfig(
+                false, false, ImmutableSet.of(), ImmutableSet.of(), Duration.ofMinutes(1), false));
     var peerControl = mock(PeerControl.class);
     var peerManager = mock(PeerManager.class);
     var proxyCertificateManager = mock(ProxyCertificateManager.class);
@@ -137,9 +145,10 @@ public class MessageCentralFuzzyTest {
             p2pConfig,
             serialization,
             peerManager,
-            proxyCertificateManager,
+            () -> proxyCertificateManager,
             Time::currentTimestamp,
             queueFactory,
+            rmock(EventDispatcher.class),
             new SystemCountersImpl(),
             () -> peerControl);
 

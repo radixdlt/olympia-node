@@ -104,18 +104,18 @@ public final class SystemModelMapper {
 
   public NetworkingConfiguration networkingConfiguration(ECPublicKey self, P2PConfig config) {
     return new NetworkingConfiguration()
-        .defaultPort(config.defaultPort())
-        .discoveryInterval(config.discoveryInterval())
-        .listenAddress(config.listenAddress())
-        .listenPort(config.listenPort())
-        .broadcastPort(config.broadcastPort())
-        .peerConnectionTimeout(config.peerConnectionTimeout())
-        .maxInboundChannels(config.maxInboundChannels())
-        .maxOutboundChannels(config.maxOutboundChannels())
-        .channelBufferSize(config.channelBufferSize())
-        .peerLivenessCheckInterval(config.peerLivenessCheckInterval())
-        .pingTimeout(config.pingTimeout())
-        .seedNodes(config.seedNodes())
+        .defaultPort(config.peerDiscoveryConfig().defaultPort())
+        .discoveryInterval(config.peerDiscoveryConfig().discoveryInterval())
+        .listenAddress(config.networkConfig().listenAddress())
+        .listenPort(config.networkConfig().listenPort())
+        .broadcastPort(config.networkConfig().broadcastPort())
+        .peerConnectionTimeout(config.channelConfig().peerConnectionTimeout())
+        .maxInboundChannels(config.channelConfig().maxInboundChannels())
+        .maxOutboundChannels(config.channelConfig().maxOutboundChannels())
+        .channelBufferSize(config.channelConfig().channelBufferSize())
+        .peerLivenessCheckInterval(config.peerLivenessConfig().peerLivenessCheckInterval())
+        .pingTimeout(config.peerLivenessConfig().pingTimeout())
+        .seedNodes(config.peerDiscoveryConfig().seedNodes())
         .nodeAddress(addressing.forNodes().of(self));
   }
 

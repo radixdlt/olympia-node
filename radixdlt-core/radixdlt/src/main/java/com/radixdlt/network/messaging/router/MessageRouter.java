@@ -64,6 +64,7 @@
 
 package com.radixdlt.network.messaging.router;
 
+import com.google.inject.Provider;
 import com.radixdlt.network.messaging.Message;
 import com.radixdlt.network.messaging.MessageFromPeer;
 import com.radixdlt.network.p2p.NodeId;
@@ -74,15 +75,15 @@ import java.util.Objects;
 
 public final class MessageRouter {
   private final NodeId self;
-  private final P2PConfig config;
-  private final ProxyCertificateManager proxyCertificateManager;
+  private final P2PConfig.ProxyConfig config;
+  private final Provider<ProxyCertificateManager> proxyCertificateManager;
 
   private final Observable<RoutingResult> routedMessages;
 
   public MessageRouter(
       NodeId self,
-      P2PConfig config,
-      ProxyCertificateManager proxyCertificateManager,
+      P2PConfig.ProxyConfig config,
+      Provider<ProxyCertificateManager> proxyCertificateManager,
       Observable<MessageFromPeer<Message>> messages) {
     this.self = Objects.requireNonNull(self);
     this.config = Objects.requireNonNull(config);
@@ -138,6 +139,7 @@ public final class MessageRouter {
             .authorizedProxies()
             .contains(sender) // message received from "our" authorized proxy
         || this.proxyCertificateManager
+            .get()
             .getVerifiedProxiesForNode(messageEnvelope.getAuthor())
             .contains(sender); // message received from author's authorized proxy
   }
@@ -151,12 +153,12 @@ public final class MessageRouter {
 
     // a message from an authorized peer
     if (config.authorizedProxiedPeers().contains(sender)) {
-      return new RoutingResult.Forward(messageEnvelope.getRecipient(), messageEnvelope);
+      return new RoutingResult.Forward(sender, messageEnvelope.getRecipient(), messageEnvelope);
     }
 
     // or a message to an authorized peer
     if (config.authorizedProxiedPeers().contains(messageEnvelope.getRecipient())) {
-      return new RoutingResult.Forward(messageEnvelope.getRecipient(), messageEnvelope);
+      return new RoutingResult.Forward(sender, messageEnvelope.getRecipient(), messageEnvelope);
     }
 
     return new RoutingResult.Drop(messageEnvelope);
@@ -165,7 +167,8 @@ public final class MessageRouter {
   public interface RoutingResult {
     record Process(MessageFromPeer<Message> messageFromPeer) implements RoutingResult {}
 
-    record Forward(NodeId forwardTo, MessageEnvelope messageEnvelope) implements RoutingResult {}
+    record Forward(NodeId sender, NodeId forwardTo, MessageEnvelope messageEnvelope)
+        implements RoutingResult {}
 
     record Drop(MessageEnvelope messageEnvelope) implements RoutingResult {}
   }

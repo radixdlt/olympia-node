@@ -119,7 +119,7 @@ public class PeerLivenessMonitorTest {
 
     this.sut =
         new PeerLivenessMonitor(
-            p2PConfig,
+            p2PConfig.peerLivenessConfig(),
             peersView,
             peerEventDispatcher,
             pingEventDispatcher,

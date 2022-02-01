@@ -102,6 +102,7 @@ public final class PeerProxyTest extends DeterministicP2PNetworkTest {
     final var proxyKey = ECKeyPair.generateNew();
 
     final var validatorProps = defaultProperties();
+    validatorProps.set("network.p2p.proxy.use_proxies", "true");
     validatorProps.set(
         "network.p2p.proxy.authorized_proxies", nodeAddressing.of(proxyKey.getPublicKey()));
 
@@ -154,6 +155,8 @@ public final class PeerProxyTest extends DeterministicP2PNetworkTest {
         .messageCentral(EXTERNAL_NODE)
         .send(nodeIdOf(VALIDATOR_NODE), new PeerPingMessage());
 
+    waitForMessagesAndProcessAll();
+
     // await until a message is received by the validator
     await()
         .atMost(Duration.ofSeconds(2))
@@ -173,6 +176,8 @@ public final class PeerProxyTest extends DeterministicP2PNetworkTest {
     testNetworkRunner
         .messageCentral(VALIDATOR_NODE)
         .send(nodeIdOf(EXTERNAL_NODE), new PeerPingMessage());
+
+    waitForMessagesAndProcessAll();
 
     // await until a message is received by the external node
     await()
@@ -196,6 +201,7 @@ public final class PeerProxyTest extends DeterministicP2PNetworkTest {
     final var proxyKey = ECKeyPair.generateNew();
 
     final var validatorProps = defaultProperties();
+    validatorProps.set("network.p2p.proxy.use_proxies", "true");
     validatorProps.set(
         "network.p2p.proxy.authorized_proxies", nodeAddressing.of(proxyKey.getPublicKey()));
 
@@ -247,6 +253,7 @@ public final class PeerProxyTest extends DeterministicP2PNetworkTest {
     final var proxyKey = ECKeyPair.generateNew();
 
     final var validatorProps = defaultProperties();
+    validatorProps.set("network.p2p.proxy.use_proxies", "true");
     validatorProps.set(
         "network.p2p.proxy.authorized_proxies", nodeAddressing.of(proxyKey.getPublicKey()));
     // validator can only connect to the proxy node
@@ -280,7 +287,7 @@ public final class PeerProxyTest extends DeterministicP2PNetworkTest {
         .messageCentral(VALIDATOR_NODE)
         .send(nodeIdOf(EXTERNAL_NODE), new PeerPingMessage());
 
-    waitForMessagesAndProcessAll();
+    waitForMessagesAndProcessAll(2);
 
     // proxy node should forward a single message
     await()
@@ -313,6 +320,8 @@ public final class PeerProxyTest extends DeterministicP2PNetworkTest {
         .messageCentral(EXTERNAL_NODE)
         .send(nodeIdOf(VALIDATOR_NODE), new PeerPingMessage());
 
+    waitForMessagesAndProcessAll();
+
     // proxy node should forward one more message
     await()
         .atMost(Duration.ofSeconds(2))
@@ -324,10 +333,16 @@ public final class PeerProxyTest extends DeterministicP2PNetworkTest {
   }
 
   private void waitForMessagesAndProcessAll() {
+    waitForMessagesAndProcessAll(1);
+  }
+
+  private void waitForMessagesAndProcessAll(int times) {
     // a small hack to wait for the processing thread
-    await()
-        .atMost(Duration.ofSeconds(4))
-        .until(() -> !testNetworkRunner.getDeterministicNetwork().allMessages().isEmpty());
-    processAll();
+    for (int i = 0; i < times; i++) {
+      await()
+          .atMost(Duration.ofSeconds(4))
+          .until(() -> !testNetworkRunner.getDeterministicNetwork().allMessages().isEmpty());
+      processAll();
+    }
   }
 }
