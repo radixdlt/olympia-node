@@ -131,7 +131,7 @@ public final class ProxyCertificateManagerTest {
 
     when(config.authorizedProxies()).thenReturn(ImmutableSet.of(peerNodeId));
 
-    sut.handlePeerConnected(PeerEvent.PeerConnected.create(peerChannel));
+    sut.handlePeerConnected(new PeerEvent.PeerConnected(peerChannel));
 
     verify(grantedProxyCertDispatcher, times(1))
         .dispatch(

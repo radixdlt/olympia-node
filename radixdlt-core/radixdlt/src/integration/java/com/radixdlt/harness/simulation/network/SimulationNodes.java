@@ -210,10 +210,10 @@ public class SimulationNodes {
           .forEach(e -> e.getValue().start());
     }
 
-    final List<BFTNode> bftNodes =
+    final var bftNodes =
         this.nodeInstances.stream()
             .map(i -> i.getInstance(Key.get(BFTNode.class, Self.class)))
-            .collect(Collectors.toList());
+            .toList();
 
     return new RunningNetwork() {
       @Override
@@ -229,9 +229,9 @@ public class SimulationNodes {
       @Override
       public Observable<EpochChange> latestEpochChanges() {
         // Just do first instance for now
-        EpochChange initialEpoch = nodeInstances.get(0).getInstance(EpochChange.class);
+        var initialEpoch = nodeInstances.get(0).getInstance(EpochChange.class);
 
-        Set<Observable<EpochChange>> epochChanges =
+        var epochChanges =
             nodeInstances.stream()
                 .map(i -> i.getInstance(Key.get(new TypeLiteral<Observable<LedgerUpdate>>() {})))
                 .map(

@@ -76,7 +76,6 @@ import com.radixdlt.utils.PrivateKeys;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Collectors;
 
 /**
  * Reads the balances from the api of all accounts and verifies that it matches the state in the
@@ -88,7 +87,7 @@ public final class ApiBalanceToRadixEngineChecker implements DeterministicActor 
         .limit(20)
         .map(ECKeyPair::getPublicKey)
         .flatMap(validatorKey -> nodeClient.getUnstakes(addr, validatorKey).stream())
-        .collect(Collectors.toList());
+        .toList();
   }
 
   @Override

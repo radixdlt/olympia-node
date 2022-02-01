@@ -73,7 +73,6 @@ import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.MetadataException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class EpochProofVerifierV2 implements BatchVerifier<LedgerAndBFTProof> {
   @Override
@@ -86,7 +85,7 @@ public class EpochProofVerifierV2 implements BatchVerifier<LedgerAndBFTProof> {
           processed.getEvents().stream()
               .filter(NextValidatorSetEvent.class::isInstance)
               .map(NextValidatorSetEvent.class::cast)
-              .collect(Collectors.toList());
+              .toList();
 
       if (!nextEpochEvents.isEmpty()) {
         // TODO: Move this check into Meter

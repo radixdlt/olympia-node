@@ -2,11 +2,9 @@ rootProject.name='radixdlt-parent'
 include ':radixdlt'
 include ':radixdlt-cli'
 include ':radixdlt-engine'
-include ':radixdlt-java'
 include ':radixdlt-java-common'
 
 project(':radixdlt').projectDir = new File('radixdlt-core/radixdlt')
 project(':radixdlt-cli').projectDir = new File('radixdlt-java/radixdlt-cli')
 project(':radixdlt-engine').projectDir = new File('radixdlt-engine')
-project(':radixdlt-java').projectDir = new File('radixdlt-java/radixdlt-java')
 project(':radixdlt-java-common').projectDir = new File('radixdlt-java-common')

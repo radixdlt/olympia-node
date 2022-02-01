@@ -110,9 +110,9 @@ public final class AuthHandshakerTest {
         (AuthHandshakeSuccess)
             handshaker1.handleResponseMessage(Unpooled.wrappedBuffer(responseMessage));
 
-    assertArrayEquals(handshaker1Result.getSecrets().aes, handshaker2Result.getSecrets().aes);
-    assertArrayEquals(handshaker1Result.getSecrets().mac, handshaker2Result.getSecrets().mac);
-    assertArrayEquals(handshaker1Result.getSecrets().token, handshaker2Result.getSecrets().token);
+    assertArrayEquals(handshaker1Result.secrets().aes, handshaker2Result.secrets().aes);
+    assertArrayEquals(handshaker1Result.secrets().mac, handshaker2Result.secrets().mac);
+    assertArrayEquals(handshaker1Result.secrets().token, handshaker2Result.secrets().token);
   }
 
   @Test

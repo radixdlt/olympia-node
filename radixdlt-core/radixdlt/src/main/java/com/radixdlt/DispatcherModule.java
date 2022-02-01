@@ -107,8 +107,6 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolRelayTrigger;
-import com.radixdlt.mempoolfiller.MempoolFillerUpdate;
-import com.radixdlt.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
 import com.radixdlt.network.p2p.discovery.DiscoverPeers;
@@ -165,12 +163,6 @@ public class DispatcherModule extends AbstractModule {
     bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() {})
         .toProvider(Dispatchers.dispatcherProvider(MempoolRelayTrigger.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<EventDispatcher<MempoolFillerUpdate>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(MempoolFillerUpdate.class))
-        .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<EventDispatcher<ScheduledMempoolFill>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(ScheduledMempoolFill.class))
-        .in(Scopes.SINGLETON);
     bind(new TypeLiteral<EventDispatcher<NoVote>>() {})
         .toProvider(
             Dispatchers.dispatcherProvider(NoVote.class, v -> CounterType.BFT_NO_VOTES_SENT))
@@ -199,9 +191,6 @@ public class DispatcherModule extends AbstractModule {
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<EventDispatcher<SyncCheckTrigger>>() {})
         .toProvider(Dispatchers.dispatcherProvider(SyncCheckTrigger.class))
-        .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMempoolFill>>() {})
-        .toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMempoolFill.class))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledStatsCollecting>>() {})
         .toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledStatsCollecting.class))

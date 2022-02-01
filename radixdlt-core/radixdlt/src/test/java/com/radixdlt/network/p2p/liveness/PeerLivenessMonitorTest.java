@@ -147,7 +147,7 @@ public class PeerLivenessMonitorTest {
                 arg ->
                     arg instanceof PeerLostLiveness
                         && ((PeerLostLiveness) arg)
-                            .getNodeId()
+                            .nodeId()
                             .equals(NodeId.fromPublicKey(peer1.getKey()))));
   }
 

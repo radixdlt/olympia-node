@@ -66,13 +66,10 @@ package com.radixdlt.harness.simulation.monitors.consensus;
 
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Check that every proposal on the network has a direct parent. This check only makes sense in
@@ -82,12 +79,12 @@ public class AllProposalsHaveDirectParentsInvariant implements TestInvariant {
 
   @Override
   public Observable<TestInvariantError> check(RunningNetwork network) {
-    List<Observable<UnverifiedVertex>> correctProposals =
+    var correctProposals =
         network.getNodes().stream()
             .map(network.getUnderlyingNetwork()::getNetwork)
             .map(net -> net.remoteEvents(ConsensusEvent.class).map(RemoteEvent::getEvent))
             .map(p -> p.ofType(Proposal.class).toObservable().map(Proposal::getVertex))
-            .collect(Collectors.toList());
+            .toList();
 
     return Observable.merge(correctProposals)
         .concatMap(

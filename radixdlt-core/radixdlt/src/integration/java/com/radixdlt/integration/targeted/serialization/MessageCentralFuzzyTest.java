@@ -75,6 +75,7 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.integration.Slow;
 import com.radixdlt.network.messaging.EventQueueFactory;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.messaging.Message;
@@ -92,19 +93,20 @@ import com.radixdlt.network.p2p.liveness.messages.PeerPingMessage;
 import com.radixdlt.network.p2p.proxy.ProxyCertificateManager;
 import com.radixdlt.utils.Compress;
 import io.reactivex.rxjava3.subjects.PublishSubject;
-import java.security.SecureRandom;
 import java.util.Comparator;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.radix.time.Time;
 
+@Category(Slow.class)
 public class MessageCentralFuzzyTest {
   private static final int MIN_MESSAGE_LEN = 1;
   private static final int MAX_MESSAGE_LEN = 1024 * 1024;
   private static final int NUM_TEST_MESSAGES = 1000;
 
-  private final Random random = new SecureRandom();
+  private final Random random = new Random();
   private final MessageSerialization serialization =
       new CompressedMessageSerialization(DefaultSerialization.getInstance());
 

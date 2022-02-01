@@ -71,7 +71,6 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.sync.SyncConfig;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.Test;
 
@@ -109,7 +108,7 @@ public class FullNodeSyncTest {
         IntStream.range(numValidators, numNodes - numValidators)
             .mapToObj(bftTest::getSystemCounters)
             .map(sc -> sc.get(CounterType.LEDGER_STATE_VERSION))
-            .collect(Collectors.toList());
+            .toList();
 
     nonValidatorsStateVersions.forEach(
         stateVersion ->

@@ -145,23 +145,20 @@ public abstract class DeterministicActorsTest {
     this.actorConfigurations = actorConfigurations;
   }
 
+  @SuppressWarnings("UnstableApiUsage")
   @Before
   public void setup() {
+    var allNodes = nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).toList();
+
     this.network =
         new DeterministicNetwork(
-            nodeKeys.stream()
-                .map(k -> BFTNode.create(k.getPublicKey()))
-                .collect(Collectors.toList()),
-            MessageSelector.firstSelector(),
-            MessageMutator.nothing());
+            allNodes, MessageSelector.firstSelector(), MessageMutator.nothing());
 
-    List<BFTNode> allNodes =
-        nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
     var nodeCreators =
         Streams.mapWithIndex(
                 nodeKeys.stream(),
                 (k, i) -> (Supplier<Injector>) () -> createRunner(i == 1, k, allNodes))
-            .collect(Collectors.toList());
+            .toList();
 
     deterministicRunner =
         new MultiNodeDeterministicRunner(nodeCreators, this::stopDatabase, network);

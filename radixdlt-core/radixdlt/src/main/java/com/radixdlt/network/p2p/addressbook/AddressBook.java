@@ -309,13 +309,13 @@ public final class AddressBook {
               existingEntry.cleanupExpiredBlacklistedUris().withBanUntil(banUntil);
           this.knownPeers.put(nodeId, updatedEntry);
           this.persistEntry(updatedEntry);
-          this.peerEventDispatcher.dispatch(PeerBanned.create(nodeId));
+          this.peerEventDispatcher.dispatch(new PeerBanned(nodeId));
         }
       } else {
         final var newEntry = AddressBookEntry.createBanned(nodeId, banUntil);
         this.knownPeers.put(nodeId, newEntry);
         this.persistEntry(newEntry);
-        this.peerEventDispatcher.dispatch(PeerBanned.create(nodeId));
+        this.peerEventDispatcher.dispatch(new PeerBanned(nodeId));
       }
     }
   }

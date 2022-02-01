@@ -73,7 +73,6 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -105,8 +104,8 @@ public class RandomValidatorsTest {
   private static Function<Long, IntStream> randomEpochToNodesMapper(
       Function<Long, Random> randomSupplier) {
     return epoch -> {
-      List<Integer> indices = IntStream.range(0, numNodes).boxed().collect(Collectors.toList());
-      Random random = randomSupplier.apply(epoch);
+      var indices = IntStream.range(0, numNodes).boxed().collect(Collectors.toList());
+      var random = randomSupplier.apply(epoch);
       for (long i = 0; i < epoch; i++) {
         random.nextInt(numNodes);
       }
@@ -121,7 +120,7 @@ public class RandomValidatorsTest {
 
   private static Function<Long, IntStream> badRandomEpochToNodesMapper() {
     // random number generator which gives a different number per node
-    Random random = new Random();
+    var random = new Random();
     return randomEpochToNodesMapper(l -> random);
   }
 

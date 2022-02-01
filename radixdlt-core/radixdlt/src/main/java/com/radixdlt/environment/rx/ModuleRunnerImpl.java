@@ -64,6 +64,8 @@
 
 package com.radixdlt.environment.rx;
 
+import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.environment.EventDispatcher;
@@ -82,19 +84,16 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /** Executes chaos related events */
 public final class ModuleRunnerImpl implements ModuleRunner {
   private static final Logger logger = LogManager.getLogger();
-  private Scheduler singleThreadScheduler;
   private ScheduledExecutorService executorService;
   private final String threadName;
   private final Object startLock = new Object();
@@ -104,15 +103,7 @@ public final class ModuleRunnerImpl implements ModuleRunner {
   private final List<Subscription<?>> subscriptions;
   private final ImmutableList<Consumer<ScheduledExecutorService>> onStart;
 
-  private static class Subscription<T> {
-    final Observable<T> o;
-    final EventProcessor<T> p;
-
-    Subscription(Observable<T> o, EventProcessor<T> p) {
-      this.o = o;
-      this.p = p;
-    }
-
+  private record Subscription<T>(Observable<T> o, EventProcessor<T> p) {
     Disposable subscribe(Scheduler s) {
       return o.observeOn(s)
           .subscribe(
@@ -120,7 +111,9 @@ public final class ModuleRunnerImpl implements ModuleRunner {
               e -> {
                 // TODO: Implement better error handling especially against Byzantine nodes.
                 // TODO: Exit process for now.
-                e.printStackTrace();
+                logger.error(
+                    "Unhandled exception in the event processing loop. Shutting down the node. ",
+                    e);
                 Thread.sleep(1000);
                 System.exit(-1);
               });
@@ -139,9 +132,10 @@ public final class ModuleRunnerImpl implements ModuleRunner {
   }
 
   public static class Builder {
-    private HashSet<StartProcessor> startProcessors = new HashSet<>();
-    private ImmutableList.Builder<Subscription<?>> subscriptionsBuilder = ImmutableList.builder();
-    private ImmutableList.Builder<Consumer<ScheduledExecutorService>> onStartBuilder =
+    private final HashSet<StartProcessor> startProcessors = new HashSet<>();
+    private final ImmutableList.Builder<Subscription<?>> subscriptionsBuilder =
+        ImmutableList.builder();
+    private final ImmutableList.Builder<Consumer<ScheduledExecutorService>> onStartBuilder =
         new ImmutableList.Builder<>();
 
     public Builder add(StartProcessor startProcessor) {
@@ -204,16 +198,14 @@ public final class ModuleRunnerImpl implements ModuleRunner {
       }
 
       this.executorService =
-          Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads(threadName));
-      this.singleThreadScheduler = Schedulers.from(this.executorService);
+          newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads(threadName));
+      var singleThreadScheduler = Schedulers.from(this.executorService);
 
       logger.info("Starting Runner: {}", this.threadName);
 
       this.executorService.submit(() -> startProcessors.forEach(StartProcessor::start));
       final var disposables =
-          this.subscriptions.stream()
-              .map(s -> s.subscribe(singleThreadScheduler))
-              .collect(Collectors.toList());
+          this.subscriptions.stream().map(s -> s.subscribe(singleThreadScheduler)).toList();
       this.compositeDisposable = new CompositeDisposable(disposables);
 
       this.onStart.forEach(f -> f.accept(this.executorService));

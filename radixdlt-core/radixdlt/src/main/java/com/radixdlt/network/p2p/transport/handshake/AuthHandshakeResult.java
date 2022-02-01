@@ -70,8 +70,8 @@ import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.proxy.ProxyCertificate;
 import java.util.Optional;
 
-public interface AuthHandshakeResult {
-
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+public sealed interface AuthHandshakeResult {
   static AuthHandshakeSuccess success(
       ECPublicKey remotePubKey, Secrets secrets, ImmutableSet<ProxyCertificate> proxyCertificates) {
     return new AuthHandshakeSuccess(NodeId.fromPublicKey(remotePubKey), secrets, proxyCertificates);
@@ -81,46 +81,10 @@ public interface AuthHandshakeResult {
     return new AuthHandshakeError(msg, maybeNodeId);
   }
 
-  final class AuthHandshakeSuccess implements AuthHandshakeResult {
-    private final NodeId remoteNodeId;
-    private final Secrets secrets;
-    private final ImmutableSet<ProxyCertificate> proxyCertificates;
+  record AuthHandshakeSuccess(
+      NodeId remoteNodeId, Secrets secrets, ImmutableSet<ProxyCertificate> proxyCertificates)
+      implements AuthHandshakeResult {}
 
-    private AuthHandshakeSuccess(
-        NodeId remoteNodeId, Secrets secrets, ImmutableSet<ProxyCertificate> proxyCertificates) {
-      this.remoteNodeId = remoteNodeId;
-      this.secrets = secrets;
-      this.proxyCertificates = proxyCertificates;
-    }
-
-    public NodeId getRemoteNodeId() {
-      return remoteNodeId;
-    }
-
-    public Secrets getSecrets() {
-      return secrets;
-    }
-
-    public ImmutableSet<ProxyCertificate> getProxyCertificates() {
-      return proxyCertificates;
-    }
-  }
-
-  final class AuthHandshakeError implements AuthHandshakeResult {
-    private final String msg;
-    private final Optional<NodeId> maybeNodeId;
-
-    public AuthHandshakeError(String msg, Optional<NodeId> maybeNodeId) {
-      this.msg = msg;
-      this.maybeNodeId = maybeNodeId;
-    }
-
-    public String getMsg() {
-      return msg;
-    }
-
-    public Optional<NodeId> getMaybeNodeId() {
-      return maybeNodeId;
-    }
-  }
+  record AuthHandshakeError(String msg, Optional<NodeId> maybeNodeId)
+      implements AuthHandshakeResult {}
 }

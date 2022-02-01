@@ -177,12 +177,6 @@ public class NoEpochsConsensusModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  public EventProcessorOnRunner<?> bftSync(BFTSync bftSync) {
-    return new EventProcessorOnRunner<>(
-        Runners.CONSENSUS, BFTInsertUpdate.class, bftSync::processBFTUpdate);
-  }
-
-  @ProvidesIntoSet
   public EventProcessorOnRunner<?> baseLedgerUpdateEventProcessor(BFTSync bftSync) {
     return new EventProcessorOnRunner<>(
         Runners.CONSENSUS, LedgerUpdate.class, bftSync.baseLedgerUpdateEventProcessor());

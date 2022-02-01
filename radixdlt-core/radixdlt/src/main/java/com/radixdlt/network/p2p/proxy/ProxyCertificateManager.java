@@ -162,9 +162,9 @@ public final class ProxyCertificateManager {
 
   public void handlePeerConnected(PeerEvent.PeerConnected peerConnected) {
     synchronized (lock) {
-      final var peerNodeId = peerConnected.getChannel().getRemoteNodeId();
+      final var peerNodeId = peerConnected.channel().getRemoteNodeId();
 
-      verifyAndUpdateProxyCertificates(peerNodeId, peerConnected.getChannel().proxyCertificates());
+      verifyAndUpdateProxyCertificates(peerNodeId, peerConnected.channel().proxyCertificates());
 
       if (config.authorizedProxies().contains(peerNodeId)) {
         handleProxyCertificateIssuance(peerNodeId);
@@ -301,7 +301,7 @@ public final class ProxyCertificateManager {
 
   public void handlePeerDisconnected(PeerEvent.PeerDisconnected peerDisconnected) {
     synchronized (lock) {
-      final var channel = peerDisconnected.getChannel();
+      final var channel = peerDisconnected.channel();
       final var mapEntryIter = this.verifiedProxies.entrySet().iterator();
       while (mapEntryIter.hasNext()) {
         final var certs = mapEntryIter.next().getValue();
@@ -311,7 +311,7 @@ public final class ProxyCertificateManager {
         }
       }
 
-      this.issuedProxyCertificates.remove(peerDisconnected.getChannel().getRemoteNodeId());
+      this.issuedProxyCertificates.remove(peerDisconnected.channel().getRemoteNodeId());
     }
   }
 }

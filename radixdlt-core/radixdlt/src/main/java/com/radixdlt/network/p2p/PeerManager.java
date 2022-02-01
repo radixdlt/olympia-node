@@ -290,25 +290,25 @@ public final class PeerManager {
 
   public EventProcessor<PeerEvent> peerEventProcessor() {
     return peerEvent -> {
-      if (peerEvent instanceof PeerConnected) {
-        this.handlePeerConnected((PeerConnected) peerEvent);
-      } else if (peerEvent instanceof PeerDisconnected) {
-        this.handlePeerDisconnected((PeerDisconnected) peerEvent);
-      } else if (peerEvent instanceof PeerLostLiveness) {
-        this.handlePeerLostLiveness((PeerLostLiveness) peerEvent);
-      } else if (peerEvent instanceof PeerBanned) {
-        this.handlePeerBanned((PeerBanned) peerEvent);
-      } else if (peerEvent instanceof PeerConnectionTimeout) {
-        this.handlePeerConnectionTimeout((PeerConnectionTimeout) peerEvent);
-      } else if (peerEvent instanceof PeerHandshakeFailed) {
-        this.handlePeerHandshakeFailed((PeerHandshakeFailed) peerEvent);
+      if (peerEvent instanceof PeerConnected peerConnected) {
+        this.handlePeerConnected(peerConnected);
+      } else if (peerEvent instanceof PeerDisconnected peerDisconnected) {
+        this.handlePeerDisconnected(peerDisconnected);
+      } else if (peerEvent instanceof PeerLostLiveness peerLostLiveness) {
+        this.handlePeerLostLiveness(peerLostLiveness);
+      } else if (peerEvent instanceof PeerBanned peerBanned) {
+        this.handlePeerBanned(peerBanned);
+      } else if (peerEvent instanceof PeerConnectionTimeout peerConnectionTimeout) {
+        this.handlePeerConnectionTimeout(peerConnectionTimeout);
+      } else if (peerEvent instanceof PeerHandshakeFailed peerHandshakeFailed) {
+        this.handlePeerHandshakeFailed(peerHandshakeFailed);
       }
     };
   }
 
   private void handlePeerConnected(PeerConnected peerConnected) {
     synchronized (lock) {
-      final var channel = peerConnected.getChannel();
+      final var channel = peerConnected.channel();
       final var channels =
           this.activeChannels.computeIfAbsent(
               channel.getRemoteNodeId(), unused -> Sets.newConcurrentHashSet());
@@ -322,7 +322,7 @@ public final class PeerManager {
 
       if (channel.isOutbound() && this.getRemainingOutboundSlots() < 0) {
         // we're over the limit, need to disconnect one of the peers
-        this.disconnectOutboundPeersOverLimit(peerConnected.getChannel().getRemoteNodeId());
+        this.disconnectOutboundPeersOverLimit(peerConnected.channel().getRemoteNodeId());
       }
 
       updateChannelsCounters();
@@ -356,19 +356,18 @@ public final class PeerManager {
   }
 
   private boolean shouldAcceptInboundPeer(NodeId nodeId) {
-    final var isBanned =
+    final boolean isBanned =
         this.addressBook.get().findById(nodeId).map(AddressBookEntry::isBanned).orElse(false);
+
     if (isBanned) {
-      log.info(
-          "Dropping inbound connection from peer {}: peer is banned",
-          addressing.forNodes().of(nodeId.getPublicKey()));
+      var nodeAddress = addressing.forNodes().of(nodeId.getPublicKey());
+      log.info("Dropping inbound connection from peer {}: peer is banned", nodeAddress);
     }
 
     final var limitReached = this.activeChannels.size() > config.maxInboundChannels();
     if (limitReached && log.isInfoEnabled()) {
-      log.info(
-          "Dropping inbound connection from peer {}: no more inbound channels allowed",
-          addressing.forNodes().of(nodeId.getPublicKey()));
+      var nodeAddress = addressing.forNodes().of(nodeId.getPublicKey());
+      log.info("Dropping inbound connection from peer {}: no inbound channels left", nodeAddress);
     }
 
     final var isAllowed = !config.usePeerAllowList() || config.peerAllowList().contains(nodeId);
@@ -383,7 +382,7 @@ public final class PeerManager {
 
   private void handlePeerDisconnected(PeerDisconnected peerDisconnected) {
     synchronized (lock) {
-      final var channel = peerDisconnected.getChannel();
+      final var channel = peerDisconnected.channel();
       final var channelsForPubKey = this.activeChannels.get(channel.getRemoteNodeId());
       if (channelsForPubKey != null) {
         channelsForPubKey.remove(channel);
@@ -398,10 +397,10 @@ public final class PeerManager {
 
   private void handlePeerLostLiveness(PeerLostLiveness peerLostLiveness) {
     synchronized (lock) {
-      log.info(
-          "Peer {} lost liveness (ping timeout)",
-          addressing.forNodes().of(peerLostLiveness.getNodeId().getPublicKey()));
-      channelFor(peerLostLiveness.getNodeId()).ifPresent(PeerChannel::disconnect);
+      var nodeAddress = addressing.forNodes().of(peerLostLiveness.nodeId().getPublicKey());
+
+      log.info("Peer {} lost liveness (ping timeout)", nodeAddress);
+      channelFor(peerLostLiveness.nodeId()).ifPresent(PeerChannel::disconnect);
     }
   }
 
@@ -427,22 +426,22 @@ public final class PeerManager {
 
   private void handlePeerBanned(PeerBanned event) {
     this.activeChannels().stream()
-        .filter(p -> p.getRemoteNodeId().equals(event.getNodeId()))
+        .filter(p -> p.getRemoteNodeId().equals(event.nodeId()))
         .forEach(
             pc -> {
-              log.info(
-                  "Closing channel to peer {} because peer has been banned",
-                  addressing.forNodes().of(pc.getRemoteNodeId().getPublicKey()));
+              var nodeAddress = addressing.forNodes().of(pc.getRemoteNodeId().getPublicKey());
+
+              log.info("Closing channel to peer {} because peer has been banned", nodeAddress);
               pc.disconnect();
             });
   }
 
   private void handlePeerConnectionTimeout(PeerConnectionTimeout peerConnectionTimeout) {
-    this.addressBook.get().addOrUpdatePeerWithFailedConnection(peerConnectionTimeout.getUri());
+    this.addressBook.get().addOrUpdatePeerWithFailedConnection(peerConnectionTimeout.uri());
   }
 
   private void handlePeerHandshakeFailed(PeerHandshakeFailed peerHandshakeFailed) {
-    peerHandshakeFailed.getChannel().getUri().ifPresent(this.addressBook.get()::blacklist);
+    peerHandshakeFailed.channel().getUri().ifPresent(this.addressBook.get()::blacklist);
     this.pendingOutboundChannelsManager.get().handlePeerHandshakeFailed(peerHandshakeFailed);
   }
 

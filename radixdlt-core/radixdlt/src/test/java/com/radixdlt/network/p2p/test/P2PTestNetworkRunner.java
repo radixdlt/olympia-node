@@ -110,7 +110,6 @@ import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.TimeSupplier;
 import java.io.IOException;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.rules.TemporaryFolder;
 
@@ -141,9 +140,7 @@ public final class P2PTestNetworkRunner {
   public static P2PTestNetworkRunner create(ImmutableList<NodeProps> nodes) throws Exception {
     final var network =
         new DeterministicNetwork(
-            nodes.stream()
-                .map(node -> BFTNode.create(node.keyPair().getPublicKey()))
-                .collect(Collectors.toList()),
+            nodes.stream().map(node -> BFTNode.create(node.keyPair().getPublicKey())).toList(),
             MessageSelector.firstSelector(),
             MessageMutator.nothing());
 

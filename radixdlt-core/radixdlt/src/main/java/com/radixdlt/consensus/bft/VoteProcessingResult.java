@@ -69,7 +69,7 @@ import com.radixdlt.consensus.TimeoutCertificate;
 import java.util.Objects;
 
 /** The result of processing a received vote. */
-public interface VoteProcessingResult {
+public sealed interface VoteProcessingResult {
 
   static VoteAccepted accepted() {
     return VoteAccepted.INSTANCE;

@@ -106,7 +106,7 @@ public final class RadixNodeUri implements Comparable<RadixNodeUri> {
 
   private RadixNodeUri(String host, int port, String networkNodeHrp, NodeId nodeId) {
     if (port <= 0) {
-      throw new RuntimeException("Port must be a positive integer");
+      throw new IllegalArgumentException("Port must be a positive integer");
     }
     this.host = requireNonNull(host);
     this.port = port;

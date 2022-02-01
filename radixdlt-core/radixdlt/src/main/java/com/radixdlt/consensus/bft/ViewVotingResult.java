@@ -69,8 +69,7 @@ import com.radixdlt.consensus.TimeoutCertificate;
 import java.util.Objects;
 
 /** The result of a view voting (either QC or TC). */
-// TODO: DISPATCH: Make interface sealed, check BFTSync::viewQuorumReachedEventProcessor
-public interface ViewVotingResult {
+public sealed interface ViewVotingResult {
 
   static FormedQC qc(QuorumCertificate qc) {
     return new FormedQC(qc);
