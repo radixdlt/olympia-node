@@ -150,7 +150,8 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
     var root = readCurrentSubStateRoot(berkeleyStorage);
     var subStateTree = new SubStateTree(new PMT(cachedPMTStorage, root));
     for (REStateUpdate stateUpdate : txn.stateUpdates().toList()) {
-      subStateTree = subStateTree.put(stateUpdate.getId(), SubStateTree.getValue(stateUpdate.isBootUp()));
+      subStateTree =
+          subStateTree.put(stateUpdate.getId(), SubStateTree.getValue(stateUpdate.isBootUp()));
       persistCurrentSubStateRoot(berkeleyStorage, subStateTree.getRootHash());
       if (stateUpdate.getParsed() instanceof EpochData epochData) {
         if (stateUpdate.isBootUp()) {
@@ -169,6 +170,7 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
             Bytes.toHexString(rootHash),
             epoch,
             watch.elapsed().toSeconds());
+        logger.info(this.pmtCache.getStats());
       }
       watch.reset();
     }
@@ -182,8 +184,7 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
     return rootHash == null ? null : berkeleyStorage.read(rootHash);
   }
 
-  private void persistCurrentSubStateRoot(
-      BerkeleyStorage berkeleyStorage, byte[] rootHash) {
+  private void persistCurrentSubStateRoot(BerkeleyStorage berkeleyStorage, byte[] rootHash) {
     berkeleyStorage.save(CURRENT_ROOT_KEY, rootHash);
   }
 

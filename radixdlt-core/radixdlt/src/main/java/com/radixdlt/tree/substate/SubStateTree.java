@@ -66,7 +66,6 @@ package com.radixdlt.tree.substate;
 
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.tree.PMT;
-import com.radixdlt.tree.storage.PMTStorage;
 
 public class SubStateTree {
 

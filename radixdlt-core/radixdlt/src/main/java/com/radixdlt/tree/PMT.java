@@ -107,18 +107,16 @@ public class PMT {
   }
 
   public PMT(
-          PMTStorage db,
-          byte[] root,
-          HashFunction hashFunction,
-          PMTNodeSerializer pmtNodeSerializer) {
-      this(db, root == null ? null : pmtNodeSerializer.deserialize(root), hashFunction, pmtNodeSerializer);
+      PMTStorage db, byte[] root, HashFunction hashFunction, PMTNodeSerializer pmtNodeSerializer) {
+    this(
+        db,
+        root == null ? null : pmtNodeSerializer.deserialize(root),
+        hashFunction,
+        pmtNodeSerializer);
   }
 
   public PMT(
-      PMTStorage db,
-      PMTNode root,
-      HashFunction hashFunction,
-      PMTNodeSerializer pmtNodeSerializer) {
+      PMTStorage db, PMTNode root, HashFunction hashFunction, PMTNodeSerializer pmtNodeSerializer) {
     this.db = db;
     this.root = root;
     this.hashFunction = hashFunction;

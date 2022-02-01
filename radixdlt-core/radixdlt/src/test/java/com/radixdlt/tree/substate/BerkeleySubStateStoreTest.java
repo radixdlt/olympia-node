@@ -159,9 +159,9 @@ public class BerkeleySubStateStoreTest {
     var berkeleyStorage =
         new BerkeleyStorage(this.berkeleySubStateStore.getSubStateTreeDatabase(), null);
     var cachedStorage = new CachedPMTStorage(berkeleyStorage, new PMTCache(CACHE_MAXIMUM_SIZE));
-    var pmt = new PMT(cachedStorage, this.berkeleySubStateStore.readCurrentSubStateRoot(berkeleyStorage));
-    SubStateTree subStateTree =
-        new SubStateTree(pmt);
+    var pmt =
+        new PMT(cachedStorage, this.berkeleySubStateStore.readCurrentSubStateRoot(berkeleyStorage));
+    SubStateTree subStateTree = new SubStateTree(pmt);
     for (REStateUpdate rEStateUpdate : this.berkeleySubStateStore.getREStateUpdateList()) {
       byte[] value = subStateTree.get(rEStateUpdate.getId());
       Assert.assertArrayEquals(SubStateTree.getValue(rEStateUpdate.isBootUp()), value);

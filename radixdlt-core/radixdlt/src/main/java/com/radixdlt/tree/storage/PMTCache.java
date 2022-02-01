@@ -66,13 +66,14 @@ package com.radixdlt.tree.storage;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheStats;
 
 public class PMTCache {
 
   private final Cache<ByteArrayWrapper, byte[]> cache;
 
   public PMTCache(int maximumSize) {
-    this.cache = CacheBuilder.newBuilder().maximumSize(maximumSize).build();
+    this.cache = CacheBuilder.newBuilder().maximumSize(maximumSize).recordStats().build();
   }
 
   public void put(byte[] key, byte[] serialisedNode) {
@@ -81,5 +82,9 @@ public class PMTCache {
 
   public byte[] get(byte[] key) {
     return this.cache.getIfPresent(ByteArrayWrapper.from(key));
+  }
+
+  public CacheStats getStats() {
+    return this.cache.stats();
   }
 }
