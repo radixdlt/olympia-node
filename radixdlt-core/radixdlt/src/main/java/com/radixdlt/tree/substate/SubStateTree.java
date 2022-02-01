@@ -66,20 +66,21 @@ package com.radixdlt.tree.substate;
 
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.tree.PMT;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.Transaction;
+import com.radixdlt.tree.storage.PMTStorage;
 
 public class SubStateTree {
 
   private final PMT pmt;
-  private final BerkeleyStorage berkeleyStorage;
 
-  public SubStateTree(Database database, Transaction tx) {
-    this.berkeleyStorage = new BerkeleyStorage(database, tx);
-    pmt = new PMT(this.berkeleyStorage);
+  public SubStateTree(PMTStorage storage) {
+    this(storage, null);
   }
 
-  public byte[] put(SubstateId key, byte[] val) {
+  public SubStateTree(PMTStorage storage, byte[] currentRoot) {
+    pmt = new PMT(storage, currentRoot);
+  }
+
+  public PMT.RootAndHash put(SubstateId key, byte[] val) {
     return pmt.add(key.asBytes(), val);
   }
 

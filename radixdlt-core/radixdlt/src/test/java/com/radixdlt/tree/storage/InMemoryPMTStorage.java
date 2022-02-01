@@ -74,10 +74,12 @@ public class InMemoryPMTStorage implements PMTStorage {
     localDb = new HashMap<>();
   }
 
+  @Override
   public void save(byte[] serialisedNodeHash, byte[] serialisedNode) {
     this.localDb.put(ByteArrayWrapper.from(serialisedNodeHash), serialisedNode);
   }
 
+  @Override
   public byte[] read(byte[] serialisedNodeHash) {
     return this.localDb.get(ByteArrayWrapper.from(serialisedNodeHash));
   }

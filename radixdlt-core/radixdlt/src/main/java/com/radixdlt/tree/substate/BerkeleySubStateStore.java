@@ -74,12 +74,16 @@ import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.tree.PMT;
+import com.radixdlt.tree.storage.CachedPMTStorage;
+import com.radixdlt.tree.storage.PMTCache;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Transaction;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
@@ -88,15 +92,21 @@ import org.apache.logging.log4j.Logger;
 public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
 
   private static final Logger logger = LogManager.getLogger();
+  public static final int CACHE_MAXIMUM_SIZE = 1_000_000;
+  public static final byte[] CURRENT_ROOT_KEY = "current_root_key".getBytes(StandardCharsets.UTF_8);
 
-  private Database substateTreeDatabase;
+  private Database subStateTreeDatabase;
   private Database epochRootHashDatabase;
+
+  private byte[] currentSubStateRoot;
+
+  private PMTCache pmtCache;
 
   private Stopwatch watch = Stopwatch.createUnstarted();
 
   @Override
   public void open(DatabaseEnvironment dbEnv) {
-    this.substateTreeDatabase =
+    this.subStateTreeDatabase =
         dbEnv
             .getEnvironment()
             .openDatabase(
@@ -118,11 +128,12 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
                     .setTransactional(true)
                     .setKeyPrefixing(true)
                     .setBtreeComparator(lexicographicalComparator()));
+    this.pmtCache = new PMTCache(CACHE_MAXIMUM_SIZE);
   }
 
   @Override
   public void close() {
-    this.substateTreeDatabase.close();
+    this.subStateTreeDatabase.close();
     this.epochRootHashDatabase.close();
   }
 
@@ -136,10 +147,15 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
     boolean isEpochChange = false;
     Long epoch = null;
     byte[] rootHash = new byte[0];
-    final var subStateTree = new SubStateTree(substateTreeDatabase, dbTxn);
+    BerkeleyStorage berkeleyStorage = new BerkeleyStorage(this.subStateTreeDatabase, dbTxn);
+    CachedPMTStorage cachedPMTStorage = new CachedPMTStorage(berkeleyStorage, pmtCache);
+    setCurrentSubStateRoot(readCurrentSubStateRoot(berkeleyStorage));
+    final var subStateTree = new SubStateTree(cachedPMTStorage, getCurrentSubStateRoot());
     for (REStateUpdate stateUpdate : txn.stateUpdates().toList()) {
-      rootHash =
+      var rootAndHash =
           subStateTree.put(stateUpdate.getId(), SubStateTree.getValue(stateUpdate.isBootUp()));
+      persistCurrentSubstateRoot(berkeleyStorage, rootAndHash);
+      setCurrentSubStateRoot(rootAndHash.serializedRoot());
       if (stateUpdate.getParsed() instanceof EpochData epochData) {
         if (stateUpdate.isBootUp()) {
           epoch = epochData.getEpoch();
@@ -165,8 +181,25 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
     }
   }
 
-  public Database getSubstateTreeDatabase() {
-    return substateTreeDatabase;
+  private byte[] readCurrentSubStateRoot(BerkeleyStorage berkeleyStorage) {
+    return berkeleyStorage.read(CURRENT_ROOT_KEY);
+  }
+
+  private void persistCurrentSubstateRoot(
+      BerkeleyStorage berkeleyStorage, PMT.RootAndHash rootAndHash) {
+    berkeleyStorage.save(CURRENT_ROOT_KEY, rootAndHash.serializedRoot());
+  }
+
+  public byte[] getCurrentSubStateRoot() {
+    return currentSubStateRoot;
+  }
+
+  private void setCurrentSubStateRoot(byte[] currentSubStateRoot) {
+    this.currentSubStateRoot = currentSubStateRoot;
+  }
+
+  public Database getSubStateTreeDatabase() {
+    return subStateTreeDatabase;
   }
 
   public Database getEpochRootHashDatabase() {

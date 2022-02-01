@@ -68,13 +68,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.radixdlt.tree.hash.Keccak256;
 import com.radixdlt.tree.serialization.rlp.RLP;
 import com.radixdlt.tree.serialization.rlp.RLPSerializer;
+import com.radixdlt.tree.storage.CachedPMTStorage;
 import com.radixdlt.tree.storage.EthTransaction;
 import com.radixdlt.tree.storage.InMemoryPMTStorage;
+import com.radixdlt.tree.storage.PMTCache;
+import com.radixdlt.tree.storage.PMTStorage;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Map;
 import org.bouncycastle.util.encoders.Hex;
@@ -85,25 +86,27 @@ public class EthereumTxTreeTest {
 
   private static final Keccak256 KECCAK_256 = new Keccak256();
   private static final RLPSerializer RLP_SERIALIZER = new RLPSerializer();
+  private static final byte[] CURRENT_ROOT = null;
+  public static final int CACHE_MAXIMUM_SIZE = 1_000_000;
 
   @Test
   public void when_tx_tree_of_eth_block_10593417_created_using_cache__then_tx_root_is_correct() {
-    var storage = new InMemoryPMTStorage();
-    var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER, Duration.of(10, ChronoUnit.MINUTES));
+    var storage = new CachedPMTStorage(new InMemoryPMTStorage(), new PMTCache(CACHE_MAXIMUM_SIZE));
+    var tree = new PMT(storage, CURRENT_ROOT, KECCAK_256, RLP_SERIALIZER);
 
-    createEthereumTxTreeBlock10593417Test(tree);
+    createEthereumTxTreeBlock10593417Test(tree, storage);
   }
 
   @Test
   public void
       when_tx_tree_of_eth_block_10593417_created_not_using_cache__then_tx_root_is_correct() {
     var storage = new InMemoryPMTStorage();
-    var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER, Duration.ZERO);
+    var tree = new PMT(storage, CURRENT_ROOT, KECCAK_256, RLP_SERIALIZER);
 
-    createEthereumTxTreeBlock10593417Test(tree);
+    createEthereumTxTreeBlock10593417Test(tree, storage);
   }
 
-  private void createEthereumTxTreeBlock10593417Test(PMT tree) {
+  private void createEthereumTxTreeBlock10593417Test(PMT tree, PMTStorage pmtStorage) {
     tree.add(
         Hex.decode("80"),
         Hex.decode(
@@ -127,7 +130,7 @@ public class EthereumTxTreeTest {
                 + "025a096e7a1d9683b205f697b4073a3e2f0d0ad42e708f03e899c61ed6a894a7f916aa05da238fbb96d41a4b5ec03"
                 + "38c86cfcb627d0aa8e556f21528e62f31c32f7e672"));
 
-    byte[] rootHash =
+    var rootAndHash =
         tree.add(
             Hex.decode("03"),
             Hex.decode(
@@ -137,14 +140,14 @@ public class EthereumTxTreeTest {
 
     Assert.assertEquals(
         "ab41f886be23cd786d8a69a72b0f988ea72e0b2e03970d0798f5e03763a442cc",
-        Hex.toHexString(rootHash));
+        Hex.toHexString(rootAndHash.rootHash()));
   }
 
   @Test
   public void when_tx_tree_of_eth_block_10467135_created_using_cache__then_tx_root_is_correct()
       throws IOException {
-    var storage = new InMemoryPMTStorage();
-    var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER, Duration.of(10, ChronoUnit.MINUTES));
+    var storage = new CachedPMTStorage(new InMemoryPMTStorage(), new PMTCache(CACHE_MAXIMUM_SIZE));
+    var tree = new PMT(storage, CURRENT_ROOT, KECCAK_256, RLP_SERIALIZER);
 
     createEthereumTxTreeBlock10467135Test(tree);
   }
@@ -153,7 +156,7 @@ public class EthereumTxTreeTest {
   public void when_tx_tree_of_eth_block_10467135_created_not_using_cache__then_tx_root_is_correct()
       throws IOException {
     var storage = new InMemoryPMTStorage();
-    var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER, Duration.of(0, ChronoUnit.MINUTES));
+    var tree = new PMT(storage, CURRENT_ROOT, KECCAK_256, RLP_SERIALIZER);
 
     createEthereumTxTreeBlock10467135Test(tree);
   }
@@ -168,7 +171,7 @@ public class EthereumTxTreeTest {
 
     var txRLPEncodedList = new ArrayList<byte[]>();
 
-    byte[] rootHash = new byte[0];
+    PMT.RootAndHash rootAndHash = null;
 
     for (int i = 0; i < maps.length; i++) {
       Map<String, String> m = maps[i];
@@ -181,7 +184,7 @@ public class EthereumTxTreeTest {
 
       byte[] txIdxRLPEncoded = RLP.encodeBigInteger(BigInteger.valueOf(i));
 
-      rootHash = tree.add(txIdxRLPEncoded, txRLPEncoded);
+      rootAndHash = tree.add(txIdxRLPEncoded, txRLPEncoded);
 
       Assert.assertArrayEquals(txRLPEncoded, tree.get(txIdxRLPEncoded));
     }
@@ -191,7 +194,7 @@ public class EthereumTxTreeTest {
           txRLPEncodedList.get(i), tree.get(RLP.encodeBigInteger(BigInteger.valueOf(i))));
     }
 
-    Assert.assertEquals(expectedTxRootHash, Hex.toHexString(rootHash));
+    Assert.assertEquals(expectedTxRootHash, Hex.toHexString(rootAndHash.rootHash()));
   }
 
   private EthTransaction getEthTransaction(Map<String, String> m) {

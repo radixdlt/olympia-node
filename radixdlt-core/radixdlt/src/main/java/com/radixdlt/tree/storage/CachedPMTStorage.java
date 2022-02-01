@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2022 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -64,89 +64,32 @@
 
 package com.radixdlt.tree.storage;
 
-import com.google.common.cache.CacheLoader;
-import com.radixdlt.tree.PMTKey;
-import com.radixdlt.tree.PMTLeaf;
-import com.radixdlt.tree.PMTNode;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
-import org.junit.Assert;
-import org.junit.Test;
+import javax.annotation.concurrent.NotThreadSafe;
 
-public class PMTCacheTest {
+@NotThreadSafe
+public class CachedPMTStorage implements PMTStorage {
 
-  @Test
-  public void
-      when_key_value_has_been_inserted_and_has_not_expired__then_it_can_be_retrieved_without_loading() {
-    // given
-    PMTCache pmtCache =
-        new PMTCache(
-            1,
-            Duration.of(1, ChronoUnit.MINUTES),
-            key -> {
-              throw new IllegalStateException();
-            });
+  private final PMTCache pmtCache;
+  private final PMTStorage pmtStorage;
 
-    String key = "key";
-    String value = "value";
-
-    // when
-    pmtCache.put(
-        key.getBytes(StandardCharsets.UTF_8),
-        new PMTLeaf(
-            new PMTKey(key.getBytes(StandardCharsets.UTF_8)),
-            value.getBytes(StandardCharsets.UTF_8)));
-
-    // then
-    PMTNode pmtNode = pmtCache.get(key.getBytes(StandardCharsets.UTF_8));
-    Assert.assertEquals(
-        new PMTLeaf(
-            new PMTKey(key.getBytes(StandardCharsets.UTF_8)),
-            value.getBytes(StandardCharsets.UTF_8)),
-        pmtNode);
+  public CachedPMTStorage(PMTStorage pmtStorage, PMTCache pmtCache) {
+    this.pmtStorage = pmtStorage;
+    this.pmtCache = pmtCache;
   }
 
-  @Test
-  public void when_key_value_has_not_been_inserted_and_cannot_be_load__then_exception_is_thrown() {
-    // given
-    PMTCache pmtCache = new PMTCache(1, Duration.of(1, ChronoUnit.MINUTES), key -> null);
-
-    // when - then
-    Assert.assertThrows(
-        CacheLoader.InvalidCacheLoadException.class,
-        () -> pmtCache.get("key".getBytes(StandardCharsets.UTF_8)));
+  @Override
+  public void save(byte[] serialisedNodeHash, byte[] serialisedNode) {
+    this.pmtCache.put(serialisedNodeHash, serialisedNode);
+    this.pmtStorage.save(serialisedNodeHash, serialisedNode);
   }
 
-  @Test
-  public void
-      when_key_value_has_been_inserted_and_has_expired__then_it_can_be_loaded_and_retrieved() {
-    // given
-    String key = "key";
-    String value = "value";
-    PMTCache pmtCache =
-        new PMTCache(
-            1,
-            Duration.of(1, ChronoUnit.NANOS),
-            k ->
-                new PMTLeaf(
-                    new PMTKey(key.getBytes(StandardCharsets.UTF_8)),
-                    value.getBytes(StandardCharsets.UTF_8)));
-
-    pmtCache.put(
-        key.getBytes(StandardCharsets.UTF_8),
-        new PMTLeaf(
-            new PMTKey(key.getBytes(StandardCharsets.UTF_8)),
-            value.getBytes(StandardCharsets.UTF_8)));
-
-    // when
-    PMTNode pmtNode = pmtCache.get(key.getBytes(StandardCharsets.UTF_8));
-
-    // then
-    Assert.assertEquals(
-        new PMTLeaf(
-            new PMTKey(key.getBytes(StandardCharsets.UTF_8)),
-            value.getBytes(StandardCharsets.UTF_8)),
-        pmtNode);
+  @Override
+  public byte[] read(byte[] serialisedNodeHash) {
+    byte[] bytes = this.pmtCache.get(serialisedNodeHash);
+    if (bytes == null) {
+      bytes = this.pmtStorage.read(serialisedNodeHash);
+      this.pmtCache.put(serialisedNodeHash, bytes);
+    }
+    return bytes;
   }
 }
