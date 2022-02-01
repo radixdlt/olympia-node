@@ -572,8 +572,6 @@ public final class BFTSync implements BFTSyncer {
     }
   }
 
-  public void processBFTUpdate(BFTInsertUpdate update) {}
-
   public EventProcessor<LedgerUpdate> baseLedgerUpdateEventProcessor() {
     return this::processLedgerUpdate;
   }

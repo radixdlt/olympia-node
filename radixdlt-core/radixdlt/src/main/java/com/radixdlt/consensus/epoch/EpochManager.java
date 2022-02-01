@@ -64,22 +64,19 @@
 
 package com.radixdlt.consensus.epoch;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
-import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerStateFactory;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -104,7 +101,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
@@ -173,7 +169,7 @@ public final class EpochManager {
       this.syncLedgerUpdateProcessor = update -> {};
       this.syncTimeoutProcessor = timeout -> {};
     } else {
-      this.bftEventProcessor = Objects.requireNonNull(initialBFTEventProcessor);
+      this.bftEventProcessor = requireNonNull(initialBFTEventProcessor);
       this.syncLedgerUpdateProcessor = initialBFTSync.baseLedgerUpdateEventProcessor();
       this.syncTimeoutProcessor = initialBFTSync.vertexRequestTimeoutEventProcessor();
     }
@@ -183,33 +179,31 @@ public final class EpochManager {
     this.syncErrorResponseProcessors =
         isValidator ? Set.of(initialBFTSync.errorResponseProcessor()) : Set.of();
     this.bftUpdateProcessors =
-        isValidator // FIXME: initialBFTSync::processBFTUpdate does nothing, do we actually need it
-            // here?
-            ? Set.of(initialBFTSync::processBFTUpdate, initialBFTEventProcessor::processBFTUpdate)
-            : Set.of();
+        isValidator ? Set.of(initialBFTEventProcessor::processBFTUpdate) : Set.of();
     this.bftRebuildProcessors =
         isValidator ? Set.of(initialBFTEventProcessor::processBFTRebuildUpdate) : Set.of();
 
-    this.ledgerStatusUpdateDispatcher = Objects.requireNonNull(ledgerStatusUpdateDispatcher);
-    this.currentEpoch = Objects.requireNonNull(initialEpoch);
-    this.self = Objects.requireNonNull(self);
-    this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
-    this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
-    this.bftSyncFactory = Objects.requireNonNull(bftSyncFactory);
+    this.ledgerStatusUpdateDispatcher = requireNonNull(ledgerStatusUpdateDispatcher);
+    this.currentEpoch = requireNonNull(initialEpoch);
+    this.self = requireNonNull(self);
+    this.pacemakerFactory = requireNonNull(pacemakerFactory);
+    this.vertexStoreFactory = requireNonNull(vertexStoreFactory);
+    this.bftSyncFactory = requireNonNull(bftSyncFactory);
     this.bftSyncRequestProcessorFactory = bftSyncRequestProcessorFactory;
-    this.hasher = Objects.requireNonNull(hasher);
-    this.signer = Objects.requireNonNull(signer);
-    this.timeoutCalculator = Objects.requireNonNull(timeoutCalculator);
+    this.hasher = requireNonNull(hasher);
+    this.signer = requireNonNull(signer);
+    this.timeoutCalculator = requireNonNull(timeoutCalculator);
     this.bftFactory = bftFactory;
-    this.counters = Objects.requireNonNull(counters);
-    this.pacemakerStateFactory = Objects.requireNonNull(pacemakerStateFactory);
-    this.persistentSafetyStateStore = Objects.requireNonNull(persistentSafetyStateStore);
+    this.counters = requireNonNull(counters);
+    this.pacemakerStateFactory = requireNonNull(pacemakerStateFactory);
+    this.persistentSafetyStateStore = requireNonNull(persistentSafetyStateStore);
     this.queuedEvents = new HashMap<>();
   }
 
   private void updateEpochState() {
-    BFTConfiguration config = this.currentEpoch.getBFTConfiguration();
-    BFTValidatorSet validatorSet = config.getValidatorSet();
+    var config = this.currentEpoch.getBFTConfiguration();
+    var validatorSet = config.getValidatorSet();
+
     if (!validatorSet.containsNode(self)) {
       this.bftRebuildProcessors = Set.of();
       this.bftUpdateProcessors = Set.of();
@@ -222,28 +216,27 @@ public final class EpochManager {
       return;
     }
 
-    final long nextEpoch = this.currentEpoch.getEpoch();
+    final var nextEpoch = this.currentEpoch.getEpoch();
 
     // Config
-    final BFTConfiguration bftConfiguration = this.currentEpoch.getBFTConfiguration();
-    final ProposerElection proposerElection = bftConfiguration.getProposerElection();
-    HighQC highQC = bftConfiguration.getVertexStoreState().getHighQC();
-    View view = highQC.highestQC().getView().next();
-    final BFTNode leader = proposerElection.getProposer(view);
-    final BFTNode nextLeader = proposerElection.getProposer(view.next());
-    final ViewUpdate initialViewUpdate = ViewUpdate.create(view, highQC, leader, nextLeader);
+    final var bftConfiguration = this.currentEpoch.getBFTConfiguration();
+    final var proposerElection = bftConfiguration.getProposerElection();
+    final var highQC = bftConfiguration.getVertexStoreState().getHighQC();
+    final var view = highQC.highestQC().getView().next();
+    final var leader = proposerElection.getProposer(view);
+    final var nextLeader = proposerElection.getProposer(view.next());
+    final var initialViewUpdate = ViewUpdate.create(view, highQC, leader, nextLeader);
 
     // Mutable Consensus State
-    final VertexStore vertexStore =
-        vertexStoreFactory.create(bftConfiguration.getVertexStoreState());
-    final PacemakerState pacemakerState =
+    final var vertexStore = vertexStoreFactory.create(bftConfiguration.getVertexStoreState());
+    final var pacemakerState =
         pacemakerStateFactory.create(initialViewUpdate, nextEpoch, proposerElection);
 
     // Consensus Drivers
-    final SafetyRules safetyRules =
+    final var safetyRules =
         new SafetyRules(
             self, SafetyState.initialState(), persistentSafetyStateStore, hasher, signer);
-    final Pacemaker pacemaker =
+    final var pacemaker =
         pacemakerFactory.create(
             validatorSet,
             vertexStore,
@@ -251,7 +244,7 @@ public final class EpochManager {
             safetyRules,
             initialViewUpdate,
             nextEpoch);
-    final BFTSync bftSync = bftSyncFactory.create(vertexStore, pacemakerState, bftConfiguration);
+    final var bftSync = bftSyncFactory.create(vertexStore, pacemakerState, bftConfiguration);
 
     this.syncLedgerUpdateProcessor = bftSync.baseLedgerUpdateEventProcessor();
     this.syncTimeoutProcessor = bftSync.vertexRequestTimeoutEventProcessor();
@@ -270,10 +263,8 @@ public final class EpochManager {
     this.syncResponseProcessors = Set.of(bftSync.responseProcessor());
     this.syncErrorResponseProcessors = Set.of(bftSync.errorResponseProcessor());
     this.syncRequestProcessors = Set.of(bftSyncRequestProcessorFactory.create(vertexStore));
-    this.bftRebuildProcessors = ImmutableSet.of(bftEventProcessor::processBFTRebuildUpdate);
-    this.bftUpdateProcessors = // FIXME: bftSync::processBFTUpdate does nothing, do we actually
-        // need it here?
-        ImmutableSet.of(bftSync::processBFTUpdate, bftEventProcessor::processBFTUpdate);
+    this.bftRebuildProcessors = Set.of(bftEventProcessor::processBFTRebuildUpdate);
+    this.bftUpdateProcessors = Set.of(bftEventProcessor::processBFTUpdate);
   }
 
   public void start() {
@@ -290,6 +281,7 @@ public final class EpochManager {
 
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
     var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
+
     if (epochChange != null) {
       this.processEpochChange(epochChange);
     } else {
@@ -306,14 +298,14 @@ public final class EpochManager {
     }
 
     if (this.currentEpoch.getBFTConfiguration().getValidatorSet().containsNode(this.self)) {
-      final ImmutableSet<BFTValidator> currentAndNextValidators =
+      final var currentAndNextValidators =
           ImmutableSet.<BFTValidator>builder()
               .addAll(epochChange.getBFTConfiguration().getValidatorSet().getValidators())
               .addAll(this.currentEpoch.getBFTConfiguration().getValidatorSet().getValidators())
               .build();
 
       final var ledgerStatusUpdate = LedgerStatusUpdate.create(epochChange.getGenesisHeader());
-      for (BFTValidator validator : currentAndNextValidators) {
+      for (var validator : currentAndNextValidators) {
         if (!validator.getNode().equals(self)) {
           this.ledgerStatusUpdateDispatcher.dispatch(validator.getNode(), ledgerStatusUpdate);
         }
@@ -327,11 +319,12 @@ public final class EpochManager {
     // Execute any queued up consensus events
     final List<ConsensusEvent> queuedEventsForEpoch =
         queuedEvents.getOrDefault(epochChange.getEpoch(), Collections.emptyList());
-    View highView =
+    var highView =
         queuedEventsForEpoch.stream()
             .map(ConsensusEvent::getView)
             .max(Comparator.naturalOrder())
             .orElse(View.genesis());
+
     queuedEventsForEpoch.stream()
         .filter(e -> e.getView().equals(highView))
         .forEach(this::processConsensusEventInternal);
@@ -342,14 +335,9 @@ public final class EpochManager {
   private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
     this.counters.increment(CounterType.BFT_EVENTS_RECEIVED);
 
-    // TODO: replace with switch
-    if (consensusEvent instanceof Proposal) {
-      bftEventProcessor.processProposal((Proposal) consensusEvent);
-    } else if (consensusEvent instanceof Vote) {
-      bftEventProcessor.processVote((Vote) consensusEvent);
-    } else {
-      // TODO: add necessary branch once there will be more ConsensusEvent implementations
-      throw new IllegalStateException("Unknown consensus event: " + consensusEvent);
+    switch (consensusEvent) {
+      case Proposal proposal -> bftEventProcessor.processProposal(proposal);
+      case Vote vote -> bftEventProcessor.processVote(vote);
     }
   }
 
@@ -427,20 +415,28 @@ public final class EpochManager {
 
   public RemoteEventProcessor<GetVerticesErrorResponse> bftSyncErrorResponseProcessor() {
     return (node, err) -> {
-      log.debug("SYNC_ERROR: Received GetVerticesErrorResponse {}", err);
+      if (log.isDebugEnabled()) {
+        log.debug("SYNC_ERROR: Received GetVerticesErrorResponse {}", err);
+      }
+
       final var responseEpoch = err.highQC().highestQC().getEpoch();
+
       if (responseEpoch < this.currentEpoch()) {
-        log.debug(
-            "SYNC_ERROR: Ignoring lower epoch error response: {} current epoch: {}",
-            err,
-            this.currentEpoch());
+        if (log.isDebugEnabled()) {
+          log.debug(
+              "SYNC_ERROR: Ignoring lower epoch error response: {} current epoch: {}",
+              err,
+              this.currentEpoch());
+        }
         return;
       }
       if (responseEpoch > this.currentEpoch()) {
-        log.debug(
-            "SYNC_ERROR: Received higher epoch error response: {} current epoch: {}",
-            err,
-            this.currentEpoch());
+        if (log.isDebugEnabled()) {
+          log.debug(
+              "SYNC_ERROR: Received higher epoch error response: {} current epoch: {}",
+              err,
+              this.currentEpoch());
+        }
       } else {
         // Current epoch
         syncErrorResponseProcessors.forEach(p -> p.process(node, err));
