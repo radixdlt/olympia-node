@@ -66,12 +66,13 @@ package com.radixdlt.utils;
 
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 
 /** A 128-bit unsigned integer, with comparison and some basic arithmetic operations. */
 @SecurityCritical(SecurityKind.NUMERIC)
-public final class UInt128 implements Comparable<UInt128> {
+public final class UInt128 implements Comparable<UInt128>, Serializable {
   // Some sizing constants in line with Integer, Long etc
   /** Size of this numeric type in bits. */
   public static final int SIZE = Integer.SIZE * 4;

@@ -68,8 +68,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 
 /** A consensus event which requires syncing to be effectively processed */
-// TODO: make interface sealed
-public interface ConsensusEvent {
+public sealed interface ConsensusEvent permits Proposal, Vote {
 
   /**
    * Retrieve the epoch number the consensus message is a part of

@@ -223,7 +223,7 @@ public final class CoreModelMapper {
           .type(NotValidatorOwnerError.class.getSimpleName());
     } else if (e instanceof InvalidDataObjectException invalidDataObjectException) {
       return new InvalidDataObjectError()
-          .invalidDataObject(invalidDataObjectException.getDataObject().getDataObject())
+          .invalidDataObject(invalidDataObjectException.getDataObject().dataObject())
           .message(invalidDataObjectException.getMessage())
           .type(InvalidDataObjectError.class.getSimpleName());
     } else if (e instanceof InvalidRakeIncreaseException rakeIncreaseException) {
@@ -233,7 +233,7 @@ public final class CoreModelMapper {
           .type(AboveMaximumValidatorFeeIncreaseError.class.getSimpleName());
     } else if (e instanceof EntityDoesNotSupportDataObjectException dataObjectException) {
       return new DataObjectNotSupportedByEntityError()
-          .dataObjectNotSupported(dataObjectException.getDataObject().getDataObject())
+          .dataObjectNotSupported(dataObjectException.getDataObject().dataObject())
           .entityIdentifier(entityIdentifier(dataObjectException.getEntity()))
           .type(DataObjectNotSupportedByEntityError.class.getSimpleName());
     } else if (e instanceof EntityDoesNotSupportResourceDepositException depositException) {

@@ -64,4 +64,6 @@
 
 package com.radixdlt.api.core.model;
 
-public sealed interface Resource permits TokenResource, StakeUnitResource {}
+import java.io.Serializable;
+
+public sealed interface Resource extends Serializable permits TokenResource, StakeUnitResource {}
