@@ -190,31 +190,9 @@ public final class PMT {
     try {
       var pmt = this;
       for (var entry : values) {
-        PMTNode newRoot;
         key = entry.getFirst();
         val = entry.getSecond();
-        var pmtKey = new PMTKey(PMTPath.intoNibbles(key));
-        if (pmt.root != null) {
-          var acc = new PMTAcc();
-          pmt.root.insertNode(pmtKey, val, acc, this::represent, this::read);
-          newRoot = acc.getTip();
-          if (newRoot == null) {
-            throw new IllegalStateException(
-                String.format(
-                    "Unexpected null PMT root when inserting key %s and value %s",
-                    TreeUtils.toHexString(key), TreeUtils.toHexString(val)));
-          }
-          for (PMTNode sanitizedAcc :
-              acc.getNewNodes().stream().filter(Objects::nonNull).toList()) {
-            byte[] serialisedNode = this.pmtNodeSerializer.serialize(sanitizedAcc);
-            if (hasDbRepresentation(serialisedNode)) {
-              this.db.save(hash(serialisedNode), serialisedNode);
-            }
-          }
-        } else {
-          newRoot = new PMTLeaf(pmtKey, val);
-        }
-        pmt = new PMT(this.db, newRoot, this.hashFunction, this.pmtNodeSerializer);
+        pmt = insertKeyValue(key, val, pmt);
       }
       this.db.save(pmt.getRootHash(), pmt.serializedRoot);
       return pmt;
@@ -228,6 +206,31 @@ public final class PMT {
               TreeUtils.toHexString(this.root == null ? emptyTreeHash : hash(this.root))),
           e);
     }
+  }
+
+  private PMT insertKeyValue(byte[] key, byte[] val, PMT pmt) {
+    PMTNode newRoot;
+    var pmtKey = new PMTKey(PMTPath.intoNibbles(key));
+    if (pmt.root != null) {
+      var acc = new PMTAcc();
+      pmt.root.insertNode(pmtKey, val, acc, this::represent, this::read);
+      newRoot = acc.getTip();
+      if (newRoot == null) {
+        throw new IllegalStateException(
+            String.format(
+                "Unexpected null PMT root when inserting key %s and value %s",
+                TreeUtils.toHexString(key), TreeUtils.toHexString(val)));
+      }
+      for (PMTNode sanitizedAcc : acc.getNewNodes().stream().filter(Objects::nonNull).toList()) {
+        byte[] serialisedNode = this.pmtNodeSerializer.serialize(sanitizedAcc);
+        if (hasDbRepresentation(serialisedNode)) {
+          this.db.save(hash(serialisedNode), serialisedNode);
+        }
+      }
+    } else {
+      newRoot = new PMTLeaf(pmtKey, val);
+    }
+    return new PMT(this.db, newRoot, this.hashFunction, this.pmtNodeSerializer);
   }
 
   public PMT add(byte[] key, byte[] val) {
