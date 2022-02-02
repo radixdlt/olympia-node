@@ -75,7 +75,7 @@ import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class PMT {
+public final class PMT {
 
   private static final Logger log = LogManager.getLogger();
 
@@ -88,6 +88,8 @@ public class PMT {
   private final byte[] emptyTreeHash;
 
   private final PMTNode root;
+  private final byte[] serializedRoot;
+  private final byte[] rootHash;
 
   // API:
   // add
@@ -131,6 +133,8 @@ public class PMT {
       PMTStorage db, PMTNode root, HashFunction hashFunction, PMTNodeSerializer pmtNodeSerializer) {
     this.db = db;
     this.root = root;
+    this.serializedRoot = this.root == null ? null : pmtNodeSerializer.serialize(this.root);
+    this.rootHash = this.root == null ? null : hashFunction.hash(this.serializedRoot);
     this.hashFunction = hashFunction;
     this.pmtNodeSerializer = pmtNodeSerializer;
     this.emptyTreeHash = hashFunction.hash(pmtNodeSerializer.emptyTree());
@@ -212,8 +216,7 @@ public class PMT {
         }
         pmt = new PMT(this.db, newRoot, this.hashFunction, this.pmtNodeSerializer);
       }
-      byte[] serializedNewRoot = this.pmtNodeSerializer.serialize(pmt.root);
-      this.db.save(hash(serializedNewRoot), serializedNewRoot);
+      this.db.save(pmt.getRootHash(), pmt.serializedRoot);
       return pmt;
     } catch (Exception e) {
       throw new IllegalStateException(
@@ -232,7 +235,7 @@ public class PMT {
   }
 
   public byte[] getRootHash() {
-    return this.root == null ? emptyTreeHash : hash(this.root);
+    return this.root == null ? emptyTreeHash : this.rootHash;
   }
 
   private PMTNode read(byte[] key) {
