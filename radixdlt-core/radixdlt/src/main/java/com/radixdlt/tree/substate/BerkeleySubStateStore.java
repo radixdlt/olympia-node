@@ -68,6 +68,7 @@ import static com.google.common.primitives.UnsignedBytes.lexicographicalComparat
 
 import com.google.common.base.Stopwatch;
 import com.radixdlt.application.system.state.EpochData;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
@@ -79,11 +80,14 @@ import com.radixdlt.tree.storage.CachedPMTStorage;
 import com.radixdlt.tree.storage.PMTCache;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Longs;
+import com.radixdlt.utils.Pair;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Transaction;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
@@ -152,9 +156,9 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
     BerkeleyStorage berkeleyStorage = new BerkeleyStorage(this.subStateTreeDatabase, dbTxn);
     CachedPMTStorage cachedPMTStorage = new CachedPMTStorage(berkeleyStorage, pmtCache);
     var subStateTree = new SubStateTree(new PMT(cachedPMTStorage, this.rootHash));
+    List<Pair<SubstateId, byte[]>> values = new ArrayList<>();
     for (REStateUpdate stateUpdate : txn.stateUpdates().toList()) {
-      subStateTree =
-          subStateTree.put(stateUpdate.getId(), SubStateTree.getValue(stateUpdate.isBootUp()));
+      values.add(Pair.of(stateUpdate.getId(), SubStateTree.getValue(stateUpdate.isBootUp())));
       if (stateUpdate.getParsed() instanceof EpochData epochData) {
         if (stateUpdate.isBootUp()) {
           epoch = epochData.getEpoch();
@@ -162,6 +166,7 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
         isEpochChange = true;
       }
     }
+    subStateTree = subStateTree.putAll(values);
     persistCurrentSubStateRoot(berkeleyStorage, subStateTree.getRootHash());
     this.rootHash = subStateTree.getRootHash();
 

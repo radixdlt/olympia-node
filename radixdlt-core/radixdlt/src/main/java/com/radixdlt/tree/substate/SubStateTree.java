@@ -66,6 +66,8 @@ package com.radixdlt.tree.substate;
 
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.tree.PMT;
+import com.radixdlt.utils.Pair;
+import java.util.List;
 
 public class SubStateTree {
 
@@ -73,6 +75,12 @@ public class SubStateTree {
 
   public SubStateTree(PMT pmt) {
     this.pmt = pmt;
+  }
+
+  public SubStateTree putAll(List<Pair<SubstateId, byte[]>> values) {
+    return new SubStateTree(
+        this.pmt.addAll(
+            values.stream().map(it -> Pair.of(it.getFirst().asBytes(), it.getSecond())).toList()));
   }
 
   public SubStateTree put(SubstateId key, byte[] val) {
