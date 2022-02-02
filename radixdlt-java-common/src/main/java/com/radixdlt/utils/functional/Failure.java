@@ -64,11 +64,11 @@
 
 package com.radixdlt.utils.functional;
 
+import java.io.Serializable;
 import java.text.MessageFormat;
-import java.util.Objects;
 
 /** Simplest failure descriptor. */
-public interface Failure {
+public interface Failure extends Serializable {
   String message();
 
   int code();
@@ -101,50 +101,9 @@ public interface Failure {
    * @return created instance of Failure
    */
   static Failure failure(int code, String message) {
+    record FailureImpl(int code, String message) implements Failure {}
+    ;
+
     return new FailureImpl(code, message);
-  }
-
-  class FailureImpl implements Failure {
-    private final int code;
-    private final String message;
-
-    private FailureImpl(int code, String message) {
-      this.message = message;
-      this.code = code;
-    }
-
-    @Override
-    public String message() {
-      return message;
-    }
-
-    @Override
-    public int code() {
-      return code;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-
-      if (!(o instanceof FailureImpl)) {
-        return false;
-      }
-
-      var failure = (FailureImpl) o;
-      return code == failure.code && Objects.equals(message, failure.message);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(message, code);
-    }
-
-    @Override
-    public String toString() {
-      return "{" + code + ", '" + message + "'}";
-    }
   }
 }
