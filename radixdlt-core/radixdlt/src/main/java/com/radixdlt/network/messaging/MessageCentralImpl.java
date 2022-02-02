@@ -243,7 +243,7 @@ public final class MessageCentralImpl implements MessageCentral {
     totalMessageProcessingTime = Math.max(totalMessageProcessingTime + messageProcessingTime, 0L);
     updateCounters();
     if (log.isTraceEnabled()) {
-      log.trace("Received from {}: {}", message.getSource(), message.getMessage());
+      log.trace("Received from {}: {}", message.source(), message.message());
     }
   }
 
@@ -260,7 +260,7 @@ public final class MessageCentralImpl implements MessageCentral {
   @SuppressWarnings("unchecked")
   public <T extends Message> Observable<MessageFromPeer<T>> messagesOf(Class<T> messageType) {
     return this.peerMessages
-        .filter(p -> messageType.isInstance(p.getMessage()))
+        .filter(p -> messageType.isInstance(p.message()))
         .map(p -> (MessageFromPeer<T>) p);
   }
 

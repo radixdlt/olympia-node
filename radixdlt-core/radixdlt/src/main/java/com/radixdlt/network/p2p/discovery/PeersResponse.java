@@ -66,43 +66,5 @@ package com.radixdlt.network.p2p.discovery;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.network.p2p.RadixNodeUri;
-import java.util.Objects;
 
-public final class PeersResponse {
-
-  private final ImmutableSet<RadixNodeUri> peers;
-
-  public static PeersResponse create(ImmutableSet<RadixNodeUri> peers) {
-    return new PeersResponse(peers);
-  }
-
-  private PeersResponse(ImmutableSet<RadixNodeUri> peers) {
-    this.peers = peers;
-  }
-
-  public ImmutableSet<RadixNodeUri> getPeers() {
-    return peers;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{}", this.getClass().getSimpleName());
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final var that = (PeersResponse) o;
-    return Objects.equals(peers, that.peers);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(peers);
-  }
-}
+public record PeersResponse(ImmutableSet<RadixNodeUri> peers) {}

@@ -73,6 +73,12 @@ import java.util.stream.Stream;
 /** Retrieve the node's current peers */
 public interface PeersView {
 
+  /** Build composite PeersView instance */
+  static PeersView combine(PeersView first, PeersView second) {
+    return () -> Stream.concat(first.peers(), second.peers());
+  }
+
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
   final class PeerChannelInfo {
     private Optional<RadixNodeUri> uri;
     private String host;
@@ -128,55 +134,13 @@ public interface PeersView {
     }
   }
 
-  final class PeerInfo {
-    private NodeId nodeId;
-    private ImmutableList<PeerChannelInfo> channels;
-
+  record PeerInfo(NodeId nodeId, ImmutableList<PeerChannelInfo> channels) {
     public static PeerInfo fromBftNode(BFTNode bftNode) {
-      return new PeerInfo(NodeId.fromPublicKey(bftNode.getKey()), ImmutableList.of());
-    }
-
-    public static PeerInfo create(NodeId nodeId, ImmutableList<PeerChannelInfo> channels) {
-      return new PeerInfo(nodeId, channels);
-    }
-
-    private PeerInfo(NodeId nodeId, ImmutableList<PeerChannelInfo> channels) {
-      this.nodeId = nodeId;
-      this.channels = channels;
-    }
-
-    public NodeId getNodeId() {
-      return nodeId;
-    }
-
-    public ImmutableList<PeerChannelInfo> getChannels() {
-      return channels;
+      return new PeerInfo(NodeId.fromBFTNode(bftNode), ImmutableList.of());
     }
 
     public BFTNode bftNode() {
-      return BFTNode.create(nodeId.getPublicKey());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      final var other = (PeerInfo) o;
-      return Objects.equals(nodeId, other.nodeId) && Objects.equals(channels, other.channels);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(nodeId, channels);
-    }
-
-    @Override
-    public String toString() {
-      return String.format("%s{%s}", this.getClass().getSimpleName(), this.nodeId);
+      return nodeId.asBFTNode();
     }
   }
 

@@ -72,6 +72,7 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
 import com.radixdlt.network.p2p.NodeId;
@@ -95,7 +96,7 @@ public class MessageCentralBFTNetworkTest {
     BFTNode leader = mock(BFTNode.class);
     when(leader.getKey()).thenReturn(leaderPk);
 
-    network.voteDispatcher().dispatch(leader, vote);
+    ((RemoteEventDispatcher<Vote>) network::sendVote).dispatch(leader, vote);
     verify(messageCentral, times(1))
         .send(eq(NodeId.fromPublicKey(leaderPk)), any(ConsensusEventMessage.class));
   }

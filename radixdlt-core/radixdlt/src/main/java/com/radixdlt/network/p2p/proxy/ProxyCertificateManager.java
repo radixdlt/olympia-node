@@ -67,7 +67,6 @@ package com.radixdlt.network.p2p.proxy;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventProcessor;
@@ -78,6 +77,7 @@ import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.network.p2p.PeersView.PeerInfo;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.NetworkId;
@@ -232,7 +232,7 @@ public final class ProxyCertificateManager {
     final var cert = issueProxyCertificate(nodeId, config.issuedProxyCertificateValidityDuration());
     this.issuedProxyCertificates.put(nodeId, cert);
     grantedProxyCertificateDispatcher.dispatch(
-        BFTNode.create(nodeId.getPublicKey()), new GrantedProxyCertificate(cert));
+        nodeId.asBFTNode(), new GrantedProxyCertificate(cert));
   }
 
   private ProxyCertificate issueProxyCertificate(NodeId nodeId, Duration validityDuration) {
@@ -249,7 +249,7 @@ public final class ProxyCertificateManager {
           return; // ignore if proxy not enabled
         }
 
-        if (!config.authorizedProxiedPeers().contains(NodeId.fromPublicKey(peer.getKey()))) {
+        if (!config.authorizedProxiedPeers().contains(NodeId.fromBFTNode(peer))) {
           return; // peer is not an authorized proxied node; ignore
         }
 
@@ -257,7 +257,7 @@ public final class ProxyCertificateManager {
             .ifPresentOrElse(
                 verifiedCert ->
                     handleVerifiedGrantedProxyCertificate(ev.proxyCertificate(), verifiedCert),
-                () -> handleInvalidGrantedProxyCertificate(NodeId.fromPublicKey(peer.getKey())));
+                () -> handleInvalidGrantedProxyCertificate(NodeId.fromBFTNode(peer)));
       }
     };
   }
@@ -279,7 +279,7 @@ public final class ProxyCertificateManager {
 
     // announce the certificate to connected peers
     this.proxyCertificatesAnnouncementDispatcher.dispatch(
-        peersView.peers().map(p -> BFTNode.create(p.getNodeId().getPublicKey())).toList(),
+        peersView.peers().map(PeerInfo::bftNode).toList(),
         new ProxyCertificatesAnnouncement(ImmutableSet.copyOf(receivedProxyCertificates.values())));
   }
 
@@ -295,8 +295,7 @@ public final class ProxyCertificateManager {
   public RemoteEventProcessor<ProxyCertificatesAnnouncement>
       proxyCertificatesAnnouncementEventProcessor() {
     return (peer, ev) ->
-        verifyAndUpdateProxyCertificates(
-            NodeId.fromPublicKey(peer.getKey()), ev.proxyCertificates());
+        verifyAndUpdateProxyCertificates(NodeId.fromBFTNode(peer), ev.proxyCertificates());
   }
 
   public void handlePeerDisconnected(PeerEvent.PeerDisconnected peerDisconnected) {

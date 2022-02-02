@@ -90,7 +90,6 @@ import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.utils.RandomHasher;
-import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -120,7 +119,7 @@ public class MessageCentralValidatorSyncTest {
     ECPublicKey ecPublicKey = mock(ECPublicKey.class);
     when(node.getKey()).thenReturn(ecPublicKey);
 
-    sync.verticesResponseDispatcher().dispatch(node, new GetVerticesResponse(vertices));
+    sync.sendGetVerticesResponse(node, new GetVerticesResponse(vertices));
     verify(messageCentral, times(1)).send(any(), any(GetVerticesResponseMessage.class));
   }
 
@@ -135,8 +134,7 @@ public class MessageCentralValidatorSyncTest {
     when(node.getKey()).thenReturn(ecPublicKey);
     final var request = new GetVerticesRequest(HashUtils.random256(), 3);
 
-    sync.verticesErrorResponseDispatcher()
-        .dispatch(node, new GetVerticesErrorResponse(highQC, request));
+    sync.sendGetVerticesErrorResponse(node, new GetVerticesErrorResponse(highQC, request));
 
     verify(messageCentral, times(1))
         .send(eq(NodeId.fromPublicKey(ecPublicKey)), any(GetVerticesErrorResponseMessage.class));
@@ -148,8 +146,7 @@ public class MessageCentralValidatorSyncTest {
     HashCode vertexId1 = mock(HashCode.class);
 
     final var peer = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
-    TestSubscriber<GetVerticesRequest> testObserver =
-        sync.requests().map(RemoteEvent::getEvent).test();
+    var testObserver = sync.requests().map(RemoteEvent::event).test();
     messageCentral.send(peer, new GetVerticesRequestMessage(vertexId0, 1));
     messageCentral.send(peer, new GetVerticesRequestMessage(vertexId1, 1));
 

@@ -79,16 +79,10 @@ import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
-import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
-import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
-import com.radixdlt.middleware2.network.MessageCentralMempool;
-import com.radixdlt.middleware2.network.MessageCentralPeerDiscovery;
-import com.radixdlt.middleware2.network.MessageCentralPeerLiveness;
-import com.radixdlt.middleware2.network.MessageCentralPeerProxy;
-import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
+import com.radixdlt.middleware2.network.*;
 import com.radixdlt.network.p2p.discovery.GetPeers;
 import com.radixdlt.network.p2p.discovery.PeersResponse;
+import com.radixdlt.network.p2p.discovery.ProxiedPeers;
 import com.radixdlt.network.p2p.liveness.Ping;
 import com.radixdlt.network.p2p.liveness.Pong;
 import com.radixdlt.network.p2p.proxy.GrantedProxyCertificate;
@@ -135,110 +129,113 @@ public final class MessagingModule extends AbstractModule {
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> proposalDispatcher(MessageCentralBFTNetwork bftNetwork) {
-    return RxRemoteDispatcher.create(Proposal.class, bftNetwork.proposalDispatcher());
+    return RxRemoteDispatcher.create(Proposal.class, bftNetwork::sendProposal);
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> voteDispatcher(MessageCentralBFTNetwork bftNetwork) {
-    return RxRemoteDispatcher.create(Vote.class, bftNetwork.voteDispatcher());
+    return RxRemoteDispatcher.create(Vote.class, bftNetwork::sendVote);
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> vertexRequestDispatcher(
       MessageCentralValidatorSync messageCentralValidatorSync) {
     return RxRemoteDispatcher.create(
-        GetVerticesRequest.class, messageCentralValidatorSync.verticesRequestDispatcher());
+        GetVerticesRequest.class, messageCentralValidatorSync::sendGetVerticesRequest);
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> vertexResponseDispatcher(
       MessageCentralValidatorSync messageCentralValidatorSync) {
     return RxRemoteDispatcher.create(
-        GetVerticesResponse.class, messageCentralValidatorSync.verticesResponseDispatcher());
+        GetVerticesResponse.class, messageCentralValidatorSync::sendGetVerticesResponse);
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> vertexErrorResponseDispatcher(
       MessageCentralValidatorSync messageCentralValidatorSync) {
     return RxRemoteDispatcher.create(
-        GetVerticesErrorResponse.class,
-        messageCentralValidatorSync.verticesErrorResponseDispatcher());
+        GetVerticesErrorResponse.class, messageCentralValidatorSync::sendGetVerticesErrorResponse);
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> syncRequestDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
-    return RxRemoteDispatcher.create(
-        SyncRequest.class, messageCentralLedgerSync.syncRequestDispatcher());
+    return RxRemoteDispatcher.create(SyncRequest.class, messageCentralLedgerSync::sendSyncRequest);
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> syncResponseDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        SyncResponse.class, messageCentralLedgerSync.syncResponseDispatcher());
+        SyncResponse.class, messageCentralLedgerSync::sendSyncResponse);
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> statusRequestDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        StatusRequest.class, messageCentralLedgerSync.statusRequestDispatcher());
+        StatusRequest.class, messageCentralLedgerSync::sendStatusRequest);
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> statusResponseDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        StatusResponse.class, messageCentralLedgerSync.statusResponseDispatcher());
+        StatusResponse.class, messageCentralLedgerSync::sendStatusResponse);
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> pingDispatcher(
       MessageCentralPeerLiveness messageCentralPeerLiveness) {
-    return RxRemoteDispatcher.create(Ping.class, messageCentralPeerLiveness.pingDispatcher());
+    return RxRemoteDispatcher.create(Ping.class, messageCentralPeerLiveness::sendPing);
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> pongDispatcher(
       MessageCentralPeerLiveness messageCentralPeerLiveness) {
-    return RxRemoteDispatcher.create(Pong.class, messageCentralPeerLiveness.pongDispatcher());
+    return RxRemoteDispatcher.create(Pong.class, messageCentralPeerLiveness::sendPong);
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> getPeersDispatcher(
       MessageCentralPeerDiscovery messageCentralPeerDiscovery) {
-    return RxRemoteDispatcher.create(
-        GetPeers.class, messageCentralPeerDiscovery.getPeersDispatcher());
+    return RxRemoteDispatcher.create(GetPeers.class, messageCentralPeerDiscovery::sendGetPeers);
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> peersResponseDispatcher(
       MessageCentralPeerDiscovery messageCentralPeerDiscovery) {
     return RxRemoteDispatcher.create(
-        PeersResponse.class, messageCentralPeerDiscovery.peersResponseDispatcher());
+        PeersResponse.class, messageCentralPeerDiscovery::sendPeersResponse);
+  }
+
+  @ProvidesIntoSet
+  private RxRemoteDispatcher<?> proxiedPeersResponseDispatcher(
+      MessageCentralProxyPeerDiscovery messageCentralProxyPeerDiscovery) {
+    return RxRemoteDispatcher.create(
+        ProxiedPeers.class, messageCentralProxyPeerDiscovery::sendProxiedPeersResponse);
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> grantedProxyCertificateDispatcher(
       MessageCentralPeerProxy messageCentralPeerProxy) {
     return RxRemoteDispatcher.create(
-        GrantedProxyCertificate.class, messageCentralPeerProxy.grantedProxyCertificateDispatcher());
+        GrantedProxyCertificate.class, messageCentralPeerProxy::sendGrantedProxyCertificate);
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> proxyCertificatesAnnouncementDispatcher(
       MessageCentralPeerProxy messageCentralPeerProxy) {
     return RxRemoteDispatcher.create(
-        ProxyCertificatesAnnouncement.class,
-        messageCentralPeerProxy.proxyCertificatesAnnouncementDispatcher());
+        ProxyCertificatesAnnouncement.class, messageCentralPeerProxy::sendCertificatesAnnouncement);
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> ledgerStatusUpdateDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        LedgerStatusUpdate.class, messageCentralLedgerSync.ledgerStatusUpdateDispatcher());
+        LedgerStatusUpdate.class, messageCentralLedgerSync::sendLedgerStatusUpdate);
   }
 
   // TODO: Clean this up
@@ -252,7 +249,8 @@ public final class MessagingModule extends AbstractModule {
       MessageCentralValidatorSync messageCentralBFTSync,
       MessageCentralPeerLiveness messageCentralPeerLiveness,
       MessageCentralPeerDiscovery messageCentralPeerDiscovery,
-      MessageCentralPeerProxy messageCentralPeerProxy) {
+      MessageCentralPeerProxy messageCentralPeerProxy,
+      MessageCentralProxyPeerDiscovery messageCentralProxyPeerDiscovery) {
     return new RxRemoteEnvironment() {
       @Override
       public <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> remoteEventClass) {
@@ -286,6 +284,10 @@ public final class MessagingModule extends AbstractModule {
           return messageCentralPeerDiscovery.getPeersEvents().map(m -> (RemoteEvent<T>) m);
         } else if (remoteEventClass == PeersResponse.class) {
           return messageCentralPeerDiscovery.peersResponses().map(m -> (RemoteEvent<T>) m);
+        } else if (remoteEventClass == ProxiedPeers.class) {
+          return messageCentralProxyPeerDiscovery
+              .proxiedPeersResponses()
+              .map(m -> (RemoteEvent<T>) m);
         } else if (remoteEventClass == GrantedProxyCertificate.class) {
           return messageCentralPeerProxy.grantedProxyCertificates().map(m -> (RemoteEvent<T>) m);
         } else if (remoteEventClass == ProxyCertificatesAnnouncement.class) {
@@ -293,7 +295,7 @@ public final class MessagingModule extends AbstractModule {
               .proxyCertificatesAnnouncements()
               .map(m -> (RemoteEvent<T>) m);
         } else {
-          throw new IllegalStateException();
+          throw new IllegalStateException("Unknown remove event class " + remoteEventClass);
         }
       }
     };

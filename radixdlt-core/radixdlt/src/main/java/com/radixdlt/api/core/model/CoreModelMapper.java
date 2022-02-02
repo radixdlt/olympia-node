@@ -572,7 +572,7 @@ public final class CoreModelMapper {
   }
 
   public Peer peer(PeersView.PeerInfo peerInfo) {
-    return new Peer().peerId(addressing.forNodes().of(peerInfo.getNodeId().getPublicKey()));
+    return new Peer().peerId(addressing.forNodes().of(peerInfo.nodeId().getPublicKey()));
   }
 
   public ResourceIdentifier resourceIdentifier(Resource resource) {

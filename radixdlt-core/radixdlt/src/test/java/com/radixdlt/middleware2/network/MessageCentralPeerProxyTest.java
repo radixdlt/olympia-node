@@ -74,6 +74,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
 import com.radixdlt.network.p2p.NodeId;
@@ -102,8 +103,8 @@ public final class MessageCentralPeerProxyTest {
     final var receiverKey = ECKeyPair.generateNew().getPublicKey();
     final var receiver = BFTNode.create(receiverKey);
 
-    messageCentralPeerProxy
-        .grantedProxyCertificateDispatcher()
+    ((RemoteEventDispatcher<GrantedProxyCertificate>)
+            messageCentralPeerProxy::sendGrantedProxyCertificate)
         .dispatch(receiver, grantedProxyCert);
     verify(messageCentral, times(1))
         .send(eq(NodeId.fromPublicKey(receiverKey)), any(GrantedProxyCertificateMessage.class));
@@ -117,8 +118,8 @@ public final class MessageCentralPeerProxyTest {
     final var receiverKey = ECKeyPair.generateNew().getPublicKey();
     final var receiver = BFTNode.create(receiverKey);
 
-    messageCentralPeerProxy
-        .proxyCertificatesAnnouncementDispatcher()
+    ((RemoteEventDispatcher<ProxyCertificatesAnnouncement>)
+            messageCentralPeerProxy::sendCertificatesAnnouncement)
         .dispatch(receiver, proxyCertsAnnouncement);
     verify(messageCentral, times(1))
         .send(

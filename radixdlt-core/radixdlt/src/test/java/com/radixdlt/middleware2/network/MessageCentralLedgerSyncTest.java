@@ -105,8 +105,8 @@ public class MessageCentralLedgerSyncTest {
     testObserver.awaitCount(1);
     testObserver.assertValue(
         syncRequest ->
-            syncRequest.getEvent().getHeader().equals(header)
-                && syncRequest.getOrigin().getKey().equals(peer.getPublicKey()));
+            syncRequest.event().getHeader().equals(header)
+                && syncRequest.origin().getKey().equals(peer.getPublicKey()));
   }
 
   @Test
@@ -119,7 +119,7 @@ public class MessageCentralLedgerSyncTest {
     when(syncResponseMessage.getCommands()).thenReturn(commands);
     messageCentral.send(peer, syncResponseMessage);
     testObserver.awaitCount(1);
-    testObserver.assertValue(resp -> resp.getEvent().getTxnsAndProof().equals(commands));
+    testObserver.assertValue(resp -> resp.event().getTxnsAndProof().equals(commands));
   }
 
   @Test
@@ -131,7 +131,7 @@ public class MessageCentralLedgerSyncTest {
     messageCentral.send(peer, statusRequestMessage);
     testObserver.awaitCount(1);
     testObserver.assertValue(
-        statusResponse -> statusResponse.getOrigin().getKey().equals(peer.getPublicKey()));
+        statusResponse -> statusResponse.origin().getKey().equals(peer.getPublicKey()));
   }
 
   @Test
@@ -146,8 +146,8 @@ public class MessageCentralLedgerSyncTest {
     testObserver.awaitCount(1);
     testObserver.assertValue(
         statusResponse ->
-            statusResponse.getEvent().getHeader().equals(header)
-                && statusResponse.getOrigin().getKey().equals(peer.getPublicKey()));
+            statusResponse.event().getHeader().equals(header)
+                && statusResponse.origin().getKey().equals(peer.getPublicKey()));
   }
 
   @Test
@@ -158,7 +158,7 @@ public class MessageCentralLedgerSyncTest {
     messageCentral.send(peer, updateMsg);
     testObserver.awaitCount(1);
     testObserver.assertValue(
-        receivedMsg -> receivedMsg.getOrigin().getKey().equals(peer.getPublicKey()));
+        receivedMsg -> receivedMsg.origin().getKey().equals(peer.getPublicKey()));
   }
 
   private NodeId createPeer() {

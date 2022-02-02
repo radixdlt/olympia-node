@@ -64,7 +64,6 @@
 
 package com.radixdlt.network.p2p.liveness;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -118,14 +117,14 @@ public final class PeerLivenessMonitor {
   }
 
   private void pingPeer(PeersView.PeerInfo peerInfo) {
-    final var nodeId = peerInfo.getNodeId();
+    final var nodeId = peerInfo.nodeId();
 
     if (this.waitingForPong.contains(nodeId)) {
       return; // already pinged
     }
 
     this.waitingForPong.add(nodeId);
-    this.pingEventDispatcher.dispatch(BFTNode.create(nodeId.getPublicKey()), Ping.create());
+    this.pingEventDispatcher.dispatch(nodeId.asBFTNode(), Ping.create());
     this.pingTimeoutEventDispatcher.dispatch(PeerPingTimeout.create(nodeId), config.pingTimeout());
   }
 
@@ -143,6 +142,6 @@ public final class PeerLivenessMonitor {
   }
 
   public RemoteEventProcessor<Pong> pongRemoteEventProcessor() {
-    return (sender, pong) -> this.waitingForPong.remove(NodeId.fromPublicKey(sender.getKey()));
+    return (sender, pong) -> this.waitingForPong.remove(NodeId.fromBFTNode(sender));
   }
 }

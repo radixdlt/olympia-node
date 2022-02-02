@@ -72,7 +72,6 @@ import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.messaging.Message;
 import com.radixdlt.network.messaging.MessageCentral;
@@ -93,59 +92,44 @@ public class MessageCentralValidatorSync {
     this.hasher = Objects.requireNonNull(hasher);
   }
 
-  public RemoteEventDispatcher<GetVerticesRequest> verticesRequestDispatcher() {
-    return this::sendGetVerticesRequest;
-  }
-
-  public RemoteEventDispatcher<GetVerticesResponse> verticesResponseDispatcher() {
-    return this::sendGetVerticesResponse;
-  }
-
-  public RemoteEventDispatcher<GetVerticesErrorResponse> verticesErrorResponseDispatcher() {
-    return this::sendGetVerticesErrorResponse;
-  }
-
-  private void sendGetVerticesRequest(BFTNode node, GetVerticesRequest request) {
-    final GetVerticesRequestMessage vertexRequest =
+  public void sendGetVerticesRequest(BFTNode node, GetVerticesRequest request) {
+    final var vertexRequest =
         new GetVerticesRequestMessage(request.getVertexId(), request.getCount());
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), vertexRequest);
+    this.messageCentral.send(NodeId.fromBFTNode(node), vertexRequest);
   }
 
-  private void sendGetVerticesResponse(BFTNode node, GetVerticesResponse response) {
+  public void sendGetVerticesResponse(BFTNode node, GetVerticesResponse response) {
     var rawVertices = response.getVertices().stream().map(VerifiedVertex::toSerializable).toList();
     var msg = new GetVerticesResponseMessage(rawVertices);
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+    this.messageCentral.send(NodeId.fromBFTNode(node), msg);
   }
 
   public void sendGetVerticesErrorResponse(BFTNode node, GetVerticesErrorResponse response) {
     var request = response.request();
     var requestMsg = new GetVerticesRequestMessage(request.getVertexId(), request.getCount());
     var msg = new GetVerticesErrorResponseMessage(response.highQC(), requestMsg);
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+    this.messageCentral.send(NodeId.fromBFTNode(node), msg);
   }
 
   public Flowable<RemoteEvent<GetVerticesRequest>> requests() {
     return this.createFlowable(
         GetVerticesRequestMessage.class,
-        (peer, msg) -> {
-          final BFTNode node = BFTNode.create(peer.getPublicKey());
-          return RemoteEvent.create(
-              node, new GetVerticesRequest(msg.getVertexId(), msg.getCount()));
-        });
+        (peer, msg) ->
+            new RemoteEvent<>(
+                peer.asBFTNode(), new GetVerticesRequest(msg.getVertexId(), msg.getCount())));
   }
 
   public Flowable<RemoteEvent<GetVerticesResponse>> responses() {
     return this.createFlowable(
         GetVerticesResponseMessage.class,
         (src, msg) -> {
-          BFTNode node = BFTNode.create(src.getPublicKey());
           // TODO: Move hasher to a more appropriate place
-          ImmutableList<VerifiedVertex> hashedVertices =
+          var hashedVertices =
               msg.getVertices().stream()
                   .map(v -> new VerifiedVertex(v, hasher.hash(v)))
                   .collect(ImmutableList.toImmutableList());
 
-          return RemoteEvent.create(node, new GetVerticesResponse(hashedVertices));
+          return new RemoteEvent<>(src.asBFTNode(), new GetVerticesResponse(hashedVertices));
         });
   }
 
@@ -153,10 +137,11 @@ public class MessageCentralValidatorSync {
     return this.createFlowable(
         GetVerticesErrorResponseMessage.class,
         (src, msg) -> {
-          final var node = BFTNode.create(src.getPublicKey());
           final var request =
               new GetVerticesRequest(msg.request().getVertexId(), msg.request().getCount());
-          return RemoteEvent.create(node, new GetVerticesErrorResponse(msg.highQC(), request));
+
+          return new RemoteEvent<>(
+              src.asBFTNode(), new GetVerticesErrorResponse(msg.highQC(), request));
         });
   }
 
@@ -165,6 +150,6 @@ public class MessageCentralValidatorSync {
     return this.messageCentral
         .messagesOf(c)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(m -> mapper.apply(m.getSource(), m.getMessage()));
+        .map(m -> mapper.apply(m.source(), m.message()));
   }
 }

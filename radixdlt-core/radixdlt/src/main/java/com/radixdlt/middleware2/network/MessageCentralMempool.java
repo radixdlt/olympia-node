@@ -87,23 +87,18 @@ public final class MessageCentralMempool {
 
   public RemoteEventDispatcher<MempoolAdd> mempoolAddRemoteEventDispatcher() {
     return (receiver, msg) -> {
-      MempoolAddMessage message = MempoolAddMessage.from(msg.txns());
-      this.send(message, receiver);
+      this.send(receiver, MempoolAddMessage.from(msg.txns()));
     };
   }
 
-  private void send(Message message, BFTNode recipient) {
-    this.messageCentral.send(NodeId.fromPublicKey(recipient.getKey()), message);
+  private void send(BFTNode recipient, Message message) {
+    this.messageCentral.send(NodeId.fromBFTNode(recipient), message);
   }
 
   public Flowable<RemoteEvent<MempoolAdd>> mempoolComands() {
     return messageCentral
         .messagesOf(MempoolAddMessage.class)
-        .map(
-            msg -> {
-              final BFTNode node = BFTNode.create(msg.getSource().getPublicKey());
-              return RemoteEvent.create(node, MempoolAdd.create(msg.getMessage().getTxns()));
-            })
+        .map(msg -> new RemoteEvent<>(msg.sourceNode(), MempoolAdd.create(msg.message().getTxns())))
         .toFlowable(BackpressureStrategy.BUFFER);
   }
 }

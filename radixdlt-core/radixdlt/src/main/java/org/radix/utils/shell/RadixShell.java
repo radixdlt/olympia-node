@@ -309,11 +309,11 @@ public final class RadixShell {
     }
 
     public <T> void dispatchRemote(PeerChannel receiver, T t) {
-      dispatchRemote(BFTNode.create(receiver.getRemoteNodeId().getPublicKey()), t);
+      dispatchRemote(receiver.getRemoteNodeId().asBFTNode(), t);
     }
 
     public <T> void dispatchRemote(RadixNodeUri receiver, T t) {
-      dispatchRemote(BFTNode.create(receiver.getNodeId().getPublicKey()), t);
+      dispatchRemote(receiver.getNodeId().asBFTNode(), t);
     }
 
     public <T> Disposable onRemoteEvent(Class<T> eventClass, Consumer<RemoteEvent<T>> consumer) {

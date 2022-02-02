@@ -82,7 +82,7 @@ public class AllProposalsHaveDirectParentsInvariant implements TestInvariant {
     var correctProposals =
         network.getNodes().stream()
             .map(network.getUnderlyingNetwork()::getNetwork)
-            .map(net -> net.remoteEvents(ConsensusEvent.class).map(RemoteEvent::getEvent))
+            .map(net -> net.remoteEvents(ConsensusEvent.class).map(RemoteEvent::event))
             .map(p -> p.ofType(Proposal.class).toObservable().map(Proposal::getVertex))
             .toList();
 

@@ -178,6 +178,15 @@ public final class PeerManager {
         .findAny();
   }
 
+  public ImmutableSet<RadixNodeUri> activePeers() {
+    return this.activeChannels.values().stream()
+        .flatMap(Collection::stream)
+        .map(PeerChannel::getUri)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .collect(ImmutableSet.toImmutableSet());
+  }
+
   private CompletableFuture<PeerChannel> createAndVerifyProxyChannel(RadixNodeUri uri) {
     final var channelFuture = connect(uri);
     return channelFuture.thenCompose(

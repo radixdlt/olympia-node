@@ -87,7 +87,7 @@ public record P2PConfig(
 
   private static final Logger log = LogManager.getLogger();
 
-  public static record ChannelConfig(
+  public record ChannelConfig(
       boolean useProxyProtocol,
       int peerConnectionTimeout,
       int maxInboundChannels,
@@ -103,7 +103,7 @@ public record P2PConfig(
     }
   }
 
-  public static record NetworkConfig(String listenAddress, int listenPort, int broadcastPort) {
+  public record NetworkConfig(String listenAddress, int listenPort, int broadcastPort) {
     public static NetworkConfig fromRuntimeProperties(RuntimeProperties properties) {
       final var listenPort = properties.get("network.p2p.listen_port", 30000);
       return new NetworkConfig(
@@ -113,7 +113,7 @@ public record P2PConfig(
     }
   }
 
-  public static record PeerDiscoveryConfig(
+  public record PeerDiscoveryConfig(
       ImmutableList<String> seedNodes,
       int defaultPort,
       long discoveryInterval,
@@ -140,7 +140,7 @@ public record P2PConfig(
     }
   }
 
-  public static record PeerLivenessConfig(long peerLivenessCheckInterval, long pingTimeout) {
+  public record PeerLivenessConfig(long peerLivenessCheckInterval, long pingTimeout) {
     public static PeerLivenessConfig fromRuntimeProperties(RuntimeProperties properties) {
       return new PeerLivenessConfig(
           properties.get("network.p2p.peer_liveness_check_interval", 10000),
@@ -148,7 +148,7 @@ public record P2PConfig(
     }
   }
 
-  public static record ProxyConfig(
+  public record ProxyConfig(
       boolean proxyEnabled,
       boolean useProxies,
       ImmutableSet<NodeId> authorizedProxies,

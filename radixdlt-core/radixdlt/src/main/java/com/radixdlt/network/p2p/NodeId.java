@@ -66,6 +66,7 @@ package com.radixdlt.network.p2p;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import java.util.Objects;
@@ -82,12 +83,20 @@ public final class NodeId {
     return new NodeId(publicKey);
   }
 
+  public static NodeId fromBFTNode(BFTNode node) {
+    return new NodeId(node.getKey());
+  }
+
   private NodeId(ECPublicKey publicKey) {
     this.publicKey = Objects.requireNonNull(publicKey);
   }
 
   public ECPublicKey getPublicKey() {
     return publicKey;
+  }
+
+  public BFTNode asBFTNode() {
+    return BFTNode.create(publicKey);
   }
 
   @JsonValue
