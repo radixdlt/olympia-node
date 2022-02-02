@@ -169,8 +169,7 @@ public class TreeAPITest {
     String verbValue = "verb";
     tree = tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
 
-    var newTree =
-        new PMT(storage, storage.read(tree.getRootHash()), new Keccak256(), new RLPSerializer());
+    var newTree = new PMT(storage, tree.getRootHash(), new Keccak256(), new RLPSerializer());
 
     assertArrayEquals(
         "Tree does not have the right root hash", newTree.getRootHash(), tree.getRootHash());

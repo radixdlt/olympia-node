@@ -77,6 +77,9 @@ public class PMT {
 
   private static final Logger log = LogManager.getLogger();
 
+  private static final RLPSerializer RLP_SERIALIZER = new RLPSerializer();
+  private static final SHA256 SHA_256 = new SHA256();
+
   private final PMTStorage db;
   private final HashFunction hashFunction;
   private final PMTNodeSerializer pmtNodeSerializer;
@@ -95,11 +98,15 @@ public class PMT {
   // verify_proof
 
   public PMT(PMTStorage db) {
-    this(db, (byte[]) null, new SHA256(), new RLPSerializer());
+    this(db, null);
   }
 
-  public PMT(PMTStorage db, byte[] currentRoot) {
-    this(db, currentRoot, new SHA256(), new RLPSerializer());
+  public PMT(PMTStorage db, byte[] rootHash) {
+    this(
+        db,
+        rootHash == null ? null : RLP_SERIALIZER.deserialize(db.read(rootHash)),
+        SHA_256,
+        RLP_SERIALIZER);
   }
 
   public PMT(PMTStorage db, HashFunction hashFunction, PMTNodeSerializer pmtNodeSerializer) {
@@ -107,15 +114,18 @@ public class PMT {
   }
 
   public PMT(
-      PMTStorage db, byte[] root, HashFunction hashFunction, PMTNodeSerializer pmtNodeSerializer) {
+      PMTStorage db,
+      byte[] rootHash,
+      HashFunction hashFunction,
+      PMTNodeSerializer pmtNodeSerializer) {
     this(
         db,
-        root == null ? null : pmtNodeSerializer.deserialize(root),
+        rootHash == null ? null : pmtNodeSerializer.deserialize(db.read(rootHash)),
         hashFunction,
         pmtNodeSerializer);
   }
 
-  public PMT(
+  private PMT(
       PMTStorage db, PMTNode root, HashFunction hashFunction, PMTNodeSerializer pmtNodeSerializer) {
     this.db = db;
     this.root = root;

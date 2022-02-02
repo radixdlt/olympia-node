@@ -101,6 +101,8 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
 
   private PMTCache pmtCache;
 
+  private byte[] rootHash;
+
   private Stopwatch watch = Stopwatch.createUnstarted();
 
   @Override
@@ -128,6 +130,7 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
                     .setKeyPrefixing(true)
                     .setBtreeComparator(lexicographicalComparator()));
     this.pmtCache = new PMTCache(CACHE_MAXIMUM_SIZE);
+    this.rootHash = new BerkeleyStorage(this.subStateTreeDatabase, null).read(CURRENT_ROOT_KEY);
   }
 
   @Override
@@ -148,12 +151,10 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
     byte[] rootHash = new byte[0];
     BerkeleyStorage berkeleyStorage = new BerkeleyStorage(this.subStateTreeDatabase, dbTxn);
     CachedPMTStorage cachedPMTStorage = new CachedPMTStorage(berkeleyStorage, pmtCache);
-    var root = readCurrentSubStateRoot(berkeleyStorage);
-    var subStateTree = new SubStateTree(new PMT(cachedPMTStorage, root));
+    var subStateTree = new SubStateTree(new PMT(cachedPMTStorage, this.rootHash));
     for (REStateUpdate stateUpdate : txn.stateUpdates().toList()) {
       subStateTree =
           subStateTree.put(stateUpdate.getId(), SubStateTree.getValue(stateUpdate.isBootUp()));
-      persistCurrentSubStateRoot(berkeleyStorage, subStateTree.getRootHash());
       if (stateUpdate.getParsed() instanceof EpochData epochData) {
         if (stateUpdate.isBootUp()) {
           epoch = epochData.getEpoch();
@@ -161,6 +162,8 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
         isEpochChange = true;
       }
     }
+    persistCurrentSubStateRoot(berkeleyStorage, subStateTree.getRootHash());
+    this.rootHash = subStateTree.getRootHash();
 
     if (isEpochChange) {
       epochRootHashDatabase.put(
@@ -180,13 +183,13 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
     }
   }
 
-  public byte[] readCurrentSubStateRoot(BerkeleyStorage berkeleyStorage) {
-    byte[] rootHash = berkeleyStorage.read(CURRENT_ROOT_KEY);
-    return rootHash == null ? null : berkeleyStorage.read(rootHash);
+  private void persistCurrentSubStateRoot(BerkeleyStorage berkeleyStorage, byte[] rootHash) {
+    // This shouldn't be cached as it will get be stale eventually.
+    berkeleyStorage.save(CURRENT_ROOT_KEY, rootHash);
   }
 
-  private void persistCurrentSubStateRoot(BerkeleyStorage berkeleyStorage, byte[] rootHash) {
-    berkeleyStorage.save(CURRENT_ROOT_KEY, rootHash);
+  public byte[] getRootHash() {
+    return rootHash;
   }
 
   public Database getSubStateTreeDatabase() {
