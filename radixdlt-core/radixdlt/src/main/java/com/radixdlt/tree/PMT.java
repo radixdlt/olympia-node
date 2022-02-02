@@ -82,7 +82,7 @@ public class PMT {
   private final PMTNodeSerializer pmtNodeSerializer;
   private final byte[] emptyTreeHash;
 
-  private PMTNode root;
+  private final PMTNode root;
 
   // API:
   // add
