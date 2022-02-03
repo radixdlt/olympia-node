@@ -64,11 +64,7 @@
 
 package com.radixdlt.network.p2p;
 
-import static com.radixdlt.serialization.DsonOutput.*;
-
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECKeyPair;
-import java.util.Optional;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
@@ -90,20 +86,5 @@ public class PeerChannelInfoTest {
     var pubKey = ECKeyPair.generateNew().getPublicKey();
     var nodeUri = RadixNodeUri.fromPubKeyAndAddress(1, pubKey, "127.0.0.2", 30000);
     PeerChannelInfo.deserialize(NodeId.fromPublicKey(pubKey), nodeUri, null, 30000, true, true);
-  }
-
-  @Test
-  public void serialize() {
-    var serialization = DefaultSerialization.getInstance();
-
-    var pubKey = ECKeyPair.generateNew().getPublicKey();
-    var nodeUri = RadixNodeUri.fromPubKeyAndAddress(1, pubKey, "127.0.0.3", 30000);
-    var instance =
-        PeerChannelInfo.createProxied(
-            NodeId.fromPublicKey(pubKey), Optional.of(nodeUri), "127.0.0.3", 30000, true);
-
-    var result = serialization.toJson(instance, Output.ALL);
-
-    System.out.println(result);
   }
 }
