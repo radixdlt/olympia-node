@@ -76,6 +76,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.*;
 import com.radixdlt.network.hostip.HostIp;
+import com.radixdlt.network.p2p.P2PConfig.ProxyConfig;
 import com.radixdlt.network.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.addressbook.AddressBookPeerControl;
@@ -115,6 +116,7 @@ public final class P2PModule extends AbstractModule {
     bind(AddressBook.class).in(Scopes.SINGLETON);
     bind(PeerManagerPeersView.class).in(Scopes.SINGLETON);
     bind(ProxiedPeersView.class).in(Scopes.SINGLETON);
+    bind(ProxiedPeersViewService.class).in(Scopes.SINGLETON);
 
     bind(PeerControl.class).to(AddressBookPeerControl.class).in(Scopes.SINGLETON);
     bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class).in(Scopes.SINGLETON);
@@ -195,8 +197,12 @@ public final class P2PModule extends AbstractModule {
 
   @Provides
   public PeersView peersView(
-      PeerManagerPeersView peerManagerPeersView, ProxiedPeersView proxiedPeersView) {
-    return PeersView.combine(peerManagerPeersView, proxiedPeersView);
+      ProxyConfig proxyConfig,
+      PeerManagerPeersView peerManagerPeersView,
+      ProxiedPeersView proxiedPeersView) {
+    return proxyConfig.proxyEnabled()
+        ? PeersView.combine(peerManagerPeersView, proxiedPeersView)
+        : peerManagerPeersView;
   }
 
   @Provides
@@ -205,7 +211,7 @@ public final class P2PModule extends AbstractModule {
   }
 
   @Provides
-  public P2PConfig.ProxyConfig proxyConfig(P2PConfig config) {
+  public ProxyConfig proxyConfig(P2PConfig config) {
     return config.proxyConfig();
   }
 

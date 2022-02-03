@@ -98,6 +98,10 @@ public final class ProxiedPeersViewService {
   }
 
   private void distributePeerInfo() {
+    if (!proxyConfig.proxyEnabled()) {
+      return;
+    }
+
     var activePeers = new ProxiedPeers(peerManager.activePeers());
     var proxiedPeers =
         peerManager.activePeers().stream()
