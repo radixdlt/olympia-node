@@ -64,37 +64,27 @@
 
 package com.radixdlt.tree.storage;
 
+import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.radixdlt.tree.PMTNode;
-import java.time.Duration;
-import java.util.function.Function;
+import com.google.common.cache.CacheStats;
 
 public class PMTCache {
 
-  private final LoadingCache<ByteArrayWrapper, PMTNode> cache;
+  private final Cache<ByteArrayWrapper, byte[]> cache;
 
-  public PMTCache(
-      int maximumSize, Duration expireAfter, Function<byte[], ? extends PMTNode> loader) {
-    this.cache =
-        CacheBuilder.newBuilder()
-            .expireAfterAccess(expireAfter)
-            .maximumSize(maximumSize)
-            .build(
-                new CacheLoader<>() {
-                  @Override
-                  public PMTNode load(ByteArrayWrapper key) {
-                    return loader.apply(key.getData());
-                  }
-                });
+  public PMTCache(int maximumSize) {
+    this.cache = CacheBuilder.newBuilder().maximumSize(maximumSize).recordStats().build();
   }
 
-  public void put(byte[] key, PMTNode node) {
-    this.cache.put(ByteArrayWrapper.from(key), node);
+  public void put(byte[] key, byte[] serialisedNode) {
+    this.cache.put(ByteArrayWrapper.from(key), serialisedNode);
   }
 
-  public PMTNode get(byte[] key) {
-    return this.cache.getUnchecked(ByteArrayWrapper.from(key));
+  public byte[] get(byte[] key) {
+    return this.cache.getIfPresent(ByteArrayWrapper.from(key));
+  }
+
+  public CacheStats getStats() {
+    return this.cache.stats();
   }
 }

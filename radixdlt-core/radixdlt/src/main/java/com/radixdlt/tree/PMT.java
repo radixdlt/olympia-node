@@ -68,27 +68,28 @@ import com.radixdlt.tree.hash.HashFunction;
 import com.radixdlt.tree.hash.SHA256;
 import com.radixdlt.tree.serialization.PMTNodeSerializer;
 import com.radixdlt.tree.serialization.rlp.RLPSerializer;
-import com.radixdlt.tree.storage.PMTCache;
 import com.radixdlt.tree.storage.PMTStorage;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
+import com.radixdlt.utils.Pair;
+import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class PMT {
+public final class PMT {
 
   private static final Logger log = LogManager.getLogger();
-  public static final int CACHE_MAXIMUM_SIZE = 1000;
-  private static final byte[] CURRENT_ROOT_KEY =
-      "current_root_key".getBytes(StandardCharsets.UTF_8);
+
+  private static final RLPSerializer RLP_SERIALIZER = new RLPSerializer();
+  private static final SHA256 SHA_256 = new SHA256();
 
   private final PMTStorage db;
-  private final PMTCache cache;
   private final HashFunction hashFunction;
   private final PMTNodeSerializer pmtNodeSerializer;
   private final byte[] emptyTreeHash;
+
+  private final PMTNode root;
+  private final byte[] serializedRoot;
+  private final byte[] rootHash;
 
   // API:
   // add
@@ -101,16 +102,39 @@ public class PMT {
   // verify_proof
 
   public PMT(PMTStorage db) {
-    this(db, new SHA256(), new RLPSerializer(), Duration.of(10, ChronoUnit.MINUTES));
+    this(db, null);
+  }
+
+  public PMT(PMTStorage db, byte[] rootHash) {
+    this(
+        db,
+        rootHash == null ? null : RLP_SERIALIZER.deserialize(db.read(rootHash)),
+        SHA_256,
+        RLP_SERIALIZER);
+  }
+
+  public PMT(PMTStorage db, HashFunction hashFunction, PMTNodeSerializer pmtNodeSerializer) {
+    this(db, (byte[]) null, hashFunction, pmtNodeSerializer);
   }
 
   public PMT(
       PMTStorage db,
+      byte[] rootHash,
       HashFunction hashFunction,
-      PMTNodeSerializer pmtNodeSerializer,
-      Duration cacheExpiryAfter) {
+      PMTNodeSerializer pmtNodeSerializer) {
+    this(
+        db,
+        rootHash == null ? null : pmtNodeSerializer.deserialize(db.read(rootHash)),
+        hashFunction,
+        pmtNodeSerializer);
+  }
+
+  private PMT(
+      PMTStorage db, PMTNode root, HashFunction hashFunction, PMTNodeSerializer pmtNodeSerializer) {
     this.db = db;
-    this.cache = new PMTCache(CACHE_MAXIMUM_SIZE, cacheExpiryAfter, this::nodeLoader);
+    this.root = root;
+    this.serializedRoot = this.root == null ? null : pmtNodeSerializer.serialize(this.root);
+    this.rootHash = this.root == null ? null : hashFunction.hash(this.serializedRoot);
     this.hashFunction = hashFunction;
     this.pmtNodeSerializer = pmtNodeSerializer;
     this.emptyTreeHash = hashFunction.hash(pmtNodeSerializer.emptyTree());
@@ -136,18 +160,17 @@ public class PMT {
   }
 
   public byte[] get(byte[] key) {
-    var root = getRoot();
     var pmtKey = new PMTKey(PMTPath.intoNibbles(key));
 
-    if (root != null) {
+    if (this.root != null) {
       var acc = new PMTAcc();
-      root.getValue(pmtKey, acc, this::read);
+      this.root.getValue(pmtKey, acc, this::read);
       if (acc.notFound()) {
         if (log.isDebugEnabled()) {
           log.debug(
               "Not found key: {} for root: {}",
               TreeUtils.toHexString(key),
-              TreeUtils.toHexString(represent(root)));
+              TreeUtils.toHexString(represent(this.root)));
         }
         return new byte[0];
       } else {
@@ -161,71 +184,71 @@ public class PMT {
     }
   }
 
-  public byte[] add(byte[] key, byte[] val) {
-
-    final var root = getRoot();
+  public PMT addAll(List<Pair<byte[], byte[]>> values) {
+    byte[] key = new byte[0];
+    byte[] val = new byte[0];
     try {
-      var pmtKey = new PMTKey(PMTPath.intoNibbles(key));
-
-      if (root != null) {
-        var acc = new PMTAcc();
-        root.insertNode(pmtKey, val, acc, this::represent, this::read);
-        final var newRoot = acc.getTip();
-        acc.getNewNodes().stream()
-            .filter(Objects::nonNull)
-            .forEach(
-                sanitizedAcc -> {
-                  this.cache.put(represent(sanitizedAcc), sanitizedAcc);
-                  byte[] serialisedNode = this.pmtNodeSerializer.serialize(sanitizedAcc);
-                  if (sanitizedAcc == newRoot || hasDbRepresentation(serialisedNode)) {
-                    this.db.save(hash(serialisedNode), serialisedNode);
-                    if (sanitizedAcc == newRoot) {
-                      this.db.save(CURRENT_ROOT_KEY, serialisedNode);
-                    }
-                  }
-                });
-        return newRoot == null ? emptyTreeHash : hash(newRoot);
-      } else {
-        PMTNode nodeRoot = new PMTLeaf(pmtKey, val);
-        byte[] serialisedNodeRoot = this.pmtNodeSerializer.serialize(nodeRoot);
-        this.cache.put(represent(nodeRoot), nodeRoot);
-        this.db.save(hash(nodeRoot), serialisedNodeRoot);
-        this.db.save(CURRENT_ROOT_KEY, serialisedNodeRoot);
-        return hash(nodeRoot);
+      var pmt = this;
+      for (var entry : values) {
+        key = entry.getFirst();
+        val = entry.getSecond();
+        pmt = insertKeyValue(key, val, pmt);
       }
+      this.db.save(pmt.getRootHash(), pmt.serializedRoot);
+      return pmt;
     } catch (Exception e) {
-      log.error(
-          "PMT operation failure: {} for: {} {} {}",
-          e.getMessage(),
-          TreeUtils.toHexString(key),
-          TreeUtils.toHexString(val),
-          TreeUtils.toHexString(root == null ? emptyTreeHash : hash(root)));
-      throw e;
+      throw new IllegalStateException(
+          String.format(
+              "An unexpected error happened when inserting key %s and value %s in PMT with root"
+                  + " %s.",
+              TreeUtils.toHexString(key),
+              TreeUtils.toHexString(val),
+              TreeUtils.toHexString(this.root == null ? emptyTreeHash : hash(this.root))),
+          e);
     }
   }
 
-  public PMTNode getRoot() {
-    byte[] root = db.read(CURRENT_ROOT_KEY);
-    return root == null ? null : pmtNodeSerializer.deserialize(root);
+  private PMT insertKeyValue(byte[] key, byte[] val, PMT pmt) {
+    PMTNode newRoot;
+    var pmtKey = new PMTKey(PMTPath.intoNibbles(key));
+    if (pmt.root != null) {
+      var acc = new PMTAcc();
+      pmt.root.insertNode(pmtKey, val, acc, this::represent, this::read);
+      newRoot = acc.getTip();
+      if (newRoot == null) {
+        throw new IllegalStateException(
+            String.format(
+                "Unexpected null PMT root when inserting key %s and value %s",
+                TreeUtils.toHexString(key), TreeUtils.toHexString(val)));
+      }
+      for (PMTNode sanitizedAcc : acc.getNewNodes().stream().filter(Objects::nonNull).toList()) {
+        byte[] serialisedNode = this.pmtNodeSerializer.serialize(sanitizedAcc);
+        if (hasDbRepresentation(serialisedNode)) {
+          this.db.save(hash(serialisedNode), serialisedNode);
+        }
+      }
+    } else {
+      newRoot = new PMTLeaf(pmtKey, val);
+    }
+    return new PMT(this.db, newRoot, this.hashFunction, this.pmtNodeSerializer);
+  }
+
+  public PMT add(byte[] key, byte[] val) {
+    return this.addAll(List.of(Pair.of(key, val)));
   }
 
   public byte[] getRootHash() {
-    var root = getRoot();
-    return root == null ? emptyTreeHash : hash(root);
+    return this.root == null ? emptyTreeHash : this.rootHash;
   }
 
   private PMTNode read(byte[] key) {
-    return this.cache.get(key);
-  }
-
-  private PMTNode nodeLoader(byte[] key) {
-    byte[] node;
+    byte[] nodeBytes;
     if (hasDbRepresentation(key)) {
-      node = db.read(key);
+      nodeBytes = this.db.read(key);
     } else {
-      node = key;
+      nodeBytes = key;
     }
-    return pmtNodeSerializer.deserialize(node);
+    return pmtNodeSerializer.deserialize(nodeBytes);
   }
 
   private byte[] hash(byte[] serialized) {

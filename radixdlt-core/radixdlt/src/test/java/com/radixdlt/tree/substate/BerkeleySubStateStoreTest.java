@@ -88,6 +88,9 @@ import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.tree.PMT;
+import com.radixdlt.tree.storage.CachedPMTStorage;
+import com.radixdlt.tree.storage.PMTCache;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import com.sleepycat.je.Cursor;
@@ -109,6 +112,8 @@ public class BerkeleySubStateStoreTest {
   @Inject private BerkeleySubStateStoreSpy berkeleySubStateStore;
   private final Amount totalTokenAmount = Amount.ofTokens(110);
   private final Amount stakeAmount = Amount.ofTokens(10);
+
+  public static final int CACHE_MAXIMUM_SIZE = 1_000;
 
   @Before
   public void setup() {
@@ -151,8 +156,11 @@ public class BerkeleySubStateStoreTest {
       when_substate_store_process_state_updates__then_tree_must_contain_the_latest_state_of_each_substate() {
     runner.start();
 
-    SubStateTree subStateTree =
-        new SubStateTree(this.berkeleySubStateStore.getSubstateTreeDatabase(), null);
+    var berkeleyStorage =
+        new BerkeleyStorage(this.berkeleySubStateStore.getSubStateTreeDatabase(), null);
+    var cachedStorage = new CachedPMTStorage(berkeleyStorage, new PMTCache(CACHE_MAXIMUM_SIZE));
+    var pmt = new PMT(cachedStorage, this.berkeleySubStateStore.getRootHash());
+    SubStateTree subStateTree = new SubStateTree(pmt);
     for (REStateUpdate rEStateUpdate : this.berkeleySubStateStore.getREStateUpdateList()) {
       byte[] value = subStateTree.get(rEStateUpdate.getId());
       Assert.assertArrayEquals(SubStateTree.getValue(rEStateUpdate.isBootUp()), value);
