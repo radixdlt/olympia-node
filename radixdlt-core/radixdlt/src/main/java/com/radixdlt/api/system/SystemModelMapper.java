@@ -206,11 +206,11 @@ public final class SystemModelMapper {
   }
 
   public Peer peer(PeersView.PeerInfo peerInfo) {
-    var peerId = addressing.forNodes().of(peerInfo.getNodeId().getPublicKey());
+    var peerId = addressing.forNodes().of(peerInfo.nodeId().getPublicKey());
     var peer = new Peer().peerId(peerId);
 
     peerInfo
-        .getChannels()
+        .channels()
         .forEach(
             channel -> {
               var peerChannel =

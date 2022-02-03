@@ -91,7 +91,7 @@ public class MessageCentralMockProvider {
     doAnswer(
             invocation ->
                 messageProcessor.filter(
-                    p -> ((Class<?>) invocation.getArgument(0)).isInstance(p.getMessage())))
+                    p -> ((Class<?>) invocation.getArgument(0)).isInstance(p.message())))
         .when(messageCentral)
         .messagesOf(any());
 

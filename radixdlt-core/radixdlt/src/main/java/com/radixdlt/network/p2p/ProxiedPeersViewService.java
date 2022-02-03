@@ -62,66 +62,58 @@
  * permissions under this License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.network.p2p;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.network.messaging.Message;
-import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageFromPeer;
-import com.radixdlt.network.p2p.NodeId;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
-import io.reactivex.rxjava3.core.Flowable;
-import java.util.Objects;
+import com.radixdlt.network.p2p.P2PConfig.ProxyConfig;
+import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
+import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
+import com.radixdlt.network.p2p.discovery.ProxiedPeers;
 
-/** BFT Network sending and receiving layer used on top of the MessageCentral layer. */
-public final class MessageCentralBFTNetwork {
-  private final MessageCentral messageCentral;
+public final class ProxiedPeersViewService {
+  private final PeerManager peerManager;
+  private final ProxyConfig proxyConfig;
+  private final RemoteEventDispatcher<ProxiedPeers> proxiedPeersDispatcher;
 
   @Inject
-  public MessageCentralBFTNetwork(MessageCentral messageCentral) {
-    this.messageCentral = Objects.requireNonNull(messageCentral);
+  public ProxiedPeersViewService(
+      PeerManager peerManager,
+      ProxyConfig proxyConfig,
+      RemoteEventDispatcher<ProxiedPeers> proxiedPeersDispatcher) {
+    this.peerManager = peerManager;
+    this.proxyConfig = proxyConfig;
+    this.proxiedPeersDispatcher = proxiedPeersDispatcher;
   }
 
-  public Flowable<RemoteEvent<Vote>> remoteVotes() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Vote)
-        .map(m -> new RemoteEvent<>(m.sourceNode(), (Vote) m.message().getConsensusMessage()));
+  public EventProcessor<PeerEvent> peerEventProcessor() {
+    return this::eventProcessor;
   }
 
-  public Flowable<RemoteEvent<Proposal>> remoteProposals() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Proposal)
-        .map(m -> new RemoteEvent<>(m.sourceNode(), (Proposal) m.message().getConsensusMessage()));
+  private void eventProcessor(PeerEvent peerEvent) {
+    if (peerEvent instanceof PeerConnected || peerEvent instanceof PeerDisconnected) {
+      distributePeerInfo();
+    }
   }
 
-  private Flowable<MessageFromPeer<ConsensusEventMessage>> remoteBftEvents() {
-    return this.messageCentral
-        .messagesOf(ConsensusEventMessage.class)
-        .toFlowable(BackpressureStrategy.BUFFER);
+  private void distributePeerInfo() {
+    if (!proxyConfig.proxyEnabled()) {
+      return;
+    }
+
+    var activePeers = new ProxiedPeers(peerManager.activePeers());
+    var proxiedPeers =
+        peerManager.activePeers().stream()
+            .filter(this::isAuthorizedProxiedNode)
+            .map(PeerChannelInfo::getNode)
+            .toList();
+
+    proxiedPeersDispatcher.dispatch(proxiedPeers, activePeers);
   }
 
-  public RemoteEventDispatcher<Proposal> proposalDispatcher() {
-    return this::sendProposal;
-  }
-
-  private void sendProposal(BFTNode receiver, Proposal proposal) {
-    send(receiver, new ConsensusEventMessage(proposal));
-  }
-
-  public RemoteEventDispatcher<Vote> voteDispatcher() {
-    return this::sendVote;
-  }
-
-  private void sendVote(BFTNode receiver, Vote vote) {
-    send(receiver, new ConsensusEventMessage(vote));
-  }
-
-  private void send(BFTNode recipient, Message message) {
-    this.messageCentral.send(NodeId.fromBFTNode(recipient), message);
+  private boolean isAuthorizedProxiedNode(PeerChannelInfo peerChannelInfo) {
+    return proxyConfig.proxyEnabled()
+        && proxyConfig.authorizedProxiedPeers().contains(peerChannelInfo.getNodeId());
   }
 }

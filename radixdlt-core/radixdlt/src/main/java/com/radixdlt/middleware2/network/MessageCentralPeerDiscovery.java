@@ -91,31 +91,22 @@ public final class MessageCentralPeerDiscovery {
     return this.messageCentral
         .messagesOf(GetPeersMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(
-            m -> {
-              final var node = BFTNode.create(m.getSource().getPublicKey());
-              return RemoteEvent.create(node, GetPeers.create());
-            });
+        .map(m -> new RemoteEvent<>(m.sourceNode(), GetPeers.create()));
   }
 
   public Flowable<RemoteEvent<PeersResponse>> peersResponses() {
     return this.messageCentral
         .messagesOf(PeersResponseMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(
-            m -> {
-              final var node = BFTNode.create(m.getSource().getPublicKey());
-              return RemoteEvent.create(node, PeersResponse.create(m.getMessage().getPeers()));
-            });
+        .map(m -> new RemoteEvent<>(m.sourceNode(), new PeersResponse(m.message().getPeers())));
   }
 
   public RemoteEventDispatcher<GetPeers> getPeersDispatcher() {
     return this::sendGetPeers;
   }
 
-  private void sendGetPeers(BFTNode node, GetPeers getPeers) {
-    final var msg = new GetPeersMessage();
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+  private void sendGetPeers(BFTNode node, GetPeers ignoredGetPeers) {
+    this.messageCentral.send(NodeId.fromBFTNode(node), new GetPeersMessage());
   }
 
   public RemoteEventDispatcher<PeersResponse> peersResponseDispatcher() {
@@ -123,7 +114,7 @@ public final class MessageCentralPeerDiscovery {
   }
 
   private void sendPeersResponse(BFTNode node, PeersResponse peersResponse) {
-    final var msg = new PeersResponseMessage(peersResponse.getPeers());
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+    this.messageCentral.send(
+        NodeId.fromBFTNode(node), new PeersResponseMessage(peersResponse.peers()));
   }
 }

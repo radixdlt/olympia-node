@@ -92,19 +92,10 @@ public final class MessageCentralPeerProxy {
         .messagesOf(GrantedProxyCertificateMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
-            m -> {
-              final var node = BFTNode.create(m.getSource().getPublicKey());
-              return RemoteEvent.create(
-                  node, new GrantedProxyCertificate(m.getMessage().getProxyCertificate()));
-            });
-  }
-
-  public RemoteEventDispatcher<GrantedProxyCertificate> grantedProxyCertificateDispatcher() {
-    return (node, grantedProxyCertificate) -> {
-      final var msg =
-          new GrantedProxyCertificateMessage(grantedProxyCertificate.proxyCertificate());
-      this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
-    };
+            m ->
+                new RemoteEvent<>(
+                    m.sourceNode(),
+                    new GrantedProxyCertificate(m.message().getProxyCertificate())));
   }
 
   public Flowable<RemoteEvent<ProxyCertificatesAnnouncement>> proxyCertificatesAnnouncements() {
@@ -113,19 +104,28 @@ public final class MessageCentralPeerProxy {
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
-              final var node = BFTNode.create(m.getSource().getPublicKey());
-              return RemoteEvent.create(
-                  node, new ProxyCertificatesAnnouncement(m.getMessage().getProxyCertificates()));
+              var msg = new ProxyCertificatesAnnouncement(m.message().getProxyCertificates());
+              return new RemoteEvent<>(m.sourceNode(), msg);
             });
+  }
+
+  public RemoteEventDispatcher<GrantedProxyCertificate> grantedProxyCertificateDispatcher() {
+    return this::sendGrantedProxyCertificate;
+  }
+
+  private void sendGrantedProxyCertificate(BFTNode node, GrantedProxyCertificate certificate) {
+    final var msg = new GrantedProxyCertificateMessage(certificate.proxyCertificate());
+    this.messageCentral.send(NodeId.fromBFTNode(node), msg);
   }
 
   public RemoteEventDispatcher<ProxyCertificatesAnnouncement>
       proxyCertificatesAnnouncementDispatcher() {
-    return (node, proxyCertificatesAnnouncement) -> {
-      final var msg =
-          new ProxyCertificatesAnnouncementMessage(
-              proxyCertificatesAnnouncement.proxyCertificates());
-      this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
-    };
+    return this::sendCertificatesAnnouncement;
+  }
+
+  private void sendCertificatesAnnouncement(
+      BFTNode node, ProxyCertificatesAnnouncement announcement) {
+    final var msg = new ProxyCertificatesAnnouncementMessage(announcement.proxyCertificates());
+    this.messageCentral.send(NodeId.fromBFTNode(node), msg);
   }
 }

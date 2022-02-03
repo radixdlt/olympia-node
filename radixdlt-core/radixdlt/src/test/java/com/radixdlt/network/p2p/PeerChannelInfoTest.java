@@ -62,66 +62,29 @@
  * permissions under this License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.network.p2p;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.network.messaging.Message;
-import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageFromPeer;
-import com.radixdlt.network.p2p.NodeId;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
-import io.reactivex.rxjava3.core.Flowable;
-import java.util.Objects;
+import com.radixdlt.crypto.ECKeyPair;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/** BFT Network sending and receiving layer used on top of the MessageCentral layer. */
-public final class MessageCentralBFTNetwork {
-  private final MessageCentral messageCentral;
-
-  @Inject
-  public MessageCentralBFTNetwork(MessageCentral messageCentral) {
-    this.messageCentral = Objects.requireNonNull(messageCentral);
+public class PeerChannelInfoTest {
+  @Test
+  public void equals_test() {
+    EqualsVerifier.forClass(PeerChannelInfo.class).verify();
   }
 
-  public Flowable<RemoteEvent<Vote>> remoteVotes() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Vote)
-        .map(m -> new RemoteEvent<>(m.sourceNode(), (Vote) m.message().getConsensusMessage()));
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException1() throws Exception {
+    var pubKey = ECKeyPair.generateNew().getPublicKey();
+    var nodeUri = RadixNodeUri.fromPubKeyAndAddress(1, pubKey, "127.0.0.2", 30000);
+    PeerChannelInfo.deserialize(null, nodeUri, "127.0.0.2", 30000, true, true);
   }
 
-  public Flowable<RemoteEvent<Proposal>> remoteProposals() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Proposal)
-        .map(m -> new RemoteEvent<>(m.sourceNode(), (Proposal) m.message().getConsensusMessage()));
-  }
-
-  private Flowable<MessageFromPeer<ConsensusEventMessage>> remoteBftEvents() {
-    return this.messageCentral
-        .messagesOf(ConsensusEventMessage.class)
-        .toFlowable(BackpressureStrategy.BUFFER);
-  }
-
-  public RemoteEventDispatcher<Proposal> proposalDispatcher() {
-    return this::sendProposal;
-  }
-
-  private void sendProposal(BFTNode receiver, Proposal proposal) {
-    send(receiver, new ConsensusEventMessage(proposal));
-  }
-
-  public RemoteEventDispatcher<Vote> voteDispatcher() {
-    return this::sendVote;
-  }
-
-  private void sendVote(BFTNode receiver, Vote vote) {
-    send(receiver, new ConsensusEventMessage(vote));
-  }
-
-  private void send(BFTNode recipient, Message message) {
-    this.messageCentral.send(NodeId.fromBFTNode(recipient), message);
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException2() throws Exception {
+    var pubKey = ECKeyPair.generateNew().getPublicKey();
+    var nodeUri = RadixNodeUri.fromPubKeyAndAddress(1, pubKey, "127.0.0.2", 30000);
+    PeerChannelInfo.deserialize(NodeId.fromPublicKey(pubKey), nodeUri, null, 30000, true, true);
   }
 }

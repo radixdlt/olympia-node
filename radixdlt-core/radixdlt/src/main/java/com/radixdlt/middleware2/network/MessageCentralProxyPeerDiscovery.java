@@ -64,64 +64,40 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.network.messaging.Message;
 import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageFromPeer;
 import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.discovery.ProxiedPeers;
+import com.radixdlt.network.p2p.discovery.messages.ProxiedPeersMessage;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import java.util.Objects;
+import javax.inject.Inject;
 
-/** BFT Network sending and receiving layer used on top of the MessageCentral layer. */
-public final class MessageCentralBFTNetwork {
+/** Network interface for peer discovery messages the MessageCentral */
+public final class MessageCentralProxyPeerDiscovery {
   private final MessageCentral messageCentral;
 
   @Inject
-  public MessageCentralBFTNetwork(MessageCentral messageCentral) {
+  public MessageCentralProxyPeerDiscovery(MessageCentral messageCentral) {
     this.messageCentral = Objects.requireNonNull(messageCentral);
   }
 
-  public Flowable<RemoteEvent<Vote>> remoteVotes() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Vote)
-        .map(m -> new RemoteEvent<>(m.sourceNode(), (Vote) m.message().getConsensusMessage()));
-  }
-
-  public Flowable<RemoteEvent<Proposal>> remoteProposals() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Proposal)
-        .map(m -> new RemoteEvent<>(m.sourceNode(), (Proposal) m.message().getConsensusMessage()));
-  }
-
-  private Flowable<MessageFromPeer<ConsensusEventMessage>> remoteBftEvents() {
+  public Flowable<RemoteEvent<ProxiedPeers>> proxiedPeersResponses() {
     return this.messageCentral
-        .messagesOf(ConsensusEventMessage.class)
-        .toFlowable(BackpressureStrategy.BUFFER);
+        .messagesOf(ProxiedPeersMessage.class)
+        .toFlowable(BackpressureStrategy.BUFFER)
+        .map(m -> new RemoteEvent<>(m.sourceNode(), new ProxiedPeers(m.message().getPeers())));
   }
 
-  public RemoteEventDispatcher<Proposal> proposalDispatcher() {
-    return this::sendProposal;
+  public RemoteEventDispatcher<ProxiedPeers> proxiedPeersDispatcher() {
+    return this::sendProxiedPeersResponse;
   }
 
-  private void sendProposal(BFTNode receiver, Proposal proposal) {
-    send(receiver, new ConsensusEventMessage(proposal));
-  }
-
-  public RemoteEventDispatcher<Vote> voteDispatcher() {
-    return this::sendVote;
-  }
-
-  private void sendVote(BFTNode receiver, Vote vote) {
-    send(receiver, new ConsensusEventMessage(vote));
-  }
-
-  private void send(BFTNode recipient, Message message) {
-    this.messageCentral.send(NodeId.fromBFTNode(recipient), message);
+  private void sendProxiedPeersResponse(BFTNode node, ProxiedPeers proxiedPeers) {
+    this.messageCentral.send(
+        NodeId.fromBFTNode(node), new ProxiedPeersMessage(proxiedPeers.peers()));
   }
 }

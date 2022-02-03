@@ -64,6 +64,7 @@
 
 package com.radixdlt.network.p2p.discovery;
 
+import static com.radixdlt.utils.TypedMocks.cmock;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -76,6 +77,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
@@ -124,7 +126,7 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
 
     final var unexpectedSender = BFTNode.random();
     final var peersResponse =
-        PeersResponse.create(
+        new PeersResponse(
             ImmutableSet.of(
                 RadixNodeUri.fromPubKeyAndAddress(
                     0, ECKeyPair.generateNew().getPublicKey(), "127.0.0.1", 1234)));
@@ -139,7 +141,7 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
     assertTrue(
         testNetworkRunner
             .addressBook(0)
-            .findById(NodeId.fromPublicKey(unexpectedSender.getKey()))
+            .findById(NodeId.fromBFTNode(unexpectedSender))
             .get()
             .isBanned());
   }
@@ -152,8 +154,8 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
 
     final var config = mock(P2PConfig.class);
     final var addressBook = mock(AddressBook.class);
-    final RemoteEventDispatcher<PeersResponse> peersResponseDispatcher =
-        rmock(RemoteEventDispatcher.class);
+    final var peersResponseDispatcher =
+        cmock(new TypeLiteral<RemoteEventDispatcher<PeersResponse>>() {});
 
     final var sut =
         new PeerDiscovery(
@@ -192,8 +194,8 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
             (BFTNode) any(),
             argThat(
                 response ->
-                    response.getPeers().containsAll(Set.of(peer1, peer2, peer4, peer5, peer6))
-                        && !response.getPeers().contains(peer3)));
+                    response.peers().containsAll(Set.of(peer1, peer2, peer4, peer5, peer6))
+                        && !response.peers().contains(peer3)));
   }
 
   private RadixNodeUri randomNodeUri() {

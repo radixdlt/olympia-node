@@ -120,7 +120,8 @@ public class SimulationNetwork {
 
     public <T> Maybe<RemoteEvent<T>> remoteEvent(Class<T> eventClass) {
       if (!sender.equals(receiver) && eventClass.isInstance(content)) {
-        return Maybe.just(RemoteEvent.create(sender, eventClass.cast(content)));
+
+        return Maybe.just(new RemoteEvent<T>(sender, eventClass.cast(content)));
       }
 
       return Maybe.empty();

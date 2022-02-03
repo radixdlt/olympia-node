@@ -66,117 +66,27 @@ package com.radixdlt.network.p2p;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.BFTNode;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 /** Retrieve the node's current peers */
 public interface PeersView {
 
-  final class PeerChannelInfo {
-    private Optional<RadixNodeUri> uri;
-    private String host;
-    private int port;
-    private boolean isOutbound;
-
-    public static PeerChannelInfo create(
-        Optional<RadixNodeUri> uri, String host, int port, boolean isOutbound) {
-      return new PeerChannelInfo(uri, host, port, isOutbound);
-    }
-
-    private PeerChannelInfo(Optional<RadixNodeUri> uri, String host, int port, boolean isOutbound) {
-      this.uri = uri;
-      this.host = host;
-      this.port = port;
-      this.isOutbound = isOutbound;
-    }
-
-    public Optional<RadixNodeUri> getUri() {
-      return uri;
-    }
-
-    public String getHost() {
-      return host;
-    }
-
-    public int getPort() {
-      return port;
-    }
-
-    public boolean isOutbound() {
-      return isOutbound;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      final var other = (PeerChannelInfo) o;
-      return Objects.equals(uri, other.uri)
-          && Objects.equals(host, other.host)
-          && port == other.port
-          && Objects.equals(isOutbound, other.isOutbound);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(uri, host, port, isOutbound);
-    }
+  /** Build composite PeersView instance */
+  static PeersView combine(PeersView first, PeersView second) {
+    return () -> Stream.concat(first.peers(), second.peers());
   }
 
-  final class PeerInfo {
-    private NodeId nodeId;
-    private ImmutableList<PeerChannelInfo> channels;
-
+  record PeerInfo(NodeId nodeId, ImmutableList<PeerChannelInfo> channels) {
     public static PeerInfo fromBftNode(BFTNode bftNode) {
-      return new PeerInfo(NodeId.fromPublicKey(bftNode.getKey()), ImmutableList.of());
+      return new PeerInfo(NodeId.fromBFTNode(bftNode), ImmutableList.of());
     }
 
-    public static PeerInfo create(NodeId nodeId, ImmutableList<PeerChannelInfo> channels) {
-      return new PeerInfo(nodeId, channels);
-    }
-
-    private PeerInfo(NodeId nodeId, ImmutableList<PeerChannelInfo> channels) {
-      this.nodeId = nodeId;
-      this.channels = channels;
-    }
-
-    public NodeId getNodeId() {
-      return nodeId;
-    }
-
-    public ImmutableList<PeerChannelInfo> getChannels() {
-      return channels;
+    public static PeerInfo fromNodeId(NodeId nodeId) {
+      return new PeerInfo(nodeId, ImmutableList.of());
     }
 
     public BFTNode bftNode() {
-      return BFTNode.create(nodeId.getPublicKey());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      final var other = (PeerInfo) o;
-      return Objects.equals(nodeId, other.nodeId) && Objects.equals(channels, other.channels);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(nodeId, channels);
-    }
-
-    @Override
-    public String toString() {
-      return String.format("%s{%s}", this.getClass().getSimpleName(), this.nodeId);
+      return nodeId.asBFTNode();
     }
   }
 

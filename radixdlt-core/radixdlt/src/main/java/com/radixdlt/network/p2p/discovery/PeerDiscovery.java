@@ -67,7 +67,6 @@ package com.radixdlt.network.p2p.discovery;
 import static java.util.function.Predicate.not;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -147,7 +146,7 @@ public final class PeerDiscovery {
               peer -> {
                 peersAsked.add(peer.getRemoteNodeId());
                 getPeersRemoteEventDispatcher.dispatch(
-                    BFTNode.create(peer.getRemoteNodeId().getPublicKey()), GetPeers.create());
+                    peer.getRemoteNodeId().asBFTNode(), GetPeers.create());
               });
 
       this.tryConnectToSomeKnownPeers();
@@ -168,7 +167,7 @@ public final class PeerDiscovery {
 
   public RemoteEventProcessor<PeersResponse> peersResponseRemoteEventProcessor() {
     return (sender, peersResponse) -> {
-      final var senderNodeId = NodeId.fromPublicKey(sender.getKey());
+      final var senderNodeId = NodeId.fromBFTNode(sender);
       if (!peersAsked.contains(senderNodeId)) {
         log.warn("Received unexpected peers response from {}", senderNodeId);
         this.peerControl.banPeer(senderNodeId, Duration.ofMinutes(15), "Unexpected peers response");
@@ -177,7 +176,7 @@ public final class PeerDiscovery {
 
       this.peersAsked.remove(senderNodeId);
       final var peersUpToLimit =
-          peersResponse.getPeers().stream()
+          peersResponse.peers().stream()
               .limit(MAX_PEERS_IN_RESPONSE)
               .collect(ImmutableSet.toImmutableSet());
       this.addressBook.addUncheckedPeers(peersUpToLimit);
@@ -188,11 +187,11 @@ public final class PeerDiscovery {
     return (sender, unused) -> {
       final var peers =
           Stream.concat(Stream.of(selfUri), this.addressBook.bestCandidatesToConnect())
-              .filter(uri -> shouldExposePeerUri(NodeId.fromPublicKey(sender.getKey()), uri))
+              .filter(uri -> shouldExposePeerUri(NodeId.fromBFTNode(sender), uri))
               .limit(MAX_PEERS_IN_RESPONSE - 1)
               .collect(ImmutableSet.toImmutableSet());
 
-      peersResponseRemoteEventDispatcher.dispatch(sender, PeersResponse.create(peers));
+      peersResponseRemoteEventDispatcher.dispatch(sender, new PeersResponse(peers));
     };
   }
 

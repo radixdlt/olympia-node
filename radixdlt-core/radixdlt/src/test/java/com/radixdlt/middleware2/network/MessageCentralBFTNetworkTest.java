@@ -96,6 +96,7 @@ public class MessageCentralBFTNetworkTest {
     when(leader.getKey()).thenReturn(leaderPk);
 
     network.voteDispatcher().dispatch(leader, vote);
+
     verify(messageCentral, times(1))
         .send(eq(NodeId.fromPublicKey(leaderPk)), any(ConsensusEventMessage.class));
   }

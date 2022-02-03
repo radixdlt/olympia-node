@@ -90,7 +90,6 @@ import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.utils.RandomHasher;
-import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -103,8 +102,10 @@ public class MessageCentralValidatorSyncTest {
   @Before
   public void setUp() {
     this.self = mock(BFTNode.class);
-    ECPublicKey pubKey = mock(ECPublicKey.class);
+    var pubKey = mock(ECPublicKey.class);
+
     when(self.getKey()).thenReturn(pubKey);
+
     this.messageCentral = MessageCentralMockProvider.get();
     this.hasher = new RandomHasher();
     this.sync = new MessageCentralValidatorSync(messageCentral, hasher);
@@ -112,12 +113,15 @@ public class MessageCentralValidatorSyncTest {
 
   @Test
   public void when_send_response__then_message_central_will_send_response() {
-    VerifiedVertex vertex = mock(VerifiedVertex.class);
-    when(vertex.toSerializable()).thenReturn(mock(UnverifiedVertex.class));
-    ImmutableList<VerifiedVertex> vertices = ImmutableList.of(vertex);
+    var vertex = mock(VerifiedVertex.class);
 
-    BFTNode node = mock(BFTNode.class);
-    ECPublicKey ecPublicKey = mock(ECPublicKey.class);
+    when(vertex.toSerializable()).thenReturn(mock(UnverifiedVertex.class));
+
+    var vertices = ImmutableList.of(vertex);
+
+    var node = mock(BFTNode.class);
+    var ecPublicKey = mock(ECPublicKey.class);
+
     when(node.getKey()).thenReturn(ecPublicKey);
 
     sync.verticesResponseDispatcher().dispatch(node, new GetVerticesResponse(vertices));
@@ -126,12 +130,15 @@ public class MessageCentralValidatorSyncTest {
 
   @Test
   public void when_send_error_response__then_message_central_will_send_error_response() {
-    QuorumCertificate qc = mock(QuorumCertificate.class);
-    HighQC highQC = mock(HighQC.class);
+    var qc = mock(QuorumCertificate.class);
+    var highQC = mock(HighQC.class);
+
     when(highQC.highestQC()).thenReturn(qc);
     when(highQC.highestCommittedQC()).thenReturn(qc);
-    BFTNode node = mock(BFTNode.class);
-    ECPublicKey ecPublicKey = mock(ECPublicKey.class);
+
+    var node = mock(BFTNode.class);
+    var ecPublicKey = mock(ECPublicKey.class);
+
     when(node.getKey()).thenReturn(ecPublicKey);
     final var request = new GetVerticesRequest(HashUtils.random256(), 3);
 
@@ -144,12 +151,12 @@ public class MessageCentralValidatorSyncTest {
 
   @Test
   public void when_subscribed_to_rpc_requests__then_should_receive_requests() {
-    HashCode vertexId0 = mock(HashCode.class);
-    HashCode vertexId1 = mock(HashCode.class);
+    var vertexId0 = mock(HashCode.class);
+    var vertexId1 = mock(HashCode.class);
 
     final var peer = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
-    TestSubscriber<GetVerticesRequest> testObserver =
-        sync.requests().map(RemoteEvent::getEvent).test();
+    var testObserver = sync.requests().map(RemoteEvent::event).test();
+
     messageCentral.send(peer, new GetVerticesRequestMessage(vertexId0, 1));
     messageCentral.send(peer, new GetVerticesRequestMessage(vertexId1, 1));
 

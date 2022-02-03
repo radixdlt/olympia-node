@@ -137,18 +137,14 @@ public class PeerLivenessMonitorTest {
     verify(pingEventDispatcher, times(1)).dispatch(eq(peer1), any());
     verify(pingTimeoutEventDispatcher, times(1)).dispatch(any(), anyLong());
 
-    this.sut
-        .pingTimeoutEventProcessor()
-        .process(PeerPingTimeout.create(NodeId.fromPublicKey(peer1.getKey())));
+    this.sut.pingTimeoutEventProcessor().process(PeerPingTimeout.create(NodeId.fromBFTNode(peer1)));
 
     verify(peerEventDispatcher, times(1))
         .dispatch(
             argThat(
                 arg ->
                     arg instanceof PeerLostLiveness
-                        && ((PeerLostLiveness) arg)
-                            .nodeId()
-                            .equals(NodeId.fromPublicKey(peer1.getKey()))));
+                        && ((PeerLostLiveness) arg).nodeId().equals(NodeId.fromBFTNode(peer1))));
   }
 
   @Test
@@ -162,9 +158,7 @@ public class PeerLivenessMonitorTest {
     verify(pingTimeoutEventDispatcher, times(1)).dispatch(any(), anyLong());
 
     this.sut.pongRemoteEventProcessor().process(peer1, Pong.create());
-    this.sut
-        .pingTimeoutEventProcessor()
-        .process(PeerPingTimeout.create(NodeId.fromPublicKey(peer1.getKey())));
+    this.sut.pingTimeoutEventProcessor().process(PeerPingTimeout.create(NodeId.fromBFTNode(peer1)));
 
     verifyNoInteractions(peerEventDispatcher);
   }

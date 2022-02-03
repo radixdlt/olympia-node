@@ -62,66 +62,143 @@
  * permissions under this License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.network.p2p;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
+import static com.radixdlt.serialization.DsonOutput.*;
+import static java.util.Objects.requireNonNull;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.network.messaging.Message;
-import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageFromPeer;
-import com.radixdlt.network.p2p.NodeId;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
-import io.reactivex.rxjava3.core.Flowable;
+import com.radixdlt.network.p2p.transport.PeerChannel;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
+import java.util.Optional;
+import javax.annotation.concurrent.Immutable;
 
-/** BFT Network sending and receiving layer used on top of the MessageCentral layer. */
-public final class MessageCentralBFTNetwork {
-  private final MessageCentral messageCentral;
+@Immutable
+@SerializerId2("p2p.discovery.peer_channel_info")
+public final class PeerChannelInfo {
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+  SerializerDummy serializer = SerializerDummy.DUMMY;
 
-  @Inject
-  public MessageCentralBFTNetwork(MessageCentral messageCentral) {
-    this.messageCentral = Objects.requireNonNull(messageCentral);
+  @JsonProperty("nodeId")
+  @DsonOutput(Output.ALL)
+  private final NodeId nodeId;
+
+  @JsonProperty("uri")
+  @DsonOutput(Output.ALL)
+  private final RadixNodeUri uri;
+
+  @JsonProperty("host")
+  @DsonOutput(Output.ALL)
+  private final String host;
+
+  @JsonProperty("port")
+  @DsonOutput(Output.ALL)
+  private final int port;
+
+  @JsonProperty("outbound")
+  @DsonOutput(Output.ALL)
+  private final boolean isOutbound;
+
+  @JsonProperty("proxied")
+  @DsonOutput(Output.ALL)
+  private final boolean isProxied;
+
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  public static PeerChannelInfo createDirect(
+      NodeId nodeId, Optional<RadixNodeUri> uri, String host, int port, boolean isOutbound) {
+    return new PeerChannelInfo(nodeId, uri.orElse(null), host, port, isOutbound, false);
   }
 
-  public Flowable<RemoteEvent<Vote>> remoteVotes() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Vote)
-        .map(m -> new RemoteEvent<>(m.sourceNode(), (Vote) m.message().getConsensusMessage()));
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  public static PeerChannelInfo createProxied(
+      NodeId nodeId, Optional<RadixNodeUri> uri, String host, int port, boolean isOutbound) {
+    return new PeerChannelInfo(nodeId, uri.orElse(null), host, port, isOutbound, true);
   }
 
-  public Flowable<RemoteEvent<Proposal>> remoteProposals() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Proposal)
-        .map(m -> new RemoteEvent<>(m.sourceNode(), (Proposal) m.message().getConsensusMessage()));
+  public static PeerChannelInfo fromPeerChannel(NodeId nodeId, PeerChannel channel) {
+    return createProxied(
+        nodeId, channel.getUri(), channel.getHost(), channel.getPort(), channel.isOutbound());
   }
 
-  private Flowable<MessageFromPeer<ConsensusEventMessage>> remoteBftEvents() {
-    return this.messageCentral
-        .messagesOf(ConsensusEventMessage.class)
-        .toFlowable(BackpressureStrategy.BUFFER);
+  @JsonCreator
+  public static PeerChannelInfo deserialize(
+      @JsonProperty(value = "nodeId", required = true) NodeId nodeId,
+      @JsonProperty("uri") RadixNodeUri uri,
+      @JsonProperty(value = "host", required = true) String host,
+      @JsonProperty("port") int port,
+      @JsonProperty("outbound") boolean isOutbound,
+      @JsonProperty("proxied") boolean isProxied) {
+    return new PeerChannelInfo(
+        requireNonNull(nodeId), uri, requireNonNull(host), port, isOutbound, isProxied);
   }
 
-  public RemoteEventDispatcher<Proposal> proposalDispatcher() {
-    return this::sendProposal;
+  private PeerChannelInfo(
+      NodeId nodeId,
+      RadixNodeUri uri,
+      String host,
+      int port,
+      boolean isOutbound,
+      boolean isProxied) {
+    this.nodeId = nodeId;
+    this.uri = uri;
+    this.host = host;
+    this.port = port;
+    this.isOutbound = isOutbound;
+    this.isProxied = isProxied;
   }
 
-  private void sendProposal(BFTNode receiver, Proposal proposal) {
-    send(receiver, new ConsensusEventMessage(proposal));
+  public Optional<RadixNodeUri> getUri() {
+    return Optional.ofNullable(uri);
   }
 
-  public RemoteEventDispatcher<Vote> voteDispatcher() {
-    return this::sendVote;
+  public NodeId getNodeId() {
+    return nodeId;
   }
 
-  private void sendVote(BFTNode receiver, Vote vote) {
-    send(receiver, new ConsensusEventMessage(vote));
+  public String getHost() {
+    return host;
   }
 
-  private void send(BFTNode recipient, Message message) {
-    this.messageCentral.send(NodeId.fromBFTNode(recipient), message);
+  public int getPort() {
+    return port;
+  }
+
+  public boolean isOutbound() {
+    return isOutbound;
+  }
+
+  public boolean isProxied() {
+    return isProxied;
+  }
+
+  public BFTNode getNode() {
+    return nodeId.asBFTNode();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    return (o instanceof PeerChannelInfo other)
+        && Objects.equals(nodeId, other.nodeId)
+        && Objects.equals(uri, other.uri)
+        && Objects.equals(host, other.host)
+        && port == other.port
+        && isOutbound == other.isOutbound
+        && isProxied == other.isProxied;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(nodeId, uri, host, port, isOutbound, isProxied);
   }
 }

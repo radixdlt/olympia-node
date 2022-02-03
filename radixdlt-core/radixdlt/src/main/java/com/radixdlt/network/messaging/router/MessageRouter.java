@@ -90,17 +90,16 @@ public final class MessageRouter {
     this.proxyCertificateManager = Objects.requireNonNull(proxyCertificateManager);
 
     this.routedMessages =
-        messages.map(msg -> route(msg.getSource(), getOrCreateEnvelope(msg))).share();
+        messages.map(msg -> route(msg.source(), getOrCreateEnvelope(msg))).share();
   }
 
   /* for backwards compatibility we support both envelope and non-envelope messages */
   private <T extends Message> MessageEnvelope getOrCreateEnvelope(
       MessageFromPeer<T> messageFromPeer) {
-    if (messageFromPeer.getMessage() instanceof MessageEnvelope messageEnvelope) {
+    if (messageFromPeer.message() instanceof MessageEnvelope messageEnvelope) {
       return messageEnvelope;
     } else {
-      return MessageEnvelope.create(
-          messageFromPeer.getSource(), self, messageFromPeer.getMessage());
+      return MessageEnvelope.create(messageFromPeer.source(), self, messageFromPeer.message());
     }
   }
 

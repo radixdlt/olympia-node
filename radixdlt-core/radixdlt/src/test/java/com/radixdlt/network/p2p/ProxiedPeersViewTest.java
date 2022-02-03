@@ -62,66 +62,80 @@
  * permissions under this License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.network.p2p;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
+import static com.radixdlt.utils.TypedMocks.cmock;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.network.messaging.Message;
-import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageFromPeer;
-import com.radixdlt.network.p2p.NodeId;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
-import io.reactivex.rxjava3.core.Flowable;
-import java.util.Objects;
+import com.radixdlt.network.p2p.P2PConfig.ProxyConfig;
+import com.radixdlt.network.p2p.discovery.ProxiedPeers;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import org.junit.Test;
 
-/** BFT Network sending and receiving layer used on top of the MessageCentral layer. */
-public final class MessageCentralBFTNetwork {
-  private final MessageCentral messageCentral;
+public class ProxiedPeersViewTest {
+  @Test
+  public void receivedProxiedPeersAreReturnedWhenRequested() {
+    var dispatcher = cmock(new TypeLiteral<RemoteEventDispatcher<ProxiedPeers>>() {});
+    var proxyConfig = mock(ProxyConfig.class);
+    var peersView = new ProxiedPeersView(mock(PeerManager.class), proxyConfig, dispatcher);
+    var peers =
+        ImmutableSet.of(
+            createPeerChannelInfo("192.168.0.1"),
+            createPeerChannelInfo("192.168.0.2"),
+            createPeerChannelInfo("192.168.0.3"));
+    var proxiedPeers = new ProxiedPeers(peers);
+    var node = BFTNode.random();
 
-  @Inject
-  public MessageCentralBFTNetwork(MessageCentral messageCentral) {
-    this.messageCentral = Objects.requireNonNull(messageCentral);
+    when(proxyConfig.authorizedProxies()).thenReturn(ImmutableSet.of(NodeId.fromBFTNode(node)));
+
+    // Pre-condition
+    assertTrue(peersView.peers().toList().isEmpty());
+
+    // Act
+    peersView.proxiedPeersEventProcessor().process(node, proxiedPeers);
+
+    // Verify
+    assertEquals(
+        peers.stream().map(PeerChannelInfo::getNodeId).collect(Collectors.toSet()),
+        peersView.peers().map(PeersView.PeerInfo::nodeId).collect(Collectors.toSet()));
   }
 
-  public Flowable<RemoteEvent<Vote>> remoteVotes() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Vote)
-        .map(m -> new RemoteEvent<>(m.sourceNode(), (Vote) m.message().getConsensusMessage()));
+  @Test
+  public void unknownSourceIsRejected() {
+    var dispatcher = cmock(new TypeLiteral<RemoteEventDispatcher<ProxiedPeers>>() {});
+    var proxyConfig = mock(ProxyConfig.class);
+    var peersView = new ProxiedPeersView(mock(PeerManager.class), proxyConfig, dispatcher);
+    var peers =
+        ImmutableSet.of(
+            createPeerChannelInfo("192.168.0.1"),
+            createPeerChannelInfo("192.168.0.2"),
+            createPeerChannelInfo("192.168.0.3"));
+    var proxiedPeers = new ProxiedPeers(peers);
+    var proxyNode = BFTNode.random();
+
+    when(proxyConfig.authorizedProxies())
+        .thenReturn(ImmutableSet.of(NodeId.fromBFTNode(proxyNode)));
+
+    // Pre-condition
+    assertTrue(peersView.peers().toList().isEmpty());
+
+    // Act
+    var unknownNode = BFTNode.random();
+    peersView.proxiedPeersEventProcessor().process(unknownNode, proxiedPeers);
+
+    // Verify
+    assertTrue(peersView.peers().toList().isEmpty());
   }
 
-  public Flowable<RemoteEvent<Proposal>> remoteProposals() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Proposal)
-        .map(m -> new RemoteEvent<>(m.sourceNode(), (Proposal) m.message().getConsensusMessage()));
-  }
-
-  private Flowable<MessageFromPeer<ConsensusEventMessage>> remoteBftEvents() {
-    return this.messageCentral
-        .messagesOf(ConsensusEventMessage.class)
-        .toFlowable(BackpressureStrategy.BUFFER);
-  }
-
-  public RemoteEventDispatcher<Proposal> proposalDispatcher() {
-    return this::sendProposal;
-  }
-
-  private void sendProposal(BFTNode receiver, Proposal proposal) {
-    send(receiver, new ConsensusEventMessage(proposal));
-  }
-
-  public RemoteEventDispatcher<Vote> voteDispatcher() {
-    return this::sendVote;
-  }
-
-  private void sendVote(BFTNode receiver, Vote vote) {
-    send(receiver, new ConsensusEventMessage(vote));
-  }
-
-  private void send(BFTNode recipient, Message message) {
-    this.messageCentral.send(NodeId.fromBFTNode(recipient), message);
+  private static PeerChannelInfo createPeerChannelInfo(String host) {
+    var nodeId = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
+    return PeerChannelInfo.createProxied(nodeId, Optional.empty(), host, 30000, true);
   }
 }

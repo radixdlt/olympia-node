@@ -64,6 +64,8 @@
 
 package com.radixdlt.network.p2p;
 
+import static com.radixdlt.environment.EventProcessor.fanOut;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -72,17 +74,14 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.RemoteEventProcessorOnRunner;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.environment.ScheduledEventProducerOnRunner;
+import com.radixdlt.environment.*;
 import com.radixdlt.network.hostip.HostIp;
+import com.radixdlt.network.p2p.P2PConfig.ProxyConfig;
 import com.radixdlt.network.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.addressbook.AddressBookPeerControl;
 import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
+import com.radixdlt.network.p2p.discovery.ProxiedPeers;
 import com.radixdlt.network.p2p.proxy.GrantedProxyCertificate;
 import com.radixdlt.network.p2p.proxy.ProxyCertificateManager;
 import com.radixdlt.network.p2p.proxy.ProxyCertificatesAnnouncement;
@@ -95,6 +94,7 @@ import com.radixdlt.networks.NetworkId;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.store.berkeley.BerkeleyAddressBookPersistence;
 import java.time.Duration;
+import java.util.List;
 
 public final class P2PModule extends AbstractModule {
 
@@ -114,7 +114,10 @@ public final class P2PModule extends AbstractModule {
     eventBinder.addBinding().toInstance(RenewIssuedProxyCertificatesTrigger.class);
 
     bind(AddressBook.class).in(Scopes.SINGLETON);
-    bind(PeersView.class).to(PeerManagerPeersView.class).in(Scopes.SINGLETON);
+    bind(PeerManagerPeersView.class).in(Scopes.SINGLETON);
+    bind(ProxiedPeersView.class).in(Scopes.SINGLETON);
+    bind(ProxiedPeersViewService.class).in(Scopes.SINGLETON);
+
     bind(PeerControl.class).to(AddressBookPeerControl.class).in(Scopes.SINGLETON);
     bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class).in(Scopes.SINGLETON);
     bind(AddressBookPersistence.class)
@@ -127,9 +130,21 @@ public final class P2PModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private EventProcessorOnRunner<?> peerEventProcessor(PeerManager peerManager) {
+  private EventProcessorOnRunner<?> peerEventProcessor(
+      PeerManager peerManager, ProxiedPeersViewService proxiedPeersViewService) {
     return new EventProcessorOnRunner<>(
-        Runners.P2P_NETWORK, PeerEvent.class, peerManager.peerEventProcessor());
+        Runners.P2P_NETWORK,
+        PeerEvent.class,
+        fanOut(
+            List.of(
+                peerManager.peerEventProcessor(), proxiedPeersViewService.peerEventProcessor())));
+  }
+
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?> proxiedPeersEventProcessor(
+      ProxiedPeersView proxiedPeersView) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.P2P_NETWORK, ProxiedPeers.class, proxiedPeersView.proxiedPeersEventProcessor());
   }
 
   @ProvidesIntoSet
@@ -181,12 +196,22 @@ public final class P2PModule extends AbstractModule {
   }
 
   @Provides
+  public PeersView peersView(
+      ProxyConfig proxyConfig,
+      PeerManagerPeersView peerManagerPeersView,
+      ProxiedPeersView proxiedPeersView) {
+    return proxyConfig.proxyEnabled()
+        ? PeersView.combine(peerManagerPeersView, proxiedPeersView)
+        : peerManagerPeersView;
+  }
+
+  @Provides
   public P2PConfig p2pConfig(Addressing addressing) {
     return P2PConfig.fromRuntimeProperties(addressing, this.properties);
   }
 
   @Provides
-  public P2PConfig.ProxyConfig proxyConfig(P2PConfig config) {
+  public ProxyConfig proxyConfig(P2PConfig config) {
     return config.proxyConfig();
   }
 

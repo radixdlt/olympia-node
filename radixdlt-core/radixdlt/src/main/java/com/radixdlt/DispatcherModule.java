@@ -113,6 +113,7 @@ import com.radixdlt.network.p2p.PendingOutboundChannelsManager.PeerOutboundConne
 import com.radixdlt.network.p2p.discovery.DiscoverPeers;
 import com.radixdlt.network.p2p.discovery.GetPeers;
 import com.radixdlt.network.p2p.discovery.PeersResponse;
+import com.radixdlt.network.p2p.discovery.ProxiedPeers;
 import com.radixdlt.network.p2p.liveness.PeerPingTimeout;
 import com.radixdlt.network.p2p.liveness.PeersLivenessCheckTrigger;
 import com.radixdlt.network.p2p.liveness.Ping;
@@ -298,6 +299,9 @@ public class DispatcherModule extends AbstractModule {
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<RemoteEventDispatcher<PeersResponse>>() {})
         .toProvider(Dispatchers.remoteDispatcherProvider(PeersResponse.class))
+        .in(Scopes.SINGLETON);
+    bind(new TypeLiteral<RemoteEventDispatcher<ProxiedPeers>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(ProxiedPeers.class))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<EventDispatcher<DiscoverPeers>>() {})
         .toProvider(Dispatchers.dispatcherProvider(DiscoverPeers.class))

@@ -72,32 +72,9 @@ import java.util.Objects;
  *
  * @param <T> the event class
  */
-public final class RemoteEvent<T> {
-  private final T event;
-  private final BFTNode origin;
-
-  private RemoteEvent(BFTNode origin, T event) {
-    this.origin = origin;
-    this.event = event;
-  }
-
-  public static <T> RemoteEvent<T> create(BFTNode origin, T event) {
+public record RemoteEvent<T>(BFTNode origin, T event) {
+  public RemoteEvent {
     Objects.requireNonNull(origin);
     Objects.requireNonNull(event);
-
-    return new RemoteEvent<>(origin, event);
-  }
-
-  public BFTNode getOrigin() {
-    return origin;
-  }
-
-  public T getEvent() {
-    return event;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s[%s->%s]", getClass().getSimpleName(), this.origin, this.event);
   }
 }

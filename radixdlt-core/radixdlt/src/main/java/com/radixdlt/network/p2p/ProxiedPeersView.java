@@ -62,66 +62,92 @@
  * permissions under this License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.network.p2p;
 
+import static java.util.stream.Collectors.groupingBy;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.network.messaging.Message;
-import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageFromPeer;
-import com.radixdlt.network.p2p.NodeId;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
-import io.reactivex.rxjava3.core.Flowable;
-import java.util.Objects;
+import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.network.p2p.P2PConfig.ProxyConfig;
+import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
+import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
+import com.radixdlt.network.p2p.discovery.ProxiedPeers;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-/** BFT Network sending and receiving layer used on top of the MessageCentral layer. */
-public final class MessageCentralBFTNetwork {
-  private final MessageCentral messageCentral;
+public final class ProxiedPeersView implements PeersView {
+  private static final Logger logger = LogManager.getLogger();
+
+  private final PeerManager peerManager;
+  private final ProxyConfig proxyConfig;
+  private final RemoteEventDispatcher<ProxiedPeers> proxiedPeersDispatcher;
+  private final RateLimiter logLimiter = RateLimiter.create(1.0);
+  private Set<PeerInfo> peers = Set.of();
 
   @Inject
-  public MessageCentralBFTNetwork(MessageCentral messageCentral) {
-    this.messageCentral = Objects.requireNonNull(messageCentral);
+  public ProxiedPeersView(
+      PeerManager peerManager,
+      ProxyConfig proxyConfig,
+      RemoteEventDispatcher<ProxiedPeers> proxiedPeersDispatcher) {
+    this.peerManager = peerManager;
+    this.proxyConfig = proxyConfig;
+    this.proxiedPeersDispatcher = proxiedPeersDispatcher;
   }
 
-  public Flowable<RemoteEvent<Vote>> remoteVotes() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Vote)
-        .map(m -> new RemoteEvent<>(m.sourceNode(), (Vote) m.message().getConsensusMessage()));
+  public RemoteEventProcessor<ProxiedPeers> proxiedPeersEventProcessor() {
+    return this::eventProcessor;
   }
 
-  public Flowable<RemoteEvent<Proposal>> remoteProposals() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Proposal)
-        .map(m -> new RemoteEvent<>(m.sourceNode(), (Proposal) m.message().getConsensusMessage()));
+  private void eventProcessor(BFTNode node, ProxiedPeers proxiedPeers) {
+    if (!proxyConfig.authorizedProxies().contains(NodeId.fromBFTNode(node))) {
+      var logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
+      logger.log(logLevel, "Attempt to spoof proxied peers from {}", node);
+
+      return;
+    }
+
+    var nodeIdToChannelInfo =
+        proxiedPeers.peers().stream()
+            .collect(groupingBy(PeerChannelInfo::getNodeId, ImmutableList.toImmutableList()));
+
+    this.peers =
+        nodeIdToChannelInfo.entrySet().stream()
+            .map(entry -> new PeerInfo(entry.getKey(), entry.getValue()))
+            .collect(ImmutableSet.toImmutableSet());
   }
 
-  private Flowable<MessageFromPeer<ConsensusEventMessage>> remoteBftEvents() {
-    return this.messageCentral
-        .messagesOf(ConsensusEventMessage.class)
-        .toFlowable(BackpressureStrategy.BUFFER);
+  public void peerEventProcessor(PeerEvent peerEvent) {
+    if (peerEvent instanceof PeerConnected || peerEvent instanceof PeerDisconnected) {
+      var activePeers = new ProxiedPeers(peerManager.activePeers());
+      var proxiedPeers = retrievePoxiedPeers();
+
+      proxiedPeersDispatcher.dispatch(proxiedPeers, activePeers);
+    }
   }
 
-  public RemoteEventDispatcher<Proposal> proposalDispatcher() {
-    return this::sendProposal;
+  private List<BFTNode> retrievePoxiedPeers() {
+    return peerManager.activePeers().stream()
+        .filter(this::isAuthorizedProxiedNode)
+        .map(uri -> uri.getNodeId().asBFTNode())
+        .toList();
   }
 
-  private void sendProposal(BFTNode receiver, Proposal proposal) {
-    send(receiver, new ConsensusEventMessage(proposal));
+  private boolean isAuthorizedProxiedNode(PeerChannelInfo peerChannelInfo) {
+    return proxyConfig.proxyEnabled()
+        && proxyConfig.authorizedProxiedPeers().contains(peerChannelInfo.getNodeId());
   }
 
-  public RemoteEventDispatcher<Vote> voteDispatcher() {
-    return this::sendVote;
-  }
-
-  private void sendVote(BFTNode receiver, Vote vote) {
-    send(receiver, new ConsensusEventMessage(vote));
-  }
-
-  private void send(BFTNode recipient, Message message) {
-    this.messageCentral.send(NodeId.fromBFTNode(recipient), message);
+  @Override
+  public Stream<PeerInfo> peers() {
+    return peers.stream();
   }
 }

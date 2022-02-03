@@ -76,6 +76,6 @@ public interface RemoteEventProcessor<T> {
   void process(BFTNode sender, T t);
 
   default void process(RemoteEvent<T> event) {
-    process(event.getOrigin(), event.getEvent());
+    process(event.origin(), event.event());
   }
 }

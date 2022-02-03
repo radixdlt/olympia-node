@@ -64,40 +64,11 @@
 
 package com.radixdlt.network.messaging;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.network.p2p.NodeId;
-import java.util.Objects;
 
-public final class MessageFromPeer<T extends Message> {
-  private final NodeId source;
-  private final T message;
-
-  public MessageFromPeer(NodeId source, T message) {
-    this.source = source;
-    this.message = message;
-  }
-
-  public NodeId getSource() {
-    return source;
-  }
-
-  public T getMessage() {
-    return message;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    MessageFromPeer<?> that = (MessageFromPeer<?>) o;
-    return Objects.equals(source, that.source) && Objects.equals(message, that.message);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(source, message);
+public record MessageFromPeer<T extends Message>(NodeId source, T message) {
+  public BFTNode sourceNode() {
+    return source().asBFTNode();
   }
 }

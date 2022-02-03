@@ -98,13 +98,16 @@ public final class MessageCentralPeerProxyTest {
   @Test
   public void when_send_granted_proxy_cert__then_message_central_should_sent_message() {
     final var grantedProxyCert = mock(GrantedProxyCertificate.class);
+
     when(grantedProxyCert.proxyCertificate()).thenReturn(mock(ProxyCertificate.class));
+
     final var receiverKey = ECKeyPair.generateNew().getPublicKey();
     final var receiver = BFTNode.create(receiverKey);
 
     messageCentralPeerProxy
         .grantedProxyCertificateDispatcher()
         .dispatch(receiver, grantedProxyCert);
+
     verify(messageCentral, times(1))
         .send(eq(NodeId.fromPublicKey(receiverKey)), any(GrantedProxyCertificateMessage.class));
   }
@@ -112,14 +115,17 @@ public final class MessageCentralPeerProxyTest {
   @Test
   public void when_send_proxy_cert_announcement__then_message_central_should_sent_message() {
     final var proxyCertsAnnouncement = mock(ProxyCertificatesAnnouncement.class);
+
     when(proxyCertsAnnouncement.proxyCertificates())
         .thenReturn(ImmutableSet.of(mock(ProxyCertificate.class)));
+
     final var receiverKey = ECKeyPair.generateNew().getPublicKey();
     final var receiver = BFTNode.create(receiverKey);
 
     messageCentralPeerProxy
         .proxyCertificatesAnnouncementDispatcher()
         .dispatch(receiver, proxyCertsAnnouncement);
+
     verify(messageCentral, times(1))
         .send(
             eq(NodeId.fromPublicKey(receiverKey)), any(ProxyCertificatesAnnouncementMessage.class));

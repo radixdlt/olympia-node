@@ -62,66 +62,49 @@
  * permissions under this License.
  */
 
-package com.radixdlt.middleware2.network;
+package org.radix.network.messages;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.network.messaging.Message;
-import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageFromPeer;
-import com.radixdlt.network.p2p.NodeId;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
-import io.reactivex.rxjava3.core.Flowable;
-import java.util.Objects;
+import static org.assertj.core.api.Assertions.assertThat;
 
-/** BFT Network sending and receiving layer used on top of the MessageCentral layer. */
-public final class MessageCentralBFTNetwork {
-  private final MessageCentral messageCentral;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.network.p2p.discovery.messages.ProxiedPeersMessage;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+import org.junit.Test;
+import org.radix.serialization.SerializeMessageObject;
 
-  @Inject
-  public MessageCentralBFTNetwork(MessageCentral messageCentral) {
-    this.messageCentral = Objects.requireNonNull(messageCentral);
+public class ProxiedPeersMessageTest extends SerializeMessageObject<ProxiedPeersMessage> {
+
+  public ProxiedPeersMessageTest() {
+    super(ProxiedPeersMessage.class, () -> new ProxiedPeersMessage(ImmutableSet.of()));
   }
 
-  public Flowable<RemoteEvent<Vote>> remoteVotes() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Vote)
-        .map(m -> new RemoteEvent<>(m.sourceNode(), (Vote) m.message().getConsensusMessage()));
+  @Test
+  public void sensibleToString() {
+    String s = new ProxiedPeersMessage(ImmutableSet.of()).toString();
+
+    assertThat(s).contains(ProxiedPeersMessage.class.getSimpleName());
   }
 
-  public Flowable<RemoteEvent<Proposal>> remoteProposals() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Proposal)
-        .map(m -> new RemoteEvent<>(m.sourceNode(), (Proposal) m.message().getConsensusMessage()));
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(ProxiedPeersMessage.class)
+        .suppress(Warning.NONFINAL_FIELDS)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
   }
 
-  private Flowable<MessageFromPeer<ConsensusEventMessage>> remoteBftEvents() {
-    return this.messageCentral
-        .messagesOf(ConsensusEventMessage.class)
-        .toFlowable(BackpressureStrategy.BUFFER);
+  @Test
+  public void deserializationWithNullIsSafe() {
+    var peersResponseMessageWithNull = new ProxiedPeersMessage(null);
+
+    assertThat(peersResponseMessageWithNull.getPeers()).isEqualTo(ImmutableSet.of());
   }
 
-  public RemoteEventDispatcher<Proposal> proposalDispatcher() {
-    return this::sendProposal;
-  }
-
-  private void sendProposal(BFTNode receiver, Proposal proposal) {
-    send(receiver, new ConsensusEventMessage(proposal));
-  }
-
-  public RemoteEventDispatcher<Vote> voteDispatcher() {
-    return this::sendVote;
-  }
-
-  private void sendVote(BFTNode receiver, Vote vote) {
-    send(receiver, new ConsensusEventMessage(vote));
-  }
-
-  private void send(BFTNode recipient, Message message) {
-    this.messageCentral.send(NodeId.fromBFTNode(recipient), message);
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullElementsInSetThrowsException() {
+    new ProxiedPeersMessage(ImmutableSet.of(null));
   }
 }

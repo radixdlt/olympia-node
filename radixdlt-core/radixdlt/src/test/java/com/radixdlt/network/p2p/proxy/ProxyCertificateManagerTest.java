@@ -73,7 +73,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -135,7 +134,7 @@ public final class ProxyCertificateManagerTest {
 
     verify(grantedProxyCertDispatcher, times(1))
         .dispatch(
-            eq(BFTNode.create(peerNodeId.getPublicKey())),
+            eq(peerNodeId.asBFTNode()),
             argThat(arg -> arg.proxyCertificate().verify().isPresent()));
   }
 }
