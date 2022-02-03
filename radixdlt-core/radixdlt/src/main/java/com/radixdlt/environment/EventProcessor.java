@@ -73,6 +73,6 @@ public interface EventProcessor<T> {
   void process(T t);
 
   static <T> EventProcessor<T> fanOut(Iterable<EventProcessor<T>> processors) {
-    return (event) -> processors.forEach(processor -> processor.process(event));
+    return event -> processors.forEach(processor -> processor.process(event));
   }
 }

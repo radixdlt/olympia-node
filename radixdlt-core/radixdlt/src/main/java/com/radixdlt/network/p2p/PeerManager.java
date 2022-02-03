@@ -178,12 +178,12 @@ public final class PeerManager {
         .findAny();
   }
 
-  public ImmutableSet<RadixNodeUri> activePeers() {
-    return this.activeChannels.values().stream()
-        .flatMap(Collection::stream)
-        .map(PeerChannel::getUri)
-        .filter(Optional::isPresent)
-        .map(Optional::get)
+  public ImmutableSet<PeerChannelInfo> activePeers() {
+    return this.activeChannels.entrySet().stream()
+        .flatMap(
+            entry ->
+                entry.getValue().stream()
+                    .map(channel -> PeerChannelInfo.fromPeerChannel(entry.getKey(), channel)))
         .collect(ImmutableSet.toImmutableSet());
   }
 

@@ -69,6 +69,7 @@ import static com.radixdlt.utils.functional.Unit.unit;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.RateLimiter;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
@@ -344,6 +345,10 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 
   public NodeId getRemoteNodeId() {
     return this.remoteNodeId;
+  }
+
+  public BFTNode getRemoteNode() {
+    return this.remoteNodeId.asBFTNode();
   }
 
   public boolean isInbound() {

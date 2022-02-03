@@ -100,7 +100,7 @@ public final class MessageCentralPeerDiscovery {
         .map(m -> new RemoteEvent<>(m.sourceNode(), new PeersResponse(m.message().getPeers())));
   }
 
-  public void sendGetPeers(BFTNode node, GetPeers getPeers) {
+  public void sendGetPeers(BFTNode node, GetPeers ignoredGetPeers) {
     this.messageCentral.send(NodeId.fromBFTNode(node), new GetPeersMessage());
   }
 

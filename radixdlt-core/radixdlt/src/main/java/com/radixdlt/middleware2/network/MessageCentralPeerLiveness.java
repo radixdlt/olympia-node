@@ -100,11 +100,11 @@ public final class MessageCentralPeerLiveness {
         .map(m -> new RemoteEvent<>(m.sourceNode(), Pong.create()));
   }
 
-  public void sendPing(BFTNode node, Ping ping) {
+  public void sendPing(BFTNode node, Ping ignoredPing) {
     this.messageCentral.send(NodeId.fromBFTNode(node), new PeerPingMessage());
   }
 
-  public void sendPong(BFTNode node, Pong pong) {
+  public void sendPong(BFTNode node, Pong ignoredPong) {
     this.messageCentral.send(NodeId.fromBFTNode(node), new PeerPongMessage());
   }
 }

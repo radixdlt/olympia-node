@@ -62,68 +62,85 @@
  * permissions under this License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.network.p2p;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static com.radixdlt.utils.TypedMocks.cmock;
+import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageCentralMockProvider;
-import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.proxy.GrantedProxyCertificate;
-import com.radixdlt.network.p2p.proxy.ProxyCertificate;
-import com.radixdlt.network.p2p.proxy.ProxyCertificatesAnnouncement;
-import com.radixdlt.network.p2p.proxy.messages.GrantedProxyCertificateMessage;
-import com.radixdlt.network.p2p.proxy.messages.ProxyCertificatesAnnouncementMessage;
-import org.junit.Before;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.network.p2p.P2PConfig.ProxyConfig;
+import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
+import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
+import com.radixdlt.network.p2p.discovery.ProxiedPeers;
+import com.radixdlt.network.p2p.transport.PeerChannel;
+import java.util.List;
+import java.util.Optional;
 import org.junit.Test;
 
-public final class MessageCentralPeerProxyTest {
-  private MessageCentral messageCentral;
-  private MessageCentralPeerProxy messageCentralPeerProxy;
+public class ProxiedPeersViewServiceTest {
+  @Test
+  public void proxiedPeersNotifiedWhenNodeIsConnected() {
+    var peerManager = mock(PeerManager.class);
+    var proxyConfig = mock(ProxyConfig.class);
+    var dispatcher = cmock(new TypeLiteral<RemoteEventDispatcher<ProxiedPeers>>() {});
+    var peersView = new ProxiedPeersView(peerManager, proxyConfig, dispatcher);
+    var proxiedPeer = createPeerChannelInfo("192.168.1.1");
+    var peers =
+        ImmutableSet.of(
+            createPeerChannelInfo("192.168.0.1"),
+            createPeerChannelInfo("192.168.0.2"),
+            createPeerChannelInfo("192.168.0.3"),
+            proxiedPeer);
 
-  @Before
-  public void setUp() {
-    this.messageCentral = MessageCentralMockProvider.get();
-    this.messageCentralPeerProxy = new MessageCentralPeerProxy(messageCentral);
+    // Setup
+    when(peerManager.activePeers()).thenReturn(peers);
+    when(proxyConfig.proxyEnabled()).thenReturn(true);
+    when(proxyConfig.authorizedProxiedPeers()).thenReturn(ImmutableSet.of(proxiedPeer.getNodeId()));
+
+    // Act
+    peersView.peerEventProcessor(new PeerConnected(mock(PeerChannel.class)));
+
+    // Verify
+    var expectedProxiedPeers = List.of(proxiedPeer.getNodeId().asBFTNode());
+    var expectedEvent = new ProxiedPeers(peers);
+
+    verify(dispatcher).dispatch(expectedProxiedPeers, expectedEvent);
   }
 
   @Test
-  public void when_send_granted_proxy_cert__then_message_central_should_sent_message() {
-    final var grantedProxyCert = mock(GrantedProxyCertificate.class);
+  public void proxiedPeersNotifiedWhenNodeIsDisconnected() {
+    var peerManager = mock(PeerManager.class);
+    var proxyConfig = mock(ProxyConfig.class);
+    var dispatcher = cmock(new TypeLiteral<RemoteEventDispatcher<ProxiedPeers>>() {});
+    var peersView = new ProxiedPeersView(peerManager, proxyConfig, dispatcher);
+    var proxiedPeer = createPeerChannelInfo("192.168.1.1");
+    var peers =
+        ImmutableSet.of(
+            createPeerChannelInfo("192.168.0.1"),
+            createPeerChannelInfo("192.168.0.2"),
+            createPeerChannelInfo("192.168.0.3"),
+            proxiedPeer);
 
-    when(grantedProxyCert.proxyCertificate()).thenReturn(mock(ProxyCertificate.class));
+    // Setup
+    when(peerManager.activePeers()).thenReturn(peers);
+    when(proxyConfig.proxyEnabled()).thenReturn(true);
+    when(proxyConfig.authorizedProxiedPeers()).thenReturn(ImmutableSet.of(proxiedPeer.getNodeId()));
 
-    final var receiverKey = ECKeyPair.generateNew().getPublicKey();
-    final var receiver = BFTNode.create(receiverKey);
+    // Act
+    peersView.peerEventProcessor(new PeerDisconnected(mock(PeerChannel.class)));
 
-    messageCentralPeerProxy.sendGrantedProxyCertificate(receiver, grantedProxyCert);
+    // Verify
+    var expectedProxiedPeers = List.of(proxiedPeer.getNodeId().asBFTNode());
+    var expectedEvent = new ProxiedPeers(peers);
 
-    verify(messageCentral, times(1))
-        .send(eq(NodeId.fromPublicKey(receiverKey)), any(GrantedProxyCertificateMessage.class));
+    verify(dispatcher).dispatch(expectedProxiedPeers, expectedEvent);
   }
 
-  @Test
-  public void when_send_proxy_cert_announcement__then_message_central_should_sent_message() {
-    final var proxyCertsAnnouncement = mock(ProxyCertificatesAnnouncement.class);
-
-    when(proxyCertsAnnouncement.proxyCertificates())
-        .thenReturn(ImmutableSet.of(mock(ProxyCertificate.class)));
-
-    final var receiverKey = ECKeyPair.generateNew().getPublicKey();
-    final var receiver = BFTNode.create(receiverKey);
-
-    messageCentralPeerProxy.sendCertificatesAnnouncement(receiver, proxyCertsAnnouncement);
-
-    verify(messageCentral, times(1))
-        .send(
-            eq(NodeId.fromPublicKey(receiverKey)), any(ProxyCertificatesAnnouncementMessage.class));
+  private static PeerChannelInfo createPeerChannelInfo(String host) {
+    var nodeId = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
+    return PeerChannelInfo.createProxied(nodeId, Optional.empty(), host, 30000, true);
   }
 }

@@ -140,7 +140,7 @@ public final class MessageCentralLedgerSync {
     this.messageCentral.send(NodeId.fromBFTNode(node), msg);
   }
 
-  public void sendStatusRequest(BFTNode node, StatusRequest statusRequest) {
+  public void sendStatusRequest(BFTNode node, StatusRequest ignoredStatusRequest) {
     final var msg = new StatusRequestMessage();
     this.messageCentral.send(NodeId.fromBFTNode(node), msg);
   }

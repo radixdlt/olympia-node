@@ -65,6 +65,6 @@
 package com.radixdlt.network.p2p.discovery;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.network.p2p.RadixNodeUri;
+import com.radixdlt.network.p2p.PeerChannelInfo;
 
-public record ProxiedPeers(ImmutableSet<RadixNodeUri> peers) {}
+public record ProxiedPeers(ImmutableSet<PeerChannelInfo> peers) {}

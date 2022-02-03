@@ -62,68 +62,48 @@
  * permissions under this License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.network.p2p;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static com.radixdlt.serialization.DsonOutput.*;
 
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageCentralMockProvider;
-import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.proxy.GrantedProxyCertificate;
-import com.radixdlt.network.p2p.proxy.ProxyCertificate;
-import com.radixdlt.network.p2p.proxy.ProxyCertificatesAnnouncement;
-import com.radixdlt.network.p2p.proxy.messages.GrantedProxyCertificateMessage;
-import com.radixdlt.network.p2p.proxy.messages.ProxyCertificatesAnnouncementMessage;
-import org.junit.Before;
+import java.util.Optional;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-public final class MessageCentralPeerProxyTest {
-  private MessageCentral messageCentral;
-  private MessageCentralPeerProxy messageCentralPeerProxy;
+public class PeerChannelInfoTest {
+  @Test
+  public void equals_test() {
+    EqualsVerifier.forClass(PeerChannelInfo.class).verify();
+  }
 
-  @Before
-  public void setUp() {
-    this.messageCentral = MessageCentralMockProvider.get();
-    this.messageCentralPeerProxy = new MessageCentralPeerProxy(messageCentral);
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException1() throws Exception {
+    var pubKey = ECKeyPair.generateNew().getPublicKey();
+    var nodeUri = RadixNodeUri.fromPubKeyAndAddress(1, pubKey, "127.0.0.2", 30000);
+    PeerChannelInfo.deserialize(null, nodeUri, "127.0.0.2", 30000, true, true);
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullThrowsException2() throws Exception {
+    var pubKey = ECKeyPair.generateNew().getPublicKey();
+    var nodeUri = RadixNodeUri.fromPubKeyAndAddress(1, pubKey, "127.0.0.2", 30000);
+    PeerChannelInfo.deserialize(NodeId.fromPublicKey(pubKey), nodeUri, null, 30000, true, true);
   }
 
   @Test
-  public void when_send_granted_proxy_cert__then_message_central_should_sent_message() {
-    final var grantedProxyCert = mock(GrantedProxyCertificate.class);
+  public void serialize() {
+    var serialization = DefaultSerialization.getInstance();
 
-    when(grantedProxyCert.proxyCertificate()).thenReturn(mock(ProxyCertificate.class));
+    var pubKey = ECKeyPair.generateNew().getPublicKey();
+    var nodeUri = RadixNodeUri.fromPubKeyAndAddress(1, pubKey, "127.0.0.3", 30000);
+    var instance =
+        PeerChannelInfo.createProxied(
+            NodeId.fromPublicKey(pubKey), Optional.of(nodeUri), "127.0.0.3", 30000, true);
 
-    final var receiverKey = ECKeyPair.generateNew().getPublicKey();
-    final var receiver = BFTNode.create(receiverKey);
+    var result = serialization.toJson(instance, Output.ALL);
 
-    messageCentralPeerProxy.sendGrantedProxyCertificate(receiver, grantedProxyCert);
-
-    verify(messageCentral, times(1))
-        .send(eq(NodeId.fromPublicKey(receiverKey)), any(GrantedProxyCertificateMessage.class));
-  }
-
-  @Test
-  public void when_send_proxy_cert_announcement__then_message_central_should_sent_message() {
-    final var proxyCertsAnnouncement = mock(ProxyCertificatesAnnouncement.class);
-
-    when(proxyCertsAnnouncement.proxyCertificates())
-        .thenReturn(ImmutableSet.of(mock(ProxyCertificate.class)));
-
-    final var receiverKey = ECKeyPair.generateNew().getPublicKey();
-    final var receiver = BFTNode.create(receiverKey);
-
-    messageCentralPeerProxy.sendCertificatesAnnouncement(receiver, proxyCertsAnnouncement);
-
-    verify(messageCentral, times(1))
-        .send(
-            eq(NodeId.fromPublicKey(receiverKey)), any(ProxyCertificatesAnnouncementMessage.class));
+    System.out.println(result);
   }
 }

@@ -93,8 +93,8 @@ public final class PeerManagerPeersView implements PeersView {
                   e.getValue().stream()
                       .map(
                           c ->
-                              PeerChannelInfo.create(
-                                  c.getUri(), c.getHost(), c.getPort(), c.isOutbound()))
+                              PeerChannelInfo.createDirect(
+                                  e.getKey(), c.getUri(), c.getHost(), c.getPort(), c.isOutbound()))
                       .collect(ImmutableList.toImmutableList());
               return new PeerInfo(e.getKey(), channelsInfo);
             });

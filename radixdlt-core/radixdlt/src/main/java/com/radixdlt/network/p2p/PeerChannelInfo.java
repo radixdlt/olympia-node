@@ -62,36 +62,124 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p.discovery.messages;
+package com.radixdlt.network.p2p;
+
+import static com.radixdlt.serialization.DsonOutput.*;
+import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.network.messaging.Message;
-import com.radixdlt.network.p2p.RadixNodeUri;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
+import java.util.Optional;
+import javax.annotation.concurrent.Immutable;
 
-@SerializerId2("p2p.discovery.proxied_peers_response")
-public final class ProxiedPeersResponseMessage extends Message {
-  @JsonProperty("peers")
+@Immutable
+@SerializerId2("p2p.discovery.peer_channel_info")
+public final class PeerChannelInfo {
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+  SerializerDummy serializer = SerializerDummy.DUMMY;
+
+  @JsonProperty("nodeId")
   @DsonOutput(Output.ALL)
-  private final ImmutableSet<RadixNodeUri> peers;
+  private final NodeId nodeId;
+
+  @JsonProperty("uri")
+  @DsonOutput(Output.ALL)
+  private final RadixNodeUri uri;
+
+  @JsonProperty("host")
+  @DsonOutput(Output.ALL)
+  private final String host;
+
+  @JsonProperty("port")
+  @DsonOutput(Output.ALL)
+  private final int port;
+
+  @JsonProperty("outbound")
+  @DsonOutput(Output.ALL)
+  private final boolean isOutbound;
+
+  @JsonProperty("proxied")
+  @DsonOutput(Output.ALL)
+  private final boolean isProxied;
+
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  public static PeerChannelInfo createDirect(
+      NodeId nodeId, Optional<RadixNodeUri> uri, String host, int port, boolean isOutbound) {
+    return new PeerChannelInfo(nodeId, uri.orElse(null), host, port, isOutbound, false);
+  }
+
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  public static PeerChannelInfo createProxied(
+      NodeId nodeId, Optional<RadixNodeUri> uri, String host, int port, boolean isOutbound) {
+    return new PeerChannelInfo(nodeId, uri.orElse(null), host, port, isOutbound, true);
+  }
+
+  public static PeerChannelInfo fromPeerChannel(NodeId nodeId, PeerChannel channel) {
+    return createProxied(
+        nodeId, channel.getUri(), channel.getHost(), channel.getPort(), channel.isOutbound());
+  }
 
   @JsonCreator
-  public ProxiedPeersResponseMessage(@JsonProperty("peers") ImmutableSet<RadixNodeUri> peers) {
-    this.peers = peers == null ? ImmutableSet.of() : peers;
+  public static PeerChannelInfo deserialize(
+      @JsonProperty(value = "nodeId", required = true) NodeId nodeId,
+      @JsonProperty("uri") RadixNodeUri uri,
+      @JsonProperty(value = "host", required = true) String host,
+      @JsonProperty("port") int port,
+      @JsonProperty("outbound") boolean isOutbound,
+      @JsonProperty("proxied") boolean isProxied) {
+    return new PeerChannelInfo(
+        requireNonNull(nodeId), uri, requireNonNull(host), port, isOutbound, isProxied);
   }
 
-  public ImmutableSet<RadixNodeUri> getPeers() {
-    return peers;
+  private PeerChannelInfo(
+      NodeId nodeId,
+      RadixNodeUri uri,
+      String host,
+      int port,
+      boolean isOutbound,
+      boolean isProxied) {
+    this.nodeId = nodeId;
+    this.uri = uri;
+    this.host = host;
+    this.port = port;
+    this.isOutbound = isOutbound;
+    this.isProxied = isProxied;
   }
 
-  @Override
-  public String toString() {
-    return String.format("%s[%s]", getClass().getSimpleName(), peers);
+  public Optional<RadixNodeUri> getUri() {
+    return Optional.ofNullable(uri);
+  }
+
+  public NodeId getNodeId() {
+    return nodeId;
+  }
+
+  public String getHost() {
+    return host;
+  }
+
+  public int getPort() {
+    return port;
+  }
+
+  public boolean isOutbound() {
+    return isOutbound;
+  }
+
+  public boolean isProxied() {
+    return isProxied;
+  }
+
+  public BFTNode getNode() {
+    return nodeId.asBFTNode();
   }
 
   @Override
@@ -100,13 +188,17 @@ public final class ProxiedPeersResponseMessage extends Message {
       return true;
     }
 
-    return (o instanceof ProxiedPeersResponseMessage that)
-        && Objects.equals(peers, that.peers)
-        && Objects.equals(getTimestamp(), that.getTimestamp());
+    return (o instanceof PeerChannelInfo other)
+        && Objects.equals(nodeId, other.nodeId)
+        && Objects.equals(uri, other.uri)
+        && Objects.equals(host, other.host)
+        && port == other.port
+        && isOutbound == other.isOutbound
+        && isProxied == other.isProxied;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(peers, getTimestamp());
+    return Objects.hash(nodeId, uri, host, port, isOutbound, isProxied);
   }
 }

@@ -66,8 +66,6 @@ package com.radixdlt.network.p2p;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.BFTNode;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 /** Retrieve the node's current peers */
@@ -78,65 +76,13 @@ public interface PeersView {
     return () -> Stream.concat(first.peers(), second.peers());
   }
 
-  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-  final class PeerChannelInfo {
-    private Optional<RadixNodeUri> uri;
-    private String host;
-    private int port;
-    private boolean isOutbound;
-
-    public static PeerChannelInfo create(
-        Optional<RadixNodeUri> uri, String host, int port, boolean isOutbound) {
-      return new PeerChannelInfo(uri, host, port, isOutbound);
-    }
-
-    private PeerChannelInfo(Optional<RadixNodeUri> uri, String host, int port, boolean isOutbound) {
-      this.uri = uri;
-      this.host = host;
-      this.port = port;
-      this.isOutbound = isOutbound;
-    }
-
-    public Optional<RadixNodeUri> getUri() {
-      return uri;
-    }
-
-    public String getHost() {
-      return host;
-    }
-
-    public int getPort() {
-      return port;
-    }
-
-    public boolean isOutbound() {
-      return isOutbound;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      final var other = (PeerChannelInfo) o;
-      return Objects.equals(uri, other.uri)
-          && Objects.equals(host, other.host)
-          && port == other.port
-          && Objects.equals(isOutbound, other.isOutbound);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(uri, host, port, isOutbound);
-    }
-  }
-
   record PeerInfo(NodeId nodeId, ImmutableList<PeerChannelInfo> channels) {
     public static PeerInfo fromBftNode(BFTNode bftNode) {
       return new PeerInfo(NodeId.fromBFTNode(bftNode), ImmutableList.of());
+    }
+
+    public static PeerInfo fromNodeId(NodeId nodeId) {
+      return new PeerInfo(nodeId, ImmutableList.of());
     }
 
     public BFTNode bftNode() {

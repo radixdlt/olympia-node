@@ -64,7 +64,10 @@
 
 package com.radixdlt.network.p2p;
 
+import static java.util.stream.Collectors.groupingBy;
+
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.network.p2p.P2PConfig.ProxyConfig;
@@ -77,21 +80,28 @@ import java.util.stream.Stream;
 public final class ProxiedPeersView implements PeersView {
   private final PeerManager peerManager;
   private final ProxyConfig proxyConfig;
-  private final RemoteEventDispatcher<ProxiedPeers> dispatcher;
-  private Set<RadixNodeUri> peers = Set.of();
+  private final RemoteEventDispatcher<ProxiedPeers> proxiedPeersDispatcher;
+  private Set<PeerInfo> peers = Set.of();
 
   @Inject
   public ProxiedPeersView(
       PeerManager peerManager,
       ProxyConfig proxyConfig,
-      RemoteEventDispatcher<ProxiedPeers> dispatcher) {
+      RemoteEventDispatcher<ProxiedPeers> proxiedPeersDispatcher) {
     this.peerManager = peerManager;
     this.proxyConfig = proxyConfig;
-    this.dispatcher = dispatcher;
+    this.proxiedPeersDispatcher = proxiedPeersDispatcher;
   }
 
   public void proxiedPeersEventProcessor(ProxiedPeers proxiedPeers) {
-    this.peers = proxiedPeers.peers();
+    var nodeIdToChannelInfo =
+        proxiedPeers.peers().stream()
+            .collect(groupingBy(PeerChannelInfo::getNodeId, ImmutableList.toImmutableList()));
+
+    this.peers =
+        nodeIdToChannelInfo.entrySet().stream()
+            .map(entry -> new PeerInfo(entry.getKey(), entry.getValue()))
+            .collect(ImmutableSet.toImmutableSet());
   }
 
   public void peerEventProcessor(PeerEvent peerEvent) {
@@ -104,19 +114,19 @@ public final class ProxiedPeersView implements PeersView {
     var activePeers = new ProxiedPeers(peerManager.activePeers());
     var proxiedPeers =
         peerManager.activePeers().stream()
-            .filter(this::isAuthorizedProxyNode)
+            .filter(this::isAuthorizedProxiedNode)
             .map(uri -> uri.getNodeId().asBFTNode())
             .toList();
-    dispatcher.dispatch(proxiedPeers, activePeers);
+    proxiedPeersDispatcher.dispatch(proxiedPeers, activePeers);
   }
 
-  private boolean isAuthorizedProxyNode(RadixNodeUri uri) {
+  private boolean isAuthorizedProxiedNode(PeerChannelInfo peerChannelInfo) {
     return proxyConfig.proxyEnabled()
-        && proxyConfig.authorizedProxiedPeers().contains(uri.getNodeId());
+        && proxyConfig.authorizedProxiedPeers().contains(peerChannelInfo.getNodeId());
   }
 
   @Override
   public Stream<PeerInfo> peers() {
-    return peers.stream().map(node -> new PeerInfo(node.getNodeId(), ImmutableList.of()));
+    return peers.stream();
   }
 }

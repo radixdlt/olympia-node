@@ -66,18 +66,22 @@ package org.radix.serialization;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.network.p2p.RadixNodeUri;
-import com.radixdlt.network.p2p.discovery.messages.ProxiedPeersResponseMessage;
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.PeerChannelInfo;
+import com.radixdlt.network.p2p.discovery.messages.ProxiedPeersMessage;
+import java.util.Optional;
 
-public class ProxiedPeersMessageSerializeTest
-    extends SerializeMessageObject<ProxiedPeersResponseMessage> {
+public class ProxiedPeersMessageSerializeTest extends SerializeMessageObject<ProxiedPeersMessage> {
   public ProxiedPeersMessageSerializeTest() {
-    super(ProxiedPeersResponseMessage.class, ProxiedPeersMessageSerializeTest::get);
+    super(ProxiedPeersMessage.class, ProxiedPeersMessageSerializeTest::get);
   }
 
-  private static ProxiedPeersResponseMessage get() {
+  private static ProxiedPeersMessage get() {
     final var pubKey = ECKeyPair.generateNew().getPublicKey();
-    final var uri = RadixNodeUri.fromPubKeyAndAddress(1, pubKey, "127.0.0.1", 30000);
-    return new ProxiedPeersResponseMessage(ImmutableSet.of(uri));
+    final var channelInfo =
+        PeerChannelInfo.createProxied(
+            NodeId.fromPublicKey(pubKey), Optional.empty(), "host", 30000, true);
+
+    return new ProxiedPeersMessage(ImmutableSet.of(channelInfo));
   }
 }

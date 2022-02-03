@@ -71,13 +71,10 @@ import static org.mockito.Mockito.*;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.network.p2p.P2PConfig.ProxyConfig;
-import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
 import com.radixdlt.network.p2p.discovery.ProxiedPeers;
-import com.radixdlt.network.p2p.transport.PeerChannel;
-import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.junit.Test;
 
@@ -89,9 +86,9 @@ public class ProxiedPeersViewTest {
         new ProxiedPeersView(mock(PeerManager.class), mock(ProxyConfig.class), dispatcher);
     var peers =
         ImmutableSet.of(
-            createNodeUri(1, "192.168.0.1"),
-            createNodeUri(1, "192.168.0.2"),
-            createNodeUri(1, "192.168.0.3"));
+            createPeerChannelInfo("192.168.0.1"),
+            createPeerChannelInfo("192.168.0.2"),
+            createPeerChannelInfo("192.168.0.3"));
     var proxiedPeers = new ProxiedPeers(peers);
 
     // Pre-condition
@@ -102,44 +99,12 @@ public class ProxiedPeersViewTest {
 
     // Verify
     assertEquals(
-        peers.stream().map(RadixNodeUri::getNodeId).collect(Collectors.toSet()),
+        peers.stream().map(PeerChannelInfo::getNodeId).collect(Collectors.toSet()),
         peersView.peers().map(PeersView.PeerInfo::nodeId).collect(Collectors.toSet()));
   }
 
-  @Test
-  public void proxiedPeersNotifiedWhenNodeIsConnected() {
-    var peerManager = mock(PeerManager.class);
-    var proxyConfig = mock(ProxyConfig.class);
-    var dispatcher = cmock(new TypeLiteral<RemoteEventDispatcher<ProxiedPeers>>() {});
-    var peersView = new ProxiedPeersView(peerManager, proxyConfig, dispatcher);
-    var proxiedPeer = createNodeUri(1, "192.168.1.1");
-    var peers =
-        ImmutableSet.of(
-            createNodeUri(1, "192.168.0.1"),
-            createNodeUri(1, "192.168.0.2"),
-            createNodeUri(1, "192.168.0.3"),
-            proxiedPeer);
-
-    // Setup
-    when(peerManager.activePeers()).thenReturn(peers);
-    when(proxyConfig.proxyEnabled()).thenReturn(true);
-    when(proxyConfig.authorizedProxiedPeers()).thenReturn(ImmutableSet.of(proxiedPeer.getNodeId()));
-
-    // Act
-    peersView.peerEventProcessor(new PeerConnected(mock(PeerChannel.class)));
-
-    // Verify
-    var expectedProxiedPeers = List.of(proxiedPeer.getNodeId().asBFTNode());
-    var expectedEvent = new ProxiedPeers(peers);
-
-    verify(dispatcher).dispatch(eq(expectedProxiedPeers), eq(expectedEvent));
-  }
-
-  private static RadixNodeUri createNodeUri(int network, String host) {
-    return createNodeUri(network, ECKeyPair.generateNew().getPublicKey(), host);
-  }
-
-  private static RadixNodeUri createNodeUri(int network, ECPublicKey publicKey, String host) {
-    return RadixNodeUri.fromPubKeyAndAddress(network, publicKey, host, 30000);
+  private static PeerChannelInfo createPeerChannelInfo(String host) {
+    var nodeId = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
+    return PeerChannelInfo.createProxied(nodeId, Optional.empty(), host, 30000, true);
   }
 }

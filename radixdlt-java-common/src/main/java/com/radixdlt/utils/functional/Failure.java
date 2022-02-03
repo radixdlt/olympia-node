@@ -102,7 +102,6 @@ public interface Failure extends Serializable {
    */
   static Failure failure(int code, String message) {
     record FailureImpl(int code, String message) implements Failure {}
-    ;
 
     return new FailureImpl(code, message);
   }

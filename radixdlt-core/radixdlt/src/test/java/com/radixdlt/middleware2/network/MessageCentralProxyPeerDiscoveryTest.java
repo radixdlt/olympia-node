@@ -64,7 +64,29 @@
 
 package com.radixdlt.middleware2.network;
 
-import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
-// TODO: finish test
-public class MessageCentralProxyPeerDiscoveryTest {}
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.network.messaging.MessageCentral;
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.discovery.ProxiedPeers;
+import com.radixdlt.network.p2p.discovery.messages.ProxiedPeersMessage;
+import org.junit.Test;
+
+public class MessageCentralProxyPeerDiscoveryTest {
+  @Test
+  public void proxiedPeersResponseIsSent() {
+    var messageCentral = mock(MessageCentral.class);
+    var proxyPeerDiscovery = new MessageCentralProxyPeerDiscovery(messageCentral);
+    var node = BFTNode.random();
+    var proxiedPeers = new ProxiedPeers(ImmutableSet.of());
+
+    proxyPeerDiscovery.sendProxiedPeersResponse(node, proxiedPeers);
+
+    verify(messageCentral).send(eq(NodeId.fromBFTNode(node)), any(ProxiedPeersMessage.class));
+  }
+}

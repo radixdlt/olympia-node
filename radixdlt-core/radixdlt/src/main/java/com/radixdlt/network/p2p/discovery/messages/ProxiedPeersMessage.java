@@ -62,68 +62,51 @@
  * permissions under this License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.network.p2p.discovery.messages;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageCentralMockProvider;
-import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.proxy.GrantedProxyCertificate;
-import com.radixdlt.network.p2p.proxy.ProxyCertificate;
-import com.radixdlt.network.p2p.proxy.ProxyCertificatesAnnouncement;
-import com.radixdlt.network.p2p.proxy.messages.GrantedProxyCertificateMessage;
-import com.radixdlt.network.p2p.proxy.messages.ProxyCertificatesAnnouncementMessage;
-import org.junit.Before;
-import org.junit.Test;
+import com.radixdlt.network.messaging.Message;
+import com.radixdlt.network.p2p.PeerChannelInfo;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializerId2;
+import java.util.Objects;
 
-public final class MessageCentralPeerProxyTest {
-  private MessageCentral messageCentral;
-  private MessageCentralPeerProxy messageCentralPeerProxy;
+@SerializerId2("p2p.discovery.proxied_peers")
+public final class ProxiedPeersMessage extends Message {
+  @JsonProperty("peers")
+  @DsonOutput(Output.ALL)
+  private final ImmutableSet<PeerChannelInfo> peers;
 
-  @Before
-  public void setUp() {
-    this.messageCentral = MessageCentralMockProvider.get();
-    this.messageCentralPeerProxy = new MessageCentralPeerProxy(messageCentral);
+  @JsonCreator
+  public ProxiedPeersMessage(@JsonProperty("peers") ImmutableSet<PeerChannelInfo> peers) {
+    this.peers = peers == null ? ImmutableSet.of() : peers;
   }
 
-  @Test
-  public void when_send_granted_proxy_cert__then_message_central_should_sent_message() {
-    final var grantedProxyCert = mock(GrantedProxyCertificate.class);
-
-    when(grantedProxyCert.proxyCertificate()).thenReturn(mock(ProxyCertificate.class));
-
-    final var receiverKey = ECKeyPair.generateNew().getPublicKey();
-    final var receiver = BFTNode.create(receiverKey);
-
-    messageCentralPeerProxy.sendGrantedProxyCertificate(receiver, grantedProxyCert);
-
-    verify(messageCentral, times(1))
-        .send(eq(NodeId.fromPublicKey(receiverKey)), any(GrantedProxyCertificateMessage.class));
+  public ImmutableSet<PeerChannelInfo> getPeers() {
+    return peers;
   }
 
-  @Test
-  public void when_send_proxy_cert_announcement__then_message_central_should_sent_message() {
-    final var proxyCertsAnnouncement = mock(ProxyCertificatesAnnouncement.class);
+  @Override
+  public String toString() {
+    return String.format("%s[%s]", getClass().getSimpleName(), peers);
+  }
 
-    when(proxyCertsAnnouncement.proxyCertificates())
-        .thenReturn(ImmutableSet.of(mock(ProxyCertificate.class)));
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
 
-    final var receiverKey = ECKeyPair.generateNew().getPublicKey();
-    final var receiver = BFTNode.create(receiverKey);
+    return (o instanceof ProxiedPeersMessage that)
+        && Objects.equals(peers, that.peers)
+        && Objects.equals(getTimestamp(), that.getTimestamp());
+  }
 
-    messageCentralPeerProxy.sendCertificatesAnnouncement(receiver, proxyCertsAnnouncement);
-
-    verify(messageCentral, times(1))
-        .send(
-            eq(NodeId.fromPublicKey(receiverKey)), any(ProxyCertificatesAnnouncementMessage.class));
+  @Override
+  public int hashCode() {
+    return Objects.hash(peers, getTimestamp());
   }
 }

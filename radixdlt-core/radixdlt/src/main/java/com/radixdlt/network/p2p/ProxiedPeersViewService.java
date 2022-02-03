@@ -62,68 +62,49 @@
  * permissions under this License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.network.p2p;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import com.google.inject.Inject;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.network.p2p.P2PConfig.ProxyConfig;
+import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
+import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
+import com.radixdlt.network.p2p.discovery.ProxiedPeers;
 
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageCentralMockProvider;
-import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.proxy.GrantedProxyCertificate;
-import com.radixdlt.network.p2p.proxy.ProxyCertificate;
-import com.radixdlt.network.p2p.proxy.ProxyCertificatesAnnouncement;
-import com.radixdlt.network.p2p.proxy.messages.GrantedProxyCertificateMessage;
-import com.radixdlt.network.p2p.proxy.messages.ProxyCertificatesAnnouncementMessage;
-import org.junit.Before;
-import org.junit.Test;
+public final class ProxiedPeersViewService {
+  private final PeerManager peerManager;
+  private final ProxyConfig proxyConfig;
+  private final RemoteEventDispatcher<ProxiedPeers> proxiedPeersDispatcher;
 
-public final class MessageCentralPeerProxyTest {
-  private MessageCentral messageCentral;
-  private MessageCentralPeerProxy messageCentralPeerProxy;
-
-  @Before
-  public void setUp() {
-    this.messageCentral = MessageCentralMockProvider.get();
-    this.messageCentralPeerProxy = new MessageCentralPeerProxy(messageCentral);
+  @Inject
+  public ProxiedPeersViewService(
+      PeerManager peerManager,
+      ProxyConfig proxyConfig,
+      RemoteEventDispatcher<ProxiedPeers> proxiedPeersDispatcher) {
+    this.peerManager = peerManager;
+    this.proxyConfig = proxyConfig;
+    this.proxiedPeersDispatcher = proxiedPeersDispatcher;
   }
 
-  @Test
-  public void when_send_granted_proxy_cert__then_message_central_should_sent_message() {
-    final var grantedProxyCert = mock(GrantedProxyCertificate.class);
-
-    when(grantedProxyCert.proxyCertificate()).thenReturn(mock(ProxyCertificate.class));
-
-    final var receiverKey = ECKeyPair.generateNew().getPublicKey();
-    final var receiver = BFTNode.create(receiverKey);
-
-    messageCentralPeerProxy.sendGrantedProxyCertificate(receiver, grantedProxyCert);
-
-    verify(messageCentral, times(1))
-        .send(eq(NodeId.fromPublicKey(receiverKey)), any(GrantedProxyCertificateMessage.class));
+  public void peerEventProcessor(PeerEvent peerEvent) {
+    if (peerEvent instanceof PeerConnected || peerEvent instanceof PeerDisconnected) {
+      distributePeerInfo();
+    }
   }
 
-  @Test
-  public void when_send_proxy_cert_announcement__then_message_central_should_sent_message() {
-    final var proxyCertsAnnouncement = mock(ProxyCertificatesAnnouncement.class);
+  private void distributePeerInfo() {
+    var activePeers = new ProxiedPeers(peerManager.activePeers());
+    var proxiedPeers =
+        peerManager.activePeers().stream()
+            .filter(this::isAuthorizedProxiedNode)
+            .map(PeerChannelInfo::getNode)
+            .toList();
 
-    when(proxyCertsAnnouncement.proxyCertificates())
-        .thenReturn(ImmutableSet.of(mock(ProxyCertificate.class)));
+    proxiedPeersDispatcher.dispatch(proxiedPeers, activePeers);
+  }
 
-    final var receiverKey = ECKeyPair.generateNew().getPublicKey();
-    final var receiver = BFTNode.create(receiverKey);
-
-    messageCentralPeerProxy.sendCertificatesAnnouncement(receiver, proxyCertsAnnouncement);
-
-    verify(messageCentral, times(1))
-        .send(
-            eq(NodeId.fromPublicKey(receiverKey)), any(ProxyCertificatesAnnouncementMessage.class));
+  private boolean isAuthorizedProxiedNode(PeerChannelInfo peerChannelInfo) {
+    return proxyConfig.proxyEnabled()
+        && proxyConfig.authorizedProxiedPeers().contains(peerChannelInfo.getNodeId());
   }
 }

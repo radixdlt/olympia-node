@@ -69,30 +69,28 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.network.p2p.discovery.messages.ProxiedPeersResponseMessage;
+import com.radixdlt.network.p2p.discovery.messages.ProxiedPeersMessage;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 import org.radix.serialization.SerializeMessageObject;
 
-public class ProxiedPeersMessageTest extends SerializeMessageObject<ProxiedPeersResponseMessage> {
+public class ProxiedPeersMessageTest extends SerializeMessageObject<ProxiedPeersMessage> {
 
   public ProxiedPeersMessageTest() {
-    super(
-        ProxiedPeersResponseMessage.class,
-        () -> new ProxiedPeersResponseMessage(ImmutableSet.of()));
+    super(ProxiedPeersMessage.class, () -> new ProxiedPeersMessage(ImmutableSet.of()));
   }
 
   @Test
   public void sensibleToString() {
-    String s = new ProxiedPeersResponseMessage(ImmutableSet.of()).toString();
+    String s = new ProxiedPeersMessage(ImmutableSet.of()).toString();
 
-    assertThat(s).contains(ProxiedPeersResponseMessage.class.getSimpleName());
+    assertThat(s).contains(ProxiedPeersMessage.class.getSimpleName());
   }
 
   @Test
   public void equalsContract() {
-    EqualsVerifier.forClass(ProxiedPeersResponseMessage.class)
+    EqualsVerifier.forClass(ProxiedPeersMessage.class)
         .suppress(Warning.NONFINAL_FIELDS)
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
         .verify();
@@ -100,13 +98,13 @@ public class ProxiedPeersMessageTest extends SerializeMessageObject<ProxiedPeers
 
   @Test
   public void deserializationWithNullIsSafe() {
-    var peersResponseMessageWithNull = new ProxiedPeersResponseMessage(null);
+    var peersResponseMessageWithNull = new ProxiedPeersMessage(null);
 
     assertThat(peersResponseMessageWithNull.getPeers()).isEqualTo(ImmutableSet.of());
   }
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullElementsInSetThrowsException() {
-    new ProxiedPeersResponseMessage(ImmutableSet.of(null));
+    new ProxiedPeersMessage(ImmutableSet.of(null));
   }
 }

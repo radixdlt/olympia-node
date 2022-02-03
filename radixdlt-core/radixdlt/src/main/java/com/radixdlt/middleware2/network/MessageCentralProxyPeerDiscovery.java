@@ -69,7 +69,7 @@ import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.discovery.ProxiedPeers;
-import com.radixdlt.network.p2p.discovery.messages.ProxiedPeersResponseMessage;
+import com.radixdlt.network.p2p.discovery.messages.ProxiedPeersMessage;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import java.util.Objects;
@@ -86,13 +86,13 @@ public final class MessageCentralProxyPeerDiscovery {
 
   public Flowable<RemoteEvent<ProxiedPeers>> proxiedPeersResponses() {
     return this.messageCentral
-        .messagesOf(ProxiedPeersResponseMessage.class)
+        .messagesOf(ProxiedPeersMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(m -> new RemoteEvent<>(m.sourceNode(), new ProxiedPeers(m.message().getPeers())));
   }
 
-  public void sendProxiedPeersResponse(BFTNode node, ProxiedPeers peersResponse) {
+  public void sendProxiedPeersResponse(BFTNode node, ProxiedPeers proxiedPeers) {
     this.messageCentral.send(
-        NodeId.fromBFTNode(node), new ProxiedPeersResponseMessage(peersResponse.peers()));
+        NodeId.fromBFTNode(node), new ProxiedPeersMessage(proxiedPeers.peers()));
   }
 }
