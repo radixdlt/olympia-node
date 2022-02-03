@@ -65,6 +65,7 @@
 package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.p2p.NodeId;
@@ -100,11 +101,19 @@ public final class MessageCentralPeerLiveness {
         .map(m -> new RemoteEvent<>(m.sourceNode(), Pong.create()));
   }
 
-  public void sendPing(BFTNode node, Ping ignoredPing) {
+  public RemoteEventDispatcher<Ping> pingDispatcher() {
+    return this::sendPing;
+  }
+
+  private void sendPing(BFTNode node, Ping ignoredPing) {
     this.messageCentral.send(NodeId.fromBFTNode(node), new PeerPingMessage());
   }
 
-  public void sendPong(BFTNode node, Pong ignoredPong) {
+  public RemoteEventDispatcher<Pong> pongDispatcher() {
+    return this::sendPong;
+  }
+
+  private void sendPong(BFTNode node, Pong ignoredPong) {
     this.messageCentral.send(NodeId.fromBFTNode(node), new PeerPongMessage());
   }
 }

@@ -129,113 +129,117 @@ public final class MessagingModule extends AbstractModule {
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> proposalDispatcher(MessageCentralBFTNetwork bftNetwork) {
-    return RxRemoteDispatcher.create(Proposal.class, bftNetwork::sendProposal);
+    return RxRemoteDispatcher.create(Proposal.class, bftNetwork.proposalDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> voteDispatcher(MessageCentralBFTNetwork bftNetwork) {
-    return RxRemoteDispatcher.create(Vote.class, bftNetwork::sendVote);
+    return RxRemoteDispatcher.create(Vote.class, bftNetwork.voteDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> vertexRequestDispatcher(
       MessageCentralValidatorSync messageCentralValidatorSync) {
     return RxRemoteDispatcher.create(
-        GetVerticesRequest.class, messageCentralValidatorSync::sendGetVerticesRequest);
+        GetVerticesRequest.class, messageCentralValidatorSync.verticesRequestDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> vertexResponseDispatcher(
       MessageCentralValidatorSync messageCentralValidatorSync) {
     return RxRemoteDispatcher.create(
-        GetVerticesResponse.class, messageCentralValidatorSync::sendGetVerticesResponse);
+        GetVerticesResponse.class, messageCentralValidatorSync.verticesResponseDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> vertexErrorResponseDispatcher(
       MessageCentralValidatorSync messageCentralValidatorSync) {
     return RxRemoteDispatcher.create(
-        GetVerticesErrorResponse.class, messageCentralValidatorSync::sendGetVerticesErrorResponse);
+        GetVerticesErrorResponse.class,
+        messageCentralValidatorSync.verticesErrorResponseDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> syncRequestDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
-    return RxRemoteDispatcher.create(SyncRequest.class, messageCentralLedgerSync::sendSyncRequest);
+    return RxRemoteDispatcher.create(
+        SyncRequest.class, messageCentralLedgerSync.syncRequestDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> syncResponseDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        SyncResponse.class, messageCentralLedgerSync::sendSyncResponse);
+        SyncResponse.class, messageCentralLedgerSync.syncResponseDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> statusRequestDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        StatusRequest.class, messageCentralLedgerSync::sendStatusRequest);
+        StatusRequest.class, messageCentralLedgerSync.statusRequestDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> statusResponseDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        StatusResponse.class, messageCentralLedgerSync::sendStatusResponse);
+        StatusResponse.class, messageCentralLedgerSync.statusResponseDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> pingDispatcher(
       MessageCentralPeerLiveness messageCentralPeerLiveness) {
-    return RxRemoteDispatcher.create(Ping.class, messageCentralPeerLiveness::sendPing);
+    return RxRemoteDispatcher.create(Ping.class, messageCentralPeerLiveness.pingDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> pongDispatcher(
       MessageCentralPeerLiveness messageCentralPeerLiveness) {
-    return RxRemoteDispatcher.create(Pong.class, messageCentralPeerLiveness::sendPong);
+    return RxRemoteDispatcher.create(Pong.class, messageCentralPeerLiveness.pongDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> getPeersDispatcher(
       MessageCentralPeerDiscovery messageCentralPeerDiscovery) {
-    return RxRemoteDispatcher.create(GetPeers.class, messageCentralPeerDiscovery::sendGetPeers);
+    return RxRemoteDispatcher.create(
+        GetPeers.class, messageCentralPeerDiscovery.getPeersDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> peersResponseDispatcher(
       MessageCentralPeerDiscovery messageCentralPeerDiscovery) {
     return RxRemoteDispatcher.create(
-        PeersResponse.class, messageCentralPeerDiscovery::sendPeersResponse);
+        PeersResponse.class, messageCentralPeerDiscovery.peersResponseDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> proxiedPeersResponseDispatcher(
       MessageCentralProxyPeerDiscovery messageCentralProxyPeerDiscovery) {
     return RxRemoteDispatcher.create(
-        ProxiedPeers.class, messageCentralProxyPeerDiscovery::sendProxiedPeersResponse);
+        ProxiedPeers.class, messageCentralProxyPeerDiscovery.proxiedPeersDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> grantedProxyCertificateDispatcher(
       MessageCentralPeerProxy messageCentralPeerProxy) {
     return RxRemoteDispatcher.create(
-        GrantedProxyCertificate.class, messageCentralPeerProxy::sendGrantedProxyCertificate);
+        GrantedProxyCertificate.class, messageCentralPeerProxy.grantedProxyCertificateDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> proxyCertificatesAnnouncementDispatcher(
       MessageCentralPeerProxy messageCentralPeerProxy) {
     return RxRemoteDispatcher.create(
-        ProxyCertificatesAnnouncement.class, messageCentralPeerProxy::sendCertificatesAnnouncement);
+        ProxyCertificatesAnnouncement.class,
+        messageCentralPeerProxy.proxyCertificatesAnnouncementDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?> ledgerStatusUpdateDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        LedgerStatusUpdate.class, messageCentralLedgerSync::sendLedgerStatusUpdate);
+        LedgerStatusUpdate.class, messageCentralLedgerSync.ledgerStatusUpdateDispatcher());
   }
 
   // TODO: Clean this up

@@ -85,7 +85,7 @@ public class MessageCentralProxyPeerDiscoveryTest {
     var node = BFTNode.random();
     var proxiedPeers = new ProxiedPeers(ImmutableSet.of());
 
-    proxyPeerDiscovery.sendProxiedPeersResponse(node, proxiedPeers);
+    proxyPeerDiscovery.proxiedPeersDispatcher().dispatch(node, proxiedPeers);
 
     verify(messageCentral).send(eq(NodeId.fromBFTNode(node)), any(ProxiedPeersMessage.class));
   }

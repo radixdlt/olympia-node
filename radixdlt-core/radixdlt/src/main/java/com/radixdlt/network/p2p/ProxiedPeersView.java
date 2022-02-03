@@ -68,19 +68,29 @@ import static java.util.stream.Collectors.groupingBy;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.network.p2p.P2PConfig.ProxyConfig;
 import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
 import com.radixdlt.network.p2p.discovery.ProxiedPeers;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class ProxiedPeersView implements PeersView {
+  private static final Logger logger = LogManager.getLogger();
+
   private final PeerManager peerManager;
   private final ProxyConfig proxyConfig;
   private final RemoteEventDispatcher<ProxiedPeers> proxiedPeersDispatcher;
+  private final RateLimiter logLimiter = RateLimiter.create(1.0);
   private Set<PeerInfo> peers = Set.of();
 
   @Inject
@@ -93,7 +103,18 @@ public final class ProxiedPeersView implements PeersView {
     this.proxiedPeersDispatcher = proxiedPeersDispatcher;
   }
 
-  public void proxiedPeersEventProcessor(ProxiedPeers proxiedPeers) {
+  public RemoteEventProcessor<ProxiedPeers> proxiedPeersEventProcessor() {
+    return this::eventProcessor;
+  }
+
+  private void eventProcessor(BFTNode node, ProxiedPeers proxiedPeers) {
+    if (!proxyConfig.authorizedProxies().contains(NodeId.fromBFTNode(node))) {
+      var logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
+      logger.log(logLevel, "Attempt to spoof proxied peers from {}", node);
+
+      return;
+    }
+
     var nodeIdToChannelInfo =
         proxiedPeers.peers().stream()
             .collect(groupingBy(PeerChannelInfo::getNodeId, ImmutableList.toImmutableList()));
@@ -106,18 +127,18 @@ public final class ProxiedPeersView implements PeersView {
 
   public void peerEventProcessor(PeerEvent peerEvent) {
     if (peerEvent instanceof PeerConnected || peerEvent instanceof PeerDisconnected) {
-      distributePeerInfo();
+      var activePeers = new ProxiedPeers(peerManager.activePeers());
+      var proxiedPeers = retrievePoxiedPeers();
+
+      proxiedPeersDispatcher.dispatch(proxiedPeers, activePeers);
     }
   }
 
-  private void distributePeerInfo() {
-    var activePeers = new ProxiedPeers(peerManager.activePeers());
-    var proxiedPeers =
-        peerManager.activePeers().stream()
-            .filter(this::isAuthorizedProxiedNode)
-            .map(uri -> uri.getNodeId().asBFTNode())
-            .toList();
-    proxiedPeersDispatcher.dispatch(proxiedPeers, activePeers);
+  private List<BFTNode> retrievePoxiedPeers() {
+    return peerManager.activePeers().stream()
+        .filter(this::isAuthorizedProxiedNode)
+        .map(uri -> uri.getNodeId().asBFTNode())
+        .toList();
   }
 
   private boolean isAuthorizedProxiedNode(PeerChannelInfo peerChannelInfo) {

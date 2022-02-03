@@ -65,6 +65,7 @@
 package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.p2p.NodeId;
@@ -108,12 +109,21 @@ public final class MessageCentralPeerProxy {
             });
   }
 
-  public void sendGrantedProxyCertificate(BFTNode node, GrantedProxyCertificate certificate) {
+  public RemoteEventDispatcher<GrantedProxyCertificate> grantedProxyCertificateDispatcher() {
+    return this::sendGrantedProxyCertificate;
+  }
+
+  private void sendGrantedProxyCertificate(BFTNode node, GrantedProxyCertificate certificate) {
     final var msg = new GrantedProxyCertificateMessage(certificate.proxyCertificate());
     this.messageCentral.send(NodeId.fromBFTNode(node), msg);
   }
 
-  public void sendCertificatesAnnouncement(
+  public RemoteEventDispatcher<ProxyCertificatesAnnouncement>
+      proxyCertificatesAnnouncementDispatcher() {
+    return this::sendCertificatesAnnouncement;
+  }
+
+  private void sendCertificatesAnnouncement(
       BFTNode node, ProxyCertificatesAnnouncement announcement) {
     final var msg = new ProxyCertificatesAnnouncementMessage(announcement.proxyCertificates());
     this.messageCentral.send(NodeId.fromBFTNode(node), msg);

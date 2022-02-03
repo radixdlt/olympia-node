@@ -124,7 +124,7 @@ public class MessageCentralValidatorSyncTest {
 
     when(node.getKey()).thenReturn(ecPublicKey);
 
-    sync.sendGetVerticesResponse(node, new GetVerticesResponse(vertices));
+    sync.verticesResponseDispatcher().dispatch(node, new GetVerticesResponse(vertices));
     verify(messageCentral, times(1)).send(any(), any(GetVerticesResponseMessage.class));
   }
 
@@ -142,7 +142,8 @@ public class MessageCentralValidatorSyncTest {
     when(node.getKey()).thenReturn(ecPublicKey);
     final var request = new GetVerticesRequest(HashUtils.random256(), 3);
 
-    sync.sendGetVerticesErrorResponse(node, new GetVerticesErrorResponse(highQC, request));
+    sync.verticesErrorResponseDispatcher()
+        .dispatch(node, new GetVerticesErrorResponse(highQC, request));
 
     verify(messageCentral, times(1))
         .send(eq(NodeId.fromPublicKey(ecPublicKey)), any(GetVerticesErrorResponseMessage.class));

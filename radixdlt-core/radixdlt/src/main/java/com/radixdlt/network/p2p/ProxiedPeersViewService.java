@@ -65,6 +65,7 @@
 package com.radixdlt.network.p2p;
 
 import com.google.inject.Inject;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.network.p2p.P2PConfig.ProxyConfig;
 import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
@@ -86,7 +87,11 @@ public final class ProxiedPeersViewService {
     this.proxiedPeersDispatcher = proxiedPeersDispatcher;
   }
 
-  public void peerEventProcessor(PeerEvent peerEvent) {
+  public EventProcessor<PeerEvent> peerEventProcessor() {
+    return this::eventProcessor;
+  }
+
+  private void eventProcessor(PeerEvent peerEvent) {
     if (peerEvent instanceof PeerConnected || peerEvent instanceof PeerDisconnected) {
       distributePeerInfo();
     }

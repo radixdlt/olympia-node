@@ -135,13 +135,14 @@ public final class P2PModule extends AbstractModule {
         PeerEvent.class,
         fanOut(
             List.of(
-                peerManager.peerEventProcessor(), proxiedPeersViewService::peerEventProcessor)));
+                peerManager.peerEventProcessor(), proxiedPeersViewService.peerEventProcessor())));
   }
 
   @ProvidesIntoSet
-  private EventProcessorOnRunner<?> proxiedPeersEventProcessor(ProxiedPeersView proxiedPeersView) {
-    return new EventProcessorOnRunner<>(
-        Runners.P2P_NETWORK, ProxiedPeers.class, proxiedPeersView::proxiedPeersEventProcessor);
+  private RemoteEventProcessorOnRunner<?> proxiedPeersEventProcessor(
+      ProxiedPeersView proxiedPeersView) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.P2P_NETWORK, ProxiedPeers.class, proxiedPeersView.proxiedPeersEventProcessor());
   }
 
   @ProvidesIntoSet

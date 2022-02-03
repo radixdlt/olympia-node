@@ -104,7 +104,9 @@ public final class MessageCentralPeerProxyTest {
     final var receiverKey = ECKeyPair.generateNew().getPublicKey();
     final var receiver = BFTNode.create(receiverKey);
 
-    messageCentralPeerProxy.sendGrantedProxyCertificate(receiver, grantedProxyCert);
+    messageCentralPeerProxy
+        .grantedProxyCertificateDispatcher()
+        .dispatch(receiver, grantedProxyCert);
 
     verify(messageCentral, times(1))
         .send(eq(NodeId.fromPublicKey(receiverKey)), any(GrantedProxyCertificateMessage.class));
@@ -120,7 +122,9 @@ public final class MessageCentralPeerProxyTest {
     final var receiverKey = ECKeyPair.generateNew().getPublicKey();
     final var receiver = BFTNode.create(receiverKey);
 
-    messageCentralPeerProxy.sendCertificatesAnnouncement(receiver, proxyCertsAnnouncement);
+    messageCentralPeerProxy
+        .proxyCertificatesAnnouncementDispatcher()
+        .dispatch(receiver, proxyCertsAnnouncement);
 
     verify(messageCentral, times(1))
         .send(

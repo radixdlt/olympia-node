@@ -70,6 +70,7 @@ import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.network.p2p.P2PConfig.ProxyConfig;
@@ -82,25 +83,55 @@ public class ProxiedPeersViewTest {
   @Test
   public void receivedProxiedPeersAreReturnedWhenRequested() {
     var dispatcher = cmock(new TypeLiteral<RemoteEventDispatcher<ProxiedPeers>>() {});
-    var peersView =
-        new ProxiedPeersView(mock(PeerManager.class), mock(ProxyConfig.class), dispatcher);
+    var proxyConfig = mock(ProxyConfig.class);
+    var peersView = new ProxiedPeersView(mock(PeerManager.class), proxyConfig, dispatcher);
     var peers =
         ImmutableSet.of(
             createPeerChannelInfo("192.168.0.1"),
             createPeerChannelInfo("192.168.0.2"),
             createPeerChannelInfo("192.168.0.3"));
     var proxiedPeers = new ProxiedPeers(peers);
+    var node = BFTNode.random();
+
+    when(proxyConfig.authorizedProxies()).thenReturn(ImmutableSet.of(NodeId.fromBFTNode(node)));
 
     // Pre-condition
     assertTrue(peersView.peers().toList().isEmpty());
 
     // Act
-    peersView.proxiedPeersEventProcessor(proxiedPeers);
+    peersView.proxiedPeersEventProcessor().process(node, proxiedPeers);
 
     // Verify
     assertEquals(
         peers.stream().map(PeerChannelInfo::getNodeId).collect(Collectors.toSet()),
         peersView.peers().map(PeersView.PeerInfo::nodeId).collect(Collectors.toSet()));
+  }
+
+  @Test
+  public void unknownSourceIsRejected() {
+    var dispatcher = cmock(new TypeLiteral<RemoteEventDispatcher<ProxiedPeers>>() {});
+    var proxyConfig = mock(ProxyConfig.class);
+    var peersView = new ProxiedPeersView(mock(PeerManager.class), proxyConfig, dispatcher);
+    var peers =
+        ImmutableSet.of(
+            createPeerChannelInfo("192.168.0.1"),
+            createPeerChannelInfo("192.168.0.2"),
+            createPeerChannelInfo("192.168.0.3"));
+    var proxiedPeers = new ProxiedPeers(peers);
+    var proxyNode = BFTNode.random();
+
+    when(proxyConfig.authorizedProxies())
+        .thenReturn(ImmutableSet.of(NodeId.fromBFTNode(proxyNode)));
+
+    // Pre-condition
+    assertTrue(peersView.peers().toList().isEmpty());
+
+    // Act
+    var unknownNode = BFTNode.random();
+    peersView.proxiedPeersEventProcessor().process(unknownNode, proxiedPeers);
+
+    // Verify
+    assertTrue(peersView.peers().toList().isEmpty());
   }
 
   private static PeerChannelInfo createPeerChannelInfo(String host) {

@@ -68,6 +68,7 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.messaging.Message;
 import com.radixdlt.network.messaging.MessageCentral;
@@ -104,11 +105,19 @@ public final class MessageCentralBFTNetwork {
         .toFlowable(BackpressureStrategy.BUFFER);
   }
 
-  public void sendProposal(BFTNode receiver, Proposal proposal) {
+  public RemoteEventDispatcher<Proposal> proposalDispatcher() {
+    return this::sendProposal;
+  }
+
+  private void sendProposal(BFTNode receiver, Proposal proposal) {
     send(receiver, new ConsensusEventMessage(proposal));
   }
 
-  public void sendVote(BFTNode receiver, Vote vote) {
+  public RemoteEventDispatcher<Vote> voteDispatcher() {
+    return this::sendVote;
+  }
+
+  private void sendVote(BFTNode receiver, Vote vote) {
     send(receiver, new ConsensusEventMessage(vote));
   }
 

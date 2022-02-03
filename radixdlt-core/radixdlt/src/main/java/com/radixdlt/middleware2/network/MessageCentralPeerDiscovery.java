@@ -65,6 +65,7 @@
 package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.p2p.NodeId;
@@ -100,11 +101,19 @@ public final class MessageCentralPeerDiscovery {
         .map(m -> new RemoteEvent<>(m.sourceNode(), new PeersResponse(m.message().getPeers())));
   }
 
-  public void sendGetPeers(BFTNode node, GetPeers ignoredGetPeers) {
+  public RemoteEventDispatcher<GetPeers> getPeersDispatcher() {
+    return this::sendGetPeers;
+  }
+
+  private void sendGetPeers(BFTNode node, GetPeers ignoredGetPeers) {
     this.messageCentral.send(NodeId.fromBFTNode(node), new GetPeersMessage());
   }
 
-  public void sendPeersResponse(BFTNode node, PeersResponse peersResponse) {
+  public RemoteEventDispatcher<PeersResponse> peersResponseDispatcher() {
+    return this::sendPeersResponse;
+  }
+
+  private void sendPeersResponse(BFTNode node, PeersResponse peersResponse) {
     this.messageCentral.send(
         NodeId.fromBFTNode(node), new PeersResponseMessage(peersResponse.peers()));
   }

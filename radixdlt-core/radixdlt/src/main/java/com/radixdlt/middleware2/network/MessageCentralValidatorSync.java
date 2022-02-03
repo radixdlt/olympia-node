@@ -72,6 +72,7 @@ import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.messaging.Message;
 import com.radixdlt.network.messaging.MessageCentral;
@@ -92,19 +93,31 @@ public class MessageCentralValidatorSync {
     this.hasher = Objects.requireNonNull(hasher);
   }
 
-  public void sendGetVerticesRequest(BFTNode node, GetVerticesRequest request) {
+  public RemoteEventDispatcher<GetVerticesRequest> verticesRequestDispatcher() {
+    return this::sendGetVerticesRequest;
+  }
+
+  public RemoteEventDispatcher<GetVerticesResponse> verticesResponseDispatcher() {
+    return this::sendGetVerticesResponse;
+  }
+
+  public RemoteEventDispatcher<GetVerticesErrorResponse> verticesErrorResponseDispatcher() {
+    return this::sendGetVerticesErrorResponse;
+  }
+
+  private void sendGetVerticesRequest(BFTNode node, GetVerticesRequest request) {
     final var vertexRequest =
         new GetVerticesRequestMessage(request.getVertexId(), request.getCount());
     this.messageCentral.send(NodeId.fromBFTNode(node), vertexRequest);
   }
 
-  public void sendGetVerticesResponse(BFTNode node, GetVerticesResponse response) {
+  private void sendGetVerticesResponse(BFTNode node, GetVerticesResponse response) {
     var rawVertices = response.getVertices().stream().map(VerifiedVertex::toSerializable).toList();
     var msg = new GetVerticesResponseMessage(rawVertices);
     this.messageCentral.send(NodeId.fromBFTNode(node), msg);
   }
 
-  public void sendGetVerticesErrorResponse(BFTNode node, GetVerticesErrorResponse response) {
+  private void sendGetVerticesErrorResponse(BFTNode node, GetVerticesErrorResponse response) {
     var request = response.request();
     var requestMsg = new GetVerticesRequestMessage(request.getVertexId(), request.getCount());
     var msg = new GetVerticesErrorResponseMessage(response.highQC(), requestMsg);
