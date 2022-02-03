@@ -38,30 +38,30 @@ Please report unacceptable behavior to [hello@radixdlt.com](mailto:hello@radixdl
 
 ## Branching strategy
 
-This branching scheme is a combination of GitHub flow and git-flow where there’s the develop branch, feature branches and then release branches.
+This branching scheme is a combination of GitHub flow and git-flow where there’s the main branch, feature branches and then release branches.
 
 
 ### Rebasing
 
-Rebasing in develop should be avoided. Rebases cause potential conflicts with other people's work on the same branches, overwrite the history of the project and ruin any GPG signed commits from other developers. On feature branches, especially if only one developer is working on it, it’s ok to do rebasing.
+Rebasing in main should be avoided. Rebases cause potential conflicts with other people's work on the same branches, overwrite the history of the project and ruin any GPG signed commits from other developers. On feature branches, especially if only one developer is working on it, it’s ok to do rebasing.
 
 
 ### Main flow
 
-* Create feature branches using develop as a starting point to start new work
+* Create feature branches using main as a starting point to start new work
 
 When the release process starts:
 
 * Create a release branch
 * Tag the commit with a release candidate tag, e.g. rc/1.0.3
 * Once a release branch is created, only add serious bug fixes to the branch.
-* Once a release branch (release or hotfix) is released, merge back to develop
+* Once a release branch (release or hotfix) is released, merge back to main
 
 
 
 ### Branch types and naming
 
-* Development  - `develop`
+* Development  - `main`
 * Release - `release/1.0.0`
 * Feature - `feature/cool-bananas`
 * Hotfix - `release/1.0.1`
@@ -69,13 +69,13 @@ When the release process starts:
 
 ### Features
 
-Feature branches are where the main work happens. The goal is to keep them as independent from each other as possible. They can be based on a previous release or from develop.
+Feature branches are where the main work happens. The goal is to keep them as independent from each other as possible. They can be based on a previous release or from main.
 
-> develop branch is not a place to dump WIP features
+> main branch is not a place to dump WIP features
 
-It’s important to remark that feature branches should only be merged to develop once they are complete and ideally tested in a test network.
+It’s important to remark that feature branches should only be merged to main once they are complete and ideally tested in a test network.
 
-### Develop
+### Main
 
 This branch acts as staging for new releases, and are where most of QA should happen.
 

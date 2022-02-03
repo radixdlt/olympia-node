@@ -1,6 +1,6 @@
 # Radix - Development Docker Node
 
-This set of scripts runs a local docker image `radixdlt/radixdlt-core:develop` created from the main repo.
+This set of scripts runs a local docker image `radixdlt/radixdlt-core:main` created from the main repo.
 
 This requires docker-compose to be installed locally.
 
@@ -48,15 +48,15 @@ From the `radixdlt` repo, on the correct branch, run these commands in turn:
 ls -l ./radixdlt-core/docker/*.deb 
 
 # Build and locally store the image.
-# If successful, the last output should read something like "naming to docker.io/radixdlt/radixdlt-core:develop"
+# If successful, the last output should read something like "naming to docker.io/radixdlt/radixdlt-core:main"
 docker-compose -f radixdlt-core/docker/node-1.yml build
 ```
 
-This builds a `radixdlt/radixdlt-core:develop` image and stores it locally under docker-compose's registry.
+This builds a `radixdlt/radixdlt-core:main` image and stores it locally under docker-compose's registry.
 
 ## Start node
 
-Run `./start-node.sh` to start the most recently created version of the `radixdlt/radixdlt-core:develop` image through docker-compose,
+Run `./start-node.sh` to start the most recently created version of the `radixdlt/radixdlt-core:main` image through docker-compose,
 using the configuration at `node-variables.sh`.
 
 Some notes:
