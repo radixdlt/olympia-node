@@ -217,6 +217,7 @@ public final class SystemModelMapper {
                   new PeerChannel()
                       .type(
                           channel.isOutbound() ? PeerChannel.TypeEnum.OUT : PeerChannel.TypeEnum.IN)
+                      .isProxied(channel.isProxied())
                       .localPort(channel.getPort())
                       .ip(channel.getHost());
               channel.getUri().map(RadixNodeUri::toString).ifPresent(peerChannel::uri);

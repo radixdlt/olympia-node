@@ -71,13 +71,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.network.p2p.P2PConfig.ProxyConfig;
-import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
-import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
 import com.radixdlt.network.p2p.discovery.ProxiedPeers;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
@@ -89,18 +85,13 @@ public final class ProxiedPeersView implements PeersView {
 
   private final PeerManager peerManager;
   private final ProxyConfig proxyConfig;
-  private final RemoteEventDispatcher<ProxiedPeers> proxiedPeersDispatcher;
   private final RateLimiter logLimiter = RateLimiter.create(1.0);
   private Set<PeerInfo> peers = Set.of();
 
   @Inject
-  public ProxiedPeersView(
-      PeerManager peerManager,
-      ProxyConfig proxyConfig,
-      RemoteEventDispatcher<ProxiedPeers> proxiedPeersDispatcher) {
+  public ProxiedPeersView(PeerManager peerManager, ProxyConfig proxyConfig) {
     this.peerManager = peerManager;
     this.proxyConfig = proxyConfig;
-    this.proxiedPeersDispatcher = proxiedPeersDispatcher;
   }
 
   public RemoteEventProcessor<ProxiedPeers> proxiedPeersEventProcessor() {
@@ -123,27 +114,6 @@ public final class ProxiedPeersView implements PeersView {
         nodeIdToChannelInfo.entrySet().stream()
             .map(entry -> new PeerInfo(entry.getKey(), entry.getValue()))
             .collect(ImmutableSet.toImmutableSet());
-  }
-
-  public void peerEventProcessor(PeerEvent peerEvent) {
-    if (peerEvent instanceof PeerConnected || peerEvent instanceof PeerDisconnected) {
-      var activePeers = new ProxiedPeers(peerManager.activePeers());
-      var proxiedPeers = retrievePoxiedPeers();
-
-      proxiedPeersDispatcher.dispatch(proxiedPeers, activePeers);
-    }
-  }
-
-  private List<BFTNode> retrievePoxiedPeers() {
-    return peerManager.activePeers().stream()
-        .filter(this::isAuthorizedProxiedNode)
-        .map(uri -> uri.getNodeId().asBFTNode())
-        .toList();
-  }
-
-  private boolean isAuthorizedProxiedNode(PeerChannelInfo peerChannelInfo) {
-    return proxyConfig.proxyEnabled()
-        && proxyConfig.authorizedProxiedPeers().contains(peerChannelInfo.getNodeId());
   }
 
   @Override
