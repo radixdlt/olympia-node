@@ -102,6 +102,10 @@ public abstract sealed class PMTNode implements Cloneable permits PMTBranch, PMT
       Function<byte[], PMTNode> read);
 
   // This method is expected to mutate PMTAcc.
+  public abstract void removeNode(
+      PMTKey key, PMTAcc acc, Function<PMTNode, byte[]> represent, Function<byte[], PMTNode> read);
+
+  // This method is expected to mutate PMTAcc.
   public abstract void getValue(PMTKey key, PMTAcc acc, Function<byte[], PMTNode> read);
 
   // This method is expected to mutate PMTAcc.

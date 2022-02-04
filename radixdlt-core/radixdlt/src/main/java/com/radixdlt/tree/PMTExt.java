@@ -104,6 +104,36 @@ public final class PMTExt extends PMTNode {
     }
   }
 
+  @Override
+  public void removeNode(
+      PMTKey key, PMTAcc acc, Function<PMTNode, byte[]> represent, Function<byte[], PMTNode> read) {
+    final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
+    if (commonPath.getCommonPrefix().isEmpty()) {
+      acc.setNotFound();
+    } else if (commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NONE
+        || commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NEW) {
+      PMTNode currentChild;
+      currentChild = read.apply(getValue());
+      var newRemainder = commonPath.getRemainder(PMTPath.RemainingSubtree.NEW);
+      currentChild.removeNode(newRemainder, acc, represent, read);
+      PMTNode newChild = acc.getTip();
+      if (acc.notFound()) {
+        acc.setTip(null);
+      } else if (newChild == null) { // remove child
+        acc.remove(this);
+        acc.setTip(null);
+      } else { // update child
+        acc.remove(this);
+        var newExt = new PMTExt(this.getKey(), represent.apply(newChild));
+        acc.add(newExt);
+        acc.setTip(newExt);
+      }
+    } else {
+      throw new IllegalStateException(
+          String.format("Unexpected subtree: %s", commonPath.whichRemainderIsLeft()));
+    }
+  }
+
   // This method is expected to mutate PMTAcc.
   private void handleBothExistingAndNewRemainders(
       PMTNode current,

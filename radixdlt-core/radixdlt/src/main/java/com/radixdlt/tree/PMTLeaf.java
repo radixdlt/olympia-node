@@ -104,6 +104,21 @@ public final class PMTLeaf extends PMTNode {
     }
   }
 
+  @Override
+  public void removeNode(
+      PMTKey key, PMTAcc acc, Function<PMTNode, byte[]> represent, Function<byte[], PMTNode> read) {
+    final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
+    switch (commonPath.whichRemainderIsLeft()) {
+      case NONE -> {
+        acc.remove(this);
+        acc.setTip(null);
+      }
+      case NEW, EXISTING, EXISTING_AND_NEW -> acc.setNotFound();
+      default -> throw new IllegalStateException(
+          String.format("Unexpected subtree: %s", commonPath.whichRemainderIsLeft()));
+    }
+  }
+
   // This method is expected to mutate PMTAcc.
   private void handleNoRemainder(PMTKey key, byte[] val, PMTAcc acc) {
     if (Arrays.equals(val, this.getValue())) {
