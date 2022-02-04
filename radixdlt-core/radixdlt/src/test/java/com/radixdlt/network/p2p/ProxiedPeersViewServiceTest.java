@@ -86,7 +86,7 @@ public class ProxiedPeersViewServiceTest {
     var peerManager = mock(PeerManager.class);
     var proxyConfig = mock(ProxyConfig.class);
     var dispatcher = cmock(new TypeLiteral<RemoteEventDispatcher<ProxiedPeers>>() {});
-    var peersView = new ProxiedPeersView(peerManager, proxyConfig, dispatcher);
+    var peersView = new ProxiedPeersViewService(peerManager, proxyConfig, dispatcher);
     var proxiedPeer = createPeerChannelInfo("192.168.1.1");
     var peers =
         ImmutableSet.of(
@@ -101,7 +101,7 @@ public class ProxiedPeersViewServiceTest {
     when(proxyConfig.authorizedProxiedPeers()).thenReturn(ImmutableSet.of(proxiedPeer.getNodeId()));
 
     // Act
-    peersView.peerEventProcessor(new PeerConnected(mock(PeerChannel.class)));
+    peersView.peerEventProcessor().process(new PeerConnected(mock(PeerChannel.class)));
 
     // Verify
     var expectedProxiedPeers = List.of(proxiedPeer.getNodeId().asBFTNode());
@@ -115,7 +115,7 @@ public class ProxiedPeersViewServiceTest {
     var peerManager = mock(PeerManager.class);
     var proxyConfig = mock(ProxyConfig.class);
     var dispatcher = cmock(new TypeLiteral<RemoteEventDispatcher<ProxiedPeers>>() {});
-    var peersView = new ProxiedPeersView(peerManager, proxyConfig, dispatcher);
+    var peersView = new ProxiedPeersViewService(peerManager, proxyConfig, dispatcher);
     var proxiedPeer = createPeerChannelInfo("192.168.1.1");
     var peers =
         ImmutableSet.of(
@@ -130,7 +130,7 @@ public class ProxiedPeersViewServiceTest {
     when(proxyConfig.authorizedProxiedPeers()).thenReturn(ImmutableSet.of(proxiedPeer.getNodeId()));
 
     // Act
-    peersView.peerEventProcessor(new PeerDisconnected(mock(PeerChannel.class)));
+    peersView.peerEventProcessor().process(new PeerDisconnected(mock(PeerChannel.class)));
 
     // Verify
     var expectedProxiedPeers = List.of(proxiedPeer.getNodeId().asBFTNode());

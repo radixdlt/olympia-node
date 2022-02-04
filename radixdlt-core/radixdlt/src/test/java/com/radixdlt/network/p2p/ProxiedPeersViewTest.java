@@ -64,15 +64,12 @@
 
 package com.radixdlt.network.p2p;
 
-import static com.radixdlt.utils.TypedMocks.cmock;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.network.p2p.P2PConfig.ProxyConfig;
 import com.radixdlt.network.p2p.discovery.ProxiedPeers;
 import java.util.Optional;
@@ -82,9 +79,8 @@ import org.junit.Test;
 public class ProxiedPeersViewTest {
   @Test
   public void receivedProxiedPeersAreReturnedWhenRequested() {
-    var dispatcher = cmock(new TypeLiteral<RemoteEventDispatcher<ProxiedPeers>>() {});
     var proxyConfig = mock(ProxyConfig.class);
-    var peersView = new ProxiedPeersView(mock(PeerManager.class), proxyConfig, dispatcher);
+    var peersView = new ProxiedPeersView(mock(PeerManager.class), proxyConfig);
     var peers =
         ImmutableSet.of(
             createPeerChannelInfo("192.168.0.1"),
@@ -109,9 +105,8 @@ public class ProxiedPeersViewTest {
 
   @Test
   public void unknownSourceIsRejected() {
-    var dispatcher = cmock(new TypeLiteral<RemoteEventDispatcher<ProxiedPeers>>() {});
     var proxyConfig = mock(ProxyConfig.class);
-    var peersView = new ProxiedPeersView(mock(PeerManager.class), proxyConfig, dispatcher);
+    var peersView = new ProxiedPeersView(mock(PeerManager.class), proxyConfig);
     var peers =
         ImmutableSet.of(
             createPeerChannelInfo("192.168.0.1"),

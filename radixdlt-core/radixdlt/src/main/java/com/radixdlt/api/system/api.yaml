@@ -237,6 +237,7 @@ components:
       type: object
       required:
         - type
+        - is_proxied
         - local_port
         - ip
       properties:
@@ -245,6 +246,8 @@ components:
           enum:
             - IN
             - OUT
+        is_proxied:
+          type: boolean
         local_port:
           type: integer
         ip:
