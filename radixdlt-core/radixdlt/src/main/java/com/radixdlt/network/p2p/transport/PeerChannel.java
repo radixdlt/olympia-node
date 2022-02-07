@@ -74,13 +74,10 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.messaging.InboundMessage;
-import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.P2PConfig;
-import com.radixdlt.network.p2p.PeerEvent;
+import com.radixdlt.network.p2p.*;
 import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerHandshakeFailed;
-import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.proxy.ProxyCertificate;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeError;
@@ -123,13 +120,15 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   enum ChannelState {
     INACTIVE,
     AUTH_HANDSHAKE,
-    ACTIVE
+    ACTIVE,
+    REJECTED
   }
 
   private final Object lock = new Object();
   private final RateLimiter droppedMessagesRateLimiter = RateLimiter.create(1.0);
   private final PublishProcessor<InboundMessage> inboundMessageSink = PublishProcessor.create();
   private final Flowable<InboundMessage> inboundMessages;
+  private final P2PConfig config;
   private final SystemCounters counters;
   private final Addressing addressing;
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
@@ -159,6 +158,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
       Optional<RadixNodeUri> uri,
       SocketChannel nettyChannel,
       Optional<InetSocketAddress> remoteAddress) {
+    this.config = config;
     this.counters = Objects.requireNonNull(counters);
     this.addressing = Objects.requireNonNull(addressing);
     this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
@@ -259,12 +259,38 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   @Override
   public void channelActive(ChannelHandlerContext ctx) {
     // if we weren't able to determine peer's address earlier, it should be available now
+    var remoteAddress = this.nettyChannel.remoteAddress();
+
     if (this.remoteAddress.isEmpty()) {
-      this.remoteAddress = Optional.ofNullable(this.nettyChannel.remoteAddress());
+      this.remoteAddress = Optional.ofNullable(remoteAddress);
+    }
+
+    if (remoteAddress != null) {
+      checkRemoteIp(ctx, remoteAddress);
     }
 
     if (this.state == ChannelState.INACTIVE) {
       this.init();
+    }
+  }
+
+  private void checkRemoteIp(ChannelHandlerContext ctx, InetSocketAddress remoteAddress) {
+    // Check if remote belongs to allowed subnets
+    var allowedIp =
+        config.allowedSubnets().stream()
+            .anyMatch(subnet -> subnet.matches(remoteAddress.getAddress()));
+
+    if (!allowedIp) {
+      // Switch to dormant state to prevent starting initialization sequence
+      this.state = ChannelState.REJECTED;
+
+      log.warn(
+          "Remote address {} does not belong to allowed subnets, scheduling closing connection",
+          remoteAddress);
+      ctx.close()
+          .addListener(
+              future ->
+                  log.info("Rejected connection to remote address {} is closed", remoteAddress));
     }
   }
 
@@ -283,7 +309,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     switch (this.state) {
       case ACTIVE -> this.handleMessage(buf);
       case AUTH_HANDSHAKE -> this.handleHandshakeData(buf);
-      case INACTIVE -> throw new IllegalStateException("Unexpected read on inactive channel");
+      case INACTIVE, REJECTED -> throw new IllegalStateException(
+          "Unexpected read on inactive or rejected channel");
     }
   }
 
