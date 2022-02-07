@@ -76,15 +76,15 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 public class FPlusOneOutOfBoundsTest {
-  private final int latency = 50;
-  private final int synchronousTimeout = 8 * latency;
-  private final int outOfBoundsLatency = synchronousTimeout;
+  private static final int LATENCY_MS = 50;
+  private static final int TIMEOUT_MS = 50 * 10;
+  private static final int LIVENESS_MS = 50 * 20;
   private final Builder bftTestBuilder =
       SimulationTest.builder()
-          .pacemakerTimeout(synchronousTimeout)
+          .pacemakerTimeout(TIMEOUT_MS)
           .addTestModules(
               ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(synchronousTimeout, TimeUnit.MILLISECONDS));
+              ConsensusMonitors.liveness(LIVENESS_MS, TimeUnit.MILLISECONDS));
 
   /** Tests a configuration of 0 out of 3 nodes out of synchrony bounds */
   @Test
@@ -92,7 +92,7 @@ public class FPlusOneOutOfBoundsTest {
     SimulationTest test =
         bftTestBuilder
             .numNodes(3)
-            .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed(latency))
+            .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed(LATENCY_MS))
             .build();
 
     final var runningTest = test.run();
@@ -108,8 +108,7 @@ public class FPlusOneOutOfBoundsTest {
         bftTestBuilder
             .numNodes(3)
             .networkModules(
-                NetworkOrdering.inOrder(),
-                NetworkLatencies.oneOutOfBounds(latency, outOfBoundsLatency))
+                NetworkOrdering.inOrder(), NetworkLatencies.oneOutOfBounds(LATENCY_MS, LIVENESS_MS))
             .build();
 
     final var runningTest = test.run();

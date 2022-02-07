@@ -85,7 +85,7 @@ public class StaticValidatorsTest {
           .pacemakerTimeout(1000)
           .addTestModules(
               ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+              ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
               ConsensusMonitors.noTimeouts(),
               ConsensusMonitors.directParents(),
               LedgerMonitors.consensusToLedger(),

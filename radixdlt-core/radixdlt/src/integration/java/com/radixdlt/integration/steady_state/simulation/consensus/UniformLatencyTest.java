@@ -70,10 +70,13 @@ import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 /** Simulation test which has the same latency for every message */
 public class UniformLatencyTest {
+  private static final int LIVENESS_MS = 50 * 20;
+
   /**
    * Sanity test check for a perfect network. 4 is the size used because it is the smallest network
    * size where quorum size (3) != network size. The sanity checks done are:
@@ -93,7 +96,7 @@ public class UniformLatencyTest {
             .numNodes(4)
             .addTestModules(
                 ConsensusMonitors.safety(),
-                ConsensusMonitors.liveness(),
+                ConsensusMonitors.liveness(LIVENESS_MS, TimeUnit.MILLISECONDS),
                 ConsensusMonitors.directParents())
             .build();
     final var checkResults = bftTest.run().awaitCompletion();

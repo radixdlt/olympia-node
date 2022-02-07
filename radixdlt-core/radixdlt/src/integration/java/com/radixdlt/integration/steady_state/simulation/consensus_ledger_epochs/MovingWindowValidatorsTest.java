@@ -105,7 +105,6 @@ public class MovingWindowValidatorsTest {
             .pacemakerTimeout(5000)
             .addTestModules(
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
-                ConsensusMonitors.timestampChecker(),
                 ConsensusMonitors.epochCeilingView(View.of(100)))
             .build();
     final var checkResults = bftTest.run().awaitCompletion();
@@ -122,7 +121,6 @@ public class MovingWindowValidatorsTest {
             .pacemakerTimeout(1000)
             .addTestModules(
                 ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-                ConsensusMonitors.timestampChecker(),
                 ConsensusMonitors.epochCeilingView(View.of(100)))
             .build();
     final var checkResults = bftTest.run().awaitCompletion();
@@ -140,7 +138,6 @@ public class MovingWindowValidatorsTest {
             .addTestModules(
                 ConsensusMonitors.liveness(
                     5, TimeUnit.SECONDS), // High timeout to make Travis happy
-                ConsensusMonitors.timestampChecker(),
                 ConsensusMonitors.epochCeilingView(View.of(100)))
             .build();
 
