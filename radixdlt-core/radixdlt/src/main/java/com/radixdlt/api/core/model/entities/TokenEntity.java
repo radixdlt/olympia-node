@@ -90,7 +90,7 @@ public record TokenEntity(String symbol, REAddr tokenAddr) implements Entity {
   public void overwriteDataObject(
       ParsedDataObject parsedDataObject, TxBuilder builder, Supplier<RERulesConfig> config)
       throws TxBuilderException {
-    var dataObject = parsedDataObject.getDataObject();
+    var dataObject = parsedDataObject.dataObject();
     if (dataObject instanceof TokenData tokenData) {
       boolean isMutable = tokenData.getIsMutable();
       var ownerKey = parsedDataObject.getParsed(ECPublicKey.class);

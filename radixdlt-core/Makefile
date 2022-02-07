@@ -8,7 +8,7 @@ all:
 
 .PHONY: build
 build-core:
-	cd radixdlt && ../../gradlew deb4docker
+	cd .. && ./gradlew deb4docker
 
 .PHONY: package
 package: build-core

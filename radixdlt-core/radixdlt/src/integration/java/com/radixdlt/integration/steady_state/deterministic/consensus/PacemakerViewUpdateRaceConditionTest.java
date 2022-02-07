@@ -90,12 +90,10 @@ import com.radixdlt.utils.KeyComparator;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.junit.Test;
 
 /**
@@ -144,13 +142,13 @@ public class PacemakerViewUpdateRaceConditionTest {
 
                   @Provides
                   public ProposerElection proposerElection(BFTValidatorSet validatorSet) {
-                    final List<BFTNode> sortedValidators =
+                    final var sortedValidators =
                         validatorSet.getValidators().stream()
                             .map(BFTValidator::getNode)
                             .sorted(
                                 Comparator.comparing(
                                     BFTNode::getKey, KeyComparator.instance().reversed()))
-                            .collect(Collectors.toList());
+                            .toList();
                     return view ->
                         sortedValidators.get(((int) view.number() - 1) % sortedValidators.size());
                   }

@@ -62,22 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.simulation.application;
+package com.radixdlt.integration.targeted.mempool;
 
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.network.SimulationNodes;
-import com.radixdlt.integration.targeted.mempool.MempoolFillerUpdate;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/** Starts a mempool filler */
-public final class MempoolFillerStarter implements SimulationTest.SimulationNetworkActor {
-  @Override
-  public void start(SimulationNodes.RunningNetwork network) {
-    EventDispatcher<MempoolFillerUpdate> dispatcher =
-        network.getDispatcher(MempoolFillerUpdate.class, network.getNodes().get(0));
-    dispatcher.dispatch(MempoolFillerUpdate.enable(15, true));
-  }
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  @Override
-  public void stop() {}
-}
+/** Key for the mempool filler */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface MempoolFillerKey {}

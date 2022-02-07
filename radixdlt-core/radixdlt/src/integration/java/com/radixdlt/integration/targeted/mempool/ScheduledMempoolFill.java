@@ -62,22 +62,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.simulation.application;
+package com.radixdlt.integration.targeted.mempool;
 
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.network.SimulationNodes;
-import com.radixdlt.integration.targeted.mempool.MempoolFillerUpdate;
+/** Scheduled event for filling the mempool */
+public enum ScheduledMempoolFill {
+  INSTANCE;
 
-/** Starts a mempool filler */
-public final class MempoolFillerStarter implements SimulationTest.SimulationNetworkActor {
-  @Override
-  public void start(SimulationNodes.RunningNetwork network) {
-    EventDispatcher<MempoolFillerUpdate> dispatcher =
-        network.getDispatcher(MempoolFillerUpdate.class, network.getNodes().get(0));
-    dispatcher.dispatch(MempoolFillerUpdate.enable(15, true));
+  public static ScheduledMempoolFill create() {
+    return INSTANCE;
   }
-
-  @Override
-  public void stop() {}
 }

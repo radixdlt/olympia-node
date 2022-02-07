@@ -64,6 +64,8 @@
 
 package com.radixdlt;
 
+import static org.apache.logging.log4j.util.Strings.isNotBlank;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -106,9 +108,9 @@ import com.radixdlt.utils.Bytes;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.util.Strings;
 import org.json.JSONObject;
 import org.radix.utils.IOUtils;
 
@@ -123,11 +125,10 @@ public final class RadixNodeModule extends AbstractModule {
 
   public RadixNodeModule(RuntimeProperties properties) {
     this.properties = properties;
-    var networkId = properties.get("network.id");
-    if (networkId == null) {
-      throw new IllegalStateException("Must specify network.id");
-    }
-    this.networkId = Integer.parseInt(networkId);
+    this.networkId =
+        Optional.ofNullable(properties.get("network.id"))
+            .map(Integer::parseInt)
+            .orElseThrow(() -> new IllegalStateException("Must specify network.id"));
   }
 
   @Provides
@@ -152,34 +153,43 @@ public final class RadixNodeModule extends AbstractModule {
   private Txn loadGenesis(int networkId) {
     var genesisTxnHex = properties.get("network.genesis_txn");
     var genesisFile = properties.get("network.genesis_file");
+
     var network = Network.ofId(networkId);
     var networkGenesis =
         network.flatMap(Network::genesisTxn).map(Bytes::fromHexString).map(Txn::create);
 
     if (networkGenesis.isPresent()) {
-      if (Strings.isNotBlank(genesisTxnHex)) {
-        throw new IllegalStateException(
-            "Cannot provide genesis txn for well-known network " + network.orElseThrow());
-      }
+      validateGenesisConfigIsMissing(genesisTxnHex, genesisFile, network.get());
 
-      if (Strings.isNotBlank(genesisFile)) {
-        throw new IllegalStateException(
-            "Cannot provide genesis file for well-known network " + network.orElseThrow());
-      }
       return networkGenesis.get();
     } else {
-      var genesisCount = 0;
-      genesisCount += Strings.isNotBlank(genesisTxnHex) ? 1 : 0;
-      genesisCount += Strings.isNotBlank(genesisFile) ? 1 : 0;
-      if (genesisCount > 1) {
-        throw new IllegalStateException("Multiple genesis txn specified.");
-      }
-      if (genesisCount == 0) {
-        throw new IllegalStateException("No genesis txn specified.");
-      }
-      return Strings.isNotBlank(genesisTxnHex)
+      validateGenesisConfigIsPresent(genesisTxnHex, genesisFile);
+
+      return isNotBlank(genesisTxnHex)
           ? Txn.create(Bytes.fromHexString(genesisTxnHex))
           : loadGenesisFile(genesisFile);
+    }
+  }
+
+  private void validateGenesisConfigIsPresent(String genesisTxnHex, String genesisFile) {
+    var genesisCount = 0;
+    genesisCount += isNotBlank(genesisTxnHex) ? 1 : 0;
+    genesisCount += isNotBlank(genesisFile) ? 1 : 0;
+
+    if (genesisCount > 1) {
+      throw new IllegalStateException("Multiple genesis txn specified.");
+    }
+
+    if (genesisCount == 0) {
+      throw new IllegalStateException("No genesis txn specified.");
+    }
+  }
+
+  private void validateGenesisConfigIsMissing(
+      String genesisTxnHex, String genesisFile, Network network) {
+    if (isNotBlank(genesisTxnHex) || isNotBlank(genesisFile)) {
+      throw new IllegalStateException(
+          "Cannot provide genesis txn for well-known network " + network);
     }
   }
 
@@ -189,18 +199,16 @@ public final class RadixNodeModule extends AbstractModule {
       throw new IllegalStateException("Illegal networkId " + networkId);
     }
 
-    var addressing = Addressing.ofNetworkId(networkId);
-    bind(Addressing.class).toInstance(addressing);
+    bind(Addressing.class).toInstance(Addressing.ofNetworkId(networkId));
     bindConstant().annotatedWith(NetworkId.class).to(networkId);
-    var genesis = loadGenesis(networkId);
-    bind(Txn.class).annotatedWith(Genesis.class).toInstance(genesis);
-    // TODO: Refactor
+    bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
+
     if (networkId == Network.MAINNET.getId()) {
       install(new MainnetForkConfigsModule());
     } else {
       install(new StokenetForkConfigsModule());
     }
-    bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
+
     bind(RuntimeProperties.class).toInstance(properties);
 
     // Consensus configuration
@@ -209,6 +217,7 @@ public final class RadixNodeModule extends AbstractModule {
     bindConstant()
         .annotatedWith(BFTSyncPatienceMillis.class)
         .to(properties.get("bft.sync.patience", 200));
+
     // Default values mean that pacemakers will sync if they are within 5 views of each other.
     // 5 consecutive failing views will take 1*(2^6)-1 seconds = 63 seconds.
     bindConstant().annotatedWith(PacemakerTimeout.class).to(3000L);
@@ -282,10 +291,10 @@ public final class RadixNodeModule extends AbstractModule {
     install(new PeerLivenessMonitorModule());
 
     // API
-    String bindAddress = properties.get("api.bind.address", DEFAULT_BIND_ADDRESS);
-    int port = properties.get("api.port", DEFAULT_CORE_PORT);
-    boolean enableTransactions = properties.get("api.transactions.enable", false);
-    boolean enableSign = properties.get("api.sign.enable", false);
+    var bindAddress = properties.get("api.bind.address", DEFAULT_BIND_ADDRESS);
+    var port = properties.get("api.port", DEFAULT_CORE_PORT);
+    var enableTransactions = properties.get("api.transactions.enable", false);
+    var enableSign = properties.get("api.sign.enable", false);
     install(new ApiModule(bindAddress, port, enableTransactions, enableSign));
   }
 }

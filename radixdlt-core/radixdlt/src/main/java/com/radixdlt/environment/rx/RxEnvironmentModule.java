@@ -291,14 +291,14 @@ public final class RxEnvironmentModule extends AbstractModule {
       String runnerName,
       ModuleRunnerImpl.Builder builder) {
     allScheduledEventProducers.stream()
-        .filter(p -> p.getRunnerName().equals(runnerName))
+        .filter(p -> p.runnerName().equals(runnerName))
         .forEach(
             scheduledEventProducer ->
                 builder.scheduleWithFixedDelay(
-                    (EventDispatcher<Object>) scheduledEventProducer.getEventDispatcher(),
-                    (Supplier<Object>) scheduledEventProducer.getEventSupplier(),
-                    scheduledEventProducer.getInitialDelay(),
-                    scheduledEventProducer.getInterval()));
+                    (EventDispatcher<Object>) scheduledEventProducer.eventDispatcher(),
+                    (Supplier<Object>) scheduledEventProducer.eventSupplier(),
+                    scheduledEventProducer.initialDelay(),
+                    scheduledEventProducer.interval()));
   }
 
   private void addStartProcessorsOnRunner(
@@ -306,8 +306,8 @@ public final class RxEnvironmentModule extends AbstractModule {
       String runnerName,
       ModuleRunnerImpl.Builder builder) {
     allStartProcessors.stream()
-        .filter(p -> p.getRunnerName().equals(runnerName))
-        .map(StartProcessorOnRunner::getProcessor)
+        .filter(p -> p.runnerName().equals(runnerName))
+        .map(StartProcessorOnRunner::processor)
         .forEach(builder::add);
   }
 

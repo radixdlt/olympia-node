@@ -96,7 +96,6 @@ import com.radixdlt.harness.deterministic.actors.actions.UnstakeStakeUnits;
 import com.radixdlt.utils.UInt256;
 import java.util.Random;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /** Submits a random transaction through a random node in a deterministic test. */
 public final class ApiTxnSubmitter implements DeterministicActor {
@@ -123,7 +122,7 @@ public final class ApiTxnSubmitter implements DeterministicActor {
             .map(ResourceAmount::getResourceIdentifier)
             .filter(TokenResourceIdentifier.class::isInstance)
             .map(TokenResourceIdentifier.class::cast)
-            .collect(Collectors.toList());
+            .toList();
 
     TokenResourceIdentifier tokenResourceIdentifier;
     if (tokenTypes.isEmpty()) {
@@ -160,7 +159,7 @@ public final class ApiTxnSubmitter implements DeterministicActor {
                     throw new IllegalStateException(e);
                   }
                 })
-            .collect(Collectors.toList());
+            .toList();
 
     if (tokenTypes.isEmpty()) {
       return null;

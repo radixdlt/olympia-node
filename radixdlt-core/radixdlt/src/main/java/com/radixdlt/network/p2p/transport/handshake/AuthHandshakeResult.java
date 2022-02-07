@@ -68,8 +68,8 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.p2p.NodeId;
 import java.util.Optional;
 
-public interface AuthHandshakeResult {
-
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+public sealed interface AuthHandshakeResult {
   static AuthHandshakeSuccess success(ECPublicKey remotePubKey, Secrets secrets) {
     return new AuthHandshakeSuccess(NodeId.fromPublicKey(remotePubKey), secrets);
   }
@@ -78,39 +78,9 @@ public interface AuthHandshakeResult {
     return new AuthHandshakeError(msg, maybeNodeId);
   }
 
-  final class AuthHandshakeSuccess implements AuthHandshakeResult {
-    private final NodeId remoteNodeId;
-    private final Secrets secrets;
+  record AuthHandshakeSuccess(NodeId remoteNodeId, Secrets secrets)
+      implements AuthHandshakeResult {}
 
-    private AuthHandshakeSuccess(NodeId remoteNodeId, Secrets secrets) {
-      this.remoteNodeId = remoteNodeId;
-      this.secrets = secrets;
-    }
-
-    public NodeId getRemoteNodeId() {
-      return remoteNodeId;
-    }
-
-    public Secrets getSecrets() {
-      return secrets;
-    }
-  }
-
-  final class AuthHandshakeError implements AuthHandshakeResult {
-    private final String msg;
-    private final Optional<NodeId> maybeNodeId;
-
-    public AuthHandshakeError(String msg, Optional<NodeId> maybeNodeId) {
-      this.msg = msg;
-      this.maybeNodeId = maybeNodeId;
-    }
-
-    public String getMsg() {
-      return msg;
-    }
-
-    public Optional<NodeId> getMaybeNodeId() {
-      return maybeNodeId;
-    }
-  }
+  record AuthHandshakeError(String msg, Optional<NodeId> maybeNodeId)
+      implements AuthHandshakeResult {}
 }

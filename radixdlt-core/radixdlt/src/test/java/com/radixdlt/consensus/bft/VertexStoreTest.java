@@ -97,7 +97,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
@@ -198,8 +197,7 @@ public class VertexStoreTest {
   @Test
   public void adding_a_qc_should_update_highest_qc() {
     // Arrange
-    final List<VerifiedVertex> vertices =
-        Stream.generate(this.nextVertex).limit(4).collect(Collectors.toList());
+    final var vertices = Stream.generate(this.nextVertex).limit(4).toList();
     sut.insertVertex(vertices.get(0));
 
     // Act
@@ -214,8 +212,7 @@ public class VertexStoreTest {
   @Test
   public void adding_a_qc_with_commit_should_commit_vertices_to_ledger() {
     // Arrange
-    final List<VerifiedVertex> vertices =
-        Stream.generate(this.nextVertex).limit(4).collect(Collectors.toList());
+    final var vertices = Stream.generate(this.nextVertex).limit(4).toList();
     sut.insertVertex(vertices.get(0));
     sut.insertVertex(vertices.get(1));
     sut.insertVertex(vertices.get(2));
@@ -254,8 +251,7 @@ public class VertexStoreTest {
   @Test
   public void rebuilding_should_emit_updates() {
     // Arrange
-    final List<VerifiedVertex> vertices =
-        Stream.generate(this.nextVertex).limit(4).collect(Collectors.toList());
+    final var vertices = Stream.generate(this.nextVertex).limit(4).toList();
     VerifiedVertexStoreState vertexStoreState =
         VerifiedVertexStoreState.create(
             HighQC.from(vertices.get(3).getQC()),
