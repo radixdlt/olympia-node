@@ -90,7 +90,7 @@ public class RadixEngineForksGenesisOnlyModule extends AbstractModule {
         .setBinding()
         .toInstance(
             m -> {
-              final var genesisFork = m.stream().min((a, b) -> (int) (a.epoch() - b.epoch()));
+              final var genesisFork = m.stream().min((a, b) -> (int) (a.minEpoch() - b.minEpoch()));
               final var baseFork = genesisFork.get().atFixedEpoch(0L);
               return Set.of(configOverride.map(baseFork::withEngineRulesConfig).orElse(baseFork));
             });

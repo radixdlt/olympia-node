@@ -66,12 +66,8 @@ package com.radixdlt.statecomputer.forks;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import java.util.Set;
 import org.junit.Test;
 
@@ -119,15 +115,6 @@ public final class ForksTest {
               Forks.create(Set.of(fork1, fork2, fork3));
             });
 
-    System.out.println(exception.getMessage());
     assertTrue(exception.getMessage().contains("duplicate epoch"));
-  }
-
-  private LedgerAndBFTProof proofAtEpoch(ForkConfig currentFork, long epoch) {
-    final var ledgerAndBftProof = mock(LedgerAndBFTProof.class);
-    final var proof = mock(LedgerProof.class);
-    when(proof.getEpoch()).thenReturn(epoch);
-    when(ledgerAndBftProof.getProof()).thenReturn(proof);
-    return ledgerAndBftProof;
   }
 }

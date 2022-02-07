@@ -96,7 +96,8 @@ public final class TestingForksModule extends AbstractModule {
         "testing-fork-v3",
         HashUtils.sha256("testing-fork-v3".getBytes(StandardCharsets.UTF_8)),
         5L,
-        5500, // 55%
+        Long.MAX_VALUE,
+        8000, // 80%
         RERulesVersion.OLYMPIA_V1,
         RERulesConfig.testingDefault());
   }

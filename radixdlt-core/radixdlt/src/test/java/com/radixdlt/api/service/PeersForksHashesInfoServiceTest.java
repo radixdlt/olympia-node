@@ -104,7 +104,7 @@ public final class PeersForksHashesInfoServiceTest {
   public void should_collect_unknown_forks_hashes_from_peer_events() {
     final var initialFork = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), reRules, 0L);
     final var candidateFork =
-        new CandidateForkConfig("fork2", HashCode.fromInt(2), reRules, 5100, 2L);
+        new CandidateForkConfig("fork2", HashCode.fromInt(2), reRules, 5100, 2L, Long.MAX_VALUE);
     final var forks = Forks.create(Set.of(initialFork, candidateFork));
 
     final var initialValidator = BFTNode.random();

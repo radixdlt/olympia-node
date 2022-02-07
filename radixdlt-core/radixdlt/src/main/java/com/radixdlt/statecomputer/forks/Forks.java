@@ -316,7 +316,8 @@ public final class Forks {
       return Optional.empty();
     }
 
-    for (long epoch = candidateFork.get().minEpoch(); epoch <= currentEpoch; epoch++) {
+    final var lastEpochToCheck = Math.min(currentEpoch, candidateFork.get().maxEpoch());
+    for (long epoch = candidateFork.get().minEpoch(); epoch <= lastEpochToCheck; epoch++) {
       final var e = epoch;
       final var forkAtEpoch =
           fixedEpochForks.reverse().stream()
@@ -366,14 +367,21 @@ public final class Forks {
             });
 
     storedForks.entrySet().stream()
-        .filter(e -> e.getKey() <= currentEpoch)
         .forEach(
             e -> {
+              if (e.getKey() > currentEpoch) {
+                throw new IllegalStateException(
+                    String.format(
+                        "Illegal state: fork %s executed epoch is %s, but current epoch is %s",
+                        e.getValue(), e.getKey(), currentEpoch));
+              }
+
               final var maybeExpectedAtFixedEpoch =
                   Optional.ofNullable(fixedEpochForksMap.get(e.getKey()));
 
               final var maybeExpectedCandidate =
-                  candidateFork.filter(f -> e.getKey() >= f.minEpoch());
+                  candidateFork.filter(
+                      f -> e.getKey() >= f.minEpoch() && e.getKey() <= f.maxEpoch());
 
               final var expectedAtFixedEpochMatches =
                   maybeExpectedAtFixedEpoch.isPresent()
@@ -417,7 +425,7 @@ public final class Forks {
     }
 
     final var nextEpoch = ledgerProof.getEpoch() + 1;
-    if (nextEpoch < candidateFork.minEpoch()) {
+    if (nextEpoch < candidateFork.minEpoch() || nextEpoch > candidateFork.maxEpoch()) {
       return false;
     }
 

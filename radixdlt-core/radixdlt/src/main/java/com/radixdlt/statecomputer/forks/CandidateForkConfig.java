@@ -74,18 +74,29 @@ public final class CandidateForkConfig implements ForkConfig {
   private final RERules reRules;
   private int requiredStake;
   private long minEpoch;
+  private long maxEpoch;
 
   public CandidateForkConfig(
-      String name, HashCode hash, RERules reRules, int requiredStake, long minEpoch) {
+      String name,
+      HashCode hash,
+      RERules reRules,
+      int requiredStake,
+      long minEpoch,
+      long maxEpoch) {
     this.name = name;
     this.hash = hash;
     this.reRules = reRules;
     this.requiredStake = requiredStake;
     this.minEpoch = minEpoch;
+    this.maxEpoch = maxEpoch;
   }
 
   public long minEpoch() {
     return minEpoch;
+  }
+
+  public long maxEpoch() {
+    return maxEpoch;
   }
 
   public int requiredStake() {
@@ -110,13 +121,13 @@ public final class CandidateForkConfig implements ForkConfig {
   @Override
   public CandidateForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
     return new CandidateForkConfig(
-        name, hash, reRules.addPostProcessor(newPostProcessor), requiredStake, minEpoch);
+        name, hash, reRules.addPostProcessor(newPostProcessor), requiredStake, minEpoch, maxEpoch);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "%s[%s:%s, min_epoch=%s, required_stake=%s]",
-        getClass().getSimpleName(), name(), hash(), minEpoch, requiredStake);
+        "%s[%s:%s, min_epoch=%s, max_epoch=%s, required_stake=%s]",
+        getClass().getSimpleName(), name(), hash(), minEpoch, maxEpoch, requiredStake);
   }
 }

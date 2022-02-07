@@ -103,8 +103,16 @@ public class ForkOverwritesFromPropertiesModule extends AbstractModule {
                   final var minEpochOverwrite =
                       properties.get("overwrite_forks." + c.getName() + ".min_epoch", "");
                   final var minEpoch =
-                      minEpochOverwrite.isBlank() ? c.epoch() : Long.parseLong(minEpochOverwrite);
-                  c = c.withStakeVoting(minEpoch, requiredStakeVotes);
+                      minEpochOverwrite.isBlank()
+                          ? c.minEpoch()
+                          : Long.parseLong(minEpochOverwrite);
+                  final var maxEpochOverwrite =
+                      properties.get("overwrite_forks." + c.getName() + ".max_epoch", "");
+                  final var maxEpoch =
+                      maxEpochOverwrite.isBlank()
+                          ? c.maxEpoch().orElse(Long.MAX_VALUE)
+                          : Long.parseLong(maxEpochOverwrite);
+                  c = c.withStakeVoting(minEpoch, maxEpoch, requiredStakeVotes);
                 } else if (!epochOverwrite.isBlank()) {
                   final var epoch = Long.parseLong(epochOverwrite);
                   logger.warn("Overwriting epoch of " + c.getName() + " to " + epoch);

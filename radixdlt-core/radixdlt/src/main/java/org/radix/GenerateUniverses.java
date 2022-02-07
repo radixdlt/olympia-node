@@ -187,12 +187,10 @@ public final class GenerateUniverses {
                           @Provides
                           @Singleton
                           private Forks forks(Set<ForkBuilder> forkBuilders) {
-                            final var initialForkConfig =
+                            return Forks.create(
                                 forkBuilders.stream()
-                                    .min((a, b) -> (int) (a.epoch() - b.epoch()))
-                                    .get()
-                                    .build();
-                            return Forks.create(Set.of(initialForkConfig));
+                                    .map(ForkBuilder::build)
+                                    .collect(Collectors.toSet()));
                           }
 
                           @Provides
@@ -204,11 +202,8 @@ public final class GenerateUniverses {
                           @Provides
                           @Singleton
                           @LatestForkConfig
-                          private ForkConfig latestForkConfig(Set<ForkBuilder> forkBuilders) {
-                            return forkBuilders.stream()
-                                .max((a, b) -> (int) (a.epoch() - b.epoch()))
-                                .get()
-                                .build();
+                          private ForkConfig latestForkConfig(Forks forks) {
+                            return forks.latestFork();
                           }
                         });
                     install(new MainnetForksModule());

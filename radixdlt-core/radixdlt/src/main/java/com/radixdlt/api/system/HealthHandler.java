@@ -76,7 +76,6 @@ import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import java.time.Duration;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.radix.time.Time;
 
 final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
@@ -151,9 +150,7 @@ final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
         .map(
             e -> {
               final var reportedByList =
-                  e.getValue().stream()
-                      .map(addressing.forValidators()::of)
-                      .toList();
+                  e.getValue().stream().map(addressing.forValidators()::of).toList();
               return new HealthResponseUnknownReportedForksHashes()
                   .hash(e.getKey().toString())
                   .reportedBy(reportedByList);
