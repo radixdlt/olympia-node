@@ -259,14 +259,14 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   @Override
   public void channelActive(ChannelHandlerContext ctx) {
     // if we weren't able to determine peer's address earlier, it should be available now
-    var remoteAddress = this.nettyChannel.remoteAddress();
+    var peerAddress = this.nettyChannel.remoteAddress();
 
     if (this.remoteAddress.isEmpty()) {
-      this.remoteAddress = Optional.ofNullable(remoteAddress);
+      this.remoteAddress = Optional.ofNullable(peerAddress);
     }
 
-    if (remoteAddress != null) {
-      checkRemoteIp(ctx, remoteAddress);
+    if (peerAddress != null) {
+      checkRemoteIp(ctx, peerAddress);
     }
 
     if (this.state == ChannelState.INACTIVE) {

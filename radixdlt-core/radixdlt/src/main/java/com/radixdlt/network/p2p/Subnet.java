@@ -75,7 +75,10 @@ import java.util.regex.Pattern;
 public record Subnet(InetAddress address, int numBits) {
   private static final Pattern IPV4 =
       Pattern.compile(
-          "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$");
+          "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\."
+              + "(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\."
+              + "(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\."
+              + "(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$");
   private static final Pattern MASK = Pattern.compile("^[0-9]{1,2}$");
 
   public static Optional<Subnet> fromString(String subnet) {
@@ -117,9 +120,6 @@ public record Subnet(InetAddress address, int numBits) {
 
   private static long toLong(InetAddress address) {
     var array = address.getAddress();
-    return ((long) array[0]) << 24
-        | ((long) array[1]) << 16
-        | ((long) array[2]) << 8
-        | ((long) array[3]);
+    return ((long) array[0]) << 24 | ((long) array[1]) << 16 | ((long) array[2]) << 8 | array[3];
   }
 }
