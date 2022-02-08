@@ -64,10 +64,12 @@
 
 package com.radixdlt.harness.simulation.monitors.consensus;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
@@ -80,6 +82,14 @@ public final class MaxLedgerSyncLagInvariant implements TestInvariant {
 
   public MaxLedgerSyncLagInvariant(long maxLag) {
     this.maxLag = maxLag;
+  }
+
+  private TestInvariantError tooMuchlagError(
+      long maxStateVersion, BFTNode node, long nodeStateVersion) {
+    return new TestInvariantError(
+        String.format(
+            "Node %s ledger sync lag (%s) at version %s exceeded maximum" + " of %s state versions",
+            node, maxStateVersion - nodeStateVersion, nodeStateVersion, maxLag));
   }
 
   @Override
@@ -96,25 +106,18 @@ public final class MaxLedgerSyncLagInvariant implements TestInvariant {
 
               final var maybeTooMuchLag =
                   network.getSystemCounters().entrySet().stream()
-                      .filter(
+                      .map(
                           e ->
-                              e.getValue().get(CounterType.LEDGER_STATE_VERSION) + maxLag
-                                  < maxStateVersion)
+                              Pair.of(
+                                  e.getKey(), e.getValue().get(CounterType.LEDGER_STATE_VERSION)))
+                      .filter(e -> e.getSecond() + maxLag < maxStateVersion)
                       .findAny();
 
               return maybeTooMuchLag
                   .map(
                       e ->
                           Observable.just(
-                              new TestInvariantError(
-                                  String.format(
-                                      "Node %s ledger sync lag (%s) at version %s exceeded maximum"
-                                          + " of %s state versions",
-                                      e.getKey(),
-                                      maxStateVersion
-                                          - e.getValue().get(CounterType.LEDGER_STATE_VERSION),
-                                      e.getValue().get(CounterType.LEDGER_STATE_VERSION),
-                                      maxLag))))
+                              tooMuchlagError(maxStateVersion, e.getFirst(), e.getSecond())))
                   .orElse(Observable.empty());
             });
   }

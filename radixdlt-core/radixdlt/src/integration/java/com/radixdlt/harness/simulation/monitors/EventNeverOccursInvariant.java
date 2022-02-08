@@ -64,9 +64,11 @@
 
 package com.radixdlt.harness.simulation.monitors;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.network.SimulationNodes;
 import io.reactivex.rxjava3.core.Observable;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 /**
@@ -86,19 +88,20 @@ public final class EventNeverOccursInvariant<T> implements TestInvariant {
     this.predicate = predicate;
   }
 
+  private Optional<TestInvariantError> test(BFTNode node, T event) {
+    if (predicate.test(event)) {
+      return Optional.of(
+          new TestInvariant.TestInvariantError("Event " + event + " occurred at node " + node));
+    }
+    return Optional.empty();
+  }
+
   @Override
   public Observable<TestInvariantError> check(SimulationNodes.RunningNetwork network) {
     return Observable.<TestInvariant.TestInvariantError>create(
             emitter ->
                 this.nodeEvents.addListener(
-                    (node, event) -> {
-                      if (predicate.test(event)) {
-                        emitter.onNext(
-                            new TestInvariant.TestInvariantError(
-                                "Event " + event + " occurred at node " + node));
-                      }
-                    },
-                    eventClass))
+                    (node, event) -> test(node, event).ifPresent(emitter::onNext), eventClass))
         .serialize();
   }
 }
