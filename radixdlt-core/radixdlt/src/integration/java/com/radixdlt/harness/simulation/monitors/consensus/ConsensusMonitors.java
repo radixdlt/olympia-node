@@ -137,13 +137,17 @@ public final class ConsensusMonitors {
       @ProvidesIntoMap
       @MonitorKey(Monitor.CONSENSUS_NO_TIMEOUTS)
       TestInvariant noTimeoutsInvariant(NodeEvents nodeEvents) {
-        return new EventNeverOccursInvariant<>(nodeEvents, LocalTimeoutOccurrence.class);
+        return new EventNeverOccursInvariant<>(
+            nodeEvents, LocalTimeoutOccurrence.class, timeout -> timeout.getView().gt(View.of(1)));
       }
 
       @ProvidesIntoMap
       @MonitorKey(Monitor.CONSENSUS_NO_EPOCH_TIMEOUTS)
       TestInvariant noEpochTimeoutsInvariant(NodeEvents nodeEvents) {
-        return new EventNeverOccursInvariant<>(nodeEvents, EpochLocalTimeoutOccurrence.class);
+        return new EventNeverOccursInvariant<>(
+            nodeEvents,
+            EpochLocalTimeoutOccurrence.class,
+            timeout -> timeout.getEpochView().getView().gt(View.of(1)));
       }
     };
   }
@@ -163,7 +167,7 @@ public final class ConsensusMonitors {
       @ProvidesIntoMap
       @MonitorKey(Monitor.CONSENSUS_NONE_COMMITTED)
       TestInvariant noneCommittedInvariant(NodeEvents nodeEvents) {
-        return new EventNeverOccursInvariant<>(nodeEvents, BFTCommittedUpdate.class);
+        return new EventNeverOccursInvariant<>(nodeEvents, BFTCommittedUpdate.class, u -> true);
       }
     };
   }

@@ -104,7 +104,7 @@ public class OneNodeNeverSendEpochResponseTest {
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
-              ConsensusMonitors.timestampChecker(Duration.ofSeconds(2)),
+              ConsensusMonitors.timestampChecker(Duration.ofSeconds(5)),
               LedgerMonitors.consensusToLedger(),
               LedgerMonitors.ordered());
 

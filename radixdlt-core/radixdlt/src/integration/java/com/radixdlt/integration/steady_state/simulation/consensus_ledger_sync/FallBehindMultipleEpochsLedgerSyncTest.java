@@ -119,7 +119,6 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
-                ConsensusMonitors.directParents(),
                 LedgerMonitors.consensusToLedger(),
                 LedgerMonitors.ordered(),
                 ConsensusMonitors.epochCeilingView(View.of(10)));

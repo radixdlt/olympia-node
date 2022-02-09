@@ -85,7 +85,7 @@ public final class RadixEngineMonitors {
       @ProvidesIntoMap
       @MonitorKey(Monitor.RADIX_ENGINE_NO_INVALID_PROPOSED_COMMANDS)
       TestInvariant registeredValidator(NodeEvents nodeEvents) {
-        return new EventNeverOccursInvariant<>(nodeEvents, InvalidProposedTxn.class);
+        return new EventNeverOccursInvariant<>(nodeEvents, InvalidProposedTxn.class, txn -> true);
       }
     };
   }
