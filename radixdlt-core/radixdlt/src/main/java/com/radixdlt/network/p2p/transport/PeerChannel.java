@@ -259,7 +259,10 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   public void channelActive(ChannelHandlerContext ctx) {
     // if we weren't able to determine peer's address earlier, it should be available now
     var peerAddress = this.nettyChannel.remoteAddress();
-    this.remoteAddress = Optional.ofNullable(peerAddress);
+
+    if (remoteAddressNotSet()) {
+      this.remoteAddress = Optional.ofNullable(peerAddress);
+    }
 
     if (peerAddress == null) {
       log.warn("Unable to determine remote IP address, disconnecting");
@@ -270,6 +273,10 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     } else if (this.state == ChannelState.INACTIVE) {
       this.init();
     }
+  }
+
+  private boolean remoteAddressNotSet() {
+    return this.remoteAddress.isEmpty();
   }
 
   private boolean isInAllowedSubnet(InetSocketAddress remoteAddress) {
