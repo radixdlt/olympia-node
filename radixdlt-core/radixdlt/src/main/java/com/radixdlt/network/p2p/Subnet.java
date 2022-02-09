@@ -64,13 +64,13 @@
 
 package com.radixdlt.network.p2p;
 
-import static com.radixdlt.errors.InternalErrors.UNKNOWN;
-import static com.radixdlt.utils.functional.Result.wrap;
-
 import com.radixdlt.utils.functional.Optionals;
 import java.net.InetAddress;
 import java.util.Optional;
 import java.util.regex.Pattern;
+
+import static com.radixdlt.errors.InternalErrors.UNKNOWN;
+import static com.radixdlt.utils.functional.Result.wrap;
 
 public record Subnet(InetAddress address, int numBits) {
   private static final Pattern IPV4 =
@@ -80,6 +80,10 @@ public record Subnet(InetAddress address, int numBits) {
               + "(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\."
               + "(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$");
   private static final Pattern MASK = Pattern.compile("^[0-9]{1,2}$");
+
+  public static Subnet fromStringUnsafe(String subnet) {
+    return fromString(subnet).orElseThrow(() -> new IllegalArgumentException("Can't parse subnet from " + subnet));
+  }
 
   public static Optional<Subnet> fromString(String subnet) {
     var components = subnet.split("/");
@@ -97,7 +101,8 @@ public record Subnet(InetAddress address, int numBits) {
     }
 
     return Optionals.allOf(
-            wrap(UNKNOWN, () -> InetAddress.getByName(components[0])).toOptional(),
+            wrap(UNKNOWN, () -> InetAddress.getByName(components[0]))
+                .toOptional(),
             wrap(UNKNOWN, () -> Integer.parseInt(components[1]))
                 .toOptional()
                 .filter(value -> value >= 0 && value <= 32))

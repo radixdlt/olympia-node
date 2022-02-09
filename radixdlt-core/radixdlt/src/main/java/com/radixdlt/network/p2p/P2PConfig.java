@@ -207,9 +207,7 @@ public record P2PConfig(
     final var allowedSubnets =
         Arrays.stream(properties.get("network.p2p.peer_allow_subnets", "0.0.0.0/0").split(","))
             .filter(not(String::isEmpty))
-            .map(Subnet::fromString)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
+            .map(Subnet::fromStringUnsafe)
             .collect(ImmutableSet.toImmutableSet());
 
     final var config =
