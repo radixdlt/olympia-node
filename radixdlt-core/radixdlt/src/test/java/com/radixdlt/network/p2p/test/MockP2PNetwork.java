@@ -85,6 +85,9 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.SocketChannel;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.security.SecureRandom;
 import java.util.Optional;
 
@@ -107,8 +110,8 @@ final class MockP2PNetwork {
             .findAny()
             .get();
 
-    final var clientSocketChannel = mock(SocketChannel.class);
-    final var serverSocketChannel = mock(SocketChannel.class);
+    final var clientSocketChannel = mock(SocketChannel.class, "clientChannel");
+    final var serverSocketChannel = mock(SocketChannel.class, "serverChannel");
 
     final var clientChannel =
         new PeerChannel(
@@ -181,6 +184,24 @@ final class MockP2PNetwork {
               clientChannel.channelInactive(mockChannel);
               return null;
             });
+
+    try {
+      var serverAddress = InetAddress.getByName(serverPeer.uri.getHost());
+      var serverSocketAddress = new InetSocketAddress(serverAddress, serverPeer.uri.getPort());
+
+      when(serverSocketChannel.remoteAddress()).thenReturn(serverSocketAddress);
+    } catch (UnknownHostException e) {
+      throw new IllegalStateException("Unable to resolve host", e);
+    }
+
+    try {
+      var clientAddress = InetAddress.getByName(clientPeer.uri.getHost());
+      var clientSocketAddress = new InetSocketAddress(clientAddress, clientPeer.uri.getPort());
+
+      when(clientSocketChannel.remoteAddress()).thenReturn(clientSocketAddress);
+    } catch (UnknownHostException e) {
+      throw new IllegalStateException("Unable to resolve host", e);
+    }
 
     serverChannel.channelActive(null);
     clientChannel.channelActive(null);

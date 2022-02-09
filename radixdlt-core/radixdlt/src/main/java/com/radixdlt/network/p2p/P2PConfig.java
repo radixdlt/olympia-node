@@ -73,6 +73,7 @@ import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DeserializeException;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -83,7 +84,8 @@ public record P2PConfig(
     PeerLivenessConfig peerLivenessConfig,
     ProxyConfig proxyConfig,
     boolean usePeerAllowList,
-    ImmutableSet<NodeId> peerAllowList) {
+    ImmutableSet<NodeId> peerAllowList,
+    ImmutableSet<Subnet> allowedSubnets) {
 
   private static final Logger log = LogManager.getLogger();
 
@@ -202,6 +204,12 @@ public record P2PConfig(
             .map(n -> P2PConfig.parseNodeId(addressing, n))
             .collect(ImmutableSet.toImmutableSet());
 
+    final var allowedSubnets =
+        Arrays.stream(properties.get("network.p2p.peer_allow_subnets", "0.0.0.0/0").split(","))
+            .filter(not(String::isEmpty))
+            .map(Subnet::fromStringUnsafe)
+            .collect(ImmutableSet.toImmutableSet());
+
     final var config =
         new P2PConfig(
             NetworkConfig.fromRuntimeProperties(properties),
@@ -210,7 +218,8 @@ public record P2PConfig(
             PeerLivenessConfig.fromRuntimeProperties(properties),
             ProxyConfig.fromRuntimeProperties(addressing, properties),
             properties.get("network.p2p.use_peer_allow_list", false),
-            peerAllowList);
+            peerAllowList,
+            allowedSubnets);
 
     if (config.usePeerAllowList() && config.peerAllowList().isEmpty()) {
       throw new IllegalArgumentException("peerAllowList can't be empty if usePeerAllowList is set");
