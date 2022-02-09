@@ -124,9 +124,16 @@ public final class PMTExt extends PMTNode {
         acc.setTip(null);
       } else { // update child
         acc.remove(this);
-        var newExt = new PMTExt(this.getKey(), represent.apply(newChild));
-        acc.add(newExt);
-        acc.setTip(newExt);
+        PMTNode newNode =
+            switch (newChild) {
+              case PMTLeaf ignored -> new PMTLeaf(
+                  this.getKey().concatenate(newChild.getKey()), newChild.getValue());
+              case PMTBranch ignored -> new PMTExt(this.getKey(), represent.apply(newChild));
+              case PMTExt ignored -> new PMTExt(
+                  this.getKey().concatenate(newChild.getKey()), newChild.getValue());
+            };
+        acc.add(newNode);
+        acc.setTip(newNode);
       }
     } else {
       throw new IllegalStateException(

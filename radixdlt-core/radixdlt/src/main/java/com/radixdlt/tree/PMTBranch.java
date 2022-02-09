@@ -74,6 +74,30 @@ public final class PMTBranch extends PMTNode {
 
   private byte[][] children;
 
+  public PMTBranch(PMTBranch pmtBranch) {
+    this.children = new byte[16][];
+    for (int i = 0; i < NUMBER_OF_NIBBLES; i++) {
+      this.children[i] = Arrays.copyOfRange(pmtBranch.children[i], 0, pmtBranch.children[i].length);
+    }
+    if (pmtBranch.getValue() != null) {
+      this.value = Arrays.copyOfRange(pmtBranch.value, 0, pmtBranch.getValue().length);
+    }
+  }
+
+  public PMTBranch(byte[][] children, byte[] value) {
+    this.children = children;
+    this.value = value;
+  }
+
+  public PMTBranch(byte[] value, PMTBranchChild... nextNode) {
+    this.children = new byte[NUMBER_OF_NIBBLES][];
+    Arrays.fill(children, new byte[0]);
+    Arrays.stream(nextNode).forEach(this::setNibble);
+    if (value != null) {
+      this.value = value;
+    }
+  }
+
   record PMTBranchChild(PMTKey branchNibble, byte[] representation) {
 
     @Override
@@ -132,7 +156,7 @@ public final class PMTBranch extends PMTNode {
     final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
     if (commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NONE) {
       acc.remove(this);
-      var newBranch = cloneBranch(this);
+      var newBranch = new PMTBranch(this);
       newBranch.setValue(null);
       acc.add(newBranch);
       acc.setTip(newBranch);
@@ -149,19 +173,48 @@ public final class PMTBranch extends PMTNode {
       if (acc.notFound()) {
         acc.setTip(null);
       } else if (newChild == null) { // remove child
-        if (hasOnlyOneChild() && this.value == null) {
+        if (numberOfChildren() == 1L) {
+          if (this.getValue() == null || this.getValue().length == 0) {
+            acc.remove(this);
+            acc.setTip(null);
+          } else {
+            acc.remove(this);
+            var newLeaf = new PMTLeaf(new PMTKey(new byte[0]), this.getValue());
+            acc.add(newLeaf);
+            acc.setTip(newLeaf);
+          }
+        } else if (numberOfChildren() == 2L
+            && (this.getValue() == null || this.getValue().length == 0)) {
+          byte[] h = new byte[0];
+          var index = 0;
+          for (; index < children.length; index++) {
+            h = children[index];
+            if (h != null && h.length > 0 && !Arrays.equals(h, nextHash)) {
+              break;
+            }
+          }
+          var c = read.apply(h);
           acc.remove(this);
-          acc.setTip(null);
+          var newNode =
+              switch (c) {
+                case PMTLeaf leaf -> new PMTLeaf(
+                    new PMTKey(new byte[] {(byte) index}).concatenate(c.getKey()), c.getValue());
+                case PMTBranch ignored -> new PMTExt(new PMTKey(new byte[] {(byte) index}), h);
+                case PMTExt ignored -> new PMTExt(
+                    new PMTKey(new byte[] {(byte) index}).concatenate(c.getKey()), c.getValue());
+              };
+          acc.add(newNode);
+          acc.setTip(newNode);
         } else {
           acc.remove(this);
-          var branchWithNext = cloneBranch(this);
+          var branchWithNext = new PMTBranch(this);
           branchWithNext.setEmptyChild(key.getFirstNibble());
           acc.add(branchWithNext);
           acc.setTip(branchWithNext);
         }
       } else { // update child
         acc.remove(this);
-        var branchWithNext = cloneBranch(this);
+        var branchWithNext = new PMTBranch(this);
         branchWithNext.setNibble(
             new PMTBranchChild(key.getFirstNibble(), represent.apply(newChild)));
         acc.add(branchWithNext);
@@ -173,13 +226,13 @@ public final class PMTBranch extends PMTNode {
     }
   }
 
-  private boolean hasOnlyOneChild() {
-    return Arrays.stream(children).filter(java.util.Objects::nonNull).count() == 1;
+  private long numberOfChildren() {
+    return Arrays.stream(children).filter(it -> it != null && it.length > 0).count();
   }
 
   // This method is expected to mutate PMTAcc.
   private void handleNoRemainder(byte[] val, PMTAcc acc) {
-    var modifiedBranch = cloneBranch(this);
+    var modifiedBranch = new PMTBranch(this);
     modifiedBranch.setValue(val);
     acc.setTip(modifiedBranch);
     acc.add(modifiedBranch);
@@ -204,7 +257,7 @@ public final class PMTBranch extends PMTNode {
       nextNode.insertNode(key.getTailNibbles(), val, acc, represent, read);
       subTip = acc.getTip();
     }
-    var branchWithNext = cloneBranch(this);
+    var branchWithNext = new PMTBranch(this);
     branchWithNext.setNibble(new PMTBranchChild(key.getFirstNibble(), represent.apply(subTip)));
     acc.setTip(branchWithNext);
     acc.add(branchWithNext);
@@ -232,24 +285,6 @@ public final class PMTBranch extends PMTNode {
     } else {
       throw new IllegalStateException(
           String.format("Unexpected subtree: %s", commonPath.whichRemainderIsLeft()));
-    }
-  }
-
-  PMTBranch cloneBranch(PMTBranch currentBranch) {
-    return currentBranch.copyForEdit();
-  }
-
-  public PMTBranch(byte[][] children, byte[] value) {
-    this.children = children;
-    this.value = value;
-  }
-
-  public PMTBranch(byte[] value, PMTBranchChild... nextNode) {
-    this.children = new byte[NUMBER_OF_NIBBLES][];
-    Arrays.fill(children, new byte[0]);
-    Arrays.stream(nextNode).forEach(this::setNibble);
-    if (value != null) {
-      this.value = value;
     }
   }
 
