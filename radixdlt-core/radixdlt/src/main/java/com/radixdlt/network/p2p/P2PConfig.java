@@ -204,7 +204,7 @@ public record P2PConfig(
             .map(n -> P2PConfig.parseNodeId(addressing, n))
             .collect(ImmutableSet.toImmutableSet());
 
-    final var peerHostAllowList =
+    final var allowedSubnets =
         Arrays.stream(properties.get("network.p2p.peer_allow_subnets", "0.0.0.0/0").split(","))
             .filter(not(String::isEmpty))
             .map(Subnet::fromString)
@@ -221,7 +221,7 @@ public record P2PConfig(
             ProxyConfig.fromRuntimeProperties(addressing, properties),
             properties.get("network.p2p.use_peer_allow_list", false),
             peerAllowList,
-            peerHostAllowList);
+            allowedSubnets);
 
     if (config.usePeerAllowList() && config.peerAllowList().isEmpty()) {
       throw new IllegalArgumentException("peerAllowList can't be empty if usePeerAllowList is set");

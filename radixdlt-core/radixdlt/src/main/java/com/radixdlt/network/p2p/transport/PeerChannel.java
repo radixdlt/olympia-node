@@ -120,8 +120,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   enum ChannelState {
     INACTIVE,
     AUTH_HANDSHAKE,
-    ACTIVE,
-    REJECTED
+    ACTIVE
   }
 
   private final Object lock = new Object();
@@ -260,38 +259,22 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   public void channelActive(ChannelHandlerContext ctx) {
     // if we weren't able to determine peer's address earlier, it should be available now
     var peerAddress = this.nettyChannel.remoteAddress();
+    this.remoteAddress = Optional.ofNullable(peerAddress);
 
-    if (this.remoteAddress.isEmpty()) {
-      this.remoteAddress = Optional.ofNullable(peerAddress);
-    }
-
-    if (peerAddress != null) {
-      checkRemoteIp(ctx, peerAddress);
-    }
-
-    if (this.state == ChannelState.INACTIVE) {
+    if (peerAddress == null) {
+      log.warn("Unable to determine remote IP address, disconnecting");
+      this.disconnect();
+    } else if (!isInAllowedSubnet(peerAddress)) {
+      log.warn("Remote IP {} does not belong to allowed subnets", peerAddress);
+      this.disconnect();
+    } else if (this.state == ChannelState.INACTIVE) {
       this.init();
     }
   }
 
-  private void checkRemoteIp(ChannelHandlerContext ctx, InetSocketAddress remoteAddress) {
-    // Check if remote belongs to allowed subnets
-    var allowedIp =
-        config.allowedSubnets().stream()
-            .anyMatch(subnet -> subnet.matches(remoteAddress.getAddress()));
-
-    if (!allowedIp) {
-      // Switch to dormant state to prevent starting initialization sequence
-      this.state = ChannelState.REJECTED;
-
-      log.warn(
-          "Remote address {} does not belong to allowed subnets, scheduling closing connection",
-          remoteAddress);
-      ctx.close()
-          .addListener(
-              future ->
-                  log.info("Rejected connection to remote address {} is closed", remoteAddress));
-    }
+  private boolean isInAllowedSubnet(InetSocketAddress remoteAddress) {
+    return config.allowedSubnets().stream()
+        .anyMatch(subnet -> subnet.matches(remoteAddress.getAddress()));
   }
 
   private void init() {
@@ -309,7 +292,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     switch (this.state) {
       case ACTIVE -> this.handleMessage(buf);
       case AUTH_HANDSHAKE -> this.handleHandshakeData(buf);
-      case INACTIVE, REJECTED -> throw new IllegalStateException(
+      case INACTIVE -> throw new IllegalStateException(
           "Unexpected read on inactive or rejected channel");
     }
   }
