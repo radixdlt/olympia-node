@@ -257,7 +257,7 @@ public class EthereumTxTreeTest {
   }
 
   @Test
-  @Ignore
+  @Ignore("See Ticket NT-249")
   public void
       when_tx_tree_of_eth_block_10467135_created_not_using_cache_and_new_nodes_added_and_removed_then_tx_root_is_correct_4()
           throws IOException {

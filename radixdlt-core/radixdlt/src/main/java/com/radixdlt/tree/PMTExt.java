@@ -70,6 +70,7 @@ public final class PMTExt extends PMTNode {
 
   public static final int EVEN_PREFIX = 0;
   public static final int ODD_PREFIX = 1;
+  public static final String UNEXPECTED_SUBTREE_ERROR_MSG = "Unexpected subtree: %s";
 
   public PMTExt(PMTKey keyNibbles, byte[] newHashPointer) {
     if (keyNibbles.isEmpty()) {
@@ -100,7 +101,7 @@ public final class PMTExt extends PMTNode {
         break;
       default:
         throw new IllegalStateException(
-            String.format("Unexpected subtree: %s", commonPath.whichRemainderIsLeft()));
+            String.format(UNEXPECTED_SUBTREE_ERROR_MSG, commonPath.whichRemainderIsLeft()));
     }
   }
 
@@ -126,18 +127,18 @@ public final class PMTExt extends PMTNode {
         acc.remove(this);
         PMTNode newNode =
             switch (newChild) {
-              case PMTLeaf ignored -> new PMTLeaf(
-                  this.getKey().concatenate(newChild.getKey()), newChild.getValue());
-              case PMTBranch ignored -> new PMTExt(this.getKey(), represent.apply(newChild));
-              case PMTExt ignored -> new PMTExt(
-                  this.getKey().concatenate(newChild.getKey()), newChild.getValue());
+              case PMTLeaf pmtLeaf -> new PMTLeaf(
+                  this.getKey().concatenate(pmtLeaf.getKey()), pmtLeaf.getValue());
+              case PMTBranch pmtBranch -> new PMTExt(this.getKey(), represent.apply(pmtBranch));
+              case PMTExt pmtExt -> new PMTExt(
+                  this.getKey().concatenate(pmtExt.getKey()), pmtExt.getValue());
             };
         acc.add(newNode);
         acc.setTip(newNode);
       }
     } else {
       throw new IllegalStateException(
-          String.format("Unexpected subtree: %s", commonPath.whichRemainderIsLeft()));
+          String.format(UNEXPECTED_SUBTREE_ERROR_MSG, commonPath.whichRemainderIsLeft()));
     }
   }
 
@@ -230,7 +231,7 @@ public final class PMTExt extends PMTNode {
         break;
       default:
         throw new IllegalStateException(
-            String.format("Unexpected subtree: %s", commonPath.whichRemainderIsLeft()));
+            String.format(UNEXPECTED_SUBTREE_ERROR_MSG, commonPath.whichRemainderIsLeft()));
     }
   }
 }
