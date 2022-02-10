@@ -72,9 +72,13 @@ public abstract sealed class PMTNode implements Cloneable permits PMTBranch, PMT
 
   public static final int DB_SIZE_COND = 32;
 
-  protected byte[] hash;
   protected PMTKey keyNibbles;
   protected byte[] value;
+
+  public PMTNode(PMTKey keyNibbles, byte[] value) {
+    this.keyNibbles = keyNibbles;
+    this.value = value;
+  }
 
   public PMTKey getKey() {
     return this.keyNibbles;
@@ -129,13 +133,12 @@ public abstract sealed class PMTNode implements Cloneable permits PMTBranch, PMT
       return false;
     }
     PMTNode pmtNode = (PMTNode) o;
-    return Arrays.equals(hash, pmtNode.hash)
-        && Objects.equals(keyNibbles, pmtNode.keyNibbles)
+    return Objects.equals(keyNibbles, pmtNode.keyNibbles)
         && Arrays.equals(value, pmtNode.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(Arrays.hashCode(hash), keyNibbles, Arrays.hashCode(value));
+    return Objects.hash(keyNibbles, Arrays.hashCode(value));
   }
 }

@@ -76,27 +76,23 @@ public final class PMTBranch extends PMTNode {
   private byte[][] children;
 
   public PMTBranch(PMTBranch pmtBranch) {
-    this.children = new byte[16][];
+    super(null, pmtBranch.getValue() == null ? null : Arrays.copyOfRange(pmtBranch.value, 0, pmtBranch.getValue().length));
+    this.children = new byte[NUMBER_OF_NIBBLES][];
     for (int i = 0; i < NUMBER_OF_NIBBLES; i++) {
       this.children[i] = Arrays.copyOfRange(pmtBranch.children[i], 0, pmtBranch.children[i].length);
-    }
-    if (pmtBranch.getValue() != null) {
-      this.value = Arrays.copyOfRange(pmtBranch.value, 0, pmtBranch.getValue().length);
     }
   }
 
   public PMTBranch(byte[][] children, byte[] value) {
+    super(null, value);
     this.children = children;
-    this.value = value;
   }
 
   public PMTBranch(byte[] value, PMTBranchChild... nextNode) {
+    super(null, value);
     this.children = new byte[NUMBER_OF_NIBBLES][];
     Arrays.fill(children, new byte[0]);
     Arrays.stream(nextNode).forEach(this::setNibble);
-    if (value != null) {
-      this.value = value;
-    }
   }
 
   record PMTBranchChild(PMTKey branchNibble, byte[] representation) {

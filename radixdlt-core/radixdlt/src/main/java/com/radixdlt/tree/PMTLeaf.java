@@ -74,8 +74,7 @@ public final class PMTLeaf extends PMTNode {
   public static final String UNEXPECTED_SUBTREE_ERROR_MSG = "Unexpected subtree: %s";
 
   public PMTLeaf(PMTKey keyNibbles, byte[] newValue) {
-    this.keyNibbles = keyNibbles;
-    this.value = newValue;
+    super(keyNibbles, newValue);
   }
 
   // This method is expected to mutate PMTAcc.

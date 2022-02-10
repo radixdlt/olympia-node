@@ -73,11 +73,9 @@ public final class PMTExt extends PMTNode {
   public static final String UNEXPECTED_SUBTREE_ERROR_MSG = "Unexpected subtree: %s";
 
   public PMTExt(PMTKey keyNibbles, byte[] newHashPointer) {
+    super(keyNibbles, newHashPointer);
     if (keyNibbles.isEmpty()) {
       throw new IllegalArgumentException("Extensions must have non empty key-part");
-    } else {
-      this.keyNibbles = keyNibbles;
-      this.value = newHashPointer;
     }
   }
 
