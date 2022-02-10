@@ -126,7 +126,7 @@ public class ByzantineSyncTest {
             .ledgerAndSync(SyncConfig.of(200L, 10, 2000L))
             .addTestModules(
                 ConsensusMonitors.safety(),
-                ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
+                ConsensusMonitors.liveness(10, TimeUnit.SECONDS),
                 ConsensusMonitors.directParents(),
                 LedgerMonitors.consensusToLedger(),
                 LedgerMonitors.ordered());

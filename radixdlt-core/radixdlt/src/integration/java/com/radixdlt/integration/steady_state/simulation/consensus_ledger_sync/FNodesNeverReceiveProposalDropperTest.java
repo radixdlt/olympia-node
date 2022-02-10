@@ -112,7 +112,6 @@ public class FNodesNeverReceiveProposalDropperTest {
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
-                ConsensusMonitors.directParents(),
                 // ConsensusMonitors.vertexRequestRate(50), // FIXME: add back check
                 LedgerMonitors.consensusToLedger(),
                 LedgerMonitors.ordered());

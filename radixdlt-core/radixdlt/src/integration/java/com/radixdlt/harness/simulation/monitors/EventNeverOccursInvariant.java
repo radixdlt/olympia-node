@@ -64,9 +64,12 @@
 
 package com.radixdlt.harness.simulation.monitors;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.network.SimulationNodes;
 import io.reactivex.rxjava3.core.Observable;
+import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * Checks that an event of a certain class never occurs in a system
@@ -76,10 +79,21 @@ import io.reactivex.rxjava3.core.Observable;
 public final class EventNeverOccursInvariant<T> implements TestInvariant {
   private final NodeEvents nodeEvents;
   private final Class<T> eventClass;
+  private final Predicate<T> predicate;
 
-  public EventNeverOccursInvariant(NodeEvents nodeEvents, Class<T> eventClass) {
+  public EventNeverOccursInvariant(
+      NodeEvents nodeEvents, Class<T> eventClass, Predicate<T> predicate) {
     this.nodeEvents = nodeEvents;
     this.eventClass = eventClass;
+    this.predicate = predicate;
+  }
+
+  private Optional<TestInvariantError> test(BFTNode node, T event) {
+    if (predicate.test(event)) {
+      return Optional.of(
+          new TestInvariant.TestInvariantError("Event " + event + " occurred at node " + node));
+    }
+    return Optional.empty();
   }
 
   @Override
@@ -87,11 +101,7 @@ public final class EventNeverOccursInvariant<T> implements TestInvariant {
     return Observable.<TestInvariant.TestInvariantError>create(
             emitter ->
                 this.nodeEvents.addListener(
-                    (node, event) ->
-                        emitter.onNext(
-                            new TestInvariant.TestInvariantError(
-                                "Event " + event + " occurred at node " + node)),
-                    eventClass))
+                    (node, event) -> test(node, event).ifPresent(emitter::onNext), eventClass))
         .serialize();
   }
 }
