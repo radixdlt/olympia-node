@@ -117,6 +117,13 @@ public class PMTKey {
     return this.key;
   }
 
+  public PMTKey concatenate(PMTKey pmtKey) {
+    if (pmtKey == null) {
+      return this;
+    }
+    return new PMTKey(org.bouncycastle.util.Arrays.concatenate(this.getRaw(), pmtKey.getRaw()));
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {

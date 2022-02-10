@@ -70,6 +70,7 @@ public final class PMTExt extends PMTNode {
 
   public static final int EVEN_PREFIX = 0;
   public static final int ODD_PREFIX = 1;
+  public static final String UNEXPECTED_SUBTREE_ERROR_MSG = "Unexpected subtree: %s";
 
   public PMTExt(PMTKey keyNibbles, byte[] newHashPointer) {
     if (keyNibbles.isEmpty()) {
@@ -100,7 +101,44 @@ public final class PMTExt extends PMTNode {
         break;
       default:
         throw new IllegalStateException(
-            String.format("Unexpected subtree: %s", commonPath.whichRemainderIsLeft()));
+            String.format(UNEXPECTED_SUBTREE_ERROR_MSG, commonPath.whichRemainderIsLeft()));
+    }
+  }
+
+  @Override
+  public void removeNode(
+      PMTKey key, PMTAcc acc, Function<PMTNode, byte[]> represent, Function<byte[], PMTNode> read) {
+    final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
+    if (commonPath.getCommonPrefix().isEmpty()) {
+      acc.setNotFound();
+    } else if (commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NONE
+        || commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NEW) {
+      PMTNode currentChild;
+      currentChild = read.apply(getValue());
+      var newRemainder = commonPath.getRemainder(PMTPath.RemainingSubtree.NEW);
+      currentChild.removeNode(newRemainder, acc, represent, read);
+      PMTNode newChild = acc.getTip();
+      if (acc.notFound()) {
+        acc.setTip(null);
+      } else if (newChild == null) { // remove child
+        acc.remove(this);
+        acc.setTip(null);
+      } else { // update child
+        acc.remove(this);
+        PMTNode newNode =
+            switch (newChild) {
+              case PMTLeaf pmtLeaf -> new PMTLeaf(
+                  this.getKey().concatenate(pmtLeaf.getKey()), pmtLeaf.getValue());
+              case PMTBranch pmtBranch -> new PMTExt(this.getKey(), represent.apply(pmtBranch));
+              case PMTExt pmtExt -> new PMTExt(
+                  this.getKey().concatenate(pmtExt.getKey()), pmtExt.getValue());
+            };
+        acc.add(newNode);
+        acc.setTip(newNode);
+      }
+    } else {
+      throw new IllegalStateException(
+          String.format(UNEXPECTED_SUBTREE_ERROR_MSG, commonPath.whichRemainderIsLeft()));
     }
   }
 
@@ -193,7 +231,7 @@ public final class PMTExt extends PMTNode {
         break;
       default:
         throw new IllegalStateException(
-            String.format("Unexpected subtree: %s", commonPath.whichRemainderIsLeft()));
+            String.format(UNEXPECTED_SUBTREE_ERROR_MSG, commonPath.whichRemainderIsLeft()));
     }
   }
 }

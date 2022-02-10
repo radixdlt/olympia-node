@@ -71,8 +71,33 @@ import java.util.function.Function;
 public final class PMTBranch extends PMTNode {
 
   public static final int NUMBER_OF_NIBBLES = 16;
+  public static final String UNEXPECTED_SUBTREE_ERROR_MSG = "Unexpected subtree: %s";
 
   private byte[][] children;
+
+  public PMTBranch(PMTBranch pmtBranch) {
+    this.children = new byte[16][];
+    for (int i = 0; i < NUMBER_OF_NIBBLES; i++) {
+      this.children[i] = Arrays.copyOfRange(pmtBranch.children[i], 0, pmtBranch.children[i].length);
+    }
+    if (pmtBranch.getValue() != null) {
+      this.value = Arrays.copyOfRange(pmtBranch.value, 0, pmtBranch.getValue().length);
+    }
+  }
+
+  public PMTBranch(byte[][] children, byte[] value) {
+    this.children = children;
+    this.value = value;
+  }
+
+  public PMTBranch(byte[] value, PMTBranchChild... nextNode) {
+    this.children = new byte[NUMBER_OF_NIBBLES][];
+    Arrays.fill(children, new byte[0]);
+    Arrays.stream(nextNode).forEach(this::setNibble);
+    if (value != null) {
+      this.value = value;
+    }
+  }
 
   record PMTBranchChild(PMTKey branchNibble, byte[] representation) {
 
@@ -122,13 +147,117 @@ public final class PMTBranch extends PMTNode {
       handleNewRemainder(key, val, acc, represent, read);
     } else {
       throw new IllegalStateException(
-          String.format("Unexpected subtree: %s", commonPath.whichRemainderIsLeft()));
+          String.format(UNEXPECTED_SUBTREE_ERROR_MSG, commonPath.whichRemainderIsLeft()));
     }
+  }
+
+  @Override
+  public void removeNode(
+      PMTKey key, PMTAcc acc, Function<PMTNode, byte[]> represent, Function<byte[], PMTNode> read) {
+    final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
+    if (commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NONE) {
+      acc.remove(this);
+      var newBranch = new PMTBranch(this);
+      newBranch.setValue(null);
+      acc.add(newBranch);
+      acc.setTip(newBranch);
+    } else if (commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NEW) {
+      var nextHash = this.getNextHash(key);
+      if (nextHash == null) {
+        acc.setNotFound();
+        return;
+      }
+      PMTNode currentChild = read.apply(nextHash);
+      currentChild.removeNode(key.getTailNibbles(), acc, represent, read);
+      PMTNode newChild = acc.getTip();
+      if (acc.notFound()) {
+        acc.setTip(null);
+      } else if (newChild == null) { // remove child
+        removeBranchChild(key, acc, read);
+      } else { // update child
+        updateBranchChild(key, acc, represent, newChild);
+      }
+    } else {
+      throw new IllegalStateException(
+          String.format(UNEXPECTED_SUBTREE_ERROR_MSG, commonPath.whichRemainderIsLeft()));
+    }
+  }
+
+  private void removeBranchChild(PMTKey key, PMTAcc acc, Function<byte[], PMTNode> read) {
+    if (numberOfChildren() == 1L) {
+      handleBranchWithOnlyOneChild(acc);
+    } else if (numberOfChildren() == 2L && (branchDoesNotHaveValue())) {
+      handleBranchWithTwoChildrenAndNoValue(acc, read, key);
+    } else {
+      acc.remove(this);
+      var branchWithNext = new PMTBranch(this);
+      branchWithNext.setEmptyChild(key.getFirstNibble());
+      acc.add(branchWithNext);
+      acc.setTip(branchWithNext);
+    }
+  }
+
+  private void handleBranchWithOnlyOneChild(PMTAcc acc) {
+    if (branchDoesNotHaveValue()) {
+      acc.remove(this);
+      acc.setTip(null);
+    } else {
+      acc.remove(this);
+      var newLeaf = new PMTLeaf(new PMTKey(new byte[0]), this.getValue());
+      acc.add(newLeaf);
+      acc.setTip(newLeaf);
+    }
+  }
+
+  private void handleBranchWithTwoChildrenAndNoValue(
+      PMTAcc acc, Function<byte[], PMTNode> read, PMTKey key) {
+    byte[] otherChildHashPointer = new byte[0];
+    var index = 0;
+    for (; index < children.length; index++) {
+      otherChildHashPointer = children[index];
+      if (otherChildHashPointer != null
+          && otherChildHashPointer.length > 0
+          && index != key.getFirstNibbleValue()) {
+        break;
+      }
+    }
+    var otherChild = read.apply(otherChildHashPointer);
+    acc.remove(this);
+    var newNode =
+        switch (otherChild) {
+          case PMTLeaf pmtLeaf -> new PMTLeaf(
+              new PMTKey(new byte[] {(byte) index}).concatenate(pmtLeaf.getKey()),
+              pmtLeaf.getValue());
+          case PMTBranch ignored -> new PMTExt(
+              new PMTKey(new byte[] {(byte) index}), otherChildHashPointer);
+          case PMTExt pmtExt -> new PMTExt(
+              new PMTKey(new byte[] {(byte) index}).concatenate(pmtExt.getKey()),
+              pmtExt.getValue());
+        };
+    acc.add(newNode);
+    acc.setTip(newNode);
+  }
+
+  private boolean branchDoesNotHaveValue() {
+    return this.getValue() == null || this.getValue().length == 0;
+  }
+
+  private void updateBranchChild(
+      PMTKey key, PMTAcc acc, Function<PMTNode, byte[]> represent, PMTNode newChild) {
+    acc.remove(this);
+    var branchWithNext = new PMTBranch(this);
+    branchWithNext.setNibble(new PMTBranchChild(key.getFirstNibble(), represent.apply(newChild)));
+    acc.add(branchWithNext);
+    acc.setTip(branchWithNext);
+  }
+
+  private long numberOfChildren() {
+    return Arrays.stream(children).filter(it -> it != null && it.length > 0).count();
   }
 
   // This method is expected to mutate PMTAcc.
   private void handleNoRemainder(byte[] val, PMTAcc acc) {
-    var modifiedBranch = cloneBranch(this);
+    var modifiedBranch = new PMTBranch(this);
     modifiedBranch.setValue(val);
     acc.setTip(modifiedBranch);
     acc.add(modifiedBranch);
@@ -153,7 +282,7 @@ public final class PMTBranch extends PMTNode {
       nextNode.insertNode(key.getTailNibbles(), val, acc, represent, read);
       subTip = acc.getTip();
     }
-    var branchWithNext = cloneBranch(this);
+    var branchWithNext = new PMTBranch(this);
     branchWithNext.setNibble(new PMTBranchChild(key.getFirstNibble(), represent.apply(subTip)));
     acc.setTip(branchWithNext);
     acc.add(branchWithNext);
@@ -164,7 +293,11 @@ public final class PMTBranch extends PMTNode {
   public void getValue(PMTKey key, PMTAcc acc, Function<byte[], PMTNode> read) {
     final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
     if (commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NONE) {
-      acc.setRetVal(this);
+      if (this.getValue() != null && this.getValue().length > 0) {
+        acc.setRetVal(this);
+      } else {
+        acc.setNotFound();
+      }
     } else if (commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NEW) {
       acc.mark(this);
       var nextHash = this.getNextHash(key);
@@ -176,25 +309,7 @@ public final class PMTBranch extends PMTNode {
       }
     } else {
       throw new IllegalStateException(
-          String.format("Unexpected subtree: %s", commonPath.whichRemainderIsLeft()));
-    }
-  }
-
-  PMTBranch cloneBranch(PMTBranch currentBranch) {
-    return currentBranch.copyForEdit();
-  }
-
-  public PMTBranch(byte[][] children, byte[] value) {
-    this.children = children;
-    this.value = value;
-  }
-
-  public PMTBranch(byte[] value, PMTBranchChild... nextNode) {
-    this.children = new byte[NUMBER_OF_NIBBLES][];
-    Arrays.fill(children, new byte[0]);
-    Arrays.stream(nextNode).forEach(this::setNibble);
-    if (value != null) {
-      this.value = value;
+          String.format(UNEXPECTED_SUBTREE_ERROR_MSG, commonPath.whichRemainderIsLeft()));
     }
   }
 
@@ -211,6 +326,10 @@ public final class PMTBranch extends PMTNode {
     var childrenKey = nextNode.branchNibble.getFirstNibbleValue();
     this.children[childrenKey] = nextNode.representation;
     return this;
+  }
+
+  private void setEmptyChild(PMTKey childKey) {
+    this.children[childKey.getFirstNibbleValue()] = new byte[0];
   }
 
   public PMTBranch copyForEdit() {

@@ -72,6 +72,7 @@ public class PMTAcc {
 
   private List<PMTNode> visitedAcc = new ArrayList<>();
   private List<PMTNode> addedAcc = new ArrayList<>();
+  private List<PMTNode> removedAcc = new ArrayList<>();
 
   private PMTNode tip;
   // INFO: it can be Leaf or Branch (as these are the only terminating nodes in PMT algo)
@@ -108,6 +109,10 @@ public class PMTAcc {
 
   public void add(PMTNode... nodes) {
     addedAcc.addAll(Arrays.stream(nodes).toList());
+  }
+
+  public void remove(PMTNode... nodes) {
+    removedAcc.addAll(Arrays.stream(nodes).toList());
   }
 
   public void mark(PMTNode node) {

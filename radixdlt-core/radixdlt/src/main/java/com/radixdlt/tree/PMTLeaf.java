@@ -71,6 +71,7 @@ public final class PMTLeaf extends PMTNode {
 
   public static final int EVEN_PREFIX = 2;
   public static final int ODD_PREFIX = 3;
+  public static final String UNEXPECTED_SUBTREE_ERROR_MSG = "Unexpected subtree: %s";
 
   public PMTLeaf(PMTKey keyNibbles, byte[] newValue) {
     this.keyNibbles = keyNibbles;
@@ -100,7 +101,22 @@ public final class PMTLeaf extends PMTNode {
         break;
       default:
         throw new IllegalStateException(
-            String.format("Unexpected subtree: %s", commonPath.whichRemainderIsLeft()));
+            String.format(UNEXPECTED_SUBTREE_ERROR_MSG, commonPath.whichRemainderIsLeft()));
+    }
+  }
+
+  @Override
+  public void removeNode(
+      PMTKey key, PMTAcc acc, Function<PMTNode, byte[]> represent, Function<byte[], PMTNode> read) {
+    final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
+    switch (commonPath.whichRemainderIsLeft()) {
+      case NONE -> {
+        acc.remove(this);
+        acc.setTip(null);
+      }
+      case NEW, EXISTING, EXISTING_AND_NEW -> acc.setNotFound();
+      default -> throw new IllegalStateException(
+          String.format(UNEXPECTED_SUBTREE_ERROR_MSG, commonPath.whichRemainderIsLeft()));
     }
   }
 
@@ -181,7 +197,7 @@ public final class PMTLeaf extends PMTNode {
         break;
       default:
         throw new IllegalStateException(
-            String.format("Unexpected subtree: %s", commonPath.whichRemainderIsLeft()));
+            String.format(UNEXPECTED_SUBTREE_ERROR_MSG, commonPath.whichRemainderIsLeft()));
     }
   }
 }

@@ -172,7 +172,7 @@ public final class PMT {
               TreeUtils.toHexString(key),
               TreeUtils.toHexString(represent(this.root)));
         }
-        return new byte[0];
+        return null;
       } else {
         return acc.getRetVal().getValue();
       }
@@ -180,7 +180,7 @@ public final class PMT {
       if (log.isDebugEnabled()) {
         log.debug("Tree empty when key: {}", TreeUtils.toHexString(key));
       }
-      return new byte[0];
+      return null;
     }
   }
 
@@ -235,6 +235,28 @@ public final class PMT {
 
   public PMT add(byte[] key, byte[] val) {
     return this.addAll(List.of(Pair.of(key, val)));
+  }
+
+  public PMT remove(byte[] key) {
+    if (this.root != null) {
+      var pmtKey = new PMTKey(PMTPath.intoNibbles(key));
+      var acc = new PMTAcc();
+      this.root.removeNode(pmtKey, acc, this::represent, this::read);
+      if (acc.notFound()) {
+        return this;
+      } else {
+        PMTNode newRoot = acc.getTip();
+        for (PMTNode sanitizedAcc : acc.getNewNodes().stream().filter(Objects::nonNull).toList()) {
+          byte[] serialisedNode = this.pmtNodeSerializer.serialize(sanitizedAcc);
+          if (hasDbRepresentation(serialisedNode)) {
+            this.db.save(hash(serialisedNode), serialisedNode);
+          }
+        }
+        return new PMT(this.db, newRoot, this.hashFunction, this.pmtNodeSerializer);
+      }
+    } else {
+      return null;
+    }
   }
 
   public byte[] getRootHash() {

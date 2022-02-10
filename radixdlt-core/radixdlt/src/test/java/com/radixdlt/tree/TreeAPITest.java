@@ -104,7 +104,7 @@ public class TreeAPITest {
     String verbValue = "verb";
     tree = tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
 
-    assertArrayEquals(tree.get(Hex.decode(verbKey)), verbValue.getBytes(StandardCharsets.UTF_8));
+    assertArrayEquals(verbValue.getBytes(StandardCharsets.UTF_8), tree.get(Hex.decode(verbKey)));
 
     String puppyKey = "646f67";
     String puppyValue = "puppy";
@@ -178,7 +178,7 @@ public class TreeAPITest {
   }
 
   @Test
-  public void when_tree_is_empty__then_empty_array_should_be_returned() {
+  public void when_tree_is_empty__then_null_should_be_returned() {
     var storage = new CachedPMTStorage(new InMemoryPMTStorage(), new PMTCache(CACHE_MAXIMUM_SIZE));
     var tree = new PMT(storage, new Keccak256(), new RLPSerializer());
 
@@ -186,12 +186,12 @@ public class TreeAPITest {
 
     assertArrayEquals(
         "Get should return empty array when tree is empty",
-        new byte[0],
+        null,
         tree.get(verbKey.getBytes(StandardCharsets.UTF_8)));
   }
 
   @Test
-  public void when_tree_does_not_contain_key__then_empty_array_should_be_returned() {
+  public void when_tree_does_not_contain_key__then_null_should_be_returned() {
     var storage = new CachedPMTStorage(new InMemoryPMTStorage(), new PMTCache(CACHE_MAXIMUM_SIZE));
     var tree = new PMT(storage, new Keccak256(), new RLPSerializer());
 
@@ -203,7 +203,104 @@ public class TreeAPITest {
 
     assertArrayEquals(
         "Get should return empty array when key is not found",
-        new byte[0],
+        null,
         tree.get(nonExistingKey.getBytes(StandardCharsets.UTF_8)));
+  }
+
+  @Test
+  public void when_existing_key_is_removed__then_it_is_not_possible_to_find_it_in_the_tree() {
+    var storage = new InMemoryPMTStorage();
+    var tree = new PMT(storage, new Keccak256(), new RLPSerializer());
+
+    String verbKey = "646f";
+    String verbValue = "verb";
+    tree = tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
+
+    tree = tree.remove(Hex.decode(verbKey.getBytes(StandardCharsets.UTF_8)));
+
+    assertArrayEquals(
+        "Get should return null when key is not found",
+        null,
+        tree.get(Hex.decode(verbKey.getBytes(StandardCharsets.UTF_8))));
+  }
+
+  @Test
+  public void
+      when_existing_key_is_removed_from_tree_with_two_elements_then_it_is_not_possible_to_find_it_in_the_tree() {
+    var storage = new InMemoryPMTStorage();
+    var tree = new PMT(storage, new Keccak256(), new RLPSerializer());
+
+    String verbKey = "646f";
+    String verbValue = "verb";
+    tree = tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
+
+    String puppyKey = "646f67";
+    String puppyValue = "puppy";
+    tree = tree.add(Hex.decode(puppyKey), puppyValue.getBytes(StandardCharsets.UTF_8));
+
+    tree = tree.remove(Hex.decode(verbKey.getBytes(StandardCharsets.UTF_8)));
+
+    assertArrayEquals(
+        "Get should return existing value when key is found",
+        puppyValue.getBytes(StandardCharsets.UTF_8),
+        tree.get(Hex.decode(puppyKey.getBytes(StandardCharsets.UTF_8))));
+
+    assertArrayEquals(
+        "Get should return null when key is not found",
+        null,
+        tree.get(Hex.decode(verbKey.getBytes(StandardCharsets.UTF_8))));
+  }
+
+  @Test
+  public void
+      when_existing_key_is_removed_twice_from_tree_with_two_elements_then_it_is_not_possible_to_find_it_in_the_tree() {
+    var storage = new InMemoryPMTStorage();
+    var tree = new PMT(storage, new Keccak256(), new RLPSerializer());
+
+    String verbKey = "646f";
+    String verbValue = "verb";
+    tree = tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
+
+    String puppyKey = "646f67";
+    String puppyValue = "puppy";
+    tree = tree.add(Hex.decode(puppyKey), puppyValue.getBytes(StandardCharsets.UTF_8));
+
+    tree = tree.remove(Hex.decode(verbKey.getBytes(StandardCharsets.UTF_8)));
+
+    tree = tree.remove(Hex.decode(verbKey.getBytes(StandardCharsets.UTF_8)));
+
+    assertArrayEquals(
+        "Get should return existing value when key is found",
+        puppyValue.getBytes(StandardCharsets.UTF_8),
+        tree.get(Hex.decode(puppyKey.getBytes(StandardCharsets.UTF_8))));
+
+    assertArrayEquals(
+        "Get should return null when key is not found",
+        null,
+        tree.get(Hex.decode(verbKey.getBytes(StandardCharsets.UTF_8))));
+  }
+
+  @Test
+  public void
+      when_non_existing_key_is_removed_from_tree_with_two_elements_then_it_is_not_possible_to_find_it_in_the_tree() {
+    var storage = new InMemoryPMTStorage();
+    var tree = new PMT(storage, new Keccak256(), new RLPSerializer());
+
+    String nonExistingKey = "6462";
+
+    String verbKey = "646f";
+    String verbValue = "verb";
+    tree = tree.add(Hex.decode(verbKey), verbValue.getBytes(StandardCharsets.UTF_8));
+
+    String puppyKey = "646f67";
+    String puppyValue = "puppy";
+    tree = tree.add(Hex.decode(puppyKey), puppyValue.getBytes(StandardCharsets.UTF_8));
+
+    tree = tree.remove(Hex.decode(verbKey.getBytes(StandardCharsets.UTF_8)));
+
+    assertArrayEquals(
+        "Get should return null when key is not found",
+        null,
+        tree.get(Hex.decode(nonExistingKey.getBytes(StandardCharsets.UTF_8))));
   }
 }
