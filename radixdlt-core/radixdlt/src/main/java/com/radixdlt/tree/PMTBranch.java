@@ -187,7 +187,7 @@ public final class PMTBranch extends PMTNode {
     if (numberOfChildren() == 1L) {
       handleBranchWithOnlyOneChild(acc);
     } else if (numberOfChildren() == 2L && (branchDoesNotHaveValue())) {
-      handleBranchWithTwoChildren(acc, read, key);
+      handleBranchWithTwoChildrenAndNoValue(acc, read, key);
     } else {
       acc.remove(this);
       var branchWithNext = new PMTBranch(this);
@@ -209,7 +209,8 @@ public final class PMTBranch extends PMTNode {
     }
   }
 
-  private void handleBranchWithTwoChildren(PMTAcc acc, Function<byte[], PMTNode> read, PMTKey key) {
+  private void handleBranchWithTwoChildrenAndNoValue(
+      PMTAcc acc, Function<byte[], PMTNode> read, PMTKey key) {
     byte[] otherChildHashPointer = new byte[0];
     var index = 0;
     for (; index < children.length; index++) {
