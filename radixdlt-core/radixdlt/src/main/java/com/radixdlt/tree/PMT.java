@@ -221,12 +221,7 @@ public final class PMT {
                 "Unexpected null PMT root when inserting key %s and value %s",
                 TreeUtils.toHexString(key), TreeUtils.toHexString(val)));
       }
-      for (PMTNode sanitizedAcc : acc.getNewNodes().stream().filter(Objects::nonNull).toList()) {
-        byte[] serialisedNode = this.pmtNodeSerializer.serialize(sanitizedAcc);
-        if (hasDbRepresentation(serialisedNode)) {
-          this.db.save(hash(serialisedNode), serialisedNode);
-        }
-      }
+      saveNewNodesToDB(acc);
     } else {
       newRoot = new PMTLeaf(pmtKey, val);
     }
@@ -246,16 +241,32 @@ public final class PMT {
         return this;
       } else {
         PMTNode newRoot = acc.getTip();
-        for (PMTNode sanitizedAcc : acc.getNewNodes().stream().filter(Objects::nonNull).toList()) {
-          byte[] serialisedNode = this.pmtNodeSerializer.serialize(sanitizedAcc);
-          if (hasDbRepresentation(serialisedNode)) {
-            this.db.save(hash(serialisedNode), serialisedNode);
-          }
-        }
+        saveNewNodesToDB(acc);
+        removeStaleNodesFromDB(acc);
         return new PMT(this.db, newRoot, this.hashFunction, this.pmtNodeSerializer);
       }
     } else {
       return null;
+    }
+  }
+
+  private void saveNewNodesToDB(PMTAcc acc) {
+    for (PMTNode sanitizedAcc : acc.getNewNodes().stream().filter(Objects::nonNull).toList()) {
+      byte[] serialisedNode = this.pmtNodeSerializer.serialize(sanitizedAcc);
+      if (hasDbRepresentation(serialisedNode)) {
+        byte[] serialisedNodeHash = hash(serialisedNode);
+        this.db.save(serialisedNodeHash, serialisedNode);
+      }
+    }
+  }
+
+  private void removeStaleNodesFromDB(PMTAcc acc) {
+    for (PMTNode sanitizedAcc : acc.getRemovedNodes().stream().filter(Objects::nonNull).toList()) {
+      byte[] serialisedNode = this.pmtNodeSerializer.serialize(sanitizedAcc);
+      if (hasDbRepresentation(serialisedNode)) {
+        byte[] serialisedNodeHash = hash(serialisedNode);
+        this.db.delete(serialisedNodeHash);
+      }
     }
   }
 

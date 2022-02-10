@@ -93,4 +93,10 @@ public class BerkeleyStorage implements PMTStorage {
     this.database.get(this.tx, key, value, null);
     return value.getData();
   }
+
+  @Override
+  public void delete(byte[] serialisedNodeHash) {
+    var key = new DatabaseEntry(serialisedNodeHash);
+    this.database.delete(this.tx, key);
+  }
 }

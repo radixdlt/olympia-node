@@ -68,10 +68,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.radixdlt.tree.hash.Keccak256;
 import com.radixdlt.tree.serialization.rlp.RLP;
 import com.radixdlt.tree.serialization.rlp.RLPSerializer;
-import com.radixdlt.tree.storage.CachedPMTStorage;
-import com.radixdlt.tree.storage.EthTransaction;
-import com.radixdlt.tree.storage.InMemoryPMTStorage;
-import com.radixdlt.tree.storage.PMTCache;
+import com.radixdlt.tree.storage.*;
 import com.radixdlt.utils.Pair;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -90,7 +87,7 @@ public class EthereumTxTreeTest {
 
   @Test
   public void when_tx_tree_of_eth_block_10593417_created_using_cache__then_tx_root_is_correct() {
-    var storage = new CachedPMTStorage(new InMemoryPMTStorage(), new PMTCache(CACHE_MAXIMUM_SIZE));
+    var storage = new CachedPMTStorage(new RefCounterPMTStorage(new InMemoryPMTStorage()), new PMTCache(CACHE_MAXIMUM_SIZE));
     var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER);
 
     createEthereumTxTreeBlock10593417Test(tree);
@@ -99,7 +96,7 @@ public class EthereumTxTreeTest {
   @Test
   public void
       when_tx_tree_of_eth_block_10593417_created_not_using_cache__then_tx_root_is_correct() {
-    var storage = new InMemoryPMTStorage();
+    var storage = new RefCounterPMTStorage(new InMemoryPMTStorage());
     var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER);
 
     createEthereumTxTreeBlock10593417Test(tree);
@@ -108,7 +105,7 @@ public class EthereumTxTreeTest {
   @Test
   public void
       when_tx_tree_of_eth_block_10593417_created_not_using_cache_after_removal__then_tx_root_is_correct() {
-    var storage = new InMemoryPMTStorage();
+    var storage = new RefCounterPMTStorage(new InMemoryPMTStorage());
     var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER);
 
     var currentTree = createEthereumTxTreeBlock10593417Test(tree);
@@ -192,7 +189,7 @@ public class EthereumTxTreeTest {
   @Test
   public void when_tx_tree_of_eth_block_10467135_created_using_cache__then_tx_root_is_correct()
       throws IOException {
-    var storage = new CachedPMTStorage(new InMemoryPMTStorage(), new PMTCache(CACHE_MAXIMUM_SIZE));
+    var storage = new CachedPMTStorage(new RefCounterPMTStorage(new InMemoryPMTStorage()), new PMTCache(CACHE_MAXIMUM_SIZE));
     var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER);
 
     createEthereumTxTreeBlock10467135Test(tree);
@@ -201,7 +198,7 @@ public class EthereumTxTreeTest {
   @Test
   public void when_tx_tree_of_eth_block_10467135_created_not_using_cache__then_tx_root_is_correct()
       throws IOException {
-    var storage = new InMemoryPMTStorage();
+    var storage = new RefCounterPMTStorage(new InMemoryPMTStorage());
     var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER);
 
     createEthereumTxTreeBlock10467135Test(tree);
@@ -213,7 +210,7 @@ public class EthereumTxTreeTest {
           throws IOException {
     // This test covers the removal of a leaf from a branch which has only this leaf as a child and
     // a value
-    var storage = new InMemoryPMTStorage();
+    var storage = new RefCounterPMTStorage(new InMemoryPMTStorage());
     var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER);
 
     var treeAndInsertedKeys = createEthereumTxTreeBlock10467135Test(tree);
@@ -240,7 +237,7 @@ public class EthereumTxTreeTest {
           throws IOException {
     // This test covers the removal of a leaf from a branch which has this leaf and another leaf as
     // a child and no value
-    var storage = new InMemoryPMTStorage();
+    var storage = new RefCounterPMTStorage(new InMemoryPMTStorage());
     var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER);
 
     var treeAndInsertedKeys = createEthereumTxTreeBlock10467135Test(tree);
@@ -263,7 +260,7 @@ public class EthereumTxTreeTest {
           throws IOException {
     // This test fails cause of a potential bug in the RLP algorithm when the value has length 55.
     // We are ignoring it for now, but needs investigation.
-    var storage = new InMemoryPMTStorage();
+    var storage = new RefCounterPMTStorage(new InMemoryPMTStorage());
     var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER);
 
     var treeAndInsertedKeys = createEthereumTxTreeBlock10467135Test(tree);
@@ -292,7 +289,7 @@ public class EthereumTxTreeTest {
           throws IOException {
     // This test covers the removal of a leaf from a branch which has only this leaf as a child and
     // a value. The branch's parent is an Extension.
-    var storage = new InMemoryPMTStorage();
+    var storage = new RefCounterPMTStorage(new InMemoryPMTStorage());
     var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER);
 
     var treeAndInsertedKeys = createEthereumTxTreeBlock10467135Test(tree);
@@ -320,7 +317,7 @@ public class EthereumTxTreeTest {
           throws IOException {
     // This test covers the removal of a leaf from a branch which has this leaf and another leaf as
     // a child and no value
-    var storage = new InMemoryPMTStorage();
+    var storage = new RefCounterPMTStorage(new InMemoryPMTStorage());
     var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER);
 
     var treeAndInsertedKeys = createEthereumTxTreeBlock10467135Test(tree);
@@ -358,7 +355,7 @@ public class EthereumTxTreeTest {
           throws IOException {
     // This test covers the removal of a leaf from a branch which has this leaf and another leaf as
     // a child and a value
-    var storage = new InMemoryPMTStorage();
+    var storage = new RefCounterPMTStorage(new InMemoryPMTStorage());
     var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER);
 
     var treeAndInsertedKeys = createEthereumTxTreeBlock10467135Test(tree);
@@ -396,7 +393,7 @@ public class EthereumTxTreeTest {
           throws IOException {
     // This test covers the removal of a leaf from a branch which has this leaf and more than one
     // leaves as children
-    var storage = new InMemoryPMTStorage();
+    var storage = new RefCounterPMTStorage(new InMemoryPMTStorage());
     var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER);
 
     var treeAndInsertedKeys = createEthereumTxTreeBlock10467135Test(tree);
@@ -442,7 +439,7 @@ public class EthereumTxTreeTest {
   public void
       when_tx_tree_of_eth_block_10467135_created_not_using_cache_and_new_random_nodes_added_and_removed__then_tx_root_is_correct()
           throws IOException {
-    var storage = new InMemoryPMTStorage();
+    var storage = new RefCounterPMTStorage(new InMemoryPMTStorage());
     var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER);
 
     var treeAndInsertedKeys = createEthereumTxTreeBlock10467135Test(tree);
