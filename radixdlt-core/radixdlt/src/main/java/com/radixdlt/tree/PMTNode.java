@@ -75,7 +75,7 @@ public abstract sealed class PMTNode implements Cloneable permits PMTBranch, PMT
   protected PMTKey keyNibbles;
   protected byte[] value;
 
-  public PMTNode(PMTKey keyNibbles, byte[] value) {
+  protected PMTNode(PMTKey keyNibbles, byte[] value) {
     this.keyNibbles = keyNibbles;
     this.value = value;
   }

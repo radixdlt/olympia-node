@@ -70,6 +70,7 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 import java.util.Objects;
+import org.bouncycastle.util.encoders.Hex;
 
 public class BerkeleyStorage implements PMTStorage {
 
@@ -101,7 +102,8 @@ public class BerkeleyStorage implements PMTStorage {
     OperationStatus operationStatus = this.database.delete(this.tx, key);
     if (operationStatus.equals(OperationStatus.NOTFOUND)) {
       throw new IllegalStateException(
-          String.format("Tried to delete non existing key %s.", serialisedNodeHash));
+          String.format(
+              "Tried to delete non existing key %s.", Hex.toHexString(serialisedNodeHash)));
     }
   }
 }
