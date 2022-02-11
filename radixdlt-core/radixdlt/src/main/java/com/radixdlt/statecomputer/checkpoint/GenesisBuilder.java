@@ -90,13 +90,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public final class GenesisBuilder {
-  private final RERules rules;
   private final LedgerAccumulator ledgerAccumulator;
   private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
   @Inject
   public GenesisBuilder(RERules rules, LedgerAccumulator ledgerAccumulator) {
-    this.rules = rules;
     this.ledgerAccumulator = ledgerAccumulator;
     var cmConfig = rules.constraintMachineConfig();
     var cm =

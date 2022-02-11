@@ -178,30 +178,8 @@ public final class RadixEngineStateComputer implements StateComputer {
     this.proposerElection = proposerElection;
   }
 
-  public static class RadixEngineTxn implements PreparedTxn {
-    private final Txn txn;
-    private final REProcessedTxn processed;
-    private final PermissionLevel permissionLevel;
-
-    public RadixEngineTxn(Txn txn, REProcessedTxn processed, PermissionLevel permissionLevel) {
-      this.txn = txn;
-      this.processed = processed;
-      this.permissionLevel = permissionLevel;
-    }
-
-    @Override
-    public Txn txn() {
-      return txn;
-    }
-
-    REProcessedTxn processed() {
-      return processed;
-    }
-
-    PermissionLevel permissionLevel() {
-      return permissionLevel;
-    }
-  }
+  public record RadixEngineTxn(Txn txn, REProcessedTxn processed, PermissionLevel permissionLevel)
+      implements PreparedTxn {}
 
   public REProcessedTxn test(byte[] payload, boolean isSigned) throws RadixEngineException {
     synchronized (lock) {
