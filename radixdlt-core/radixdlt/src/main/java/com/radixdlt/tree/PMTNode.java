@@ -74,12 +74,10 @@ public abstract sealed class PMTNode implements Cloneable permits PMTBranch, PMT
 
   protected PMTKey keyNibbles;
   protected byte[] value;
-  protected Byte referencesCounter;
 
   public PMTNode(PMTKey keyNibbles, byte[] value) {
     this.keyNibbles = keyNibbles;
     this.value = value;
-    this.referencesCounter = null; //We will interpret null as one ref to use less storage
   }
 
   public PMTKey getKey() {
@@ -135,8 +133,7 @@ public abstract sealed class PMTNode implements Cloneable permits PMTBranch, PMT
       return false;
     }
     PMTNode pmtNode = (PMTNode) o;
-    return Objects.equals(keyNibbles, pmtNode.keyNibbles)
-        && Arrays.equals(value, pmtNode.value);
+    return Objects.equals(keyNibbles, pmtNode.keyNibbles) && Arrays.equals(value, pmtNode.value);
   }
 
   @Override

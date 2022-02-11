@@ -129,6 +129,7 @@ public final class PMTLeaf extends PMTNode {
       acc.setTip(newLeaf);
       acc.add(newLeaf);
       acc.mark(this);
+      acc.remove(this);
     }
   }
 
@@ -150,6 +151,7 @@ public final class PMTLeaf extends PMTNode {
     computeAndSetTip(commonPath, newBranch, acc, represent);
     acc.add(newLeafNew, newLeafOld, newBranch);
     acc.mark(this);
+    acc.remove(this);
   }
 
   // This method is expected to mutate PMTAcc.
@@ -167,6 +169,7 @@ public final class PMTLeaf extends PMTNode {
     computeAndSetTip(commonPath, newBranch, acc, represent);
     acc.add(newLeaf, newBranch);
     acc.mark(this);
+    acc.remove(this);
   }
 
   // This method is expected to mutate PMTAcc.
@@ -181,6 +184,7 @@ public final class PMTLeaf extends PMTNode {
     computeAndSetTip(commonPath, newBranch, acc, represent);
     acc.add(newLeaf, newBranch);
     acc.mark(this);
+    acc.remove(this);
   }
 
   // This method is expected to mutate PMTAcc.

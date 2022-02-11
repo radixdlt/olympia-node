@@ -108,7 +108,7 @@ public class PMTAcc {
   }
 
   public List<PMTNode> getRemovedNodes() {
-    return addedAcc;
+    return removedAcc;
   }
 
   public void add(PMTNode... nodes) {

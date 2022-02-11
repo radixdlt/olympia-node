@@ -89,13 +89,13 @@ public final class PMTExt extends PMTNode {
     final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
     switch (commonPath.whichRemainderIsLeft()) {
       case EXISTING:
-        handleOnlyExistingRemainderIsLeft(this, val, acc, commonPath, represent);
+        handleOnlyExistingRemainderIsLeft(val, acc, commonPath, represent);
         break;
       case NEW, NONE:
-        handleNoRemainderIsLeft(this, val, acc, commonPath, represent, read);
+        handleNoRemainderIsLeft(val, acc, commonPath, represent, read);
         break;
       case EXISTING_AND_NEW:
-        handleBothExistingAndNewRemainders(this, val, acc, commonPath, represent);
+        handleBothExistingAndNewRemainders(val, acc, commonPath, represent);
         break;
       default:
         throw new IllegalStateException(
@@ -142,20 +142,16 @@ public final class PMTExt extends PMTNode {
 
   // This method is expected to mutate PMTAcc.
   private void handleBothExistingAndNewRemainders(
-      PMTNode current,
-      byte[] val,
-      PMTAcc acc,
-      PMTPath commonPath,
-      Function<PMTNode, byte[]> represent) {
+      byte[] val, PMTAcc acc, PMTPath commonPath, Function<PMTNode, byte[]> represent) {
     var remainderOld = commonPath.getRemainder(PMTPath.RemainingSubtree.EXISTING);
     PMTKey remainderNew = commonPath.getRemainder(PMTPath.RemainingSubtree.NEW);
     byte[] sliceVal;
     // INFO: as implemented here, the key-end can be empty
     var newLeaf = new PMTLeaf(remainderNew.getTailNibbles(), val);
     if (remainderOld.isNibble()) {
-      sliceVal = current.getValue();
+      sliceVal = this.getValue();
     } else {
-      var newShorter = new PMTExt(remainderOld.getTailNibbles(), current.getValue());
+      var newShorter = new PMTExt(remainderOld.getTailNibbles(), this.getValue());
       acc.add(newShorter);
       sliceVal = represent.apply(newShorter);
     }
@@ -166,19 +162,19 @@ public final class PMTExt extends PMTNode {
             new PMTBranch.PMTBranchChild(remainderOld.getFirstNibble(), sliceVal));
     computeAndSetTip(commonPath, newBranch, acc, represent);
     acc.add(newBranch, newLeaf);
-    acc.mark(current);
+    acc.mark(this);
+    acc.remove(this);
   }
 
   // This method is expected to mutate PMTAcc.
   private void handleNoRemainderIsLeft(
-      PMTNode current,
       byte[] val,
       PMTAcc acc,
       PMTPath commonPath,
       Function<PMTNode, byte[]> represent,
       Function<byte[], PMTNode> read) {
     var newRemainder = commonPath.getRemainder(PMTPath.RemainingSubtree.NEW);
-    var nextHash = current.getValue();
+    var nextHash = this.getValue();
     var nextNode = read.apply(nextHash);
     // INFO: for NONE, the NEW will be empty
     nextNode.insertNode(newRemainder, val, acc, represent, read);
@@ -187,22 +183,19 @@ public final class PMTExt extends PMTNode {
     var newExt = new PMTExt(commonPath.getCommonPrefix(), represent.apply(subTip));
     acc.setTip(newExt);
     acc.add(newExt);
-    acc.mark(current);
+    acc.mark(this);
+    acc.remove(this);
   }
 
   // This method is expected to mutate PMTAcc.
   private void handleOnlyExistingRemainderIsLeft(
-      PMTNode current,
-      byte[] val,
-      PMTAcc acc,
-      PMTPath commonPath,
-      Function<PMTNode, byte[]> represent) {
+      byte[] val, PMTAcc acc, PMTPath commonPath, Function<PMTNode, byte[]> represent) {
     var remainder = commonPath.getRemainder(PMTPath.RemainingSubtree.EXISTING);
     byte[] sliceVal;
     if (remainder.isNibble()) {
-      sliceVal = current.getValue();
+      sliceVal = this.getValue();
     } else {
-      var newShorter = new PMTExt(remainder.getTailNibbles(), current.getValue());
+      var newShorter = new PMTExt(remainder.getTailNibbles(), this.getValue());
       acc.add(newShorter);
       sliceVal = represent.apply(newShorter);
     }
@@ -210,7 +203,8 @@ public final class PMTExt extends PMTNode {
         new PMTBranch(val, new PMTBranch.PMTBranchChild(remainder.getFirstNibble(), sliceVal));
     computeAndSetTip(commonPath, newBranch, acc, represent);
     acc.add(newBranch);
-    acc.mark(current);
+    acc.mark(this);
+    acc.remove(this);
   }
 
   // This method is expected to mutate PMTAcc.

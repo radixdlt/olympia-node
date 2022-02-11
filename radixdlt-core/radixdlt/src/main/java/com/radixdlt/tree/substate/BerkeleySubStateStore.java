@@ -78,6 +78,8 @@ import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.tree.PMT;
 import com.radixdlt.tree.storage.CachedPMTStorage;
 import com.radixdlt.tree.storage.PMTCache;
+import com.radixdlt.tree.storage.PMTStorage;
+import com.radixdlt.tree.storage.RefCounterPMTStorage;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.Pair;
@@ -153,8 +155,9 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
     boolean isEpochChange = false;
     Long epoch = null;
     byte[] rootHash = new byte[0];
-    BerkeleyStorage berkeleyStorage = new BerkeleyStorage(this.subStateTreeDatabase, dbTxn);
-    CachedPMTStorage cachedPMTStorage = new CachedPMTStorage(berkeleyStorage, pmtCache);
+    PMTStorage pmtStorage =
+        new RefCounterPMTStorage(new BerkeleyStorage(this.subStateTreeDatabase, dbTxn));
+    CachedPMTStorage cachedPMTStorage = new CachedPMTStorage(pmtStorage, pmtCache);
     var subStateTree = new SubStateTree(new PMT(cachedPMTStorage, this.rootHash));
     List<Pair<SubstateId, byte[]>> values = new ArrayList<>();
     for (REStateUpdate stateUpdate : txn.stateUpdates().toList()) {
@@ -167,7 +170,7 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
       }
     }
     subStateTree = subStateTree.putAll(values);
-    persistCurrentSubStateRoot(berkeleyStorage, subStateTree.getRootHash());
+    persistCurrentSubStateRoot(pmtStorage, subStateTree.getRootHash());
     this.rootHash = subStateTree.getRootHash();
 
     if (isEpochChange) {
@@ -188,9 +191,9 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
     }
   }
 
-  private void persistCurrentSubStateRoot(BerkeleyStorage berkeleyStorage, byte[] rootHash) {
+  private void persistCurrentSubStateRoot(PMTStorage pmtStorage, byte[] rootHash) {
     // This shouldn't be cached as it will get be stale eventually.
-    berkeleyStorage.save(CURRENT_ROOT_KEY, rootHash);
+    pmtStorage.save(CURRENT_ROOT_KEY, rootHash);
   }
 
   public byte[] getRootHash() {

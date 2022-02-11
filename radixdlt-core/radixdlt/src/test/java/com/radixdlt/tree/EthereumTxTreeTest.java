@@ -87,7 +87,9 @@ public class EthereumTxTreeTest {
 
   @Test
   public void when_tx_tree_of_eth_block_10593417_created_using_cache__then_tx_root_is_correct() {
-    var storage = new CachedPMTStorage(new RefCounterPMTStorage(new InMemoryPMTStorage()), new PMTCache(CACHE_MAXIMUM_SIZE));
+    var storage =
+        new CachedPMTStorage(
+            new RefCounterPMTStorage(new InMemoryPMTStorage()), new PMTCache(CACHE_MAXIMUM_SIZE));
     var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER);
 
     createEthereumTxTreeBlock10593417Test(tree);
@@ -189,7 +191,9 @@ public class EthereumTxTreeTest {
   @Test
   public void when_tx_tree_of_eth_block_10467135_created_using_cache__then_tx_root_is_correct()
       throws IOException {
-    var storage = new CachedPMTStorage(new RefCounterPMTStorage(new InMemoryPMTStorage()), new PMTCache(CACHE_MAXIMUM_SIZE));
+    var storage =
+        new CachedPMTStorage(
+            new RefCounterPMTStorage(new InMemoryPMTStorage()), new PMTCache(CACHE_MAXIMUM_SIZE));
     var tree = new PMT(storage, KECCAK_256, RLP_SERIALIZER);
 
     createEthereumTxTreeBlock10467135Test(tree);
