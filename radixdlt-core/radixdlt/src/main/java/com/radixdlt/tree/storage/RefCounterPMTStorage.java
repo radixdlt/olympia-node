@@ -78,11 +78,11 @@ public class RefCounterPMTStorage implements PMTStorage {
   public void save(byte[] serialisedNodeHash, byte[] serialisedNode) {
     byte[] newData = this.pmtStorage.read(serialisedNodeHash);
     if (newData != null) {
-      newData[serialisedNode.length]++;
+      newData[newData.length - 1]++;
     } else {
       newData = new byte[serialisedNode.length + 1];
       System.arraycopy(serialisedNode, 0, newData, 0, serialisedNode.length);
-      newData[serialisedNode.length] = 1;
+      newData[newData.length - 1] = 1;
     }
     this.pmtStorage.save(serialisedNodeHash, newData);
   }

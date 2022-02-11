@@ -135,7 +135,7 @@ public final class PMT {
     this.db = db;
     this.root = root;
     this.serializedRoot = this.root == null ? null : pmtNodeSerializer.serialize(this.root);
-    this.rootHash = this.root == null ? null : hashFunction.hash(this.serializedRoot);
+    this.rootHash = this.serializedRoot == null ? null : hashFunction.hash(this.serializedRoot);
     this.hashFunction = hashFunction;
     this.pmtNodeSerializer = pmtNodeSerializer;
     this.emptyTreeHash = hashFunction.hash(pmtNodeSerializer.emptyTree());
@@ -195,7 +195,6 @@ public final class PMT {
         val = entry.getSecond();
         pmt = insertKeyValue(key, val, pmt);
       }
-      this.db.save(pmt.getRootHash(), pmt.serializedRoot);
       return pmt;
     } catch (Exception e) {
       throw new IllegalStateException(
@@ -226,8 +225,8 @@ public final class PMT {
       removeStaleNodesFromDB(acc.getRemovedNodes().stream().filter(Objects::nonNull).toList());
     } else {
       newRoot = new PMTLeaf(pmtKey, val);
-      this.save(pmtNodeSerializer.serialize(newRoot));
     }
+    this.save(pmtNodeSerializer.serialize(newRoot));
     return new PMT(this.db, newRoot, this.hashFunction, this.pmtNodeSerializer);
   }
 
@@ -246,6 +245,9 @@ public final class PMT {
         PMTNode newRoot = acc.getTip();
         saveNewNodesToDB(acc.getNewNodes().stream().filter(Objects::nonNull).toList());
         removeStaleNodesFromDB(acc.getRemovedNodes().stream().filter(Objects::nonNull).toList());
+        if (newRoot != null) {
+          this.save(pmtNodeSerializer.serialize(newRoot));
+        }
         return new PMT(this.db, newRoot, this.hashFunction, this.pmtNodeSerializer);
       }
     } else {
