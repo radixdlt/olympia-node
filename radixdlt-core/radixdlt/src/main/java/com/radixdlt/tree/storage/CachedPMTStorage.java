@@ -88,8 +88,16 @@ public class CachedPMTStorage implements PMTStorage {
     byte[] bytes = this.pmtCache.get(serialisedNodeHash);
     if (bytes == null) {
       bytes = this.pmtStorage.read(serialisedNodeHash);
-      this.pmtCache.put(serialisedNodeHash, bytes);
+      if (bytes != null) {
+        this.pmtCache.put(serialisedNodeHash, bytes);
+      }
     }
     return bytes;
+  }
+
+  @Override
+  public void delete(byte[] serialisedNodeHash) {
+    this.pmtCache.invalidate(serialisedNodeHash);
+    this.pmtStorage.delete(serialisedNodeHash);
   }
 }

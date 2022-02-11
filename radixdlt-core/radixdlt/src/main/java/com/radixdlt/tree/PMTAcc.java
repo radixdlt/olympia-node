@@ -107,6 +107,10 @@ public class PMTAcc {
     return addedAcc;
   }
 
+  public List<PMTNode> getRemovedNodes() {
+    return removedAcc;
+  }
+
   public void add(PMTNode... nodes) {
     addedAcc.addAll(Arrays.stream(nodes).toList());
   }

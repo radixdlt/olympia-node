@@ -62,82 +62,46 @@
  * permissions under this License.
  */
 
-package com.radixdlt.tree;
+package com.radixdlt.tree.storage;
 
 import java.util.Arrays;
-import java.util.Objects;
-import java.util.function.Function;
 
-public abstract sealed class PMTNode implements Cloneable permits PMTBranch, PMTExt, PMTLeaf {
+public class RefCounterPMTStorage implements PMTStorage {
 
-  public static final int DB_SIZE_COND = 32;
+  private final PMTStorage pmtStorage;
 
-  protected PMTKey keyNibbles;
-  protected byte[] value;
-
-  protected PMTNode(PMTKey keyNibbles, byte[] value) {
-    this.keyNibbles = keyNibbles;
-    this.value = value;
-  }
-
-  public PMTKey getKey() {
-    return this.keyNibbles;
-  }
-
-  public byte[] getValue() {
-    return value;
-  }
-
-  public PMTNode setValue(byte[] value) {
-    if (this.value == value) {
-      throw new IllegalArgumentException("Nothing changed");
-    } else {
-      this.value = value;
-    }
-    return this;
-  }
-
-  // This method is expected to mutate PMTAcc.
-  public abstract void insertNode(
-      PMTKey key,
-      byte[] val,
-      PMTAcc acc,
-      Function<PMTNode, byte[]> represent,
-      Function<byte[], PMTNode> read);
-
-  // This method is expected to mutate PMTAcc.
-  public abstract void removeNode(
-      PMTKey key, PMTAcc acc, Function<PMTNode, byte[]> represent, Function<byte[], PMTNode> read);
-
-  // This method is expected to mutate PMTAcc.
-  public abstract void getValue(PMTKey key, PMTAcc acc, Function<byte[], PMTNode> read);
-
-  // This method is expected to mutate PMTAcc.
-  public void computeAndSetTip(
-      PMTPath pmtPath, PMTBranch branch, PMTAcc acc, Function<PMTNode, byte[]> represent) {
-    if (pmtPath.getCommonPrefix().isEmpty()) {
-      acc.setTip(branch);
-    } else {
-      var newExt = new PMTExt(pmtPath.getCommonPrefix(), represent.apply(branch));
-      acc.setTip(newExt);
-      acc.add(newExt);
-    }
+  public RefCounterPMTStorage(PMTStorage pmtStorage) {
+    this.pmtStorage = pmtStorage;
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
+  public void save(byte[] serialisedNodeHash, byte[] serialisedNode) {
+    byte[] newData = this.pmtStorage.read(serialisedNodeHash);
+    if (newData != null) {
+      newData[newData.length - 1]++;
+    } else {
+      newData = new byte[serialisedNode.length + 1];
+      System.arraycopy(serialisedNode, 0, newData, 0, serialisedNode.length);
+      newData[newData.length - 1] = 1;
     }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    PMTNode pmtNode = (PMTNode) o;
-    return Objects.equals(keyNibbles, pmtNode.keyNibbles) && Arrays.equals(value, pmtNode.value);
+    this.pmtStorage.save(serialisedNodeHash, newData);
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(keyNibbles, Arrays.hashCode(value));
+  public byte[] read(byte[] serialisedNodeHash) {
+    byte[] bytes = this.pmtStorage.read(serialisedNodeHash);
+    return Arrays.copyOfRange(bytes, 0, bytes.length - 1);
+  }
+
+  @Override
+  public void delete(byte[] serialisedNodeHash) {
+    byte[] existingData = this.pmtStorage.read(serialisedNodeHash);
+
+    if (existingData[existingData.length - 1] == 1) {
+      this.pmtStorage.delete(serialisedNodeHash);
+    } else {
+      existingData[existingData.length - 1]--;
+      this.pmtStorage.save(serialisedNodeHash, existingData);
+    }
   }
 }

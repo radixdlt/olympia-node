@@ -78,6 +78,8 @@ import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.tree.PMT;
 import com.radixdlt.tree.storage.CachedPMTStorage;
 import com.radixdlt.tree.storage.PMTCache;
+import com.radixdlt.tree.storage.PMTStorage;
+import com.radixdlt.tree.storage.RefCounterPMTStorage;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.Pair;
@@ -152,10 +154,10 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
     watch.start();
     boolean isEpochChange = false;
     Long epoch = null;
-    byte[] rootHash = new byte[0];
     BerkeleyStorage berkeleyStorage = new BerkeleyStorage(this.subStateTreeDatabase, dbTxn);
     CachedPMTStorage cachedPMTStorage = new CachedPMTStorage(berkeleyStorage, pmtCache);
-    var subStateTree = new SubStateTree(new PMT(cachedPMTStorage, this.rootHash));
+    PMTStorage refCounterPMTStorage = new RefCounterPMTStorage(cachedPMTStorage);
+    var subStateTree = new SubStateTree(new PMT(refCounterPMTStorage, this.rootHash));
     List<Pair<SubstateId, byte[]>> values = new ArrayList<>();
     for (REStateUpdate stateUpdate : txn.stateUpdates().toList()) {
       values.add(Pair.of(stateUpdate.getId(), SubStateTree.getValue(stateUpdate.isBootUp())));
@@ -167,16 +169,17 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
       }
     }
     subStateTree = subStateTree.putAll(values);
-    persistCurrentSubStateRoot(berkeleyStorage, subStateTree.getRootHash());
     this.rootHash = subStateTree.getRootHash();
+    // This shouldn't be cached as it will get be stale eventually. We also can't use ref counting.
+    berkeleyStorage.save(CURRENT_ROOT_KEY, this.rootHash);
 
     if (isEpochChange) {
       epochRootHashDatabase.put(
-          dbTxn, new DatabaseEntry(Longs.toByteArray(epoch)), new DatabaseEntry(rootHash));
+          dbTxn, new DatabaseEntry(Longs.toByteArray(epoch)), new DatabaseEntry(this.rootHash));
       if (logger.isInfoEnabled()) {
         logger.info(
             "SubState Tree Root hash: {} for epoch {}. Time spent since last epoch: {} s.",
-            Bytes.toHexString(rootHash),
+            Bytes.toHexString(this.rootHash),
             epoch,
             watch.elapsed().toSeconds());
         logger.info(this.pmtCache.getStats());
@@ -186,11 +189,6 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
     if (watch.isRunning()) {
       watch.stop();
     }
-  }
-
-  private void persistCurrentSubStateRoot(BerkeleyStorage berkeleyStorage, byte[] rootHash) {
-    // This shouldn't be cached as it will get be stale eventually.
-    berkeleyStorage.save(CURRENT_ROOT_KEY, rootHash);
   }
 
   public byte[] getRootHash() {

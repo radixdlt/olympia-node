@@ -72,6 +72,7 @@ import com.radixdlt.tree.storage.PMTStorage;
 import com.radixdlt.utils.Pair;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -134,7 +135,7 @@ public final class PMT {
     this.db = db;
     this.root = root;
     this.serializedRoot = this.root == null ? null : pmtNodeSerializer.serialize(this.root);
-    this.rootHash = this.root == null ? null : hashFunction.hash(this.serializedRoot);
+    this.rootHash = this.serializedRoot == null ? null : hashFunction.hash(this.serializedRoot);
     this.hashFunction = hashFunction;
     this.pmtNodeSerializer = pmtNodeSerializer;
     this.emptyTreeHash = hashFunction.hash(pmtNodeSerializer.emptyTree());
@@ -194,7 +195,6 @@ public final class PMT {
         val = entry.getSecond();
         pmt = insertKeyValue(key, val, pmt);
       }
-      this.db.save(pmt.getRootHash(), pmt.serializedRoot);
       return pmt;
     } catch (Exception e) {
       throw new IllegalStateException(
@@ -221,15 +221,12 @@ public final class PMT {
                 "Unexpected null PMT root when inserting key %s and value %s",
                 TreeUtils.toHexString(key), TreeUtils.toHexString(val)));
       }
-      for (PMTNode sanitizedAcc : acc.getNewNodes().stream().filter(Objects::nonNull).toList()) {
-        byte[] serialisedNode = this.pmtNodeSerializer.serialize(sanitizedAcc);
-        if (hasDbRepresentation(serialisedNode)) {
-          this.db.save(hash(serialisedNode), serialisedNode);
-        }
-      }
+      saveNewNodesToDB(acc.getNewNodes().stream().filter(Objects::nonNull).toList());
+      removeStaleNodesFromDB(acc.getRemovedNodes().stream().filter(Objects::nonNull).toList());
     } else {
       newRoot = new PMTLeaf(pmtKey, val);
     }
+    this.save(pmtNodeSerializer.serialize(newRoot));
     return new PMT(this.db, newRoot, this.hashFunction, this.pmtNodeSerializer);
   }
 
@@ -246,17 +243,41 @@ public final class PMT {
         return this;
       } else {
         PMTNode newRoot = acc.getTip();
-        for (PMTNode sanitizedAcc : acc.getNewNodes().stream().filter(Objects::nonNull).toList()) {
-          byte[] serialisedNode = this.pmtNodeSerializer.serialize(sanitizedAcc);
-          if (hasDbRepresentation(serialisedNode)) {
-            this.db.save(hash(serialisedNode), serialisedNode);
-          }
+        saveNewNodesToDB(acc.getNewNodes().stream().filter(Objects::nonNull).toList());
+        removeStaleNodesFromDB(acc.getRemovedNodes().stream().filter(Objects::nonNull).toList());
+        if (newRoot != null) {
+          this.save(pmtNodeSerializer.serialize(newRoot));
         }
         return new PMT(this.db, newRoot, this.hashFunction, this.pmtNodeSerializer);
       }
     } else {
       return null;
     }
+  }
+
+  private void saveNewNodesToDB(List<PMTNode> nodes) {
+    applyDBOperation(nodes, this::save);
+  }
+
+  private void removeStaleNodesFromDB(List<PMTNode> nodes) {
+    applyDBOperation(nodes, this::delete);
+  }
+
+  private void applyDBOperation(List<PMTNode> nodes, Consumer<byte[]> dbOperation) {
+    for (PMTNode node : nodes) {
+      byte[] serialisedNode = this.pmtNodeSerializer.serialize(node);
+      if (hasDbRepresentation(serialisedNode)) {
+        dbOperation.accept(serialisedNode);
+      }
+    }
+  }
+
+  private void save(byte[] serialisedNode) {
+    this.db.save(hash(serialisedNode), serialisedNode);
+  }
+
+  private void delete(byte[] serializedNode) {
+    this.db.delete(hash(serializedNode));
   }
 
   public byte[] getRootHash() {

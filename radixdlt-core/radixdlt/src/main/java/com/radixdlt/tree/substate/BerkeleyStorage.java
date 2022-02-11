@@ -67,8 +67,10 @@ package com.radixdlt.tree.substate;
 import com.radixdlt.tree.storage.PMTStorage;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 import java.util.Objects;
+import org.bouncycastle.util.encoders.Hex;
 
 public class BerkeleyStorage implements PMTStorage {
 
@@ -92,5 +94,16 @@ public class BerkeleyStorage implements PMTStorage {
     var value = new DatabaseEntry();
     this.database.get(this.tx, key, value, null);
     return value.getData();
+  }
+
+  @Override
+  public void delete(byte[] serialisedNodeHash) {
+    var key = new DatabaseEntry(serialisedNodeHash);
+    OperationStatus operationStatus = this.database.delete(this.tx, key);
+    if (operationStatus.equals(OperationStatus.NOTFOUND)) {
+      throw new IllegalStateException(
+          String.format(
+              "Tried to delete non existing key %s.", Hex.toHexString(serialisedNodeHash)));
+    }
   }
 }
