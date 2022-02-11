@@ -108,7 +108,8 @@ public class RandomValidatorsTest {
                       1,
                       Amount.ofTokens(10),
                       9800,
-                      50)),
+                      50,
+                      255)),
               new ForksModule())
           .ledgerAndRadixEngineWithEpochHighView()
           .addTestModules(

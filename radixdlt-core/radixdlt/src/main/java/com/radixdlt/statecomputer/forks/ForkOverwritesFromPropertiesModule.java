@@ -86,31 +86,25 @@ public class ForkOverwritesFromPropertiesModule extends AbstractModule {
       return forkConfigs.stream()
           .map(
               c -> {
-                var epochOverwrite =
-                    properties.get("overwrite_forks." + c.getName() + ".epoch", "");
+                var epochOverwrite = properties.get("overwrite_forks." + c.name() + ".epoch", "");
                 if (!epochOverwrite.isBlank()) {
                   var epoch = Long.parseLong(epochOverwrite);
                   logger.warn(
-                      "Overwriting epoch of "
-                          + c.getName()
-                          + " from "
-                          + c.getEpoch()
-                          + " to "
-                          + epoch);
+                      "Overwriting epoch of " + c.name() + " from " + c.epoch() + " to " + epoch);
                   c = c.overrideEpoch(epoch);
                 }
 
-                var viewOverwrite = properties.get("overwrite_forks." + c.getName() + ".views", "");
+                var viewOverwrite = properties.get("overwrite_forks." + c.name() + ".views", "");
                 if (!viewOverwrite.isBlank()) {
                   var view = Long.parseLong(viewOverwrite);
                   logger.warn(
                       "Overwriting views of "
-                          + c.getName()
+                          + c.name()
                           + " from "
-                          + c.getConfig().getMaxRounds()
+                          + c.config().maxRounds()
                           + " to "
                           + view);
-                  c = c.overrideConfig(c.getConfig().overrideMaxRounds(view));
+                  c = c.overrideConfig(c.config().overrideMaxRounds(view));
                 }
                 return c;
               })

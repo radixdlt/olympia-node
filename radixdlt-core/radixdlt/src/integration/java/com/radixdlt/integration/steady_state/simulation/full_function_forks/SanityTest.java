@@ -134,7 +134,8 @@ public class SanityTest {
                         1,
                         Amount.ofTokens(10),
                         9800,
-                        10)),
+                        10,
+                        255)),
                 new ForksModule())
             .addNodeModule(MempoolConfig.asModule(1000, 10))
             .addTestModules(

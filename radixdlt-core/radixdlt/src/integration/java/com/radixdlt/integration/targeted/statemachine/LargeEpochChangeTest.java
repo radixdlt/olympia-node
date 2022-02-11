@@ -170,7 +170,8 @@ public class LargeEpochChangeTest {
                 150, // Two weeks worth of epochs
                 Amount.ofTokens(10), // Rewards per proposal
                 9800, // 98.00% threshold for completed proposals to get any rewards
-                100 // 100 max validators
+                100, // 100 max validators
+                255 // 255 max message length
                 )),
         new ForksModule(),
         new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),

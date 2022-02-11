@@ -92,7 +92,7 @@ public class RadixEngineUniqueGenerator implements TxnGenerator {
     var keyPair = ECKeyPair.generateNew();
     var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "smthng");
     var builder =
-        TxBuilder.newBuilder(parser.getSubstateDeserialization(), rules.getSerialization())
+        TxBuilder.newBuilder(parser.getSubstateDeserialization(), rules.serialization())
             .toLowLevelBuilder()
             .syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
             .virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())

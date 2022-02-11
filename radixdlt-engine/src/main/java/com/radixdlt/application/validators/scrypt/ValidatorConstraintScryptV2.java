@@ -87,13 +87,8 @@ import java.util.Objects;
 
 public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 
-  private static class UpdatingValidatorHashMetadata implements ReducerState {
-    private final ValidatorSystemMetadata prevState;
-
-    private UpdatingValidatorHashMetadata(ValidatorSystemMetadata prevState) {
-      this.prevState = prevState;
-    }
-
+  private record UpdatingValidatorHashMetadata(ValidatorSystemMetadata prevState)
+      implements ReducerState {
     void update(ValidatorSystemMetadata next) throws ProcedureException {
       if (!prevState.getValidatorKey().equals(next.getValidatorKey())) {
         throw new ProcedureException("Invalid key");
@@ -101,21 +96,9 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
     }
   }
 
-  private static class UpdatingValidatorInfo implements ReducerState {
-    private final ValidatorMetaData prevState;
+  private record UpdatingValidatorInfo(ValidatorMetaData prevState) implements ReducerState {}
 
-    private UpdatingValidatorInfo(ValidatorMetaData prevState) {
-      this.prevState = prevState;
-    }
-  }
-
-  private static class UpdatingDelegationFlag implements ReducerState {
-    private final AllowDelegationFlag current;
-
-    private UpdatingDelegationFlag(AllowDelegationFlag current) {
-      this.current = current;
-    }
-
+  private record UpdatingDelegationFlag(AllowDelegationFlag current) implements ReducerState {
     void update(AllowDelegationFlag next) throws ProcedureException {
       if (!current.getValidatorKey().equals(next.getValidatorKey())) {
         throw new ProcedureException("Invalid key update");

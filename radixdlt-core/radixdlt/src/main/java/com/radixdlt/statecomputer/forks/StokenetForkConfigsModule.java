@@ -114,7 +114,8 @@ public final class StokenetForkConfigsModule extends AbstractModule {
             500, // Two weeks worth of epochs
             Amount.ofMicroTokens(2307700), // Rewards per proposal
             9800, // 98.00% threshold for completed proposals to get any rewards,
-            100 // 100 max validators
+            100, // 100 max validators
+            255 // 255 max message length
             ));
   }
 }

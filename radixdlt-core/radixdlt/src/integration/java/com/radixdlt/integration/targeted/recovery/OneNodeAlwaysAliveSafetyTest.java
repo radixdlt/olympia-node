@@ -234,7 +234,8 @@ public class OneNodeAlwaysAliveSafetyTest {
                 1,
                 Amount.ofTokens(10),
                 9800,
-                10)),
+                10,
+                255)),
         new ForksModule(),
         new PersistedNodeForTestingModule(),
         new AbstractModule() {

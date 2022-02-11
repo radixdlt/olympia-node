@@ -62,92 +62,105 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.full_function;
+package com.radixdlt.statecomputer.radixengine;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.application.RadixEngineUniqueGenerator;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.network.p2p.RadixNodeUri;
+import com.radixdlt.network.p2p.addressbook.AddressBook;
+import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
-import java.time.Duration;
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.OptionalInt;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 
-@RunWith(Parameterized.class)
-public class OneOutOfBoundsTest {
-  @Parameterized.Parameters
-  public static Collection<Object[]> fees() {
-    return List.of(
-        new Object[][] {
-          {UInt256.ONE}, {UInt256.ZERO},
-        });
+public abstract class AbstractRadixEngineTest {
+  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+  @Inject private DeterministicProcessor processor;
+
+  private final Amount totalTokenAmount = Amount.ofTokens(110);
+  private final Amount stakeAmount = Amount.ofTokens(10);
+  private final int mempoolMaxSize;
+
+  protected AbstractRadixEngineTest(int mempoolMaxSize) {
+    this.mempoolMaxSize = mempoolMaxSize;
   }
 
-  private final SimulationTest.Builder bftTestBuilder;
-
-  public OneOutOfBoundsTest(UInt256 perByteFee) {
-    bftTestBuilder =
-        SimulationTest.builder()
-            .numNodes(4)
-            .pacemakerTimeout(3000)
-            .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.oneOutOfBounds(50, 10000))
-            .fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
-            .addRadixEngineConfigModules(
-                new MainnetForkConfigsModule(),
-                new RadixEngineForksLatestOnlyModule(
-                    new RERulesConfig(
-                        Set.of("xrd"),
-                        Pattern.compile("[a-z0-9]+"),
-                        FeeTable.create(Amount.ofSubunits(perByteFee), Map.of()),
-                        1024 * 1024,
-                        OptionalInt.of(5),
-                        20L,
-                        2,
-                        Amount.ofTokens(10),
-                        1,
-                        Amount.ofTokens(10),
-                        9800,
-                        10,
-                        255)),
-                new ForksModule())
-            .addNodeModule(MempoolConfig.asModule(1000, 10))
-            .addTestModules(
-                ConsensusMonitors.safety(),
-                ConsensusMonitors.liveness(10000, TimeUnit.SECONDS),
-                LedgerMonitors.consensusToLedger(),
-                LedgerMonitors.ordered(),
-                RadixEngineMonitors.noInvalidProposedCommands())
-            .addMempoolSubmissionsSteadyState(RadixEngineUniqueGenerator.class);
-  }
-
-  @Test
-  public void sanity_tests_should_pass() {
-    SimulationTest simulationTest = bftTestBuilder.build();
-
-    final var results = simulationTest.run(Duration.ofMinutes(2)).awaitCompletion();
-    assertThat(results)
-        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+  @Before
+  public void setup() {
+    var injector =
+        Guice.createInjector(
+            MempoolConfig.asModule(mempoolMaxSize, 10),
+            new MainnetForkConfigsModule(),
+            new RadixEngineForksLatestOnlyModule(
+                RERulesConfig.testingDefault()
+                    .overrideFeeTable(
+                        FeeTable.create(
+                            Amount.ofSubunits(UInt256.ONE),
+                            Map.of(ValidatorRegisteredCopy.class, Amount.ofSubunits(UInt256.ONE))))
+                    .overrideMaxMessageLen(511)),
+            new ForksModule(),
+            new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 1),
+            new MockedGenesisModule(Set.of(TEST_KEY.getPublicKey()), totalTokenAmount, stakeAmount),
+            new AbstractModule() {
+              @Override
+              protected void configure() {
+                bind(BerkeleyRecoverableProcessedTxnStore.class).in(Scopes.SINGLETON);
+                Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
+                    .addBinding()
+                    .to(BerkeleyRecoverableProcessedTxnStore.class);
+                bindConstant()
+                    .annotatedWith(DatabaseLocation.class)
+                    .to(folder.getRoot().getAbsolutePath());
+                bindConstant().annotatedWith(NetworkId.class).to(99);
+                bind(P2PConfig.class).toInstance(mock(P2PConfig.class));
+                bind(AddressBook.class).in(Scopes.SINGLETON);
+                var selfUri =
+                    RadixNodeUri.fromPubKeyAndAddress(
+                        99, TEST_KEY.getPublicKey(), "localhost", 23456);
+                bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
+                var addressBookPersistence = mock(AddressBookPersistence.class);
+                when(addressBookPersistence.getAllEntries()).thenReturn(ImmutableList.of());
+                bind(AddressBookPersistence.class).toInstance(addressBookPersistence);
+                var runtimeProperties = mock(RuntimeProperties.class);
+                when(runtimeProperties.get(eq("api.transactions.enable"), anyBoolean()))
+                    .thenReturn(true);
+                bind(RuntimeProperties.class).toInstance(runtimeProperties);
+              }
+            });
+    injector.injectMembers(this);
   }
 }

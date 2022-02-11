@@ -191,6 +191,7 @@ public final class TxBuilder {
   }
 
   // For mempool filler
+  @SuppressWarnings("unchecked")
   public <T extends Particle> T downSubstate(Class<T> particleClass, Predicate<T> particlePredicate)
       throws TxBuilderException {
     var localSubstate =
@@ -221,6 +222,7 @@ public final class TxBuilder {
     }
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends Particle> T findSystem(Class<T> substateClass) {
     var typeByte = deserialization.classToByte(substateClass);
     var mapKey = SystemMapKey.ofSystem(typeByte);
@@ -241,6 +243,7 @@ public final class TxBuilder {
         .orElseThrow();
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends Particle> T find(Class<T> substateClass, Object key) throws TxBuilderException {
     var keyBytes = serialization.serializeKey(substateClass, key);
     var typeByte = deserialization.classToByte(substateClass);
@@ -283,6 +286,7 @@ public final class TxBuilder {
     }
   }
 
+  @SuppressWarnings("unchecked")
   private <T extends Particle> T readDownInternal(
       Class<T> substateClass, Object key, boolean down) {
     var keyBytes = serialization.serializeKey(substateClass, key);
@@ -327,6 +331,7 @@ public final class TxBuilder {
     return readDownInternal(substateClass, key, false);
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends Particle> T downSystem(Class<T> substateClass) {
     var typeByte = deserialization.classToByte(substateClass);
     var mapKey = SystemMapKey.ofSystem(typeByte);
@@ -346,6 +351,7 @@ public final class TxBuilder {
     }
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends Particle> T readSystem(Class<T> substateClass) {
     var typeByte = deserialization.classToByte(substateClass);
     var mapKey = SystemMapKey.ofSystem(typeByte);
@@ -387,6 +393,7 @@ public final class TxBuilder {
   }
 
   // FIXME: programmedInTxn is just a hack
+  @SuppressWarnings("unchecked")
   public <T extends Particle> CloseableCursor<T> readIndex(
       SubstateIndex<T> index, boolean programmedInTxn) {
     var comparator = UnsignedBytes.lexicographicalComparator().reversed();
@@ -451,6 +458,7 @@ public final class TxBuilder {
     };
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends Particle, U> U shutdownAll(
       SubstateIndex<T> index, Function<Iterator<T>, U> mapper) {
     try (var cursor = createRemoteSubstateCursor(index)) {
@@ -468,6 +476,7 @@ public final class TxBuilder {
     }
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends ResourceInBucket, X extends Exception> UInt256 downFungible(
       SubstateIndex<T> index,
       Predicate<T> particlePredicate,
@@ -556,8 +565,8 @@ public final class TxBuilder {
     return this;
   }
 
-  public TxBuilder message(byte[] message) throws MessageTooLongException {
-    lowLevelBuilder.message(message);
+  public TxBuilder message(byte[] message, int maxMessageLen) throws MessageTooLongException {
+    lowLevelBuilder.message(message, maxMessageLen);
     return this;
   }
 

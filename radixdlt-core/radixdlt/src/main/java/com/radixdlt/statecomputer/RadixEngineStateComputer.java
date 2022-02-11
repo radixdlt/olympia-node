@@ -64,6 +64,8 @@
 
 package com.radixdlt.statecomputer;
 
+import static com.radixdlt.counters.SystemCounters.*;
+
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -187,13 +189,17 @@ public final class RadixEngineStateComputer implements StateComputer {
       this.permissionLevel = permissionLevel;
     }
 
-    REProcessedTxn processedTxn() {
-      return processed;
-    }
-
     @Override
     public Txn txn() {
       return txn;
+    }
+
+    REProcessedTxn processed() {
+      return processed;
+    }
+
+    PermissionLevel permissionLevel() {
+      return permissionLevel;
     }
   }
 
@@ -203,10 +209,11 @@ public final class RadixEngineStateComputer implements StateComputer {
           isSigned
               ? Txn.create(payload)
               : TxLowLevelBuilder.newBuilder(payload).sig(ECDSASignature.zeroSignature()).build();
+
       var checker = radixEngine.transientBranch();
+
       try {
-        var result = checker.execute(List.of(txn), !isSigned);
-        return result.getProcessedTxn();
+        return checker.execute(List.of(txn), !isSigned).getProcessedTxn();
       } finally {
         radixEngine.deleteBranches();
       }
@@ -219,22 +226,22 @@ public final class RadixEngineStateComputer implements StateComputer {
 
   public REProcessedTxn addToMempool(Txn txn, BFTNode origin) throws MempoolRejectedException {
     synchronized (lock) {
-      REProcessedTxn processed;
       try {
-        processed = mempool.add(txn);
+        var processed = mempool.add(txn);
+
+        systemCounters.increment(CounterType.MEMPOOL_ADD_SUCCESS);
+        systemCounters.set(CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+
+        var success = MempoolAddSuccess.create(txn, processed, origin);
+        mempoolAddSuccessEventDispatcher.dispatch(success);
+
+        return processed;
       } catch (MempoolDuplicateException e) {
         throw e;
       } catch (MempoolRejectedException e) {
-        systemCounters.increment(SystemCounters.CounterType.MEMPOOL_ADD_FAILURE);
+        systemCounters.increment(CounterType.MEMPOOL_ADD_FAILURE);
         throw e;
       }
-
-      systemCounters.increment(SystemCounters.CounterType.MEMPOOL_ADD_SUCCESS);
-      systemCounters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
-      var success = MempoolAddSuccess.create(txn, processed, origin);
-      mempoolAddSuccessEventDispatcher.dispatch(success);
-
-      return processed;
     }
   }
 
@@ -255,10 +262,7 @@ public final class RadixEngineStateComputer implements StateComputer {
   public List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
     synchronized (lock) {
       var cmds =
-          prepared.stream()
-              .map(RadixEngineTxn.class::cast)
-              .map(RadixEngineTxn::processedTxn)
-              .toList();
+          prepared.stream().map(RadixEngineTxn.class::cast).map(RadixEngineTxn::processed).toList();
 
       // TODO: only return commands which will not cause a missing dependency error
       return mempool.getTxns(maxSigsPerRound.orElse(50), cmds);
@@ -288,6 +292,7 @@ public final class RadixEngineStateComputer implements StateComputer {
     final RadixEngineResult result;
     try {
       // TODO: combine construct/execute
+
       systemUpdate = branch.construct(systemActions).buildWithoutSignature();
       result = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
     } catch (RadixEngineException | TxBuilderException e) {
@@ -335,12 +340,13 @@ public final class RadixEngineStateComputer implements StateComputer {
     synchronized (lock) {
       var next = vertex.getTxns();
       var transientBranch = this.radixEngine.transientBranch();
-      for (PreparedTxn command : previous) {
+
+      for (var command : previous) {
         // TODO: fix this cast with generics. Currently the fix would become a bit too messy
         final var radixEngineCommand = (RadixEngineTxn) command;
         try {
           transientBranch.execute(
-              List.of(radixEngineCommand.txn), radixEngineCommand.permissionLevel);
+              List.of(radixEngineCommand.txn), radixEngineCommand.permissionLevel());
         } catch (RadixEngineException e) {
           throw new IllegalStateException(
               "Re-execution of already prepared atom failed: "
@@ -350,11 +356,13 @@ public final class RadixEngineStateComputer implements StateComputer {
       }
 
       var systemTxn = this.executeSystemUpdate(transientBranch, vertex, timestamp);
-      final ImmutableList.Builder<PreparedTxn> successBuilder = ImmutableList.builder();
+      var successBuilder = ImmutableList.<PreparedTxn>builder();
+
       successBuilder.add(systemTxn);
-      final ImmutableMap.Builder<Txn, Exception> exceptionBuilder = ImmutableMap.builder();
+
+      var exceptionBuilder = ImmutableMap.<Txn, Exception>builder();
       var nextValidatorSet =
-          systemTxn.processedTxn().getEvents().stream()
+          systemTxn.processed().getEvents().stream()
               .filter(NextValidatorSetEvent.class::isInstance)
               .map(NextValidatorSetEvent.class::cast)
               .findFirst()
@@ -402,27 +410,24 @@ public final class RadixEngineStateComputer implements StateComputer {
               rules -> {
                 log.info("Epoch {} Forking RadixEngine to {}", proof.getEpoch() + 1, rules.name());
                 this.radixEngine.replaceConstraintMachine(
-                    rules.getConstraintMachineConfig(),
-                    rules.getSerialization(),
-                    rules.getActionConstructors(),
-                    rules.getBatchVerifier(),
-                    rules.getParser());
-                this.epochCeilingView = rules.getMaxRounds();
-                this.maxSigsPerRound = rules.getMaxSigsPerRound();
+                    rules.constraintMachineConfig(),
+                    rules.serialization(),
+                    rules.actionConstructors(),
+                    rules.batchVerifier(),
+                    rules.parser());
+                this.epochCeilingView = rules.maxRounds();
+                this.maxSigsPerRound = rules.maxSigsPerRound();
               });
     }
 
     result
         .getProcessedTxns()
         .forEach(
-            t -> {
-              if (t.isSystemOnly()) {
+            t ->
                 systemCounters.increment(
-                    SystemCounters.CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS);
-              } else {
-                systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_USER_TRANSACTIONS);
-              }
-            });
+                    t.isSystemOnly()
+                        ? CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS
+                        : CounterType.RADIX_ENGINE_USER_TRANSACTIONS));
 
     return result.getProcessedTxns();
   }
@@ -434,10 +439,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 
       // TODO: refactor mempool to be less generic and make this more efficient
       // TODO: Move this into engine
-      List<Txn> removed = this.mempool.committed(txCommitted);
-      systemCounters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+      var removed = this.mempool.committed(txCommitted);
+      systemCounters.set(CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
       if (!removed.isEmpty()) {
-        TxnsRemovedFromMempool atomsRemovedFromMempool = TxnsRemovedFromMempool.create(removed);
+        var atomsRemovedFromMempool = TxnsRemovedFromMempool.create(removed);
         mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);
       }
 

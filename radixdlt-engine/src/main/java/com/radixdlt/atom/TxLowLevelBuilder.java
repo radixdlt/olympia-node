@@ -81,7 +81,6 @@ import com.radixdlt.utils.UInt256;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -132,19 +131,6 @@ public final class TxLowLevelBuilder {
     return new ArrayList<>(localUpParticles.values());
   }
 
-  // TODO: Remove array copies
-  private byte[] varLengthData(byte[] bytes) {
-    if (bytes.length > 255) {
-      throw new IllegalArgumentException(
-          "Data length is " + bytes.length + " but must be <= " + 255);
-    }
-    var data = new byte[Short.BYTES + bytes.length];
-    data[0] = 0;
-    data[1] = (byte) bytes.length;
-    System.arraycopy(bytes, 0, data, 2, bytes.length);
-    return data;
-  }
-
   private void instruction(REInstruction.REMicroOp op, ByteBuffer buffer) {
     blobStream.write(op.opCode());
     blobStream.write(buffer.array(), buffer.position(), buffer.remaining());
@@ -159,18 +145,17 @@ public final class TxLowLevelBuilder {
     }
   }
 
-  public TxLowLevelBuilder message(byte[] bytes) throws MessageTooLongException {
-    if (bytes.length > 255) {
-      throw new MessageTooLongException(bytes.length);
+  public TxLowLevelBuilder message(byte[] bytes, int limit) throws MessageTooLongException {
+    if (bytes.length > limit) {
+      throw new MessageTooLongException(limit, bytes.length);
     }
 
-    instruction(REInstruction.REMicroOp.MSG, varLengthData(bytes));
-    return this;
-  }
+    var buf = ByteBuffer.allocate(Short.BYTES + bytes.length);
+    buf.putShort((short) bytes.length);
+    buf.put(bytes);
 
-  public TxLowLevelBuilder message(String message) throws MessageTooLongException {
-    var bytes = message.getBytes(StandardCharsets.UTF_8);
-    return message(bytes);
+    instruction(REInstruction.REMicroOp.MSG, buf.array());
+    return this;
   }
 
   public TxLowLevelBuilder up(Particle particle) {
@@ -178,18 +163,16 @@ public final class TxLowLevelBuilder {
 
     var localSubstate = LocalSubstate.create(upParticleCount, particle);
 
-    if (particle instanceof ValidatorData) {
-      var p = (ValidatorData) particle;
-      var b = serialization.classToByte(p.getClass());
-      var k = SystemMapKey.ofSystem(b, p.getValidatorKey().getCompressedBytes());
+    if (particle instanceof ValidatorData validatorData) {
+      var b = serialization.classToByte(validatorData.getClass());
+      var k = SystemMapKey.ofSystem(b, validatorData.getValidatorKey().getCompressedBytes());
       this.localMapValues.put(k, localSubstate);
     } else if (particle instanceof SystemData) {
       var b = serialization.classToByte(particle.getClass());
       var k = SystemMapKey.ofSystem(b);
       this.localMapValues.put(k, localSubstate);
-    } else if (particle instanceof VirtualParent) {
-      var p = (VirtualParent) particle;
-      var typeByte = p.getData()[0];
+    } else if (particle instanceof VirtualParent virtualParent) {
+      var typeByte = virtualParent.getData()[0];
       var k = SystemMapKey.ofSystem(typeByte);
       this.localMapValues.put(k, localSubstate);
     }
@@ -209,9 +192,8 @@ public final class TxLowLevelBuilder {
   }
 
   public TxLowLevelBuilder localVirtualDown(int index, byte[] virtualKey) {
-    if (virtualKey.length > 128) {
-      throw new IllegalStateException();
-    }
+    validateVirtualKey(virtualKey);
+
     var buf = ByteBuffer.allocate(Short.BYTES + Short.BYTES + virtualKey.length);
     buf.putShort((short) (virtualKey.length + Short.BYTES));
     buf.putShort((short) index);
@@ -221,9 +203,8 @@ public final class TxLowLevelBuilder {
   }
 
   public TxLowLevelBuilder localVirtualRead(int index, byte[] virtualKey) {
-    if (virtualKey.length > 128) {
-      throw new IllegalStateException();
-    }
+    validateVirtualKey(virtualKey);
+
     var buf = ByteBuffer.allocate(Short.BYTES + Short.BYTES + virtualKey.length);
     buf.putShort((short) (virtualKey.length + Short.BYTES));
     buf.putShort((short) index);
@@ -233,9 +214,8 @@ public final class TxLowLevelBuilder {
   }
 
   public TxLowLevelBuilder virtualDown(SubstateId parent, byte[] virtualKey) {
-    if (virtualKey.length > 128) {
-      throw new IllegalStateException();
-    }
+    validateVirtualKey(virtualKey);
+
     var id = SubstateId.ofVirtualSubstate(parent, virtualKey);
     var buf = ByteBuffer.allocate(Short.BYTES + id.asBytes().length);
     buf.putShort((short) id.asBytes().length);
@@ -245,9 +225,8 @@ public final class TxLowLevelBuilder {
   }
 
   public TxLowLevelBuilder virtualRead(SubstateId parent, byte[] virtualKey) {
-    if (virtualKey.length > 128) {
-      throw new IllegalStateException();
-    }
+    validateVirtualKey(virtualKey);
+
     var id = SubstateId.ofVirtualSubstate(parent, virtualKey);
     var buf = ByteBuffer.allocate(Short.BYTES + id.asBytes().length);
     buf.putShort((short) id.asBytes().length);
@@ -256,11 +235,14 @@ public final class TxLowLevelBuilder {
     return this;
   }
 
-  public TxLowLevelBuilder localRead(int index) {
-    var particle = localUpParticles.get(index);
-    if (particle == null) {
-      throw new IllegalStateException("Local particle does not exist: " + index);
+  private void validateVirtualKey(byte[] virtualKey) {
+    if (virtualKey.length > 128) {
+      throw new IllegalStateException("Virtual key length > 128");
     }
+  }
+
+  public TxLowLevelBuilder localRead(int index) {
+    validateParticle(localUpParticles.get(index), index);
     instruction(REInstruction.REMicroOp.LREAD, Shorts.toByteArray((short) index));
     return this;
   }
@@ -271,12 +253,15 @@ public final class TxLowLevelBuilder {
   }
 
   public TxLowLevelBuilder localDown(int index) {
-    var particle = localUpParticles.remove(index);
-    if (particle == null) {
-      throw new IllegalStateException("Local particle does not exist: " + index);
-    }
+    validateParticle(localUpParticles.remove(index), index);
     instruction(REInstruction.REMicroOp.LDOWN, Shorts.toByteArray((short) index));
     return this;
+  }
+
+  private void validateParticle(LocalSubstate particle, int index) {
+    if (particle == null) {
+      throw new IllegalStateException("Local particle does not exist at index : " + index);
+    }
   }
 
   public TxLowLevelBuilder down(SubstateId substateId) {

@@ -248,7 +248,7 @@ public final class CoreModelMapper {
           .type(ResourceWithdrawOperationNotSupportedByEntityError.class.getSimpleName());
     } else if (e instanceof MessageTooLongException messageTooLongException) {
       return new MessageTooLongError()
-          .maximumMessageLength(255)
+          .maximumMessageLength(messageTooLongException.getLimit())
           .attemptedMessageLength(messageTooLongException.getAttemptedLength())
           .type(MessageTooLongError.class.getSimpleName());
     } else if (e instanceof FeeConstructionException feeConstructionException) {
@@ -786,29 +786,27 @@ public final class CoreModelMapper {
   public EngineConfiguration engineConfiguration(RERulesConfig config) {
     return new EngineConfiguration()
         .nativeToken(nativeToken())
-        .maximumMessageLength(255) // TODO: Remove hardcode
+        .maximumMessageLength(config.maxMessageLen())
         .maximumValidatorFeeIncrease(ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE)
-        .feeTable(feeTable(config.getFeeTable()))
-        .reservedSymbols(config.getReservedSymbols().stream().toList())
-        .tokenSymbolPattern(config.getTokenSymbolPattern().pattern())
-        .maximumTransactionSize(config.getMaxTxnSize())
-        .maximumTransactionsPerRound(config.getMaxSigsPerRound().orElse(0))
-        .maximumRoundsPerEpoch(config.getMaxRounds())
-        .validatorFeeIncreaseDebouncerEpochLength(config.getRakeIncreaseDebouncerEpochLength())
-        .minimumStake(nativeTokenAmount(config.getMinimumStake().toSubunits()))
-        .unstakingDelayEpochLength(config.getUnstakingEpochDelay())
-        .rewardsPerProposal(nativeTokenAmount(config.getRewardsPerProposal().toSubunits()))
-        .minimumCompletedProposalsPercentage(config.getMinimumCompletedProposalsPercentage())
-        .maximumValidators(config.getMaxValidators());
+        .feeTable(feeTable(config.feeTable()))
+        .reservedSymbols(config.reservedSymbols().stream().toList())
+        .tokenSymbolPattern(config.tokenSymbolPattern().pattern())
+        .maximumTransactionSize(config.maxTxnSize())
+        .maximumTransactionsPerRound(config.maxSigsPerRound().orElse(0))
+        .maximumRoundsPerEpoch(config.maxRounds())
+        .validatorFeeIncreaseDebouncerEpochLength(config.rakeIncreaseDebouncerEpochLength())
+        .minimumStake(nativeTokenAmount(config.minimumStake().toSubunits()))
+        .unstakingDelayEpochLength(config.unstakingEpochDelay())
+        .rewardsPerProposal(nativeTokenAmount(config.rewardsPerProposal().toSubunits()))
+        .minimumCompletedProposalsPercentage(config.minimumCompletedProposalsPercentage())
+        .maximumValidators(config.maxValidators());
   }
 
   public Fork fork(ForkConfig forkConfig) {
     return new Fork()
-        .forkIdentifier(
-            new ForkIdentifier().epoch(forkConfig.getEpoch()).fork(forkConfig.getName()))
-        .engineIdentifier(
-            new EngineIdentifier().engine(forkConfig.getVersion().name().toLowerCase()))
-        .engineConfiguration(engineConfiguration(forkConfig.getConfig()));
+        .forkIdentifier(new ForkIdentifier().epoch(forkConfig.epoch()).fork(forkConfig.name()))
+        .engineIdentifier(new EngineIdentifier().engine(forkConfig.version().name().toLowerCase()))
+        .engineConfiguration(engineConfiguration(forkConfig.config()));
   }
 
   public DataObject tokenData(TokenResource tokenResource) {

@@ -62,112 +62,88 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.model;
+package com.radixdlt.statecomputer.radixengine;
 
-import com.google.common.base.Suppliers;
-import com.radixdlt.api.core.openapitools.model.Data;
-import com.radixdlt.application.system.state.EpochData;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.google.inject.Inject;
+import com.radixdlt.api.core.model.EntityOperation;
+import com.radixdlt.api.core.model.NotEnoughNativeTokensForFeesException;
+import com.radixdlt.api.core.model.OperationTxBuilder;
+import com.radixdlt.api.core.model.ResourceOperation;
+import com.radixdlt.api.core.model.TokenResource;
+import com.radixdlt.api.core.model.entities.AccountVaultEntity;
+import com.radixdlt.atom.MessageTooLongException;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
-import java.util.Optional;
-import java.util.function.Supplier;
+import org.junit.Test;
 
-public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
-  private final Forks forks;
-  private final List<List<EntityOperation>> operationGroups;
-  private final String message;
+public class TxWithMessageTest extends AbstractRadixEngineTest {
+  @Inject @LocalSigner private HashSigner hashSigner;
+  @Inject @Self private ECPublicKey self;
+  @Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
+  @Inject private Forks forks;
 
-  public OperationTxBuilder(
-      String message, List<List<EntityOperation>> operationGroups, Forks forks) {
-    this.message = message;
-    this.operationGroups = operationGroups;
-    this.forks = forks;
+  public TxWithMessageTest() {
+    super(1);
   }
 
-  private void executeResourceOperation(
-      Entity entity,
-      ResourceOperation operation,
-      TxBuilder txBuilder,
-      Supplier<RERulesConfig> config)
-      throws TxBuilderException {
-    if (operation == null) {
-      return;
-    }
+  private Txn buildSignedTxn(REAddr from, REAddr to, String message) throws Exception {
+    var toTransfer = UInt256.ONE;
 
-    var amount = operation.getAmount();
-    if (operation.isDeposit()) {
-      entity.deposit(amount, txBuilder, config);
-    } else {
-      var withdrawal = entity.withdraw(amount.resource());
-      var feeInReserve = Optional.ofNullable(txBuilder.getFeeReserve()).orElse(UInt256.ZERO);
-      var change =
-          withdrawal.execute(
-              txBuilder,
-              amount.amount(),
-              available ->
-                  new NotEnoughResourcesException(
-                      amount.resource(), amount.amount(), available, feeInReserve));
-
-      if (!change.isZero()) {
-        var changeAmount = new ResourceUnsignedAmount(amount.resource(), change);
-        entity.deposit(changeAmount, txBuilder, config);
-      }
-    }
+    var entityOperationGroups =
+        List.of(
+            List.of(
+                EntityOperation.from(
+                    new AccountVaultEntity(from),
+                    ResourceOperation.withdraw(
+                        new TokenResource("xrd", REAddr.ofNativeToken()), toTransfer)),
+                EntityOperation.from(
+                    new AccountVaultEntity(to),
+                    ResourceOperation.deposit(
+                        new TokenResource("xrd", REAddr.ofNativeToken()), toTransfer))));
+    var operationTxBuilder = new OperationTxBuilder(message, entityOperationGroups, forks);
+    var builder =
+        radixEngine.constructWithFees(
+            operationTxBuilder, false, from, NotEnoughNativeTokensForFeesException::new);
+    return builder.signAndBuild(hashSigner::sign);
   }
 
-  private void executeDataOperation(
-      Entity entity, DataOperation operation, TxBuilder txBuilder, Supplier<RERulesConfig> config)
-      throws TxBuilderException {
-    if (operation == null) {
-      return;
-    }
+  @Test
+  public void txn_with_correct_message_can_be_built() throws Exception {
+    // Arrange
+    var accountAddress = REAddr.ofPubKeyAccount(self);
+    var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+    var message = "aa".repeat(511);
 
-    var dataAction = operation.getDataAction();
-    if (dataAction == Data.ActionEnum.CREATE) {
-      var parsedDataObject = operation.getParsedDataObject();
-      entity.overwriteDataObject(parsedDataObject, txBuilder, config);
-    } else {
-      throw new IllegalStateException("DataAction: " + dataAction + " not supported yet.");
-    }
+    // Act
+    var signedTxn = buildSignedTxn(accountAddress, otherAddress, message);
+
+    // Assert
+    assertThat(signedTxn).isNotNull();
   }
 
-  private void execute(
-      EntityOperation operation, TxBuilder txBuilder, Supplier<RERulesConfig> config)
-      throws TxBuilderException {
-    var entity = operation.entity();
-    var resourceOperation = operation.resourceOperation();
-    executeResourceOperation(entity, resourceOperation, txBuilder, config);
+  @Test
+  public void txn_with_too_long_message_can_not_be_built() {
+    // Arrange
+    var accountAddress = REAddr.ofPubKeyAccount(self);
+    var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+    var message = "aa".repeat(512);
 
-    var dataOperation = operation.dataOperation();
-    executeDataOperation(entity, dataOperation, txBuilder, config);
-  }
-
-  @Override
-  public void execute(TxBuilder txBuilder) throws TxBuilderException {
-    var configSupplier =
-        Suppliers.memoize(
-            () -> {
-              var epoch = txBuilder.findSystem(EpochData.class).getEpoch();
-              return forks.get(epoch).config();
-            });
-
-    for (var operationGroup : this.operationGroups) {
-      for (var operation : operationGroup) {
-        execute(operation, txBuilder, configSupplier);
-      }
-      txBuilder.end();
-    }
-
-    if (this.message != null) {
-      int maxMessageLen = configSupplier.get().maxMessageLen();
-      byte[] message = Bytes.fromHexString(this.message);
-      txBuilder.message(message, maxMessageLen);
-    }
+    // Act
+    // Assert
+    assertThatThrownBy(() -> buildSignedTxn(accountAddress, otherAddress, message))
+        .isInstanceOf(MessageTooLongException.class);
   }
 }
