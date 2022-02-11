@@ -218,7 +218,7 @@ public final class REInstruction {
         return REFieldSerialization.deserializeSignature(b);
       }
     },
-    // There is no way put actual limit here, so it is just lifted to maximum possible
+    // There is no way to put actual limit here, so it is just lifted to maximum possible
     // value, given used encoding format.
     MSG((byte) 0xc, REOp.MSG, LengthType.VARIABLE, 1, 65535) {
       @Override
