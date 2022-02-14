@@ -145,7 +145,7 @@ public final class TxLowLevelBuilder {
     }
   }
 
-  public TxLowLevelBuilder message(byte[] bytes, int limit) throws MessageTooLongException {
+  TxLowLevelBuilder message(byte[] bytes, int limit) throws MessageTooLongException {
     if (bytes.length > limit) {
       throw new MessageTooLongException(limit, bytes.length);
     }
@@ -158,20 +158,20 @@ public final class TxLowLevelBuilder {
     return this;
   }
 
-  public TxLowLevelBuilder up(Particle particle) {
-    Objects.requireNonNull(particle, "particle is required");
+  public TxLowLevelBuilder up(Particle substate) {
+    Objects.requireNonNull(substate, "substate is required");
 
-    var localSubstate = LocalSubstate.create(upParticleCount, particle);
+    var localSubstate = LocalSubstate.create(upParticleCount, substate);
 
-    if (particle instanceof ValidatorData validatorData) {
+    if (substate instanceof ValidatorData validatorData) {
       var b = serialization.classToByte(validatorData.getClass());
       var k = SystemMapKey.ofSystem(b, validatorData.getValidatorKey().getCompressedBytes());
       this.localMapValues.put(k, localSubstate);
-    } else if (particle instanceof SystemData) {
-      var b = serialization.classToByte(particle.getClass());
+    } else if (substate instanceof SystemData) {
+      var b = serialization.classToByte(substate.getClass());
       var k = SystemMapKey.ofSystem(b);
       this.localMapValues.put(k, localSubstate);
-    } else if (particle instanceof VirtualParent virtualParent) {
+    } else if (substate instanceof VirtualParent virtualParent) {
       var typeByte = virtualParent.getData()[0];
       var k = SystemMapKey.ofSystem(typeByte);
       this.localMapValues.put(k, localSubstate);
@@ -181,7 +181,7 @@ public final class TxLowLevelBuilder {
 
     var buf = ByteBuffer.allocate(1024);
     buf.putShort((short) 0);
-    serialization.serialize(particle, buf);
+    serialization.serialize(substate, buf);
     var limit = buf.position();
     buf.putShort(0, (short) (limit - 2));
     buf.position(0);
@@ -242,7 +242,7 @@ public final class TxLowLevelBuilder {
   }
 
   public TxLowLevelBuilder localRead(int index) {
-    validateParticle(localUpParticles.get(index), index);
+    validateSubstate(localUpParticles.get(index), index);
     instruction(REInstruction.REMicroOp.LREAD, Shorts.toByteArray((short) index));
     return this;
   }
@@ -253,14 +253,14 @@ public final class TxLowLevelBuilder {
   }
 
   public TxLowLevelBuilder localDown(int index) {
-    validateParticle(localUpParticles.remove(index), index);
+    validateSubstate(localUpParticles.remove(index), index);
     instruction(REInstruction.REMicroOp.LDOWN, Shorts.toByteArray((short) index));
     return this;
   }
 
-  private void validateParticle(LocalSubstate particle, int index) {
-    if (particle == null) {
-      throw new IllegalStateException("Local particle does not exist at index : " + index);
+  private void validateSubstate(LocalSubstate substate, int index) {
+    if (substate == null) {
+      throw new IllegalStateException("Local substate does not exist at index : " + index);
     }
   }
 

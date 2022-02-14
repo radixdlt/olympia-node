@@ -324,10 +324,10 @@ public final class RadixEngineStateComputer implements StateComputer {
         final var radixEngineCommand = (RadixEngineTxn) command;
         try {
           transientBranch.execute(
-              List.of(radixEngineCommand.txn), radixEngineCommand.permissionLevel());
+              List.of(radixEngineCommand.txn()), radixEngineCommand.permissionLevel());
         } catch (RadixEngineException e) {
           throw new IllegalStateException(
-              "Re-execution of already prepared atom failed: "
+              "Re-execution of already prepared transaction failed: "
                   + radixEngineCommand.processed.getTxn().getId(),
               e);
         }

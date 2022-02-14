@@ -252,25 +252,17 @@ public final class REParser {
 
     parserState.finish();
 
-    final var payloadHashAndSig = calculatePayloadHashAndSign(txn, sig, sigPosition);
-
     return new ParsedTxn(
         txn,
         feePaid,
         parserState.instructions,
         parserState.msg,
-        payloadHashAndSig,
+        sig == null ? null : Pair.of(calculatePayloadHash(txn, sigPosition), sig),
         parserState.disableResourceAllocAndDestroy);
   }
 
-  private Pair<HashCode, ECDSASignature> calculatePayloadHashAndSign(
-      Txn txn, ECDSASignature sig, int sigPosition) {
-    if (sig == null) {
-      return null;
-    }
-
-    var payloadHash = HashUtils.sha256(txn.getPayload(), 0, sigPosition); // This is a double hash
-    return Pair.of(payloadHash, sig);
+  private HashCode calculatePayloadHash(Txn txn, int sigPosition) {
+    return HashUtils.sha256(txn.getPayload(), 0, sigPosition); // This is a double hash
   }
 
   private REInstruction readInstruction(ParserState parserState, ByteBuffer buf)

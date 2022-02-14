@@ -220,7 +220,7 @@ public final class REInstruction {
     },
     // There is no way to put actual limit here, so it is just lifted to maximum possible
     // value, given used encoding format.
-    MSG((byte) 0xc, REOp.MSG, LengthType.VARIABLE, 1, 65535) {
+    MSG((byte) 0xc, REOp.MSG, LengthType.VARIABLE, 1, Short.MAX_VALUE) {
       @Override
       public Object read(REParser.ParserState parserState, ByteBuffer buf)
           throws DeserializeException {
