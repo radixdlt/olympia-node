@@ -106,6 +106,7 @@ public final class TxBuilder {
   private final SubstateStore remoteSubstate;
   private final SubstateDeserialization deserialization;
   private final SubstateSerialization serialization;
+  private final int maxMessageLen;
   private UInt256 feeReservePut;
   private UInt256 feeReserveTake = UInt256.ZERO;
   private int numResourcesCreated = 0;
@@ -113,23 +114,28 @@ public final class TxBuilder {
   private TxBuilder(
       SubstateStore remoteSubstate,
       SubstateDeserialization deserialization,
-      SubstateSerialization serialization) {
+      SubstateSerialization serialization,
+      int maxMessageLen) {
     this.lowLevelBuilder = TxLowLevelBuilder.newBuilder(serialization);
     this.remoteSubstate = remoteSubstate;
     this.deserialization = deserialization;
     this.serialization = serialization;
+    this.maxMessageLen = maxMessageLen;
   }
 
   public static TxBuilder newBuilder(
       SubstateStore remoteSubstate,
       SubstateDeserialization deserialization,
-      SubstateSerialization serialization) {
-    return new TxBuilder(remoteSubstate, deserialization, serialization);
+      SubstateSerialization serialization,
+      int maxMessageLen) {
+    return new TxBuilder(remoteSubstate, deserialization, serialization, maxMessageLen);
   }
 
   public static TxBuilder newBuilder(
-      SubstateDeserialization deserialization, SubstateSerialization serialization) {
-    return new TxBuilder(SubstateStore.empty(), deserialization, serialization);
+      SubstateDeserialization deserialization,
+      SubstateSerialization serialization,
+      int maxMessageLen) {
+    return new TxBuilder(SubstateStore.empty(), deserialization, serialization, maxMessageLen);
   }
 
   public TxLowLevelBuilder toLowLevelBuilder() {
@@ -565,7 +571,7 @@ public final class TxBuilder {
     return this;
   }
 
-  public TxBuilder message(byte[] message, int maxMessageLen) throws MessageTooLongException {
+  public TxBuilder message(byte[] message) throws MessageTooLongException {
     lowLevelBuilder.message(message, maxMessageLen);
     return this;
   }

@@ -165,7 +165,7 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
     }
 
     if (this.message != null) {
-      txBuilder.message(Bytes.fromHexString(this.message), configSupplier.get().maxMessageLen());
+      txBuilder.message(Bytes.fromHexString(this.message));
     }
   }
 }

@@ -277,6 +277,10 @@ public final class REInstruction {
       this.maxLength = maxLength;
     }
 
+    public int maxLength() {
+      return maxLength;
+    }
+
     public REOp getOp() {
       return op;
     }

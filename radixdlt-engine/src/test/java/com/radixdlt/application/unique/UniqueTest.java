@@ -140,7 +140,7 @@ public class UniqueTest {
   public void using_someone_elses_mutex_should_fail() throws Exception {
     var addr = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
     var builder =
-        TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization)
+        TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization, 255)
             .toLowLevelBuilder()
             .syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
             .virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())

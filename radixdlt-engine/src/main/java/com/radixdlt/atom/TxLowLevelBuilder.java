@@ -64,6 +64,8 @@
 
 package com.radixdlt.atom;
 
+import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
+
 import com.google.common.hash.HashCode;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.system.state.SystemData;
@@ -150,11 +152,15 @@ public final class TxLowLevelBuilder {
       throw new MessageTooLongException(limit, bytes.length);
     }
 
+    if (bytes.length > MSG.maxLength()) {
+      throw new MessageTooLongException(MSG.maxLength(), bytes.length);
+    }
+
     var buf = ByteBuffer.allocate(Short.BYTES + bytes.length);
     buf.putShort((short) bytes.length);
     buf.put(bytes);
 
-    instruction(REInstruction.REMicroOp.MSG, buf.array());
+    instruction(MSG, buf.array());
     return this;
   }
 

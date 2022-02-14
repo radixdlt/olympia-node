@@ -430,7 +430,7 @@ public final class RadixEngine<M> {
 
       var txBuilder =
           TxBuilder.newBuilder(
-              filteredStore, constraintMachine.getDeserialization(), serialization);
+              filteredStore, constraintMachine.getDeserialization(), serialization, maxMessageLen);
 
       executable.execute(txBuilder);
 
@@ -461,7 +461,7 @@ public final class RadixEngine<M> {
 
           var msg = request.getMsg();
           if (msg.isPresent()) {
-            txBuilder.message(msg.get(), maxMessageLen);
+            txBuilder.message(msg.get());
           }
         },
         request.getSubstatesToAvoid());
@@ -523,7 +523,7 @@ public final class RadixEngine<M> {
               }
               var msg = request.getMsg();
               if (msg.isPresent()) {
-                txBuilder.message(msg.get(), maxMessageLen);
+                txBuilder.message(msg.get());
               }
               this.actionConstructors.construct(new FeeReserveComplete(feePayer), txBuilder);
             },
