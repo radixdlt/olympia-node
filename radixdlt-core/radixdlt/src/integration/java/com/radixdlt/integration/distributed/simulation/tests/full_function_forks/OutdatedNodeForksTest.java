@@ -167,8 +167,8 @@ public final class OutdatedNodeForksTest {
                                 node -> {
                                   final var storedForks =
                                       network.getInstance(ForksEpochStore.class, node);
-                                  return storedForks.getEpochsForkHashes().containsKey(5)
-                                      && storedForks.getEpochsForkHashes().containsKey(10);
+                                  return storedForks.getStoredForks().containsKey(5)
+                                      && storedForks.getStoredForks().containsKey(10);
                                 })
                             .findAny();
 
@@ -181,9 +181,7 @@ public final class OutdatedNodeForksTest {
                                     maybeInvalidNode.get())));
 
                     final var nodeUnderTestForks =
-                        network
-                            .getInstance(ForksEpochStore.class, nodeUnderTest)
-                            .getEpochsForkHashes();
+                        network.getInstance(ForksEpochStore.class, nodeUnderTest).getStoredForks();
 
                     if (nodeUnderTestForks.containsKey(5L) || nodeUnderTestForks.containsKey(10L)) {
                       reportError.accept(
@@ -212,9 +210,7 @@ public final class OutdatedNodeForksTest {
                             });
                   } else if (epochChange.getEpoch() == 13L) {
                     final var nodeUnderTestForks =
-                        network
-                            .getInstance(ForksEpochStore.class, nodeUnderTest)
-                            .getEpochsForkHashes();
+                        network.getInstance(ForksEpochStore.class, nodeUnderTest).getStoredForks();
 
                     if (!nodeUnderTestForks.containsKey(5L)
                         || !nodeUnderTestForks.containsKey(10L)) {

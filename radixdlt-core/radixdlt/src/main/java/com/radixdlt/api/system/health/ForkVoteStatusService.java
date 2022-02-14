@@ -73,8 +73,8 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.forks.CandidateForkVote;
 import com.radixdlt.statecomputer.forks.CurrentForkView;
-import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.EngineStore;
 import java.util.Objects;
@@ -106,12 +106,12 @@ public final class ForkVoteStatusService {
     final var currentFork = currentForkView.currentForkConfig();
 
     if (forks.getCandidateFork().isEmpty()
-        || forks.getCandidateFork().get().hash().equals(currentFork.hash())) {
+        || forks.getCandidateFork().get().name().equals(currentFork.name())) {
       return ForkVoteStatus.NO_ACTION_NEEDED;
     }
 
-    final var expectedCandidateForkVoteHash =
-        ForkConfig.voteHash(self.getKey(), forks.getCandidateFork().get());
+    final var expectedCandidateForkVote =
+        CandidateForkVote.create(self.getKey(), forks.getCandidateFork().get());
 
     final var substateDeserialization =
         currentFork.engineRules().getParser().getSubstateDeserialization();
@@ -122,7 +122,7 @@ public final class ForkVoteStatusService {
             SubstateIndex.create(
                 SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class))) {
 
-      final var maybeSelfForkVoteHash =
+      final var maybeSelfForkVote =
           Streams.stream(validatorMetadataCursor)
               .map(
                   s -> {
@@ -136,9 +136,10 @@ public final class ForkVoteStatusService {
                   })
               .filter(vm -> vm.getValidatorKey().equals(self.getKey()))
               .findAny()
-              .map(ValidatorSystemMetadata::getAsHash);
+              .map(ValidatorSystemMetadata::getAsHash)
+              .map(CandidateForkVote::new);
 
-      return maybeSelfForkVoteHash.filter(expectedCandidateForkVoteHash::equals).isPresent()
+      return maybeSelfForkVote.filter(expectedCandidateForkVote::equals).isPresent()
           ? ForkVoteStatus.NO_ACTION_NEEDED
           : ForkVoteStatus.VOTE_REQUIRED;
     }

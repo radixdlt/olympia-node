@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2022 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,61 +62,71 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.statecomputer.forks;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
-import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SubstateIndex;
+import com.google.common.hash.HashCode;
+import com.google.common.primitives.Bytes;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.engine.PostProcessor;
-import com.radixdlt.engine.PostProcessorException;
-import com.radixdlt.store.EngineStore;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.Longs;
+import com.radixdlt.utils.Shorts;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.List;
 
-/** Adds validatorsSystemMetadata at epoch boundary to result metadata. */
-public final class ValidatorsSystemMetadataPostProcessor
-    implements PostProcessor<LedgerAndBFTProof> {
-  @Override
-  public LedgerAndBFTProof process(
-      LedgerAndBFTProof metadata,
-      EngineStore<LedgerAndBFTProof> engineStore,
-      List<REProcessedTxn> txns)
-      throws PostProcessorException {
-    if (metadata.getProof().getNextValidatorSet().isPresent()) {
-      return metadata.withValidatorsSystemMetadata(
-          getValidatorsSystemMetadata(engineStore, metadata));
-    } else {
-      return metadata;
-    }
+public final record CandidateForkVote(HashCode payload) {
+  public static final HashCode FORK_VOTE_NONCE =
+      HashUtils.sha256("olympia".getBytes(StandardCharsets.US_ASCII));
+  public static final int NAME_LEN = 16;
+  public static final int FORK_CONFIG_PARAMS_HASH_LEN = 8;
+  public static final int NONCE_HASH_LEN = 8;
+  public static final int TOTAL_LEN = NAME_LEN + FORK_CONFIG_PARAMS_HASH_LEN + NONCE_HASH_LEN;
+
+  public static CandidateForkVote create(ECPublicKey publicKey, CandidateForkConfig forkConfig) {
+    final var payload = new byte[TOTAL_LEN];
+
+    final var nameEncoded = forkConfig.name().getBytes(ForkConfig.FORK_NAME_CHARSET);
+    System.arraycopy(nameEncoded, 0, payload, 0, nameEncoded.length);
+
+    final var forkConfigParamsHash = forkConfigParamsHash(forkConfig).asBytes();
+    System.arraycopy(forkConfigParamsHash, 0, payload, NAME_LEN, FORK_CONFIG_PARAMS_HASH_LEN);
+
+    final var nonceHash =
+        HashUtils.sha256(Bytes.concat(FORK_VOTE_NONCE.asBytes(), publicKey.getBytes())).asBytes();
+    System.arraycopy(nonceHash, 0, payload, NAME_LEN + FORK_CONFIG_PARAMS_HASH_LEN, NONCE_HASH_LEN);
+
+    return new CandidateForkVote(HashCode.fromBytes(payload));
   }
 
-  private ImmutableList<RawSubstateBytes> getValidatorsSystemMetadata(
-      EngineStore<LedgerAndBFTProof> engineStore, LedgerAndBFTProof ledgerAndBFTProof) {
-    final var validatorSet = ledgerAndBFTProof.getProof().getNextValidatorSet().orElseThrow();
+  public String name() {
+    return new String(payloadSlice(0, NAME_LEN), ForkConfig.FORK_NAME_CHARSET).trim();
+  }
 
-    try (var validatorMetadataCursor =
-        engineStore.openIndexedCursor(
-            SubstateIndex.create(
-                SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class))) {
-      return Streams.stream(validatorMetadataCursor)
-          .filter(
-              rawSubstate -> {
-                final var keyBytes =
-                    Arrays.copyOfRange(rawSubstate.getData(), 2, 2 + ECPublicKey.COMPRESSED_BYTES);
-                try {
-                  final var key = ECPublicKey.fromBytes(keyBytes);
-                  return validatorSet.containsNode(key);
-                } catch (PublicKeyException ex) {
-                  throw new IllegalStateException(ex);
-                }
-              })
-          .collect(ImmutableList.toImmutableList());
-    }
+  public byte[] forkConfigParamsHash() {
+    return payloadSlice(NAME_LEN, FORK_CONFIG_PARAMS_HASH_LEN);
+  }
+
+  public byte[] nonceHash() {
+    return payloadSlice(NAME_LEN + FORK_CONFIG_PARAMS_HASH_LEN, NONCE_HASH_LEN);
+  }
+
+  private byte[] payloadSlice(int from, int len) {
+    final var res = new byte[len];
+    System.arraycopy(payload.asBytes(), from, res, 0, len);
+    return res;
+  }
+
+  public static HashCode forkConfigParamsHash(CandidateForkConfig candidateForkConfig) {
+    final var nameEncoded = candidateForkConfig.name().getBytes(ForkConfig.FORK_NAME_CHARSET);
+    final var fullHash =
+        HashUtils.sha256(
+            Bytes.concat(
+                nameEncoded,
+                Shorts.toByteArray(candidateForkConfig.requiredStake()),
+                Longs.toByteArray(candidateForkConfig.minEpoch()),
+                Longs.toByteArray(candidateForkConfig.maxEpoch()),
+                Ints.toByteArray(candidateForkConfig.numEpochsBeforeEnacted())));
+    return HashCode.fromBytes(
+        Arrays.copyOfRange(fullHash.asBytes(), 0, FORK_CONFIG_PARAMS_HASH_LEN));
   }
 }

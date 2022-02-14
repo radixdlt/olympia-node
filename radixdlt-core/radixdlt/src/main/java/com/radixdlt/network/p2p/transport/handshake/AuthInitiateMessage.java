@@ -98,7 +98,7 @@ public final class AuthInitiateMessage {
   @DsonOutput(DsonOutput.Output.ALL)
   private final int networkId;
 
-  private final Optional<HashCode> latestForkHash;
+  private final Optional<String> latestForkName;
 
   @JsonCreator
   public static AuthInitiateMessage deserialize(
@@ -106,10 +106,10 @@ public final class AuthInitiateMessage {
       @JsonProperty(value = "publicKey", required = true) HashCode publicKey,
       @JsonProperty(value = "nonce", required = true) HashCode nonce,
       @JsonProperty("networkId") int networkId,
-      @JsonProperty("latestForkHash") HashCode rawLatestForkHash) {
-    final var latestForkHash =
-        rawLatestForkHash == null ? Optional.<HashCode>empty() : Optional.of(rawLatestForkHash);
-    return new AuthInitiateMessage(signature, publicKey, nonce, networkId, latestForkHash);
+      @JsonProperty("latestForkName") String rawLatestForkName) {
+    final var latestForkName =
+        rawLatestForkName == null ? Optional.<String>empty() : Optional.of(rawLatestForkName);
+    return new AuthInitiateMessage(signature, publicKey, nonce, networkId, latestForkName);
   }
 
   public AuthInitiateMessage(
@@ -117,12 +117,12 @@ public final class AuthInitiateMessage {
       HashCode publicKey,
       HashCode nonce,
       int networkId,
-      Optional<HashCode> latestForkHash) {
+      Optional<String> latestForkName) {
     this.signature = signature;
     this.publicKey = publicKey;
     this.nonce = nonce;
     this.networkId = networkId;
-    this.latestForkHash = latestForkHash;
+    this.latestForkName = latestForkName;
   }
 
   public ECDSASignature getSignature() {
@@ -141,14 +141,14 @@ public final class AuthInitiateMessage {
     return networkId;
   }
 
-  public Optional<HashCode> getLatestForkHash() {
-    return latestForkHash;
+  public Optional<String> getLatestForkName() {
+    return latestForkName;
   }
 
-  @JsonProperty("latestForkHash")
+  @JsonProperty("latestForkName")
   @DsonOutput(DsonOutput.Output.ALL)
-  public HashCode rawLatestForkHash() {
-    return this.latestForkHash.orElse(null);
+  public String rawLatestForkName() {
+    return this.latestForkName.orElse(null);
   }
 
   @Override
@@ -162,11 +162,11 @@ public final class AuthInitiateMessage {
         && Objects.equals(publicKey, that.publicKey)
         && Objects.equals(nonce, that.nonce)
         && networkId == that.networkId
-        && Objects.equals(latestForkHash, that.latestForkHash);
+        && Objects.equals(latestForkName, that.latestForkName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(signature, publicKey, nonce, networkId, latestForkHash);
+    return Objects.hash(signature, publicKey, nonce, networkId, latestForkName);
   }
 }

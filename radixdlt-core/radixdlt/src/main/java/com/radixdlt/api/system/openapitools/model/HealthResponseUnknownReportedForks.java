@@ -23,52 +23,52 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * HealthResponseUnknownReportedForksHashes
+ * HealthResponseUnknownReportedForks
  */
 @JsonPropertyOrder({
-        HealthResponseUnknownReportedForksHashes.JSON_PROPERTY_HASH,
-        HealthResponseUnknownReportedForksHashes.JSON_PROPERTY_REPORTED_BY
+        HealthResponseUnknownReportedForks.JSON_PROPERTY_NAME,
+        HealthResponseUnknownReportedForks.JSON_PROPERTY_REPORTED_BY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-01-21T16:46:19.630902293+01:00[Europe/Warsaw]")
-public class HealthResponseUnknownReportedForksHashes {
-  public static final String JSON_PROPERTY_HASH = "hash";
-  private String hash;
+public class HealthResponseUnknownReportedForks {
+  public static final String JSON_PROPERTY_NAME = "name";
+  private String name;
 
   public static final String JSON_PROPERTY_REPORTED_BY = "reported_by";
   private List<String> reportedBy = new ArrayList<>();
 
-  public HealthResponseUnknownReportedForksHashes hash(String hash) {
-    this.hash = hash;
+  public HealthResponseUnknownReportedForks name(String name) {
+    this.name = name;
     return this;
   }
 
   /**
-   * Get hash
-   * @return hash
+   * Get name
+   * @return name
    **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_HASH)
+  @JsonProperty(JSON_PROPERTY_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getHash() {
-    return hash;
+  public String getName() {
+    return name;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_HASH)
+  @JsonProperty(JSON_PROPERTY_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setHash(String hash) {
-    this.hash = hash;
+  public void setName(String name) {
+    this.name = name;
   }
 
 
-  public HealthResponseUnknownReportedForksHashes reportedBy(List<String> reportedBy) {
+  public HealthResponseUnknownReportedForks reportedBy(List<String> reportedBy) {
     this.reportedBy = reportedBy;
     return this;
   }
 
-  public HealthResponseUnknownReportedForksHashes addReportedByItem(String reportedByItem) {
+  public HealthResponseUnknownReportedForks addReportedByItem(String reportedByItem) {
     this.reportedBy.add(reportedByItem);
     return this;
   }
@@ -95,7 +95,7 @@ public class HealthResponseUnknownReportedForksHashes {
 
 
   /**
-   * Return true if this HealthResponse_unknown_reported_forks_hashes object is equal to o.
+   * Return true if this HealthResponse_unknown_reported_forks object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -105,21 +105,21 @@ public class HealthResponseUnknownReportedForksHashes {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    HealthResponseUnknownReportedForksHashes healthResponseUnknownReportedForksHashes = (HealthResponseUnknownReportedForksHashes) o;
-    return Objects.equals(this.hash, healthResponseUnknownReportedForksHashes.hash) &&
-            Objects.equals(this.reportedBy, healthResponseUnknownReportedForksHashes.reportedBy);
+    HealthResponseUnknownReportedForks healthResponseUnknownReportedForks = (HealthResponseUnknownReportedForks) o;
+    return Objects.equals(this.name, healthResponseUnknownReportedForks.name) &&
+            Objects.equals(this.reportedBy, healthResponseUnknownReportedForks.reportedBy);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(hash, reportedBy);
+    return Objects.hash(name, reportedBy);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class HealthResponseUnknownReportedForksHashes {\n");
-    sb.append("    hash: ").append(toIndentedString(hash)).append("\n");
+    sb.append("class HealthResponseUnknownReportedForks {\n");
+    sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("    reportedBy: ").append(toIndentedString(reportedBy)).append("\n");
     sb.append("}");
     return sb.toString();

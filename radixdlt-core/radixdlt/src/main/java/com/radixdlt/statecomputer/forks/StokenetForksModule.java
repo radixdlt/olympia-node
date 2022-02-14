@@ -76,8 +76,6 @@ import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.crypto.HashUtils;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -91,7 +89,6 @@ public final class StokenetForksModule extends AbstractModule {
   ForkBuilder stokenet() {
     return new ForkBuilder(
         "stokenet",
-        HashUtils.sha256("stokenet".getBytes(StandardCharsets.UTF_8)),
         0L,
         RERulesVersion.OLYMPIA_V1,
         new RERulesConfig(

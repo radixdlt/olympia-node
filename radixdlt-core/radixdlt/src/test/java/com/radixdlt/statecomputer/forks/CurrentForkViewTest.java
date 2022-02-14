@@ -68,7 +68,6 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -82,8 +81,8 @@ public final class CurrentForkViewTest {
 
   @Test
   public void should_keep_track_of_current_fork_config() {
-    final var initialFork = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), reRules, 0L);
-    final var nextFork = new FixedEpochForkConfig("fork2", HashCode.fromInt(2), reRules, 2L);
+    final var initialFork = new FixedEpochForkConfig("fork1", reRules, 0L);
+    final var nextFork = new FixedEpochForkConfig("fork2", reRules, 2L);
     final var forks = Forks.create(Set.of(initialFork, nextFork));
 
     final var currentForkView = new CurrentForkView(forks, initialFork);
@@ -92,7 +91,7 @@ public final class CurrentForkViewTest {
 
     final var ledgerAndBftProof =
         LedgerAndBFTProof.create(
-            mock(LedgerProof.class), null, Optional.of(HashCode.fromInt(2)), Optional.empty());
+            mock(LedgerProof.class), null, Optional.of("fork2"), Optional.empty());
     final var ledgerUpdate =
         new LedgerUpdate(
             mock(VerifiedTxnsAndProof.class),

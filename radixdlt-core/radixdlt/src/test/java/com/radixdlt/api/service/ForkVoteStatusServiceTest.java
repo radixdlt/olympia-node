@@ -73,7 +73,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.api.system.health.ForkVoteStatusService;
 import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.CloseableCursor;
@@ -81,9 +80,9 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.CandidateForkConfig;
+import com.radixdlt.statecomputer.forks.CandidateForkVote;
 import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
-import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -103,9 +102,9 @@ public final class ForkVoteStatusServiceTest {
     final var otherNode = BFTNode.random();
     @SuppressWarnings("unchecked")
     final var engineStore = (EngineStore<LedgerAndBFTProof>) rmock(EngineStore.class);
-    final var initialFork = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), reRules, 0L);
+    final var initialFork = new FixedEpochForkConfig("fork1", reRules, 0L);
     final var candidateFork =
-        new CandidateForkConfig("fork2", HashCode.fromInt(2), reRules, 5100, 2L, Long.MAX_VALUE);
+        new CandidateForkConfig("fork2", reRules, (short) 5100, 2L, Long.MAX_VALUE, 1);
     final var forks = Forks.create(Set.of(initialFork, candidateFork));
 
     final var currentForkView = mock(CurrentForkView.class);
@@ -129,8 +128,8 @@ public final class ForkVoteStatusServiceTest {
     final var self = BFTNode.random();
     @SuppressWarnings("unchecked")
     final var engineStore = (EngineStore<LedgerAndBFTProof>) rmock(EngineStore.class);
-    final var initialFork = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), reRules, 0L);
-    final var nextFork = new FixedEpochForkConfig("fork2", HashCode.fromInt(2), reRules, 2L);
+    final var initialFork = new FixedEpochForkConfig("fork1", reRules, 0L);
+    final var nextFork = new FixedEpochForkConfig("fork2", reRules, 2L);
     final var forks = Forks.create(Set.of(initialFork, nextFork));
 
     final var currentForkView = mock(CurrentForkView.class);
@@ -143,17 +142,17 @@ public final class ForkVoteStatusServiceTest {
     verifyNoInteractions(engineStore);
   }
 
-  private CloseableCursor<RawSubstateBytes> votesOf(ForkConfig forkConfig, BFTNode... nodes) {
+  private CloseableCursor<RawSubstateBytes> votesOf(
+      CandidateForkConfig forkConfig, BFTNode... nodes) {
     return CloseableCursor.of(
-        Arrays.stream(nodes)
-            .map(n -> voteOf(n, forkConfig.hash()))
-            .toArray(RawSubstateBytes[]::new));
+        Arrays.stream(nodes).map(n -> voteOf(n, forkConfig)).toArray(RawSubstateBytes[]::new));
   }
 
-  private RawSubstateBytes voteOf(BFTNode validator, HashCode forkHash) {
+  private RawSubstateBytes voteOf(BFTNode validator, CandidateForkConfig forkConfig) {
     final var pubKey = validator.getKey();
     final var substate =
-        new ValidatorSystemMetadata(pubKey, ForkConfig.voteHash(pubKey, forkHash).asBytes());
+        new ValidatorSystemMetadata(
+            pubKey, CandidateForkVote.create(pubKey, forkConfig).payload().asBytes());
     final var serializedSubstate = reRules.getSerialization().serialize(substate);
     return new RawSubstateBytes(new byte[] {}, serializedSubstate);
   }

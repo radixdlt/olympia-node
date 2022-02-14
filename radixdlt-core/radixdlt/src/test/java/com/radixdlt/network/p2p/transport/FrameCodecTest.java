@@ -66,7 +66,6 @@ package com.radixdlt.network.p2p.transport;
 
 import static org.junit.Assert.assertArrayEquals;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
@@ -117,18 +116,10 @@ public final class FrameCodecTest {
       throws Exception {
     final var handshaker1 =
         new AuthHandshaker(
-            serialization,
-            secureRandom,
-            ECKeyOps.fromKeyPair(nodeKey1),
-            (byte) 0x01,
-            HashCode.fromInt(1));
+            serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01, "fork1");
     final var handshaker2 =
         new AuthHandshaker(
-            serialization,
-            secureRandom,
-            ECKeyOps.fromKeyPair(nodeKey2),
-            (byte) 0x01,
-            HashCode.fromInt(1));
+            serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x01, "fork1");
 
     final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
     final var handshaker2ResultPair =

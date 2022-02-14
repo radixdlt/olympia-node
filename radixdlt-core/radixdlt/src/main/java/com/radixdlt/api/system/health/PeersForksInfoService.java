@@ -66,7 +66,6 @@ package com.radixdlt.api.system.health;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -81,34 +80,34 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Collects other peers' latest known forks hashes (received during the handshake) and compares it
+ * Collects other peers' latest known forks names (received during the handshake) and compares it
  * against local list of forks. Signals with a flag, when there's a known fork on any of the
  * validator nodes that local node is not aware of, which means that there's potentially a newer app
  * version to download.
  */
-public final class PeersForksHashesInfoService {
-  // max number of map entries (fork hashes)
-  private static final int MAX_FORK_HASHES_KEYS = 50;
+public final class PeersForksInfoService {
+  // max number of map entries (fork names)
+  private static final int MAX_FORK_KEYS = 50;
 
-  // max number of reports (peers' public keys) per fork hash
-  private static final int MAX_REPORTS_PER_HASH = 20;
+  // max number of reports (peers' public keys) per fork
+  private static final int MAX_REPORTS_PER_FORK = 20;
 
   private final Forks forks;
 
   private BFTValidatorSet currentValidatorSet;
-  private final LinkedHashMap<HashCode, ImmutableSet<ECPublicKey>> unknownReportedForksHashes;
+  private final LinkedHashMap<String, ImmutableSet<ECPublicKey>> unknownReportedForks;
 
   @Inject
-  public PeersForksHashesInfoService(Forks forks, EpochChange initialEpoch) {
+  public PeersForksInfoService(Forks forks, EpochChange initialEpoch) {
     this.forks = Objects.requireNonNull(forks);
 
     this.currentValidatorSet = initialEpoch.getBFTConfiguration().getValidatorSet();
-    this.unknownReportedForksHashes =
+    this.unknownReportedForks =
         new LinkedHashMap<>() {
           @Override
           protected boolean removeEldestEntry(
-              final Map.Entry<HashCode, ImmutableSet<ECPublicKey>> eldest) {
-            return size() > MAX_FORK_HASHES_KEYS;
+              final Map.Entry<String, ImmutableSet<ECPublicKey>> eldest) {
+            return size() > MAX_FORK_KEYS;
           }
         };
   }
@@ -118,30 +117,30 @@ public final class PeersForksHashesInfoService {
       if (peerEvent instanceof PeerEvent.PeerConnected peerConnected) {
         final var peerChannel = peerConnected.getChannel();
         peerChannel
-            .getRemoteLatestForkHash()
+            .getRemoteLatestForkName()
             .ifPresent(
-                peerLatestForkHash -> {
+                peerLatestForkName -> {
                   final var peerPubKey = peerChannel.getRemoteNodeId().getPublicKey();
-                  final var isPeerForkHashKnown = forks.getByHash(peerLatestForkHash).isPresent();
+                  final var isPeerForkKnown = forks.getByName(peerLatestForkName).isPresent();
                   final var peerIsInValidatorSet =
                       currentValidatorSet.containsNode(BFTNode.create(peerPubKey));
-                  if (peerIsInValidatorSet && !isPeerForkHashKnown) {
-                    addUnknownReportedForkHash(peerPubKey, peerLatestForkHash);
+                  if (peerIsInValidatorSet && !isPeerForkKnown) {
+                    addUnknownReportedForkName(peerPubKey, peerLatestForkName);
                   }
                 });
       }
     };
   }
 
-  private void addUnknownReportedForkHash(ECPublicKey publicKey, HashCode forkHash) {
-    final var currentReportsForHash =
-        this.unknownReportedForksHashes.getOrDefault(forkHash, ImmutableSet.of());
+  private void addUnknownReportedForkName(ECPublicKey publicKey, String forkName) {
+    final var currentReportsForName =
+        this.unknownReportedForks.getOrDefault(forkName, ImmutableSet.of());
 
-    if (currentReportsForHash.size() < MAX_REPORTS_PER_HASH) {
-      final var newReportsForHash =
-          ImmutableSet.<ECPublicKey>builder().addAll(currentReportsForHash).add(publicKey).build();
+    if (currentReportsForName.size() < MAX_REPORTS_PER_FORK) {
+      final var newReportsForName =
+          ImmutableSet.<ECPublicKey>builder().addAll(currentReportsForName).add(publicKey).build();
 
-      this.unknownReportedForksHashes.put(forkHash, newReportsForHash);
+      this.unknownReportedForks.put(forkName, newReportsForName);
     }
   }
 
@@ -154,7 +153,7 @@ public final class PeersForksHashesInfoService {
     };
   }
 
-  public ImmutableMap<HashCode, ImmutableSet<ECPublicKey>> getUnknownReportedForksHashes() {
-    return ImmutableMap.copyOf(this.unknownReportedForksHashes);
+  public ImmutableMap<String, ImmutableSet<ECPublicKey>> getUnknownReportedForks() {
+    return ImmutableMap.copyOf(this.unknownReportedForks);
   }
 }

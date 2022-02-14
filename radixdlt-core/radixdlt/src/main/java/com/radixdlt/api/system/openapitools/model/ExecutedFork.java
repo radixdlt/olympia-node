@@ -25,15 +25,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
         ExecutedFork.JSON_PROPERTY_EPOCH,
-        ExecutedFork.JSON_PROPERTY_HASH
+        ExecutedFork.JSON_PROPERTY_NAME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-01-21T16:46:19.630902293+01:00[Europe/Warsaw]")
 public class ExecutedFork {
   public static final String JSON_PROPERTY_EPOCH = "epoch";
   private Long epoch;
 
-  public static final String JSON_PROPERTY_HASH = "hash";
-  private String hash;
+  public static final String JSON_PROPERTY_NAME = "name";
+  private String name;
 
   public ExecutedFork epoch(Long epoch) {
     this.epoch = epoch;
@@ -61,29 +61,29 @@ public class ExecutedFork {
   }
 
 
-  public ExecutedFork hash(String hash) {
-    this.hash = hash;
+  public ExecutedFork name(String name) {
+    this.name = name;
     return this;
   }
 
   /**
-   * Get hash
-   * @return hash
+   * Get name
+   * @return name
    **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_HASH)
+  @JsonProperty(JSON_PROPERTY_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getHash() {
-    return hash;
+  public String getName() {
+    return name;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_HASH)
+  @JsonProperty(JSON_PROPERTY_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setHash(String hash) {
-    this.hash = hash;
+  public void setName(String name) {
+    this.name = name;
   }
 
 
@@ -100,12 +100,12 @@ public class ExecutedFork {
     }
     ExecutedFork executedFork = (ExecutedFork) o;
     return Objects.equals(this.epoch, executedFork.epoch) &&
-            Objects.equals(this.hash, executedFork.hash);
+            Objects.equals(this.name, executedFork.name);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epoch, hash);
+    return Objects.hash(epoch, name);
   }
 
   @Override
@@ -113,7 +113,7 @@ public class ExecutedFork {
     StringBuilder sb = new StringBuilder();
     sb.append("class ExecutedFork {\n");
     sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
-    sb.append("    hash: ").append(toIndentedString(hash)).append("\n");
+    sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("}");
     return sb.toString();
   }

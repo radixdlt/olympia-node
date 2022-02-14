@@ -87,8 +87,8 @@ public final class CurrentForkView {
       final var ledgerAndBftProof =
           (LedgerAndBFTProof) ledgerUpdate.getStateComputerOutput().get(LedgerAndBFTProof.class);
       ledgerAndBftProof
-          .getNextForkHash()
-          .flatMap(forks::getByHash)
+          .getNextForkName()
+          .flatMap(forks::getByName)
           .ifPresent(nextFork -> currentForkConfig = nextFork);
     };
   }

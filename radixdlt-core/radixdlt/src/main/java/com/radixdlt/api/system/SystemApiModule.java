@@ -73,7 +73,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.api.HandlerRoute;
 import com.radixdlt.api.system.health.ForkVoteStatusService;
 import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.api.system.health.PeersForksHashesInfoService;
+import com.radixdlt.api.system.health.PeersForksInfoService;
 import com.radixdlt.api.system.health.ScheduledStatsCollecting;
 import com.radixdlt.api.system.prometheus.PrometheusApiModule;
 import com.radixdlt.environment.EventProcessorOnRunner;
@@ -92,7 +92,7 @@ public class SystemApiModule extends AbstractModule {
     eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
     bind(HealthInfoService.class).in(Scopes.SINGLETON);
     bind(ForkVoteStatusService.class).in(Scopes.SINGLETON);
-    bind(PeersForksHashesInfoService.class).in(Scopes.SINGLETON);
+    bind(PeersForksInfoService.class).in(Scopes.SINGLETON);
 
     var binder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class);
     binder.addBinding(HandlerRoute.get("/system/configuration")).to(ConfigurationHandler.class);
@@ -112,17 +112,17 @@ public class SystemApiModule extends AbstractModule {
 
   @ProvidesIntoSet
   public EventProcessorOnRunner<?> peerEventPeersForksHashesInfoService(
-      PeersForksHashesInfoService peersForksHashesInfoService) {
+      PeersForksInfoService peersForksInfoService) {
     return new EventProcessorOnRunner<>(
-        Runners.SYSTEM_INFO, PeerEvent.class, peersForksHashesInfoService.peerEventProcessor());
+        Runners.SYSTEM_INFO, PeerEvent.class, peersForksInfoService.peerEventProcessor());
   }
 
   @ProvidesIntoSet
   public EventProcessorOnRunner<?> ledgerUpdatePeersForksHashesInfoService(
-      PeersForksHashesInfoService peersForksHashesInfoService) {
+      PeersForksInfoService peersForksInfoService) {
     return new EventProcessorOnRunner<>(
         Runners.SYSTEM_INFO,
         LedgerUpdate.class,
-        peersForksHashesInfoService.ledgerUpdateEventProcessor());
+        peersForksInfoService.ledgerUpdateEventProcessor());
   }
 }

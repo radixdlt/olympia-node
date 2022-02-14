@@ -64,17 +64,14 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.full_function_forks;
 
-import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.statecomputer.forks.ForkBuilder;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RERulesVersion;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -88,7 +85,6 @@ public final class MockedForksModule extends AbstractModule {
     this.baseForkBuilder =
         new ForkBuilder(
             "",
-            HashCode.fromInt(0),
             0L,
             RERulesVersion.OLYMPIA_V1,
             new RERulesConfig(
@@ -130,24 +126,22 @@ public final class MockedForksModule extends AbstractModule {
 
   @ProvidesIntoSet
   ForkBuilder fork4() {
-    return copyBaseWithVoting("fork3", 5100, 20L);
+    return copyBaseWithVoting("fork3", (short) 5100, 20L, Long.MAX_VALUE, 1);
   }
 
   private ForkBuilder copyBaseAtEpoch(String name, long epoch) {
     return new ForkBuilder(
-        name,
-        HashUtils.sha256(name.getBytes(StandardCharsets.UTF_8)),
-        epoch,
-        baseForkBuilder.getReRulesVersion(),
-        baseForkBuilder.getEngineRulesConfig());
+        name, epoch, baseForkBuilder.getReRulesVersion(), baseForkBuilder.getEngineRulesConfig());
   }
 
-  private ForkBuilder copyBaseWithVoting(String name, int percentage, long minEpoch) {
+  private ForkBuilder copyBaseWithVoting(
+      String name, short requiredStake, long minEpoch, long maxEpoch, int epochsBeforeEnacted) {
     return new ForkBuilder(
         name,
-        HashUtils.sha256(name.getBytes(StandardCharsets.UTF_8)),
+        requiredStake,
         minEpoch,
-        percentage,
+        maxEpoch,
+        epochsBeforeEnacted,
         baseForkBuilder.getReRulesVersion(),
         baseForkBuilder.getEngineRulesConfig());
   }

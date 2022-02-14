@@ -68,7 +68,6 @@ import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
-import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -176,10 +175,6 @@ public final class HashUtils {
    */
   public static HashCode transactionIdHash(byte[] payload) {
     return sha256(payload);
-  }
-
-  public static HashCode transactionIdHash(ByteBuffer buf) {
-    return sha256(buf.array(), buf.position(), buf.remaining());
   }
 
   private HashUtils() {

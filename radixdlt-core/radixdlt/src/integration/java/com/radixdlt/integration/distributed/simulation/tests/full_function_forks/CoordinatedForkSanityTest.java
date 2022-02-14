@@ -88,6 +88,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.radixdlt.statecomputer.forks.CandidateForkVote;
 import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
@@ -190,7 +191,7 @@ public final class CoordinatedForkSanityTest {
                     // verify that at epoch 21 we've successfully switched to the fork with voting
                     // (idx 3)
                     if (!verifyCurrentFork(network, forks.get(3))) {
-                      reportError.accept("Expected to be at a different fork (3) at epoch 20");
+                      reportError.accept("Expected to be at a different fork (3) at epoch 21");
                     }
                   }
                 });
@@ -216,8 +217,8 @@ public final class CoordinatedForkSanityTest {
 
   private void updateValidatorWithLatestFork(RunningNetwork network, BFTNode node) {
     final var forks = network.getInstance(Forks.class, node);
-    final var maybeForkVoteHash =
-        forks.getCandidateFork().map(f -> ForkConfig.voteHash(node.getKey(), f));
+    final var maybeForkVote =
+        forks.getCandidateFork().map(f -> CandidateForkVote.create(node.getKey(), f));
     final var keyPair = network.getInstance(ECKeyPair.class, node);
     try {
       final var txRequest =
@@ -226,7 +227,10 @@ public final class CoordinatedForkSanityTest {
               .construct(
                   TxnConstructionRequest.create()
                       .updateValidatorSystemMetadata(
-                          node.getKey(), maybeForkVoteHash.orElseGet(HashUtils::zero256)))
+                          node.getKey(),
+                          maybeForkVote
+                              .map(CandidateForkVote::payload)
+                              .orElseGet(HashUtils::zero256)))
               .signAndBuild(keyPair::sign);
       network.getInstance(RadixEngineStateComputer.class, node).addToMempool(txRequest);
     } catch (TxBuilderException | MempoolRejectedException e) {
@@ -240,7 +244,7 @@ public final class CoordinatedForkSanityTest {
             node -> {
               final var nodeFork =
                   network.getInstance(CurrentForkView.class, node).currentForkConfig();
-              return nodeFork.hash().equals(forkConfig.hash());
+              return nodeFork.name().equals(forkConfig.name());
             });
   }
 }

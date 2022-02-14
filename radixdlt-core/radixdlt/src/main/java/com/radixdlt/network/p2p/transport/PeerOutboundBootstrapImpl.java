@@ -64,7 +64,6 @@
 
 package com.radixdlt.network.p2p.transport;
 
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
@@ -89,7 +88,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
   private final P2PConfig config;
   private final Addressing addressing;
   private final int networkId;
-  private final HashCode latestForkHash;
+  private final String latestForkName;
   private final SystemCounters counters;
   private final Serialization serialization;
   private final SecureRandom secureRandom;
@@ -112,7 +111,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
     this.networkId = networkId;
-    this.latestForkHash = Objects.requireNonNull(latestForkConfig).hash();
+    this.latestForkName = Objects.requireNonNull(latestForkConfig).name();
     this.counters = Objects.requireNonNull(counters);
     this.serialization = Objects.requireNonNull(serialization);
     this.secureRandom = Objects.requireNonNull(secureRandom);
@@ -135,7 +134,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
                 config,
                 addressing,
                 networkId,
-                latestForkHash,
+                latestForkName,
                 counters,
                 serialization,
                 secureRandom,

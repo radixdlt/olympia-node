@@ -67,6 +67,7 @@ package com.radixdlt.atom;
 import com.google.common.collect.Iterators;
 import java.io.Closeable;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -195,6 +196,10 @@ public interface CloseableCursor<T> extends Iterator<T>, Closeable {
 
   @SafeVarargs
   static <T> CloseableCursor<T> of(T... items) {
+    return of(List.of(items));
+  }
+
+  static <T> CloseableCursor<T> of(List<T> items) {
     return new CloseableCursor<>() {
       private int pos = 0;
 
@@ -205,15 +210,15 @@ public interface CloseableCursor<T> extends Iterator<T>, Closeable {
 
       @Override
       public boolean hasNext() {
-        return pos < items.length;
+        return pos < items.size();
       }
 
       @Override
       public T next() {
-        if (pos == items.length) {
+        if (pos == items.size()) {
           throw new NoSuchElementException();
         }
-        return items[pos++];
+        return items.get(pos++);
       }
     };
   }

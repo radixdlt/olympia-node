@@ -64,57 +64,219 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import static com.radixdlt.statecomputer.forks.RERulesVersion.OLYMPIA_V1;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.utils.UInt256;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.Test;
 
 public final class ForksTest {
 
   @Test
   public void should_fail_when_two_forks_with_the_same_hash() {
-    final var fork1 = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), null, 0L);
-    final var fork2 = new FixedEpochForkConfig("fork2", HashCode.fromInt(1), null, 1L);
+    final var fork1 =
+        new FixedEpochForkConfig("fork1", OLYMPIA_V1.create(RERulesConfig.testingDefault()), 0L);
+    final var fork2 =
+        new FixedEpochForkConfig("fork1", OLYMPIA_V1.create(RERulesConfig.testingDefault()), 1L);
 
     final var exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> {
-              Forks.create(Set.of(fork1, fork2));
-            });
+        assertThrows(IllegalArgumentException.class, () -> Forks.create(Set.of(fork1, fork2)));
 
-    assertTrue(exception.getMessage().contains("duplicate hashes"));
+    assertTrue(exception.getMessage().contains("duplicate name"));
   }
 
   @Test
   public void should_fail_when_no_genesis() {
-    final var fork1 = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), null, 1L);
+    final var fork1 =
+        new FixedEpochForkConfig("fork1", OLYMPIA_V1.create(RERulesConfig.testingDefault()), 1L);
 
     final var exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> {
-              Forks.create(Set.of(fork1));
-            });
+        assertThrows(IllegalArgumentException.class, () -> Forks.create(Set.of(fork1)));
 
     assertTrue(exception.getMessage().contains("must start at epoch"));
   }
 
   @Test
   public void should_fail_when_duplicate_epoch() {
-    final var fork1 = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), null, 0L);
-    final var fork2 = new FixedEpochForkConfig("fork2", HashCode.fromInt(2), null, 2L);
-    final var fork3 = new FixedEpochForkConfig("fork3", HashCode.fromInt(3), null, 2L);
+    final var fork1 =
+        new FixedEpochForkConfig("fork1", OLYMPIA_V1.create(RERulesConfig.testingDefault()), 0L);
+    final var fork2 =
+        new FixedEpochForkConfig("fork2", OLYMPIA_V1.create(RERulesConfig.testingDefault()), 2L);
+    final var fork3 =
+        new FixedEpochForkConfig("fork3", OLYMPIA_V1.create(RERulesConfig.testingDefault()), 2L);
 
     final var exception =
         assertThrows(
-            IllegalArgumentException.class,
-            () -> {
-              Forks.create(Set.of(fork1, fork2, fork3));
-            });
+            IllegalArgumentException.class, () -> Forks.create(Set.of(fork1, fork2, fork3)));
 
     assertTrue(exception.getMessage().contains("duplicate epoch"));
+  }
+
+  @Test
+  public void forks_should_respect_candidate_epoch_limits() {
+    final var candidate =
+        new CandidateForkConfig(
+            "candidate",
+            OLYMPIA_V1.create(RERulesConfig.testingDefault()),
+            (short) 8000,
+            3L,
+            5L,
+            1);
+
+    final var countedForksVotes =
+        votesFor(candidate, candidate.requiredStake() /* fork has just enough stake votes */);
+
+    assertFalse(
+        Forks.testCandidate(
+            candidate,
+            proofForCandidate(
+                1L /* next epoch = 2; minEpoch <!= 2 <= maxEpoch */, countedForksVotes)));
+    assertTrue(
+        Forks.testCandidate(
+            candidate,
+            proofForCandidate(
+                2L /* next epoch = 3; minEpoch <= 3 <= maxEpoch */, countedForksVotes)));
+    assertTrue(
+        Forks.testCandidate(
+            candidate,
+            proofForCandidate(
+                3L /* next epoch = 4; minEpoch <= 4 <= maxEpoch */, countedForksVotes)));
+    assertTrue(
+        Forks.testCandidate(
+            candidate,
+            proofForCandidate(
+                4L /* next epoch = 5; minEpoch <= 5 <= maxEpoch */, countedForksVotes)));
+    assertFalse(
+        Forks.testCandidate(
+            candidate,
+            proofForCandidate(
+                5L /* next epoch = 6; minEpoch <= 6 <!= maxEpoch */, countedForksVotes)));
+  }
+
+  @Test
+  public void forks_should_respect_candidate_required_stake() {
+    final var candidate =
+        new CandidateForkConfig(
+            "candidate",
+            OLYMPIA_V1.create(RERulesConfig.testingDefault()),
+            (short) 8000,
+            3L,
+            5L,
+            1);
+
+    assertFalse(
+        Forks.testCandidate(
+            candidate,
+            proofForCandidate(
+                candidate.minEpoch() - 1,
+                votesFor(
+                    candidate, (short) (candidate.requiredStake() - 1) /* too little stake */))));
+
+    assertTrue(
+        Forks.testCandidate(
+            candidate,
+            proofForCandidate(
+                candidate.minEpoch() - 1,
+                votesFor(candidate, candidate.requiredStake() /* just enough stake */))));
+
+    assertTrue(
+        Forks.testCandidate(
+            candidate,
+            proofForCandidate(
+                candidate.minEpoch() - 1,
+                votesFor(
+                    candidate, (short) (candidate.requiredStake() + 1) /* more than required */))));
+  }
+
+  private LedgerAndBFTProof proofForCandidate(
+      long epoch, ImmutableMap<HashCode, Short> countedForksVotes) {
+    final var ledgerProof = mock(LedgerProof.class);
+    // value is not used, but optional needs to be present in proof (test for epoch boundary)
+    final var validatorSet =
+        BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
+    when(ledgerProof.getNextValidatorSet()).thenReturn(Optional.of(validatorSet));
+
+    when(ledgerProof.getEpoch()).thenReturn(epoch);
+
+    return LedgerAndBFTProof.create(ledgerProof).withCountedForksVotes(countedForksVotes);
+  }
+
+  private ImmutableMap<HashCode, Short> votesFor(CandidateForkConfig forkConfig, short votes) {
+    return ImmutableMap.of(CandidateForkVote.forkConfigParamsHash(forkConfig), votes);
+  }
+
+  @Test
+  public void forks_should_signal_ledger_inconsistency_when_db_entry_is_missing() {
+    final var fork1 =
+        new FixedEpochForkConfig("fork1", OLYMPIA_V1.create(RERulesConfig.testingDefault()), 0L);
+    final var fork2 =
+        new FixedEpochForkConfig("fork2", OLYMPIA_V1.create(RERulesConfig.testingDefault()), 10L);
+
+    final var forks = Forks.create(Set.of(fork1, fork2));
+
+    final var committedReader = mock(CommittedReader.class);
+    final var forksEpochStore = mock(ForksEpochStore.class);
+
+    // latest epoch is 11, so fork2 should be stored...
+    final var proof = proofAtEpoch(11L);
+    when(committedReader.getLastProof()).thenReturn(Optional.of(proof));
+
+    // ...but it isn't
+    when(forksEpochStore.getStoredForks()).thenReturn(ImmutableMap.of(0L, fork1.name()));
+
+    final var exception =
+        assertThrows(
+            IllegalStateException.class, () -> forks.init(committedReader, forksEpochStore));
+
+    assertTrue(exception.getMessage().toLowerCase().contains("forks inconsistency"));
+  }
+
+  @Test
+  public void forks_should_signal_ledger_inconsistency_when_config_is_missing() {
+    final var fork1 =
+        new FixedEpochForkConfig("fork1", OLYMPIA_V1.create(RERulesConfig.testingDefault()), 0L);
+
+    final var forks = Forks.create(Set.of(fork1));
+
+    final var committedReader = mock(CommittedReader.class);
+    final var forksEpochStore = mock(ForksEpochStore.class);
+
+    final var proof = proofAtEpoch(11L);
+    when(committedReader.getLastProof()).thenReturn(Optional.of(proof));
+
+    when(forksEpochStore.getStoredForks())
+        .thenReturn(
+            ImmutableMap.of(
+                0L,
+                fork1.name(),
+                10L,
+                "fork2" /* fork2 was executed at epoch 10 according to the ledger */));
+
+    final var exception =
+        assertThrows(
+            IllegalStateException.class, () -> forks.init(committedReader, forksEpochStore));
+
+    assertTrue(exception.getMessage().toLowerCase().contains("forks inconsistency"));
+  }
+
+  private LedgerProof proofAtEpoch(long epoch) {
+    final var ledgerProof = mock(LedgerProof.class);
+    when(ledgerProof.getEpoch()).thenReturn(epoch);
+    return ledgerProof;
   }
 }

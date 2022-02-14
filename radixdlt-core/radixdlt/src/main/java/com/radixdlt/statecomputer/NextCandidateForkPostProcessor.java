@@ -67,22 +67,19 @@ package com.radixdlt.statecomputer;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.PostProcessorException;
-import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.forks.CandidateForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.EngineStore;
 import java.util.List;
 
 /**
- * Checks whether the engine should switch to the next candidate fork. If so, adds nextForkHash to
- * result metadata.
+ * Checks whether the engine should switch to the next candidate fork. If so, adds nextForkName to
+ * the result metadata.
  */
 public final class NextCandidateForkPostProcessor implements PostProcessor<LedgerAndBFTProof> {
-  private final REParser reParser;
   private final CandidateForkConfig nextFork;
 
-  public NextCandidateForkPostProcessor(REParser reParser, CandidateForkConfig nextFork) {
-    this.reParser = reParser;
+  public NextCandidateForkPostProcessor(CandidateForkConfig nextFork) {
     this.nextFork = nextFork;
   }
 
@@ -93,8 +90,8 @@ public final class NextCandidateForkPostProcessor implements PostProcessor<Ledge
       List<REProcessedTxn> txns)
       throws PostProcessorException {
     if (metadata.getProof().getNextValidatorSet().isPresent()
-        && Forks.testCandidate(nextFork, reParser, metadata)) {
-      return metadata.withNextForkHash(nextFork.hash());
+        && Forks.testCandidate(nextFork, metadata)) {
+      return metadata.withNextForkName(nextFork.name());
     } else {
       return metadata;
     }

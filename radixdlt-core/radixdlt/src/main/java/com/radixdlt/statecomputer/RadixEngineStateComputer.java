@@ -398,11 +398,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 
     result
         .getMetadata()
-        .getNextForkHash()
+        .getNextForkName()
         .ifPresent(
-            nextForkHash -> {
+            nextForkName -> {
               final var nextForkConfig =
-                  forks.getByHash(nextForkHash).orElseThrow(); // guaranteed to be present
+                  forks.getByName(nextForkName).orElseThrow(); // guaranteed to be present
               log.info(
                   "Epoch {} forking RadixEngine to {}",
                   proof.getEpoch() + 1,

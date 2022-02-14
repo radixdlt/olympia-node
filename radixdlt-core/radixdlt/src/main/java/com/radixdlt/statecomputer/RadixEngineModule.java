@@ -93,13 +93,13 @@ public class RadixEngineModule extends AbstractModule {
       CommittedReader committedReader, ForksEpochStore forksEpochStore, Forks forks) {
     forks.init(committedReader, forksEpochStore);
 
-    final var maybeLatestForkHash =
-        forksEpochStore.getEpochsForkHashes().entrySet().stream()
+    final var maybeLatestForkName =
+        forksEpochStore.getStoredForks().entrySet().stream()
             .max((a, b) -> (int) (a.getKey() - b.getKey()))
             .map(Map.Entry::getValue);
 
     final var initialForkConfig =
-        maybeLatestForkHash.flatMap(forks::getByHash).orElseGet(forks::genesisFork);
+        maybeLatestForkName.flatMap(forks::getByName).orElseGet(forks::genesisFork);
 
     return new CurrentForkView(forks, initialForkConfig);
   }

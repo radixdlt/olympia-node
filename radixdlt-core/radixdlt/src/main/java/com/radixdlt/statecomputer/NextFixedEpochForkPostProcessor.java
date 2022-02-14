@@ -72,8 +72,8 @@ import com.radixdlt.store.EngineStore;
 import java.util.List;
 
 /**
- * Checks whether the engine should switch to the next fixed epoch fork. If so, adds nextForkHash to
- * result metadata.
+ * Checks whether the engine should switch to the next fixed epoch fork. If so, adds nextForkName to
+ * the result metadata.
  */
 public final class NextFixedEpochForkPostProcessor implements PostProcessor<LedgerAndBFTProof> {
   private final FixedEpochForkConfig nextFork;
@@ -90,7 +90,7 @@ public final class NextFixedEpochForkPostProcessor implements PostProcessor<Ledg
       throws PostProcessorException {
     if (metadata.getProof().getNextValidatorSet().isPresent()
         && nextFork.epoch() == metadata.getProof().getEpoch() + 1) {
-      return metadata.withNextForkHash(nextFork.hash());
+      return metadata.withNextForkName(nextFork.name());
     } else {
       return metadata;
     }

@@ -64,29 +64,18 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /** Configuration used for hard forks */
 public interface ForkConfig {
-  String name();
+  Charset FORK_NAME_CHARSET = StandardCharsets.US_ASCII;
 
-  HashCode hash();
+  String name();
 
   RERules engineRules();
 
   ForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor);
-
-  static HashCode voteHash(ECPublicKey publicKey, ForkConfig forkConfig) {
-    return voteHash(publicKey, forkConfig.hash());
-  }
-
-  static HashCode voteHash(ECPublicKey publicKey, HashCode forkHash) {
-    final var bytes = ByteUtils.concatenate(publicKey.getBytes(), forkHash.asBytes());
-    return HashUtils.sha256(bytes); // it's actually hashed twice (see HashUtils impl)
-  }
 }

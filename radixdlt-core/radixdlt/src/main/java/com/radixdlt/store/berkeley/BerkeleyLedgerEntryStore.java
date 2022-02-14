@@ -75,6 +75,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
+import com.google.common.primitives.Bytes;
 import com.google.inject.Inject;
 import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.system.state.VirtualParent;
@@ -108,6 +109,8 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.forks.CandidateForkVote;
+import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.EngineStore;
@@ -116,6 +119,8 @@ import com.radixdlt.store.StoreConfig;
 import com.radixdlt.store.berkeley.atom.AppendLog;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Longs;
+import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.Shorts;
 import com.radixdlt.utils.UInt256;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -172,14 +177,13 @@ public final class BerkeleyLedgerEntryStore
   private static final String VERTEX_STORE_DB_NAME = "radix.vertex_store";
   private static final String TXN_DB_NAME = "radix.txn_db";
   private static final String FORK_CONFIG_DB = "radix.fork_config_db";
-  private static final String VALIDATORS_SYSTEM_METADATA_DB = "radix.validators_system_metadata_db";
-  private static final int VALIDATORS_SYSTEM_METADATA_DB_MAX_EPOCHS = 1000;
+  private static final String COUNTED_FORKS_VOTES_DB = "radix.counted_forks_votes";
 
   private Database vertexStoreDatabase; // Write/Delete
   private Database proofDatabase; // Write/Delete
   private SecondaryDatabase epochProofDatabase;
   private Database forkConfigDatabase;
-  private Database validatorsSystemMetadataDatabase;
+  private Database countedForksVotesDatabase;
 
   // Syncing Ledger databases
   private static final String PROOF_DB_NAME = "radix.proof_db";
@@ -221,7 +225,7 @@ public final class BerkeleyLedgerEntryStore
 
     safeClose(forkConfigDatabase);
 
-    safeClose(validatorsSystemMetadataDatabase);
+    safeClose(countedForksVotesDatabase);
 
     additionalStores.forEach(BerkeleyAdditionalStore::close);
 
@@ -416,42 +420,29 @@ public final class BerkeleyLedgerEntryStore
     final var nextEpoch = ledgerAndBFTProof.getProof().getEpoch() + 1;
 
     ledgerAndBFTProof
-        .getValidatorsSystemMetadata()
+        .getCountedForksVotes()
         .ifPresent(
-            validatorSystemMetadata ->
-                storeEpochValidatorsSystemMetadata(dbTxn, nextEpoch, validatorSystemMetadata));
+            countedForksVotes -> storeCountedForksVotes(dbTxn, nextEpoch, countedForksVotes));
 
     ledgerAndBFTProof
-        .getNextForkHash()
-        .ifPresent(nextForkHash -> this.storeEpochForkHash(dbTxn, nextEpoch, nextForkHash));
+        .getNextForkName()
+        .ifPresent(nextForkName -> this.storeForkAtEpoch(dbTxn, nextEpoch, nextForkName));
   }
 
-  private void storeEpochValidatorsSystemMetadata(
-      Transaction dbTxn, long epoch, ImmutableList<RawSubstateBytes> validatorSystemMetadata) {
-    removeOldEpochValidatorsSystemMetadataEntries(dbTxn, epoch);
+  private void storeCountedForksVotes(
+      Transaction dbTxn, long epoch, ImmutableMap<HashCode, Short> countedForksVotes) {
     final var key = new DatabaseEntry(Longs.toByteArray(epoch));
-    validatorSystemMetadata.forEach(
-        data ->
-            validatorsSystemMetadataDatabase.put(dbTxn, key, new DatabaseEntry(data.getData())));
-  }
-
-  private void removeOldEpochValidatorsSystemMetadataEntries(Transaction dbTxn, long epoch) {
-    try (var cursor = validatorsSystemMetadataDatabase.openCursor(dbTxn, null)) {
-      final var deleteUpToEpoch = epoch - VALIDATORS_SYSTEM_METADATA_DB_MAX_EPOCHS;
-      final var key = new DatabaseEntry();
-      while (cursor.getNext(key, null, DEFAULT) == SUCCESS
-          && Longs.fromByteArray(key.getData()) < deleteUpToEpoch) {
-        cursor.delete();
-      }
-    }
+    countedForksVotes.forEach(
+        (k, v) ->
+            countedForksVotesDatabase.put(
+                dbTxn, key, new DatabaseEntry(Bytes.concat(k.asBytes(), Shorts.toByteArray(v)))));
   }
 
   @Override
-  public CloseableCursor<HashCode> validatorsSystemMetadataCursor(long epoch) {
+  public CloseableCursor<Pair<HashCode, Short>> countedForksVotesCursor(long epoch) {
     return new CloseableCursor<>() {
       private final DatabaseEntry value = new DatabaseEntry();
-      private final Cursor underlyingCursor =
-          validatorsSystemMetadataDatabase.openCursor(null, null);
+      private final Cursor underlyingCursor = countedForksVotesDatabase.openCursor(null, null);
       private OperationStatus cursorStatus =
           underlyingCursor.getSearchKey(
               new DatabaseEntry(Longs.toByteArray(epoch)), value, DEFAULT);
@@ -462,14 +453,21 @@ public final class BerkeleyLedgerEntryStore
       }
 
       @Override
-      public HashCode next() {
+      public Pair<HashCode, Short> next() {
         if (!hasNext()) {
           throw new NoSuchElementException();
         }
 
-        final var result = value.getData();
+        final var data = value.getData();
+        final var forkConfigParamsHash =
+            Arrays.copyOfRange(data, 0, CandidateForkVote.FORK_CONFIG_PARAMS_HASH_LEN);
+        final var countedVotes =
+            Shorts.fromByteArray(
+                Arrays.copyOfRange(
+                    data, CandidateForkVote.FORK_CONFIG_PARAMS_HASH_LEN, data.length));
+
         cursorStatus = underlyingCursor.getNextDup(null, value, DEFAULT);
-        return HashCode.fromBytes(result);
+        return Pair.of(HashCode.fromBytes(forkConfigParamsHash), countedVotes);
       }
 
       @Override
@@ -479,29 +477,31 @@ public final class BerkeleyLedgerEntryStore
     };
   }
 
-  private void storeEpochForkHash(Transaction dbTxn, long epoch, HashCode forkHash) {
+  private void storeForkAtEpoch(Transaction dbTxn, long epoch, String forkName) {
     final var key = new DatabaseEntry(Longs.toByteArray(epoch));
-    final var entry = new DatabaseEntry(forkHash.asBytes());
+    final var entry = new DatabaseEntry(forkName.getBytes(ForkConfig.FORK_NAME_CHARSET));
     if (forkConfigDatabase.putNoOverwrite(dbTxn, key, entry) != SUCCESS) {
       throw new BerkeleyStoreException("Duplicate fork hash stored for epoch " + epoch);
     }
   }
 
   @Override
-  public void storeEpochForkHash(long epoch, HashCode forkHash) {
+  public void storeForkAtEpoch(long epoch, String forkName) {
     final var tx = beginTransaction();
-    storeEpochForkHash(tx, epoch, forkHash);
+    storeForkAtEpoch(tx, epoch, forkName);
     tx.commit();
   }
 
   @Override
-  public ImmutableMap<Long, HashCode> getEpochsForkHashes() {
-    final var builder = ImmutableMap.<Long, HashCode>builder();
+  public ImmutableMap<Long, String> getStoredForks() {
+    final var builder = ImmutableMap.<Long, String>builder();
     try (var cursor = forkConfigDatabase.openCursor(null, null)) {
       var key = entry();
       var value = entry();
       while (cursor.getNext(key, value, DEFAULT) == OperationStatus.SUCCESS) {
-        builder.put(Longs.fromByteArray(key.getData()), HashCode.fromBytes(value.getData()));
+        builder.put(
+            Longs.fromByteArray(key.getData()),
+            new String(value.getData(), ForkConfig.FORK_NAME_CHARSET));
       }
     }
     return builder.build();
@@ -681,9 +681,8 @@ public final class BerkeleyLedgerEntryStore
               null, EPOCH_PROOF_DB_NAME, proofDatabase, buildEpochProofConfig());
 
       forkConfigDatabase = env.openDatabase(null, FORK_CONFIG_DB, primaryConfig);
-      validatorsSystemMetadataDatabase =
-          env.openDatabase(
-              null, VALIDATORS_SYSTEM_METADATA_DB, primaryConfig.setSortedDuplicates(true));
+      countedForksVotesDatabase =
+          env.openDatabase(null, COUNTED_FORKS_VOTES_DB, primaryConfig.setSortedDuplicates(true));
 
       txnLog =
           AppendLog.openCompressed(

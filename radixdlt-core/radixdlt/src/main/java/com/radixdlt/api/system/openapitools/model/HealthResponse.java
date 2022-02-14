@@ -29,10 +29,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
         HealthResponse.JSON_PROPERTY_NETWORK_STATUS,
-        HealthResponse.JSON_PROPERTY_CURRENT_FORK_HASH,
+        HealthResponse.JSON_PROPERTY_CURRENT_FORK_NAME,
         HealthResponse.JSON_PROPERTY_EXECUTED_FORKS,
         HealthResponse.JSON_PROPERTY_FORK_VOTE_STATUS,
-        HealthResponse.JSON_PROPERTY_UNKNOWN_REPORTED_FORKS_HASHES
+        HealthResponse.JSON_PROPERTY_UNKNOWN_REPORTED_FORKS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-01-21T16:46:19.630902293+01:00[Europe/Warsaw]")
 public class HealthResponse {
@@ -80,8 +80,8 @@ public class HealthResponse {
   public static final String JSON_PROPERTY_NETWORK_STATUS = "network_status";
   private NetworkStatusEnum networkStatus;
 
-  public static final String JSON_PROPERTY_CURRENT_FORK_HASH = "current_fork_hash";
-  private String currentForkHash;
+  public static final String JSON_PROPERTY_CURRENT_FORK_NAME = "current_fork_name";
+  private String currentForkName;
 
   public static final String JSON_PROPERTY_EXECUTED_FORKS = "executed_forks";
   private List<ExecutedFork> executedForks = new ArrayList<>();
@@ -124,8 +124,8 @@ public class HealthResponse {
   public static final String JSON_PROPERTY_FORK_VOTE_STATUS = "fork_vote_status";
   private ForkVoteStatusEnum forkVoteStatus;
 
-  public static final String JSON_PROPERTY_UNKNOWN_REPORTED_FORKS_HASHES = "unknown_reported_forks_hashes";
-  private List<HealthResponseUnknownReportedForksHashes> unknownReportedForksHashes = new ArrayList<>();
+  public static final String JSON_PROPERTY_UNKNOWN_REPORTED_FORKS = "unknown_reported_forks";
+  private List<HealthResponseUnknownReportedForks> unknownReportedForks = new ArrayList<>();
 
   public HealthResponse networkStatus(NetworkStatusEnum networkStatus) {
     this.networkStatus = networkStatus;
@@ -153,29 +153,29 @@ public class HealthResponse {
   }
 
 
-  public HealthResponse currentForkHash(String currentForkHash) {
-    this.currentForkHash = currentForkHash;
+  public HealthResponse currentForkName(String currentForkName) {
+    this.currentForkName = currentForkName;
     return this;
   }
 
   /**
-   * Get currentForkHash
-   * @return currentForkHash
+   * Get currentForkName
+   * @return currentForkName
    **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_CURRENT_FORK_HASH)
+  @JsonProperty(JSON_PROPERTY_CURRENT_FORK_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getCurrentForkHash() {
-    return currentForkHash;
+  public String getCurrentForkName() {
+    return currentForkName;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CURRENT_FORK_HASH)
+  @JsonProperty(JSON_PROPERTY_CURRENT_FORK_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCurrentForkHash(String currentForkHash) {
-    this.currentForkHash = currentForkHash;
+  public void setCurrentForkName(String currentForkName) {
+    this.currentForkName = currentForkName;
   }
 
 
@@ -236,34 +236,34 @@ public class HealthResponse {
   }
 
 
-  public HealthResponse unknownReportedForksHashes(List<HealthResponseUnknownReportedForksHashes> unknownReportedForksHashes) {
-    this.unknownReportedForksHashes = unknownReportedForksHashes;
+  public HealthResponse unknownReportedForks(List<HealthResponseUnknownReportedForks> unknownReportedForks) {
+    this.unknownReportedForks = unknownReportedForks;
     return this;
   }
 
-  public HealthResponse addUnknownReportedForksHashesItem(HealthResponseUnknownReportedForksHashes unknownReportedForksHashesItem) {
-    this.unknownReportedForksHashes.add(unknownReportedForksHashesItem);
+  public HealthResponse addUnknownReportedForksItem(HealthResponseUnknownReportedForks unknownReportedForksItem) {
+    this.unknownReportedForks.add(unknownReportedForksItem);
     return this;
   }
 
   /**
-   * Get unknownReportedForksHashes
-   * @return unknownReportedForksHashes
+   * Get unknownReportedForks
+   * @return unknownReportedForks
    **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_UNKNOWN_REPORTED_FORKS_HASHES)
+  @JsonProperty(JSON_PROPERTY_UNKNOWN_REPORTED_FORKS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<HealthResponseUnknownReportedForksHashes> getUnknownReportedForksHashes() {
-    return unknownReportedForksHashes;
+  public List<HealthResponseUnknownReportedForks> getUnknownReportedForks() {
+    return unknownReportedForks;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_UNKNOWN_REPORTED_FORKS_HASHES)
+  @JsonProperty(JSON_PROPERTY_UNKNOWN_REPORTED_FORKS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setUnknownReportedForksHashes(List<HealthResponseUnknownReportedForksHashes> unknownReportedForksHashes) {
-    this.unknownReportedForksHashes = unknownReportedForksHashes;
+  public void setUnknownReportedForks(List<HealthResponseUnknownReportedForks> unknownReportedForks) {
+    this.unknownReportedForks = unknownReportedForks;
   }
 
 
@@ -280,15 +280,15 @@ public class HealthResponse {
     }
     HealthResponse healthResponse = (HealthResponse) o;
     return Objects.equals(this.networkStatus, healthResponse.networkStatus) &&
-            Objects.equals(this.currentForkHash, healthResponse.currentForkHash) &&
+            Objects.equals(this.currentForkName, healthResponse.currentForkName) &&
             Objects.equals(this.executedForks, healthResponse.executedForks) &&
             Objects.equals(this.forkVoteStatus, healthResponse.forkVoteStatus) &&
-            Objects.equals(this.unknownReportedForksHashes, healthResponse.unknownReportedForksHashes);
+            Objects.equals(this.unknownReportedForks, healthResponse.unknownReportedForks);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(networkStatus, currentForkHash, executedForks, forkVoteStatus, unknownReportedForksHashes);
+    return Objects.hash(networkStatus, currentForkName, executedForks, forkVoteStatus, unknownReportedForks);
   }
 
   @Override
@@ -296,10 +296,10 @@ public class HealthResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class HealthResponse {\n");
     sb.append("    networkStatus: ").append(toIndentedString(networkStatus)).append("\n");
-    sb.append("    currentForkHash: ").append(toIndentedString(currentForkHash)).append("\n");
+    sb.append("    currentForkName: ").append(toIndentedString(currentForkName)).append("\n");
     sb.append("    executedForks: ").append(toIndentedString(executedForks)).append("\n");
     sb.append("    forkVoteStatus: ").append(toIndentedString(forkVoteStatus)).append("\n");
-    sb.append("    unknownReportedForksHashes: ").append(toIndentedString(unknownReportedForksHashes)).append("\n");
+    sb.append("    unknownReportedForks: ").append(toIndentedString(unknownReportedForks)).append("\n");
     sb.append("}");
     return sb.toString();
   }
