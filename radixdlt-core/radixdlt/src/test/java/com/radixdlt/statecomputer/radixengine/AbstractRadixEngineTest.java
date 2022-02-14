@@ -107,16 +107,21 @@ import org.junit.rules.TemporaryFolder;
 
 public abstract class AbstractRadixEngineTest {
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-
   @Rule public TemporaryFolder folder = new TemporaryFolder();
   @Inject private DeterministicProcessor processor;
 
   private final Amount totalTokenAmount = Amount.ofTokens(110);
   private final Amount stakeAmount = Amount.ofTokens(10);
   private final int mempoolMaxSize;
+  private final int maxMessageLen;
 
   protected AbstractRadixEngineTest(int mempoolMaxSize) {
+    this(mempoolMaxSize, 255);
+  }
+
+  protected AbstractRadixEngineTest(int mempoolMaxSize, int maxMessageLen) {
     this.mempoolMaxSize = mempoolMaxSize;
+    this.maxMessageLen = maxMessageLen;
   }
 
   @Before
@@ -131,7 +136,7 @@ public abstract class AbstractRadixEngineTest {
                         FeeTable.create(
                             Amount.ofSubunits(UInt256.ONE),
                             Map.of(ValidatorRegisteredCopy.class, Amount.ofSubunits(UInt256.ONE))))
-                    .overrideMaxMessageLen(511)),
+                    .overrideMaxMessageLen(maxMessageLen)),
             new ForksModule(),
             new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 1),
             new MockedGenesisModule(Set.of(TEST_KEY.getPublicKey()), totalTokenAmount, stakeAmount),

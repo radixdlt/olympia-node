@@ -96,7 +96,7 @@ public class TxWithMessageTest extends AbstractRadixEngineTest {
   @Inject private Forks forks;
 
   public TxWithMessageTest() {
-    super(1);
+    super(1, 511);
   }
 
   private Txn buildSignedTxn(REAddr from, REAddr to, String message) throws Exception {
