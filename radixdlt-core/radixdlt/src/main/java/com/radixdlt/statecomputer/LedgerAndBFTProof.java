@@ -64,11 +64,10 @@
 
 package com.radixdlt.statecomputer;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.constraintmachine.RawSubstateBytes;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -76,18 +75,18 @@ import java.util.Optional;
 public final class LedgerAndBFTProof {
   private final LedgerProof ledgerProof;
   private final VerifiedVertexStoreState vertexStoreState;
-  private final Optional<HashCode> nextForkHash;
-  private final Optional<ImmutableList<RawSubstateBytes>> validatorsSystemMetadata;
+  private final Optional<String> nextForkName;
+  private final Optional<ImmutableMap<HashCode, Short>> countedForksVotes;
 
   private LedgerAndBFTProof(
       LedgerProof ledgerProof,
       VerifiedVertexStoreState vertexStoreState,
-      Optional<HashCode> nextForkHash,
-      Optional<ImmutableList<RawSubstateBytes>> validatorsSystemMetadata) {
+      Optional<String> nextForkName,
+      Optional<ImmutableMap<HashCode, Short>> countedForksVotes) {
     this.ledgerProof = ledgerProof;
     this.vertexStoreState = vertexStoreState;
-    this.nextForkHash = nextForkHash;
-    this.validatorsSystemMetadata = validatorsSystemMetadata;
+    this.nextForkName = nextForkName;
+    this.countedForksVotes = countedForksVotes;
   }
 
   public static LedgerAndBFTProof create(LedgerProof ledgerProof) {
@@ -102,11 +101,10 @@ public final class LedgerAndBFTProof {
   public static LedgerAndBFTProof create(
       LedgerProof ledgerProof,
       VerifiedVertexStoreState vertexStoreState,
-      Optional<HashCode> nextForkHash,
-      Optional<ImmutableList<RawSubstateBytes>> validatorsSystemMetadata) {
+      Optional<String> nextForkName,
+      Optional<ImmutableMap<HashCode, Short>> countedForksVotes) {
     Objects.requireNonNull(ledgerProof);
-    return new LedgerAndBFTProof(
-        ledgerProof, vertexStoreState, nextForkHash, validatorsSystemMetadata);
+    return new LedgerAndBFTProof(ledgerProof, vertexStoreState, nextForkName, countedForksVotes);
   }
 
   public LedgerProof getProof() {
@@ -117,40 +115,38 @@ public final class LedgerAndBFTProof {
     return Optional.ofNullable(vertexStoreState);
   }
 
-  public Optional<HashCode> getNextForkHash() {
-    return nextForkHash;
+  public Optional<String> getNextForkName() {
+    return nextForkName;
   }
 
-  public Optional<ImmutableList<RawSubstateBytes>> getValidatorsSystemMetadata() {
-    return validatorsSystemMetadata;
+  public Optional<ImmutableMap<HashCode, Short>> getCountedForksVotes() {
+    return countedForksVotes;
   }
 
-  public LedgerAndBFTProof withNextForkHash(HashCode nextForkHash) {
+  public LedgerAndBFTProof withNextForkName(String nextForkName) {
     return new LedgerAndBFTProof(
-        ledgerProof, vertexStoreState, Optional.of(nextForkHash), validatorsSystemMetadata);
+        ledgerProof, vertexStoreState, Optional.of(nextForkName), countedForksVotes);
   }
 
-  public LedgerAndBFTProof withValidatorsSystemMetadata(
-      ImmutableList<RawSubstateBytes> validatorsSystemMetadata) {
+  public LedgerAndBFTProof withCountedForksVotes(ImmutableMap<HashCode, Short> countedForksVotes) {
     return new LedgerAndBFTProof(
-        ledgerProof, vertexStoreState, nextForkHash, Optional.of(validatorsSystemMetadata));
+        ledgerProof, vertexStoreState, nextForkName, Optional.of(countedForksVotes));
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ledgerProof, vertexStoreState, nextForkHash, validatorsSystemMetadata);
+    return Objects.hash(ledgerProof, vertexStoreState, nextForkName, countedForksVotes);
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof LedgerAndBFTProof)) {
+    if (!(o instanceof LedgerAndBFTProof other)) {
       return false;
     }
 
-    var other = (LedgerAndBFTProof) o;
     return Objects.equals(this.ledgerProof, other.ledgerProof)
         && Objects.equals(this.vertexStoreState, other.vertexStoreState)
-        && Objects.equals(this.nextForkHash, other.nextForkHash)
-        && Objects.equals(this.validatorsSystemMetadata, other.validatorsSystemMetadata);
+        && Objects.equals(this.nextForkName, other.nextForkName)
+        && Objects.equals(this.countedForksVotes, other.countedForksVotes);
   }
 }

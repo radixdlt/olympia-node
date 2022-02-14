@@ -65,7 +65,6 @@
 package com.radixdlt.network.p2p.test;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -220,7 +219,7 @@ public final class P2PTestNetworkRunner {
             Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
             bind(ForkConfig.class)
                 .annotatedWith(LatestForkConfig.class)
-                .toInstance(new FixedEpochForkConfig("genesis", HashCode.fromInt(1), null, 0L));
+                .toInstance(new FixedEpochForkConfig("genesis", null, 0L));
           }
         });
   }

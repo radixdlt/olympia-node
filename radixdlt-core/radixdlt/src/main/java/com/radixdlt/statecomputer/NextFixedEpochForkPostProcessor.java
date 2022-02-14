@@ -90,7 +90,7 @@ public final class NextFixedEpochForkPostProcessor implements PostProcessor<Ledg
       throws PostProcessorException {
     if (metadata.getProof().getNextValidatorSet().isPresent()
         && nextFork.epoch() == metadata.getProof().getEpoch() + 1) {
-      return metadata.withNextForkHash(nextFork.hash());
+      return metadata.withNextForkName(nextFork.name());
     } else {
       return metadata;
     }

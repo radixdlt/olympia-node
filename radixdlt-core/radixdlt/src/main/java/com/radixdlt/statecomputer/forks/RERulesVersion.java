@@ -126,8 +126,8 @@ import com.radixdlt.constraintmachine.meter.TxnSizeFeeMeter;
 import com.radixdlt.constraintmachine.meter.UpSubstateFeeMeter;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.statecomputer.CountForksVotesPostProcessor;
 import com.radixdlt.statecomputer.EpochProofVerifierV2;
-import com.radixdlt.statecomputer.ValidatorsSystemMetadataPostProcessor;
 
 public enum RERulesVersion {
   OLYMPIA_V1 {
@@ -225,7 +225,8 @@ public enum RERulesVersion {
           constraintMachineConfig,
           actionConstructors,
           PostProcessor.combine(
-              new EpochProofVerifierV2(), new ValidatorsSystemMetadataPostProcessor()),
+              new EpochProofVerifierV2(),
+              new CountForksVotesPostProcessor(parser.getSubstateDeserialization())),
           config);
     }
   };

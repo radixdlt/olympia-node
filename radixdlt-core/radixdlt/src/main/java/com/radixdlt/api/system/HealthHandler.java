@@ -67,10 +67,10 @@ package com.radixdlt.api.system;
 import com.google.inject.Inject;
 import com.radixdlt.api.system.health.ForkVoteStatusService;
 import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.api.system.health.PeersForksHashesInfoService;
+import com.radixdlt.api.system.health.PeersForksInfoService;
 import com.radixdlt.api.system.openapitools.model.ExecutedFork;
 import com.radixdlt.api.system.openapitools.model.HealthResponse;
-import com.radixdlt.api.system.openapitools.model.HealthResponseUnknownReportedForksHashes;
+import com.radixdlt.api.system.openapitools.model.HealthResponseUnknownReportedForks;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForksEpochStore;
@@ -83,7 +83,7 @@ final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
 
   private final HealthInfoService healthInfoService;
   private final ForkVoteStatusService forkVoteStatusService;
-  private final PeersForksHashesInfoService peersForksHashesInfoService;
+  private final PeersForksInfoService peersForksInfoService;
   private final ForksEpochStore forksEpochStore;
   private final CurrentForkView currentForkView;
   private final Addressing addressing;
@@ -95,13 +95,13 @@ final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
   HealthHandler(
       HealthInfoService healthInfoService,
       ForkVoteStatusService forkVoteStatusService,
-      PeersForksHashesInfoService peersForksHashesInfoService,
+      PeersForksInfoService peersForksInfoService,
       ForksEpochStore forksEpochStore,
       CurrentForkView currentForkView,
       Addressing addressing) {
     this.healthInfoService = healthInfoService;
     this.forkVoteStatusService = forkVoteStatusService;
-    this.peersForksHashesInfoService = peersForksHashesInfoService;
+    this.peersForksInfoService = peersForksInfoService;
     this.forksEpochStore = forksEpochStore;
     this.currentForkView = currentForkView;
     this.addressing = addressing;
@@ -133,26 +133,26 @@ final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
         };
     return new HealthResponse()
         .networkStatus(networkStatus)
-        .currentForkHash(currentForkView.currentForkConfig().hash().toString())
+        .currentForkName(currentForkView.currentForkConfig().name())
         .executedForks(prepareExecutedForks())
         .forkVoteStatus(forkVoteStatus)
-        .unknownReportedForksHashes(prepareUnknownReportedForksHashes());
+        .unknownReportedForks(prepareUnknownReportedForks());
   }
 
   private List<ExecutedFork> prepareExecutedForks() {
-    return forksEpochStore.getEpochsForkHashes().entrySet().stream()
-        .map(e -> new ExecutedFork().epoch(e.getKey()).hash(e.getValue().toString()))
+    return forksEpochStore.getStoredForks().entrySet().stream()
+        .map(e -> new ExecutedFork().epoch(e.getKey()).name(e.getValue()))
         .toList();
   }
 
-  private List<HealthResponseUnknownReportedForksHashes> prepareUnknownReportedForksHashes() {
-    return peersForksHashesInfoService.getUnknownReportedForksHashes().entrySet().stream()
+  private List<HealthResponseUnknownReportedForks> prepareUnknownReportedForks() {
+    return peersForksInfoService.getUnknownReportedForks().entrySet().stream()
         .map(
             e -> {
               final var reportedByList =
                   e.getValue().stream().map(addressing.forValidators()::of).toList();
-              return new HealthResponseUnknownReportedForksHashes()
-                  .hash(e.getKey().toString())
+              return new HealthResponseUnknownReportedForks()
+                  .name(e.getKey())
                   .reportedBy(reportedByList);
             })
         .toList();

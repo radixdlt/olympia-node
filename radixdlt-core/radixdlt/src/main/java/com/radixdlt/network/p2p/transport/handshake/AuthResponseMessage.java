@@ -89,23 +89,23 @@ public final class AuthResponseMessage {
   @DsonOutput(DsonOutput.Output.ALL)
   private final HashCode nonce;
 
-  private final Optional<HashCode> latestForkHash;
+  private final Optional<String> latestForkName;
 
   @JsonCreator
   public static AuthResponseMessage deserialize(
       @JsonProperty(value = "ephemeralPublicKey", required = true) HashCode ephemeralPublicKey,
       @JsonProperty(value = "nonce", required = true) HashCode nonce,
-      @JsonProperty("latestForkHash") HashCode rawLatestForkHash) {
-    final var latestForkHash =
-        rawLatestForkHash == null ? Optional.<HashCode>empty() : Optional.of(rawLatestForkHash);
-    return new AuthResponseMessage(ephemeralPublicKey, nonce, latestForkHash);
+      @JsonProperty("latestForkName") String rawLatestForkName) {
+    final var latestForkName =
+        rawLatestForkName == null ? Optional.<String>empty() : Optional.of(rawLatestForkName);
+    return new AuthResponseMessage(ephemeralPublicKey, nonce, latestForkName);
   }
 
   public AuthResponseMessage(
-      HashCode ephemeralPublicKey, HashCode nonce, Optional<HashCode> latestForkHash) {
+      HashCode ephemeralPublicKey, HashCode nonce, Optional<String> latestForkName) {
     this.ephemeralPublicKey = ephemeralPublicKey;
     this.nonce = nonce;
-    this.latestForkHash = latestForkHash;
+    this.latestForkName = latestForkName;
   }
 
   public HashCode getEphemeralPublicKey() {
@@ -116,14 +116,14 @@ public final class AuthResponseMessage {
     return nonce;
   }
 
-  public Optional<HashCode> getLatestForkHash() {
-    return latestForkHash;
+  public Optional<String> getLatestForkName() {
+    return latestForkName;
   }
 
-  @JsonProperty("latestForkHash")
+  @JsonProperty("latestForkName")
   @DsonOutput(DsonOutput.Output.ALL)
-  public HashCode rawLatestForkHash() {
-    return this.latestForkHash.orElse(null);
+  public String rawLatestForkName() {
+    return this.latestForkName.orElse(null);
   }
 
   @Override
@@ -135,11 +135,11 @@ public final class AuthResponseMessage {
     return (o instanceof AuthResponseMessage that)
         && Objects.equals(ephemeralPublicKey, that.ephemeralPublicKey)
         && Objects.equals(nonce, that.nonce)
-        && Objects.equals(latestForkHash, that.latestForkHash);
+        && Objects.equals(latestForkName, that.latestForkName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ephemeralPublicKey, nonce, latestForkHash);
+    return Objects.hash(ephemeralPublicKey, nonce, latestForkName);
   }
 }

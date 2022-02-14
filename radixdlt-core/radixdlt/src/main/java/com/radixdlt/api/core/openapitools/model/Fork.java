@@ -25,7 +25,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
         Fork.JSON_PROPERTY_NAME,
-        Fork.JSON_PROPERTY_HASH,
         Fork.JSON_PROPERTY_IS_CANDIDATE,
         Fork.JSON_PROPERTY_ENGINE_IDENTIFIER,
         Fork.JSON_PROPERTY_ENGINE_CONFIGURATION
@@ -34,9 +33,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class Fork {
   public static final String JSON_PROPERTY_NAME = "name";
   private String name;
-
-  public static final String JSON_PROPERTY_HASH = "hash";
-  private String hash;
 
   public static final String JSON_PROPERTY_IS_CANDIDATE = "is_candidate";
   private Boolean isCandidate;
@@ -71,33 +67,6 @@ public class Fork {
   public void setName(String name) {
     this.name = name;
   }
-
-
-  public Fork hash(String hash) {
-    this.hash = hash;
-    return this;
-  }
-
-  /**
-   * Get hash
-   * @return hash
-   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getHash() {
-    return hash;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setHash(String hash) {
-    this.hash = hash;
-  }
-
 
   public Fork isCandidate(Boolean isCandidate) {
     this.isCandidate = isCandidate;
@@ -190,7 +159,6 @@ public class Fork {
     }
     Fork fork = (Fork) o;
     return Objects.equals(this.name, fork.name) &&
-            Objects.equals(this.hash, fork.hash) &&
             Objects.equals(this.isCandidate, fork.isCandidate) &&
             Objects.equals(this.engineIdentifier, fork.engineIdentifier) &&
             Objects.equals(this.engineConfiguration, fork.engineConfiguration);
@@ -198,7 +166,7 @@ public class Fork {
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, hash, isCandidate, engineIdentifier, engineConfiguration);
+    return Objects.hash(name, isCandidate, engineIdentifier, engineConfiguration);
   }
 
   @Override
@@ -206,7 +174,6 @@ public class Fork {
     StringBuilder sb = new StringBuilder();
     sb.append("class Fork {\n");
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
-    sb.append("    hash: ").append(toIndentedString(hash)).append("\n");
     sb.append("    isCandidate: ").append(toIndentedString(isCandidate)).append("\n");
     sb.append("    engineIdentifier: ").append(toIndentedString(engineIdentifier)).append("\n");
     sb.append("    engineConfiguration: ").append(toIndentedString(engineConfiguration)).append("\n");

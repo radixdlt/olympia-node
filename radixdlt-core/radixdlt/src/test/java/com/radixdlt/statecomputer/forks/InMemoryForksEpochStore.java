@@ -71,11 +71,12 @@ import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.utils.Pair;
 import java.util.TreeMap;
 
 public final class InMemoryForksEpochStore implements ForksEpochStore {
   public static final class Store {
-    final TreeMap<Long, HashCode> epochsForkHashes = new TreeMap<>();
+    final TreeMap<Long, String> storedForks = new TreeMap<>();
   }
 
   private final Object lock = new Object();
@@ -94,29 +95,29 @@ public final class InMemoryForksEpochStore implements ForksEpochStore {
         if (ledgerAndBftProof != null) {
           final var nextEpoch = update.getTail().getEpoch() + 1;
           ledgerAndBftProof
-              .getNextForkHash()
-              .ifPresent(nextForkHash -> this.store.epochsForkHashes.put(nextEpoch, nextForkHash));
+              .getNextForkName()
+              .ifPresent(nextForkName -> this.store.storedForks.put(nextEpoch, nextForkName));
         }
       }
     };
   }
 
   @Override
-  public ImmutableMap<Long, HashCode> getEpochsForkHashes() {
+  public ImmutableMap<Long, String> getStoredForks() {
     synchronized (lock) {
-      return ImmutableMap.copyOf(store.epochsForkHashes);
+      return ImmutableMap.copyOf(store.storedForks);
     }
   }
 
   @Override
-  public void storeEpochForkHash(long epoch, HashCode forkHash) {
+  public void storeForkAtEpoch(long epoch, String forkName) {
     synchronized (lock) {
-      this.store.epochsForkHashes.put(epoch, forkHash);
+      this.store.storedForks.put(epoch, forkName);
     }
   }
 
   @Override
-  public CloseableCursor<HashCode> validatorsSystemMetadataCursor(long epoch) {
+  public CloseableCursor<Pair<HashCode, Short>> countedForksVotesCursor(long epoch) {
     return CloseableCursor.empty();
   }
 

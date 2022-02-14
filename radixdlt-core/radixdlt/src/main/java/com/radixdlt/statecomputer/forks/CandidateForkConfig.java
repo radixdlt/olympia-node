@@ -64,31 +64,39 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import java.nio.charset.StandardCharsets;
 
 public final class CandidateForkConfig implements ForkConfig {
   private final String name;
-  private final HashCode hash;
   private final RERules reRules;
-  private int requiredStake;
+  private short requiredStake;
   private long minEpoch;
   private long maxEpoch;
+  private int numEpochsBeforeEnacted;
 
   public CandidateForkConfig(
       String name,
-      HashCode hash,
       RERules reRules,
-      int requiredStake,
+      short requiredStake,
       long minEpoch,
-      long maxEpoch) {
+      long maxEpoch,
+      int numEpochsBeforeEnacted) {
+    if (name.getBytes(StandardCharsets.US_ASCII).length > 16) {
+      throw new IllegalArgumentException("Fork name can't be longer than 16 bytes");
+    }
+
+    if (numEpochsBeforeEnacted < 1) {
+      throw new IllegalArgumentException("Num epochs before enacted must be at least 1");
+    }
+
     this.name = name;
-    this.hash = hash;
     this.reRules = reRules;
     this.requiredStake = requiredStake;
     this.minEpoch = minEpoch;
     this.maxEpoch = maxEpoch;
+    this.numEpochsBeforeEnacted = numEpochsBeforeEnacted;
   }
 
   public long minEpoch() {
@@ -99,18 +107,17 @@ public final class CandidateForkConfig implements ForkConfig {
     return maxEpoch;
   }
 
-  public int requiredStake() {
+  public short requiredStake() {
     return requiredStake;
+  }
+
+  public int numEpochsBeforeEnacted() {
+    return numEpochsBeforeEnacted;
   }
 
   @Override
   public String name() {
     return name;
-  }
-
-  @Override
-  public HashCode hash() {
-    return hash;
   }
 
   @Override
@@ -121,13 +128,18 @@ public final class CandidateForkConfig implements ForkConfig {
   @Override
   public CandidateForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
     return new CandidateForkConfig(
-        name, hash, reRules.addPostProcessor(newPostProcessor), requiredStake, minEpoch, maxEpoch);
+        name,
+        reRules.addPostProcessor(newPostProcessor),
+        requiredStake,
+        minEpoch,
+        maxEpoch,
+        numEpochsBeforeEnacted);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "%s[%s:%s, min_epoch=%s, max_epoch=%s, required_stake=%s]",
-        getClass().getSimpleName(), name(), hash(), minEpoch, maxEpoch, requiredStake);
+        "%s[%s, min_epoch=%s, max_epoch=%s, required_stake=%s]",
+        getClass().getSimpleName(), name(), minEpoch, maxEpoch, requiredStake);
   }
 }

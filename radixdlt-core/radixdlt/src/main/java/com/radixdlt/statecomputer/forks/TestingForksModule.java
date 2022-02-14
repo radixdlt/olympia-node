@@ -66,38 +66,28 @@ package com.radixdlt.statecomputer.forks;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.crypto.HashUtils;
-import java.nio.charset.StandardCharsets;
 
 public final class TestingForksModule extends AbstractModule {
   @ProvidesIntoSet
   ForkBuilder fork1() {
     return new ForkBuilder(
-        "testing-fork-genesis",
-        HashUtils.sha256("testing-fork-genesis".getBytes(StandardCharsets.UTF_8)),
-        0L,
-        RERulesVersion.OLYMPIA_V1,
-        RERulesConfig.testingDefault());
+        "testing-fork-genesis", 0L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault());
   }
 
   @ProvidesIntoSet
   ForkBuilder fork2() {
     return new ForkBuilder(
-        "testing-fork-v2",
-        HashUtils.sha256("testing-fork-v2".getBytes(StandardCharsets.UTF_8)),
-        2L,
-        RERulesVersion.OLYMPIA_V1,
-        RERulesConfig.testingDefault());
+        "testing-fork-v2", 2L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault());
   }
 
   @ProvidesIntoSet
   ForkBuilder fork3() {
     return new ForkBuilder(
         "testing-fork-v3",
-        HashUtils.sha256("testing-fork-v3".getBytes(StandardCharsets.UTF_8)),
+        (short) 8000, // 80%
         5L,
         Long.MAX_VALUE,
-        8000, // 80%
+        1,
         RERulesVersion.OLYMPIA_V1,
         RERulesConfig.testingDefault());
   }

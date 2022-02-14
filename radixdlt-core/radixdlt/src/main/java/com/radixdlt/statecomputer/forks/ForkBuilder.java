@@ -64,7 +64,6 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.google.common.hash.HashCode;
 import java.util.Optional;
 
 /**
@@ -75,24 +74,18 @@ public final class ForkBuilder {
   public static final record FixedEpochForkBuildersOpts(long epoch) {}
 
   public static final record CandidateForkBuildersOpts(
-      long minEpoch, long maxEpoch, int requiredStake) {}
+      short requiredStake, long minEpoch, long maxEpoch, int numEpochsBeforeEnacted) {}
 
   private final String name;
-  private final HashCode hash;
   private final Optional<FixedEpochForkBuildersOpts> fixedEpochForkBuilderOpts;
   private final Optional<CandidateForkBuildersOpts> candidateForkBuilderOpts;
   private final RERulesVersion reRulesVersion;
   private final RERulesConfig reRulesConfig;
 
   public ForkBuilder(
-      String name,
-      HashCode hash,
-      long fixedEpoch,
-      RERulesVersion reRulesVersion,
-      RERulesConfig reRulesConfig) {
+      String name, long fixedEpoch, RERulesVersion reRulesVersion, RERulesConfig reRulesConfig) {
     this(
         name,
-        hash,
         Optional.of(new FixedEpochForkBuildersOpts(fixedEpoch)),
         Optional.empty(),
         reRulesVersion,
@@ -101,24 +94,24 @@ public final class ForkBuilder {
 
   public ForkBuilder(
       String name,
-      HashCode hash,
+      short requiredStake,
       long minEpoch,
       long maxEpoch,
-      int requiredStake,
+      int numEpochsBeforeEnacted,
       RERulesVersion reRulesVersion,
       RERulesConfig reRulesConfig) {
     this(
         name,
-        hash,
         Optional.empty(),
-        Optional.of(new CandidateForkBuildersOpts(minEpoch, maxEpoch, requiredStake)),
+        Optional.of(
+            new CandidateForkBuildersOpts(
+                requiredStake, minEpoch, maxEpoch, numEpochsBeforeEnacted)),
         reRulesVersion,
         reRulesConfig);
   }
 
   private ForkBuilder(
       String name,
-      HashCode hash,
       Optional<FixedEpochForkBuildersOpts> fixedEpochForkBuildersOpts,
       Optional<CandidateForkBuildersOpts> candidateForkBuildersOpts,
       RERulesVersion reRulesVersion,
@@ -129,7 +122,6 @@ public final class ForkBuilder {
     }
 
     this.name = name;
-    this.hash = hash;
     this.fixedEpochForkBuilderOpts = fixedEpochForkBuildersOpts;
     this.candidateForkBuilderOpts = candidateForkBuildersOpts;
     this.reRulesVersion = reRulesVersion;
@@ -151,7 +143,6 @@ public final class ForkBuilder {
   public ForkBuilder withEngineRulesConfig(RERulesConfig newEngineRulesConfig) {
     return new ForkBuilder(
         name,
-        hash,
         fixedEpochForkBuilderOpts,
         candidateForkBuilderOpts,
         reRulesVersion,
@@ -159,12 +150,19 @@ public final class ForkBuilder {
   }
 
   public ForkBuilder atFixedEpoch(long fixedEpoch) {
-    return new ForkBuilder(name, hash, fixedEpoch, reRulesVersion, reRulesConfig);
+    return new ForkBuilder(name, fixedEpoch, reRulesVersion, reRulesConfig);
   }
 
-  public ForkBuilder withStakeVoting(long minEpoch, long maxEpoch, int requiredStake) {
+  public ForkBuilder withStakeVoting(
+      short requiredStake, long minEpoch, long maxEpoch, int numEpochsBeforeEnacted) {
     return new ForkBuilder(
-        name, hash, minEpoch, maxEpoch, requiredStake, reRulesVersion, reRulesConfig);
+        name,
+        requiredStake,
+        minEpoch,
+        maxEpoch,
+        numEpochsBeforeEnacted,
+        reRulesVersion,
+        reRulesConfig);
   }
 
   public long minEpoch() {
@@ -177,16 +175,23 @@ public final class ForkBuilder {
     return candidateForkBuilderOpts.map(CandidateForkBuildersOpts::maxEpoch);
   }
 
+  public Optional<Integer> numEpochsBeforeEnacted() {
+    return candidateForkBuilderOpts.map(CandidateForkBuildersOpts::numEpochsBeforeEnacted);
+  }
+
   public ForkConfig build() {
     final var reRules = reRulesVersion.create(reRulesConfig);
     return candidateForkBuilderOpts
         .<ForkConfig>map(
             opts ->
                 new CandidateForkConfig(
-                    name, hash, reRules, opts.requiredStake, opts.minEpoch, opts.maxEpoch))
+                    name,
+                    reRules,
+                    opts.requiredStake,
+                    opts.minEpoch,
+                    opts.maxEpoch,
+                    opts.numEpochsBeforeEnacted))
         .orElseGet(
-            () ->
-                new FixedEpochForkConfig(
-                    name, hash, reRules, fixedEpochForkBuilderOpts.get().epoch));
+            () -> new FixedEpochForkConfig(name, reRules, fixedEpochForkBuilderOpts.get().epoch));
   }
 }

@@ -807,7 +807,6 @@ public final class CoreModelMapper {
   public Fork fork(ForkConfig forkConfig) {
     return new Fork()
         .name(forkConfig.name())
-        .hash(forkConfig.hash().toString())
         .isCandidate(forkConfig instanceof CandidateForkConfig)
         .engineIdentifier(
             new EngineIdentifier()

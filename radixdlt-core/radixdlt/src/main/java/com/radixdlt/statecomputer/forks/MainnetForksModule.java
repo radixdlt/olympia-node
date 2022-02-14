@@ -76,8 +76,6 @@ import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.crypto.HashUtils;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -88,10 +86,9 @@ public final class MainnetForksModule extends AbstractModule {
       Set.of("xrd", "xrds", "exrd", "exrds", "rad", "rads", "rdx", "rdxs", "radix");
 
   @ProvidesIntoSet
-  ForkBuilder olympiaFirstEpoch() {
+  ForkBuilder olympiaGenesis() {
     return new ForkBuilder(
-        "olympia-first-epoch",
-        HashUtils.sha256("olympia-first-epoch".getBytes(StandardCharsets.UTF_8)),
+        "olympia-genesis",
         0L,
         RERulesVersion.OLYMPIA_V1,
         new RERulesConfig(
@@ -125,7 +122,6 @@ public final class MainnetForksModule extends AbstractModule {
   ForkBuilder olympia() {
     return new ForkBuilder(
         "olympia",
-        HashUtils.sha256("olympia".getBytes(StandardCharsets.UTF_8)),
         2L,
         RERulesVersion.OLYMPIA_V1,
         new RERulesConfig(

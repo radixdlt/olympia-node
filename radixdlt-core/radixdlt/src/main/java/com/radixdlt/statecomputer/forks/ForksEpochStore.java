@@ -67,28 +67,29 @@ package com.radixdlt.statecomputer.forks;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atom.CloseableCursor;
+import com.radixdlt.utils.Pair;
 
 public interface ForksEpochStore {
-  ImmutableMap<Long, HashCode> getEpochsForkHashes();
+  ImmutableMap<Long, String> getStoredForks();
 
-  void storeEpochForkHash(long epoch, HashCode forkHash);
+  void storeForkAtEpoch(long epoch, String forkName);
 
-  CloseableCursor<HashCode> validatorsSystemMetadataCursor(long epoch);
+  CloseableCursor<Pair<HashCode, Short>> countedForksVotesCursor(long epoch);
 
   static ForksEpochStore mocked() {
     return new ForksEpochStore() {
       @Override
-      public ImmutableMap<Long, HashCode> getEpochsForkHashes() {
+      public ImmutableMap<Long, String> getStoredForks() {
         return ImmutableMap.of();
       }
 
       @Override
-      public void storeEpochForkHash(long epoch, HashCode forkHash) {
+      public void storeForkAtEpoch(long epoch, String forkName) {
         // no-op
       }
 
       @Override
-      public CloseableCursor<HashCode> validatorsSystemMetadataCursor(long epoch) {
+      public CloseableCursor<Pair<HashCode, Short>> countedForksVotesCursor(long epoch) {
         return CloseableCursor.empty();
       }
     };

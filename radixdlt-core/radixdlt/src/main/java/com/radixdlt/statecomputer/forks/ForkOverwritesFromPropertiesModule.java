@@ -99,7 +99,7 @@ public class ForkOverwritesFromPropertiesModule extends AbstractModule {
                     properties.get("overwrite_forks." + c.getName() + ".epoch", "");
 
                 if (!requiredStakeVotesOverwrite.isBlank()) {
-                  final var requiredStakeVotes = Integer.parseInt(requiredStakeVotesOverwrite);
+                  final var requiredStakeVotes = Short.parseShort(requiredStakeVotesOverwrite);
                   final var minEpochOverwrite =
                       properties.get("overwrite_forks." + c.getName() + ".min_epoch", "");
                   final var minEpoch =
@@ -108,11 +108,20 @@ public class ForkOverwritesFromPropertiesModule extends AbstractModule {
                           : Long.parseLong(minEpochOverwrite);
                   final var maxEpochOverwrite =
                       properties.get("overwrite_forks." + c.getName() + ".max_epoch", "");
+                  final var numEpochsBeforeEnactedOverwrite =
+                      properties.get(
+                          "overwrite_forks." + c.getName() + ".numEpochsBeforeEnacted", "");
                   final var maxEpoch =
                       maxEpochOverwrite.isBlank()
                           ? c.maxEpoch().orElse(Long.MAX_VALUE)
                           : Long.parseLong(maxEpochOverwrite);
-                  c = c.withStakeVoting(minEpoch, maxEpoch, requiredStakeVotes);
+                  final var numEpochsBeforeEnacted =
+                      numEpochsBeforeEnactedOverwrite.isBlank()
+                          ? c.numEpochsBeforeEnacted().orElse(1)
+                          : Integer.parseInt(numEpochsBeforeEnactedOverwrite);
+                  c =
+                      c.withStakeVoting(
+                          requiredStakeVotes, minEpoch, maxEpoch, numEpochsBeforeEnacted);
                 } else if (!epochOverwrite.isBlank()) {
                   final var epoch = Long.parseLong(epochOverwrite);
                   logger.warn("Overwriting epoch of " + c.getName() + " to " + epoch);

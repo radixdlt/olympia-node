@@ -72,7 +72,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Key;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerEvent;
@@ -115,7 +114,7 @@ final class MockP2PNetwork {
             clientPeer.injector.getInstance(P2PConfig.class),
             Addressing.ofNetwork(Network.LOCALNET),
             1,
-            HashUtils.random(32),
+            "fork1",
             clientPeer.injector.getInstance(SystemCounters.class),
             clientPeer.injector.getInstance(Serialization.class),
             new SecureRandom(),
@@ -130,7 +129,7 @@ final class MockP2PNetwork {
             serverPeer.injector.getInstance(P2PConfig.class),
             Addressing.ofNetwork(Network.LOCALNET),
             1,
-            HashUtils.random(32),
+            "fork1",
             serverPeer.injector.getInstance(SystemCounters.class),
             serverPeer.injector.getInstance(Serialization.class),
             new SecureRandom(),

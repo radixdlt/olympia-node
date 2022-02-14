@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2022 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,67 +62,71 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
+package com.radixdlt.statecomputer.forks;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.api.HandlerRoute;
-import com.radixdlt.api.system.health.ForkVoteStatusService;
-import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.api.system.health.PeersForksInfoService;
-import com.radixdlt.api.system.health.ScheduledStatsCollecting;
-import com.radixdlt.api.system.prometheus.PrometheusApiModule;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.network.p2p.PeerEvent;
-import io.undertow.server.HttpHandler;
+import com.google.common.hash.HashCode;
+import com.google.common.primitives.Bytes;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.Longs;
+import com.radixdlt.utils.Shorts;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
-public class SystemApiModule extends AbstractModule {
-  @Override
-  protected void configure() {
-    var eventBinder =
-        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
-            .permitDuplicates();
-    eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
-    bind(HealthInfoService.class).in(Scopes.SINGLETON);
-    bind(ForkVoteStatusService.class).in(Scopes.SINGLETON);
-    bind(PeersForksInfoService.class).in(Scopes.SINGLETON);
+public final record CandidateForkVote(HashCode payload) {
+  public static final HashCode FORK_VOTE_NONCE =
+      HashUtils.sha256("olympia".getBytes(StandardCharsets.UTF_8));
+  public static final int NAME_LEN = 16;
+  public static final int FORK_CONFIG_PARAMS_HASH_LEN = 8;
+  public static final int NONCE_HASH_LEN = 8;
+  public static final int TOTAL_LEN = NAME_LEN + FORK_CONFIG_PARAMS_HASH_LEN + NONCE_HASH_LEN;
 
-    var binder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/configuration")).to(ConfigurationHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/metrics")).to(MetricsHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/health")).to(HealthHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/version")).to(VersionHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/peers")).to(PeersHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/addressbook")).to(AddressBookHandler.class);
-    install(new PrometheusApiModule("/prometheus/metrics"));
+  public static CandidateForkVote create(ECPublicKey publicKey, CandidateForkConfig forkConfig) {
+    final var payload = new byte[TOTAL_LEN];
+
+    final var nameEncoded = forkConfig.name().getBytes(StandardCharsets.US_ASCII);
+    System.arraycopy(nameEncoded, 0, payload, 0, nameEncoded.length);
+
+    final var forkConfigParamsHash = forkConfigParamsHash(forkConfig).asBytes();
+    System.arraycopy(forkConfigParamsHash, 0, payload, NAME_LEN, FORK_CONFIG_PARAMS_HASH_LEN);
+
+    final var nonceHash =
+        HashUtils.sha256(Bytes.concat(FORK_VOTE_NONCE.asBytes(), publicKey.getBytes())).asBytes();
+    System.arraycopy(nonceHash, 0, payload, NAME_LEN + FORK_CONFIG_PARAMS_HASH_LEN, NONCE_HASH_LEN);
+
+    return new CandidateForkVote(HashCode.fromBytes(payload));
   }
 
-  @ProvidesIntoSet
-  public EventProcessorOnRunner<?> healthInfoService(HealthInfoService healthInfoService) {
-    return new EventProcessorOnRunner<>(
-        Runners.SYSTEM_INFO, ScheduledStatsCollecting.class, healthInfoService.updateStats());
+  public String name() {
+    return new String(payloadSlice(0, NAME_LEN), StandardCharsets.US_ASCII).trim();
   }
 
-  @ProvidesIntoSet
-  public EventProcessorOnRunner<?> peerEventPeersForksHashesInfoService(
-      PeersForksInfoService peersForksInfoService) {
-    return new EventProcessorOnRunner<>(
-        Runners.SYSTEM_INFO, PeerEvent.class, peersForksInfoService.peerEventProcessor());
+  public byte[] forkConfigParamsHash() {
+    return payloadSlice(NAME_LEN, FORK_CONFIG_PARAMS_HASH_LEN);
   }
 
-  @ProvidesIntoSet
-  public EventProcessorOnRunner<?> ledgerUpdatePeersForksHashesInfoService(
-      PeersForksInfoService peersForksInfoService) {
-    return new EventProcessorOnRunner<>(
-        Runners.SYSTEM_INFO,
-        LedgerUpdate.class,
-        peersForksInfoService.ledgerUpdateEventProcessor());
+  public byte[] nonceHash() {
+    return payloadSlice(NAME_LEN + FORK_CONFIG_PARAMS_HASH_LEN, NONCE_HASH_LEN);
+  }
+
+  private byte[] payloadSlice(int from, int len) {
+    final var res = new byte[len];
+    System.arraycopy(payload.asBytes(), from, res, 0, len);
+    return res;
+  }
+
+  public static HashCode forkConfigParamsHash(CandidateForkConfig candidateForkConfig) {
+    final var nameEncoded = candidateForkConfig.name().getBytes(StandardCharsets.US_ASCII);
+    final var fullHash =
+        HashUtils.sha256(
+            Bytes.concat(
+                nameEncoded,
+                Shorts.toByteArray(candidateForkConfig.requiredStake()),
+                Longs.toByteArray(candidateForkConfig.minEpoch()),
+                Longs.toByteArray(candidateForkConfig.maxEpoch()),
+                Ints.toByteArray(candidateForkConfig.numEpochsBeforeEnacted())));
+    return HashCode.fromBytes(
+        Arrays.copyOfRange(fullHash.asBytes(), 0, FORK_CONFIG_PARAMS_HASH_LEN));
   }
 }

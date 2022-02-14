@@ -71,8 +71,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.common.hash.HashCode;
-import com.radixdlt.api.system.health.PeersForksHashesInfoService;
+import com.radixdlt.api.system.health.PeersForksInfoService;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -96,15 +95,15 @@ import java.util.Optional;
 import java.util.Set;
 import org.junit.Test;
 
-public final class PeersForksHashesInfoServiceTest {
+public final class PeersForksInfoServiceTest {
 
   private final RERules reRules = RERulesVersion.OLYMPIA_V1.create(RERulesConfig.testingDefault());
 
   @Test
   public void should_collect_unknown_forks_hashes_from_peer_events() {
-    final var initialFork = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), reRules, 0L);
+    final var initialFork = new FixedEpochForkConfig("fork1", reRules, 0L);
     final var candidateFork =
-        new CandidateForkConfig("fork2", HashCode.fromInt(2), reRules, 5100, 2L, Long.MAX_VALUE);
+        new CandidateForkConfig("fork2", reRules, (short) 5100, 2L, Long.MAX_VALUE, 1);
     final var forks = Forks.create(Set.of(initialFork, candidateFork));
 
     final var initialValidator = BFTNode.random();
@@ -114,48 +113,36 @@ public final class PeersForksHashesInfoServiceTest {
     final var bftConfiguration = mock(BFTConfiguration.class);
     when(bftConfiguration.getValidatorSet()).thenReturn(BFTValidatorSet.from(initialValidators));
     final var initialEpochChange = new EpochChange(mock(LedgerProof.class), bftConfiguration);
-    final var peersForksHashesInfoService =
-        new PeersForksHashesInfoService(forks, initialEpochChange);
+    final var peersForksInfoService = new PeersForksInfoService(forks, initialEpochChange);
 
-    assertTrue(peersForksHashesInfoService.getUnknownReportedForksHashes().isEmpty());
+    assertTrue(peersForksInfoService.getUnknownReportedForks().isEmpty());
 
     final var peer1 = mock(PeerChannel.class);
     when(peer1.getRemoteNodeId()).thenReturn(NodeId.fromPublicKey(initialValidator.getKey()));
-    when(peer1.getRemoteLatestForkHash())
-        .thenReturn(Optional.of(HashCode.fromInt(2))); // this hash is known
-    peersForksHashesInfoService.peerEventProcessor().process(PeerEvent.PeerConnected.create(peer1));
+    when(peer1.getRemoteLatestForkName()).thenReturn(Optional.of("fork1")); // this fork is known
+    peersForksInfoService.peerEventProcessor().process(PeerEvent.PeerConnected.create(peer1));
 
     // hash was known, so still empty
-    assertTrue(peersForksHashesInfoService.getUnknownReportedForksHashes().isEmpty());
+    assertTrue(peersForksInfoService.getUnknownReportedForks().isEmpty());
 
-    final var fstReportedForkHash = HashCode.fromBytes(new byte[] {0x5});
-    when(peer1.getRemoteLatestForkHash()).thenReturn(Optional.of(fstReportedForkHash));
-    peersForksHashesInfoService.peerEventProcessor().process(PeerEvent.PeerConnected.create(peer1));
+    final var fstReportedFork = "1st fork";
+    when(peer1.getRemoteLatestForkName()).thenReturn(Optional.of(fstReportedFork));
+    peersForksInfoService.peerEventProcessor().process(PeerEvent.PeerConnected.create(peer1));
 
     // got an unknown hash from a validator
-    assertTrue(
-        peersForksHashesInfoService
-            .getUnknownReportedForksHashes()
-            .containsKey(fstReportedForkHash));
+    assertTrue(peersForksInfoService.getUnknownReportedForks().containsKey(fstReportedFork));
     assertEquals(
         initialValidator.getKey(),
-        peersForksHashesInfoService
-            .getUnknownReportedForksHashes()
-            .get(fstReportedForkHash)
-            .asList()
-            .get(0));
+        peersForksInfoService.getUnknownReportedForks().get(fstReportedFork).asList().get(0));
 
-    final var sndReportedForkHash = HashCode.fromBytes(new byte[] {0x6});
+    final var sndReportedFork = "2nd fork";
     final var peer2 = mock(PeerChannel.class);
     when(peer2.getRemoteNodeId()).thenReturn(NodeId.fromPublicKey(nextValidator.getKey()));
-    when(peer2.getRemoteLatestForkHash()).thenReturn(Optional.of(sndReportedForkHash));
-    peersForksHashesInfoService.peerEventProcessor().process(PeerEvent.PeerConnected.create(peer2));
+    when(peer2.getRemoteLatestForkName()).thenReturn(Optional.of(sndReportedFork));
+    peersForksInfoService.peerEventProcessor().process(PeerEvent.PeerConnected.create(peer2));
 
     // got unknown hash from non-validator, so no change
-    assertFalse(
-        peersForksHashesInfoService
-            .getUnknownReportedForksHashes()
-            .containsKey(sndReportedForkHash));
+    assertFalse(peersForksInfoService.getUnknownReportedForks().containsKey(sndReportedFork));
 
     final var nextValidators = List.of(BFTValidator.from(nextValidator, UInt256.ONE));
     final var newBftConfig = mock(BFTConfiguration.class);
@@ -165,21 +152,14 @@ public final class PeersForksHashesInfoServiceTest {
         new LedgerUpdate(
             mock(VerifiedTxnsAndProof.class),
             ImmutableClassToInstanceMap.of(EpochChange.class, newEpochChange));
-    peersForksHashesInfoService.ledgerUpdateEventProcessor().process(ledgerUpdate);
+    peersForksInfoService.ledgerUpdateEventProcessor().process(ledgerUpdate);
 
     // process unknown hash from the same peer (this time a validator)
-    peersForksHashesInfoService.peerEventProcessor().process(PeerEvent.PeerConnected.create(peer2));
+    peersForksInfoService.peerEventProcessor().process(PeerEvent.PeerConnected.create(peer2));
 
-    assertTrue(
-        peersForksHashesInfoService
-            .getUnknownReportedForksHashes()
-            .containsKey(sndReportedForkHash));
+    assertTrue(peersForksInfoService.getUnknownReportedForks().containsKey(sndReportedFork));
     assertEquals(
         nextValidator.getKey(),
-        peersForksHashesInfoService
-            .getUnknownReportedForksHashes()
-            .get(sndReportedForkHash)
-            .asList()
-            .get(0));
+        peersForksInfoService.getUnknownReportedForks().get(sndReportedFork).asList().get(0));
   }
 }

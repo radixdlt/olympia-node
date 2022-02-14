@@ -68,16 +68,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
-import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
-import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.NextCandidateForkPostProcessor;
 import com.radixdlt.statecomputer.NextFixedEpochForkPostProcessor;
 import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.Pair;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -97,11 +93,11 @@ public final class Forks {
   private static final Logger log = LogManager.getLogger();
 
   private final ImmutableList<FixedEpochForkConfig> fixedEpochForks;
-  private final Optional<CandidateForkConfig> candidateFork;
+  private final Optional<CandidateForkConfig> maybeCandidateFork;
 
   public static Forks create(Set<ForkConfig> forks) {
-    if (!ensureUniqueHashes(forks)) {
-      throw new IllegalArgumentException("Forks contain duplicate hashes: " + forks);
+    if (!ensureUniqueNames(forks)) {
+      throw new IllegalArgumentException("Forks contain duplicate names: " + forks);
     }
 
     final var candidateForks =
@@ -147,9 +143,9 @@ public final class Forks {
     return new Forks(fixedEpochForks, maybeCandidateFork);
   }
 
-  private static boolean ensureUniqueHashes(Set<ForkConfig> forks) {
-    final var hashesSet = forks.stream().map(ForkConfig::hash).collect(Collectors.toSet());
-    return forks.size() == hashesSet.size();
+  private static boolean ensureUniqueNames(Set<ForkConfig> forks) {
+    final var namesSet = forks.stream().map(ForkConfig::name).collect(Collectors.toSet());
+    return forks.size() == namesSet.size();
   }
 
   private static boolean sanityCheckFixedEpochs(ImmutableList<FixedEpochForkConfig> forkConfigs) {
@@ -166,7 +162,7 @@ public final class Forks {
 
   private Forks(
       ImmutableList<FixedEpochForkConfig> fixedEpochForks,
-      Optional<CandidateForkConfig> candidateFork) {
+      Optional<CandidateForkConfig> maybeCandidateFork) {
     // decorate base PostProcessor with ForksPostProcessor
     this.fixedEpochForks =
         IntStream.range(0, fixedEpochForks.size())
@@ -177,10 +173,9 @@ public final class Forks {
                     final var nextForkPostProcessor =
                         new NextFixedEpochForkPostProcessor(fixedEpochForks.get(idx + 1));
                     return forkConfig.addPostProcessor(nextForkPostProcessor);
-                  } else if (candidateFork.isPresent()) {
+                  } else if (maybeCandidateFork.isPresent()) {
                     final var nextForkPostProcessor =
-                        new NextCandidateForkPostProcessor(
-                            forkConfig.engineRules().getParser(), candidateFork.get());
+                        new NextCandidateForkPostProcessor(maybeCandidateFork.get());
                     return forkConfig.addPostProcessor(nextForkPostProcessor);
                   } else {
                     return forkConfig;
@@ -188,31 +183,31 @@ public final class Forks {
                 })
             .collect(ImmutableList.toImmutableList());
 
-    this.candidateFork = candidateFork;
+    this.maybeCandidateFork = maybeCandidateFork;
   }
 
   public Optional<CandidateForkConfig> getCandidateFork() {
-    return this.candidateFork;
+    return this.maybeCandidateFork;
   }
 
   public ImmutableList<ForkConfig> forkConfigs() {
     final var builder = ImmutableList.<ForkConfig>builder().addAll(fixedEpochForks);
-    candidateFork.ifPresent(builder::add);
+    maybeCandidateFork.ifPresent(builder::add);
     return builder.build();
   }
 
   @SuppressWarnings("unchecked")
-  public Optional<ForkConfig> getByHash(HashCode forkHash) {
+  public Optional<ForkConfig> getByName(String name) {
     final var maybeFixedEpochFork =
         this.fixedEpochForks.stream()
-            .filter(forkConfig -> forkConfig.hash().equals(forkHash))
+            .filter(forkConfig -> forkConfig.name().equals(name))
             .findFirst();
 
     if (maybeFixedEpochFork.isPresent()) {
       // thank you Java for a non-covariant Optional type...
       return (Optional) maybeFixedEpochFork;
     } else {
-      return (Optional) candidateFork.filter(forkConfig -> forkConfig.hash().equals(forkHash));
+      return (Optional) maybeCandidateFork.filter(forkConfig -> forkConfig.name().equals(name));
     }
   }
 
@@ -221,15 +216,15 @@ public final class Forks {
   }
 
   public ForkConfig latestFork() {
-    if (candidateFork.isPresent()) {
-      return candidateFork.get();
+    if (maybeCandidateFork.isPresent()) {
+      return maybeCandidateFork.get();
     } else {
       return fixedEpochForks.get(fixedEpochForks.size() - 1);
     }
   }
 
   public void init(CommittedReader committedReader, ForksEpochStore forksEpochStore) {
-    final var initialStoredForks = forksEpochStore.getEpochsForkHashes();
+    final var initialStoredForks = forksEpochStore.getStoredForks();
     final var currentEpoch = committedReader.getLastProof().map(LedgerProof::getEpoch).orElse(0L);
 
     log.info(
@@ -243,14 +238,12 @@ public final class Forks {
   }
 
   private void executeMissedFixedEpochForks(
-      ImmutableMap<Long, HashCode> storedForks,
-      long currentEpoch,
-      ForksEpochStore forksEpochStore) {
+      ImmutableMap<Long, String> storedForks, long currentEpoch, ForksEpochStore forksEpochStore) {
     fixedEpochForks.forEach(
         fixedEpochFork -> {
           final var forkAlreadyStored =
               storedForks.entrySet().stream()
-                  .anyMatch(e -> e.getValue().equals(fixedEpochFork.hash()));
+                  .anyMatch(e -> e.getValue().equals(fixedEpochFork.name()));
 
           // simply store the fork if not already in the database
           // we do not check if the epoch matches here, that'll be caught by sanityCheck
@@ -259,26 +252,27 @@ public final class Forks {
                 "Found a missed fork config {}, inserting at epoch {}",
                 fixedEpochFork.name(),
                 fixedEpochFork);
-            forksEpochStore.storeEpochForkHash(fixedEpochFork.epoch(), fixedEpochFork.hash());
+            forksEpochStore.storeForkAtEpoch(fixedEpochFork.epoch(), fixedEpochFork.name());
           }
         });
   }
 
   private void executeAndCheckMissedCandidateFork(
-      ImmutableMap<Long, HashCode> storedForks,
+      ImmutableMap<Long, String> storedForks,
       long currentEpoch,
       ForksEpochStore forksEpochStore,
       CommittedReader committedReader) {
-    if (candidateFork.isEmpty()) {
+    if (maybeCandidateFork.isEmpty()) {
       return;
     }
 
-    final var candidate = candidateFork.get();
+    final var candidateFork = maybeCandidateFork.get();
+
     final var maybeCandidateForkEpoch =
         findExecuteEpochForCandidate(currentEpoch, forksEpochStore, committedReader);
     final var maybeStoredCandidate =
         storedForks.entrySet().stream()
-            .filter(e -> e.getValue().equals(candidate.hash()))
+            .filter(e -> e.getValue().equals(candidateFork.name()))
             .findAny();
 
     maybeCandidateForkEpoch.ifPresentOrElse(
@@ -294,9 +288,9 @@ public final class Forks {
           } else {
             log.info(
                 "Found a missed candidate fork config {}, inserting at epoch {}",
-                candidate.name(),
+                candidateFork.name(),
                 executeEpoch);
-            forksEpochStore.storeEpochForkHash(executeEpoch, candidate.hash());
+            forksEpochStore.storeForkAtEpoch(executeEpoch, candidateFork.name());
           }
         },
         () -> {
@@ -312,32 +306,20 @@ public final class Forks {
 
   private Optional<Long> findExecuteEpochForCandidate(
       long currentEpoch, ForksEpochStore forksEpochStore, CommittedReader committedReader) {
-    if (candidateFork.isEmpty()) {
+    if (maybeCandidateFork.isEmpty()) {
       return Optional.empty();
     }
 
-    final var lastEpochToCheck = Math.min(currentEpoch, candidateFork.get().maxEpoch());
-    for (long epoch = candidateFork.get().minEpoch(); epoch <= lastEpochToCheck; epoch++) {
-      final var e = epoch;
-      final var forkAtEpoch =
-          fixedEpochForks.reverse().stream()
-              .filter(fork -> e >= fork.epoch())
-              .findFirst()
-              .orElseThrow();
-      final var substateDeserialization =
-          forkAtEpoch.engineRules().getParser().getSubstateDeserialization();
-      try (var cursor = forksEpochStore.validatorsSystemMetadataCursor(epoch)) {
-        final var validatorsMetadataAtEpoch =
-            Streams.stream(cursor)
-                .map(
-                    data ->
-                        deserializeValidatorSystemMetadata(substateDeserialization, data.asBytes()))
-                .collect(ImmutableList.toImmutableList());
+    final var candidateFork = maybeCandidateFork.get();
 
+    final var lastEpochToCheck = Math.min(currentEpoch, candidateFork.maxEpoch());
+    for (long epoch = candidateFork.minEpoch(); epoch <= lastEpochToCheck; epoch++) {
+      try (var cursor = forksEpochStore.countedForksVotesCursor(epoch)) {
+        final var countedForksVotes =
+            Streams.stream(cursor)
+                .collect(ImmutableMap.toImmutableMap(Pair::getFirst, Pair::getSecond));
         if (testCandidate(
-            candidateFork.get(),
-            committedReader.getEpochProof(epoch).orElseThrow(),
-            validatorsMetadataAtEpoch)) {
+            candidateFork, committedReader.getEpochProof(epoch).orElseThrow(), countedForksVotes)) {
           return Optional.of(epoch);
         }
       }
@@ -347,7 +329,7 @@ public final class Forks {
   }
 
   private void sanityCheck(ForksEpochStore forksEpochStore, long currentEpoch) {
-    final var storedForks = forksEpochStore.getEpochsForkHashes();
+    final var storedForks = forksEpochStore.getStoredForks();
     final var fixedEpochForksMap =
         fixedEpochForks.stream()
             .collect(ImmutableMap.toImmutableMap(FixedEpochForkConfig::epoch, Function.identity()));
@@ -357,7 +339,7 @@ public final class Forks {
         .forEach(
             fork -> {
               final var maybeStored = Optional.ofNullable(storedForks.get(fork.epoch()));
-              if (maybeStored.isEmpty() || !maybeStored.get().equals(fork.hash())) {
+              if (maybeStored.isEmpty() || !maybeStored.get().equals(fork.name())) {
                 throw new IllegalStateException(
                     String.format(
                         "Forks inconsistency! Fork %s should have been executed at epoch %s, but"
@@ -380,16 +362,16 @@ public final class Forks {
                   Optional.ofNullable(fixedEpochForksMap.get(e.getKey()));
 
               final var maybeExpectedCandidate =
-                  candidateFork.filter(
+                  maybeCandidateFork.filter(
                       f -> e.getKey() >= f.minEpoch() && e.getKey() <= f.maxEpoch());
 
               final var expectedAtFixedEpochMatches =
                   maybeExpectedAtFixedEpoch.isPresent()
-                      && maybeExpectedAtFixedEpoch.get().hash().equals(e.getValue());
+                      && maybeExpectedAtFixedEpoch.get().name().equals(e.getValue());
 
               final var expectedCandidateMatches =
                   maybeExpectedCandidate.isPresent()
-                      && maybeExpectedCandidate.get().hash().equals(e.getValue());
+                      && maybeExpectedCandidate.get().name().equals(e.getValue());
 
               if (!expectedAtFixedEpochMatches && !expectedCandidateMatches) {
                 throw new IllegalStateException(
@@ -402,24 +384,17 @@ public final class Forks {
   }
 
   public static boolean testCandidate(
-      CandidateForkConfig candidateFork, REParser reParser, LedgerAndBFTProof ledgerAndBFTProof) {
-    if (ledgerAndBFTProof.getValidatorsSystemMetadata().isEmpty()) {
-      return false;
-    }
-
-    final var substateDeserialization = reParser.getSubstateDeserialization();
-    final var validatorsSystemMetadata =
-        ledgerAndBFTProof.getValidatorsSystemMetadata().get().stream()
-            .map(s -> deserializeValidatorSystemMetadata(substateDeserialization, s.getData()))
-            .collect(ImmutableList.toImmutableList());
-
-    return testCandidate(candidateFork, ledgerAndBFTProof.getProof(), validatorsSystemMetadata);
+      CandidateForkConfig candidateFork, LedgerAndBFTProof ledgerAndBFTProof) {
+    return ledgerAndBFTProof.getCountedForksVotes().stream()
+        .anyMatch(
+            countedForksVotes ->
+                testCandidate(candidateFork, ledgerAndBFTProof.getProof(), countedForksVotes));
   }
 
   private static boolean testCandidate(
       CandidateForkConfig candidateFork,
       LedgerProof ledgerProof,
-      ImmutableList<ValidatorSystemMetadata> validatorsMetadata) {
+      ImmutableMap<HashCode, Short> countedForksVotes) {
     if (ledgerProof.getNextValidatorSet().isEmpty()) {
       return false;
     }
@@ -429,35 +404,10 @@ public final class Forks {
       return false;
     }
 
-    final var validatorSet = ledgerProof.getNextValidatorSet().get();
+    final var votedPercentage =
+        countedForksVotes.getOrDefault(
+            CandidateForkVote.forkConfigParamsHash(candidateFork), Short.MIN_VALUE);
 
-    final var requiredPower =
-        validatorSet
-            .getTotalPower()
-            .multiply(UInt256.from(candidateFork.requiredStake()))
-            .divide(UInt256.from(10000));
-
-    final var forkVotesPower =
-        validatorsMetadata.stream()
-            .filter(vm -> validatorSet.containsNode(vm.getValidatorKey()))
-            .filter(
-                vm -> {
-                  final var expectedVoteHash =
-                      ForkConfig.voteHash(vm.getValidatorKey(), candidateFork);
-                  return vm.getAsHash().equals(expectedVoteHash);
-                })
-            .map(validatorMetadata -> validatorSet.getPower(validatorMetadata.getValidatorKey()))
-            .reduce(UInt256.ZERO, UInt256::add);
-
-    return forkVotesPower.compareTo(requiredPower) >= 0;
-  }
-
-  private static ValidatorSystemMetadata deserializeValidatorSystemMetadata(
-      SubstateDeserialization substateDeserialization, byte[] data) {
-    try {
-      return (ValidatorSystemMetadata) substateDeserialization.deserialize(data);
-    } catch (DeserializeException e) {
-      throw new IllegalStateException("Failed to deserialize ValidatorSystemMetadata substate");
-    }
+    return votedPercentage >= candidateFork.requiredStake();
   }
 }

@@ -64,24 +64,43 @@
 
 package com.radixdlt.statecomputer;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.PostProcessorException;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.statecomputer.forks.CandidateForkVote;
 import com.radixdlt.store.EngineStore;
-import java.util.Arrays;
+import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt256;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
-/** Adds validatorsSystemMetadata at epoch boundary to result metadata. */
-public final class ValidatorsSystemMetadataPostProcessor
-    implements PostProcessor<LedgerAndBFTProof> {
+/** Adds countedForksVotes at epoch boundary to the result metadata. */
+public final class CountForksVotesPostProcessor implements PostProcessor<LedgerAndBFTProof> {
+  /**
+   * Specifies a minimum stake that needs to vote for a fork to be added to the resulting stored
+   * map. Acts as a storage size optimization so that we don't store insignificant entries.
+   */
+  private static final short VOTES_THRESHOLD_TO_STORE_RESULT = 5000; /* 50.00% */
+
+  private final SubstateDeserialization substateDeserialization;
+
+  public CountForksVotesPostProcessor(SubstateDeserialization substateDeserialization) {
+    this.substateDeserialization = Objects.requireNonNull(substateDeserialization);
+  }
+
   @Override
   public LedgerAndBFTProof process(
       LedgerAndBFTProof metadata,
@@ -89,34 +108,79 @@ public final class ValidatorsSystemMetadataPostProcessor
       List<REProcessedTxn> txns)
       throws PostProcessorException {
     if (metadata.getProof().getNextValidatorSet().isPresent()) {
-      return metadata.withValidatorsSystemMetadata(
-          getValidatorsSystemMetadata(engineStore, metadata));
+      return metadata.withCountedForksVotes(countForksVotes(engineStore, metadata));
     } else {
       return metadata;
     }
   }
 
-  private ImmutableList<RawSubstateBytes> getValidatorsSystemMetadata(
+  private ImmutableMap<HashCode, Short> countForksVotes(
       EngineStore<LedgerAndBFTProof> engineStore, LedgerAndBFTProof ledgerAndBFTProof) {
     final var validatorSet = ledgerAndBFTProof.getProof().getNextValidatorSet().orElseThrow();
+    final var totalPower = validatorSet.getTotalPower();
+    final var totalPowerVotedMap = countTotalPowerVoted(engineStore, validatorSet);
+
+    return totalPowerVotedMap.entrySet().stream()
+        .map(
+            e -> {
+              final var percentagePower =
+                  e.getValue()
+                      .multiply(UInt256.from(10000))
+                      .divide(totalPower)
+                      .toBigInt()
+                      .shortValue();
+              return Pair.of(e.getKey(), percentagePower);
+            })
+        .filter(p -> p.getSecond() >= VOTES_THRESHOLD_TO_STORE_RESULT)
+        .collect(ImmutableMap.toImmutableMap(Pair::getFirst, Pair::getSecond));
+  }
+
+  private ImmutableMap<HashCode, UInt256> countTotalPowerVoted(
+      EngineStore<LedgerAndBFTProof> engineStore, BFTValidatorSet validatorSet) {
+    final var totalPowerVoted = new HashMap<HashCode, UInt256>();
 
     try (var validatorMetadataCursor =
         engineStore.openIndexedCursor(
             SubstateIndex.create(
                 SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class))) {
-      return Streams.stream(validatorMetadataCursor)
-          .filter(
-              rawSubstate -> {
-                final var keyBytes =
-                    Arrays.copyOfRange(rawSubstate.getData(), 2, 2 + ECPublicKey.COMPRESSED_BYTES);
-                try {
-                  final var key = ECPublicKey.fromBytes(keyBytes);
-                  return validatorSet.containsNode(key);
-                } catch (PublicKeyException ex) {
-                  throw new IllegalStateException(ex);
-                }
-              })
-          .collect(ImmutableList.toImmutableList());
+      validatorMetadataCursor.forEachRemaining(
+          rawSubstate ->
+              extractBftNodeAndVoteIfPresent(rawSubstate)
+                  .ifPresent(
+                      bftNodeAndVote -> {
+                        if (validatorSet.containsNode(bftNodeAndVote.getFirst())) {
+                          final var mapKey =
+                              HashCode.fromBytes(bftNodeAndVote.getSecond().forkConfigParamsHash());
+                          final var existingValue =
+                              totalPowerVoted.getOrDefault(mapKey, UInt256.ZERO);
+                          final var newValue =
+                              existingValue.add(validatorSet.getPower(bftNodeAndVote.getFirst()));
+                          totalPowerVoted.put(mapKey, newValue);
+                        }
+                      }));
+    }
+    return ImmutableMap.copyOf(totalPowerVoted);
+  }
+
+  private Optional<Pair<BFTNode, CandidateForkVote>> extractBftNodeAndVoteIfPresent(
+      RawSubstateBytes rawSubstateBytes) {
+    try {
+      final var validatorSystemMetadataSubstate =
+          (ValidatorSystemMetadata) substateDeserialization.deserialize(rawSubstateBytes.getData());
+
+      if (Bytes.allZeros(validatorSystemMetadataSubstate.getData())) {
+        return Optional.empty();
+      }
+
+      final var candidateForkVote =
+          new CandidateForkVote(HashCode.fromBytes(validatorSystemMetadataSubstate.getData()));
+
+      return Optional.of(
+          Pair.of(
+              BFTNode.create(validatorSystemMetadataSubstate.getValidatorKey()),
+              candidateForkVote));
+    } catch (DeserializeException e) {
+      throw new PostProcessorException("Error deserializing ValidatorSystemMetadata");
     }
   }
 }

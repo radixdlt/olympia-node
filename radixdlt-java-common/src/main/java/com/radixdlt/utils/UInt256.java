@@ -925,4 +925,8 @@ public final class UInt256 implements Comparable<UInt256> {
     }
     return sb.reverse().toString();
   }
+
+  public BigInteger toBigInt() {
+    return new BigInteger(1, this.toByteArray());
+  }
 }

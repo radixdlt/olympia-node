@@ -64,19 +64,20 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import java.nio.charset.StandardCharsets;
 
 public final class FixedEpochForkConfig implements ForkConfig {
   private final String name;
-  private final HashCode hash;
   private final RERules reRules;
   private final long epoch;
 
-  public FixedEpochForkConfig(String name, HashCode hash, RERules reRules, long epoch) {
+  public FixedEpochForkConfig(String name, RERules reRules, long epoch) {
+    if (name.getBytes(StandardCharsets.US_ASCII).length > 16) {
+      throw new IllegalArgumentException("Fork name can't be longer than 16 bytes");
+    }
     this.name = name;
-    this.hash = hash;
     this.reRules = reRules;
     this.epoch = epoch;
   }
@@ -91,22 +92,17 @@ public final class FixedEpochForkConfig implements ForkConfig {
   }
 
   @Override
-  public HashCode hash() {
-    return hash;
-  }
-
-  @Override
   public RERules engineRules() {
     return reRules;
   }
 
   @Override
   public FixedEpochForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
-    return new FixedEpochForkConfig(name, hash, reRules.addPostProcessor(newPostProcessor), epoch);
+    return new FixedEpochForkConfig(name, reRules.addPostProcessor(newPostProcessor), epoch);
   }
 
   @Override
   public String toString() {
-    return String.format("%s[%s:%s, epoch=%s]", getClass().getSimpleName(), name(), hash(), epoch);
+    return String.format("%s[%s, epoch=%s]", getClass().getSimpleName(), name(), epoch);
   }
 }

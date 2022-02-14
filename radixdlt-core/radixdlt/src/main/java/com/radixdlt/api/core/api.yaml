@@ -2344,14 +2344,11 @@ components:
       type: object
       required:
         - name
-        - hash
         - is_candidate
         - engine_identifier
         - engine_configuration
       properties:
         name:
-          type: string
-        hash:
           type: string
         is_candidate:
           type: boolean

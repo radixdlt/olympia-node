@@ -130,10 +130,10 @@ components:
       type: object
       required:
         - network_status
-        - current_fork_hash
+        - current_fork_name
         - executed_forks
         - fork_vote_status
-        - unknown_reported_forks_hashes
+        - unknown_reported_forks
       properties:
         network_status:
           type: string
@@ -143,7 +143,7 @@ components:
             - UP
             - STALLED
             - OUT_OF_SYNC
-        current_fork_hash:
+        current_fork_name:
           type: string
         executed_forks:
           type: array
@@ -154,15 +154,15 @@ components:
           enum:
             - VOTE_REQUIRED
             - NO_ACTION_NEEDED
-        unknown_reported_forks_hashes:
+        unknown_reported_forks:
           type: array
           items:
             type: object
             required:
-              - hash
+              - name
               - reported_by
             properties:
-              hash:
+              name:
                 type: string
               reported_by:
                 type: array
@@ -577,10 +577,10 @@ components:
       type: object
       required:
         - epoch
-        - hash
+        - name
       properties:
         epoch:
           type: integer
           format: int64
-        hash:
+        name:
           type: string
