@@ -64,6 +64,7 @@
 
 package com.radixdlt.integration.steady_state.simulation.full_function_forks;
 
+import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.application.system.FeeTable;
@@ -135,7 +136,7 @@ public class SanityTest {
                         Amount.ofTokens(10),
                         9800,
                         10,
-                        255)),
+                        MSG.maxLength())),
                 new ForksModule())
             .addNodeModule(MempoolConfig.asModule(1000, 10))
             .addTestModules(

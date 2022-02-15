@@ -64,6 +64,8 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
+
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import java.util.Map;
@@ -100,7 +102,7 @@ public record RERulesConfig(
         Amount.ofMicroTokens(2307700), // Rewards per proposal
         9800,
         10,
-        255);
+        MSG.maxLength());
   }
 
   public RERulesConfig overrideMinimumStake(Amount minimumStake) {

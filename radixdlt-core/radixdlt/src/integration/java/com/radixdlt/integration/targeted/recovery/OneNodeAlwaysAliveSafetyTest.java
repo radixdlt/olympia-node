@@ -64,6 +64,8 @@
 
 package com.radixdlt.integration.targeted.recovery;
 
+import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -235,7 +237,7 @@ public class OneNodeAlwaysAliveSafetyTest {
                 Amount.ofTokens(10),
                 9800,
                 10,
-                255)),
+                MSG.maxLength())),
         new ForksModule(),
         new PersistedNodeForTestingModule(),
         new AbstractModule() {

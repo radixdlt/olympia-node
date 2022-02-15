@@ -64,6 +64,8 @@
 
 package com.radixdlt.integration.targeted.statemachine;
 
+import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
+
 import com.google.common.base.Stopwatch;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -171,8 +173,7 @@ public class LargeEpochChangeTest {
                 Amount.ofTokens(10), // Rewards per proposal
                 9800, // 98.00% threshold for completed proposals to get any rewards
                 100, // 100 max validators
-                255 // 255 max message length
-                )),
+                MSG.maxLength())),
         new ForksModule(),
         new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
         new MockedGenesisModule(

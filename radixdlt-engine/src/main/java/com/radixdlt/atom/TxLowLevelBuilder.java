@@ -152,8 +152,8 @@ public final class TxLowLevelBuilder {
       throw new MessageTooLongException(limit, bytes.length);
     }
 
-    if (bytes.length > MSG.maxLength()) {
-      throw new MessageTooLongException(MSG.maxLength(), bytes.length);
+    if (bytes.length > Short.MAX_VALUE) {
+      throw new MessageTooLongException(Short.MAX_VALUE, bytes.length);
     }
 
     var buf = ByteBuffer.allocate(Short.BYTES + bytes.length);

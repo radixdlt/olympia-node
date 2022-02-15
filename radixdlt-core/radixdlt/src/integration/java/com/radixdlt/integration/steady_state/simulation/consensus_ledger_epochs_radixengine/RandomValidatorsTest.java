@@ -64,6 +64,7 @@
 
 package com.radixdlt.integration.steady_state.simulation.consensus_ledger_epochs_radixengine;
 
+import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.application.system.FeeTable;
@@ -109,7 +110,7 @@ public class RandomValidatorsTest {
                       Amount.ofTokens(10),
                       9800,
                       50,
-                      255)),
+                      MSG.maxLength())),
               new ForksModule())
           .ledgerAndRadixEngineWithEpochHighView()
           .addTestModules(
