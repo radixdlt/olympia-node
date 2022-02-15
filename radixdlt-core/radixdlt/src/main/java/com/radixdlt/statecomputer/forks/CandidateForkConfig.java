@@ -69,7 +69,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 public record CandidateForkConfig(
     String name,
-    RERules reRules,
+    RERules engineRules,
     short requiredStake,
     long minEpoch,
     long maxEpoch,
@@ -86,37 +86,11 @@ public record CandidateForkConfig(
     }
   }
 
-  public long minEpoch() {
-    return minEpoch;
-  }
-
-  public long maxEpoch() {
-    return maxEpoch;
-  }
-
-  public short requiredStake() {
-    return requiredStake;
-  }
-
-  public int numEpochsBeforeEnacted() {
-    return numEpochsBeforeEnacted;
-  }
-
-  @Override
-  public String name() {
-    return name;
-  }
-
-  @Override
-  public RERules engineRules() {
-    return reRules;
-  }
-
   @Override
   public CandidateForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
     return new CandidateForkConfig(
         name,
-        reRules.addPostProcessor(newPostProcessor),
+        engineRules.addPostProcessor(newPostProcessor),
         requiredStake,
         minEpoch,
         maxEpoch,

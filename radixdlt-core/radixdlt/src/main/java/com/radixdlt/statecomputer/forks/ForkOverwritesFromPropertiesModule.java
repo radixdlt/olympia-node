@@ -77,6 +77,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ForkOverwritesFromPropertiesModule extends AbstractModule {
+  private static final String PROPERTIES_PREFIX = "overwrite_forks.";
+
   private static final Logger logger = LogManager.getLogger();
 
   private static class ForkOverwrite implements UnaryOperator<Set<ForkBuilder>> {
@@ -88,29 +90,29 @@ public class ForkOverwritesFromPropertiesModule extends AbstractModule {
           .map(
               c -> {
                 final var forkDisabledOverwrite =
-                    properties.get("overwrite_forks." + c.getName() + ".disabled", "");
+                    properties.get(PROPERTIES_PREFIX + c.getName() + ".disabled", "");
                 if (!forkDisabledOverwrite.isBlank()) {
                   return Optional.<ForkBuilder>empty();
                 }
 
                 final var requiredStakeVotesOverwrite =
-                    properties.get("overwrite_forks." + c.getName() + ".required_stake_votes", "");
+                    properties.get(PROPERTIES_PREFIX + c.getName() + ".required_stake_votes", "");
                 final var epochOverwrite =
-                    properties.get("overwrite_forks." + c.getName() + ".epoch", "");
+                    properties.get(PROPERTIES_PREFIX + c.getName() + ".epoch", "");
 
                 if (!requiredStakeVotesOverwrite.isBlank()) {
                   final var requiredStakeVotes = Short.parseShort(requiredStakeVotesOverwrite);
                   final var minEpochOverwrite =
-                      properties.get("overwrite_forks." + c.getName() + ".min_epoch", "");
+                      properties.get(PROPERTIES_PREFIX + c.getName() + ".min_epoch", "");
                   final var minEpoch =
                       minEpochOverwrite.isBlank()
                           ? c.minEpoch()
                           : Long.parseLong(minEpochOverwrite);
                   final var maxEpochOverwrite =
-                      properties.get("overwrite_forks." + c.getName() + ".max_epoch", "");
+                      properties.get(PROPERTIES_PREFIX + c.getName() + ".max_epoch", "");
                   final var numEpochsBeforeEnactedOverwrite =
                       properties.get(
-                          "overwrite_forks." + c.getName() + ".numEpochsBeforeEnacted", "");
+                          PROPERTIES_PREFIX + c.getName() + ".numEpochsBeforeEnacted", "");
                   final var maxEpoch =
                       maxEpochOverwrite.isBlank()
                           ? c.maxEpoch().orElse(Long.MAX_VALUE)
@@ -129,7 +131,7 @@ public class ForkOverwritesFromPropertiesModule extends AbstractModule {
                 }
 
                 final var viewOverwrite =
-                    properties.get("overwrite_forks." + c.getName() + ".views", "");
+                    properties.get(PROPERTIES_PREFIX + c.getName() + ".views", "");
                 if (!viewOverwrite.isBlank()) {
                   final var view = Long.parseLong(viewOverwrite);
                   logger.warn(
