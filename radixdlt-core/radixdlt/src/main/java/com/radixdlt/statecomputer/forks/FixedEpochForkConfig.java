@@ -67,7 +67,7 @@ package com.radixdlt.statecomputer.forks;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
-public final record FixedEpochForkConfig(String name, RERules reRules, long epoch)
+public record FixedEpochForkConfig(String name, RERules reRules, long epoch)
     implements ForkConfig {
 
   public FixedEpochForkConfig {

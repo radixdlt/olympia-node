@@ -67,7 +67,7 @@ package com.radixdlt.statecomputer.forks;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
-public final record CandidateForkConfig(
+public record CandidateForkConfig(
     String name,
     RERules reRules,
     short requiredStake,

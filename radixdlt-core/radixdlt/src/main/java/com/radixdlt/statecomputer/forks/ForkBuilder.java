@@ -71,9 +71,9 @@ import java.util.Optional;
  * parameters before the actual fork config object is created.
  */
 public final class ForkBuilder {
-  public static final record FixedEpochForkBuildersOpts(long epoch) {}
+  public static record FixedEpochForkBuildersOpts(long epoch) {}
 
-  public static final record CandidateForkBuildersOpts(
+  public static record CandidateForkBuildersOpts(
       short requiredStake, long minEpoch, long maxEpoch, int numEpochsBeforeEnacted) {}
 
   private final String name;

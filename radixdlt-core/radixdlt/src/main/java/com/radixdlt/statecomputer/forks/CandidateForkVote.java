@@ -74,7 +74,7 @@ import com.radixdlt.utils.Shorts;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-public final record CandidateForkVote(HashCode payload) {
+public record CandidateForkVote(HashCode payload) {
   public static final HashCode FORK_VOTE_NONCE =
       HashUtils.sha256("olympia".getBytes(StandardCharsets.US_ASCII));
   public static final int NAME_LEN = 16;
