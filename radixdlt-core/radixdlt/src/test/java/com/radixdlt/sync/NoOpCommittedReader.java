@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2022 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,17 +62,26 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.forks;
+package com.radixdlt.sync;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.hash.HashCode;
-import com.radixdlt.atom.CloseableCursor;
-import com.radixdlt.utils.Pair;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import java.util.Optional;
 
-public interface ForksEpochStore {
-  ImmutableMap<Long, String> getStoredForks();
+public final class NoOpCommittedReader implements CommittedReader {
+  @Override
+  public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
+    return null;
+  }
 
-  void storeForkAtEpoch(long epoch, String forkName);
+  @Override
+  public Optional<LedgerProof> getEpochProof(long epoch) {
+    return Optional.empty();
+  }
 
-  CloseableCursor<Pair<HashCode, Short>> countedForksVotesCursor(long epoch);
+  @Override
+  public Optional<LedgerProof> getLastProof() {
+    return Optional.empty();
+  }
 }

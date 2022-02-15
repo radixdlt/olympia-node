@@ -131,9 +131,11 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.statecomputer.forks.MockedForksEpochStoreModule;
+import com.radixdlt.statecomputer.forks.NoOpForksEpochStore;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.MockedCommittedReaderModule;
+import com.radixdlt.sync.NoOpCommittedReader;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
@@ -568,8 +570,8 @@ public final class SimulationTest {
                         Amount.ofTokens(10000)));
                 bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
                 bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-                bind(CommittedReader.class).toInstance(CommittedReader.mocked());
-                bind(ForksEpochStore.class).toInstance(ForksEpochStore.mocked());
+                bind(CommittedReader.class).toInstance(new NoOpCommittedReader());
+                bind(ForksEpochStore.class).toInstance(new NoOpForksEpochStore());
               }
 
               @Genesis

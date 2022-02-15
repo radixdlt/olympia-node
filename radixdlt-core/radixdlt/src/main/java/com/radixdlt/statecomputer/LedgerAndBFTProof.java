@@ -140,11 +140,8 @@ public final class LedgerAndBFTProof {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof LedgerAndBFTProof other)) {
-      return false;
-    }
-
-    return Objects.equals(this.ledgerProof, other.ledgerProof)
+    return o instanceof LedgerAndBFTProof other
+        && Objects.equals(this.ledgerProof, other.ledgerProof)
         && Objects.equals(this.vertexStoreState, other.vertexStoreState)
         && Objects.equals(this.nextForkName, other.nextForkName)
         && Objects.equals(this.countedForksVotes, other.countedForksVotes);

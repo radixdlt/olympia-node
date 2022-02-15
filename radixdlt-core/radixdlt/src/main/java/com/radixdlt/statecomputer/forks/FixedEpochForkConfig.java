@@ -67,18 +67,13 @@ package com.radixdlt.statecomputer.forks;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
-public final class FixedEpochForkConfig implements ForkConfig {
-  private final String name;
-  private final RERules reRules;
-  private final long epoch;
+public final record FixedEpochForkConfig(String name, RERules reRules, long epoch)
+    implements ForkConfig {
 
-  public FixedEpochForkConfig(String name, RERules reRules, long epoch) {
+  public FixedEpochForkConfig {
     if (name.getBytes(ForkConfig.FORK_NAME_CHARSET).length > 16) {
       throw new IllegalArgumentException("Fork name can't be longer than 16 bytes");
     }
-    this.name = name;
-    this.reRules = reRules;
-    this.epoch = epoch;
   }
 
   public long epoch() {
@@ -98,10 +93,5 @@ public final class FixedEpochForkConfig implements ForkConfig {
   @Override
   public FixedEpochForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
     return new FixedEpochForkConfig(name, reRules.addPostProcessor(newPostProcessor), epoch);
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s[%s, epoch=%s]", getClass().getSimpleName(), name(), epoch);
   }
 }

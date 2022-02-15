@@ -67,21 +67,16 @@ package com.radixdlt.statecomputer.forks;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
-public final class CandidateForkConfig implements ForkConfig {
-  private final String name;
-  private final RERules reRules;
-  private short requiredStake;
-  private long minEpoch;
-  private long maxEpoch;
-  private int numEpochsBeforeEnacted;
+public final record CandidateForkConfig(
+    String name,
+    RERules reRules,
+    short requiredStake,
+    long minEpoch,
+    long maxEpoch,
+    int numEpochsBeforeEnacted)
+    implements ForkConfig {
 
-  public CandidateForkConfig(
-      String name,
-      RERules reRules,
-      short requiredStake,
-      long minEpoch,
-      long maxEpoch,
-      int numEpochsBeforeEnacted) {
+  public CandidateForkConfig {
     if (name.getBytes(ForkConfig.FORK_NAME_CHARSET).length > 16) {
       throw new IllegalArgumentException("Fork name can't be longer than 16 bytes");
     }
@@ -89,13 +84,6 @@ public final class CandidateForkConfig implements ForkConfig {
     if (numEpochsBeforeEnacted < 1) {
       throw new IllegalArgumentException("Num epochs before enacted must be at least 1");
     }
-
-    this.name = name;
-    this.reRules = reRules;
-    this.requiredStake = requiredStake;
-    this.minEpoch = minEpoch;
-    this.maxEpoch = maxEpoch;
-    this.numEpochsBeforeEnacted = numEpochsBeforeEnacted;
   }
 
   public long minEpoch() {
@@ -133,12 +121,5 @@ public final class CandidateForkConfig implements ForkConfig {
         minEpoch,
         maxEpoch,
         numEpochsBeforeEnacted);
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s[%s, min_epoch=%s, max_epoch=%s, required_stake=%s]",
-        getClass().getSimpleName(), name(), minEpoch, maxEpoch, requiredStake);
   }
 }

@@ -88,8 +88,9 @@ public class RadixEngineForksLatestOnlyModule extends AbstractModule {
             binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() {})
         .setBinding()
         .toInstance(
-            m -> {
-              final var latestFork = m.stream().max((a, b) -> (int) (a.minEpoch() - b.minEpoch()));
+            forkBuilders -> {
+              final var latestFork =
+                  forkBuilders.stream().max((a, b) -> (int) (a.minEpoch() - b.minEpoch()));
               return Set.of(latestFork.get().withEngineRulesConfig(config).atFixedEpoch(0L));
             });
   }

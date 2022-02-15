@@ -396,27 +396,7 @@ public final class RadixEngineStateComputer implements StateComputer {
       throw new ByzantineQuorumException(e.getMessage(), e);
     }
 
-    result
-        .getMetadata()
-        .getNextForkName()
-        .ifPresent(
-            nextForkName -> {
-              final var nextForkConfig =
-                  forks.getByName(nextForkName).orElseThrow(); // guaranteed to be present
-              log.info(
-                  "Epoch {} forking RadixEngine to {}",
-                  proof.getEpoch() + 1,
-                  nextForkConfig.name());
-              final var rules = nextForkConfig.engineRules();
-              this.radixEngine.replaceConstraintMachine(
-                  rules.getConstraintMachineConfig(),
-                  rules.getSerialization(),
-                  rules.getActionConstructors(),
-                  rules.getPostProcessor(),
-                  rules.getParser());
-              this.epochCeilingView = rules.getMaxRounds();
-              this.maxSigsPerRound = rules.getMaxSigsPerRound();
-            });
+    result.getMetadata().getNextForkName().ifPresent(this::forkRadixEngine);
 
     result
         .getProcessedTxns()
@@ -431,6 +411,21 @@ public final class RadixEngineStateComputer implements StateComputer {
             });
 
     return result;
+  }
+
+  private void forkRadixEngine(String nextForkName) {
+    final var nextForkConfig =
+        forks.getByName(nextForkName).orElseThrow(); // guaranteed to be present
+    log.info("Forking RadixEngine to {}", nextForkConfig.name());
+    final var rules = nextForkConfig.engineRules();
+    this.radixEngine.replaceConstraintMachine(
+        rules.getConstraintMachineConfig(),
+        rules.getSerialization(),
+        rules.getActionConstructors(),
+        rules.getPostProcessor(),
+        rules.getParser());
+    this.epochCeilingView = rules.getMaxRounds();
+    this.maxSigsPerRound = rules.getMaxSigsPerRound();
   }
 
   @Override

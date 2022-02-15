@@ -133,10 +133,12 @@ import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.NoOpForksEpochStore;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.NoOpCommittedReader;
 import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
@@ -193,8 +195,8 @@ public class RadixEngineStateComputerTest {
         install(new RadixEngineForksLatestOnlyModule());
 
         // HACK
-        bind(CommittedReader.class).toInstance(CommittedReader.mocked());
-        bind(ForksEpochStore.class).toInstance(ForksEpochStore.mocked());
+        bind(CommittedReader.class).toInstance(new NoOpCommittedReader());
+        bind(ForksEpochStore.class).toInstance(new NoOpForksEpochStore());
 
         bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 

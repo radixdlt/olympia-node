@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2022 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -69,10 +69,19 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.utils.Pair;
 
-public interface ForksEpochStore {
-  ImmutableMap<Long, String> getStoredForks();
+public final class NoOpForksEpochStore implements ForksEpochStore {
+  @Override
+  public ImmutableMap<Long, String> getStoredForks() {
+    return ImmutableMap.of();
+  }
 
-  void storeForkAtEpoch(long epoch, String forkName);
+  @Override
+  public void storeForkAtEpoch(long epoch, String forkName) {
+    // no-op
+  }
 
-  CloseableCursor<Pair<HashCode, Short>> countedForksVotesCursor(long epoch);
+  @Override
+  public CloseableCursor<Pair<HashCode, Short>> countedForksVotesCursor(long epoch) {
+    return CloseableCursor.empty();
+  }
 }

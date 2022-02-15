@@ -330,9 +330,6 @@ public final class Forks {
 
   private void sanityCheck(ForksEpochStore forksEpochStore, long currentEpoch) {
     final var storedForks = forksEpochStore.getStoredForks();
-    final var fixedEpochForksMap =
-        fixedEpochForks.stream()
-            .collect(ImmutableMap.toImmutableMap(FixedEpochForkConfig::epoch, Function.identity()));
 
     fixedEpochForks.stream()
         .filter(f -> f.epoch() <= currentEpoch && f.epoch() > 0)
@@ -348,39 +345,45 @@ public final class Forks {
               }
             });
 
-    storedForks.entrySet().stream()
-        .forEach(
-            e -> {
-              if (e.getKey() > currentEpoch) {
-                throw new IllegalStateException(
-                    String.format(
-                        "Illegal state: fork %s executed epoch is %s, but current epoch is %s",
-                        e.getValue(), e.getKey(), currentEpoch));
-              }
+    final var fixedEpochForksMap =
+        fixedEpochForks.stream()
+            .collect(ImmutableMap.toImmutableMap(FixedEpochForkConfig::epoch, Function.identity()));
+    storedForks
+        .entrySet()
+        .forEach(e -> verifyStoredFork(fixedEpochForksMap, currentEpoch, e.getKey(), e.getValue()));
+  }
 
-              final var maybeExpectedAtFixedEpoch =
-                  Optional.ofNullable(fixedEpochForksMap.get(e.getKey()));
+  private void verifyStoredFork(
+      ImmutableMap<Long, FixedEpochForkConfig> fixedEpochForksMap,
+      long currentEpoch,
+      long forkEpoch,
+      String forkName) {
+    if (forkEpoch > currentEpoch) {
+      throw new IllegalStateException(
+          String.format(
+              "Illegal state: fork %s executed epoch is %s, but current epoch is %s",
+              forkName, forkEpoch, currentEpoch));
+    }
 
-              final var maybeExpectedCandidate =
-                  maybeCandidateFork.filter(
-                      f -> e.getKey() >= f.minEpoch() && e.getKey() <= f.maxEpoch());
+    final var maybeExpectedAtFixedEpoch = Optional.ofNullable(fixedEpochForksMap.get(forkEpoch));
 
-              final var expectedAtFixedEpochMatches =
-                  maybeExpectedAtFixedEpoch.isPresent()
-                      && maybeExpectedAtFixedEpoch.get().name().equals(e.getValue());
+    final var maybeExpectedCandidate =
+        maybeCandidateFork.filter(f -> forkEpoch >= f.minEpoch() && forkEpoch <= f.maxEpoch());
 
-              final var expectedCandidateMatches =
-                  maybeExpectedCandidate.isPresent()
-                      && maybeExpectedCandidate.get().name().equals(e.getValue());
+    final var expectedAtFixedEpochMatches =
+        maybeExpectedAtFixedEpoch.isPresent()
+            && maybeExpectedAtFixedEpoch.get().name().equals(forkName);
 
-              if (!expectedAtFixedEpochMatches && !expectedCandidateMatches) {
-                throw new IllegalStateException(
-                    String.format(
-                        "Forks inconsistency! Fork %s was executed at epoch %s, but shouldn't have"
-                            + " been.",
-                        e.getValue(), e.getKey()));
-              }
-            });
+    final var expectedCandidateMatches =
+        maybeExpectedCandidate.isPresent() && maybeExpectedCandidate.get().name().equals(forkName);
+
+    if (!expectedAtFixedEpochMatches && !expectedCandidateMatches) {
+      throw new IllegalStateException(
+          String.format(
+              "Forks inconsistency! Fork %s was executed at epoch %s, but shouldn't have"
+                  + " been.",
+              forkName, forkEpoch));
+    }
   }
 
   public static boolean testCandidate(
