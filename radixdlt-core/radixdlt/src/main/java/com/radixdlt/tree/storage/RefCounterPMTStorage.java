@@ -64,10 +64,15 @@
 
 package com.radixdlt.tree.storage;
 
+import com.radixdlt.utils.Ints;
+
+import javax.annotation.concurrent.NotThreadSafe;
 import java.util.Arrays;
 
+@NotThreadSafe
 public class RefCounterPMTStorage implements PMTStorage {
 
+  protected static final int COUNTER_BYTE_LEN = 4;
   private final PMTStorage pmtStorage;
 
   public RefCounterPMTStorage(PMTStorage pmtStorage) {
@@ -77,30 +82,41 @@ public class RefCounterPMTStorage implements PMTStorage {
   @Override
   public void save(byte[] serialisedNodeHash, byte[] serialisedNode) {
     byte[] newData = this.pmtStorage.read(serialisedNodeHash);
-    if (newData != null) {
-      newData[newData.length - 1]++;
-    } else {
-      newData = new byte[serialisedNode.length + 1];
+    byte[] intBytesArray;
+    if (newData != null) { // If already exits, increment the counter.
+      var counter = Ints.fromByteArray(newData, serialisedNode.length, COUNTER_BYTE_LEN);
+      counter++;
+      intBytesArray = Ints.toByteArray(counter);
+    } else { // Otherwise, extend the array to be persisted to be big enough to contain the counter.
+      //  Initialize the counter with 1.
+      newData = new byte[serialisedNode.length + COUNTER_BYTE_LEN];
       System.arraycopy(serialisedNode, 0, newData, 0, serialisedNode.length);
-      newData[newData.length - 1] = 1;
+      intBytesArray = Ints.toByteArray(1);
     }
+    // Copy the counter bytes to the array to be persisted.
+    System.arraycopy(intBytesArray, 0, newData, serialisedNode.length, COUNTER_BYTE_LEN);
     this.pmtStorage.save(serialisedNodeHash, newData);
   }
 
   @Override
   public byte[] read(byte[] serialisedNodeHash) {
     byte[] bytes = this.pmtStorage.read(serialisedNodeHash);
-    return Arrays.copyOfRange(bytes, 0, bytes.length - 1);
+    // Return the content without the bytes used for the counter.
+    return Arrays.copyOfRange(bytes, 0, bytes.length - COUNTER_BYTE_LEN);
   }
 
   @Override
   public void delete(byte[] serialisedNodeHash) {
     byte[] existingData = this.pmtStorage.read(serialisedNodeHash);
-
-    if (existingData[existingData.length - 1] == 1) {
+    var counter =
+        Ints.fromByteArray(existingData, existingData.length - COUNTER_BYTE_LEN, COUNTER_BYTE_LEN);
+    if (counter == 1) { // If counter is 1, delete the entry.
       this.pmtStorage.delete(serialisedNodeHash);
-    } else {
-      existingData[existingData.length - 1]--;
+    } else { // Otherwise, decrement the counter and persist the new entry.
+      counter--;
+      var intBytesArray = Ints.toByteArray(counter);
+      System.arraycopy(
+          intBytesArray, 0, existingData, existingData.length - COUNTER_BYTE_LEN, COUNTER_BYTE_LEN);
       this.pmtStorage.save(serialisedNodeHash, existingData);
     }
   }
