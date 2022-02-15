@@ -156,11 +156,16 @@ public final class PMTBranch extends PMTNode {
       PMTKey key, PMTAcc acc, Function<PMTNode, byte[]> represent, Function<byte[], PMTNode> read) {
     final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
     if (commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NONE) {
-      acc.remove(this);
-      var newBranch = new PMTBranch(this);
-      newBranch.setValue(null);
-      acc.add(newBranch);
-      acc.setTip(newBranch);
+      if (branchDoesNotHaveValue()) {
+        acc.setNotFound();
+        return;
+      } else {
+        acc.remove(this);
+        var newBranch = new PMTBranch(this);
+        newBranch.setValue(null);
+        acc.add(newBranch);
+        acc.setTip(newBranch);
+      }
     } else if (commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NEW) {
       var nextHash = this.getNextHash(key);
       if (nextHash == null) {
