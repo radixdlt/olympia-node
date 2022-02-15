@@ -74,7 +74,6 @@ import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.PostProcessorException;
 import com.radixdlt.store.EngineStore;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class EpochProofVerifierV2 implements PostProcessor<LedgerAndBFTProof> {
   @Override
@@ -90,7 +89,7 @@ public class EpochProofVerifierV2 implements PostProcessor<LedgerAndBFTProof> {
           processed.getEvents().stream()
               .filter(NextValidatorSetEvent.class::isInstance)
               .map(NextValidatorSetEvent.class::cast)
-              .collect(Collectors.toList());
+              .toList();
 
       if (!nextEpochEvents.isEmpty()) {
         // TODO: Move this check into Meter

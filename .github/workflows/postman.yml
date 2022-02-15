@@ -3,7 +3,7 @@ name: sync-postman-collections
 on:
   push:
     branches:
-      - develop
+      - main
 
 jobs:
   cancel_running_workflows:
@@ -15,7 +15,7 @@ jobs:
         with:
           access_token: ${{ github.token }}
   sync_core_collection:
-    name: Sync Postman Core collection w/ latest develop
+    name: Sync Postman Core collection w/ latest main
     environment: Postman
     runs-on: ubuntu-20.04
     steps:
@@ -53,7 +53,7 @@ jobs:
           curl -X GET -H "X-API-KEY:${{secrets.POSTMAN_API_TOKEN}}" https://api.getpostman.com/collections/14449947-f288f14a-5deb-4427-bde5-52c2f4c696de > tmp.core.collection.json
       - name: Add a timestamp to the name
         run: |
-          sed -i 's/"name":".*","description":"This API/"name":"Core API (develop) ${{steps.date.outputs.date}} UTC","description":"This API/' tmp.core.collection.json
+          sed -i 's/"name":".*","description":"This API/"name":"Core API (main) ${{steps.date.outputs.date}} UTC","description":"This API/' tmp.core.collection.json
       - name: Change the baseUrl variable name
         run: |
           sed -i 's/{{baseUrl}}/{{coreBaseUrl}}/g' tmp.core.collection.json
@@ -70,7 +70,7 @@ jobs:
           curl -X GET -H "X-API-KEY:${{secrets.POSTMAN_API_TOKEN}}" https://api.getpostman.com/collections/14449947-573cde3b-1504-4ba0-a865-ada778e08c74 > tmp.system.collection.json
       - name: Add a timestamp to the name
         run: |
-          sed -i 's/"name":".*","schema"/"name":"System API (develop) ${{steps.date.outputs.date}} UTC","schema"/' tmp.system.collection.json
+          sed -i 's/"name":".*","schema"/"name":"System API (main) ${{steps.date.outputs.date}} UTC","schema"/' tmp.system.collection.json
       - name: Change the baseUrl variable name
         run: |
           sed -i 's/{{baseUrl}}/{{systemBaseUrl}}/g' tmp.system.collection.json

@@ -77,6 +77,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -149,69 +150,106 @@ public final class EventLoggerModule extends AbstractModule {
 
   @ProvidesIntoSet
   @Singleton
+  @SuppressWarnings("UnstableApiUsage")
   EventProcessorOnDispatch<?> ledgerUpdate(
       @Self BFTNode self, Function<ECPublicKey, String> nodeString) {
     final RateLimiter logLimiter = RateLimiter.create(1.0);
     return new EventProcessorOnDispatch<>(
-        LedgerUpdate.class,
-        u -> {
-          var output = u.getStateComputerOutput().getInstance(REOutput.class);
-          var epochChange = u.getStateComputerOutput().getInstance(EpochChange.class);
-          long userTxns =
-              output != null
-                  ? output.getProcessedTxns().stream().filter(t -> !t.isSystemOnly()).count()
-                  : 0;
-          var logLevel =
-              (epochChange != null || logLimiter.tryAcquire()) ? Level.INFO : Level.TRACE;
-          logger.log(
-              logLevel,
-              "lgr_commit{epoch={} round={} version={} hash={} user_txns={}}",
-              u.getTail().getEpoch(),
-              u.getTail().getView().number(),
-              u.getTail().getStateVersion(),
-              Bytes.toHexString(u.getTail().getAccumulatorState().getAccumulatorHash().asBytes())
-                  .substring(0, 16),
-              userTxns);
+        LedgerUpdate.class, u -> processLedgerUpdate(self, nodeString, logLimiter, u));
+  }
 
-          if (epochChange != null) {
-            var validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
-            logger.info(
-                "lgr_nepoch{epoch={} included={} num_validators={} total_stake={}}",
-                epochChange.getEpoch(),
-                validatorSet.containsNode(self),
-                validatorSet.getValidators().size(),
-                Amount.ofSubunits(validatorSet.getTotalPower()));
-          }
+  @SuppressWarnings("UnstableApiUsage")
+  private void processLedgerUpdate(
+      BFTNode self,
+      Function<ECPublicKey, String> nodeString,
+      RateLimiter logLimiter,
+      LedgerUpdate ledgerUpdate) {
+    var output = ledgerUpdate.getStateComputerOutput().getInstance(REOutput.class);
+    var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
 
-          if (output == null) {
-            return;
-          }
+    logLedgerUpdate(
+        ledgerUpdate, countUserTxns(output), calculateLoggingLevel(logLimiter, epochChange));
 
-          output.getProcessedTxns().stream()
-              .flatMap(t -> t.getEvents().stream())
-              .forEach(
-                  e -> {
-                    if (e instanceof ValidatorBFTDataEvent) {
-                      var event = (ValidatorBFTDataEvent) e;
-                      Level level = event.getMissedProposals() > 0 ? Level.WARN : Level.INFO;
-                      logger.log(
-                          level,
-                          "vdr_epochr{validator={} completed_proposals={} missed_proposals={}}",
-                          nodeString.apply(event.getValidatorKey()),
-                          event.getCompletedProposals(),
-                          event.getMissedProposals());
-                    } else if (e instanceof ValidatorMissedProposalsEvent) {
-                      var event = (ValidatorMissedProposalsEvent) e;
-                      var you = event.getValidatorKey().equals(self.getKey());
-                      Level level = you ? Level.ERROR : Level.WARN;
-                      logger.log(
-                          level,
-                          "{}_failed{validator={} missed_proposals={}}",
-                          you ? "you" : "vdr",
-                          nodeString.apply(event.getValidatorKey()),
-                          event.getMissedProposals());
-                    }
-                  });
-        });
+    if (epochChange != null) {
+      logEpochChange(self, epochChange);
+    }
+
+    if (output == null) {
+      return;
+    }
+
+    output.getProcessedTxns().stream()
+        .flatMap(t -> t.getEvents().stream())
+        .forEach(e -> logValidatorEvents(self, nodeString, e));
+  }
+
+  private void logEpochChange(BFTNode self, EpochChange epochChange) {
+    var validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
+    logger.info(
+        "lgr_nepoch{epoch={} included={} num_validators={} total_stake={}}",
+        epochChange.getEpoch(),
+        validatorSet.containsNode(self),
+        validatorSet.getValidators().size(),
+        Amount.ofSubunits(validatorSet.getTotalPower()));
+  }
+
+  private long countUserTxns(REOutput output) {
+    return output != null
+        ? output.getProcessedTxns().stream().filter(t -> !t.isSystemOnly()).count()
+        : 0;
+  }
+
+  private void logLedgerUpdate(LedgerUpdate ledgerUpdate, long userTxns, Level logLevel) {
+    if (!logger.isEnabled(logLevel)) {
+      return;
+    }
+
+    logger.log(
+        logLevel,
+        "lgr_commit{epoch={} round={} version={} hash={} user_txns={}}",
+        ledgerUpdate.getTail().getEpoch(),
+        ledgerUpdate.getTail().getView().number(),
+        ledgerUpdate.getTail().getStateVersion(),
+        Bytes.toHexString(
+                ledgerUpdate.getTail().getAccumulatorState().getAccumulatorHash().asBytes())
+            .substring(0, 16),
+        userTxns);
+  }
+
+  @SuppressWarnings("UnstableApiUsage")
+  private Level calculateLoggingLevel(RateLimiter logLimiter, EpochChange epochChange) {
+    return (epochChange != null || logLimiter.tryAcquire()) ? Level.INFO : Level.TRACE;
+  }
+
+  private void logValidatorEvents(
+      BFTNode self, Function<ECPublicKey, String> nodeString, REEvent e) {
+    if (e instanceof ValidatorBFTDataEvent event) {
+      var level = event.getMissedProposals() > 0 ? Level.WARN : Level.INFO;
+
+      if (!logger.isEnabled(level)) {
+        return;
+      }
+
+      logger.log(
+          level,
+          "vdr_epochr{validator={} completed_proposals={} missed_proposals={}}",
+          nodeString.apply(event.getValidatorKey()),
+          event.getCompletedProposals(),
+          event.getMissedProposals());
+    } else if (e instanceof ValidatorMissedProposalsEvent event) {
+      var you = event.getValidatorKey().equals(self.getKey());
+      var level = you ? Level.ERROR : Level.WARN;
+
+      if (!logger.isEnabled(level)) {
+        return;
+      }
+
+      logger.log(
+          level,
+          "{}_failed{validator={} missed_proposals={}}",
+          you ? "you" : "vdr",
+          nodeString.apply(event.getValidatorKey()),
+          event.getMissedProposals());
+    }
   }
 }

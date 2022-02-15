@@ -120,14 +120,14 @@ public final class PeersForksInfoServiceTest {
     final var peer1 = mock(PeerChannel.class);
     when(peer1.getRemoteNodeId()).thenReturn(NodeId.fromPublicKey(initialValidator.getKey()));
     when(peer1.getRemoteLatestForkName()).thenReturn(Optional.of("fork1")); // this fork is known
-    peersForksInfoService.peerEventProcessor().process(PeerEvent.PeerConnected.create(peer1));
+    peersForksInfoService.peerEventProcessor().process(new PeerEvent.PeerConnected(peer1));
 
     // hash was known, so still empty
     assertTrue(peersForksInfoService.getUnknownReportedForks().isEmpty());
 
     final var fstReportedFork = "1st fork";
     when(peer1.getRemoteLatestForkName()).thenReturn(Optional.of(fstReportedFork));
-    peersForksInfoService.peerEventProcessor().process(PeerEvent.PeerConnected.create(peer1));
+    peersForksInfoService.peerEventProcessor().process(new PeerEvent.PeerConnected(peer1));
 
     // got an unknown hash from a validator
     assertTrue(peersForksInfoService.getUnknownReportedForks().containsKey(fstReportedFork));
@@ -139,7 +139,7 @@ public final class PeersForksInfoServiceTest {
     final var peer2 = mock(PeerChannel.class);
     when(peer2.getRemoteNodeId()).thenReturn(NodeId.fromPublicKey(nextValidator.getKey()));
     when(peer2.getRemoteLatestForkName()).thenReturn(Optional.of(sndReportedFork));
-    peersForksInfoService.peerEventProcessor().process(PeerEvent.PeerConnected.create(peer2));
+    peersForksInfoService.peerEventProcessor().process(new PeerEvent.PeerConnected(peer2));
 
     // got unknown hash from non-validator, so no change
     assertFalse(peersForksInfoService.getUnknownReportedForks().containsKey(sndReportedFork));
@@ -155,7 +155,7 @@ public final class PeersForksInfoServiceTest {
     peersForksInfoService.ledgerUpdateEventProcessor().process(ledgerUpdate);
 
     // process unknown hash from the same peer (this time a validator)
-    peersForksInfoService.peerEventProcessor().process(PeerEvent.PeerConnected.create(peer2));
+    peersForksInfoService.peerEventProcessor().process(new PeerEvent.PeerConnected(peer2));
 
     assertTrue(peersForksInfoService.getUnknownReportedForks().containsKey(sndReportedFork));
     assertEquals(

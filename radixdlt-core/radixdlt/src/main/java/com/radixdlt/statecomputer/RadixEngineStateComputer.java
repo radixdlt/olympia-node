@@ -118,7 +118,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.LongFunction;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -257,9 +256,9 @@ public final class RadixEngineStateComputer implements StateComputer {
     synchronized (lock) {
       var cmds =
           prepared.stream()
-              .map(p -> (RadixEngineTxn) p)
+              .map(RadixEngineTxn.class::cast)
               .map(RadixEngineTxn::processedTxn)
-              .collect(Collectors.toList());
+              .toList();
 
       // TODO: only return commands which will not cause a missing dependency error
       return mempool.getTxns(maxSigsPerRound.orElse(50), cmds);

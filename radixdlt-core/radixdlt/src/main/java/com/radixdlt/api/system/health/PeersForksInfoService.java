@@ -115,7 +115,7 @@ public final class PeersForksInfoService {
   public EventProcessor<PeerEvent> peerEventProcessor() {
     return peerEvent -> {
       if (peerEvent instanceof PeerEvent.PeerConnected peerConnected) {
-        final var peerChannel = peerConnected.getChannel();
+        final var peerChannel = peerConnected.channel();
         peerChannel
             .getRemoteLatestForkName()
             .ifPresent(

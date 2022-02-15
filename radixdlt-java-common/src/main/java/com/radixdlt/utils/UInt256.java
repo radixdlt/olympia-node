@@ -72,13 +72,14 @@ import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.utils.functional.Result;
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Objects;
 
 /** A 256-bit unsigned integer, with comparison and some basic arithmetic operations. */
 @SecurityCritical(SecurityKind.NUMERIC)
-public final class UInt256 implements Comparable<UInt256> {
+public final class UInt256 implements Comparable<UInt256>, Serializable {
   // Some sizing constants in line with Integer, Long etc
   /** Size of this numeric type in bits. */
   public static final int SIZE = UInt128.SIZE * 2;

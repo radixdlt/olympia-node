@@ -157,7 +157,7 @@ public class AWSSecrets {
                   value ->
                       Stream.of(value.split(","))
                           .map(entry -> entry.replaceAll("[^\\w-]", ""))
-                          .collect(Collectors.toList()))
+                          .toList())
               .orElse(List.of());
 
       if (nodeCount <= 0 && listOfNodes.size() <= 0) {
@@ -177,7 +177,7 @@ public class AWSSecrets {
           nodeCount > 0
               ? IntStream.range(0, nodeCount)
                   .mapToObj(counter -> String.format("%s%s", namePrefix, counter))
-                  .collect(Collectors.toList())
+                  .toList()
               : listOfNodes;
 
       System.out.println("name prefix " + namePrefix);

@@ -8,12 +8,12 @@ all:
 
 .PHONY: build
 build-core:
-	cd radixdlt && ../../gradlew deb4docker
+	cd .. && ./gradlew deb4docker
 
 .PHONY: package
 package: build-core
 	docker-compose -f docker/node-1.yml build
-	docker tag radixdlt/radixdlt-core:develop $(CORE_REPO):$(TAG)
+	docker tag radixdlt/radixdlt-core:main $(CORE_REPO):$(TAG)
 
 .PHONY: publish
 publish: package
