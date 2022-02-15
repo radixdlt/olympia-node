@@ -84,7 +84,11 @@ public class BerkeleySubStateStoreSpy extends BerkeleySubStateStore {
       Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
     super.process(dbTxn, txn, stateVersion, mapper);
     for (REStateUpdate su : txn.stateUpdates().toList()) {
-      this.reStateUpdateList.put(su.getId(), su);
+      if (su.isBootUp()) {
+        this.reStateUpdateList.put(su.getId(), su);
+      } else {
+        this.reStateUpdateList.remove(su.getId());
+      }
     }
   }
 

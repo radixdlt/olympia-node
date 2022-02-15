@@ -64,6 +64,8 @@
 
 package com.radixdlt.tree.substate;
 
+import static org.junit.Assert.assertNotNull;
+
 import com.google.common.primitives.Longs;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -162,8 +164,7 @@ public class BerkeleySubStateStoreTest {
     var pmt = new PMT(cachedStorage, this.berkeleySubStateStore.getRootHash());
     SubStateTree subStateTree = new SubStateTree(pmt);
     for (REStateUpdate rEStateUpdate : this.berkeleySubStateStore.getREStateUpdateList()) {
-      byte[] value = subStateTree.get(rEStateUpdate.getId());
-      Assert.assertArrayEquals(SubStateTree.getValue(rEStateUpdate.isBootUp()), value);
+      assertNotNull(subStateTree.get(rEStateUpdate.getId()));
     }
 
     Database epochRootHashDatabase = this.berkeleySubStateStore.getEpochRootHashDatabase();
