@@ -96,7 +96,7 @@ import java.util.Set;
 public final class TxLowLevelBuilder {
   private final ByteArrayOutputStream blobStream;
   private final Map<SystemMapKey, LocalSubstate> localMapValues = new HashMap<>();
-  private final Map<Integer, LocalSubstate> localUpParticles = new HashMap<>();
+  private final Map<Integer, LocalSubstate> localUpSubstates = new HashMap<>();
   private final Set<SubstateId> remoteDownSubstate = new HashSet<>();
   private final SubstateSerialization serialization;
   private int upParticleCount = 0;
@@ -130,7 +130,7 @@ public final class TxLowLevelBuilder {
   }
 
   public List<LocalSubstate> localUpSubstate() {
-    return new ArrayList<>(localUpParticles.values());
+    return new ArrayList<>(localUpSubstates.values());
   }
 
   private void instruction(REInstruction.REMicroOp op, ByteBuffer buffer) {
@@ -183,7 +183,7 @@ public final class TxLowLevelBuilder {
       this.localMapValues.put(k, localSubstate);
     }
 
-    this.localUpParticles.put(upParticleCount, localSubstate);
+    this.localUpSubstates.put(upParticleCount, localSubstate);
 
     var buf = ByteBuffer.allocate(1024);
     buf.putShort((short) 0);
@@ -248,7 +248,7 @@ public final class TxLowLevelBuilder {
   }
 
   public TxLowLevelBuilder localRead(int index) {
-    validateSubstate(localUpParticles.get(index), index);
+    validateSubstate(localUpSubstates.get(index), index);
     instruction(REInstruction.REMicroOp.LREAD, Shorts.toByteArray((short) index));
     return this;
   }
@@ -259,7 +259,7 @@ public final class TxLowLevelBuilder {
   }
 
   public TxLowLevelBuilder localDown(int index) {
-    validateSubstate(localUpParticles.remove(index), index);
+    validateSubstate(localUpSubstates.remove(index), index);
     instruction(REInstruction.REMicroOp.LDOWN, Shorts.toByteArray((short) index));
     return this;
   }
