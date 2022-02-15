@@ -97,7 +97,11 @@ public class CachedPMTStorage implements PMTStorage {
 
   @Override
   public void delete(byte[] serialisedNodeHash) {
-    this.pmtCache.invalidate(serialisedNodeHash);
+    this.invalidate(serialisedNodeHash);
     this.pmtStorage.delete(serialisedNodeHash);
+  }
+
+  public void invalidate(byte[] serialisedNodeHash) {
+    this.pmtCache.invalidate(serialisedNodeHash);
   }
 }

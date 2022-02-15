@@ -159,18 +159,20 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
     PMTStorage refCounterPMTStorage = new RefCounterPMTStorage(cachedPMTStorage);
     var subStateTree = new SubStateTree(new PMT(refCounterPMTStorage, this.rootHash));
     List<Pair<SubstateId, byte[]>> values = new ArrayList<>();
-    for (REStateUpdate stateUpdate : txn.stateUpdates().toList()) {
-      values.add(Pair.of(stateUpdate.getId(), SubStateTree.getValue(stateUpdate.isBootUp())));
+    for (REStateUpdate stateUpdate : txn.stateUpdates().filter(REStateUpdate::isBootUp).toList()) {
+      values.add(Pair.of(stateUpdate.getId(), new byte[0]));
       if (stateUpdate.getParsed() instanceof EpochData epochData) {
-        if (stateUpdate.isBootUp()) {
-          epoch = epochData.getEpoch();
-        }
+        epoch = epochData.getEpoch();
         isEpochChange = true;
       }
     }
     subStateTree = subStateTree.putAll(values);
+    for (REStateUpdate stateUpdate :
+        txn.stateUpdates().filter(REStateUpdate::isShutDown).toList()) {
+      subStateTree = subStateTree.remove(stateUpdate.getId());
+    }
     this.rootHash = subStateTree.getRootHash();
-    // This shouldn't be cached as it will get be stale eventually. We also can't use ref counting.
+    // This shouldn't be cached as it will get stale eventually. We can't use ref counting either.
     berkeleyStorage.save(CURRENT_ROOT_KEY, this.rootHash);
 
     if (isEpochChange) {

@@ -65,9 +65,8 @@
 package com.radixdlt.tree.storage;
 
 import com.radixdlt.utils.Ints;
-
-import javax.annotation.concurrent.NotThreadSafe;
 import java.util.Arrays;
+import javax.annotation.concurrent.NotThreadSafe;
 
 @NotThreadSafe
 public class RefCounterPMTStorage implements PMTStorage {

@@ -87,6 +87,10 @@ public class SubStateTree {
     return new SubStateTree(this.pmt.add(key.asBytes(), val));
   }
 
+  public SubStateTree remove(SubstateId key) {
+    return new SubStateTree(this.pmt.remove(key.asBytes()));
+  }
+
   public byte[] get(SubstateId key) {
     return this.pmt.get(key.asBytes());
   }
