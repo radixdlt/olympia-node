@@ -158,7 +158,6 @@ public final class PMTBranch extends PMTNode {
     if (commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NONE) {
       if (branchDoesNotHaveValue()) {
         acc.setNotFound();
-        return;
       } else {
         acc.remove(this);
         var newBranch = new PMTBranch(this);
