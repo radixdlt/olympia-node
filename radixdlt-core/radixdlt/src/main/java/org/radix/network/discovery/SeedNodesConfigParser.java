@@ -79,7 +79,6 @@ import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 // TODO: move to PeerDiscovery
 public final class SeedNodesConfigParser {
@@ -120,7 +119,7 @@ public final class SeedNodesConfigParser {
     this.unresolvedUris.removeAll(newlyResolvedHostsNames);
 
     this.resolvedSeedNodes.addAll(
-        newlyResolvedHosts.stream().map(p -> p.getSecond().get()).collect(Collectors.toList()));
+        newlyResolvedHosts.stream().map(p -> p.getSecond().get()).toList());
   }
 
   private Optional<RadixNodeUri> resolveRadixNodeUri(String rawUri) {

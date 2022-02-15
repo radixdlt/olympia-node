@@ -85,6 +85,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /** Represents a vote on a vertex */
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 @Immutable
 @SerializerId2("consensus.vote")
 public final class Vote implements ConsensusEvent {

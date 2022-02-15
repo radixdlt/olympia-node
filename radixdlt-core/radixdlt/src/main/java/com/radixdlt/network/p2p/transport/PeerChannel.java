@@ -112,6 +112,7 @@ import org.radix.time.Time;
  * Class that manages TCP connection channel. It takes care of the initial handshake, creating the
  * frame and message codec and forwarding the messages to MessageCentral.
  */
+@SuppressWarnings({"UnstableApiUsage", "OptionalUsedAsFieldOrParameterType"})
 public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   private static final Logger log = LogManager.getLogger();
 
@@ -125,7 +126,6 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   private final RateLimiter droppedMessagesRateLimiter = RateLimiter.create(1.0);
   private final PublishProcessor<InboundMessage> inboundMessageSink = PublishProcessor.create();
   private final Flowable<InboundMessage> inboundMessages;
-
   private final SystemCounters counters;
   private final Addressing addressing;
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
@@ -174,7 +174,9 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
               this.counters.increment(SystemCounters.CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
               final var logLevel =
                   droppedMessagesRateLimiter.tryAcquire() ? Level.WARN : Level.TRACE;
-              log.log(logLevel, "TCP msg buffer overflow, dropping msg on {}", this.toString());
+              if (log.isEnabled(logLevel)) {
+                log.log(logLevel, "TCP msg buffer overflow, dropping msg on {}", this);
+              }
             },
             BackpressureOverflowStrategy.DROP_LATEST);
 
@@ -185,7 +187,11 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 
   private void initHandshake(NodeId remoteNodeId) {
     final var initiatePacket = authHandshaker.initiate(remoteNodeId.getPublicKey());
-    log.trace("Sending auth initiate to {}", this.toString());
+
+    if (log.isTraceEnabled()) {
+      log.trace("Sending auth initiate to {}", this);
+    }
+
     this.write(Unpooled.wrappedBuffer(initiatePacket));
   }
 
@@ -195,11 +201,15 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 
   private void handleHandshakeData(ByteBuf data) throws IOException {
     if (this.isInitiator) {
-      log.trace("Auth response from {}", this.toString());
+      if (log.isTraceEnabled()) {
+        log.trace("Auth response from {}", this);
+      }
       final var handshakeResult = this.authHandshaker.handleResponseMessage(data);
       this.finalizeHandshake(handshakeResult);
     } else {
-      log.trace("Auth initiate from {}", this.toString());
+      if (log.isTraceEnabled()) {
+        log.trace("Auth initiate from {}", this);
+      }
       final var result = this.authHandshaker.handleInitialMessage(data);
       this.write(Unpooled.wrappedBuffer(result.getFirst()));
       this.finalizeHandshake(result.getSecond());
@@ -207,18 +217,21 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   }
 
   private void finalizeHandshake(AuthHandshakeResult handshakeResult) {
-    if (handshakeResult instanceof AuthHandshakeSuccess) {
-      final var successResult = (AuthHandshakeSuccess) handshakeResult;
-      this.remoteNodeId = successResult.getRemoteNodeId();
-      this.frameCodec = new FrameCodec(successResult.getSecrets());
-      this.remoteLatestForkHash = successResult.getLatestForkHash();
+    if (handshakeResult instanceof final AuthHandshakeSuccess successResult) {
+      this.remoteNodeId = successResult.remoteNodeId();
+      this.frameCodec = new FrameCodec(successResult.secrets());
+      this.remoteLatestForkHash = successResult.latestForkHash();
       this.state = ChannelState.ACTIVE;
-      log.trace("Successful auth handshake: {}", this.toString());
-      peerEventDispatcher.dispatch(PeerConnected.create(this));
+
+      if (log.isTraceEnabled()) {
+        log.trace("Successful auth handshake: {}", this);
+      }
+      peerEventDispatcher.dispatch(new PeerConnected(this));
     } else {
       final var errorResult = (AuthHandshakeError) handshakeResult;
-      log.warn("Auth handshake failed on {}: {}", this.toString(), errorResult.getMsg());
-      peerEventDispatcher.dispatch(PeerHandshakeFailed.create(this));
+
+      log.warn("Auth handshake failed on {}: {}", this, errorResult.msg());
+      peerEventDispatcher.dispatch(new PeerHandshakeFailed(this));
       this.disconnect();
     }
   }
@@ -230,7 +243,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
       final var maybeFrame = this.frameCodec.tryReadSingleFrame(buf);
       maybeFrame.ifPresentOrElse(
           frame -> inboundMessageSink.onNext(new InboundMessage(receiveTime, remoteNodeId, frame)),
-          () -> log.error("Failed to read a complete frame: {}", this.toString()));
+          () -> log.error("Failed to read a complete frame: {}", this));
     }
   }
 
@@ -247,7 +260,9 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   }
 
   private void init() {
-    log.trace("Init: {}", this.toString());
+    if (log.isTraceEnabled()) {
+      log.trace("Init: {}", this);
+    }
     this.state = ChannelState.AUTH_HANDSHAKE;
     if (this.isInitiator) {
       this.initHandshake(this.remoteNodeId);
@@ -257,20 +272,15 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   @Override
   public void channelRead0(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
     switch (this.state) {
-      case INACTIVE:
-        throw new RuntimeException("Unexpected read on inactive channel");
-      case AUTH_HANDSHAKE:
-        this.handleHandshakeData(buf);
-        break;
-      case ACTIVE:
-        this.handleMessage(buf);
-        break;
+      case ACTIVE -> this.handleMessage(buf);
+      case AUTH_HANDSHAKE -> this.handleHandshakeData(buf);
+      case INACTIVE -> throw new IllegalStateException("Unexpected read on inactive channel");
     }
   }
 
   @Override
   public void channelInactive(ChannelHandlerContext ctx) {
-    log.info("Closed: {}", this.toString());
+    log.info("Closed: {}", this);
 
     final var prevState = this.state;
     this.state = ChannelState.INACTIVE;
@@ -278,13 +288,13 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 
     if (prevState == ChannelState.ACTIVE) {
       // only send out event if peer was previously active
-      this.peerEventDispatcher.dispatch(PeerDisconnected.create(this));
+      this.peerEventDispatcher.dispatch(new PeerDisconnected(this));
     }
   }
 
   @Override
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-    log.warn("Exception on {}: {}", this.toString(), cause.getMessage());
+    log.warn("Exception on {}: {}", this, cause.getMessage());
     ctx.close();
   }
 

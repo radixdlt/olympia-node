@@ -140,10 +140,9 @@ public class KeyGenerator {
   }
 
   private Result<Void> generateKeypair(
-      String keystore, String password, String keypairName, Boolean shouldShowPk) {
+      String keystore, String password, String keypairName, boolean shouldShowPk) {
     var keystoreFile = new File(keystore);
     var newFile = !keystoreFile.canWrite();
-    var isNew = newFile ? "new" : "existing";
 
     if (shouldShowPk) {
       return printPublicKey(keystoreFile, password, keypairName, newFile);
@@ -154,7 +153,7 @@ public class KeyGenerator {
 
     System.out.printf(
         "Writing keypair '%s' [public key: %s]%ninto %s keystore %s%n",
-        keypairName, publicKey, isNew, keystore);
+        keypairName, publicKey, newFile ? "new" : "existing", keystore);
 
     return Result.wrap(
         UNABLE_TO_LOAD_KEYSTORE,

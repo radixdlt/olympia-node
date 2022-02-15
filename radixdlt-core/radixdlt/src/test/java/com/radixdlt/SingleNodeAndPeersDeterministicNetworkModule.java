@@ -77,7 +77,6 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.network.p2p.PeersView;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** Module which injects a full one node network */
@@ -116,8 +115,7 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
   @Singleton
   public DeterministicNetwork network(@Self BFTNode self, PeersView peersView) {
     return new DeterministicNetwork(
-        Stream.concat(Stream.of(self), peersView.peers().map(PeersView.PeerInfo::bftNode))
-            .collect(Collectors.toList()),
+        Stream.concat(Stream.of(self), peersView.peers().map(PeersView.PeerInfo::bftNode)).toList(),
         MessageSelector.firstSelector(),
         MessageMutator.nothing());
   }

@@ -4,7 +4,7 @@ on:
     types: [ published ]
   push:
     branches:
-      - develop
+      - main
       - release\/*
 jobs:
   cancel_running_workflows:

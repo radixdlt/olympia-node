@@ -123,14 +123,14 @@ public final class PeersForksHashesInfoServiceTest {
     when(peer1.getRemoteNodeId()).thenReturn(NodeId.fromPublicKey(initialValidator.getKey()));
     when(peer1.getRemoteLatestForkHash())
         .thenReturn(Optional.of(HashCode.fromInt(2))); // this hash is known
-    peersForksHashesInfoService.peerEventProcessor().process(PeerEvent.PeerConnected.create(peer1));
+    peersForksHashesInfoService.peerEventProcessor().process(new PeerEvent.PeerConnected(peer1));
 
     // hash was known, so still empty
     assertTrue(peersForksHashesInfoService.getUnknownReportedForksHashes().isEmpty());
 
     final var fstReportedForkHash = HashCode.fromBytes(new byte[] {0x5});
     when(peer1.getRemoteLatestForkHash()).thenReturn(Optional.of(fstReportedForkHash));
-    peersForksHashesInfoService.peerEventProcessor().process(PeerEvent.PeerConnected.create(peer1));
+    peersForksHashesInfoService.peerEventProcessor().process(new PeerEvent.PeerConnected(peer1));
 
     // got an unknown hash from a validator
     assertTrue(
@@ -149,7 +149,7 @@ public final class PeersForksHashesInfoServiceTest {
     final var peer2 = mock(PeerChannel.class);
     when(peer2.getRemoteNodeId()).thenReturn(NodeId.fromPublicKey(nextValidator.getKey()));
     when(peer2.getRemoteLatestForkHash()).thenReturn(Optional.of(sndReportedForkHash));
-    peersForksHashesInfoService.peerEventProcessor().process(PeerEvent.PeerConnected.create(peer2));
+    peersForksHashesInfoService.peerEventProcessor().process(new PeerEvent.PeerConnected(peer2));
 
     // got unknown hash from non-validator, so no change
     assertFalse(
@@ -168,7 +168,7 @@ public final class PeersForksHashesInfoServiceTest {
     peersForksHashesInfoService.ledgerUpdateEventProcessor().process(ledgerUpdate);
 
     // process unknown hash from the same peer (this time a validator)
-    peersForksHashesInfoService.peerEventProcessor().process(PeerEvent.PeerConnected.create(peer2));
+    peersForksHashesInfoService.peerEventProcessor().process(new PeerEvent.PeerConnected(peer2));
 
     assertTrue(
         peersForksHashesInfoService

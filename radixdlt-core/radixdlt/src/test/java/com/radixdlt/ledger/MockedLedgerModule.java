@@ -78,7 +78,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class MockedLedgerModule extends AbstractModule {
   @Override
@@ -104,9 +103,7 @@ public class MockedLedgerModule extends AbstractModule {
             vertex
                 .withHeader(ledgerHeader, timeSupplier.currentTime())
                 .andTxns(
-                    vertex.getTxns().stream()
-                        .<PreparedTxn>map(MockPrepared::new)
-                        .collect(Collectors.toList()),
+                    vertex.getTxns().stream().<PreparedTxn>map(MockPrepared::new).toList(),
                     Map.of()));
       }
     };

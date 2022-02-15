@@ -68,6 +68,7 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.VoteProcessingResult.*;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -230,23 +231,15 @@ public final class BFTEventReducer implements BFTEventProcessor {
       return;
     }
 
-    // TODO: rework to eliminate uncovered cases and use pattern matching switch
-    final VoteProcessingResult result = this.pendingVotes.insertVote(vote, this.validatorSet);
-
-    if (result instanceof VoteProcessingResult.VoteAccepted) {
-      log.trace("Vote has been processed but didn't form a quorum");
-    } else if (result instanceof VoteProcessingResult.VoteRejected) {
-      log.trace(
-          "Vote has been rejected because of: {}",
-          ((VoteProcessingResult.VoteRejected) result).getReason());
-    } else if (result instanceof VoteProcessingResult.QuorumReached) {
-      this.hasReachedQuorum = true;
-      final ViewVotingResult viewResult =
-          ((VoteProcessingResult.QuorumReached) result).getViewVotingResult();
-      viewQuorumReachedEventDispatcher.dispatch(
-          new ViewQuorumReached(viewResult, vote.getAuthor()));
-    } else {
-      throw new IllegalStateException("Unknown vote processing result type: " + result);
+    switch (this.pendingVotes.insertVote(vote, this.validatorSet)) {
+      case VoteAccepted ignored -> log.trace("Vote has been processed but didn't form a quorum");
+      case VoteRejected voteRejected -> log.trace(
+          "Vote has been rejected because of: {}", voteRejected.getReason());
+      case QuorumReached quorumReached -> {
+        this.hasReachedQuorum = true;
+        viewQuorumReachedEventDispatcher.dispatch(
+            new ViewQuorumReached(quorumReached.getViewVotingResult(), vote.getAuthor()));
+      }
     }
   }
 

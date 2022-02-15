@@ -67,19 +67,18 @@ package com.radixdlt.consensus.bft;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.store.berkeley.SerializedVertexStoreState;
-import com.radixdlt.utils.Pair;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.concurrent.Immutable;
 
 /** State of the vertex store which can be serialized. */
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 @Immutable
 public final class VerifiedVertexStoreState {
   private final VerifiedVertex root;
@@ -116,7 +115,7 @@ public final class VerifiedVertexStoreState {
       ImmutableList<VerifiedVertex> vertices,
       Optional<TimeoutCertificate> highestTC,
       Hasher hasher) {
-    final Pair<BFTHeader, LedgerProof> headers =
+    final var headers =
         highQC
             .highestCommittedQC()
             .getCommittedAndLedgerStateProof(hasher)
@@ -124,23 +123,23 @@ public final class VerifiedVertexStoreState {
                 () ->
                     new IllegalStateException(
                         String.format("highQC=%s does not have commit", highQC)));
-    LedgerProof rootHeader = headers.getSecond();
-    BFTHeader bftHeader = headers.getFirst();
+    var bftHeader = headers.getFirst();
+
     if (!bftHeader.getVertexId().equals(root.getId())) {
       throw new IllegalStateException(
           String.format("committedHeader=%s does not match rootVertex=%s", bftHeader, root));
     }
 
-    HashMap<HashCode, VerifiedVertex> seen = new HashMap<>();
+    var seen = new HashMap<HashCode, VerifiedVertex>();
     seen.put(root.getId(), root);
-    for (VerifiedVertex v : vertices) {
-      if (!seen.containsKey(v.getParentId())) {
+
+    for (var vertex : vertices) {
+      if (!seen.containsKey(vertex.getParentId())) {
         throw new IllegalStateException(
-            String.format("Missing qc=%s {root=%s vertices=%s}", v.getQC(), root, vertices));
+            String.format("Missing qc=%s {root=%s vertices=%s}", vertex.getQC(), root, vertices));
       }
-      seen.put(v.getId(), v);
+      seen.put(vertex.getId(), vertex);
     }
-    ImmutableMap<HashCode, VerifiedVertex> idToVertex = ImmutableMap.copyOf(seen);
 
     if (seen.keySet().stream()
         .noneMatch(highQC.highestCommittedQC().getProposed().getVertexId()::equals)) {
@@ -167,28 +166,30 @@ public final class VerifiedVertexStoreState {
           String.format("highQC=%s highQC proposed does not have a corresponding vertex", highQC));
     }
 
-    return new VerifiedVertexStoreState(highQC, rootHeader, root, idToVertex, vertices, highestTC);
+    return new VerifiedVertexStoreState(
+        highQC, headers.getSecond(), root, ImmutableMap.copyOf(seen), vertices, highestTC);
   }
 
   public VerifiedVertexStoreState prune(Hasher hasher) {
-    if (highQC.highestQC().getCommittedAndLedgerStateProof(hasher).isPresent()) {
-      Pair<BFTHeader, LedgerProof> newHeaders =
-          highQC.highestQC().getCommittedAndLedgerStateProof(hasher).get();
-      BFTHeader header = newHeaders.getFirst();
+    var stateProof = highQC.highestQC().getCommittedAndLedgerStateProof(hasher);
+    if (stateProof.isPresent()) {
+      var newHeaders = stateProof.get();
+      var header = newHeaders.getFirst();
+
       if (header.getView().gt(root.getView())) {
-        VerifiedVertex newRoot = idToVertex.get(header.getVertexId());
-        ImmutableList<VerifiedVertex> newVertices =
+        var newRoot = idToVertex.get(header.getVertexId());
+        var newVertices =
             ImmutableList.of(
                 idToVertex.get(highQC.highestQC().getParent().getVertexId()),
                 idToVertex.get(highQC.highestQC().getProposed().getVertexId()));
-        ImmutableMap<HashCode, VerifiedVertex> idToVertex =
+        var idToVertexMap =
             ImmutableMap.of(
                 highQC.highestQC().getParent().getVertexId(), newVertices.get(0),
                 highQC.highestQC().getProposed().getVertexId(), newVertices.get(1));
-        HighQC newHighQC = HighQC.from(highQC.highestQC());
-        LedgerProof proof = newHeaders.getSecond();
+        var newHighQC = HighQC.from(highQC.highestQC());
+        var proof = newHeaders.getSecond();
         return new VerifiedVertexStoreState(
-            newHighQC, proof, newRoot, idToVertex, newVertices, highestTC);
+            newHighQC, proof, newRoot, idToVertexMap, newVertices, highestTC);
       }
     }
 
@@ -232,12 +233,8 @@ public final class VerifiedVertexStoreState {
       return true;
     }
 
-    if (!(o instanceof VerifiedVertexStoreState)) {
-      return false;
-    }
-
-    VerifiedVertexStoreState other = (VerifiedVertexStoreState) o;
-    return Objects.equals(this.root, other.root)
+    return o instanceof VerifiedVertexStoreState other
+        && Objects.equals(this.root, other.root)
         && Objects.equals(this.rootHeader, other.rootHeader)
         && Objects.equals(this.highQC, other.highQC)
         && Objects.equals(this.vertices, other.vertices)

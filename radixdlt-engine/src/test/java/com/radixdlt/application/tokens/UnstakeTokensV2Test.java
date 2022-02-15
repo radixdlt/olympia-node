@@ -207,8 +207,7 @@ public class UnstakeTokensV2Test {
       List<ConstraintScrypt> scrypts,
       ActionConstructor<StakeTokens> stakeTokensConstructor,
       ActionConstructor<UnstakeOwnership> unstakeTokensConstructor) {
-    this.stakes =
-        stakes.stream().map(i -> Amount.ofTokens(i * 10).toSubunits()).collect(Collectors.toList());
+    this.stakes = stakes.stream().map(i -> Amount.ofTokens(i * 10).toSubunits()).toList();
     this.totalStakes = this.stakes.stream().reduce(UInt256::add).orElseThrow();
     this.unstakeAmt = Amount.ofTokens(unstakeAmt * 10L).toSubunits();
     this.scrypts = scrypts;

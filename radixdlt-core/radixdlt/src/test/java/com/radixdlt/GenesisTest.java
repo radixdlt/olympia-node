@@ -82,7 +82,6 @@ import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
@@ -98,7 +97,7 @@ public class GenesisTest {
         .map(Bytes::fromHexString)
         .map(Txn::create)
         .map(txn -> new Object[] {txn})
-        .collect(Collectors.toList());
+        .toList();
   }
 
   private static final Logger logger = LogManager.getLogger();

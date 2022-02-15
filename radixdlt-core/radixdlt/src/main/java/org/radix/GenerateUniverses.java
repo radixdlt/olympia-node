@@ -153,8 +153,7 @@ public final class GenerateUniverses {
     }
     final int validatorsCount =
         cmd.getOptionValue("v") != null ? Integer.parseInt(cmd.getOptionValue("v")) : 0;
-    var generatedValidatorKeys =
-        PrivateKeys.numeric(6).limit(validatorsCount).collect(Collectors.toList());
+    var generatedValidatorKeys = PrivateKeys.numeric(6).limit(validatorsCount).toList();
     generatedValidatorKeys.stream().map(ECKeyPair::getPublicKey).forEach(validatorKeys::add);
 
     // Issuances to mnemomic account, keys 1-5, and 1st validator
