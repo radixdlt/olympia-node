@@ -13,13 +13,9 @@
 
 package com.radixdlt.api.core.openapitools.model;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.radixdlt.api.core.openapitools.JSON;
-import io.swagger.annotations.ApiModelProperty;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,9 +24,6 @@ import java.util.Objects;
 /**
  * ValidatorSystemMetadata
  */
-@JsonPropertyOrder({
-  ValidatorSystemMetadata.JSON_PROPERTY_DATA
-})
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-24T23:25:44.231186-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
@@ -51,35 +44,6 @@ import java.util.Objects;
 })
 
 public class ValidatorSystemMetadata extends DataObject {
-  public static final String JSON_PROPERTY_DATA = "data";
-  private String data;
-
-
-  public ValidatorSystemMetadata data(String data) {
-    this.data = data;
-    return this;
-  }
-
-   /**
-   * A hex encoded byte array.
-   * @return data
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A hex encoded byte array.")
-  @JsonProperty(JSON_PROPERTY_DATA)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getData() {
-    return data;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_DATA)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setData(String data) {
-    this.data = data;
-  }
-
 
   /**
    * Return true if this ValidatorSystemMetadata object is equal to o.
@@ -93,13 +57,12 @@ public class ValidatorSystemMetadata extends DataObject {
       return false;
     }
     ValidatorSystemMetadata validatorSystemMetadata = (ValidatorSystemMetadata) o;
-    return Objects.equals(this.data, validatorSystemMetadata.data) &&
-        super.equals(o);
+    return super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(data, super.hashCode());
+    return Objects.hash(super.hashCode());
   }
 
   @Override
@@ -107,7 +70,6 @@ public class ValidatorSystemMetadata extends DataObject {
     StringBuilder sb = new StringBuilder();
     sb.append("class ValidatorSystemMetadata {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    data: ").append(toIndentedString(data)).append("\n");
     sb.append("}");
     return sb.toString();
   }

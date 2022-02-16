@@ -76,8 +76,7 @@ public final class TestingForksModule extends AbstractModule {
 
   @ProvidesIntoSet
   ForkBuilder fork2() {
-    return new ForkBuilder(
-        "fork-2", 2L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault());
+    return new ForkBuilder("fork-2", 2L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault());
   }
 
   @ProvidesIntoSet

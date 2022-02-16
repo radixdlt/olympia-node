@@ -88,14 +88,18 @@ import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.statecomputer.forks.CandidateForkConfig;
+import com.radixdlt.statecomputer.forks.CandidateForkVote;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.utils.Bytes;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Supplier;
 
-public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
+public record ValidatorEntity(
+    ECPublicKey validatorKey, Optional<CandidateForkConfig> maybeCandidateFork) implements Entity {
 
   @Override
   public void overwriteDataObject(
@@ -128,7 +132,13 @@ public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
         com.radixdlt.application.validators.state.ValidatorSystemMetadata.class, validatorKey);
     builder.up(
         new com.radixdlt.application.validators.state.ValidatorSystemMetadata(
-            validatorKey, Bytes.fromHexString(metadata.getData())));
+            validatorKey,
+            maybeCandidateFork
+                .map(
+                    candidateFork ->
+                        CandidateForkVote.create(validatorKey, candidateFork).payload())
+                .orElseGet(HashUtils::zero256)
+                .asBytes()));
   }
 
   private void updateAllowDelegation(TxBuilder builder, ValidatorAllowDelegation allowDelegation) {
