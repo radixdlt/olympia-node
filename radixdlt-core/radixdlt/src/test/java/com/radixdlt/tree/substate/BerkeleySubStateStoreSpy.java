@@ -66,7 +66,6 @@ package com.radixdlt.tree.substate;
 
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.sleepycat.je.Transaction;
@@ -74,7 +73,8 @@ import java.util.*;
 import java.util.function.Function;
 
 public class BerkeleySubStateStoreSpy extends BerkeleySubStateStore {
-  public Map<SubstateId, REStateUpdate> reStateUpdateList = new LinkedHashMap<>();
+  public Set<SubstateId> upREStateUpdates = new HashSet<>();
+  public Set<SubstateId> downREStateUpdates = new HashSet<>();
 
   @Override
   public void process(
@@ -83,16 +83,23 @@ public class BerkeleySubStateStoreSpy extends BerkeleySubStateStore {
       long stateVersion,
       Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
     super.process(dbTxn, txn, stateVersion, mapper);
-    for (REStateUpdate su : txn.stateUpdates().toList()) {
-      if (su.isBootUp()) {
-        this.reStateUpdateList.put(su.getId(), su);
-      } else {
-        this.reStateUpdateList.remove(su.getId());
-      }
-    }
+    txn.stateUpdates()
+        .forEach(
+            su -> {
+              if (su.isBootUp()) {
+                this.upREStateUpdates.add(su.getId());
+              } else {
+                this.downREStateUpdates.add(su.getId());
+                this.upREStateUpdates.remove(su.getId());
+              }
+            });
   }
 
-  public List<REStateUpdate> getREStateUpdateList() {
-    return this.reStateUpdateList.values().stream().toList();
+  public Set<SubstateId> getUpREStateUpdates() {
+    return upREStateUpdates;
+  }
+
+  public Set<SubstateId> getDownREStateUpdates() {
+    return downREStateUpdates;
   }
 }

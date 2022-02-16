@@ -151,15 +151,19 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
       REProcessedTxn txn,
       long stateVersion,
       Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
+
     watch.start();
     boolean isEpochChange = false;
     Long epoch = null;
+
     BerkeleyStorage berkeleyStorage = new BerkeleyStorage(this.subStateTreeDatabase, dbTxn);
     CachedPMTStorage cachedPMTStorage = new CachedPMTStorage(berkeleyStorage, pmtCache);
     PMTStorage refCounterPMTStorage = new RefCounterPMTStorage(cachedPMTStorage);
     var subStateTree = new SubStateTree(new PMT(refCounterPMTStorage, this.rootHash));
+
     List<Pair<SubstateId, byte[]>> values = new ArrayList<>();
-    for (REStateUpdate stateUpdate : txn.stateUpdates().filter(REStateUpdate::isBootUp).toList()) {
+    var upSubStates = txn.stateUpdates().filter(REStateUpdate::isBootUp).toList();
+    for (var stateUpdate : upSubStates) {
       values.add(Pair.of(stateUpdate.getId(), new byte[0]));
       if (stateUpdate.getParsed() instanceof EpochData epochData) {
         epoch = epochData.getEpoch();
@@ -167,10 +171,12 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
       }
     }
     subStateTree = subStateTree.putAll(values);
-    for (REStateUpdate stateUpdate :
-        txn.stateUpdates().filter(REStateUpdate::isShutDown).toList()) {
+
+    var downSubStates = txn.stateUpdates().filter(REStateUpdate::isShutDown).toList();
+    for (var stateUpdate : downSubStates) {
       subStateTree = subStateTree.remove(stateUpdate.getId());
     }
+
     this.rootHash = subStateTree.getRootHash();
     // This shouldn't be cached as it will get stale eventually. We can't use ref counting either.
     berkeleyStorage.save(CURRENT_ROOT_KEY, this.rootHash);

@@ -65,6 +65,7 @@
 package com.radixdlt.tree.substate;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import com.google.common.primitives.Longs;
 import com.google.inject.AbstractModule;
@@ -77,7 +78,6 @@ import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.mempool.MempoolConfig;
@@ -91,8 +91,6 @@ import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.tree.PMT;
-import com.radixdlt.tree.storage.CachedPMTStorage;
-import com.radixdlt.tree.storage.PMTCache;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import com.sleepycat.je.Cursor;
@@ -160,11 +158,13 @@ public class BerkeleySubStateStoreTest {
 
     var berkeleyStorage =
         new BerkeleyStorage(this.berkeleySubStateStore.getSubStateTreeDatabase(), null);
-    var cachedStorage = new CachedPMTStorage(berkeleyStorage, new PMTCache(CACHE_MAXIMUM_SIZE));
-    var pmt = new PMT(cachedStorage, this.berkeleySubStateStore.getRootHash());
+    var pmt = new PMT(berkeleyStorage, this.berkeleySubStateStore.getRootHash());
     SubStateTree subStateTree = new SubStateTree(pmt);
-    for (REStateUpdate rEStateUpdate : this.berkeleySubStateStore.getREStateUpdateList()) {
-      assertNotNull(subStateTree.get(rEStateUpdate.getId()));
+    for (var upREStateUpdateSubStateID : this.berkeleySubStateStore.getUpREStateUpdates()) {
+      assertNotNull(subStateTree.get(upREStateUpdateSubStateID));
+    }
+    for (var downREStateUpdateSubStateID : this.berkeleySubStateStore.getDownREStateUpdates()) {
+      assertNull(subStateTree.get(downREStateUpdateSubStateID));
     }
 
     Database epochRootHashDatabase = this.berkeleySubStateStore.getEpochRootHashDatabase();

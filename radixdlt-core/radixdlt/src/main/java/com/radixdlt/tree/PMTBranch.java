@@ -303,7 +303,7 @@ public final class PMTBranch extends PMTNode {
     } else if (commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NEW) {
       acc.mark(this);
       var nextHash = this.getNextHash(key);
-      if (nextHash == null) {
+      if (nextHash == null || nextHash.length == 0) {
         acc.setNotFound();
       } else {
         var nextNode = read.apply(nextHash);
