@@ -94,6 +94,9 @@ public final class PersistedBFTKeyManager {
 
   private static Optional<ECKeyPair> readNodeKeyFromEnvironment() {
     return Optional.ofNullable(System.getenv("RADIXDLT_NODE_KEY"))
+        .map(key -> key.replace('\r', ' '))
+        .map(key -> key.replace('\n', ' '))
+        .map(String::trim)
         .map(Bytes::fromBase64String)
         .map(
             keyBytes -> {
