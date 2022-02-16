@@ -71,19 +71,19 @@ public final class TestingForksModule extends AbstractModule {
   @ProvidesIntoSet
   ForkBuilder fork1() {
     return new ForkBuilder(
-        "testing-fork-genesis", 0L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault());
+        "testing-genesis", 0L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault());
   }
 
   @ProvidesIntoSet
   ForkBuilder fork2() {
     return new ForkBuilder(
-        "testing-fork-v2", 2L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault());
+        "fork-2", 2L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault());
   }
 
   @ProvidesIntoSet
   ForkBuilder fork3() {
     return new ForkBuilder(
-        "testing-fork-v3",
+        "fork-3",
         (short) 8000, // 80%
         5L,
         Long.MAX_VALUE,
