@@ -85,7 +85,7 @@ public class PMTCache {
   }
 
   public void invalidate(byte[] key) {
-    this.cache.invalidate(key);
+    this.cache.invalidate(ByteArrayWrapper.from(key));
   }
 
   public CacheStats getStats() {
