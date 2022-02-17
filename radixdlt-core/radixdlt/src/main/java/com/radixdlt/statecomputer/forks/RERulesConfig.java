@@ -112,18 +112,32 @@ public final class RERulesConfig {
     this.maxValidators = maxValidators;
   }
 
+  /**
+   * epochs last 10 rounds, fee table is empty
+   */
   public static RERulesConfig testingDefault() {
+    return testingDefault(10, FeeTable.create(Amount.zero(), Map.of()));
+  }
+
+  /**
+   * fee table is empty
+   */
+  public static RERulesConfig testingDefault(long maxRounds) {
+    return testingDefault(maxRounds, FeeTable.create(Amount.zero(), Map.of()));
+  }
+
+  public static RERulesConfig testingDefault(long maxRounds, FeeTable feeTable) {
     return new RERulesConfig(
         Set.of("xrd"),
         Pattern.compile("[a-z0-9]+"),
-        FeeTable.create(Amount.zero(), Map.of()),
+        feeTable,
         (long) 1024 * 1024,
         OptionalInt.of(2),
-        10,
+        maxRounds,
         1,
         Amount.ofTokens(10),
         1,
-        Amount.ofMicroTokens(2307700), // Rewards per proposal
+        Amount.ofMicroTokens(1000000), // Rewards per proposal
         9800,
         10);
   }

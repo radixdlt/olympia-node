@@ -66,17 +66,21 @@ package com.radixdlt.statecomputer.forks;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.application.tokens.Amount;
 
-public final class TestingForksModule extends AbstractModule {
+import java.util.Collections;
+
+public final class TestingForksModuleV2 extends AbstractModule {
   @ProvidesIntoSet
   ForkBuilder fork1() {
     return new ForkBuilder(
-        "testing-genesis", 0L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault());
+        "testing-genesis", 0L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
   }
 
   @ProvidesIntoSet
   ForkBuilder fork2() {
-    return new ForkBuilder("fork-2", 2L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault());
+    return new ForkBuilder("fork-2", 2L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
   }
 
   @ProvidesIntoSet
@@ -88,6 +92,7 @@ public final class TestingForksModule extends AbstractModule {
         Long.MAX_VALUE,
         1,
         RERulesVersion.OLYMPIA_V1,
-        RERulesConfig.testingDefault());
+        RERulesConfig.testingDefault(500, FeeTable.create(Amount.ofMicroTokens(200), Collections.emptyMap()))
+    );
   }
 }
