@@ -102,4 +102,8 @@ public class SubStateTree {
   public static byte[] getValue(boolean isBootUp) {
     return isBootUp ? new byte[] {0} : new byte[] {1};
   }
+
+  public long size() {
+    return this.pmt.size();
+  }
 }

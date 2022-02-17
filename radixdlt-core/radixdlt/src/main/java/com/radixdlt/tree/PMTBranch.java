@@ -156,11 +156,15 @@ public final class PMTBranch extends PMTNode {
       PMTKey key, PMTAcc acc, Function<PMTNode, byte[]> represent, Function<byte[], PMTNode> read) {
     final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
     if (commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NONE) {
-      acc.remove(this);
-      var newBranch = new PMTBranch(this);
-      newBranch.setValue(null);
-      acc.add(newBranch);
-      acc.setTip(newBranch);
+      if (branchDoesNotHaveValue()) {
+        acc.setNotFound();
+      } else {
+        acc.remove(this);
+        var newBranch = new PMTBranch(this);
+        newBranch.setValue(null);
+        acc.add(newBranch);
+        acc.setTip(newBranch);
+      }
     } else if (commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NEW) {
       var nextHash = this.getNextHash(key);
       if (nextHash == null) {
@@ -225,14 +229,21 @@ public final class PMTBranch extends PMTNode {
     acc.remove(this);
     var newNode =
         switch (otherChild) {
-          case PMTLeaf pmtLeaf -> new PMTLeaf(
+          case PMTLeaf pmtLeaf -> {
+            acc.remove(pmtLeaf);
+            yield new PMTLeaf(
               new PMTKey(new byte[] {(byte) index}).concatenate(pmtLeaf.getKey()),
               pmtLeaf.getValue());
+          }
           case PMTBranch ignored -> new PMTExt(
               new PMTKey(new byte[] {(byte) index}), otherChildHashPointer);
-          case PMTExt pmtExt -> new PMTExt(
-              new PMTKey(new byte[] {(byte) index}).concatenate(pmtExt.getKey()),
-              pmtExt.getValue());
+          case PMTExt pmtExt -> {
+            acc.remove(pmtExt);
+            yield new PMTExt(
+                    new PMTKey(new byte[] {(byte) index}).concatenate(pmtExt.getKey()),
+                    pmtExt.getValue());
+
+          }
         };
     acc.add(newNode);
     acc.setTip(newNode);

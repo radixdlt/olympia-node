@@ -101,6 +101,8 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
   public static final int CACHE_MAXIMUM_SIZE = 1_000_000;
   protected static final byte[] CURRENT_ROOT_KEY =
       "current_root_key".getBytes(StandardCharsets.UTF_8);
+  protected static final byte[] CURRENT_SIZE =
+      "current_size".getBytes(StandardCharsets.UTF_8);
 
   private Database subStateTreeDatabase;
   private Database epochRootHashDatabase;
@@ -108,6 +110,7 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
   private PMTCache pmtCache;
 
   private byte[] rootHash;
+  private long size;
 
   private Stopwatch watch = Stopwatch.createUnstarted();
 
@@ -137,6 +140,8 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
                     .setBtreeComparator(lexicographicalComparator()));
     this.pmtCache = new PMTCache(CACHE_MAXIMUM_SIZE);
     this.rootHash = new BerkeleyStorage(this.subStateTreeDatabase, null).read(CURRENT_ROOT_KEY);
+    byte[] sizeBytes = new BerkeleyStorage(this.subStateTreeDatabase, null).read(CURRENT_SIZE);
+    this.size = sizeBytes == null ? 0L : Longs.fromByteArray(sizeBytes);
   }
 
   @Override
@@ -159,7 +164,7 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
     BerkeleyStorage berkeleyStorage = new BerkeleyStorage(this.subStateTreeDatabase, dbTxn);
     CachedPMTStorage cachedPMTStorage = new CachedPMTStorage(berkeleyStorage, pmtCache);
     PMTStorage refCounterPMTStorage = new RefCounterPMTStorage(cachedPMTStorage);
-    var subStateTree = new SubStateTree(new PMT(refCounterPMTStorage, this.rootHash));
+    var subStateTree = new SubStateTree(new PMT(refCounterPMTStorage, this.rootHash, this.size));
 
     List<Pair<SubstateId, byte[]>> values = new ArrayList<>();
     var upSubStates = txn.stateUpdates().filter(REStateUpdate::isBootUp).toList();
@@ -178,8 +183,11 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
     }
 
     this.rootHash = subStateTree.getRootHash();
+    this.size = subStateTree.size();
+
     // This shouldn't be cached as it will get stale eventually. We can't use ref counting either.
     berkeleyStorage.save(CURRENT_ROOT_KEY, this.rootHash);
+    berkeleyStorage.save(CURRENT_SIZE, Longs.toByteArray(this.size));
 
     if (isEpochChange) {
       epochRootHashDatabase.put(
@@ -191,6 +199,8 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
             epoch,
             watch.elapsed().toSeconds());
         logger.info(this.pmtCache.getStats());
+        logger.info("Tree size {}", subStateTree.size());
+        logger.info("DB number of entries {}.", this.subStateTreeDatabase.count());
       }
       watch.reset();
     }
@@ -201,6 +211,10 @@ public class BerkeleySubStateStore implements BerkeleyAdditionalStore {
 
   public byte[] getRootHash() {
     return rootHash;
+  }
+
+  public long getSize() {
+    return size;
   }
 
   public Database getSubStateTreeDatabase() {

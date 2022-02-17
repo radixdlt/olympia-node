@@ -92,6 +92,8 @@ public final class PMT {
   private final byte[] serializedRoot;
   private final byte[] rootHash;
 
+  private final long size;
+
   // API:
   // add
   // update
@@ -103,35 +105,38 @@ public final class PMT {
   // verify_proof
 
   public PMT(PMTStorage db) {
-    this(db, null);
+    this(db, null, 0L);
   }
 
-  public PMT(PMTStorage db, byte[] rootHash) {
+  public PMT(PMTStorage db, byte[] rootHash, long size) {
     this(
         db,
         rootHash == null ? null : RLP_SERIALIZER.deserialize(db.read(rootHash)),
         SHA_256,
-        RLP_SERIALIZER);
+        RLP_SERIALIZER,
+            size);
   }
 
   public PMT(PMTStorage db, HashFunction hashFunction, PMTNodeSerializer pmtNodeSerializer) {
-    this(db, (byte[]) null, hashFunction, pmtNodeSerializer);
+    this(db, (byte[]) null, hashFunction, pmtNodeSerializer, 0L);
   }
 
   public PMT(
       PMTStorage db,
       byte[] rootHash,
       HashFunction hashFunction,
-      PMTNodeSerializer pmtNodeSerializer) {
+      PMTNodeSerializer pmtNodeSerializer,
+      long size) {
     this(
         db,
         rootHash == null ? null : pmtNodeSerializer.deserialize(db.read(rootHash)),
         hashFunction,
-        pmtNodeSerializer);
+        pmtNodeSerializer,
+            size);
   }
 
   private PMT(
-      PMTStorage db, PMTNode root, HashFunction hashFunction, PMTNodeSerializer pmtNodeSerializer) {
+      PMTStorage db, PMTNode root, HashFunction hashFunction, PMTNodeSerializer pmtNodeSerializer, long size) {
     this.db = db;
     this.root = root;
     this.serializedRoot = this.root == null ? null : pmtNodeSerializer.serialize(this.root);
@@ -139,6 +144,10 @@ public final class PMT {
     this.hashFunction = hashFunction;
     this.pmtNodeSerializer = pmtNodeSerializer;
     this.emptyTreeHash = hashFunction.hash(pmtNodeSerializer.emptyTree());
+    if (size < 0) {
+      throw new IllegalStateException(String.format("Tree size cannot be negative %s.", size));
+    }
+    this.size = size;
   }
 
   public byte[] represent(PMTNode node) {
@@ -208,12 +217,13 @@ public final class PMT {
     }
   }
 
-  private PMT insertKeyValue(byte[] key, byte[] val, PMT pmt) {
+  private static PMT insertKeyValue(byte[] key, byte[] val, PMT pmt) {
     PMTNode newRoot;
     var pmtKey = new PMTKey(PMTPath.intoNibbles(key));
+    long newSize = pmt.size;
     if (pmt.root != null) {
       var acc = new PMTAcc();
-      pmt.root.insertNode(pmtKey, val, acc, this::represent, this::read);
+      pmt.root.insertNode(pmtKey, val, acc, pmt::represent, pmt::read);
       newRoot = acc.getTip();
       if (newRoot == null) {
         throw new IllegalStateException(
@@ -221,13 +231,15 @@ public final class PMT {
                 "Unexpected null PMT root when inserting key %s and value %s",
                 TreeUtils.toHexString(key), TreeUtils.toHexString(val)));
       }
-      saveNewNodesToDB(acc.getNewNodes().stream().filter(Objects::nonNull).toList());
-      removeStaleNodesFromDB(acc.getRemovedNodes().stream().filter(Objects::nonNull).toList());
+      newSize = newSize + acc.getAddedAcc().size() - acc.getRemovedNodes().size();
+      pmt.saveNewNodesToDB(acc.getAddedAcc().stream().filter(Objects::nonNull).toList());
+      pmt.removeStaleNodesFromDB(acc.getRemovedNodes().stream().filter(Objects::nonNull).toList());
     } else {
       newRoot = new PMTLeaf(pmtKey, val);
+      newSize = 1L;
+      pmt.save(pmt.pmtNodeSerializer.serialize(newRoot));
     }
-    this.save(pmtNodeSerializer.serialize(newRoot));
-    return new PMT(this.db, newRoot, this.hashFunction, this.pmtNodeSerializer);
+    return new PMT(pmt.db, newRoot, pmt.hashFunction, pmt.pmtNodeSerializer, newSize);
   }
 
   public PMT add(byte[] key, byte[] val) {
@@ -243,12 +255,9 @@ public final class PMT {
         return this;
       } else {
         PMTNode newRoot = acc.getTip();
-        saveNewNodesToDB(acc.getNewNodes().stream().filter(Objects::nonNull).toList());
+        saveNewNodesToDB(acc.getAddedAcc().stream().filter(Objects::nonNull).toList());
         removeStaleNodesFromDB(acc.getRemovedNodes().stream().filter(Objects::nonNull).toList());
-        if (newRoot != null) {
-          this.save(pmtNodeSerializer.serialize(newRoot));
-        }
-        return new PMT(this.db, newRoot, this.hashFunction, this.pmtNodeSerializer);
+        return new PMT(this.db, newRoot, this.hashFunction, this.pmtNodeSerializer, this.size + acc.getAddedAcc().size() - acc.getRemovedNodes().size());
       }
     } else {
       return null;
@@ -282,6 +291,10 @@ public final class PMT {
 
   public byte[] getRootHash() {
     return this.root == null ? emptyTreeHash : this.rootHash;
+  }
+
+  public long size() {
+    return this.size;
   }
 
   private PMTNode read(byte[] key) {

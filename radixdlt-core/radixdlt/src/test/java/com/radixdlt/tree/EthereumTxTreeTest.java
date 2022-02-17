@@ -450,9 +450,12 @@ public class EthereumTxTreeTest {
     var currentTree = treeAndInsertedKeys.getFirst();
     var insertedKeys = treeAndInsertedKeys.getSecond();
 
-    int maxKeyLength = 20;
+    int maxKeyLength = 36;
     int maxDataLength = 50;
     var keyLength = 0;
+
+    var originalTreeSize = currentTree.size();
+    var originalDBSize = storage.count();
 
     for (int j = 0; j < 100; j++) {
       var keys = new ArrayList<byte[]>();
@@ -487,26 +490,38 @@ public class EthereumTxTreeTest {
         System.out.println(
             "This exception happened after inserting and during deleting the following keys and"
                 + " data.");
-        for (int i = 0; i < keys.size(); i++) {
-          System.out.printf(
-              "Key: %s, Data: %s%n",
-              Arrays.toString(keys.get(i)), Arrays.toString(dataList.get(i)));
-        }
+        printKeysAndData(keys, dataList);
         break;
       }
 
       if (!"bb345e208bda953c908027a45aa443d6cab6b8d2fd64e83ec52f1008ddeafa58"
           .equals(Hex.toHexString(currentTree.getRootHash()))) {
         System.out.println(
-            "Tree root hash is wrong after inserting and during deleting the following keys and"
+            "Tree root hash is wrong after inserting and deleting the following keys and"
                 + " data.");
-        for (int i = 0; i < keys.size(); i++) {
-          System.out.printf(
-              "Key: %s, Data: %s%n",
-              Arrays.toString(keys.get(i)), Arrays.toString(dataList.get(i)));
-        }
+        printKeysAndData(keys, dataList);
         break;
       }
+      if (currentTree.size() != originalTreeSize) {
+        System.out.println(String.format(
+                "Current Tree size %s is different from original tree size %s after inserting and during deleting the following keys and"
+                        + " data.", currentTree.size(), originalTreeSize));
+        printKeysAndData(keys, dataList);
+      }
+      if (storage.count() != originalDBSize) {
+        System.out.println(String.format(
+                "Current DB size %s is different from original db size %s after inserting and during deleting the following keys and"
+                        + " data.", storage.count(), originalDBSize));
+        printKeysAndData(keys, dataList);
+      }
+    }
+  }
+
+  private void printKeysAndData(ArrayList<byte[]> keys, ArrayList<byte[]> dataList) {
+    for (int i = 0; i < keys.size(); i++) {
+      System.out.printf(
+              "Key: %s, Data: %s%n",
+              Arrays.toString(keys.get(i)), Arrays.toString(dataList.get(i)));
     }
   }
 
