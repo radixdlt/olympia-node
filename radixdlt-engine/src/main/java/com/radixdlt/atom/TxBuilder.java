@@ -90,6 +90,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Function;
@@ -106,7 +107,6 @@ public final class TxBuilder {
   private final SubstateStore remoteSubstate;
   private final SubstateDeserialization deserialization;
   private final SubstateSerialization serialization;
-  private final int maxMessageLen;
   private UInt256 feeReservePut;
   private UInt256 feeReserveTake = UInt256.ZERO;
   private int numResourcesCreated = 0;
@@ -116,11 +116,11 @@ public final class TxBuilder {
       SubstateDeserialization deserialization,
       SubstateSerialization serialization,
       int maxMessageLen) {
-    this.lowLevelBuilder = TxLowLevelBuilder.newBuilder(serialization);
+    this.lowLevelBuilder =
+        TxLowLevelBuilder.newBuilder(serialization, OptionalInt.of(maxMessageLen));
     this.remoteSubstate = remoteSubstate;
     this.deserialization = deserialization;
     this.serialization = serialization;
-    this.maxMessageLen = maxMessageLen;
   }
 
   public static TxBuilder newBuilder(
@@ -572,7 +572,7 @@ public final class TxBuilder {
   }
 
   public TxBuilder message(byte[] message) throws MessageTooLongException {
-    lowLevelBuilder.message(message, maxMessageLen);
+    lowLevelBuilder.message(message);
     return this;
   }
 

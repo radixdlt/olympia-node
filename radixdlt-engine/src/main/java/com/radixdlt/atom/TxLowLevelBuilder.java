@@ -90,6 +90,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 
 /** Low level builder class for transactions */
@@ -99,11 +100,25 @@ public final class TxLowLevelBuilder {
   private final Map<Integer, LocalSubstate> localUpSubstates = new HashMap<>();
   private final Set<SubstateId> remoteDownSubstate = new HashSet<>();
   private final SubstateSerialization serialization;
+  private final OptionalInt maxMessageLen;
   private int upParticleCount = 0;
 
-  TxLowLevelBuilder(SubstateSerialization serialization, ByteArrayOutputStream blobStream) {
+  private TxLowLevelBuilder(
+      SubstateSerialization serialization,
+      ByteArrayOutputStream blobStream,
+      OptionalInt maxMessageLen) {
+    maxMessageLen.ifPresent(this::validateMaxMessageLen);
+
     this.serialization = serialization;
     this.blobStream = blobStream;
+    this.maxMessageLen = maxMessageLen;
+  }
+
+  private void validateMaxMessageLen(int limit) {
+    if (limit > Short.MAX_VALUE) {
+      throw new IllegalArgumentException(
+          "Attempt to set limit which exceeds transaction format capabilities");
+    }
   }
 
   public static TxLowLevelBuilder newBuilder(byte[] blob) {
@@ -114,11 +129,16 @@ public final class TxLowLevelBuilder {
       throw new IllegalStateException("Unable to write data.", e);
     }
     // TODO: Cleanup null serialization, but works for now as only used for client side signing
-    return new TxLowLevelBuilder(null, blobStream);
+    return new TxLowLevelBuilder(null, blobStream, OptionalInt.empty());
   }
 
   public static TxLowLevelBuilder newBuilder(SubstateSerialization serialization) {
-    return new TxLowLevelBuilder(serialization, new ByteArrayOutputStream());
+    return newBuilder(serialization, OptionalInt.empty());
+  }
+
+  public static TxLowLevelBuilder newBuilder(
+      SubstateSerialization serialization, OptionalInt maxMessageLen) {
+    return new TxLowLevelBuilder(serialization, new ByteArrayOutputStream(), maxMessageLen);
   }
 
   public Set<SubstateId> remoteDownSubstate() {
@@ -147,13 +167,11 @@ public final class TxLowLevelBuilder {
     }
   }
 
-  TxLowLevelBuilder message(byte[] bytes, int limit) throws MessageTooLongException {
+  TxLowLevelBuilder message(byte[] bytes) throws MessageTooLongException {
+    var limit = getMessageLengthLimit();
+
     if (bytes.length > limit) {
       throw new MessageTooLongException(limit, bytes.length);
-    }
-
-    if (bytes.length > Short.MAX_VALUE) {
-      throw new MessageTooLongException(Short.MAX_VALUE, bytes.length);
     }
 
     var buf = ByteBuffer.allocate(Short.BYTES + bytes.length);
@@ -162,6 +180,13 @@ public final class TxLowLevelBuilder {
 
     instruction(MSG, buf.array());
     return this;
+  }
+
+  private int getMessageLengthLimit() {
+    return maxMessageLen.orElseThrow(
+        () ->
+            new IllegalStateException(
+                "Attempt to add message without providing message length limit"));
   }
 
   public TxLowLevelBuilder up(Particle substate) {
@@ -248,7 +273,7 @@ public final class TxLowLevelBuilder {
   }
 
   public TxLowLevelBuilder localRead(int index) {
-    validateSubstate(localUpSubstates.get(index), index);
+    validateSubstatePresentAtIndex(localUpSubstates.get(index), index);
     instruction(REInstruction.REMicroOp.LREAD, Shorts.toByteArray((short) index));
     return this;
   }
@@ -259,12 +284,12 @@ public final class TxLowLevelBuilder {
   }
 
   public TxLowLevelBuilder localDown(int index) {
-    validateSubstate(localUpSubstates.remove(index), index);
+    validateSubstatePresentAtIndex(localUpSubstates.remove(index), index);
     instruction(REInstruction.REMicroOp.LDOWN, Shorts.toByteArray((short) index));
     return this;
   }
 
-  private void validateSubstate(LocalSubstate substate, int index) {
+  private void validateSubstatePresentAtIndex(LocalSubstate substate, int index) {
     if (substate == null) {
       throw new IllegalStateException("Local substate does not exist at index : " + index);
     }
