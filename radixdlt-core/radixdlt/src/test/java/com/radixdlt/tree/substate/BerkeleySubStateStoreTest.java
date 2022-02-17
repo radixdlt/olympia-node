@@ -158,7 +158,11 @@ public class BerkeleySubStateStoreTest {
 
     var berkeleyStorage =
         new BerkeleyStorage(this.berkeleySubStateStore.getSubStateTreeDatabase(), null);
-    var pmt = new PMT(berkeleyStorage, this.berkeleySubStateStore.getRootHash(), this.berkeleySubStateStore.getSize());
+    var pmt =
+        new PMT(
+            berkeleyStorage,
+            this.berkeleySubStateStore.getRootHash(),
+            this.berkeleySubStateStore.getSize());
     SubStateTree subStateTree = new SubStateTree(pmt);
     for (var upREStateUpdateSubStateID : this.berkeleySubStateStore.getUpREStateUpdates()) {
       assertNotNull(subStateTree.get(upREStateUpdateSubStateID));

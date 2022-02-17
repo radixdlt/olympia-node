@@ -114,7 +114,7 @@ public final class PMT {
         rootHash == null ? null : RLP_SERIALIZER.deserialize(db.read(rootHash)),
         SHA_256,
         RLP_SERIALIZER,
-            size);
+        size);
   }
 
   public PMT(PMTStorage db, HashFunction hashFunction, PMTNodeSerializer pmtNodeSerializer) {
@@ -132,11 +132,15 @@ public final class PMT {
         rootHash == null ? null : pmtNodeSerializer.deserialize(db.read(rootHash)),
         hashFunction,
         pmtNodeSerializer,
-            size);
+        size);
   }
 
   private PMT(
-      PMTStorage db, PMTNode root, HashFunction hashFunction, PMTNodeSerializer pmtNodeSerializer, long size) {
+      PMTStorage db,
+      PMTNode root,
+      HashFunction hashFunction,
+      PMTNodeSerializer pmtNodeSerializer,
+      long size) {
     this.db = db;
     this.root = root;
     this.serializedRoot = this.root == null ? null : pmtNodeSerializer.serialize(this.root);
@@ -257,7 +261,12 @@ public final class PMT {
         PMTNode newRoot = acc.getTip();
         saveNewNodesToDB(acc.getAddedAcc().stream().filter(Objects::nonNull).toList());
         removeStaleNodesFromDB(acc.getRemovedNodes().stream().filter(Objects::nonNull).toList());
-        return new PMT(this.db, newRoot, this.hashFunction, this.pmtNodeSerializer, this.size + acc.getAddedAcc().size() - acc.getRemovedNodes().size());
+        return new PMT(
+            this.db,
+            newRoot,
+            this.hashFunction,
+            this.pmtNodeSerializer,
+            this.size + acc.getAddedAcc().size() - acc.getRemovedNodes().size());
       }
     } else {
       return null;

@@ -232,17 +232,16 @@ public final class PMTBranch extends PMTNode {
           case PMTLeaf pmtLeaf -> {
             acc.remove(pmtLeaf);
             yield new PMTLeaf(
-              new PMTKey(new byte[] {(byte) index}).concatenate(pmtLeaf.getKey()),
-              pmtLeaf.getValue());
+                new PMTKey(new byte[] {(byte) index}).concatenate(pmtLeaf.getKey()),
+                pmtLeaf.getValue());
           }
           case PMTBranch ignored -> new PMTExt(
               new PMTKey(new byte[] {(byte) index}), otherChildHashPointer);
           case PMTExt pmtExt -> {
             acc.remove(pmtExt);
             yield new PMTExt(
-                    new PMTKey(new byte[] {(byte) index}).concatenate(pmtExt.getKey()),
-                    pmtExt.getValue());
-
+                new PMTKey(new byte[] {(byte) index}).concatenate(pmtExt.getKey()),
+                pmtExt.getValue());
           }
         };
     acc.add(newNode);

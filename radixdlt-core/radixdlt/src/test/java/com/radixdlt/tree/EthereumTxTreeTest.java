@@ -503,15 +503,19 @@ public class EthereumTxTreeTest {
         break;
       }
       if (currentTree.size() != originalTreeSize) {
-        System.out.println(String.format(
-                "Current Tree size %s is different from original tree size %s after inserting and during deleting the following keys and"
-                        + " data.", currentTree.size(), originalTreeSize));
+        System.out.println(
+            String.format(
+                "Current Tree size %s is different from original tree size %s after inserting and"
+                    + " during deleting the following keys and data.",
+                currentTree.size(), originalTreeSize));
         printKeysAndData(keys, dataList);
       }
       if (storage.count() != originalDBSize) {
-        System.out.println(String.format(
-                "Current DB size %s is different from original db size %s after inserting and during deleting the following keys and"
-                        + " data.", storage.count(), originalDBSize));
+        System.out.println(
+            String.format(
+                "Current DB size %s is different from original db size %s after inserting and"
+                    + " during deleting the following keys and data.",
+                storage.count(), originalDBSize));
         printKeysAndData(keys, dataList);
       }
     }
@@ -520,8 +524,7 @@ public class EthereumTxTreeTest {
   private void printKeysAndData(ArrayList<byte[]> keys, ArrayList<byte[]> dataList) {
     for (int i = 0; i < keys.size(); i++) {
       System.out.printf(
-              "Key: %s, Data: %s%n",
-              Arrays.toString(keys.get(i)), Arrays.toString(dataList.get(i)));
+          "Key: %s, Data: %s%n", Arrays.toString(keys.get(i)), Arrays.toString(dataList.get(i)));
     }
   }
 
