@@ -111,6 +111,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+
+import com.sleepycat.je.EnvironmentConfig;
+import com.sleepycat.je.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.util.Strings;
@@ -270,6 +274,7 @@ public final class RadixNodeModule extends AbstractModule {
     } else if (properties.get("testing_forks.enable", false)) {
       int forkConfigVersion = !properties.get("testing_forks.version").isBlank() ?
           properties.get("testing_forks.version", 2) : 2;
+      log.info("Using testing fork config, version {}", forkConfigVersion);
       switch (forkConfigVersion) {
         case 1 -> install(new TestingForksModuleV1());
         case 2 -> install(new TestingForksModuleV2());
