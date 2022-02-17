@@ -84,6 +84,7 @@ import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -132,6 +133,7 @@ public class PrometheusService {
   private final Map<String, Boolean> endpointStatuses;
   private final PeersView peersView;
   private final RadixEngine<LedgerAndBFTProof> radixEngine;
+  private final CurrentForkView currentForkView;
 
   @Inject
   public PrometheusService(
@@ -142,7 +144,8 @@ public class PrometheusService {
       InMemorySystemInfo inMemorySystemInfo,
       RadixEngine<LedgerAndBFTProof> radixEngine,
       @Self BFTNode self,
-      Addressing addressing) {
+      Addressing addressing,
+      CurrentForkView currentForkView) {
     this.radixEngine = radixEngine;
     boolean enableTransactions = properties.get("api.transactions.enable", false);
     this.endpointStatuses = Map.of("transactions", enableTransactions);
@@ -152,6 +155,7 @@ public class PrometheusService {
     this.inMemorySystemInfo = inMemorySystemInfo;
     this.self = self;
     this.addressing = addressing;
+    this.currentForkView = currentForkView;
   }
 
   public String getMetrics() {
@@ -202,6 +206,7 @@ public class PrometheusService {
     addBranchAndCommit(builder);
     addValidatorAddress(builder);
     addAccumulatorState(builder);
+    addCurrentFork(builder);
     appendField(builder, "health", healthInfoService.nodeStatus().name());
     appendField(builder, "key", self.getKey().toHex());
 
@@ -224,6 +229,10 @@ public class PrometheusService {
   private void addBranchAndCommit(StringBuilder builder) {
     var branchAndCommit = Radix.systemVersionInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
     appendField(builder, "branch_and_commit", branchAndCommit);
+  }
+
+  private void addCurrentFork(StringBuilder builder) {
+    appendField(builder, "current_fork_name", currentForkView.currentForkConfig().name());
   }
 
   private void addAccumulatorState(StringBuilder builder) {
