@@ -132,6 +132,7 @@ import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.forks.CandidateForkConfig;
 import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
@@ -156,13 +157,18 @@ public final class CoreModelMapper {
   private final Addressing addressing;
   private final Network network;
   private final CurrentForkView currentForkView;
+  private final Forks forks;
 
   @Inject
   CoreModelMapper(
-      @NetworkId int networkId, Addressing addressing, CurrentForkView currentForkView) {
+      @NetworkId int networkId,
+      Addressing addressing,
+      CurrentForkView currentForkView,
+      Forks forks) {
     this.network = Network.ofId(networkId).orElseThrow();
     this.addressing = addressing;
     this.currentForkView = currentForkView;
+    this.forks = forks;
   }
 
   public void verifyNetwork(NetworkIdentifier networkIdentifier) throws CoreApiException {
@@ -312,7 +318,7 @@ public final class CoreModelMapper {
     var key = addressing.forValidators().parseOrThrow(address, s -> invalidAddress(address));
     var subEntity = entityIdentifier.getSubEntity();
     if (subEntity == null) {
-      return new ValidatorEntity(key);
+      return new ValidatorEntity(key, forks.getCandidateFork());
     }
 
     var metadata = subEntity.getMetadata();

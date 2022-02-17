@@ -88,14 +88,19 @@ import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.statecomputer.forks.CandidateForkConfig;
+import com.radixdlt.statecomputer.forks.CandidateForkVote;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.Bytes;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Supplier;
 
-public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
+public record ValidatorEntity(
+    ECPublicKey validatorKey, Optional<CandidateForkConfig> maybeCandidateFork) implements Entity {
 
   @Override
   public void overwriteDataObject(
@@ -111,24 +116,46 @@ public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
       updateValidatorFee(builder, preparedValidatorFee, config);
     } else if (dataObject instanceof ValidatorMetadata metadata) {
       updateMetadata(builder, metadata);
+      updateValidatorSystemMetadataVote(builder);
     } else if (dataObject instanceof ValidatorAllowDelegation allowDelegation) {
       updateAllowDelegation(builder, allowDelegation);
     } else if (dataObject
         instanceof com.radixdlt.api.core.openapitools.model.ValidatorSystemMetadata metadata) {
-      updateValidatorSystemMetadata(builder, metadata);
+      if (metadata.getData().isEmpty()) {
+        updateValidatorSystemMetadataVote(builder);
+      } else if (Bytes.allZeros(Bytes.fromHexString(metadata.getData()))) {
+        updateValidatorSystemMetadataWithdrawVote(builder);
+      } else {
+        throw new InvalidDataObjectException(
+            parsedDataObject,
+            "ValidatorSystemMetadata \"data\" field must either be empty (to vote) or consist of"
+                + " only zero bytes (to withdraw a vote)");
+      }
     } else {
       throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
     }
   }
 
-  private void updateValidatorSystemMetadata(
-      TxBuilder builder,
-      com.radixdlt.api.core.openapitools.model.ValidatorSystemMetadata metadata) {
+  private void updateValidatorSystemMetadataVote(TxBuilder builder) {
     builder.down(
         com.radixdlt.application.validators.state.ValidatorSystemMetadata.class, validatorKey);
     builder.up(
         new com.radixdlt.application.validators.state.ValidatorSystemMetadata(
-            validatorKey, Bytes.fromHexString(metadata.getData())));
+            validatorKey,
+            maybeCandidateFork
+                .map(
+                    candidateFork ->
+                        CandidateForkVote.create(validatorKey, candidateFork).payload())
+                .orElseGet(HashUtils::zero256)
+                .asBytes()));
+  }
+
+  private void updateValidatorSystemMetadataWithdrawVote(TxBuilder builder) {
+    builder.down(
+        com.radixdlt.application.validators.state.ValidatorSystemMetadata.class, validatorKey);
+    builder.up(
+        new com.radixdlt.application.validators.state.ValidatorSystemMetadata(
+            validatorKey, HashUtils.zero256().asBytes()));
   }
 
   private void updateAllowDelegation(TxBuilder builder, ValidatorAllowDelegation allowDelegation) {
