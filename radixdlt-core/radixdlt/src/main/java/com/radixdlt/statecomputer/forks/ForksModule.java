@@ -84,7 +84,7 @@ public final class ForksModule extends AbstractModule {
   @Provides
   @Singleton
   private Forks forks(NavigableMap<Long, ForkConfig> forkConfigs) {
-    return new Forks(asTreeMap(forkConfigs.values(), e -> e.getVersion().create(e.getConfig())));
+    return new Forks(asTreeMap(forkConfigs.values(), e -> e.version().create(e.config())));
   }
 
   @Provides
@@ -97,6 +97,6 @@ public final class ForksModule extends AbstractModule {
 
   private static <T> TreeMap<Long, T> asTreeMap(
       Collection<ForkConfig> input, Function<ForkConfig, T> mapper) {
-    return new TreeMap<>(input.stream().collect(Collectors.toMap(ForkConfig::getEpoch, mapper)));
+    return new TreeMap<>(input.stream().collect(Collectors.toMap(ForkConfig::epoch, mapper)));
   }
 }

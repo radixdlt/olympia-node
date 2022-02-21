@@ -96,7 +96,7 @@ public final class GenesisBuilder {
   @Inject
   public GenesisBuilder(RERules rules, LedgerAccumulator ledgerAccumulator) {
     this.ledgerAccumulator = ledgerAccumulator;
-    var cmConfig = rules.getConstraintMachineConfig();
+    var cmConfig = rules.constraintMachineConfig();
     var cm =
         new ConstraintMachine(
             cmConfig.getProcedures(),
@@ -105,12 +105,13 @@ public final class GenesisBuilder {
             cmConfig.getMeter());
     this.radixEngine =
         new RadixEngine<>(
-            rules.getParser(),
-            rules.getSerialization(),
-            rules.getActionConstructors(),
+            rules.parser(),
+            rules.serialization(),
+            rules.actionConstructors(),
             cm,
             new InMemoryEngineStore<>(),
-            rules.getBatchVerifier());
+            rules.batchVerifier(),
+            rules.maxMessageLen());
   }
 
   public Txn build(String message, long timestamp, List<TxAction> actions)

@@ -150,12 +150,11 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
 
   @Override
   public void execute(TxBuilder txBuilder) throws TxBuilderException {
-
     var configSupplier =
         Suppliers.memoize(
             () -> {
-              var epochData = txBuilder.findSystem(EpochData.class);
-              return forks.get(epochData.getEpoch()).getConfig();
+              var epoch = txBuilder.findSystem(EpochData.class).getEpoch();
+              return forks.get(epoch).config();
             });
 
     for (var operationGroup : this.operationGroups) {
@@ -166,7 +165,7 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
     }
 
     if (this.message != null) {
-      txBuilder.message(Bytes.fromHexString(message));
+      txBuilder.message(Bytes.fromHexString(this.message));
     }
   }
 }

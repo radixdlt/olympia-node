@@ -64,6 +64,8 @@
 
 package com.radixdlt.atom;
 
+import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
+
 import com.google.common.hash.HashCode;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.system.state.SystemData;
@@ -81,7 +83,6 @@ import com.radixdlt.utils.UInt256;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -89,20 +90,35 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 
 /** Low level builder class for transactions */
 public final class TxLowLevelBuilder {
   private final ByteArrayOutputStream blobStream;
   private final Map<SystemMapKey, LocalSubstate> localMapValues = new HashMap<>();
-  private final Map<Integer, LocalSubstate> localUpParticles = new HashMap<>();
+  private final Map<Integer, LocalSubstate> localUpSubstates = new HashMap<>();
   private final Set<SubstateId> remoteDownSubstate = new HashSet<>();
   private final SubstateSerialization serialization;
+  private final OptionalInt maxMessageLen;
   private int upParticleCount = 0;
 
-  TxLowLevelBuilder(SubstateSerialization serialization, ByteArrayOutputStream blobStream) {
+  private TxLowLevelBuilder(
+      SubstateSerialization serialization,
+      ByteArrayOutputStream blobStream,
+      OptionalInt maxMessageLen) {
+    maxMessageLen.ifPresent(this::validateMaxMessageLen);
+
     this.serialization = serialization;
     this.blobStream = blobStream;
+    this.maxMessageLen = maxMessageLen;
+  }
+
+  private void validateMaxMessageLen(int limit) {
+    if (limit > Short.MAX_VALUE) {
+      throw new IllegalArgumentException(
+          "Attempt to set limit which exceeds transaction format capabilities");
+    }
   }
 
   public static TxLowLevelBuilder newBuilder(byte[] blob) {
@@ -113,11 +129,16 @@ public final class TxLowLevelBuilder {
       throw new IllegalStateException("Unable to write data.", e);
     }
     // TODO: Cleanup null serialization, but works for now as only used for client side signing
-    return new TxLowLevelBuilder(null, blobStream);
+    return new TxLowLevelBuilder(null, blobStream, OptionalInt.empty());
   }
 
   public static TxLowLevelBuilder newBuilder(SubstateSerialization serialization) {
-    return new TxLowLevelBuilder(serialization, new ByteArrayOutputStream());
+    return newBuilder(serialization, OptionalInt.empty());
+  }
+
+  public static TxLowLevelBuilder newBuilder(
+      SubstateSerialization serialization, OptionalInt maxMessageLen) {
+    return new TxLowLevelBuilder(serialization, new ByteArrayOutputStream(), maxMessageLen);
   }
 
   public Set<SubstateId> remoteDownSubstate() {
@@ -129,20 +150,7 @@ public final class TxLowLevelBuilder {
   }
 
   public List<LocalSubstate> localUpSubstate() {
-    return new ArrayList<>(localUpParticles.values());
-  }
-
-  // TODO: Remove array copies
-  private byte[] varLengthData(byte[] bytes) {
-    if (bytes.length > 255) {
-      throw new IllegalArgumentException(
-          "Data length is " + bytes.length + " but must be <= " + 255);
-    }
-    var data = new byte[Short.BYTES + bytes.length];
-    data[0] = 0;
-    data[1] = (byte) bytes.length;
-    System.arraycopy(bytes, 0, data, 2, bytes.length);
-    return data;
+    return new ArrayList<>(localUpSubstates.values());
   }
 
   private void instruction(REInstruction.REMicroOp op, ByteBuffer buffer) {
@@ -159,46 +167,52 @@ public final class TxLowLevelBuilder {
     }
   }
 
-  public TxLowLevelBuilder message(byte[] bytes) throws MessageTooLongException {
-    if (bytes.length > 255) {
-      throw new MessageTooLongException(bytes.length);
+  TxLowLevelBuilder message(byte[] bytes) throws MessageTooLongException {
+    var limit = getMessageLengthLimit();
+
+    if (bytes.length > limit) {
+      throw new MessageTooLongException(limit, bytes.length);
     }
 
-    instruction(REInstruction.REMicroOp.MSG, varLengthData(bytes));
+    var buf = ByteBuffer.allocate(Short.BYTES + bytes.length);
+    buf.putShort((short) bytes.length);
+    buf.put(bytes);
+
+    instruction(MSG, buf.array());
     return this;
   }
 
-  public TxLowLevelBuilder message(String message) throws MessageTooLongException {
-    var bytes = message.getBytes(StandardCharsets.UTF_8);
-    return message(bytes);
+  private int getMessageLengthLimit() {
+    return maxMessageLen.orElseThrow(
+        () ->
+            new IllegalStateException(
+                "Attempt to add message without providing message length limit"));
   }
 
-  public TxLowLevelBuilder up(Particle particle) {
-    Objects.requireNonNull(particle, "particle is required");
+  public TxLowLevelBuilder up(Particle substate) {
+    Objects.requireNonNull(substate, "substate is required");
 
-    var localSubstate = LocalSubstate.create(upParticleCount, particle);
+    var localSubstate = LocalSubstate.create(upParticleCount, substate);
 
-    if (particle instanceof ValidatorData) {
-      var p = (ValidatorData) particle;
-      var b = serialization.classToByte(p.getClass());
-      var k = SystemMapKey.ofSystem(b, p.getValidatorKey().getCompressedBytes());
+    if (substate instanceof ValidatorData validatorData) {
+      var b = serialization.classToByte(validatorData.getClass());
+      var k = SystemMapKey.ofSystem(b, validatorData.getValidatorKey().getCompressedBytes());
       this.localMapValues.put(k, localSubstate);
-    } else if (particle instanceof SystemData) {
-      var b = serialization.classToByte(particle.getClass());
+    } else if (substate instanceof SystemData) {
+      var b = serialization.classToByte(substate.getClass());
       var k = SystemMapKey.ofSystem(b);
       this.localMapValues.put(k, localSubstate);
-    } else if (particle instanceof VirtualParent) {
-      var p = (VirtualParent) particle;
-      var typeByte = p.getData()[0];
+    } else if (substate instanceof VirtualParent virtualParent) {
+      var typeByte = virtualParent.getData()[0];
       var k = SystemMapKey.ofSystem(typeByte);
       this.localMapValues.put(k, localSubstate);
     }
 
-    this.localUpParticles.put(upParticleCount, localSubstate);
+    this.localUpSubstates.put(upParticleCount, localSubstate);
 
     var buf = ByteBuffer.allocate(1024);
     buf.putShort((short) 0);
-    serialization.serialize(particle, buf);
+    serialization.serialize(substate, buf);
     var limit = buf.position();
     buf.putShort(0, (short) (limit - 2));
     buf.position(0);
@@ -209,9 +223,8 @@ public final class TxLowLevelBuilder {
   }
 
   public TxLowLevelBuilder localVirtualDown(int index, byte[] virtualKey) {
-    if (virtualKey.length > 128) {
-      throw new IllegalStateException();
-    }
+    validateVirtualKey(virtualKey);
+
     var buf = ByteBuffer.allocate(Short.BYTES + Short.BYTES + virtualKey.length);
     buf.putShort((short) (virtualKey.length + Short.BYTES));
     buf.putShort((short) index);
@@ -221,9 +234,8 @@ public final class TxLowLevelBuilder {
   }
 
   public TxLowLevelBuilder localVirtualRead(int index, byte[] virtualKey) {
-    if (virtualKey.length > 128) {
-      throw new IllegalStateException();
-    }
+    validateVirtualKey(virtualKey);
+
     var buf = ByteBuffer.allocate(Short.BYTES + Short.BYTES + virtualKey.length);
     buf.putShort((short) (virtualKey.length + Short.BYTES));
     buf.putShort((short) index);
@@ -233,9 +245,8 @@ public final class TxLowLevelBuilder {
   }
 
   public TxLowLevelBuilder virtualDown(SubstateId parent, byte[] virtualKey) {
-    if (virtualKey.length > 128) {
-      throw new IllegalStateException();
-    }
+    validateVirtualKey(virtualKey);
+
     var id = SubstateId.ofVirtualSubstate(parent, virtualKey);
     var buf = ByteBuffer.allocate(Short.BYTES + id.asBytes().length);
     buf.putShort((short) id.asBytes().length);
@@ -245,9 +256,8 @@ public final class TxLowLevelBuilder {
   }
 
   public TxLowLevelBuilder virtualRead(SubstateId parent, byte[] virtualKey) {
-    if (virtualKey.length > 128) {
-      throw new IllegalStateException();
-    }
+    validateVirtualKey(virtualKey);
+
     var id = SubstateId.ofVirtualSubstate(parent, virtualKey);
     var buf = ByteBuffer.allocate(Short.BYTES + id.asBytes().length);
     buf.putShort((short) id.asBytes().length);
@@ -256,11 +266,14 @@ public final class TxLowLevelBuilder {
     return this;
   }
 
-  public TxLowLevelBuilder localRead(int index) {
-    var particle = localUpParticles.get(index);
-    if (particle == null) {
-      throw new IllegalStateException("Local particle does not exist: " + index);
+  private void validateVirtualKey(byte[] virtualKey) {
+    if (virtualKey.length > 128) {
+      throw new IllegalStateException("Virtual key length > 128");
     }
+  }
+
+  public TxLowLevelBuilder localRead(int index) {
+    validateSubstatePresentAtIndex(localUpSubstates.get(index), index);
     instruction(REInstruction.REMicroOp.LREAD, Shorts.toByteArray((short) index));
     return this;
   }
@@ -271,12 +284,15 @@ public final class TxLowLevelBuilder {
   }
 
   public TxLowLevelBuilder localDown(int index) {
-    var particle = localUpParticles.remove(index);
-    if (particle == null) {
-      throw new IllegalStateException("Local particle does not exist: " + index);
-    }
+    validateSubstatePresentAtIndex(localUpSubstates.remove(index), index);
     instruction(REInstruction.REMicroOp.LDOWN, Shorts.toByteArray((short) index));
     return this;
+  }
+
+  private void validateSubstatePresentAtIndex(LocalSubstate substate, int index) {
+    if (substate == null) {
+      throw new IllegalStateException("Local substate does not exist at index : " + index);
+    }
   }
 
   public TxLowLevelBuilder down(SubstateId substateId) {

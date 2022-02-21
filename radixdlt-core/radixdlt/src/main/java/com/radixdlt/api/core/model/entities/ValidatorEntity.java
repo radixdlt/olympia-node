@@ -177,7 +177,7 @@ public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
       throw new InvalidRakeIncreaseException(maxRakeIncrease, rakeIncrease);
     }
 
-    var rakeIncreaseDebounceEpochLength = config.get().getRakeIncreaseDebouncerEpochLength();
+    var rakeIncreaseDebounceEpochLength = config.get().rakeIncreaseDebouncerEpochLength();
     var epochDiff = isIncrease ? (1 + rakeIncreaseDebounceEpochLength) : 1;
     var curEpoch = builder.readSystem(EpochData.class);
     var epoch = curEpoch.getEpoch() + epochDiff;

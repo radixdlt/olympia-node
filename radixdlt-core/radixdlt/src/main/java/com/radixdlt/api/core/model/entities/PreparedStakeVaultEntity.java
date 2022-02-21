@@ -105,7 +105,7 @@ public record PreparedStakeVaultEntity(REAddr accountAddress, ECPublicKey valida
       throw new EntityDoesNotSupportResourceDepositException(this, amount.resource());
     }
 
-    var minStake = config.get().getMinimumStake().toSubunits();
+    var minStake = config.get().minimumStake().toSubunits();
     var attempt = UInt256.from(amount.amount().toByteArray());
     if (attempt.compareTo(minStake) < 0) {
       throw new MinimumStakeException(minStake, attempt);

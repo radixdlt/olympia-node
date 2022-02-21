@@ -375,7 +375,7 @@ public class RadixEngineStateComputerTest {
                 new NextRound(1, false, 0, i -> proposerElection.getProposer(View.of(i)).getKey()))
             .buildWithoutSignature();
     var illegalTxn =
-        TxLowLevelBuilder.newBuilder(rules.getSerialization())
+        TxLowLevelBuilder.newBuilder(rules.serialization())
             .down(SubstateId.ofSubstate(txn.getId(), 1))
             .up(new RoundData(2, 0))
             .end()

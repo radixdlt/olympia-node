@@ -98,7 +98,7 @@ public class RadixEngineModule extends AbstractModule {
   @Provides
   @Singleton
   private REParser parser(RERules rules) {
-    return rules.getParser();
+    return rules.parser();
   }
 
   // TODO: Remove
@@ -106,7 +106,7 @@ public class RadixEngineModule extends AbstractModule {
   @Singleton
   @MaxSigsPerRound
   private OptionalInt maxSigsPerRound(RERules rules) {
-    return rules.getMaxSigsPerRound();
+    return rules.maxSigsPerRound();
   }
 
   // TODO: Remove
@@ -114,7 +114,7 @@ public class RadixEngineModule extends AbstractModule {
   @Singleton
   @EpochCeilingView
   private View epochCeilingHighView(RERules rules) {
-    return rules.getMaxRounds();
+    return rules.maxRounds();
   }
 
   // TODO: Remove
@@ -122,14 +122,14 @@ public class RadixEngineModule extends AbstractModule {
   @Singleton
   @MaxValidators
   private int maxValidators(RERules rules) {
-    return rules.getMaxValidators();
+    return rules.maxValidators();
   }
 
   @Provides
   @Singleton
   private RadixEngine<LedgerAndBFTProof> getRadixEngine(
       EngineStore<LedgerAndBFTProof> engineStore, RERules rules) {
-    var cmConfig = rules.getConstraintMachineConfig();
+    var cmConfig = rules.constraintMachineConfig();
     var cm =
         new ConstraintMachine(
             cmConfig.getProcedures(),
@@ -137,11 +137,12 @@ public class RadixEngineModule extends AbstractModule {
             cmConfig.getVirtualSubstateDeserialization(),
             cmConfig.getMeter());
     return new RadixEngine<>(
-        rules.getParser(),
-        rules.getSerialization(),
-        rules.getActionConstructors(),
+        rules.parser(),
+        rules.serialization(),
+        rules.actionConstructors(),
         cm,
         engineStore,
-        rules.getBatchVerifier());
+        rules.batchVerifier(),
+        rules.maxMessageLen());
   }
 }

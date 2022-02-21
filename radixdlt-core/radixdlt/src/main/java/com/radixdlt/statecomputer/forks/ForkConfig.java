@@ -65,34 +65,7 @@
 package com.radixdlt.statecomputer.forks;
 
 /** Configuration used for hard forks */
-public final class ForkConfig {
-  private final long epoch;
-  private final String name;
-  private final RERulesConfig config;
-  private final RERulesVersion version;
-
-  public ForkConfig(long epoch, String name, RERulesVersion version, RERulesConfig config) {
-    this.epoch = epoch;
-    this.name = name;
-    this.config = config;
-    this.version = version;
-  }
-
-  public long getEpoch() {
-    return epoch;
-  }
-
-  public RERulesVersion getVersion() {
-    return version;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public RERulesConfig getConfig() {
-    return config;
-  }
+public record ForkConfig(long epoch, String name, RERulesVersion version, RERulesConfig config) {
 
   public ForkConfig overrideEpoch(long epoch) {
     return new ForkConfig(epoch, this.name, this.version, this.config);

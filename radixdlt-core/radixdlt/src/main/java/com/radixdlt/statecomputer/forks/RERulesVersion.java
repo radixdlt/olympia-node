@@ -131,11 +131,11 @@ public enum RERulesVersion {
   OLYMPIA_V1 {
     @Override
     public RERules create(RERulesConfig config) {
-      var maxRounds = config.getMaxRounds();
-      var perByteFee = config.getFeeTable().getPerByteFee();
-      var perUpSubstateFee = config.getFeeTable().getPerUpSubstateFee();
-      var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
-      var tokenSymbolPattern = config.getTokenSymbolPattern();
+      var maxRounds = config.maxRounds();
+      var perByteFee = config.feeTable().getPerByteFee();
+      var perUpSubstateFee = config.feeTable().getPerUpSubstateFee();
+      var rakeIncreaseDebouncerEpochLength = config.rakeIncreaseDebouncerEpochLength();
+      var tokenSymbolPattern = config.tokenSymbolPattern();
 
       final CMAtomOS v4 = new CMAtomOS();
       v4.load(new ValidatorConstraintScryptV2());
@@ -143,25 +143,25 @@ public enum RERulesVersion {
       v4.load(new ValidatorRegisterConstraintScrypt());
       v4.load(new ValidatorUpdateOwnerConstraintScrypt());
       v4.load(new SystemConstraintScrypt());
-      v4.load(new TokensConstraintScryptV3(config.getReservedSymbols(), tokenSymbolPattern));
-      v4.load(new StakingConstraintScryptV4(config.getMinimumStake().toSubunits()));
+      v4.load(new TokensConstraintScryptV3(config.reservedSymbols(), tokenSymbolPattern));
+      v4.load(new StakingConstraintScryptV4(config.minimumStake().toSubunits()));
       v4.load(new MutexConstraintScrypt());
       v4.load(new RoundUpdateConstraintScrypt(maxRounds));
       v4.load(
           new EpochUpdateConstraintScrypt(
               maxRounds,
-              config.getRewardsPerProposal().toSubunits(),
-              config.getMinimumCompletedProposalsPercentage(),
-              config.getUnstakingEpochDelay(),
-              config.getMaxValidators()));
+              config.rewardsPerProposal().toSubunits(),
+              config.minimumCompletedProposalsPercentage(),
+              config.unstakingEpochDelay(),
+              config.maxValidators()));
       var meter =
           Meters.combine(
-              config.getMaxSigsPerRound().stream()
+              config.maxSigsPerRound().stream()
                   .<Meter>mapToObj(SigsPerRoundMeter::create)
                   .findAny()
                   .orElse(Meter.EMPTY),
               Meters.combine(
-                  TxnSizeFeeMeter.create(perByteFee, config.getMaxTxnSize()),
+                  TxnSizeFeeMeter.create(perByteFee, config.maxTxnSize()),
                   UpSubstateFeeMeter.create(perUpSubstateFee)));
       var betanet4 =
           new ConstraintMachineConfig(
@@ -186,24 +186,23 @@ public enum RERulesVersion {
               .put(
                   NextEpoch.class,
                   new NextEpochConstructorV3(
-                      config.getRewardsPerProposal().toSubunits(),
-                      config.getMinimumCompletedProposalsPercentage(),
-                      config.getUnstakingEpochDelay(),
-                      config.getMaxValidators()))
+                      config.rewardsPerProposal().toSubunits(),
+                      config.minimumCompletedProposalsPercentage(),
+                      config.unstakingEpochDelay(),
+                      config.maxValidators()))
               .put(NextRound.class, new NextViewConstructorV3())
               .put(RegisterValidator.class, new RegisterValidatorConstructor())
               .put(SplitToken.class, new SplitTokenConstructor())
               .put(
                   StakeTokens.class,
-                  new StakeTokensConstructorV3(config.getMinimumStake().toSubunits()))
+                  new StakeTokensConstructorV3(config.minimumStake().toSubunits()))
               .put(UnstakeTokens.class, new UnstakeTokensConstructorV2())
               .put(UnstakeOwnership.class, new UnstakeOwnershipConstructor())
               .put(TransferToken.class, new TransferTokensConstructorV2())
               .put(UnregisterValidator.class, new UnregisterValidatorConstructor())
               .put(UpdateValidatorMetadata.class, new UpdateValidatorMetadataConstructor())
               .put(FeeReservePut.class, new FeeReservePutConstructor())
-              .put(
-                  FeeReserveComplete.class, new FeeReserveCompleteConstructor(config.getFeeTable()))
+              .put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(config.feeTable()))
               .put(
                   UpdateValidatorFee.class,
                   new UpdateRakeConstructor(
