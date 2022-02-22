@@ -18,3 +18,4 @@ api.bind.address=$RADIXDLT_HTTP_BIND_ADDRESS
 api.transactions.enable=$RADIXDLT_TRANSACTIONS_API_ENABLE
 api.sign.enable=$RADIXDLT_SIGN_ENABLE
 testing_forks.enable=$RADIXDLT_TESTING_FORKS_ENABLE
+testing_forks.version=$RADIXDLT_TESTING_FORKS_VERSION
