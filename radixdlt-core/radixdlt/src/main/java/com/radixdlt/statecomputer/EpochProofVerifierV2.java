@@ -79,7 +79,7 @@ public class EpochProofVerifierV2 implements PostProcessor<LedgerAndBFTProof> {
   @Override
   public LedgerAndBFTProof process(
       LedgerAndBFTProof metadata,
-      EngineStore<LedgerAndBFTProof> engineStore,
+      EngineStore.EngineStoreInTransaction<LedgerAndBFTProof> engineStore,
       List<REProcessedTxn> txns)
       throws PostProcessorException {
     NextValidatorSetEvent nextValidatorSetEvent = null;

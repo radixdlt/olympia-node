@@ -76,7 +76,8 @@ import java.util.List;
  */
 public interface PostProcessor<M> {
   /** @return new metadata to be stored */
-  default M process(M metadata, EngineStore<M> engineStore, List<REProcessedTxn> txns)
+  default M process(
+      M metadata, EngineStore.EngineStoreInTransaction<M> engineStore, List<REProcessedTxn> txns)
       throws PostProcessorException {
     return metadata;
   }
@@ -85,7 +86,10 @@ public interface PostProcessor<M> {
   static <M> PostProcessor<M> combine(PostProcessor<M>... postProcessors) {
     return new PostProcessor<>() {
       @Override
-      public M process(M metadata, EngineStore<M> engineStore, List<REProcessedTxn> txns)
+      public M process(
+          M metadata,
+          EngineStore.EngineStoreInTransaction<M> engineStore,
+          List<REProcessedTxn> txns)
           throws PostProcessorException {
         var result = metadata;
         for (var postProcessor : postProcessors) {

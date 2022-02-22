@@ -104,7 +104,7 @@ public final class CountForksVotesPostProcessor implements PostProcessor<LedgerA
   @Override
   public LedgerAndBFTProof process(
       LedgerAndBFTProof metadata,
-      EngineStore<LedgerAndBFTProof> engineStore,
+      EngineStore.EngineStoreInTransaction<LedgerAndBFTProof> engineStore,
       List<REProcessedTxn> txns)
       throws PostProcessorException {
     if (metadata.getProof().getNextValidatorSet().isPresent()) {
@@ -115,7 +115,8 @@ public final class CountForksVotesPostProcessor implements PostProcessor<LedgerA
   }
 
   private ImmutableMap<HashCode, Short> countForksVotes(
-      EngineStore<LedgerAndBFTProof> engineStore, LedgerAndBFTProof ledgerAndBFTProof) {
+      EngineStore.EngineStoreInTransaction<LedgerAndBFTProof> engineStore,
+      LedgerAndBFTProof ledgerAndBFTProof) {
     final var validatorSet = ledgerAndBFTProof.getProof().getNextValidatorSet().orElseThrow();
     final var totalPower = validatorSet.getTotalPower();
     final var totalPowerVotedMap = countTotalPowerVoted(engineStore, validatorSet);
@@ -136,7 +137,8 @@ public final class CountForksVotesPostProcessor implements PostProcessor<LedgerA
   }
 
   private ImmutableMap<HashCode, UInt256> countTotalPowerVoted(
-      EngineStore<LedgerAndBFTProof> engineStore, BFTValidatorSet validatorSet) {
+      EngineStore.EngineStoreInTransaction<LedgerAndBFTProof> engineStore,
+      BFTValidatorSet validatorSet) {
     final var totalPowerVoted = new HashMap<HashCode, UInt256>();
 
     try (var validatorMetadataCursor =

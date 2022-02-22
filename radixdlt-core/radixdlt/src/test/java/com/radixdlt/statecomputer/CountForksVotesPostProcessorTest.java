@@ -83,6 +83,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.statecomputer.forks.CandidateForkConfig;
 import com.radixdlt.statecomputer.forks.CandidateForkVote;
 import com.radixdlt.statecomputer.forks.RERules;
@@ -140,7 +141,8 @@ public final class CountForksVotesPostProcessorTest {
   }
 
   @Test
-  public void should_count_forks_votes_for_a_single_fork_and_equal_stake_vset() {
+  public void should_count_forks_votes_for_a_single_fork_and_equal_stake_vset()
+      throws RadixEngineException {
     final var equalStakeValidatorSetOf6 =
         BFTValidatorSet.from(
             List.of(
@@ -196,7 +198,7 @@ public final class CountForksVotesPostProcessorTest {
   }
 
   @Test
-  public void should_count_votes_for_two_forks() {
+  public void should_count_votes_for_two_forks() throws RadixEngineException {
     final var equalStakeValidatorSetOf6 =
         BFTValidatorSet.from(
             List.of(
@@ -227,7 +229,8 @@ public final class CountForksVotesPostProcessorTest {
   }
 
   @Test
-  public void should_correctly_count_votes_for_different_validator_sets() {
+  public void should_correctly_count_votes_for_different_validator_sets()
+      throws RadixEngineException {
     final var singleNodeVset =
         BFTValidatorSet.from(List.of(BFTValidator.from(bftNode(0), UInt256.ONE)));
 
@@ -262,7 +265,8 @@ public final class CountForksVotesPostProcessorTest {
   }
 
   @Test
-  public void should_ignore_votes_from_nodes_outside_the_validator_set() {
+  public void should_ignore_votes_from_nodes_outside_the_validator_set()
+      throws RadixEngineException {
     final var singleNodeVset =
         BFTValidatorSet.from(
             List.of(
@@ -301,11 +305,16 @@ public final class CountForksVotesPostProcessorTest {
     return BFTNode.create(ECKeyPair.fromSeed(Shorts.toByteArray((short) seed)).getPublicKey());
   }
 
-  private void processAndAssert(Consumer<ImmutableMap<HashCode, Short>> consumer) {
-    consumer.accept(
-        sut.process(ledgerAndBftProof, engineStore, List.of())
-            .getCountedForksVotes()
-            .orElseThrow());
+  private void processAndAssert(Consumer<ImmutableMap<HashCode, Short>> consumer)
+      throws RadixEngineException {
+    engineStore.transaction(
+        engineStoreInTransaction -> {
+          consumer.accept(
+              sut.process(ledgerAndBftProof, engineStoreInTransaction, List.of())
+                  .getCountedForksVotes()
+                  .orElseThrow());
+          return null;
+        });
   }
 
   private RawSubstateBytes createVoteSubstateBytes(BFTNode node, CandidateForkConfig forkConfig) {

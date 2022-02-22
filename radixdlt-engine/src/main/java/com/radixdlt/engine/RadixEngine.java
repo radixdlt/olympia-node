@@ -383,7 +383,8 @@ public final class RadixEngine<M> {
     }
 
     try {
-      final var postProcessedMetadata = postProcessor.process(meta, engineStore, processedTxns);
+      final var postProcessedMetadata =
+          postProcessor.process(meta, engineStoreInTransaction, processedTxns);
       if (postProcessedMetadata != null) {
         engineStoreInTransaction.storeMetadata(postProcessedMetadata);
       }
