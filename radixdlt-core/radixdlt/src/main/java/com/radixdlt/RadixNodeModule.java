@@ -101,7 +101,8 @@ import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.StokenetForksModule;
-import com.radixdlt.statecomputer.forks.TestingForksModule;
+import com.radixdlt.statecomputer.forks.TestingForksModuleV1;
+import com.radixdlt.statecomputer.forks.TestingForksModuleV2;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
@@ -110,6 +111,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+
+import com.sleepycat.je.EnvironmentConfig;
+import com.sleepycat.je.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.util.Strings;
@@ -267,8 +272,17 @@ public final class RadixNodeModule extends AbstractModule {
       log.info("Using mainnet forks");
       install(new MainnetForksModule());
     } else if (properties.get("testing_forks.enable", false)) {
-      log.info("Using testing forks");
-      install(new TestingForksModule());
+      int forkConfigVersion = !properties.get("testing_forks.version").isBlank() ?
+          properties.get("testing_forks.version", 2) : 2;
+      log.info("Using testing fork config, version {}", forkConfigVersion);
+      switch (forkConfigVersion) {
+        case 1 -> install(new TestingForksModuleV1());
+        case 2 -> install(new TestingForksModuleV2());
+        default -> {
+          log.warn("Unknown fork version {}, will use V2", forkConfigVersion);
+          install(new TestingForksModuleV2());
+        }
+      }
     } else {
       log.info("Using stokenet forks");
       install(new StokenetForksModule());
