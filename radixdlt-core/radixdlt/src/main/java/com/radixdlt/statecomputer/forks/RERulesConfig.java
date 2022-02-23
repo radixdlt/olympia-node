@@ -112,16 +112,12 @@ public final class RERulesConfig {
     this.maxValidators = maxValidators;
   }
 
-  /**
-   * epochs last 10 rounds, fee table is empty
-   */
+  /** epochs last 10 rounds, fee table is empty */
   public static RERulesConfig testingDefault() {
     return testingDefault(10, FeeTable.create(Amount.zero(), Map.of()));
   }
 
-  /**
-   * fee table is empty
-   */
+  /** fee table is empty */
   public static RERulesConfig testingDefault(long maxRounds) {
     return testingDefault(maxRounds, FeeTable.create(Amount.zero(), Map.of()));
   }
