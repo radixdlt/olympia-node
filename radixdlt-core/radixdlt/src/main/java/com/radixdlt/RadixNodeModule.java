@@ -269,7 +269,8 @@ public final class RadixNodeModule extends AbstractModule {
       install(new MainnetForksModule());
     } else if (properties.get("testing_forks.enable", false)) {
       int forkConfigVersion =
-          !properties.get("testing_forks.version").isBlank()
+          properties.get("testing_forks.version") != null
+              && !properties.get("testing_forks.version").isBlank()
               ? properties.get("testing_forks.version", 2)
               : 2;
       log.info("Using testing fork config, version {}", forkConfigVersion);
