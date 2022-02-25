@@ -64,6 +64,7 @@
 
 package com.radixdlt.integration.targeted.staking;
 
+import static com.radixdlt.atom.TxAction.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.google.inject.AbstractModule;
@@ -75,9 +76,6 @@ import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;

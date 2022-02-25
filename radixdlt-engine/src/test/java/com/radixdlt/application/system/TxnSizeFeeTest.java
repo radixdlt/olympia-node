@@ -64,6 +64,7 @@
 
 package com.radixdlt.application.system;
 
+import static com.radixdlt.atom.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -80,16 +81,7 @@ import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.tokens.state.AccountBucket;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.atom.NotEnoughResourcesException;
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atom.actions.CreateSystem;
-import com.radixdlt.atom.actions.FeeReserveComplete;
-import com.radixdlt.atom.actions.FeeReservePut;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atom.*;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;

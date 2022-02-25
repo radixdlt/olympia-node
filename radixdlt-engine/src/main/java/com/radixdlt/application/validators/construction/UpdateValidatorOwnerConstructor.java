@@ -64,12 +64,13 @@
 
 package com.radixdlt.application.validators.construction;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.UpdateValidatorOwner;
 import java.util.OptionalLong;
 
 public class UpdateValidatorOwnerConstructor implements ActionConstructor<UpdateValidatorOwner> {
@@ -82,7 +83,7 @@ public class UpdateValidatorOwnerConstructor implements ActionConstructor<Update
         new ValidatorOwnerCopy(
             OptionalLong.of(curEpoch.getEpoch() + 1),
             action.validatorKey(),
-            action.getOwnerAddress()));
+            action.ownerAddress()));
     txBuilder.end();
   }
 }

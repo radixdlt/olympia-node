@@ -65,6 +65,7 @@
 package com.radixdlt.application.system.construction;
 
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
+import static com.radixdlt.atom.TxAction.*;
 
 import com.google.common.collect.Streams;
 import com.google.common.primitives.UnsignedBytes;
@@ -80,11 +81,7 @@ import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.NextEpoch;
+import com.radixdlt.atom.*;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -98,22 +95,12 @@ import java.util.TreeSet;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch> {
-  private final UInt256 rewardsPerProposal;
-  private final long unstakingEpochDelay;
-  private final long minimumCompletedProposalsPercentage;
-  private final int maxValidators;
-
-  public NextEpochConstructorV3(
-      UInt256 rewardsPerProposal,
-      long minimumCompletedProposalsPercentage,
-      long unstakingEpochDelay,
-      int maxValidators) {
-    this.rewardsPerProposal = rewardsPerProposal;
-    this.unstakingEpochDelay = unstakingEpochDelay;
-    this.minimumCompletedProposalsPercentage = minimumCompletedProposalsPercentage;
-    this.maxValidators = maxValidators;
-  }
+public record NextEpochConstructorV3(
+    UInt256 rewardsPerProposal,
+    long minimumCompletedProposalsPercentage,
+    long unstakingEpochDelay,
+    int maxValidators)
+    implements ActionConstructor<NextEpoch> {
 
   private static ValidatorScratchPad loadValidatorStakeData(
       TxBuilder txBuilder,

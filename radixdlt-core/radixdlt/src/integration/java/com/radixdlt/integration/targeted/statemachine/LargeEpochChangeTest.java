@@ -64,6 +64,7 @@
 
 package com.radixdlt.integration.targeted.statemachine;
 
+import static com.radixdlt.atom.TxAction.*;
 import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 
 import com.google.common.base.Stopwatch;
@@ -85,11 +86,6 @@ import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.NextEpoch;
-import com.radixdlt.atom.actions.NextRound;
-import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.TimestampedECDSASignatures;

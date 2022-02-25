@@ -64,6 +64,7 @@
 
 package com.radixdlt.statecomputer;
 
+import static com.radixdlt.atom.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -80,15 +81,7 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.NextEpoch;
-import com.radixdlt.atom.actions.NextRound;
-import com.radixdlt.atom.actions.RegisterValidator;
+import com.radixdlt.atom.*;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
@@ -397,9 +390,8 @@ public class RadixEngineStateComputerTest {
         .hasValueSatisfying(
             new Condition<>(
                 e -> {
-                  RadixEngineException ex = (RadixEngineException) e;
-                  ConstraintMachineException cmException =
-                      (ConstraintMachineException) ex.getCause();
+                  var ex = (RadixEngineException) e;
+                  var cmException = (ConstraintMachineException) ex.getCause();
                   return cmException.getCause() instanceof InvalidPermissionException;
                 },
                 "Is invalid_execution_permission error"));
@@ -430,7 +422,7 @@ public class RadixEngineStateComputerTest {
   @Test
   public void committing_epoch_change_with_additional_cmds_should_fail() throws Exception {
     // Arrange
-    ECKeyPair keyPair = ECKeyPair.generateNew();
+    var keyPair = ECKeyPair.generateNew();
     var cmd0 = systemUpdateCommand(0, 2);
     var cmd1 = registerCommand(keyPair);
     var ledgerProof =

@@ -64,11 +64,12 @@
 
 package com.radixdlt.application.system.construction;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.FeeReserveComplete;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
@@ -117,7 +118,7 @@ public class FeeReserveCompleteConstructor implements ActionConstructor<FeeReser
       throw new FeeReserveCompleteException(feeReserve, expectedFee);
     }
     var leftover = feeReserve.subtract(expectedFee);
-    builder.takeFeeReserve(action.to(), leftover);
+    builder.takeFeeReserve(action.toAddr(), leftover);
     builder.end();
   }
 

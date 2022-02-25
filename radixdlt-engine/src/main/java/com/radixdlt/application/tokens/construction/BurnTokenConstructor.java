@@ -64,26 +64,22 @@
 
 package com.radixdlt.application.tokens.construction;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.radixdlt.application.tokens.state.AccountBucket;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.NotEnoughResourcesException;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.*;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import java.nio.ByteBuffer;
 
 public final class BurnTokenConstructor implements ActionConstructor<BurnToken> {
-
   @Override
   public void construct(BurnToken action, TxBuilder txBuilder) throws TxBuilderException {
     var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
     buf.put(SubstateTypeId.TOKENS.id());
     buf.put((byte) 0);
-    buf.put(action.from().getBytes());
+    buf.put(action.fromAddr().getBytes());
 
     var index = SubstateIndex.create(buf.array(), TokensInAccount.class);
     var change =
@@ -91,14 +87,14 @@ public final class BurnTokenConstructor implements ActionConstructor<BurnToken> 
             index,
             p ->
                 p.getResourceAddr().equals(action.resourceAddr())
-                    && p.getHoldingAddr().equals(action.from()),
+                    && p.getHoldingAddr().equals(action.fromAddr()),
             action.amount(),
             available -> {
-              var from = AccountBucket.from(action.resourceAddr(), action.from());
+              var from = AccountBucket.from(action.resourceAddr(), action.fromAddr());
               return new NotEnoughResourcesException(from, action.amount(), available);
             });
     if (!change.isZero()) {
-      txBuilder.up(new TokensInAccount(action.from(), action.resourceAddr(), change));
+      txBuilder.up(new TokensInAccount(action.fromAddr(), action.resourceAddr(), change));
     }
     txBuilder.end();
   }

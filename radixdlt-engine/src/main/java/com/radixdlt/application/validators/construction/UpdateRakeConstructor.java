@@ -64,25 +64,27 @@
 
 package com.radixdlt.application.validators.construction;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.UpdateValidatorFee;
 import java.util.OptionalLong;
 
-public final class UpdateRakeConstructor implements ActionConstructor<UpdateValidatorFee> {
-  private final long rakeIncreaseDebounceEpochLength;
-  private final int maxRakeIncrease;
-
-  public UpdateRakeConstructor(long rakeIncreaseDebounceEpochLength, int maxRakeIncrease) {
+public record UpdateRakeConstructor(long rakeIncreaseDebounceEpochLength, int maxRakeIncrease)
+    implements ActionConstructor<UpdateValidatorFee> {
+  public UpdateRakeConstructor {
     if (rakeIncreaseDebounceEpochLength < 0 || maxRakeIncrease < 0) {
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException(
+          "Invalid rakeIncreaseDebounceEpochLength ("
+              + rakeIncreaseDebounceEpochLength
+              + ") or maxRakeIncrease ("
+              + maxRakeIncrease
+              + ")");
     }
-    this.rakeIncreaseDebounceEpochLength = rakeIncreaseDebounceEpochLength;
-    this.maxRakeIncrease = maxRakeIncrease;
   }
 
   @Override
@@ -91,8 +93,8 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateVali
     var curRakePercentage =
         builder.read(ValidatorStakeData.class, action.validatorKey()).getRakePercentage();
 
-    var isIncrease = action.getFeePercentage() > curRakePercentage;
-    var rakeIncrease = action.getFeePercentage() - curRakePercentage;
+    var isIncrease = action.feePercentage() > curRakePercentage;
+    var rakeIncrease = action.feePercentage() - curRakePercentage;
     if (isIncrease && rakeIncrease >= maxRakeIncrease) {
       throw new InvalidRakeIncreaseException(maxRakeIncrease, rakeIncrease);
     }
@@ -102,7 +104,7 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateVali
     var epoch = curEpoch.getEpoch() + epochDiff;
     builder.up(
         new ValidatorFeeCopy(
-            OptionalLong.of(epoch), action.validatorKey(), action.getFeePercentage()));
+            OptionalLong.of(epoch), action.validatorKey(), action.feePercentage()));
     builder.end();
   }
 }

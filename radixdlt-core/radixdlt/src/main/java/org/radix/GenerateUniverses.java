@@ -64,6 +64,8 @@
 
 package org.radix;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -75,7 +77,6 @@ import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
