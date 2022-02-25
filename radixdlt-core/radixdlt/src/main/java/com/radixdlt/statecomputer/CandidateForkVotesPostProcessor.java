@@ -65,6 +65,7 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.SubstateTypeId;
@@ -78,6 +79,7 @@ import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.PostProcessorException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.forks.CandidateForkVote;
+import com.radixdlt.statecomputer.forks.ForkVotingResult;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
@@ -87,8 +89,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/** Adds countedForksVotes at epoch boundary to the result metadata. */
-public final class CountForksVotesPostProcessor implements PostProcessor<LedgerAndBFTProof> {
+/** Adds forksVotingResults at epoch boundary to the result metadata. */
+public final class CandidateForkVotesPostProcessor implements PostProcessor<LedgerAndBFTProof> {
   /**
    * Specifies a minimum stake that needs to vote for a fork to be added to the resulting stored
    * map. Acts as a storage size optimization so that we don't store insignificant entries.
@@ -97,7 +99,7 @@ public final class CountForksVotesPostProcessor implements PostProcessor<LedgerA
 
   private final SubstateDeserialization substateDeserialization;
 
-  public CountForksVotesPostProcessor(SubstateDeserialization substateDeserialization) {
+  public CandidateForkVotesPostProcessor(SubstateDeserialization substateDeserialization) {
     this.substateDeserialization = Objects.requireNonNull(substateDeserialization);
   }
 
@@ -108,18 +110,19 @@ public final class CountForksVotesPostProcessor implements PostProcessor<LedgerA
       List<REProcessedTxn> txns)
       throws PostProcessorException {
     if (metadata.getProof().getNextValidatorSet().isPresent()) {
-      return metadata.withCountedForksVotes(countForksVotes(engineStore, metadata));
+      return metadata.withForksVotingResults(prepareForksVotingResults(engineStore, metadata));
     } else {
       return metadata;
     }
   }
 
-  private ImmutableMap<HashCode, Short> countForksVotes(
+  private ImmutableSet<ForkVotingResult> prepareForksVotingResults(
       EngineStore.EngineStoreInTransaction<LedgerAndBFTProof> engineStore,
       LedgerAndBFTProof ledgerAndBFTProof) {
+    final var nextEpoch = ledgerAndBFTProof.getProof().getEpoch() + 1;
     final var validatorSet = ledgerAndBFTProof.getProof().getNextValidatorSet().orElseThrow();
     final var totalPower = validatorSet.getTotalPower();
-    final var totalPowerVotedMap = countTotalPowerVoted(engineStore, validatorSet);
+    final var totalPowerVotedMap = totalStakePowerVotedByFork(engineStore, validatorSet);
 
     return totalPowerVotedMap.entrySet().stream()
         .map(
@@ -133,10 +136,11 @@ public final class CountForksVotesPostProcessor implements PostProcessor<LedgerA
               return Pair.of(e.getKey(), percentagePower);
             })
         .filter(p -> p.getSecond() >= VOTES_THRESHOLD_TO_STORE_RESULT)
-        .collect(ImmutableMap.toImmutableMap(Pair::getFirst, Pair::getSecond));
+        .map(e -> new ForkVotingResult(nextEpoch, e.getFirst(), e.getSecond()))
+        .collect(ImmutableSet.toImmutableSet());
   }
 
-  private ImmutableMap<HashCode, UInt256> countTotalPowerVoted(
+  private ImmutableMap<HashCode, UInt256> totalStakePowerVotedByFork(
       EngineStore.EngineStoreInTransaction<LedgerAndBFTProof> engineStore,
       BFTValidatorSet validatorSet) {
     final var totalPowerVoted = new HashMap<HashCode, UInt256>();
@@ -152,7 +156,7 @@ public final class CountForksVotesPostProcessor implements PostProcessor<LedgerA
                       bftNodeAndVote -> {
                         if (validatorSet.containsNode(bftNodeAndVote.getFirst())) {
                           final var mapKey =
-                              HashCode.fromBytes(bftNodeAndVote.getSecond().forkConfigParamsHash());
+                              HashCode.fromBytes(bftNodeAndVote.getSecond().candidateForkId());
                           final var existingValue =
                               totalPowerVoted.getOrDefault(mapKey, UInt256.ZERO);
                           final var newValue =

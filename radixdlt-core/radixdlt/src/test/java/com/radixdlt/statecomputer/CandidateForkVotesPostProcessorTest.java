@@ -71,7 +71,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.CloseableCursor;
@@ -86,6 +86,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.statecomputer.forks.CandidateForkConfig;
 import com.radixdlt.statecomputer.forks.CandidateForkVote;
+import com.radixdlt.statecomputer.forks.ForkVotingResult;
 import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.store.EngineStore;
@@ -97,21 +98,31 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.Test;
 
-public final class CountForksVotesPostProcessorTest {
+public final class CandidateForkVotesPostProcessorTest {
   private final RERules reRules = OLYMPIA_V1.create(RERulesConfig.testingDefault());
   private final CandidateForkConfig fork1 =
-      new CandidateForkConfig("fork1", reRules, (short) 8000, 1L, 5L, 1);
-  private final HashCode fork1MapKey = CandidateForkVote.forkConfigParamsHash(fork1);
+      new CandidateForkConfig(
+          "fork1",
+          reRules,
+          ImmutableSet.of(new CandidateForkConfig.Threshold((short) 8000, 1)),
+          1L,
+          5L);
+  private final HashCode fork1CandidateForkId = CandidateForkVote.candidateForkId(fork1);
   private final CandidateForkConfig fork2 =
-      new CandidateForkConfig("fork2", reRules, (short) 8000, 1L, 5L, 1);
-  private final HashCode fork2MapKey = CandidateForkVote.forkConfigParamsHash(fork2);
+      new CandidateForkConfig(
+          "fork2",
+          reRules,
+          ImmutableSet.of(new CandidateForkConfig.Threshold((short) 8000, 1)),
+          1L,
+          5L);
+  private final HashCode fork2CandidateForkid = CandidateForkVote.candidateForkId(fork2);
 
   private SubstateIndex<ValidatorSystemMetadata> metadataSubstateIdx =
       SubstateIndex.create(
           SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class);
 
-  private CountForksVotesPostProcessor sut =
-      new CountForksVotesPostProcessor(reRules.getParser().getSubstateDeserialization());
+  private CandidateForkVotesPostProcessor sut =
+      new CandidateForkVotesPostProcessor(reRules.getParser().getSubstateDeserialization());
 
   private LedgerAndBFTProof ledgerAndBftProof;
   private EngineStore<LedgerAndBFTProof> engineStore;
@@ -137,7 +148,7 @@ public final class CountForksVotesPostProcessorTest {
     final var nonEpochLedgerProof = mock(LedgerProof.class);
     when(nonEpochLedgerProof.getNextValidatorSet()).thenReturn(Optional.empty());
     final var nonEpochProof = LedgerAndBFTProof.create(nonEpochLedgerProof);
-    assertTrue(sut.process(nonEpochProof, null, null).getCountedForksVotes().isEmpty());
+    assertTrue(sut.process(nonEpochProof, null, null).getForksVotingResults().isEmpty());
   }
 
   @Test
@@ -164,7 +175,7 @@ public final class CountForksVotesPostProcessorTest {
     processAndAssert(
         result -> {
           assertEquals(1, result.size());
-          assertEquals((short) 5000, result.get(fork1MapKey).shortValue());
+          assertEquals((short) 5000, result.iterator().next().stakePercentageVoted());
         });
 
     // 6 out of 6 votes
@@ -181,7 +192,8 @@ public final class CountForksVotesPostProcessorTest {
     processAndAssert(
         result -> {
           assertEquals(1, result.size());
-          assertEquals((short) 10000, result.get(fork1MapKey).shortValue());
+          assertEquals((short) 10000, result.iterator().next().stakePercentageVoted());
+          //          TODO(luk): also assert hash to be fork1ConfigParamsHash
         });
 
     // no votes
@@ -223,8 +235,19 @@ public final class CountForksVotesPostProcessorTest {
     processAndAssert(
         result -> {
           assertEquals(2, result.size());
-          assertEquals((short) 5000, result.get(fork1MapKey).shortValue());
-          assertEquals((short) 5000, result.get(fork2MapKey).shortValue());
+          final var resultFork1 =
+              result.stream()
+                  .filter(e -> e.candidateForkId().equals(fork1CandidateForkId))
+                  .findAny()
+                  .orElseThrow();
+          final var resultFork2 =
+              result.stream()
+                  .filter(e -> e.candidateForkId().equals(fork2CandidateForkid))
+                  .findAny()
+                  .orElseThrow();
+
+          assertEquals((short) 5000, resultFork1.stakePercentageVoted());
+          assertEquals((short) 5000, resultFork2.stakePercentageVoted());
         });
   }
 
@@ -239,7 +262,13 @@ public final class CountForksVotesPostProcessorTest {
     processAndAssert(
         result -> {
           assertEquals(1, result.size());
-          assertEquals((short) 10000, result.get(fork1MapKey).shortValue());
+          assertEquals(
+              (short) 10000,
+              result.stream()
+                  .filter(r -> r.candidateForkId().equals(fork1CandidateForkId))
+                  .findAny()
+                  .orElseThrow()
+                  .stakePercentageVoted());
         });
 
     final var twoNodesDifferentStakeVset =
@@ -260,7 +289,13 @@ public final class CountForksVotesPostProcessorTest {
     processAndAssert(
         result -> {
           assertEquals(1, result.size());
-          assertEquals((short) 9090, result.get(fork1MapKey).shortValue());
+          assertEquals(
+              (short) 9090,
+              result.stream()
+                  .filter(r -> r.candidateForkId().equals(fork1CandidateForkId))
+                  .findAny()
+                  .orElseThrow()
+                  .stakePercentageVoted());
         });
   }
 
@@ -297,7 +332,13 @@ public final class CountForksVotesPostProcessorTest {
     processAndAssert(
         result -> {
           assertEquals(1, result.size());
-          assertEquals((short) 6666, result.get(fork1MapKey).shortValue());
+          assertEquals(
+              (short) 6666,
+              result.stream()
+                  .filter(r -> r.candidateForkId().equals(fork1CandidateForkId))
+                  .findAny()
+                  .orElseThrow()
+                  .stakePercentageVoted());
         });
   }
 
@@ -305,13 +346,13 @@ public final class CountForksVotesPostProcessorTest {
     return BFTNode.create(ECKeyPair.fromSeed(Shorts.toByteArray((short) seed)).getPublicKey());
   }
 
-  private void processAndAssert(Consumer<ImmutableMap<HashCode, Short>> consumer)
+  private void processAndAssert(Consumer<ImmutableSet<ForkVotingResult>> consumer)
       throws RadixEngineException {
     engineStore.transaction(
         engineStoreInTransaction -> {
           consumer.accept(
               sut.process(ledgerAndBftProof, engineStoreInTransaction, List.of())
-                  .getCountedForksVotes()
+                  .getForksVotingResults()
                   .orElseThrow());
           return null;
         });

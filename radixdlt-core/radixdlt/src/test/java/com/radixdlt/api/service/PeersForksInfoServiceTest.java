@@ -71,6 +71,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.api.system.health.PeersForksInfoService;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerProof;
@@ -103,7 +104,12 @@ public final class PeersForksInfoServiceTest {
   public void should_collect_unknown_forks_hashes_from_peer_events() {
     final var initialFork = new FixedEpochForkConfig("fork1", reRules, 0L);
     final var candidateFork =
-        new CandidateForkConfig("fork2", reRules, (short) 5100, 2L, Long.MAX_VALUE, 1);
+        new CandidateForkConfig(
+            "fork2",
+            reRules,
+            ImmutableSet.of(new CandidateForkConfig.Threshold((short) 5100, 1)),
+            2L,
+            Long.MAX_VALUE);
     final var forks = Forks.create(Set.of(initialFork, candidateFork));
 
     final var initialValidator = BFTNode.random();

@@ -73,6 +73,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.api.system.health.ForkVoteStatusService;
 import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.CloseableCursor;
@@ -104,7 +105,12 @@ public final class ForkVoteStatusServiceTest {
     final var engineStore = (EngineStore<LedgerAndBFTProof>) rmock(EngineStore.class);
     final var initialFork = new FixedEpochForkConfig("fork1", reRules, 0L);
     final var candidateFork =
-        new CandidateForkConfig("fork2", reRules, (short) 5100, 2L, Long.MAX_VALUE, 1);
+        new CandidateForkConfig(
+            "fork2",
+            reRules,
+            ImmutableSet.of(new CandidateForkConfig.Threshold((short) 5100, 1)),
+            2L,
+            Long.MAX_VALUE);
     final var forks = Forks.create(Set.of(initialFork, candidateFork));
 
     final var currentForkView = mock(CurrentForkView.class);

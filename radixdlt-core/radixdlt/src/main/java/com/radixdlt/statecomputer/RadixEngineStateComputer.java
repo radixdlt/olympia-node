@@ -415,7 +415,9 @@ public final class RadixEngineStateComputer implements StateComputer {
   private void forkRadixEngine(String nextForkName) {
     final var nextForkConfig =
         forks.getByName(nextForkName).orElseThrow(); // guaranteed to be present
-    log.info("Forking RadixEngine to {}", nextForkConfig.name());
+    if (log.isInfoEnabled()) {
+      log.info("Forking RadixEngine to {}", nextForkConfig.name());
+    }
     final var rules = nextForkConfig.engineRules();
     this.radixEngine.replaceConstraintMachine(
         rules.getConstraintMachineConfig(),

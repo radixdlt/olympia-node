@@ -126,7 +126,7 @@ import com.radixdlt.constraintmachine.meter.TxnSizeFeeMeter;
 import com.radixdlt.constraintmachine.meter.UpSubstateFeeMeter;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.statecomputer.CountForksVotesPostProcessor;
+import com.radixdlt.statecomputer.CandidateForkVotesPostProcessor;
 import com.radixdlt.statecomputer.EpochProofVerifierV2;
 
 public enum RERulesVersion {
@@ -226,7 +226,7 @@ public enum RERulesVersion {
           actionConstructors,
           PostProcessor.combine(
               new EpochProofVerifierV2(),
-              new CountForksVotesPostProcessor(parser.getSubstateDeserialization())),
+              new CandidateForkVotesPostProcessor(parser.getSubstateDeserialization())),
           config);
     }
   };

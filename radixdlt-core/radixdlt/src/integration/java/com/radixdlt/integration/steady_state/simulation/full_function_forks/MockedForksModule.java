@@ -64,11 +64,13 @@
 
 package com.radixdlt.integration.steady_state.simulation.full_function_forks;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.statecomputer.forks.CandidateForkConfig;
 import com.radixdlt.statecomputer.forks.ForkBuilder;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RERulesVersion;
@@ -126,7 +128,7 @@ public final class MockedForksModule extends AbstractModule {
 
   @ProvidesIntoSet
   ForkBuilder fork4() {
-    return copyBaseWithVoting("fork3", (short) 5100, 20L, Long.MAX_VALUE, 1);
+    return copyBaseWithVoting("fork3", (short) 7500, 20L, Long.MAX_VALUE, 1);
   }
 
   private ForkBuilder copyBaseAtEpoch(String name, long epoch) {
@@ -138,10 +140,9 @@ public final class MockedForksModule extends AbstractModule {
       String name, short requiredStake, long minEpoch, long maxEpoch, int epochsBeforeEnacted) {
     return new ForkBuilder(
         name,
-        requiredStake,
+        ImmutableSet.of(new CandidateForkConfig.Threshold(requiredStake, epochsBeforeEnacted)),
         minEpoch,
         maxEpoch,
-        epochsBeforeEnacted,
         baseForkBuilder.getReRulesVersion(),
         baseForkBuilder.getEngineRulesConfig());
   }

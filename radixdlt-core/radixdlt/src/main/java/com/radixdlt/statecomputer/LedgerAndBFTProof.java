@@ -64,10 +64,10 @@
 
 package com.radixdlt.statecomputer;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.hash.HashCode;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.statecomputer.forks.ForkVotingResult;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -76,17 +76,17 @@ public final class LedgerAndBFTProof {
   private final LedgerProof ledgerProof;
   private final VerifiedVertexStoreState vertexStoreState;
   private final Optional<String> nextForkName;
-  private final Optional<ImmutableMap<HashCode, Short>> countedForksVotes;
+  private final Optional<ImmutableSet<ForkVotingResult>> forksVotingResults;
 
   private LedgerAndBFTProof(
       LedgerProof ledgerProof,
       VerifiedVertexStoreState vertexStoreState,
       Optional<String> nextForkName,
-      Optional<ImmutableMap<HashCode, Short>> countedForksVotes) {
+      Optional<ImmutableSet<ForkVotingResult>> forksVotingResults) {
     this.ledgerProof = ledgerProof;
     this.vertexStoreState = vertexStoreState;
     this.nextForkName = nextForkName;
-    this.countedForksVotes = countedForksVotes;
+    this.forksVotingResults = forksVotingResults;
   }
 
   public static LedgerAndBFTProof create(LedgerProof ledgerProof) {
@@ -102,9 +102,9 @@ public final class LedgerAndBFTProof {
       LedgerProof ledgerProof,
       VerifiedVertexStoreState vertexStoreState,
       Optional<String> nextForkName,
-      Optional<ImmutableMap<HashCode, Short>> countedForksVotes) {
+      Optional<ImmutableSet<ForkVotingResult>> forksVotingResults) {
     Objects.requireNonNull(ledgerProof);
-    return new LedgerAndBFTProof(ledgerProof, vertexStoreState, nextForkName, countedForksVotes);
+    return new LedgerAndBFTProof(ledgerProof, vertexStoreState, nextForkName, forksVotingResults);
   }
 
   public LedgerProof getProof() {
@@ -119,23 +119,24 @@ public final class LedgerAndBFTProof {
     return nextForkName;
   }
 
-  public Optional<ImmutableMap<HashCode, Short>> getCountedForksVotes() {
-    return countedForksVotes;
+  public Optional<ImmutableSet<ForkVotingResult>> getForksVotingResults() {
+    return forksVotingResults;
   }
 
   public LedgerAndBFTProof withNextForkName(String nextForkName) {
     return new LedgerAndBFTProof(
-        ledgerProof, vertexStoreState, Optional.of(nextForkName), countedForksVotes);
+        ledgerProof, vertexStoreState, Optional.of(nextForkName), forksVotingResults);
   }
 
-  public LedgerAndBFTProof withCountedForksVotes(ImmutableMap<HashCode, Short> countedForksVotes) {
+  public LedgerAndBFTProof withForksVotingResults(
+      ImmutableSet<ForkVotingResult> forksVotingResults) {
     return new LedgerAndBFTProof(
-        ledgerProof, vertexStoreState, nextForkName, Optional.of(countedForksVotes));
+        ledgerProof, vertexStoreState, nextForkName, Optional.of(forksVotingResults));
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ledgerProof, vertexStoreState, nextForkName, countedForksVotes);
+    return Objects.hash(ledgerProof, vertexStoreState, nextForkName, forksVotingResults);
   }
 
   @Override
@@ -144,6 +145,6 @@ public final class LedgerAndBFTProof {
         && Objects.equals(this.ledgerProof, other.ledgerProof)
         && Objects.equals(this.vertexStoreState, other.vertexStoreState)
         && Objects.equals(this.nextForkName, other.nextForkName)
-        && Objects.equals(this.countedForksVotes, other.countedForksVotes);
+        && Objects.equals(this.forksVotingResults, other.forksVotingResults);
   }
 }

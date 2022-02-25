@@ -71,12 +71,16 @@ import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.utils.Pair;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.TreeMap;
 
 public final class InMemoryForksEpochStore implements ForksEpochStore {
   public static final class Store {
     final TreeMap<Long, String> storedForks = new TreeMap<>();
+    final TreeMap<Long, Set<ForkVotingResult>> forksVotingResults = new TreeMap<>();
+    long maxStoredEpoch = 0L;
   }
 
   private final Object lock = new Object();
@@ -117,8 +121,27 @@ public final class InMemoryForksEpochStore implements ForksEpochStore {
   }
 
   @Override
-  public CloseableCursor<Pair<HashCode, Short>> countedForksVotesCursor(long epoch) {
-    return CloseableCursor.empty();
+  public CloseableCursor<ForkVotingResult> forkVotingResultsCursor(
+      long fromEpoch, long toEpoch, HashCode candidateForkId) {
+    final var result = new ArrayList<ForkVotingResult>();
+    for (long i = fromEpoch; i < toEpoch && i <= store.maxStoredEpoch; i += 1) {
+      if (store.forksVotingResults.containsKey(i)) {
+        store.forksVotingResults.get(i).stream()
+            .filter(r -> r.candidateForkId().equals(candidateForkId))
+            .findAny()
+            .ifPresent(result::add);
+      }
+    }
+
+    return CloseableCursor.of(result);
+  }
+
+  public void storeForkVotingResult(ForkVotingResult forkVotingResult) {
+    final var currentResults =
+        this.store.forksVotingResults.computeIfAbsent(
+            forkVotingResult.epoch(), unused -> new HashSet<>());
+    currentResults.add(forkVotingResult);
+    this.store.maxStoredEpoch = Math.max(this.store.maxStoredEpoch, forkVotingResult.epoch());
   }
 
   public Store getStore() {

@@ -64,6 +64,7 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import com.google.common.collect.ImmutableSet;
 import java.util.Optional;
 
 /**
@@ -74,7 +75,7 @@ public final class ForkBuilder {
   public static record FixedEpochForkBuildersOpts(long epoch) {}
 
   public static record CandidateForkBuildersOpts(
-      short requiredStake, long minEpoch, long maxEpoch, int numEpochsBeforeEnacted) {}
+      ImmutableSet<CandidateForkConfig.Threshold> thresholds, long minEpoch, long maxEpoch) {}
 
   private final String name;
   private final Optional<FixedEpochForkBuildersOpts> fixedEpochForkBuilderOpts;
@@ -94,18 +95,15 @@ public final class ForkBuilder {
 
   public ForkBuilder(
       String name,
-      short requiredStake,
+      ImmutableSet<CandidateForkConfig.Threshold> thresholds,
       long minEpoch,
       long maxEpoch,
-      int numEpochsBeforeEnacted,
       RERulesVersion reRulesVersion,
       RERulesConfig reRulesConfig) {
     this(
         name,
         Optional.empty(),
-        Optional.of(
-            new CandidateForkBuildersOpts(
-                requiredStake, minEpoch, maxEpoch, numEpochsBeforeEnacted)),
+        Optional.of(new CandidateForkBuildersOpts(thresholds, minEpoch, maxEpoch)),
         reRulesVersion,
         reRulesConfig);
   }
@@ -154,15 +152,8 @@ public final class ForkBuilder {
   }
 
   public ForkBuilder withStakeVoting(
-      short requiredStake, long minEpoch, long maxEpoch, int numEpochsBeforeEnacted) {
-    return new ForkBuilder(
-        name,
-        requiredStake,
-        minEpoch,
-        maxEpoch,
-        numEpochsBeforeEnacted,
-        reRulesVersion,
-        reRulesConfig);
+      ImmutableSet<CandidateForkConfig.Threshold> thresholds, long minEpoch, long maxEpoch) {
+    return new ForkBuilder(name, thresholds, minEpoch, maxEpoch, reRulesVersion, reRulesConfig);
   }
 
   public long minEpoch() {
@@ -175,22 +166,13 @@ public final class ForkBuilder {
     return candidateForkBuilderOpts.map(CandidateForkBuildersOpts::maxEpoch);
   }
 
-  public Optional<Integer> numEpochsBeforeEnacted() {
-    return candidateForkBuilderOpts.map(CandidateForkBuildersOpts::numEpochsBeforeEnacted);
-  }
-
   public ForkConfig build() {
     final var reRules = reRulesVersion.create(reRulesConfig);
     return candidateForkBuilderOpts
         .<ForkConfig>map(
             opts ->
                 new CandidateForkConfig(
-                    name,
-                    reRules,
-                    opts.requiredStake,
-                    opts.minEpoch,
-                    opts.maxEpoch,
-                    opts.numEpochsBeforeEnacted))
+                    name, reRules, opts.thresholds, opts.minEpoch, opts.maxEpoch))
         .orElseGet(
             () -> new FixedEpochForkConfig(name, reRules, fixedEpochForkBuilderOpts.get().epoch));
   }

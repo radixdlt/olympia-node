@@ -65,27 +65,35 @@
 package com.radixdlt.statecomputer.forks;
 
 import static com.radixdlt.statecomputer.forks.RERulesVersion.OLYMPIA_V1;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.hash.HashCode;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.Test;
 
 public final class ForksTest {
+
+  private final ForksEpochStore emptyForksEpochStore =
+      new InMemoryForksEpochStore(new InMemoryForksEpochStore.Store());
 
   @Test
   public void should_fail_when_two_forks_with_the_same_hash() {
@@ -129,55 +137,62 @@ public final class ForksTest {
 
   @Test
   public void forks_should_respect_candidate_epoch_limits() {
+    final var threshold = new CandidateForkConfig.Threshold((short) 8000, 1);
     final var candidate =
         new CandidateForkConfig(
             "candidate",
             OLYMPIA_V1.create(RERulesConfig.testingDefault()),
-            (short) 8000,
+            ImmutableSet.of(threshold),
             3L,
-            5L,
-            1);
-
-    final var countedForksVotes =
-        votesFor(candidate, candidate.requiredStake() /* fork has just enough stake votes */);
+            5L);
 
     assertFalse(
         Forks.testCandidate(
             candidate,
             proofForCandidate(
-                1L /* next epoch = 2; minEpoch <!= 2 <= maxEpoch */, countedForksVotes)));
+                1L /* next epoch = 2; minEpoch <!= 2 <= maxEpoch */,
+                votesFor(2L, candidate, threshold.requiredStake())),
+            emptyForksEpochStore));
     assertTrue(
         Forks.testCandidate(
             candidate,
             proofForCandidate(
-                2L /* next epoch = 3; minEpoch <= 3 <= maxEpoch */, countedForksVotes)));
+                2L /* next epoch = 3; minEpoch <= 3 <= maxEpoch */,
+                votesFor(3L, candidate, threshold.requiredStake())),
+            emptyForksEpochStore));
     assertTrue(
         Forks.testCandidate(
             candidate,
             proofForCandidate(
-                3L /* next epoch = 4; minEpoch <= 4 <= maxEpoch */, countedForksVotes)));
+                3L /* next epoch = 4; minEpoch <= 4 <= maxEpoch */,
+                votesFor(4L, candidate, threshold.requiredStake())),
+            emptyForksEpochStore));
     assertTrue(
         Forks.testCandidate(
             candidate,
             proofForCandidate(
-                4L /* next epoch = 5; minEpoch <= 5 <= maxEpoch */, countedForksVotes)));
+                4L /* next epoch = 5; minEpoch <= 5 <= maxEpoch */,
+                votesFor(5L, candidate, threshold.requiredStake())),
+            emptyForksEpochStore));
     assertFalse(
         Forks.testCandidate(
             candidate,
             proofForCandidate(
-                5L /* next epoch = 6; minEpoch <= 6 <!= maxEpoch */, countedForksVotes)));
+                5L /* next epoch = 6; minEpoch <= 6 <!= maxEpoch */,
+                votesFor(6L, candidate, threshold.requiredStake())),
+            emptyForksEpochStore));
   }
 
   @Test
   public void forks_should_respect_candidate_required_stake() {
+    final var threshold = new CandidateForkConfig.Threshold((short) 8000, 1);
     final var candidate =
         new CandidateForkConfig(
             "candidate",
             OLYMPIA_V1.create(RERulesConfig.testingDefault()),
-            (short) 8000,
+            ImmutableSet.of(threshold),
             3L,
-            5L,
-            1);
+            5L);
 
     assertFalse(
         Forks.testCandidate(
@@ -185,14 +200,10 @@ public final class ForksTest {
             proofForCandidate(
                 candidate.minEpoch() - 1,
                 votesFor(
-                    candidate, (short) (candidate.requiredStake() - 1) /* too little stake */))));
-
-    assertTrue(
-        Forks.testCandidate(
-            candidate,
-            proofForCandidate(
-                candidate.minEpoch() - 1,
-                votesFor(candidate, candidate.requiredStake() /* just enough stake */))));
+                    candidate.minEpoch(),
+                    candidate,
+                    (short) (threshold.requiredStake() - 1) /* too little stake */)),
+            emptyForksEpochStore));
 
     assertTrue(
         Forks.testCandidate(
@@ -200,11 +211,25 @@ public final class ForksTest {
             proofForCandidate(
                 candidate.minEpoch() - 1,
                 votesFor(
-                    candidate, (short) (candidate.requiredStake() + 1) /* more than required */))));
+                    candidate.minEpoch(),
+                    candidate,
+                    threshold.requiredStake() /* just enough stake */)),
+            emptyForksEpochStore));
+
+    assertTrue(
+        Forks.testCandidate(
+            candidate,
+            proofForCandidate(
+                candidate.minEpoch() - 1,
+                votesFor(
+                    candidate.minEpoch(),
+                    candidate,
+                    (short) (threshold.requiredStake() + 1) /* more than required */)),
+            emptyForksEpochStore));
   }
 
   private LedgerAndBFTProof proofForCandidate(
-      long epoch, ImmutableMap<HashCode, Short> countedForksVotes) {
+      long epoch, ImmutableSet<ForkVotingResult> forksVotingResults) {
     final var ledgerProof = mock(LedgerProof.class);
     // value is not used, but optional needs to be present in proof (test for epoch boundary)
     final var validatorSet =
@@ -213,11 +238,13 @@ public final class ForksTest {
 
     when(ledgerProof.getEpoch()).thenReturn(epoch);
 
-    return LedgerAndBFTProof.create(ledgerProof).withCountedForksVotes(countedForksVotes);
+    return LedgerAndBFTProof.create(ledgerProof).withForksVotingResults(forksVotingResults);
   }
 
-  private ImmutableMap<HashCode, Short> votesFor(CandidateForkConfig forkConfig, short votes) {
-    return ImmutableMap.of(CandidateForkVote.forkConfigParamsHash(forkConfig), votes);
+  private ImmutableSet<ForkVotingResult> votesFor(
+      long epoch, CandidateForkConfig forkConfig, short votes) {
+    return ImmutableSet.of(
+        new ForkVotingResult(epoch, CandidateForkVote.candidateForkId(forkConfig), votes));
   }
 
   @Test
@@ -272,6 +299,61 @@ public final class ForksTest {
             IllegalStateException.class, () -> forks.init(committedReader, forksEpochStore));
 
     assertTrue(exception.getMessage().toLowerCase().contains("forks inconsistency"));
+  }
+
+  @Test
+  public void it_should_correctly_calculate_execute_epoch_for_a_candidate_fork() {
+    // spotless:off just to make the test cases a little nicer to read
+    final var engineRules = OLYMPIA_V1.create(RERulesConfig.testingDefault());
+    final var genesis = new FixedEpochForkConfig("genesis", engineRules, 0L);
+    final var candidate =
+      new CandidateForkConfig(
+        "candidate", engineRules,
+        ImmutableSet.of(
+            new CandidateForkConfig.Threshold((short) 8000, 4), /* 80% for 4 epochs */
+            new CandidateForkConfig.Threshold((short) 9000, 2) /* or 90% for 2 epochs */),
+        10 /* min epoch */, 20 /* max epoch */);
+    final var candidateForkId = CandidateForkVote.candidateForkId(candidate);
+    final var sut = Forks.create(Set.of(genesis, candidate));
+
+    /* contains pairs of (expectedResult, input), where input is an array of pairs: (epoch, percentage_stake_voted) */
+    final var testCases =
+      ImmutableList.of(
+        Pair.of(Optional.of(10L), new Object[][]
+          {{6L, 8000}, {7L, 8000}, {8L, 8000}, {9L, 8000}, {10L, 8000}}),
+        Pair.of(Optional.empty(), new Object[][]
+          {{6L, 8000}, {7L, 8000}, {8L, 8000}, {9L, 8000}, {11L /* one epoch gap */, 8000}}),
+        Pair.of(Optional.empty(), new Object[][]
+          {{6L, 3000}, {7L, 3000}, {8L, 8000}, {9L, 8000}, {10L, 8000}}),
+        Pair.of(Optional.of(10L), new Object[][]
+          {{9L, 9000}, {10L, 9000}}),
+        Pair.of(Optional.empty(), new Object[][]
+          {{8L, 9000}, {9L, 9000}}),
+        Pair.of(Optional.empty(), new Object[][]
+          {{19L, 8500}, {20L, 9000}, {21L, 9000}}),
+        Pair.of(Optional.of(20L), new Object[][]
+          {{19L, 9900}, {20L, 9000}}),
+        Pair.of(Optional.empty(), new Object[][]
+          {}));
+
+    testCases.forEach(
+        pair -> {
+          final var votingResults =
+            Arrays.stream(pair.getSecond())
+              .map(arr -> new ForkVotingResult((long) arr[0], candidateForkId, (short) (int) arr[1]))
+              .toList();
+          assertEquals(
+              pair.getFirst(),
+              sut.findExecuteEpochForCandidate(forksEpochStoreWithResults(votingResults)));
+        });
+    // spotless:on
+  }
+
+  private ForksEpochStore forksEpochStoreWithResults(
+      Collection<ForkVotingResult> forkVotingResults) {
+    final var forksEpochStore = new InMemoryForksEpochStore(new InMemoryForksEpochStore.Store());
+    forkVotingResults.forEach(forksEpochStore::storeForkVotingResult);
+    return forksEpochStore;
   }
 
   private LedgerProof proofAtEpoch(long epoch) {

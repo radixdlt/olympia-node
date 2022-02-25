@@ -67,12 +67,21 @@ package com.radixdlt.statecomputer.forks;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atom.CloseableCursor;
-import com.radixdlt.utils.Pair;
 
 public interface ForksEpochStore {
   ImmutableMap<Long, String> getStoredForks();
 
   void storeForkAtEpoch(long epoch, String forkName);
 
-  CloseableCursor<Pair<HashCode, Short>> countedForksVotesCursor(long epoch);
+  /**
+   * Returns a cursor of ForkVotingResults for a particular candidateForkId. The results are for
+   * increasing epochs, but there can be gaps (including the first item, which can be for a higher
+   * epoch than fromEpoch).
+   *
+   * @param fromEpoch minimum epoch, inclusive
+   * @param toEpoch maximum epoch, exclusive
+   * @param candidateForkId id of the candidate fork
+   */
+  CloseableCursor<ForkVotingResult> forkVotingResultsCursor(
+      long fromEpoch, long toEpoch, HashCode candidateForkId);
 }

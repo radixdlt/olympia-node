@@ -64,6 +64,7 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.system.FeeTable;
@@ -87,10 +88,9 @@ public final class TestingForksModuleV2 extends AbstractModule {
   ForkBuilder fork3() {
     return new ForkBuilder(
         "fork-3",
-        (short) 8000, // 80%
+        ImmutableSet.of(new CandidateForkConfig.Threshold((short) 8000 /* 80% */, 1)),
         5L,
         Long.MAX_VALUE,
-        1,
         RERulesVersion.OLYMPIA_V1,
         RERulesConfig.testingDefault(
             500, FeeTable.create(Amount.ofMicroTokens(200), Collections.emptyMap())));

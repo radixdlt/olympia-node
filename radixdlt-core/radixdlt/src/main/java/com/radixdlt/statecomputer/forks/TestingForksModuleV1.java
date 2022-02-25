@@ -64,6 +64,7 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 
@@ -78,10 +79,9 @@ public final class TestingForksModuleV1 extends AbstractModule {
   ForkBuilder fork2() {
     return new ForkBuilder(
         "fork-2",
-        (short) 7000, // 70%
+        ImmutableSet.of(new CandidateForkConfig.Threshold((short) 7000 /* 70% */, 1)),
         2L,
         Long.MAX_VALUE,
-        1,
         RERulesVersion.OLYMPIA_V1,
         RERulesConfig.testingDefault(500));
   }

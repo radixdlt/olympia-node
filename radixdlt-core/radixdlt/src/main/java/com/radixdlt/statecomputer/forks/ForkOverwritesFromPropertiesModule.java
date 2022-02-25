@@ -95,36 +95,10 @@ public class ForkOverwritesFromPropertiesModule extends AbstractModule {
                   return Optional.<ForkBuilder>empty();
                 }
 
-                final var requiredStakeVotesOverwrite =
-                    properties.get(PROPERTIES_PREFIX + c.getName() + ".required_stake_votes", "");
                 final var epochOverwrite =
                     properties.get(PROPERTIES_PREFIX + c.getName() + ".epoch", "");
 
-                if (!requiredStakeVotesOverwrite.isBlank()) {
-                  final var requiredStakeVotes = Short.parseShort(requiredStakeVotesOverwrite);
-                  final var minEpochOverwrite =
-                      properties.get(PROPERTIES_PREFIX + c.getName() + ".min_epoch", "");
-                  final var minEpoch =
-                      minEpochOverwrite.isBlank()
-                          ? c.minEpoch()
-                          : Long.parseLong(minEpochOverwrite);
-                  final var maxEpochOverwrite =
-                      properties.get(PROPERTIES_PREFIX + c.getName() + ".max_epoch", "");
-                  final var numEpochsBeforeEnactedOverwrite =
-                      properties.get(
-                          PROPERTIES_PREFIX + c.getName() + ".numEpochsBeforeEnacted", "");
-                  final var maxEpoch =
-                      maxEpochOverwrite.isBlank()
-                          ? c.maxEpoch().orElse(Long.MAX_VALUE)
-                          : Long.parseLong(maxEpochOverwrite);
-                  final var numEpochsBeforeEnacted =
-                      numEpochsBeforeEnactedOverwrite.isBlank()
-                          ? c.numEpochsBeforeEnacted().orElse(1)
-                          : Integer.parseInt(numEpochsBeforeEnactedOverwrite);
-                  c =
-                      c.withStakeVoting(
-                          requiredStakeVotes, minEpoch, maxEpoch, numEpochsBeforeEnacted);
-                } else if (!epochOverwrite.isBlank()) {
+                if (!epochOverwrite.isBlank()) {
                   final var epoch = Long.parseLong(epochOverwrite);
                   logger.warn("Overwriting epoch of " + c.getName() + " to " + epoch);
                   c = c.atFixedEpoch(epoch);

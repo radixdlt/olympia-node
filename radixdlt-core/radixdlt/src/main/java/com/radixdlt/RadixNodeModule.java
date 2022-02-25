@@ -119,6 +119,7 @@ import org.radix.utils.IOUtils;
 
 /** Module which manages everything in a single node */
 public final class RadixNodeModule extends AbstractModule {
+  private static final String TESTING_FORKS_VERSION_KEY = "testing_forks.version";
   private static final int DEFAULT_CORE_PORT = 3333;
   private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
   private static final Logger log = LogManager.getLogger();
@@ -269,9 +270,9 @@ public final class RadixNodeModule extends AbstractModule {
       install(new MainnetForksModule());
     } else if (properties.get("testing_forks.enable", false)) {
       int forkConfigVersion =
-          properties.get("testing_forks.version") != null
-              && !properties.get("testing_forks.version").isBlank()
-              ? properties.get("testing_forks.version", 2)
+          properties.get(TESTING_FORKS_VERSION_KEY) != null
+                  && !properties.get(TESTING_FORKS_VERSION_KEY).isBlank()
+              ? properties.get(TESTING_FORKS_VERSION_KEY, 2)
               : 2;
       log.info("Using testing fork config, version {}", forkConfigVersion);
       switch (forkConfigVersion) {

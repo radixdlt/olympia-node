@@ -69,8 +69,10 @@ import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.PostProcessorException;
 import com.radixdlt.statecomputer.forks.CandidateForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.store.EngineStore;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Checks whether the engine should switch to the next candidate fork. If so, adds nextForkName to
@@ -78,9 +80,12 @@ import java.util.List;
  */
 public final class NextCandidateForkPostProcessor implements PostProcessor<LedgerAndBFTProof> {
   private final CandidateForkConfig nextFork;
+  private final Supplier<ForksEpochStore> forksEpochStoreSupplier;
 
-  public NextCandidateForkPostProcessor(CandidateForkConfig nextFork) {
+  public NextCandidateForkPostProcessor(
+      CandidateForkConfig nextFork, Supplier<ForksEpochStore> forksEpochStoreSupplier) {
     this.nextFork = nextFork;
+    this.forksEpochStoreSupplier = forksEpochStoreSupplier;
   }
 
   @Override
@@ -90,7 +95,7 @@ public final class NextCandidateForkPostProcessor implements PostProcessor<Ledge
       List<REProcessedTxn> txns)
       throws PostProcessorException {
     if (metadata.getProof().getNextValidatorSet().isPresent()
-        && Forks.testCandidate(nextFork, metadata)) {
+        && Forks.testCandidate(nextFork, metadata, forksEpochStoreSupplier.get())) {
       return metadata.withNextForkName(nextFork.name());
     } else {
       return metadata;

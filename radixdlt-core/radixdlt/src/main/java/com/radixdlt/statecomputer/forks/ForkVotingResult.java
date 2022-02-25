@@ -64,35 +64,6 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.engine.PostProcessor;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.google.common.hash.HashCode;
 
-public record CandidateForkConfig(
-    String name,
-    RERules engineRules,
-    ImmutableSet<Threshold> thresholds,
-    long minEpoch,
-    long maxEpoch)
-    implements ForkConfig {
-
-  public static record Threshold(short requiredStake, int numEpochsBeforeEnacted) {
-    public Threshold {
-      if (numEpochsBeforeEnacted < 1) {
-        throw new IllegalArgumentException("Num epochs before enacted must be at least 1");
-      }
-    }
-  }
-
-  public CandidateForkConfig {
-    if (name.getBytes(ForkConfig.FORK_NAME_CHARSET).length > 16) {
-      throw new IllegalArgumentException("Fork name can't be longer than 16 bytes");
-    }
-  }
-
-  @Override
-  public CandidateForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
-    return new CandidateForkConfig(
-        name, engineRules.addPostProcessor(newPostProcessor), thresholds, minEpoch, maxEpoch);
-  }
-}
+public record ForkVotingResult(long epoch, HashCode candidateForkId, short stakePercentageVoted) {}

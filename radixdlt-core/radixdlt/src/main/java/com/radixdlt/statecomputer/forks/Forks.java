@@ -66,14 +66,13 @@ package com.radixdlt.statecomputer.forks;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Streams;
-import com.google.common.hash.HashCode;
+import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.NextCandidateForkPostProcessor;
 import com.radixdlt.statecomputer.NextFixedEpochForkPostProcessor;
 import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.utils.Pair;
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -94,6 +93,8 @@ public final class Forks {
 
   private final ImmutableList<FixedEpochForkConfig> fixedEpochForks;
   private final Optional<CandidateForkConfig> maybeCandidateFork;
+
+  private ForksEpochStore forksEpochStore;
 
   public static Forks create(Set<ForkConfig> forks) {
     if (!ensureUniqueNames(forks)) {
@@ -175,7 +176,8 @@ public final class Forks {
                     return forkConfig.addPostProcessor(nextForkPostProcessor);
                   } else if (maybeCandidateFork.isPresent()) {
                     final var nextForkPostProcessor =
-                        new NextCandidateForkPostProcessor(maybeCandidateFork.get());
+                        new NextCandidateForkPostProcessor(
+                            maybeCandidateFork.get(), () -> forksEpochStore);
                     return forkConfig.addPostProcessor(nextForkPostProcessor);
                   } else {
                     return forkConfig;
@@ -224,6 +226,7 @@ public final class Forks {
   }
 
   public void init(CommittedReader committedReader, ForksEpochStore forksEpochStore) {
+    this.forksEpochStore = forksEpochStore;
     final var initialStoredForks = forksEpochStore.getStoredForks();
     final var currentEpoch = committedReader.getLastProof().map(LedgerProof::getEpoch).orElse(0L);
 
@@ -231,8 +234,7 @@ public final class Forks {
         "Forks init [stored_forks: {}, configured_forks: {}]", initialStoredForks, forkConfigs());
 
     executeMissedFixedEpochForks(initialStoredForks, currentEpoch, forksEpochStore);
-    executeAndCheckMissedCandidateFork(
-        initialStoredForks, currentEpoch, forksEpochStore, committedReader);
+    executeAndCheckMissedCandidateFork(initialStoredForks, forksEpochStore);
 
     sanityCheck(forksEpochStore, currentEpoch);
   }
@@ -258,18 +260,14 @@ public final class Forks {
   }
 
   private void executeAndCheckMissedCandidateFork(
-      ImmutableMap<Long, String> storedForks,
-      long currentEpoch,
-      ForksEpochStore forksEpochStore,
-      CommittedReader committedReader) {
+      ImmutableMap<Long, String> storedForks, ForksEpochStore forksEpochStore) {
     if (maybeCandidateFork.isEmpty()) {
       return;
     }
 
     final var candidateFork = maybeCandidateFork.get();
 
-    final var maybeCandidateForkEpoch =
-        findExecuteEpochForCandidate(currentEpoch, forksEpochStore, committedReader);
+    final var maybeCandidateForkEpoch = findExecuteEpochForCandidate(forksEpochStore);
     final var maybeStoredCandidate =
         storedForks.entrySet().stream()
             .filter(e -> e.getValue().equals(candidateFork.name()))
@@ -304,28 +302,61 @@ public final class Forks {
         });
   }
 
-  private Optional<Long> findExecuteEpochForCandidate(
-      long currentEpoch, ForksEpochStore forksEpochStore, CommittedReader committedReader) {
+  Optional<Long> findExecuteEpochForCandidate(ForksEpochStore forksEpochStore) {
     if (maybeCandidateFork.isEmpty()) {
       return Optional.empty();
     }
 
     final var candidateFork = maybeCandidateFork.get();
+    final var candidateForkId = CandidateForkVote.candidateForkId(candidateFork);
 
-    final var lastEpochToCheck = Math.min(currentEpoch, candidateFork.maxEpoch());
-    for (long epoch = candidateFork.minEpoch(); epoch <= lastEpochToCheck; epoch++) {
-      try (var cursor = forksEpochStore.countedForksVotesCursor(epoch)) {
-        final var countedForksVotes =
-            Streams.stream(cursor)
-                .collect(ImmutableMap.toImmutableMap(Pair::getFirst, Pair::getSecond));
-        if (testCandidate(
-            candidateFork, committedReader.getEpochProof(epoch).orElseThrow(), countedForksVotes)) {
-          return Optional.of(epoch);
-        }
+    final var longestThresholdEpochs =
+        candidateFork.thresholds().stream()
+            .mapToInt(CandidateForkConfig.Threshold::numEpochsBeforeEnacted)
+            .max()
+            .orElse(1);
+
+    final var fromEpoch = candidateFork.minEpoch() - longestThresholdEpochs;
+    try (final var forkVotingResultsCursor =
+        forksEpochStore.forkVotingResultsCursor(
+            fromEpoch, candidateFork.maxEpoch() + 1, candidateForkId)) {
+
+      if (!forkVotingResultsCursor.hasNext()) {
+        return Optional.empty();
       }
-    }
 
-    return Optional.empty();
+      final var thresholdEpochsMap =
+          new HashMap<>(
+              candidateFork.thresholds().stream().collect(Collectors.toMap(el -> el, el -> 0)));
+
+      Optional<Long> previousEpoch = Optional.empty();
+
+      do {
+        final ForkVotingResult next = forkVotingResultsCursor.next();
+        if (previousEpoch.isEmpty() || previousEpoch.get() + 1 == next.epoch()) {
+          thresholdEpochsMap.replaceAll(
+              (threshold, numEpochs) ->
+                  next.stakePercentageVoted() >= threshold.requiredStake()
+                      ? numEpochs + 1 // threshold passes: increment numEpochs
+                      : 0); // threshold doesn't pass: reset to 0
+        } else {
+          // there's a gap in fork voting results (no votes for the given epoch); reset the counters
+          thresholdEpochsMap.replaceAll((threshold, numEpochs) -> 0);
+        }
+
+        if (thresholdEpochsMap.entrySet().stream()
+                .anyMatch(e -> e.getValue() >= e.getKey().numEpochsBeforeEnacted())
+            && next.epoch() >= candidateFork.minEpoch()
+            && next.epoch() <= candidateFork.maxEpoch()) {
+          return Optional.of(next.epoch());
+        }
+
+        previousEpoch = Optional.of(next.epoch());
+
+      } while (forkVotingResultsCursor.hasNext());
+
+      return Optional.empty();
+    }
   }
 
   private void sanityCheck(ForksEpochStore forksEpochStore, long currentEpoch) {
@@ -387,17 +418,47 @@ public final class Forks {
   }
 
   public static boolean testCandidate(
-      CandidateForkConfig candidateFork, LedgerAndBFTProof ledgerAndBFTProof) {
-    return ledgerAndBFTProof.getCountedForksVotes().stream()
-        .anyMatch(
-            countedForksVotes ->
-                testCandidate(candidateFork, ledgerAndBFTProof.getProof(), countedForksVotes));
+      CandidateForkConfig candidateFork,
+      LedgerAndBFTProof ledgerAndBFTProof,
+      ForksEpochStore forksEpochStore) {
+    if (ledgerAndBFTProof.getForksVotingResults().isEmpty()) {
+      return false;
+    }
+
+    final var nextEpoch = ledgerAndBFTProof.getProof().getEpoch() + 1;
+    final var candidateForkId = CandidateForkVote.candidateForkId(candidateFork);
+
+    final var maybeCurrentForkVotingResult =
+        ledgerAndBFTProof.getForksVotingResults().orElseThrow().stream()
+            .filter(votingResult -> votingResult.candidateForkId().equals(candidateForkId))
+            .findAny();
+
+    final var longestThresholdEpochs =
+        candidateFork.thresholds().stream()
+            .mapToInt(CandidateForkConfig.Threshold::numEpochsBeforeEnacted)
+            .max()
+            .orElse(1);
+
+    final var fromEpoch = nextEpoch - longestThresholdEpochs;
+    try (final var previousVotingResultsCursor =
+        forksEpochStore.forkVotingResultsCursor(
+            fromEpoch, candidateFork.maxEpoch(), candidateForkId)) {
+      final var previousAndCurrentResultsCursor =
+          maybeCurrentForkVotingResult
+              .map(
+                  currentForkVotingResult ->
+                      previousVotingResultsCursor.concat(
+                          () -> CloseableCursor.of(currentForkVotingResult)))
+              .orElse(previousVotingResultsCursor);
+      return testCandidate(
+          candidateFork, ledgerAndBFTProof.getProof(), previousAndCurrentResultsCursor);
+    }
   }
 
   private static boolean testCandidate(
       CandidateForkConfig candidateFork,
       LedgerProof ledgerProof,
-      ImmutableMap<HashCode, Short> countedForksVotes) {
+      CloseableCursor<ForkVotingResult> forkVotingResultsCursor) {
     if (ledgerProof.getNextValidatorSet().isEmpty()) {
       return false;
     }
@@ -407,10 +468,37 @@ public final class Forks {
       return false;
     }
 
-    final var votedPercentage =
-        countedForksVotes.getOrDefault(
-            CandidateForkVote.forkConfigParamsHash(candidateFork), Short.MIN_VALUE);
+    if (!forkVotingResultsCursor.hasNext()) {
+      return false;
+    }
 
-    return votedPercentage >= candidateFork.requiredStake();
+    ForkVotingResult next = forkVotingResultsCursor.next();
+    long previousEpoch = next.epoch() - 1;
+
+    final var thresholdEpochsMap =
+        new HashMap<>(
+            candidateFork.thresholds().stream()
+                .collect(
+                    Collectors.toMap(
+                        el -> el,
+                        el -> next.stakePercentageVoted() >= el.requiredStake() ? 1 : 0)));
+
+    while (forkVotingResultsCursor.hasNext() && next.epoch() <= nextEpoch) {
+      if (next.epoch() != previousEpoch + 1) {
+        // there's a gap in fork voting results (no votes for the given epoch); reset the counters
+        thresholdEpochsMap.replaceAll((threshold, numEpochs) -> 0);
+      } else {
+        thresholdEpochsMap.replaceAll(
+            (threshold, numEpochs) ->
+                next.stakePercentageVoted() >= threshold.requiredStake()
+                    ? numEpochs + 1 // threshold passes: increment numEpochs
+                    : 0); // threshold doesn't pass: reset to 0
+      }
+    }
+
+    return next.epoch() == nextEpoch
+        && // the cursor ended up right at the correct epoch
+        thresholdEpochsMap.entrySet().stream() // and at least one threshold has enough epochs
+            .anyMatch(e -> e.getValue() >= e.getKey().numEpochsBeforeEnacted());
   }
 }
