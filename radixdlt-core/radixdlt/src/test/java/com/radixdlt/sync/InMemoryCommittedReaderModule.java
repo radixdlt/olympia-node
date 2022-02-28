@@ -71,7 +71,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.ledger.LedgerUpdate;
 
-public class MockedCommittedReaderModule extends AbstractModule {
+public class InMemoryCommittedReaderModule extends AbstractModule {
   @Override
   public void configure() {
     bind(InMemoryCommittedReader.Store.class).toInstance(new InMemoryCommittedReader.Store());

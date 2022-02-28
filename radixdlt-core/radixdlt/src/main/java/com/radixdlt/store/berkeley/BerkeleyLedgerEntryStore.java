@@ -147,7 +147,6 @@ import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -309,32 +308,6 @@ public final class BerkeleyLedgerEntryStore
   @Override
   public LedgerAndBFTProof getMetadata() {
     return getLastProof().map(LedgerAndBFTProof::create).orElse(null);
-  }
-
-  public Stream<RawSubstateBytes> scanner() {
-    var cursor = substatesDatabase.openCursor(null, null);
-    var iterator =
-        new Iterator<RawSubstateBytes>() {
-          final DatabaseEntry key = new DatabaseEntry();
-          final DatabaseEntry data = new DatabaseEntry();
-          OperationStatus status = cursor.getFirst(key, data, null);
-
-          @Override
-          public boolean hasNext() {
-            return status == SUCCESS;
-          }
-
-          @Override
-          public RawSubstateBytes next() {
-            if (status != SUCCESS) {
-              throw new NoSuchElementException();
-            }
-            var next = new RawSubstateBytes(key.getData(), data.getData());
-            status = cursor.getNext(key, data, null);
-            return next;
-          }
-        };
-    return Streams.stream(iterator).onClose(cursor::close);
   }
 
   @Override

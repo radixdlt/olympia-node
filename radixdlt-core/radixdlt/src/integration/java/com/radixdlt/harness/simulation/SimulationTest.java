@@ -130,11 +130,11 @@ import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksEpochStore;
-import com.radixdlt.statecomputer.forks.MockedForksEpochStoreModule;
+import com.radixdlt.statecomputer.forks.InMemoryForksEpochStoreModule;
 import com.radixdlt.statecomputer.forks.NoOpForksEpochStore;
-import com.radixdlt.store.MockedRadixEngineStoreModule;
+import com.radixdlt.store.InMemoryRadixEngineStoreModule;
 import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.sync.MockedCommittedReaderModule;
+import com.radixdlt.sync.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.NoOpCommittedReader;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.DurationParser;
@@ -449,7 +449,7 @@ public final class SimulationTest {
               };
             }
           });
-      this.modules.add(new MockedForksEpochStoreModule());
+      this.modules.add(new InMemoryForksEpochStoreModule());
 
       return this;
     }
@@ -545,7 +545,7 @@ public final class SimulationTest {
 
       // Persistence
       if (ledgerType.hasRadixEngine) {
-        modules.add(new MockedRadixEngineStoreModule());
+        modules.add(new InMemoryRadixEngineStoreModule());
         modules.add(
             new MockedGenesisModule(
                 initialNodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
@@ -559,7 +559,7 @@ public final class SimulationTest {
             new AbstractModule() {
               public void configure() {
                 install(new RadixEngineModule());
-                install(new MockedRadixEngineStoreModule());
+                install(new InMemoryRadixEngineStoreModule());
                 install(new MockedCryptoModule());
                 install(
                     new MockedGenesisModule(
@@ -616,8 +616,8 @@ public final class SimulationTest {
       // Runners
       modules.add(new RxEnvironmentModule());
       if (ledgerType.hasLedger && ledgerType.hasSync) {
-        modules.add(new MockedCommittedReaderModule());
-        modules.add(new MockedForksEpochStoreModule());
+        modules.add(new InMemoryCommittedReaderModule());
+        modules.add(new InMemoryForksEpochStoreModule());
       }
 
       return new SimulationTest(

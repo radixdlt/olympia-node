@@ -62,25 +62,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.statecomputer.forks;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.environment.EventProcessorOnDispatch;
+import com.radixdlt.ledger.LedgerUpdate;
 
-public class MockedRadixEngineStoreModule extends AbstractModule {
+public final class InMemoryForksEpochStoreModule extends AbstractModule {
   @Override
   public void configure() {
-    bind(new TypeLiteral<InMemoryEngineStore.Store<LedgerAndBFTProof>>() {})
-        .toInstance(new InMemoryEngineStore.Store<>());
+    bind(InMemoryForksEpochStore.Store.class).toInstance(new InMemoryForksEpochStore.Store());
+    bind(ForksEpochStore.class).to(InMemoryForksEpochStore.class).in(Scopes.SINGLETON);
   }
 
-  @Provides
   @Singleton
-  private EngineStore<LedgerAndBFTProof> engineStore(
-      InMemoryEngineStore.Store<LedgerAndBFTProof> store) {
-    return new InMemoryEngineStore<>(store);
+  @ProvidesIntoSet
+  public EventProcessorOnDispatch<?> eventProcessor(
+      InMemoryForksEpochStore inMemoryForksEpochStore) {
+    return new EventProcessorOnDispatch<>(
+        LedgerUpdate.class, inMemoryForksEpochStore.ledgerUpdateEventProcessor());
   }
 }
