@@ -64,19 +64,26 @@
 
 package com.radixdlt.systeminfo;
 
+import static com.radixdlt.atom.SubstateTypeId.VALIDATOR_BFT_DATA;
+
 import com.google.inject.Inject;
+import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
+import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** Manages system information to be consumed by clients such as the api. */
@@ -85,14 +92,22 @@ public final class InMemorySystemInfo {
   private final AtomicReference<EpochView> currentView =
       new AtomicReference<>(EpochView.of(0L, View.genesis()));
   private final AtomicReference<QuorumCertificate> highQC = new AtomicReference<>();
+  private final AtomicReference<ValidatorBFTDataEvent> missedProposals = new AtomicReference<>();
   private final AtomicReference<LedgerProof> ledgerProof;
   private final AtomicReference<LedgerProof> epochsLedgerProof;
+  private final BFTNode self;
+  private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
   @Inject
   public InMemorySystemInfo(
-      @LastProof LedgerProof lastProof, @LastEpochProof LedgerProof lastEpochProof) {
+      @LastProof LedgerProof lastProof,
+      @LastEpochProof LedgerProof lastEpochProof,
+      @Self BFTNode self,
+      RadixEngine<LedgerAndBFTProof> radixEngine) {
     this.ledgerProof = new AtomicReference<>(lastProof);
     this.epochsLedgerProof = new AtomicReference<>(lastEpochProof);
+    this.self = self;
+    this.radixEngine = radixEngine;
   }
 
   public void processTimeout(EpochLocalTimeoutOccurrence timeout) {
@@ -110,7 +125,35 @@ public final class InMemorySystemInfo {
       if (epochChange != null) {
         epochsLedgerProof.set(update.getTail());
       }
+
+      update.getStateComputerOutput().getInstance(REOutput.class).getProcessedTxns().stream()
+          .flatMap(processedTxn -> processedTxn.getEvents().stream())
+          .filter(ValidatorBFTDataEvent.class::isInstance)
+          .map(ValidatorBFTDataEvent.class::cast)
+          .filter(event -> event.validatorKey().equals(self.getKey()))
+          .forEach(missedProposals::set);
     };
+  }
+
+  public Optional<ValidatorBFTDataEvent> validatorBFTData() {
+    if (missedProposals.get() == null) {
+      // There were no relevant events yet
+      getProposalStats().ifPresent(missedProposals::set);
+    }
+
+    return Optional.ofNullable(missedProposals.get());
+  }
+
+  private Optional<ValidatorBFTDataEvent> getProposalStats() {
+    var validatorBFTKey =
+        SystemMapKey.ofSystem(VALIDATOR_BFT_DATA.id(), self.getKey().getCompressedBytes());
+
+    return radixEngine.read(
+        reader ->
+            reader
+                .get(validatorBFTKey)
+                .map(ValidatorBFTData.class::cast)
+                .map(ValidatorBFTDataEvent::fromData));
   }
 
   public EventProcessor<BFTHighQCUpdate> bftHighQCEventProcessor() {

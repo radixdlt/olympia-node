@@ -64,6 +64,7 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
@@ -82,7 +83,13 @@ public sealed interface REEvent {
       implements REEvent {}
 
   record ValidatorBFTDataEvent(
-      ECPublicKey validatorKey, long completedProposals, long missedProposals) implements REEvent {}
+      ECPublicKey validatorKey, long completedProposals, long missedProposals) implements REEvent {
+
+    public static ValidatorBFTDataEvent fromData(ValidatorBFTData data) {
+      return new ValidatorBFTDataEvent(
+          data.getValidatorKey(), data.proposalsCompleted(), data.proposalsMissed());
+    }
+  }
 
   record ValidatorMissedProposalsEvent(ECPublicKey validatorKey, long missedProposals)
       implements REEvent {}
