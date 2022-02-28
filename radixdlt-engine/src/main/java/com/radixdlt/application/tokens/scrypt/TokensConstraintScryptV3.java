@@ -65,7 +65,6 @@
 package com.radixdlt.application.tokens.scrypt;
 
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
-import com.radixdlt.application.tokens.ResourceCreatedEvent;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.application.tokens.state.TokensInAccount;
@@ -74,15 +73,8 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
-import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.DownProcedure;
-import com.radixdlt.constraintmachine.EndProcedure;
-import com.radixdlt.constraintmachine.ExecutionContext;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.UpProcedure;
-import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.constraintmachine.*;
+import com.radixdlt.constraintmachine.REEvent.ResourceCreatedEvent;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.ReservedSymbolException;
 import com.radixdlt.serialization.DeserializeException;

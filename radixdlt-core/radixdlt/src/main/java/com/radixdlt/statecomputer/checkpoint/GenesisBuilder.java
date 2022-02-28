@@ -67,7 +67,6 @@ package com.radixdlt.statecomputer.checkpoint;
 import static com.radixdlt.atom.TxAction.*;
 
 import com.google.inject.Inject;
-import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
@@ -78,6 +77,7 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -137,8 +137,8 @@ public final class GenesisBuilder {
     radixEngine.deleteBranches();
     var genesisValidatorSet =
         result.getProcessedTxn().getEvents().stream()
-            .filter(NextValidatorSetEvent.class::isInstance)
-            .map(NextValidatorSetEvent.class::cast)
+            .filter(REEvent.NextValidatorSetEvent.class::isInstance)
+            .map(REEvent.NextValidatorSetEvent.class::cast)
             .findFirst()
             .map(
                 e ->

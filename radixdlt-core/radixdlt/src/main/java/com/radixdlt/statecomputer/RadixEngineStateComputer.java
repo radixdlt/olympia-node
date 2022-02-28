@@ -71,7 +71,6 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.atom.*;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HighQC;
@@ -88,6 +87,7 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
@@ -337,8 +337,8 @@ public final class RadixEngineStateComputer implements StateComputer {
       var exceptionBuilder = ImmutableMap.<Txn, Exception>builder();
       var nextValidatorSet =
           systemTxn.processed().getEvents().stream()
-              .filter(NextValidatorSetEvent.class::isInstance)
-              .map(NextValidatorSetEvent.class::cast)
+              .filter(REEvent.NextValidatorSetEvent.class::isInstance)
+              .map(REEvent.NextValidatorSetEvent.class::cast)
               .findFirst()
               .map(
                   e ->

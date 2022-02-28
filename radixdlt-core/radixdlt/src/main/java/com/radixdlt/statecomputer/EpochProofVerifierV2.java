@@ -64,11 +64,11 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.MetadataException;
@@ -78,13 +78,13 @@ public class EpochProofVerifierV2 implements BatchVerifier<LedgerAndBFTProof> {
   @Override
   public void testMetadata(LedgerAndBFTProof metadata, List<REProcessedTxn> txns)
       throws MetadataException {
-    NextValidatorSetEvent nextValidatorSetEvent = null;
+    REEvent.NextValidatorSetEvent nextValidatorSetEvent = null;
     for (int i = 0; i < txns.size(); i++) {
       var processed = txns.get(i);
       var nextEpochEvents =
           processed.getEvents().stream()
-              .filter(NextValidatorSetEvent.class::isInstance)
-              .map(NextValidatorSetEvent.class::cast)
+              .filter(REEvent.NextValidatorSetEvent.class::isInstance)
+              .map(REEvent.NextValidatorSetEvent.class::cast)
               .toList();
 
       if (!nextEpochEvents.isEmpty()) {

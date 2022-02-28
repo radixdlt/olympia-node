@@ -92,6 +92,7 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
@@ -224,8 +225,8 @@ public class NextEpochV2Test {
     var result = this.sut.execute(List.of(txn), null, PermissionLevel.SUPER_USER);
     var nextValidatorSet =
         result.getProcessedTxn().getEvents().stream()
-            .filter(NextValidatorSetEvent.class::isInstance)
-            .map(NextValidatorSetEvent.class::cast)
+            .filter(REEvent.NextValidatorSetEvent.class::isInstance)
+            .map(REEvent.NextValidatorSetEvent.class::cast)
             .findFirst()
             .orElseThrow();
     assertThat(nextValidatorSet.nextValidators()).isEmpty();

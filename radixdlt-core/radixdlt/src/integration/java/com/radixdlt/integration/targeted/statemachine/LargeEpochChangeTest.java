@@ -74,7 +74,6 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
@@ -94,6 +93,7 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
@@ -293,8 +293,8 @@ public class LargeEpochChangeTest {
     sut.deleteBranches();
     var nextValidatorSet =
         result.getProcessedTxn().getEvents().stream()
-            .filter(NextValidatorSetEvent.class::isInstance)
-            .map(NextValidatorSetEvent.class::cast)
+            .filter(REEvent.NextValidatorSetEvent.class::isInstance)
+            .map(REEvent.NextValidatorSetEvent.class::cast)
             .findFirst()
             .map(
                 e ->

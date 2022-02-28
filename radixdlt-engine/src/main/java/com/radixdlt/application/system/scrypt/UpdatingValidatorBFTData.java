@@ -64,9 +64,9 @@
 
 package com.radixdlt.application.system.scrypt;
 
-import com.radixdlt.application.system.ValidatorMissedProposalsEvent;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -121,7 +121,8 @@ public class UpdatingValidatorBFTData implements ReducerState {
     var additionalProposalsMissed = next.proposalsMissed() - old.proposalsMissed();
     if (additionalProposalsMissed > 0) {
       context.emitEvent(
-          ValidatorMissedProposalsEvent.create(next.getValidatorKey(), additionalProposalsMissed));
+          new REEvent.ValidatorMissedProposalsEvent(
+              next.getValidatorKey(), additionalProposalsMissed));
     }
 
     incrementViews(additionalProposalsCompleted);

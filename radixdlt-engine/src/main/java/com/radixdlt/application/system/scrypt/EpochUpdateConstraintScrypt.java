@@ -68,8 +68,6 @@ import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeCons
 
 import com.google.common.collect.Streams;
 import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.application.system.NextValidatorSetEvent;
-import com.radixdlt.application.system.ValidatorBFTDataEvent;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.HasEpochData;
 import com.radixdlt.application.system.state.RoundData;
@@ -88,16 +86,9 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
-import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.DownProcedure;
-import com.radixdlt.constraintmachine.ExecutionContext;
-import com.radixdlt.constraintmachine.IndexedSubstateIterator;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ReadIndexProcedure;
-import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.ShutdownAllProcedure;
-import com.radixdlt.constraintmachine.UpProcedure;
+import com.radixdlt.constraintmachine.*;
+import com.radixdlt.constraintmachine.REEvent.NextValidatorSetEvent;
+import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
 import com.radixdlt.constraintmachine.exceptions.MismatchException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -105,11 +96,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.UInt256;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.Objects;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -228,7 +215,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
       }
       var bftData = validatorBFTData.remove(k);
       context.emitEvent(
-          ValidatorBFTDataEvent.create(k, bftData.proposalsCompleted(), bftData.proposalsMissed()));
+          new ValidatorBFTDataEvent(k, bftData.proposalsCompleted(), bftData.proposalsMissed()));
       if (bftData.proposalsCompleted() + bftData.proposalsMissed() == 0) {
         return next(context);
       }
@@ -329,7 +316,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
               .filter(v -> !v.getTotalStake().isZero())
               .collect(Collectors.toCollection(LinkedList::new));
 
-      context.emitEvent(NextValidatorSetEvent.create(this.nextValidatorSet));
+      context.emitEvent(new NextValidatorSetEvent(this.nextValidatorSet));
       return next();
     }
 

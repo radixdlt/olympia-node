@@ -78,7 +78,6 @@ import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.*;
@@ -98,6 +97,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.counters.SystemCounters;
@@ -212,8 +212,8 @@ public class RadixEngineStateComputerTest {
     var processed = branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
     var genesisValidatorSet =
         processed.getProcessedTxns().get(0).getEvents().stream()
-            .filter(NextValidatorSetEvent.class::isInstance)
-            .map(NextValidatorSetEvent.class::cast)
+            .filter(REEvent.NextValidatorSetEvent.class::isInstance)
+            .map(REEvent.NextValidatorSetEvent.class::cast)
             .findFirst()
             .map(
                 e ->
