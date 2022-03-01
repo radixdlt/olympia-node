@@ -66,10 +66,9 @@ package com.radixdlt.application.validators.state;
 
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
-import org.bouncycastle.util.encoders.Hex;
-
 import java.util.Arrays;
 import java.util.Objects;
+import org.bouncycastle.util.encoders.Hex;
 
 public record ValidatorSystemMetadata(ECPublicKey validatorKey, byte[] data)
     implements ValidatorData {
@@ -103,6 +102,10 @@ public record ValidatorSystemMetadata(ECPublicKey validatorKey, byte[] data)
 
   @Override
   public String toString() {
-    return "ValidatorSystemMetadata[key=" + validatorKey.toHex() + ", data=" + Hex.toHexString(data) + "]";
+    return "ValidatorSystemMetadata[key="
+        + validatorKey.toHex()
+        + ", data="
+        + Hex.toHexString(data)
+        + "]";
   }
 }
