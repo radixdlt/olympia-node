@@ -96,7 +96,12 @@ public sealed interface TxAction {
     public CreateFixedToken {
       ensureResourceAddressIsHashedKey(resourceAddr);
       ensureNonZeroSupply(supply);
-      requireAllNonNull(accountAddr, symbol, name, description, iconUrl, tokenUrl);
+      requireNonNull(accountAddr);
+      requireNonNull(symbol);
+      requireNonNull(name);
+      requireNonNull(description);
+      requireNonNull(iconUrl);
+      requireNonNull(tokenUrl);
     }
   }
 
@@ -242,12 +247,6 @@ public sealed interface TxAction {
           this.getClass().getSimpleName(),
           validatorKey.toHex(),
           bytes == null ? "null" : Bytes.toHexString(bytes));
-    }
-  }
-
-  static void requireAllNonNull(Object... values) {
-    for (var value : values) {
-      requireNonNull(value);
     }
   }
 
