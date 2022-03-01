@@ -65,6 +65,8 @@
 package com.radixdlt.application.system.state;
 
 import com.radixdlt.constraintmachine.Particle;
+import org.bouncycastle.util.encoders.Hex;
+
 import java.util.Arrays;
 
 public record VirtualParent(byte[] data) implements Particle {
@@ -78,5 +80,10 @@ public record VirtualParent(byte[] data) implements Particle {
   @Override
   public boolean equals(Object o) {
     return o instanceof VirtualParent other && Arrays.equals(this.data, other.data);
+  }
+
+  @Override
+  public String toString() {
+    return "VirtualParent[data=" + (data == null ? "null" : Hex.toHexString(data) + "]");
   }
 }
