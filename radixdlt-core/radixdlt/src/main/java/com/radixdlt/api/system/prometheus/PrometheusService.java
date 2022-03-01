@@ -73,6 +73,7 @@ import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.REAddr;
@@ -240,19 +241,18 @@ public class PrometheusService {
   private void exportCounters(StringBuilder builder) {
     EXPORT_LIST.forEach(counterType -> generateCounterEntry(counterType, builder));
 
-    inMemorySystemInfo
-        .validatorBFTData()
-        .ifPresent(
-            uptime -> {
-              appendCounter(
-                  builder,
-                  COUNTER_PREFIX + "radix_engine_cur_epoch_completed_proposals",
-                  uptime.completedProposals());
-              appendCounter(
-                  builder,
-                  COUNTER_PREFIX + "radix_engine_cur_epoch_missed_proposals",
-                  uptime.missedProposals());
-            });
+    inMemorySystemInfo.validatorBFTData().ifPresent(uptime -> addProposalsInfo(builder, uptime));
+  }
+
+  private void addProposalsInfo(StringBuilder builder, REEvent.ValidatorBFTDataEvent uptime) {
+    appendCounter(
+        builder,
+        COUNTER_PREFIX + "radix_engine_cur_epoch_completed_proposals",
+        uptime.completedProposals());
+    appendCounter(
+        builder,
+        COUNTER_PREFIX + "radix_engine_cur_epoch_missed_proposals",
+        uptime.missedProposals());
   }
 
   private void generateCounterEntry(CounterType counterType, StringBuilder builder) {

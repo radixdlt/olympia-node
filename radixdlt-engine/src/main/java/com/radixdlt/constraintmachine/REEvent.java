@@ -87,7 +87,7 @@ public sealed interface REEvent {
 
     public static ValidatorBFTDataEvent fromData(ValidatorBFTData data) {
       return new ValidatorBFTDataEvent(
-          data.getValidatorKey(), data.proposalsCompleted(), data.proposalsMissed());
+          data.validatorKey(), data.completedProposals(), data.missedProposals());
     }
   }
 
