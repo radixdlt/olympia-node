@@ -82,7 +82,6 @@ import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
-
 import java.util.OptionalLong;
 
 public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {

@@ -80,10 +80,7 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
   public void construct(UnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
     var validatorStake = txBuilder.find(ValidatorStakeData.class, action.fromDelegate());
     var ownershipAmt =
-        action
-            .amount()
-            .multiply(validatorStake.totalOwnership())
-            .divide(validatorStake.amount());
+        action.amount().multiply(validatorStake.totalOwnership()).divide(validatorStake.amount());
 
     // TODO: construct this in substate definition
     var buf =

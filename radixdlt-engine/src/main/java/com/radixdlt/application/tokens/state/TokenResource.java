@@ -64,21 +64,18 @@
 
 package com.radixdlt.application.tokens.state;
 
+import static java.util.Objects.requireNonNull;
+
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
-
 import java.util.Optional;
 
-import static java.util.Objects.requireNonNull;
-
-/**
- * Particle representing a fixed supply token definition
- */
+/** Particle representing a fixed supply token definition */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-public record TokenResource(REAddr addr, UInt256 granularity,
-                            boolean isMutable, ECPublicKey owner) implements ResourceData {
+public record TokenResource(REAddr addr, UInt256 granularity, boolean isMutable, ECPublicKey owner)
+    implements ResourceData {
   public TokenResource {
     if (!isMutable && owner != null) {
       throw new IllegalArgumentException("Can't have fixed supply and minter");

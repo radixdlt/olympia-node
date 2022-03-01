@@ -74,10 +74,14 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 
-public record ValidatorStakeData(ECPublicKey validatorKey, UInt256 totalStake,
-                                 UInt256 totalOwnership, int rakePercentage,
-                                 REAddr ownerAddr,
-                                 boolean isRegistered) implements ResourceInBucket, ValidatorData {
+public record ValidatorStakeData(
+    ECPublicKey validatorKey,
+    UInt256 totalStake,
+    UInt256 totalOwnership,
+    int rakePercentage,
+    REAddr ownerAddr,
+    boolean isRegistered)
+    implements ResourceInBucket, ValidatorData {
   public ValidatorStakeData {
     if (totalStake.isZero() != totalOwnership.isZero()) {
       throw new IllegalArgumentException(

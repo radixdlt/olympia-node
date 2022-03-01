@@ -64,21 +64,20 @@
 
 package com.radixdlt.application.tokens.state;
 
+import static java.util.Objects.requireNonNull;
+
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.scrypt.Tokens;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * A particle which represents an amount of transferrable fungible tokens owned by some key owner
  * and stored in an account.
  */
-public record TokensInAccount(REAddr holdingAddress,
-                              REAddr resourceAddr,
-                              UInt256 amount) implements ResourceInBucket {
+public record TokensInAccount(REAddr holdingAddress, REAddr resourceAddr, UInt256 amount)
+    implements ResourceInBucket {
   public TokensInAccount {
     requireNonNull(holdingAddress);
     requireNonNull(resourceAddr);

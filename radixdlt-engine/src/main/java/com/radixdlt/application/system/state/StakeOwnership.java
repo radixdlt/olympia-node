@@ -64,16 +64,16 @@
 
 package com.radixdlt.application.system.state;
 
+import static java.util.Objects.requireNonNull;
+
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
-import static java.util.Objects.requireNonNull;
-
-public record StakeOwnership(ECPublicKey delegateKey, REAddr owner,
-                             UInt256 amount) implements ResourceInBucket {
+public record StakeOwnership(ECPublicKey delegateKey, REAddr owner, UInt256 amount)
+    implements ResourceInBucket {
   public StakeOwnership {
     if (amount.isZero()) {
       throw new IllegalArgumentException("Stake ownership should not be zero");

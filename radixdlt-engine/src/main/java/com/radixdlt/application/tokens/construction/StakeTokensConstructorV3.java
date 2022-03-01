@@ -97,8 +97,7 @@ public record StakeTokensConstructorV3(UInt256 minimumStake)
     var change =
         builder.downFungible(
             index,
-            p ->
-                p.resourceAddr().isNativeToken() && p.holdingAddress().equals(action.fromAddr()),
+            p -> p.resourceAddr().isNativeToken() && p.holdingAddress().equals(action.fromAddr()),
             action.amount(),
             available -> {
               var from = AccountBucket.from(REAddr.ofNativeToken(), action.fromAddr());

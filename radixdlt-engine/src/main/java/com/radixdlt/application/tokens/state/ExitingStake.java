@@ -64,6 +64,8 @@
 
 package com.radixdlt.application.tokens.state;
 
+import static java.util.Objects.requireNonNull;
+
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.crypto.ECPublicKey;
@@ -71,12 +73,11 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import java.nio.ByteBuffer;
 
-import static java.util.Objects.requireNonNull;
-
-public record ExitingStake(long epochUnlocked, ECPublicKey delegateKey,
-                           REAddr owner,
-                           UInt256 amount) implements ResourceInBucket {
-  private static final int DATA_SIZE = ECPublicKey.COMPRESSED_BYTES + (ECPublicKey.COMPRESSED_BYTES + 1) + Long.BYTES;
+public record ExitingStake(
+    long epochUnlocked, ECPublicKey delegateKey, REAddr owner, UInt256 amount)
+    implements ResourceInBucket {
+  private static final int DATA_SIZE =
+      ECPublicKey.COMPRESSED_BYTES + (ECPublicKey.COMPRESSED_BYTES + 1) + Long.BYTES;
 
   public ExitingStake {
     requireNonNull(delegateKey);

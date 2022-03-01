@@ -64,14 +64,14 @@
 
 package com.radixdlt.application.tokens.state;
 
-import com.radixdlt.identifiers.REAddr;
-
 import static com.radixdlt.atom.REFieldSerialization.requireValidUrl;
 import static java.util.Objects.requireNonNull;
 
-public record TokenResourceMetadata(REAddr addr, String symbol,
-                                    String name, String description, String iconUrl,
-                                    String url) implements ResourceData {
+import com.radixdlt.identifiers.REAddr;
+
+public record TokenResourceMetadata(
+    REAddr addr, String symbol, String name, String description, String iconUrl, String url)
+    implements ResourceData {
   public TokenResourceMetadata {
     requireNonNull(addr);
     requireNonNull(name);

@@ -64,20 +64,20 @@
 
 package com.radixdlt.application.tokens.state;
 
+import static java.util.Objects.requireNonNull;
+
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * A particle which represents an amount of staked fungible tokens owned by some key owner, stored
  * in an account and staked to a delegate address.
  */
-public record PreparedStake(UInt256 amount, REAddr owner,
-                            ECPublicKey delegateKey) implements ResourceInBucket {
+public record PreparedStake(UInt256 amount, REAddr owner, ECPublicKey delegateKey)
+    implements ResourceInBucket {
   public PreparedStake {
     requireNonNull(delegateKey);
     requireNonNull(owner);

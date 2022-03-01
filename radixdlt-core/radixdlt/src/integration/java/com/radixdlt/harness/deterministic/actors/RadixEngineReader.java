@@ -87,8 +87,7 @@ public final class RadixEngineReader {
   public BigInteger getTotalExittingStake() {
     var totalStakeExitting =
         radixEngine.read(
-            reader ->
-                reader.reduce(ExitingStake.class, UInt256.ZERO, (u, t) -> u.add(t.amount())));
+            reader -> reader.reduce(ExitingStake.class, UInt256.ZERO, (u, t) -> u.add(t.amount())));
     return new BigInteger(1, totalStakeExitting.toByteArray());
   }
 

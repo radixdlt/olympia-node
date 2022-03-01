@@ -70,8 +70,9 @@ import com.radixdlt.crypto.ECPublicKey;
 import java.util.Objects;
 import java.util.OptionalLong;
 
-public record ValidatorFeeCopy(OptionalLong epochUpdate, ECPublicKey validatorKey,
-                               int curRakePercentage) implements ValidatorUpdatingData {
+public record ValidatorFeeCopy(
+    OptionalLong epochUpdate, ECPublicKey validatorKey, int curRakePercentage)
+    implements ValidatorUpdatingData {
   public ValidatorFeeCopy {
     Objects.requireNonNull(validatorKey);
   }

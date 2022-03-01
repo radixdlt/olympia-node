@@ -64,13 +64,13 @@
 
 package com.radixdlt.application.validators.state;
 
-import com.radixdlt.crypto.ECPublicKey;
-
 import static com.radixdlt.atom.REFieldSerialization.requireValidUrl;
 import static java.util.Objects.requireNonNull;
 
-public record ValidatorMetaData(ECPublicKey validatorKey, String name,
-                                String url) implements ValidatorData {
+import com.radixdlt.crypto.ECPublicKey;
+
+public record ValidatorMetaData(ECPublicKey validatorKey, String name, String url)
+    implements ValidatorData {
   public ValidatorMetaData {
     requireNonNull(validatorKey);
     requireNonNull(name);

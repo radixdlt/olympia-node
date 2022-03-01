@@ -66,8 +66,8 @@ package com.radixdlt.application.validators.state;
 
 import com.radixdlt.crypto.ECPublicKey;
 
-public record AllowDelegationFlag(ECPublicKey validatorKey,
-                                  boolean allowsDelegation) implements ValidatorData {
+public record AllowDelegationFlag(ECPublicKey validatorKey, boolean allowsDelegation)
+    implements ValidatorData {
 
   public static AllowDelegationFlag createVirtual(ECPublicKey validatorKey) {
     return new AllowDelegationFlag(validatorKey, false);

@@ -880,8 +880,7 @@ public final class BerkeleyLedgerEntryStore
         } else if (stateUpdate.getParsed() instanceof ValidatorData) {
           var p = (ValidatorData) stateUpdate.getParsed();
           var mapKey =
-              SystemMapKey.ofSystem(
-                  stateUpdate.typeByte(), p.validatorKey().getCompressedBytes());
+              SystemMapKey.ofSystem(stateUpdate.typeByte(), p.validatorKey().getCompressedBytes());
           deleteFromMapDatabaseOrFail(txn, mapKey);
         } else if (stateUpdate.getParsed() instanceof SystemData) {
           var mapKey = SystemMapKey.ofSystem(stateUpdate.typeByte());

@@ -64,14 +64,13 @@
 
 package com.radixdlt.application.system.state;
 
+import static com.radixdlt.identifiers.REAddr.HASHED_KEY_BYTES;
+
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.exceptions.InvalidHashedKeyException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-
 import java.util.Arrays;
-
-import static com.radixdlt.identifiers.REAddr.HASHED_KEY_BYTES;
 
 public record UnclaimedREAddr(REAddr addr) implements Particle {
 

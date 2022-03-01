@@ -159,16 +159,14 @@ public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
   private void updateOwner(TxBuilder builder, REAddr owner) {
     builder.down(ValidatorOwnerCopy.class, validatorKey);
     var curEpoch = builder.readSystem(EpochData.class);
-    builder.up(
-        new ValidatorOwnerCopy(OptionalLong.of(curEpoch.epoch() + 1), validatorKey, owner));
+    builder.up(new ValidatorOwnerCopy(OptionalLong.of(curEpoch.epoch() + 1), validatorKey, owner));
   }
 
   private void updateValidatorFee(
       TxBuilder builder, PreparedValidatorFee preparedValidatorFee, Supplier<RERulesConfig> config)
       throws InvalidRakeIncreaseException {
     builder.down(ValidatorFeeCopy.class, validatorKey);
-    var curRakePercentage =
-        builder.read(ValidatorStakeData.class, validatorKey).rakePercentage();
+    var curRakePercentage = builder.read(ValidatorStakeData.class, validatorKey).rakePercentage();
     int validatorFee = preparedValidatorFee.getFee();
     var isIncrease = validatorFee > curRakePercentage;
     var rakeIncrease = validatorFee - curRakePercentage;

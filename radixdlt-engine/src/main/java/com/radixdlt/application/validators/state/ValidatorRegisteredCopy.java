@@ -67,8 +67,9 @@ package com.radixdlt.application.validators.state;
 import com.radixdlt.crypto.ECPublicKey;
 import java.util.OptionalLong;
 
-public record ValidatorRegisteredCopy(OptionalLong epochUpdate, ECPublicKey validatorKey,
-                                      boolean isRegistered) implements ValidatorUpdatingData {
+public record ValidatorRegisteredCopy(
+    OptionalLong epochUpdate, ECPublicKey validatorKey, boolean isRegistered)
+    implements ValidatorUpdatingData {
 
   public static ValidatorRegisteredCopy createVirtual(ECPublicKey validatorKey) {
     return new ValidatorRegisteredCopy(OptionalLong.empty(), validatorKey, false);

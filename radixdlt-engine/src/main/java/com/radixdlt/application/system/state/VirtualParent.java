@@ -65,7 +65,6 @@
 package com.radixdlt.application.system.state;
 
 import com.radixdlt.constraintmachine.Particle;
-
 import java.util.Arrays;
 
 public record VirtualParent(byte[] data) implements Particle {

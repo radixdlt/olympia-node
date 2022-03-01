@@ -69,8 +69,8 @@ import com.radixdlt.crypto.HashUtils;
 import java.util.Arrays;
 import java.util.Objects;
 
-public record ValidatorSystemMetadata(ECPublicKey validatorKey,
-                                      byte[] data) implements ValidatorData {
+public record ValidatorSystemMetadata(ECPublicKey validatorKey, byte[] data)
+    implements ValidatorData {
   public ValidatorSystemMetadata {
     if (data.length != 32) {
       throw new IllegalArgumentException("Invalid number of bytes in data");

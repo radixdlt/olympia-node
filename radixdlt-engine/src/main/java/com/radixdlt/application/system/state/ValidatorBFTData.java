@@ -67,8 +67,9 @@ package com.radixdlt.application.system.state;
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.crypto.ECPublicKey;
 
-public record ValidatorBFTData(ECPublicKey validatorKey, long completedProposals,
-                               long missedProposals) implements ValidatorData {
+public record ValidatorBFTData(
+    ECPublicKey validatorKey, long completedProposals, long missedProposals)
+    implements ValidatorData {
   public ValidatorBFTData incrementCompletedProposals() {
     return new ValidatorBFTData(validatorKey, completedProposals + 1, missedProposals);
   }

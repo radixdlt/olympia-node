@@ -657,8 +657,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
       var iter = indexedSubstateIterator.iterator();
       while (iter.hasNext()) {
         var preparedValidatorUpdate = iter.next();
-        preparingOwnerUpdates.put(
-            preparedValidatorUpdate.validatorKey(), preparedValidatorUpdate);
+        preparingOwnerUpdates.put(preparedValidatorUpdate.validatorKey(), preparedValidatorUpdate);
       }
       return next();
     }

@@ -68,10 +68,11 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import java.util.OptionalLong;
 
-public record ValidatorOwnerCopy(OptionalLong epochUpdate, ECPublicKey validatorKey,
-                                 REAddr owner) implements ValidatorUpdatingData {
+public record ValidatorOwnerCopy(OptionalLong epochUpdate, ECPublicKey validatorKey, REAddr owner)
+    implements ValidatorUpdatingData {
 
   public static ValidatorOwnerCopy createVirtual(ECPublicKey validatorKey) {
-    return new ValidatorOwnerCopy(OptionalLong.empty(), validatorKey, REAddr.ofPubKeyAccount(validatorKey));
+    return new ValidatorOwnerCopy(
+        OptionalLong.empty(), validatorKey, REAddr.ofPubKeyAccount(validatorKey));
   }
 }

@@ -239,8 +239,7 @@ public record NextEpochConstructorV3(
                                       Comparator.comparing(
                                           REAddr::getBytes,
                                           UnsignedBytes.lexicographicalComparator())))
-                          .merge(
-                              preparedStake.owner(), preparedStake.amount(), UInt256::add));
+                          .merge(preparedStake.owner(), preparedStake.amount(), UInt256::add));
               return map;
             });
     for (var e : allPreparedUnstake.entrySet()) {
@@ -271,8 +270,7 @@ public record NextEpochConstructorV3(
                                       Comparator.comparing(
                                           REAddr::getBytes,
                                           UnsignedBytes.lexicographicalComparator())))
-                          .merge(
-                              preparedStake.owner(), preparedStake.amount(), UInt256::add));
+                          .merge(preparedStake.owner(), preparedStake.amount(), UInt256::add));
               return preparingStake;
             });
     for (var e : allPreparedStake.entrySet()) {
