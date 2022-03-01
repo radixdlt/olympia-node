@@ -64,6 +64,7 @@
 
 package com.radixdlt.application.tokens;
 
+import static com.radixdlt.atom.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -76,10 +77,6 @@ import com.radixdlt.application.tokens.construction.MintTokenConstructor;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atom.actions.CreateSystem;
-import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;

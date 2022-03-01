@@ -117,7 +117,7 @@ public class REResourceAccounting {
                 resourceInBucket.bucket(),
                 new BigInteger(
                     update.isBootUp() ? 1 : -1,
-                    resourceInBucket.getAmount().toByteArray(),
+                    resourceInBucket.amount().toByteArray(),
                     0,
                     UInt256.BYTES),
                 REResourceAccounting::sumIfZeroThenNull);

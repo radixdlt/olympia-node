@@ -153,7 +153,7 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
     var configSupplier =
         Suppliers.memoize(
             () -> {
-              var epoch = txBuilder.findSystem(EpochData.class).getEpoch();
+              var epoch = txBuilder.findSystem(EpochData.class).epoch();
               return forks.get(epoch).config();
             });
 

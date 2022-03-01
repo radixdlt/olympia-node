@@ -254,11 +254,11 @@ public class PrometheusService {
               appendCounter(
                   builder,
                   COUNTER_PREFIX + "radix_engine_cur_epoch_completed_proposals",
-                  uptime.proposalsCompleted());
+                  uptime.completedProposals());
               appendCounter(
                   builder,
                   COUNTER_PREFIX + "radix_engine_cur_epoch_missed_proposals",
-                  uptime.proposalsMissed());
+                  uptime.missedProposals());
             });
   }
 

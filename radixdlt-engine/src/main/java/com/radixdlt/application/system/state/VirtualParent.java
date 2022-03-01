@@ -65,20 +65,12 @@
 package com.radixdlt.application.system.state;
 
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
-public final class VirtualParent implements Particle {
-  private final byte[] data;
+public record VirtualParent(byte[] data) implements Particle {
 
-  public VirtualParent(byte[] data) {
-    this.data = data;
-  }
-
-  public byte[] getData() {
-    return data;
-  }
-
+  // Primitive array member requires explicit hashCode() and equals()
   @Override
   public int hashCode() {
     return Arrays.hashCode(data);
@@ -86,16 +78,11 @@ public final class VirtualParent implements Particle {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof VirtualParent)) {
-      return false;
-    }
-
-    var other = (VirtualParent) o;
-    return Arrays.equals(this.data, other.data);
+    return o instanceof VirtualParent other && Arrays.equals(this.data, other.data);
   }
 
   @Override
   public String toString() {
-    return String.format("%s{%s}", this.getClass().getSimpleName(), Bytes.toHexString(data));
+    return "VirtualParent[data=" + (data == null ? "null" : Hex.toHexString(data) + "]");
   }
 }

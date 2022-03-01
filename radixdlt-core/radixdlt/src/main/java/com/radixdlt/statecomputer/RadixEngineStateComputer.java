@@ -64,19 +64,14 @@
 
 package com.radixdlt.statecomputer;
 
+import static com.radixdlt.atom.TxAction.*;
 import static com.radixdlt.counters.SystemCounters.*;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.radixdlt.application.system.NextValidatorSetEvent;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.NextEpoch;
-import com.radixdlt.atom.actions.NextRound;
+import com.radixdlt.atom.*;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
@@ -92,6 +87,7 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
@@ -341,8 +337,8 @@ public final class RadixEngineStateComputer implements StateComputer {
       var exceptionBuilder = ImmutableMap.<Txn, Exception>builder();
       var nextValidatorSet =
           systemTxn.processed().getEvents().stream()
-              .filter(NextValidatorSetEvent.class::isInstance)
-              .map(NextValidatorSetEvent.class::cast)
+              .filter(REEvent.NextValidatorSetEvent.class::isInstance)
+              .map(REEvent.NextValidatorSetEvent.class::cast)
               .findFirst()
               .map(
                   e ->
@@ -351,7 +347,7 @@ public final class RadixEngineStateComputer implements StateComputer {
                               .map(
                                   v ->
                                       BFTValidator.from(
-                                          BFTNode.create(v.getValidatorKey()), v.getAmount()))));
+                                          BFTNode.create(v.validatorKey()), v.amount()))));
       // Don't execute command if changing epochs
       if (nextValidatorSet.isEmpty()) {
         this.executeUserCommands(

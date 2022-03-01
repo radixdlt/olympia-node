@@ -65,6 +65,7 @@
 package com.radixdlt.application.system.construction;
 
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
+import static com.radixdlt.atom.TxAction.*;
 
 import com.google.common.collect.Streams;
 import com.google.common.primitives.UnsignedBytes;
@@ -80,40 +81,23 @@ import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.NextEpoch;
+import com.radixdlt.atom.*;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
 import java.nio.ByteBuffer;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch> {
-  private final UInt256 rewardsPerProposal;
-  private final long unstakingEpochDelay;
-  private final long minimumCompletedProposalsPercentage;
-  private final int maxValidators;
-
-  public NextEpochConstructorV3(
-      UInt256 rewardsPerProposal,
-      long minimumCompletedProposalsPercentage,
-      long unstakingEpochDelay,
-      int maxValidators) {
-    this.rewardsPerProposal = rewardsPerProposal;
-    this.unstakingEpochDelay = unstakingEpochDelay;
-    this.minimumCompletedProposalsPercentage = minimumCompletedProposalsPercentage;
-    this.maxValidators = maxValidators;
-  }
+public record NextEpochConstructorV3(
+    UInt256 rewardsPerProposal,
+    long minimumCompletedProposalsPercentage,
+    long unstakingEpochDelay,
+    int maxValidators)
+    implements ActionConstructor<NextEpoch> {
 
   private static ValidatorScratchPad loadValidatorStakeData(
       TxBuilder txBuilder,
@@ -149,7 +133,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
     txBuilder.shutdownAll(
         index,
         (Iterator<T> i) -> {
-          i.forEachRemaining(update -> preparing.put(update.getValidatorKey(), update));
+          i.forEachRemaining(update -> preparing.put(update.validatorKey(), update));
           return preparing;
         });
     for (var e : preparing.entrySet()) {
@@ -169,7 +153,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
     var unlockedStateIndexBuf = ByteBuffer.allocate(2 + Long.BYTES);
     unlockedStateIndexBuf.put(SubstateTypeId.EXITING_STAKE.id());
     unlockedStateIndexBuf.put((byte) 0);
-    unlockedStateIndexBuf.putLong(closingEpoch.getEpoch() + 1);
+    unlockedStateIndexBuf.putLong(closingEpoch.epoch() + 1);
     var unlockedStakeIndex =
         SubstateIndex.create(unlockedStateIndexBuf.array(), ExitingStake.class);
     var exitting =
@@ -195,7 +179,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
             i -> {
               final TreeMap<ECPublicKey, ValidatorBFTData> bftData =
                   new TreeMap<>(KeyComparator.instance());
-              i.forEachRemaining(e -> bftData.put(e.getValidatorKey(), e));
+              i.forEachRemaining(e -> bftData.put(e.validatorKey(), e));
               return bftData;
             });
     var preparingStake =
@@ -203,20 +187,20 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
     for (var e : validatorBFTData.entrySet()) {
       var k = e.getKey();
       var bftData = e.getValue();
-      if (bftData.proposalsCompleted() + bftData.proposalsMissed() == 0) {
+      if (bftData.completedProposals() + bftData.missedProposals() == 0) {
         continue;
       }
       var percentageCompleted =
-          bftData.proposalsCompleted()
+          bftData.completedProposals()
               * 10000
-              / (bftData.proposalsCompleted() + bftData.proposalsMissed());
+              / (bftData.completedProposals() + bftData.missedProposals());
 
       // Didn't pass threshold, no rewards!
       if (percentageCompleted < minimumCompletedProposalsPercentage) {
         continue;
       }
 
-      var nodeRewards = rewardsPerProposal.multiply(UInt256.from(bftData.proposalsCompleted()));
+      var nodeRewards = rewardsPerProposal.multiply(UInt256.from(bftData.completedProposals()));
       if (nodeRewards.isZero()) {
         continue;
       }
@@ -249,14 +233,13 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
               i.forEachRemaining(
                   preparedStake ->
                       map.computeIfAbsent(
-                              preparedStake.getDelegateKey(),
+                              preparedStake.delegateKey(),
                               k ->
                                   new TreeMap<>(
                                       Comparator.comparing(
                                           REAddr::getBytes,
                                           UnsignedBytes.lexicographicalComparator())))
-                          .merge(
-                              preparedStake.getOwner(), preparedStake.getAmount(), UInt256::add));
+                          .merge(preparedStake.owner(), preparedStake.amount(), UInt256::add));
               return map;
             });
     for (var e : allPreparedUnstake.entrySet()) {
@@ -266,7 +249,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
       for (var entry : unstakes.entrySet()) {
         var addr = entry.getKey();
         var amt = entry.getValue();
-        var epochUnlocked = closingEpoch.getEpoch() + 1 + unstakingEpochDelay;
+        var epochUnlocked = closingEpoch.epoch() + 1 + unstakingEpochDelay;
         var exittingStake = curValidator.unstakeOwnership(addr, amt, epochUnlocked);
         txBuilder.up(exittingStake);
       }
@@ -281,14 +264,13 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
                   preparedStake ->
                       preparingStake
                           .computeIfAbsent(
-                              preparedStake.getDelegateKey(),
+                              preparedStake.delegateKey(),
                               k ->
                                   new TreeMap<>(
                                       Comparator.comparing(
                                           REAddr::getBytes,
                                           UnsignedBytes.lexicographicalComparator())))
-                          .merge(
-                              preparedStake.getOwner(), preparedStake.getAmount(), UInt256::add));
+                          .merge(preparedStake.owner(), preparedStake.amount(), UInt256::add));
               return preparingStake;
             });
     for (var e : allPreparedStake.entrySet()) {
@@ -310,9 +292,9 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
         validatorsToUpdate,
         ValidatorFeeCopy.class,
         SubstateTypeId.VALIDATOR_RAKE_COPY.id(),
-        closingEpoch.getEpoch() + 1,
-        (v, u) -> v.setRakePercentage(u.getRakePercentage()),
-        u -> new ValidatorFeeCopy(u.getValidatorKey(), u.getRakePercentage()));
+        closingEpoch.epoch() + 1,
+        (v, u) -> v.setRakePercentage(u.curRakePercentage()),
+        u -> new ValidatorFeeCopy(OptionalLong.empty(), u.validatorKey(), u.curRakePercentage()));
 
     // Update owners
     prepare(
@@ -320,9 +302,9 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
         validatorsToUpdate,
         ValidatorOwnerCopy.class,
         SubstateTypeId.VALIDATOR_OWNER_COPY.id(),
-        closingEpoch.getEpoch() + 1,
-        (v, u) -> v.setOwnerAddr(u.getOwner()),
-        u -> new ValidatorOwnerCopy(u.getValidatorKey(), u.getOwner()));
+        closingEpoch.epoch() + 1,
+        (v, u) -> v.setOwnerAddr(u.owner()),
+        u -> new ValidatorOwnerCopy(OptionalLong.empty(), u.validatorKey(), u.owner()));
 
     // Update registered flag
     prepare(
@@ -330,9 +312,9 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
         validatorsToUpdate,
         ValidatorRegisteredCopy.class,
         SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id(),
-        closingEpoch.getEpoch() + 1,
+        closingEpoch.epoch() + 1,
         (v, u) -> v.setRegistered(u.isRegistered()),
-        u -> new ValidatorRegisteredCopy(u.getValidatorKey(), u.isRegistered()));
+        u -> new ValidatorRegisteredCopy(OptionalLong.empty(), u.validatorKey(), u.isRegistered()));
 
     validatorsToUpdate.forEach((k, v) -> txBuilder.up(v.toSubstate()));
 
@@ -346,11 +328,11 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
       Streams.stream(cursor)
           .map(ValidatorStakeData.class::cast)
           .limit(maxValidators)
-          .filter(s -> !s.getTotalStake().isZero())
-          .forEach(v -> txBuilder.up(new ValidatorBFTData(v.getValidatorKey(), 0, 0)));
+          .filter(s -> !s.totalStake().isZero())
+          .forEach(v -> txBuilder.up(new ValidatorBFTData(v.validatorKey(), 0, 0)));
     }
-    txBuilder.up(new EpochData(closingEpoch.getEpoch() + 1));
-    txBuilder.up(new RoundData(0, closedRound.getTimestamp()));
+    txBuilder.up(new EpochData(closingEpoch.epoch() + 1));
+    txBuilder.up(new RoundData(0, closedRound.timestamp()));
     txBuilder.end();
   }
 }

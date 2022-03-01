@@ -196,14 +196,14 @@ public final class TxLowLevelBuilder {
 
     if (substate instanceof ValidatorData validatorData) {
       var b = serialization.classToByte(validatorData.getClass());
-      var k = SystemMapKey.ofSystem(b, validatorData.getValidatorKey().getCompressedBytes());
+      var k = SystemMapKey.ofSystem(b, validatorData.validatorKey().getCompressedBytes());
       this.localMapValues.put(k, localSubstate);
     } else if (substate instanceof SystemData) {
       var b = serialization.classToByte(substate.getClass());
       var k = SystemMapKey.ofSystem(b);
       this.localMapValues.put(k, localSubstate);
     } else if (substate instanceof VirtualParent virtualParent) {
-      var typeByte = virtualParent.getData()[0];
+      var typeByte = virtualParent.data()[0];
       var k = SystemMapKey.ofSystem(typeByte);
       this.localMapValues.put(k, localSubstate);
     }

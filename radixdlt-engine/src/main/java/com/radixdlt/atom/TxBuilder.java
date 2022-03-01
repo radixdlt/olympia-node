@@ -497,7 +497,7 @@ public final class TxBuilder {
       }
       var resource = (T) p;
 
-      spent = spent.add(resource.getAmount());
+      spent = spent.add(resource.amount());
       localDown(l.getIndex());
 
       if (spent.compareTo(amount) >= 0) {
@@ -513,7 +513,7 @@ public final class TxBuilder {
           if (!particlePredicate.test(resource)) {
             continue;
           }
-          spent = spent.add(resource.getAmount());
+          spent = spent.add(resource.amount());
           down(SubstateId.fromBytes(raw.getId()));
           if (spent.compareTo(amount) >= 0) {
             return spent.subtract(amount);
@@ -543,7 +543,7 @@ public final class TxBuilder {
     var remainder =
         downFungible(
             index,
-            p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(feePayer),
+            p -> p.resourceAddr().isNativeToken() && p.holdingAddress().equals(feePayer),
             amount,
             exceptionSupplier);
     lowLevelBuilder.syscall(Syscall.FEE_RESERVE_PUT, amount);

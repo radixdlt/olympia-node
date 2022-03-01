@@ -203,7 +203,7 @@ public final class ConstraintMachine {
       localUpParticles.put(bootupCount, Pair.of(substate, buffer));
       if (substate.getParticle() instanceof TokenResource) {
         var resource = (TokenResource) substate.getParticle();
-        localResources.put(resource.getAddr(), resource);
+        localResources.put(resource.addr(), resource);
       }
       bootupCount++;
     }
@@ -217,7 +217,7 @@ public final class ConstraintMachine {
 
       var parentBuf = store.verifyVirtualSubstate(substateId);
       var parent = (VirtualParent) deserialization.deserialize(parentBuf);
-      var typeByte = parent.getData()[0];
+      var typeByte = parent.data()[0];
       var keyBuf = substateId.getVirtualKey().orElseThrow();
       return virtualSubstateDeserialization.keyToSubstate(typeByte, keyBuf);
     }
@@ -243,7 +243,7 @@ public final class ConstraintMachine {
         throw new VirtualParentStateDoesNotExist(parentId);
       }
       var parent = (VirtualParent) substate.getFirst().getParticle();
-      var typeByte = parent.getData()[0];
+      var typeByte = parent.data()[0];
       var keyBuf = substateId.getVirtualKey().orElseThrow();
       return virtualSubstateDeserialization.keyToSubstate(typeByte, keyBuf);
     }

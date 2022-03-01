@@ -64,6 +64,8 @@
 
 package com.radixdlt.engine;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.google.common.base.Stopwatch;
 import com.radixdlt.application.system.construction.FeeReserveCompleteException;
 import com.radixdlt.application.tokens.ResourceInBucket;
@@ -76,8 +78,6 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.FeeReserveComplete;
-import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.ExecutionContext;
@@ -592,7 +592,7 @@ public final class RadixEngine<M> {
                   deserialization.index(c),
                   new HashMap<>(),
                   (m, t) -> {
-                    m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
+                    m.merge(keyMapper.apply(t), UInt384.from(t.amount()), UInt384::add);
                     return m;
                   });
             }
@@ -605,7 +605,7 @@ public final class RadixEngine<M> {
                   new HashMap<>(),
                   (m, t) -> {
                     if (predicate.test(t)) {
-                      m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
+                      m.merge(keyMapper.apply(t), UInt384.from(t.amount()), UInt384::add);
                     }
                     return m;
                   });

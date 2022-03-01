@@ -69,38 +69,33 @@ import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.ActionConstructor;
+import com.radixdlt.atom.TxAction.CreateFixedToken;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.CreateFixedToken;
 import java.nio.charset.StandardCharsets;
 
-public final class CreateFixedTokenConstructor implements ActionConstructor<CreateFixedToken> {
-  private final int maxSymbolLength;
-
-  public CreateFixedTokenConstructor(int maxSymbolLength) {
-    this.maxSymbolLength = maxSymbolLength;
-  }
+public record CreateFixedTokenConstructor(int maxSymbolLength)
+    implements ActionConstructor<CreateFixedToken> {
 
   @Override
   public void construct(CreateFixedToken action, TxBuilder txBuilder) throws TxBuilderException {
-    if (action.getSymbol().length() > maxSymbolLength) {
-      throw new SymbolLengthException(maxSymbolLength, action.getSymbol().length());
+    if (action.symbol().length() > maxSymbolLength) {
+      throw new SymbolLengthException(maxSymbolLength, action.symbol().length());
     }
     txBuilder
         .toLowLevelBuilder()
-        .syscall(Syscall.READDR_CLAIM, action.getSymbol().getBytes(StandardCharsets.UTF_8));
-    txBuilder.downREAddr(action.getResourceAddr());
-    txBuilder.up(TokenResource.createFixedSupplyResource(action.getResourceAddr()));
-    txBuilder.up(
-        new TokensInAccount(action.getAccountAddr(), action.getResourceAddr(), action.getSupply()));
+        .syscall(Syscall.READDR_CLAIM, action.symbol().getBytes(StandardCharsets.UTF_8));
+    txBuilder.downREAddr(action.resourceAddr());
+    txBuilder.up(TokenResource.createFixedSupplyResource(action.resourceAddr()));
+    txBuilder.up(new TokensInAccount(action.accountAddr(), action.resourceAddr(), action.supply()));
     txBuilder.up(
         new TokenResourceMetadata(
-            action.getResourceAddr(),
-            action.getSymbol(),
-            action.getName(),
-            action.getDescription(),
-            action.getIconUrl(),
-            action.getTokenUrl()));
+            action.resourceAddr(),
+            action.symbol(),
+            action.name(),
+            action.description(),
+            action.iconUrl(),
+            action.tokenUrl()));
     txBuilder.end();
   }
 }

@@ -64,6 +64,8 @@
 
 package com.radixdlt.statecomputer.checkpoint;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
@@ -73,7 +75,6 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;

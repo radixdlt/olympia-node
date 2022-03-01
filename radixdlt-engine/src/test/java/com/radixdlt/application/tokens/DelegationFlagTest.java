@@ -64,6 +64,7 @@
 
 package com.radixdlt.application.tokens;
 
+import static com.radixdlt.atom.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
@@ -79,16 +80,7 @@ import com.radixdlt.application.validators.construction.UpdateAllowDelegationFla
 import com.radixdlt.application.validators.construction.UpdateValidatorOwnerConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atom.actions.CreateSystem;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
-import com.radixdlt.atom.actions.UpdateValidatorOwner;
+import com.radixdlt.atom.*;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.ConstraintMachine;

@@ -64,12 +64,13 @@
 
 package com.radixdlt.application.system.construction;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.KeyComparator;
 import java.util.TreeMap;
@@ -78,12 +79,12 @@ public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
   @Override
   public void construct(NextRound action, TxBuilder txBuilder) throws TxBuilderException {
     var prevRound = txBuilder.downSystem(RoundData.class);
-    if (action.view() <= prevRound.getView()) {
-      throw new InvalidRoundException(prevRound.getView(), action.view());
+    if (action.view() <= prevRound.view()) {
+      throw new InvalidRoundException(prevRound.view(), action.view());
     }
 
     var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorBFTData>(KeyComparator.instance());
-    for (long view = prevRound.getView() + 1; view < action.view(); view++) {
+    for (long view = prevRound.view() + 1; view < action.view(); view++) {
       var missingLeader = action.leaderMapping().apply(view);
       if (!validatorsToUpdate.containsKey(missingLeader)) {
         var validatorData = txBuilder.down(ValidatorBFTData.class, missingLeader);

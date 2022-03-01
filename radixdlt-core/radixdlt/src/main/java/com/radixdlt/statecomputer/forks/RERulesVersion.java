@@ -64,6 +64,8 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.radixdlt.application.misc.SplitTokenConstructor;
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.FeeReserveCompleteConstructor;
@@ -96,27 +98,6 @@ import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScr
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atom.actions.CreateFixedToken;
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atom.actions.CreateSystem;
-import com.radixdlt.atom.actions.FeeReserveComplete;
-import com.radixdlt.atom.actions.FeeReservePut;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.NextEpoch;
-import com.radixdlt.atom.actions.NextRound;
-import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.atom.actions.SplitToken;
-import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnregisterValidator;
-import com.radixdlt.atom.actions.UnstakeOwnership;
-import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
-import com.radixdlt.atom.actions.UpdateValidatorFee;
-import com.radixdlt.atom.actions.UpdateValidatorMetadata;
-import com.radixdlt.atom.actions.UpdateValidatorOwner;
-import com.radixdlt.atom.actions.UpdateValidatorSystemMetadata;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.meter.Meter;

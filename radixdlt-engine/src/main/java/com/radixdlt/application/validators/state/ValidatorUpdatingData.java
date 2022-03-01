@@ -67,5 +67,5 @@ package com.radixdlt.application.validators.state;
 import java.util.OptionalLong;
 
 public interface ValidatorUpdatingData extends ValidatorData {
-  OptionalLong getEpochUpdate();
+  OptionalLong epochUpdate();
 }
