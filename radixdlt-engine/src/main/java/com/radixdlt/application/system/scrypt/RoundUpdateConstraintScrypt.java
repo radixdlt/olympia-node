@@ -100,11 +100,11 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
     }
 
     public ReducerState beginUpdate(ValidatorBFTData validatorBFTData) throws ProcedureException {
-      if (validatorsToUpdate.containsKey(validatorBFTData.getValidatorKey())) {
+      if (validatorsToUpdate.containsKey(validatorBFTData.validatorKey())) {
         throw new ProcedureException("Validator already started to update.");
       }
 
-      validatorsToUpdate.put(validatorBFTData.getValidatorKey(), validatorBFTData);
+      validatorsToUpdate.put(validatorBFTData.validatorKey(), validatorBFTData);
       return this;
     }
 
@@ -129,9 +129,9 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
             },
             (s, buf) -> {
               REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeKey(buf, s.getValidatorKey());
-              buf.putLong(s.proposalsCompleted());
-              buf.putLong(s.proposalsMissed());
+              REFieldSerialization.serializeKey(buf, s.validatorKey());
+              buf.putLong(s.completedProposals());
+              buf.putLong(s.missedProposals());
             },
             (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)));
 
@@ -148,7 +148,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
             ValidatorBFTData.class,
             d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
             (d, s, r, c) -> {
-              var closedRound = s.getClosedRound().getView();
+              var closedRound = s.getClosedRound().view();
               var next = new StartValidatorBFTUpdate(closedRound);
               next.beginUpdate(d);
               return ReducerResult.incomplete(next);

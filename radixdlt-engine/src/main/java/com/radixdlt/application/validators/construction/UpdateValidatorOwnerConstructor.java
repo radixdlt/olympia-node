@@ -81,7 +81,7 @@ public class UpdateValidatorOwnerConstructor implements ActionConstructor<Update
     var curEpoch = txBuilder.readSystem(EpochData.class);
     txBuilder.up(
         new ValidatorOwnerCopy(
-            OptionalLong.of(curEpoch.getEpoch() + 1),
+            OptionalLong.of(curEpoch.epoch() + 1),
             action.validatorKey(),
             action.ownerAddress()));
     txBuilder.end();

@@ -81,7 +81,7 @@ public final class UnregisterValidatorConstructor
     var curEpoch = txBuilder.readSystem(EpochData.class);
     txBuilder.up(
         new ValidatorRegisteredCopy(
-            OptionalLong.of(curEpoch.getEpoch() + 1), action.validatorKey(), false));
+            OptionalLong.of(curEpoch.epoch() + 1), action.validatorKey(), false));
     txBuilder.end();
   }
 }

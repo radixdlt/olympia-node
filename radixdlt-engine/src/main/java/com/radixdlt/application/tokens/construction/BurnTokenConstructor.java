@@ -86,8 +86,8 @@ public final class BurnTokenConstructor implements ActionConstructor<BurnToken> 
         txBuilder.downFungible(
             index,
             p ->
-                p.getResourceAddr().equals(action.resourceAddr())
-                    && p.getHoldingAddr().equals(action.fromAddr()),
+                p.resourceAddr().equals(action.resourceAddr())
+                    && p.holdingAddress().equals(action.fromAddr()),
             action.amount(),
             available -> {
               var from = AccountBucket.from(action.resourceAddr(), action.fromAddr());

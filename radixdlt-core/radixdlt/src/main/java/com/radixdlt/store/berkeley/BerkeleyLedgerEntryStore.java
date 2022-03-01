@@ -841,7 +841,7 @@ public final class BerkeleyLedgerEntryStore
       // FIXME: Superhack
       if (stateUpdate.getParsed() instanceof TokenResource) {
         var p = (TokenResource) stateUpdate.getParsed();
-        var addr = p.getAddr();
+        var addr = p.addr();
         var buf2 = stateUpdate.getStateBuf();
         var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
         resourceDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
@@ -851,17 +851,17 @@ public final class BerkeleyLedgerEntryStore
       // TODO: and stateful reads, move this into a separate store at some point.
       if (stateUpdate.getParsed() instanceof VirtualParent) {
         var p = (VirtualParent) stateUpdate.getParsed();
-        var typeByte = p.getData()[0];
+        var typeByte = p.data()[0];
         var mapKey = SystemMapKey.ofSystem(typeByte);
         insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
       } else if (stateUpdate.getParsed() instanceof ResourceData) {
         var p = (ResourceData) stateUpdate.getParsed();
-        var mapKey = SystemMapKey.ofResourceData(p.getAddr(), stateUpdate.typeByte());
+        var mapKey = SystemMapKey.ofResourceData(p.addr(), stateUpdate.typeByte());
         insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
       } else if (stateUpdate.getParsed() instanceof ValidatorData) {
         var p = (ValidatorData) stateUpdate.getParsed();
         var mapKey =
-            SystemMapKey.ofSystem(stateUpdate.typeByte(), p.getValidatorKey().getCompressedBytes());
+            SystemMapKey.ofSystem(stateUpdate.typeByte(), p.validatorKey().getCompressedBytes());
         insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
       } else if (stateUpdate.getParsed() instanceof SystemData) {
         var mapKey = SystemMapKey.ofSystem(stateUpdate.typeByte());
@@ -875,13 +875,13 @@ public final class BerkeleyLedgerEntryStore
 
         if (stateUpdate.getParsed() instanceof ResourceData) {
           var p = (ResourceData) stateUpdate.getParsed();
-          var mapKey = SystemMapKey.ofResourceData(p.getAddr(), stateUpdate.typeByte());
+          var mapKey = SystemMapKey.ofResourceData(p.addr(), stateUpdate.typeByte());
           deleteFromMapDatabaseOrFail(txn, mapKey);
         } else if (stateUpdate.getParsed() instanceof ValidatorData) {
           var p = (ValidatorData) stateUpdate.getParsed();
           var mapKey =
               SystemMapKey.ofSystem(
-                  stateUpdate.typeByte(), p.getValidatorKey().getCompressedBytes());
+                  stateUpdate.typeByte(), p.validatorKey().getCompressedBytes());
           deleteFromMapDatabaseOrFail(txn, mapKey);
         } else if (stateUpdate.getParsed() instanceof SystemData) {
           var mapKey = SystemMapKey.ofSystem(stateUpdate.typeByte());

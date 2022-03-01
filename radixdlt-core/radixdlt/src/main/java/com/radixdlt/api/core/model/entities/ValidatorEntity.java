@@ -141,8 +141,8 @@ public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
     builder.up(
         new ValidatorMetaData(
             validatorKey,
-            metadata.getName() == null ? substateDown.getName() : metadata.getName(),
-            metadata.getUrl() == null ? substateDown.getUrl() : metadata.getUrl()));
+            metadata.getName() == null ? substateDown.name() : metadata.getName(),
+            metadata.getUrl() == null ? substateDown.url() : metadata.getUrl()));
   }
 
   private void updateRegistered(
@@ -151,7 +151,7 @@ public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
     var curEpoch = builder.readSystem(EpochData.class);
     builder.up(
         new ValidatorRegisteredCopy(
-            OptionalLong.of(curEpoch.getEpoch() + 1),
+            OptionalLong.of(curEpoch.epoch() + 1),
             validatorKey,
             preparedValidatorRegistered.getRegistered()));
   }
@@ -160,7 +160,7 @@ public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
     builder.down(ValidatorOwnerCopy.class, validatorKey);
     var curEpoch = builder.readSystem(EpochData.class);
     builder.up(
-        new ValidatorOwnerCopy(OptionalLong.of(curEpoch.getEpoch() + 1), validatorKey, owner));
+        new ValidatorOwnerCopy(OptionalLong.of(curEpoch.epoch() + 1), validatorKey, owner));
   }
 
   private void updateValidatorFee(
@@ -168,7 +168,7 @@ public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
       throws InvalidRakeIncreaseException {
     builder.down(ValidatorFeeCopy.class, validatorKey);
     var curRakePercentage =
-        builder.read(ValidatorStakeData.class, validatorKey).getRakePercentage();
+        builder.read(ValidatorStakeData.class, validatorKey).rakePercentage();
     int validatorFee = preparedValidatorFee.getFee();
     var isIncrease = validatorFee > curRakePercentage;
     var rakeIncrease = validatorFee - curRakePercentage;
@@ -180,7 +180,7 @@ public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
     var rakeIncreaseDebounceEpochLength = config.get().rakeIncreaseDebouncerEpochLength();
     var epochDiff = isIncrease ? (1 + rakeIncreaseDebounceEpochLength) : 1;
     var curEpoch = builder.readSystem(EpochData.class);
-    var epoch = curEpoch.getEpoch() + epochDiff;
+    var epoch = curEpoch.epoch() + epochDiff;
     builder.up(new ValidatorFeeCopy(OptionalLong.of(epoch), validatorKey, validatorFee));
   }
 

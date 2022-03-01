@@ -303,7 +303,7 @@ public class LargeEpochChangeTest {
                             .map(
                                 v ->
                                     BFTValidator.from(
-                                        BFTNode.create(v.getValidatorKey()), v.getAmount()))));
+                                        BFTNode.create(v.validatorKey()), v.amount()))));
     var stateUpdates = result.getProcessedTxn().stateUpdates().count();
     construction.stop();
     logger.info(

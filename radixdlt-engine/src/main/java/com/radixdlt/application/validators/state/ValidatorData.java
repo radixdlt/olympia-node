@@ -68,5 +68,5 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 
 public interface ValidatorData extends Particle {
-  ECPublicKey getValidatorKey();
+  ECPublicKey validatorKey();
 }

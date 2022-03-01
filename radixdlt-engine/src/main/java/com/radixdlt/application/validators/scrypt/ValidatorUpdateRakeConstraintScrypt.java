@@ -109,11 +109,11 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
     }
 
     void update(ValidatorFeeCopy update) throws ProcedureException {
-      if (!Objects.equals(stakeData.getValidatorKey(), update.getValidatorKey())) {
+      if (!Objects.equals(stakeData.validatorKey(), update.validatorKey())) {
         throw new ProcedureException("Must update same key");
       }
 
-      var rakeIncrease = update.getRakePercentage() - stakeData.getRakePercentage();
+      var rakeIncrease = update.curRakePercentage() - stakeData.rakePercentage();
       if (rakeIncrease > MAX_RAKE_INCREASE) {
         throw new ProcedureException(
             "Max rake increase is "
@@ -124,16 +124,16 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 
       var epoch =
           update
-              .getEpochUpdate()
+              .epochUpdate()
               .orElseThrow(() -> new ProcedureException("Must contain epoch update"));
       if (rakeIncrease > 0) {
-        var expectedEpoch = epochData.getEpoch() + 1 + rakeIncreaseDebounceEpochLength;
+        var expectedEpoch = epochData.epoch() + 1 + rakeIncreaseDebounceEpochLength;
         if (epoch != expectedEpoch) {
           throw new ProcedureException(
               "Increasing rake requires epoch delay to " + expectedEpoch + " but was " + epoch);
         }
       } else {
-        var expectedEpoch = epochData.getEpoch() + 1;
+        var expectedEpoch = epochData.epoch() + 1;
         if (epoch != expectedEpoch) {
           throw new ProcedureException(
               "Decreasing rake requires epoch delay to " + expectedEpoch + " but was " + epoch);
@@ -151,7 +151,7 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 
     public ReducerState readValidatorStakeState(ValidatorStakeData validatorStakeData)
         throws ProcedureException {
-      if (!validatorStakeData.getValidatorKey().equals(validatorKey)) {
+      if (!validatorStakeData.validatorKey().equals(validatorKey)) {
         throw new ProcedureException("Invalid key update");
       }
 
@@ -191,9 +191,9 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
             },
             (s, buf) -> {
               REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeOptionalLong(buf, s.getEpochUpdate());
-              REFieldSerialization.serializeKey(buf, s.getValidatorKey());
-              buf.putInt(s.getRakePercentage());
+              REFieldSerialization.serializeOptionalLong(buf, s.epochUpdate());
+              REFieldSerialization.serializeKey(buf, s.validatorKey());
+              buf.putInt(s.curRakePercentage());
             },
             buf -> REFieldSerialization.deserializeKey(buf),
             (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
@@ -207,13 +207,13 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
                 new Authorization(
                     PermissionLevel.USER,
                     (r, c) -> {
-                      if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
+                      if (!c.key().map(d.validatorKey()::equals).orElse(false)) {
                         throw new AuthorizationException("Key does not match.");
                       }
                     }),
             (d, s, r, c) -> {
               return ReducerResult.incomplete(
-                  new UpdatingRakeNeedToReadCurrentRake(d.getValidatorKey()));
+                  new UpdatingRakeNeedToReadCurrentRake(d.validatorKey()));
             }));
     os.procedure(
         new ReadProcedure<>(

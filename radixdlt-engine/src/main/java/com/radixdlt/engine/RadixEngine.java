@@ -592,7 +592,7 @@ public final class RadixEngine<M> {
                   deserialization.index(c),
                   new HashMap<>(),
                   (m, t) -> {
-                    m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
+                    m.merge(keyMapper.apply(t), UInt384.from(t.amount()), UInt384::add);
                     return m;
                   });
             }
@@ -605,7 +605,7 @@ public final class RadixEngine<M> {
                   new HashMap<>(),
                   (m, t) -> {
                     if (predicate.test(t)) {
-                      m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
+                      m.merge(keyMapper.apply(t), UInt384.from(t.amount()), UInt384::add);
                     }
                     return m;
                   });

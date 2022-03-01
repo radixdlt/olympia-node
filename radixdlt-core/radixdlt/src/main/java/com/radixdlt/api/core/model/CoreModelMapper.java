@@ -812,10 +812,10 @@ public final class CoreModelMapper {
   public DataObject tokenData(TokenResource tokenResource) {
     var tokenData =
         new TokenData()
-            .granularity(tokenResource.getGranularity().toString())
+            .granularity(tokenResource.granularity().toString())
             .isMutable(tokenResource.isMutable());
     tokenResource
-        .getOwner()
+        .optionalOwner()
         .map(REAddr::ofPubKeyAccount)
         .ifPresent(addr -> tokenData.setOwner(entityIdentifier(addr)));
     return tokenData.type(SubstateTypeMapping.getName(SubstateTypeId.TOKEN_RESOURCE));
@@ -823,30 +823,30 @@ public final class CoreModelMapper {
 
   public DataObject tokenMetadata(TokenResourceMetadata tokenResourceMetadata) {
     return new TokenMetadata()
-        .symbol(tokenResourceMetadata.getSymbol())
-        .name(tokenResourceMetadata.getName())
-        .description(tokenResourceMetadata.getDescription())
-        .url(tokenResourceMetadata.getUrl())
-        .iconUrl(tokenResourceMetadata.getIconUrl())
+        .symbol(tokenResourceMetadata.symbol())
+        .name(tokenResourceMetadata.name())
+        .description(tokenResourceMetadata.description())
+        .url(tokenResourceMetadata.url())
+        .iconUrl(tokenResourceMetadata.iconUrl())
         .type(SubstateTypeMapping.getName(SubstateTypeId.TOKEN_RESOURCE_METADATA));
   }
 
   public DataObject epochData(EpochData epochData) {
     return new com.radixdlt.api.core.openapitools.model.EpochData()
-        .epoch(epochData.getEpoch())
+        .epoch(epochData.epoch())
         .type(SubstateTypeMapping.getName(SubstateTypeId.EPOCH_DATA));
   }
 
   public DataObject roundData(RoundData roundData) {
     return new com.radixdlt.api.core.openapitools.model.RoundData()
-        .round(roundData.getView())
-        .timestamp(roundData.getTimestamp())
+        .round(roundData.view())
+        .timestamp(roundData.timestamp())
         .type(SubstateTypeMapping.getName(SubstateTypeId.ROUND_DATA));
   }
 
   public DataObject preparedValidatorRegistered(ValidatorRegisteredCopy copy) {
     var preparedValidatorRegistered = new PreparedValidatorRegistered();
-    copy.getEpochUpdate().ifPresent(preparedValidatorRegistered::epoch);
+    copy.epochUpdate().ifPresent(preparedValidatorRegistered::epoch);
     return preparedValidatorRegistered
         .registered(copy.isRegistered())
         .type(SubstateTypeMapping.getName(SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY));
@@ -854,33 +854,33 @@ public final class CoreModelMapper {
 
   public DataObject preparedValidatorOwner(ValidatorOwnerCopy copy, boolean virtual) {
     var preparedValidatorOwner = new PreparedValidatorOwner();
-    copy.getEpochUpdate().ifPresent(preparedValidatorOwner::epoch);
+    copy.epochUpdate().ifPresent(preparedValidatorOwner::epoch);
     return preparedValidatorOwner
-        .owner(virtual ? selfAccountEntityIdentifier() : entityIdentifier(copy.getOwner()))
+        .owner(virtual ? selfAccountEntityIdentifier() : entityIdentifier(copy.owner()))
         .type(SubstateTypeMapping.getName(SubstateTypeId.VALIDATOR_OWNER_COPY));
   }
 
   public DataObject preparedValidatorFee(ValidatorFeeCopy copy) {
     var preparedValidatorFee = new PreparedValidatorFee();
-    copy.getEpochUpdate().ifPresent(preparedValidatorFee::epoch);
+    copy.epochUpdate().ifPresent(preparedValidatorFee::epoch);
     return preparedValidatorFee
-        .fee(copy.getRakePercentage())
+        .fee(copy.curRakePercentage())
         .type(SubstateTypeMapping.getName(SubstateTypeId.VALIDATOR_RAKE_COPY));
   }
 
   public DataObject validatorMetadata(ValidatorMetaData metaData) {
     var validatorMetadata = new ValidatorMetadata();
     return validatorMetadata
-        .name(metaData.getName())
-        .url(metaData.getUrl())
+        .name(metaData.name())
+        .url(metaData.url())
         .type(SubstateTypeMapping.getName(SubstateTypeId.VALIDATOR_META_DATA));
   }
 
   public DataObject validatorBFTData(ValidatorBFTData validatorBFTData) {
     var bftData = new com.radixdlt.api.core.openapitools.model.ValidatorBFTData();
     return bftData
-        .proposalsCompleted(validatorBFTData.proposalsCompleted())
-        .proposalsMissed(validatorBFTData.proposalsMissed())
+        .proposalsCompleted(validatorBFTData.completedProposals())
+        .proposalsMissed(validatorBFTData.missedProposals())
         .type(SubstateTypeMapping.getName(SubstateTypeId.VALIDATOR_BFT_DATA));
   }
 
@@ -894,7 +894,7 @@ public final class CoreModelMapper {
   public DataObject validatorSystemMetadata(ValidatorSystemMetadata validatorSystemMetadata) {
     var systemMetadata = new com.radixdlt.api.core.openapitools.model.ValidatorSystemMetadata();
     return systemMetadata
-        .data(Bytes.toHexString(validatorSystemMetadata.getData()))
+        .data(Bytes.toHexString(validatorSystemMetadata.data()))
         .type(SubstateTypeMapping.getName(SubstateTypeId.VALIDATOR_SYSTEM_META_DATA));
   }
 
@@ -908,9 +908,9 @@ public final class CoreModelMapper {
         .owner(
             virtual
                 ? selfAccountEntityIdentifier()
-                : entityIdentifier(validatorStakeData.getOwnerAddr()))
+                : entityIdentifier(validatorStakeData.ownerAddr()))
         .registered(validatorStakeData.isRegistered())
-        .fee(validatorStakeData.getRakePercentage())
+        .fee(validatorStakeData.rakePercentage())
         .type(SubstateTypeMapping.getName(SubstateTypeId.VALIDATOR_STAKE_DATA));
   }
 
@@ -935,7 +935,7 @@ public final class CoreModelMapper {
   }
 
   public DataObject virtualParent(VirtualParent virtualParent) {
-    var childType = SubstateTypeId.valueOf(virtualParent.getData()[0]);
+    var childType = SubstateTypeId.valueOf(virtualParent.data()[0]);
     var virtualDataObject =
         switch (childType) {
           case UNCLAIMED_READDR -> unclaimedREAddrData();
@@ -1020,7 +1020,7 @@ public final class CoreModelMapper {
 
   public ResourceAmount resourceOperation(
       ResourceInBucket resourceInBucket, boolean bootUp, Function<REAddr, String> addressToSymbol) {
-    var amount = new BigInteger(bootUp ? 1 : -1, resourceInBucket.getAmount().toByteArray());
+    var amount = new BigInteger(bootUp ? 1 : -1, resourceInBucket.amount().toByteArray());
     var bucket = resourceInBucket.bucket();
     var resourceIdentifier = resourceIdentifier(bucket, addressToSymbol);
     return new ResourceAmount().resourceIdentifier(resourceIdentifier).value(amount.toString());
@@ -1062,24 +1062,24 @@ public final class CoreModelMapper {
       return entityIdentifierOwnedBucket(resourceInBucket);
     } else if (substate instanceof ValidatorStakeData validatorStakeData) {
       return new EntityIdentifier()
-          .address(addressing.forValidators().of(validatorStakeData.getValidatorKey()))
+          .address(addressing.forValidators().of(validatorStakeData.validatorKey()))
           .subEntity(new SubEntity().address(SYSTEM_ADDRESS));
     } else if (substate instanceof ResourceData resourceData) {
-      var symbol = addressToSymbol.apply(resourceData.getAddr());
+      var symbol = addressToSymbol.apply(resourceData.addr());
       return new EntityIdentifier()
-          .address(addressing.forResources().of(symbol, resourceData.getAddr()));
+          .address(addressing.forResources().of(symbol, resourceData.addr()));
     } else if (substate instanceof SystemData) {
       return new EntityIdentifier().address(SYSTEM_ADDRESS);
     } else if (substate instanceof ValidatorUpdatingData validatorUpdatingData) {
       return new EntityIdentifier()
-          .address(addressing.forValidators().of(validatorUpdatingData.getValidatorKey()));
+          .address(addressing.forValidators().of(validatorUpdatingData.validatorKey()));
     } else if (substate
         instanceof com.radixdlt.application.validators.state.ValidatorData validatorData) {
       return new EntityIdentifier()
-          .address(addressing.forValidators().of(validatorData.getValidatorKey()))
+          .address(addressing.forValidators().of(validatorData.validatorKey()))
           .subEntity(new SubEntity().address(SYSTEM_ADDRESS));
     } else if (substate instanceof UnclaimedREAddr unclaimedREAddr) {
-      var addr = unclaimedREAddr.getAddr();
+      var addr = unclaimedREAddr.addr();
       final String address;
       if (addr.isSystem()) {
         address = SYSTEM_ADDRESS;
@@ -1115,7 +1115,7 @@ public final class CoreModelMapper {
     operation.substate(substate(substateId, isBootUp));
     operation.entityIdentifier(entityIdentifier(substate, addressToSymbol));
     if (substate instanceof ResourceInBucket resourceInBucket
-        && !resourceInBucket.getAmount().isZero()) {
+        && !resourceInBucket.amount().isZero()) {
       operation.amount(resourceOperation(resourceInBucket, isBootUp, addressToSymbol));
     }
     data(substate, isBootUp).ifPresent(operation::data);
@@ -1129,7 +1129,7 @@ public final class CoreModelMapper {
     operation.substate(substate(update.getId(), update.isBootUp()));
     operation.entityIdentifier(entityIdentifier(substate, addressToSymbol));
     if (substate instanceof ResourceInBucket resourceInBucket
-        && !resourceInBucket.getAmount().isZero()) {
+        && !resourceInBucket.amount().isZero()) {
       operation.amount(resourceOperation(resourceInBucket, update.isBootUp(), addressToSymbol));
     }
     data(substate, update.isBootUp()).ifPresent(operation::data);
@@ -1155,8 +1155,8 @@ public final class CoreModelMapper {
                   .map(REStateUpdate::getParsed)
                   .filter(TokenResourceMetadata.class::isInstance)
                   .map(TokenResourceMetadata.class::cast)
-                  .filter(r -> r.getAddr().equals(addr))
-                  .map(TokenResourceMetadata::getSymbol)
+                  .filter(r -> r.addr().equals(addr))
+                  .map(TokenResourceMetadata::symbol)
                   .findFirst();
 
           return localSymbol.orElseGet(() -> addressToSymbol.apply(addr));
@@ -1193,8 +1193,8 @@ public final class CoreModelMapper {
                   .map(REStateUpdate::getParsed)
                   .filter(TokenResourceMetadata.class::isInstance)
                   .map(TokenResourceMetadata.class::cast)
-                  .filter(r -> r.getAddr().equals(addr))
-                  .map(TokenResourceMetadata::getSymbol)
+                  .filter(r -> r.addr().equals(addr))
+                  .map(TokenResourceMetadata::symbol)
                   .findFirst();
 
           return localSymbol.orElseGet(() -> addressToSymbol.apply(addr));

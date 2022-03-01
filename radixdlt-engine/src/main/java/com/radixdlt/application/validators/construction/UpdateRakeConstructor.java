@@ -91,7 +91,7 @@ public record UpdateRakeConstructor(long rakeIncreaseDebounceEpochLength, int ma
   public void construct(UpdateValidatorFee action, TxBuilder builder) throws TxBuilderException {
     builder.down(ValidatorFeeCopy.class, action.validatorKey());
     var curRakePercentage =
-        builder.read(ValidatorStakeData.class, action.validatorKey()).getRakePercentage();
+        builder.read(ValidatorStakeData.class, action.validatorKey()).rakePercentage();
 
     var isIncrease = action.feePercentage() > curRakePercentage;
     var rakeIncrease = action.feePercentage() - curRakePercentage;
@@ -101,7 +101,7 @@ public record UpdateRakeConstructor(long rakeIncreaseDebounceEpochLength, int ma
 
     var epochDiff = isIncrease ? (1 + rakeIncreaseDebounceEpochLength) : 1;
     var curEpoch = builder.readSystem(EpochData.class);
-    var epoch = curEpoch.getEpoch() + epochDiff;
+    var epoch = curEpoch.epoch() + epochDiff;
     builder.up(
         new ValidatorFeeCopy(
             OptionalLong.of(epoch), action.validatorKey(), action.feePercentage()));

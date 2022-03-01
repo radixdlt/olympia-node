@@ -249,8 +249,8 @@ public class TxnSizeFeeTest {
                       txBuilder.downFungible(
                           index,
                           p ->
-                              p.getResourceAddr().isNativeToken()
-                                  && p.getHoldingAddr().equals(accountAddr),
+                              p.resourceAddr().isNativeToken()
+                                  && p.holdingAddress().equals(accountAddr),
                           fee,
                           available -> {
                             var from = AccountBucket.from(REAddr.ofNativeToken(), accountAddr);
@@ -290,8 +290,8 @@ public class TxnSizeFeeTest {
                       txBuilder.downFungible(
                           index,
                           p ->
-                              p.getResourceAddr().isNativeToken()
-                                  && p.getHoldingAddr().equals(accountAddr),
+                              p.resourceAddr().isNativeToken()
+                                  && p.holdingAddress().equals(accountAddr),
                           fee,
                           available -> {
                             var from = AccountBucket.from(REAddr.ofNativeToken(), accountAddr);

@@ -222,7 +222,7 @@ public class RadixEngineStateComputerTest {
                             .map(
                                 v ->
                                     BFTValidator.from(
-                                        BFTNode.create(v.getValidatorKey()), v.getAmount()))))
+                                        BFTNode.create(v.validatorKey()), v.amount()))))
             .orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
     radixEngine.deleteBranches();
 

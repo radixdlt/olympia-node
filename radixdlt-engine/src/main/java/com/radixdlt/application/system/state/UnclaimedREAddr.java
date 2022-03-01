@@ -64,25 +64,16 @@
 
 package com.radixdlt.application.system.state;
 
-import static com.radixdlt.identifiers.REAddr.HASHED_KEY_BYTES;
-
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.exceptions.InvalidHashedKeyException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+
 import java.util.Arrays;
-import java.util.Objects;
 
-public final class UnclaimedREAddr implements Particle {
-  private final REAddr addr;
+import static com.radixdlt.identifiers.REAddr.HASHED_KEY_BYTES;
 
-  public UnclaimedREAddr(REAddr addr) {
-    this.addr = addr;
-  }
-
-  public REAddr getAddr() {
-    return addr;
-  }
+public record UnclaimedREAddr(REAddr addr) implements Particle {
 
   public void verifyHashedKey(ECPublicKey publicKey, byte[] arg) throws InvalidHashedKeyException {
     if (addr.getType() != REAddr.REAddrType.HASHED_KEY) {
@@ -94,24 +85,5 @@ public final class UnclaimedREAddr implements Particle {
     if (!Arrays.equals(addr.getBytes(), 1, HASHED_KEY_BYTES + 1, hash, 0, HASHED_KEY_BYTES)) {
       throw new InvalidHashedKeyException("Hashed key does not match {arg=\"" + str + "\"}");
     }
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(this.addr);
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (!(obj instanceof UnclaimedREAddr)) {
-      return false;
-    }
-    final var that = (UnclaimedREAddr) obj;
-    return Objects.equals(this.addr, that.addr);
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s[(%s)]", getClass().getSimpleName(), addr);
   }
 }

@@ -113,17 +113,17 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
                         if (update.isBootUp()) {
                           if (update.getParsed() instanceof TokenResource) {
                             var tokenDef = (TokenResource) update.getParsed();
-                            resources.put(tokenDef.getAddr(), update::getStateBuf);
+                            resources.put(tokenDef.addr(), update::getStateBuf);
                           } else if (update.getParsed() instanceof VirtualParent) {
                             var p = (VirtualParent) update.getParsed();
-                            var typeByte = p.getData()[0];
+                            var typeByte = p.data()[0];
                             var mapKey = SystemMapKey.ofSystem(typeByte);
                             maps.put(mapKey, update.getRawSubstateBytes());
                           } else if (update.getParsed() instanceof ValidatorData) {
                             var data = (ValidatorData) update.getParsed();
                             var mapKey =
                                 SystemMapKey.ofSystem(
-                                    update.typeByte(), data.getValidatorKey().getCompressedBytes());
+                                    update.typeByte(), data.validatorKey().getCompressedBytes());
                             maps.put(mapKey, update.getRawSubstateBytes());
                           } else if (update.getParsed() instanceof SystemData) {
                             var mapKey = SystemMapKey.ofSystem(update.typeByte());
@@ -134,7 +134,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
                             var data = (ValidatorData) update.getParsed();
                             var mapKey =
                                 SystemMapKey.ofSystem(
-                                    update.typeByte(), data.getValidatorKey().getCompressedBytes());
+                                    update.typeByte(), data.validatorKey().getCompressedBytes());
                             maps.remove(mapKey);
                           } else if (update.getParsed() instanceof SystemData) {
                             var mapKey = SystemMapKey.ofSystem(update.typeByte());

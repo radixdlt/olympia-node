@@ -80,8 +80,8 @@ public final class UpdateValidatorMetadataConstructor
     txBuilder.up(
         new ValidatorMetaData(
             action.validatorKey(),
-            action.name() == null ? substateDown.getName() : action.name(),
-            action.name() == null ? substateDown.getUrl() : action.url()));
+            action.name() == null ? substateDown.name() : action.name(),
+            action.name() == null ? substateDown.url() : action.url()));
     txBuilder.end();
   }
 }

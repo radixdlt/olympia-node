@@ -98,7 +98,7 @@ public record StakeTokensConstructorV3(UInt256 minimumStake)
         builder.downFungible(
             index,
             p ->
-                p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(action.fromAddr()),
+                p.resourceAddr().isNativeToken() && p.holdingAddress().equals(action.fromAddr()),
             action.amount(),
             available -> {
               var from = AccountBucket.from(REAddr.ofNativeToken(), action.fromAddr());
@@ -111,7 +111,7 @@ public record StakeTokensConstructorV3(UInt256 minimumStake)
     var flag = builder.read(AllowDelegationFlag.class, action.toDelegate());
     if (!flag.allowsDelegation()) {
       var validator = builder.read(ValidatorOwnerCopy.class, action.toDelegate());
-      var owner = validator.getOwner();
+      var owner = validator.owner();
       if (!action.fromAddr().equals(owner)) {
         throw new DelegateStakePermissionException(owner, action.fromAddr());
       }

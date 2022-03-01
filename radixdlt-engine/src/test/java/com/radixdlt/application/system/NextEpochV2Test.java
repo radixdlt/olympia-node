@@ -199,7 +199,7 @@ public class NextEpochV2Test {
     // Assert
     var map =
         sut.read(
-            reader -> reader.reduceResources(PreparedStake.class, PreparedStake::getDelegateKey));
+            reader -> reader.reduceResources(PreparedStake.class, PreparedStake::delegateKey));
     assertThat(map).isEmpty();
   }
 

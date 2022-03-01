@@ -64,86 +64,24 @@
 
 package com.radixdlt.application.tokens.state;
 
-import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.identifiers.REAddr;
-import java.util.Objects;
 
-public final class TokenResourceMetadata implements ResourceData {
-  private final REAddr addr;
-  private final String name;
-  private final String symbol;
-  private final String description;
-  private final String iconUrl;
-  private final String url;
+import static com.radixdlt.atom.REFieldSerialization.requireValidUrl;
+import static java.util.Objects.requireNonNull;
 
-  public TokenResourceMetadata(
-      REAddr addr, String symbol, String name, String description, String iconUrl, String url) {
-    this.addr = Objects.requireNonNull(addr);
-    this.name = Objects.requireNonNull(name);
-    this.symbol = Objects.requireNonNull(symbol);
-    this.description = Objects.requireNonNull(description);
-    this.iconUrl = REFieldSerialization.requireValidUrl(iconUrl);
-    this.url = REFieldSerialization.requireValidUrl(url);
-  }
-
-  @Override
-  public REAddr getAddr() {
-    return addr;
-  }
-
-  public String getSymbol() {
-    return symbol;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public String getIconUrl() {
-    return iconUrl;
-  }
-
-  public String getUrl() {
-    return url;
+public record TokenResourceMetadata(REAddr addr, String symbol,
+                                    String name, String description, String iconUrl,
+                                    String url) implements ResourceData {
+  public TokenResourceMetadata {
+    requireNonNull(addr);
+    requireNonNull(name);
+    requireNonNull(symbol);
+    requireNonNull(description);
+    requireValidUrl(iconUrl);
+    requireValidUrl(url);
   }
 
   public static TokenResourceMetadata empty(REAddr addr, String symbol) {
     return new TokenResourceMetadata(addr, symbol, "", "", "", "");
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(addr, symbol, name, description, iconUrl, url);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof TokenResourceMetadata)) {
-      return false;
-    }
-    var other = (TokenResourceMetadata) o;
-    return Objects.equals(this.addr, other.addr)
-        && Objects.equals(this.symbol, other.symbol)
-        && Objects.equals(this.name, other.name)
-        && Objects.equals(this.description, other.description)
-        && Objects.equals(this.iconUrl, other.iconUrl)
-        && Objects.equals(this.url, other.url);
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{addr=%s symbol=%s name=%s desc=%s iconUrl=%s url=%s}",
-        this.getClass().getSimpleName(),
-        this.addr,
-        this.symbol,
-        this.name,
-        this.description,
-        this.iconUrl,
-        this.url);
   }
 }

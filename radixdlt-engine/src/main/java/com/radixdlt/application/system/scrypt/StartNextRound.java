@@ -76,9 +76,9 @@ public class StartNextRound implements ReducerState {
   }
 
   public void update(RoundData next) throws ProcedureException {
-    if (this.expectedView != next.getView()) {
+    if (this.expectedView != next.view()) {
       throw new ProcedureException(
-          "Expected view " + this.expectedView + " but was " + next.getView());
+          "Expected view " + this.expectedView + " but was " + next.view());
     }
   }
 }

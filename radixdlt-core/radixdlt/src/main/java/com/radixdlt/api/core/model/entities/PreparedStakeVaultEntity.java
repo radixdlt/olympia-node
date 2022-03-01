@@ -114,7 +114,7 @@ public record PreparedStakeVaultEntity(REAddr accountAddress, ECPublicKey valida
     var flag = txBuilder.read(AllowDelegationFlag.class, validatorKey);
     if (!flag.allowsDelegation()) {
       var validator = txBuilder.read(ValidatorOwnerCopy.class, validatorKey);
-      var owner = validator.getOwner();
+      var owner = validator.owner();
       if (!accountAddress.equals(owner)) {
         throw new DelegateStakePermissionException(owner, accountAddress);
       }

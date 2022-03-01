@@ -82,8 +82,8 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
     var ownershipAmt =
         action
             .amount()
-            .multiply(validatorStake.getTotalOwnership())
-            .divide(validatorStake.getAmount());
+            .multiply(validatorStake.totalOwnership())
+            .divide(validatorStake.amount());
 
     // TODO: construct this in substate definition
     var buf =
@@ -102,8 +102,8 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
         txBuilder.downFungible(
             index,
             p ->
-                p.getOwner().equals(action.accountAddr())
-                    && p.getDelegateKey().equals(action.fromDelegate()),
+                p.owner().equals(action.accountAddr())
+                    && p.delegateKey().equals(action.fromDelegate()),
             ownershipAmt,
             available -> {
               var from = StakeOwnershipBucket.from(action.fromDelegate(), action.accountAddr());

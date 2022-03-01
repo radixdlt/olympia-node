@@ -80,7 +80,7 @@ public class RegisterValidatorConstructor implements ActionConstructor<RegisterV
     var curEpoch = txBuilder.readSystem(EpochData.class);
     txBuilder.up(
         new ValidatorRegisteredCopy(
-            OptionalLong.of(curEpoch.getEpoch() + 1), action.validatorKey(), true));
+            OptionalLong.of(curEpoch.epoch() + 1), action.validatorKey(), true));
     txBuilder.end();
   }
 }

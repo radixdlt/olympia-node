@@ -79,12 +79,12 @@ public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
   @Override
   public void construct(NextRound action, TxBuilder txBuilder) throws TxBuilderException {
     var prevRound = txBuilder.downSystem(RoundData.class);
-    if (action.view() <= prevRound.getView()) {
-      throw new InvalidRoundException(prevRound.getView(), action.view());
+    if (action.view() <= prevRound.view()) {
+      throw new InvalidRoundException(prevRound.view(), action.view());
     }
 
     var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorBFTData>(KeyComparator.instance());
-    for (long view = prevRound.getView() + 1; view < action.view(); view++) {
+    for (long view = prevRound.view() + 1; view < action.view(); view++) {
       var missingLeader = action.leaderMapping().apply(view);
       if (!validatorsToUpdate.containsKey(missingLeader)) {
         var validatorData = txBuilder.down(ValidatorBFTData.class, missingLeader);

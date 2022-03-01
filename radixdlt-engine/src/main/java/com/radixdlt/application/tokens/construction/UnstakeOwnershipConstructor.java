@@ -93,8 +93,8 @@ public class UnstakeOwnershipConstructor implements ActionConstructor<UnstakeOwn
         txBuilder.downFungible(
             index,
             p ->
-                p.getOwner().equals(action.accountAddr())
-                    && p.getDelegateKey().equals(action.fromDelegate()),
+                p.owner().equals(action.accountAddr())
+                    && p.delegateKey().equals(action.fromDelegate()),
             action.amount(),
             available -> {
               var from = StakeOwnershipBucket.from(action.fromDelegate(), action.accountAddr());

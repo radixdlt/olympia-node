@@ -147,7 +147,7 @@ public final class GenesisBuilder {
                             .map(
                                 v ->
                                     BFTValidator.from(
-                                        BFTNode.create(v.getValidatorKey()), v.getAmount()))))
+                                        BFTNode.create(v.validatorKey()), v.amount()))))
             .orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
 
     var init = new AccumulatorState(0, HashUtils.zero256());

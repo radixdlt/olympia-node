@@ -347,7 +347,7 @@ public final class RadixEngineStateComputer implements StateComputer {
                               .map(
                                   v ->
                                       BFTValidator.from(
-                                          BFTNode.create(v.getValidatorKey()), v.getAmount()))));
+                                          BFTNode.create(v.validatorKey()), v.amount()))));
       // Don't execute command if changing epochs
       if (nextValidatorSet.isEmpty()) {
         this.executeUserCommands(

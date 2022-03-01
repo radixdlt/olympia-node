@@ -66,61 +66,14 @@ package com.radixdlt.application.system.state;
 
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.crypto.ECPublicKey;
-import java.util.Objects;
 
-public final class ValidatorBFTData implements ValidatorData {
-  private final ECPublicKey validatorKey;
-  private final long proposalsCompleted;
-  private final long proposalsMissed;
-
-  public ValidatorBFTData(ECPublicKey validatorKey, long proposalsCompleted, long proposalsMissed) {
-    this.validatorKey = validatorKey;
-    this.proposalsCompleted = proposalsCompleted;
-    this.proposalsMissed = proposalsMissed;
-  }
-
-  public long proposalsMissed() {
-    return proposalsMissed;
-  }
-
-  @Override
-  public ECPublicKey getValidatorKey() {
-    return validatorKey;
-  }
-
+public record ValidatorBFTData(ECPublicKey validatorKey, long completedProposals,
+                               long missedProposals) implements ValidatorData {
   public ValidatorBFTData incrementCompletedProposals() {
-    return new ValidatorBFTData(validatorKey, proposalsCompleted + 1, proposalsMissed);
+    return new ValidatorBFTData(validatorKey, completedProposals + 1, missedProposals);
   }
 
   public ValidatorBFTData incrementProposalsMissed() {
-    return new ValidatorBFTData(validatorKey, proposalsCompleted, proposalsMissed + 1);
-  }
-
-  public long proposalsCompleted() {
-    return proposalsCompleted;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(validatorKey, proposalsCompleted, proposalsMissed);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof ValidatorBFTData)) {
-      return false;
-    }
-
-    var other = (ValidatorBFTData) o;
-    return Objects.equals(this.validatorKey, other.validatorKey)
-        && this.proposalsCompleted == other.proposalsCompleted
-        && Objects.equals(this.proposalsMissed, other.proposalsMissed);
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{validatorKey=%s proposalsCompleted=%s}",
-        this.getClass().getSimpleName(), validatorKey, proposalsCompleted);
+    return new ValidatorBFTData(validatorKey, completedProposals, missedProposals + 1);
   }
 }

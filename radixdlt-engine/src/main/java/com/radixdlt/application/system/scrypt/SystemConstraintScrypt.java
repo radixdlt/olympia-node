@@ -112,9 +112,9 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
     public ReducerState createVirtualSubstate(VirtualParent virtualParent)
         throws ProcedureException {
       var typeId = substatesToVirtualize.remove(0);
-      if (!Arrays.equals(virtualParent.getData(), new byte[] {typeId.id()})) {
+      if (!Arrays.equals(virtualParent.data(), new byte[] {typeId.id()})) {
         throw new ProcedureException(
-            "Expected " + typeId + " but was " + Bytes.toHexString(virtualParent.getData()));
+            "Expected " + typeId + " but was " + Bytes.toHexString(virtualParent.data()));
       }
       return substatesToVirtualize.isEmpty() ? null : this;
     }
@@ -134,7 +134,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
     }
 
     public REAddr getAddr() {
-      return unclaimedREAddr.getAddr();
+      return unclaimedREAddr.addr();
     }
   }
 
@@ -169,7 +169,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
             },
             (s, buf) -> {
               REFieldSerialization.serializeReservedByte(buf);
-              buf.put(s.getData());
+              buf.put(s.data());
             }));
 
     // TODO: Down singleton
@@ -179,11 +179,11 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
             VirtualParent.class,
             u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> {}),
             (s, u, c, r) -> {
-              if (u.getData().length != 1) {
-                throw new ProcedureException("Invalid data: " + Bytes.toHexString(u.getData()));
+              if (u.data().length != 1) {
+                throw new ProcedureException("Invalid data: " + Bytes.toHexString(u.data()));
               }
-              if (u.getData()[0] != SubstateTypeId.UNCLAIMED_READDR.id()) {
-                throw new ProcedureException("Invalid data: " + Bytes.toHexString(u.getData()));
+              if (u.data()[0] != SubstateTypeId.UNCLAIMED_READDR.id()) {
+                throw new ProcedureException("Invalid data: " + Bytes.toHexString(u.data()));
               }
               return ReducerResult.complete();
             }));
@@ -199,7 +199,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
             },
             (s, buf) -> {
               REFieldSerialization.serializeReservedByte(buf);
-              buf.putLong(s.getEpoch());
+              buf.putLong(s.epoch());
             }));
 
     os.substate(
@@ -214,8 +214,8 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
             },
             (s, buf) -> {
               REFieldSerialization.serializeReservedByte(buf);
-              buf.putLong(s.getView());
-              buf.putLong(s.getTimestamp());
+              buf.putLong(s.view());
+              buf.putLong(s.timestamp());
             }));
 
     os.procedure(
@@ -278,7 +278,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
             },
             (s, buf) -> {
               REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeREAddr(buf, s.getAddr());
+              REFieldSerialization.serializeREAddr(buf, s.addr());
             },
             buf -> REFieldSerialization.deserializeREAddr(buf, claimableAddrTypes),
             (a, buf) -> REFieldSerialization.serializeREAddr(buf, (REAddr) a),
@@ -290,7 +290,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
             UnclaimedREAddr.class,
             d -> {
               final PermissionLevel permissionLevel;
-              if (d.getAddr().isNativeToken() || d.getAddr().isSystem()) {
+              if (d.addr().isNativeToken() || d.addr().isSystem()) {
                 permissionLevel = PermissionLevel.SYSTEM;
               } else {
                 permissionLevel = PermissionLevel.USER;
@@ -306,7 +306,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
             EpochData.class,
             u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> {}),
             (s, u, c, r) -> {
-              if (u.getEpoch() != 0) {
+              if (u.epoch() != 0) {
                 throw new ProcedureException("First epoch must be 0.");
               }
 
@@ -318,7 +318,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
             RoundData.class,
             u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> {}),
             (s, u, c, r) -> {
-              if (u.getView() != 0) {
+              if (u.view() != 0) {
                 throw new ProcedureException("First view must be 0.");
               }
               return ReducerResult.incomplete(new AllocatingVirtualState());
