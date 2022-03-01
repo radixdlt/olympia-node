@@ -428,7 +428,7 @@ public final class BerkeleyLedgerEntryStore
 
     return new CloseableCursor<>() {
       private Optional<ForkVotingResult> nextOpt =
-          findNextForkVotingResult(toEpoch, candidateForkId, underlyingCursor);
+          findNextForkVotingResult(toEpoch, candidateForkId, underlyingCursor, true);
 
       @Override
       public boolean hasNext() {
@@ -438,7 +438,7 @@ public final class BerkeleyLedgerEntryStore
       @Override
       public ForkVotingResult next() {
         final var res = nextOpt.orElseThrow(NoSuchElementException::new);
-        nextOpt = findNextForkVotingResult(toEpoch, candidateForkId, underlyingCursor);
+        nextOpt = findNextForkVotingResult(toEpoch, candidateForkId, underlyingCursor, false);
         return res;
       }
 
@@ -450,10 +450,18 @@ public final class BerkeleyLedgerEntryStore
   }
 
   private Optional<ForkVotingResult> findNextForkVotingResult(
-      long toEpoch, HashCode candidateForkId, Cursor cursor) {
+      long toEpoch, HashCode candidateForkId, Cursor cursor, boolean startWithCurrent) {
     final DatabaseEntry key = new DatabaseEntry();
     final DatabaseEntry value = new DatabaseEntry();
-    OperationStatus operationStatus = cursor.getCurrent(key, value, DEFAULT);
+    OperationStatus operationStatus =
+        startWithCurrent
+            ? cursor.getCurrent(key, value, DEFAULT)
+            : cursor.getNext(key, value, DEFAULT);
+
+    if (operationStatus != SUCCESS) {
+      return Optional.empty();
+    }
+
     long epoch = Longs.fromByteArray(key.getData());
 
     while (operationStatus == SUCCESS && epoch < toEpoch) {
