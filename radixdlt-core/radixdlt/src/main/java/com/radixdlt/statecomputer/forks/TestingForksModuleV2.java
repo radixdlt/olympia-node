@@ -73,22 +73,22 @@ import java.util.Collections;
 
 public final class TestingForksModuleV2 extends AbstractModule {
   @ProvidesIntoSet
+  ForkBuilder genesis() {
+    return new ForkBuilder(
+        "genesis", 0L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
+  }
+
+  @ProvidesIntoSet
   ForkBuilder fork1() {
     return new ForkBuilder(
-        "testing-genesis", 0L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
+        "fork-1", 2L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
   }
 
   @ProvidesIntoSet
   ForkBuilder fork2() {
     return new ForkBuilder(
-        "fork-2", 2L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
-  }
-
-  @ProvidesIntoSet
-  ForkBuilder fork3() {
-    return new ForkBuilder(
-        "fork-3",
-        ImmutableSet.of(new CandidateForkConfig.Threshold((short) 8000 /* 80% */, 1)),
+        "fork-2",
+        ImmutableSet.of(new CandidateForkConfig.Threshold((short) 6000 /* 60% */, 1)),
         5L,
         Long.MAX_VALUE,
         RERulesVersion.OLYMPIA_V1,
