@@ -7,7 +7,7 @@ COPY apt-config/sources.list /etc/apt/
 COPY apt-config/99own /etc/apt/apt.conf.d/
 
 RUN apt-get -y update > /dev/null && \
-    apt-get -y --no-install-recommends install apt-utils net-tools iptables iproute2 gettext-base curl tcpdump strace attr software-properties-common > /dev/null && \
+    apt-get -y --no-install-recommends install apt-utils net-tools iptables iproute2 gettext-base curl tcpdump strace attr software-properties-common daemontools > /dev/null && \
     apt-get clean > /dev/null && \
     rm -rf /var/lib/apt/lists/* /var/tmp/* /tmp/*
 
@@ -17,8 +17,8 @@ RUN /tmp/fix-vulnerabilities.sh
 RUN apt-get -y --no-install-recommends install openjdk-17-jdk
 
 # set entrypoint and default command
-ENTRYPOINT [ "/opt/radixdlt/config_radixdlt.sh" ]
-CMD ["/bin/bash", "-xe", "/opt/radixdlt/bin/radixdlt"]
+ENTRYPOINT ["/opt/radixdlt/config_radixdlt.sh"]
+CMD ["/opt/radixdlt/bin/radixdlt"]
 
 # set default environment variables
 ENV RADIXDLT_HOME=/home/radixdlt \
