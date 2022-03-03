@@ -101,6 +101,11 @@ public class CachedPMTStorage implements PMTStorage {
     this.pmtStorage.delete(serialisedNodeHash);
   }
 
+  @Override
+  public long count() {
+    return this.pmtStorage.count();
+  }
+
   public void invalidate(byte[] serialisedNodeHash) {
     this.pmtCache.invalidate(serialisedNodeHash);
   }

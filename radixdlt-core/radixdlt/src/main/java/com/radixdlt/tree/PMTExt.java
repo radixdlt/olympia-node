@@ -125,11 +125,15 @@ public final class PMTExt extends PMTNode {
         acc.remove(this);
         PMTNode newNode =
             switch (newChild) {
-              case PMTLeaf pmtLeaf -> new PMTLeaf(
-                  this.getKey().concatenate(pmtLeaf.getKey()), pmtLeaf.getValue());
+              case PMTLeaf pmtLeaf -> {
+                acc.removeFromAddedAcc(pmtLeaf);
+                yield new PMTLeaf(this.getKey().concatenate(pmtLeaf.getKey()), pmtLeaf.getValue());
+              }
               case PMTBranch pmtBranch -> new PMTExt(this.getKey(), represent.apply(pmtBranch));
-              case PMTExt pmtExt -> new PMTExt(
-                  this.getKey().concatenate(pmtExt.getKey()), pmtExt.getValue());
+              case PMTExt pmtExt -> {
+                acc.removeFromAddedAcc(pmtExt);
+                yield new PMTExt(this.getKey().concatenate(pmtExt.getKey()), pmtExt.getValue());
+              }
             };
         acc.add(newNode);
         acc.setTip(newNode);

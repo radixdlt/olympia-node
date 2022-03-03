@@ -103,12 +103,16 @@ public class PMTAcc {
     return this.notFound;
   }
 
-  public List<PMTNode> getNewNodes() {
+  public List<PMTNode> getAddedAcc() {
     return addedAcc;
   }
 
   public List<PMTNode> getRemovedNodes() {
     return removedAcc;
+  }
+
+  public void removeFromAddedAcc(PMTNode pmtNode) {
+    this.addedAcc.remove(pmtNode);
   }
 
   public void add(PMTNode... nodes) {

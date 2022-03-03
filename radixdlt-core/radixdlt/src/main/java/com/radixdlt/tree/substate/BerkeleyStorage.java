@@ -106,4 +106,9 @@ public class BerkeleyStorage implements PMTStorage {
               "Tried to delete non existing key %s.", Hex.toHexString(serialisedNodeHash)));
     }
   }
+
+  @Override
+  public long count() {
+    return this.database.count();
+  }
 }

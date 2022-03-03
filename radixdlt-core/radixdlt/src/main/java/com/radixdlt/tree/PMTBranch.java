@@ -156,25 +156,39 @@ public final class PMTBranch extends PMTNode {
       PMTKey key, PMTAcc acc, Function<PMTNode, byte[]> represent, Function<byte[], PMTNode> read) {
     final PMTPath commonPath = PMTPath.findCommonPath(this.getKey(), key);
     if (commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NONE) {
-      acc.remove(this);
-      var newBranch = new PMTBranch(this);
-      newBranch.setValue(null);
-      acc.add(newBranch);
-      acc.setTip(newBranch);
+      // At this point the searched key has been completely matched with the branch node.
+      if (branchDoesNotHaveValue()) {
+        // If the branch node does not have a value, the tree does not contain the searched key.
+        acc.setNotFound();
+      } else {
+        // If the branch node has a value, we need to remove the value and the recursion is done.
+        acc.remove(this);
+        var newBranch = new PMTBranch(this);
+        newBranch.setValue(null);
+        acc.add(newBranch);
+        acc.setTip(newBranch);
+      }
     } else if (commonPath.whichRemainderIsLeft() == PMTPath.RemainingSubtree.NEW) {
+      // At this point the searched key has been partially matched with the branch node. We need to
+      // find the next child node to continue the recursive deletion.
       var nextHash = this.getNextHash(key);
       if (nextHash == null) {
+        // If there is no child node, the tree does not contain the searched key.
         acc.setNotFound();
         return;
       }
+      // Continue the recursion
       PMTNode currentChild = read.apply(nextHash);
       currentChild.removeNode(key.getTailNibbles(), acc, represent, read);
       PMTNode newChild = acc.getTip();
       if (acc.notFound()) {
+        // The recursion has finished and the key was not found.
         acc.setTip(null);
-      } else if (newChild == null) { // remove child
+      } else if (newChild == null) {
+        // The recursion has finished and the child node must be deleted.
         removeBranchChild(key, acc, read);
-      } else { // update child
+      } else {
+        // The recursion has finished and the child node must be updated.
         updateBranchChild(key, acc, represent, newChild);
       }
     } else {
@@ -189,6 +203,10 @@ public final class PMTBranch extends PMTNode {
     } else if (numberOfChildren() == 2L && (branchDoesNotHaveValue())) {
       handleBranchWithTwoChildrenAndNoValue(acc, read, key);
     } else {
+      // The branch node has either more than 2 children or 2 children and a value. In this case the
+      // branch node does not need to be removed, only the child. "Removed" here means removing from
+      // the current tree, because even an update to a node requires removing the old version and
+      // creating an updated one, even if it has not been removed from the tree.
       acc.remove(this);
       var branchWithNext = new PMTBranch(this);
       branchWithNext.setEmptyChild(key.getFirstNibble());
@@ -199,9 +217,15 @@ public final class PMTBranch extends PMTNode {
 
   private void handleBranchWithOnlyOneChild(PMTAcc acc) {
     if (branchDoesNotHaveValue()) {
+      // We need to remove the branch node from the tree as its only child has been deleted, and it
+      // does not have
+      // a value.
       acc.remove(this);
       acc.setTip(null);
     } else {
+      // We need to remove the branch node from the tree as its only child has been deleted. As the
+      // branch has a
+      // value, we need to create a new leaf node with its value.
       acc.remove(this);
       var newLeaf = new PMTLeaf(new PMTKey(new byte[0]), this.getValue());
       acc.add(newLeaf);
@@ -211,8 +235,12 @@ public final class PMTBranch extends PMTNode {
 
   private void handleBranchWithTwoChildrenAndNoValue(
       PMTAcc acc, Function<byte[], PMTNode> read, PMTKey key) {
+    // The branch originally had 2 children and one has been deleted.
+    // At this point, we always need to replace the branch node by a transformation of its remaining
+    // child.
     byte[] otherChildHashPointer = new byte[0];
     var index = 0;
+    // Here, we are searching for the pointer to the other child.
     for (; index < children.length; index++) {
       otherChildHashPointer = children[index];
       if (otherChildHashPointer != null
@@ -225,14 +253,28 @@ public final class PMTBranch extends PMTNode {
     acc.remove(this);
     var newNode =
         switch (otherChild) {
-          case PMTLeaf pmtLeaf -> new PMTLeaf(
-              new PMTKey(new byte[] {(byte) index}).concatenate(pmtLeaf.getKey()),
-              pmtLeaf.getValue());
+            // If the other child is a leaf, we need to replace it by a new leaf. The new key is the
+            // child index in the branch concatenated with the child's key. The new value is the
+            // child's value.
+          case PMTLeaf pmtLeaf -> {
+            acc.remove(pmtLeaf);
+            yield new PMTLeaf(
+                new PMTKey(new byte[] {(byte) index}).concatenate(pmtLeaf.getKey()),
+                pmtLeaf.getValue());
+          }
+            // If the other child is a branch, we need to replace it by an extension node. The new
+            // key is the child index in the branch. The new value is the child's hash pointer.
           case PMTBranch ignored -> new PMTExt(
               new PMTKey(new byte[] {(byte) index}), otherChildHashPointer);
-          case PMTExt pmtExt -> new PMTExt(
-              new PMTKey(new byte[] {(byte) index}).concatenate(pmtExt.getKey()),
-              pmtExt.getValue());
+            // If the other child is an extension, we need to replace it by a new extension. The new
+            // key is the child index in the branch concatenated with the child's key. The new value
+            // is the child's value.
+          case PMTExt pmtExt -> {
+            acc.remove(pmtExt);
+            yield new PMTExt(
+                new PMTKey(new byte[] {(byte) index}).concatenate(pmtExt.getKey()),
+                pmtExt.getValue());
+          }
         };
     acc.add(newNode);
     acc.setTip(newNode);

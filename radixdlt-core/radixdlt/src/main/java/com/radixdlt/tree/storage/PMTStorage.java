@@ -70,4 +70,6 @@ public interface PMTStorage {
   byte[] read(byte[] serialisedNodeHash);
 
   void delete(byte[] serialisedNodeHash);
+
+  long count();
 }

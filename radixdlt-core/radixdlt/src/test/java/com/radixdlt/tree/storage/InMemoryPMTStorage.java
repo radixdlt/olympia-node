@@ -86,6 +86,11 @@ public class InMemoryPMTStorage implements PMTStorage {
 
   @Override
   public void delete(byte[] serialisedNodeHash) {
-    this.localDb.remove(serialisedNodeHash);
+    this.localDb.remove(ByteArrayWrapper.from(serialisedNodeHash));
+  }
+
+  @Override
+  public long count() {
+    return localDb.size();
   }
 }

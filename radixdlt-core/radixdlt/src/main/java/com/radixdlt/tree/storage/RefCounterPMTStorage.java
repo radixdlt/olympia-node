@@ -119,4 +119,9 @@ public class RefCounterPMTStorage implements PMTStorage {
       this.pmtStorage.save(serialisedNodeHash, existingData);
     }
   }
+
+  @Override
+  public long count() {
+    return this.pmtStorage.count();
+  }
 }
