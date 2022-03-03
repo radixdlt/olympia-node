@@ -191,9 +191,10 @@ public final class CandidateForkVotesPostProcessorTest {
 
     processAndAssert(
         result -> {
+        final var next = result.iterator().next();
           assertEquals(1, result.size());
-          assertEquals((short) 10000, result.iterator().next().stakePercentageVoted());
-          //          TODO(luk): also assert hash to be fork1ConfigParamsHash
+          assertEquals((short) 10000, next.stakePercentageVoted());
+          assertEquals(fork1CandidateForkId, next.candidateForkId());
         });
 
     // no votes
