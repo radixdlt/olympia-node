@@ -64,7 +64,6 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 
