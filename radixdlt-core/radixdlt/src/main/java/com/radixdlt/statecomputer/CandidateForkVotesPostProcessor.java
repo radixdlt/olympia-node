@@ -93,9 +93,13 @@ import java.util.Optional;
 public final class CandidateForkVotesPostProcessor implements PostProcessor<LedgerAndBFTProof> {
   /**
    * Specifies a minimum stake that needs to vote for a fork to be added to the resulting stored
-   * map. Acts as a storage size optimization so that we don't store insignificant entries.
+   * map. Acts as a storage size optimization so that we don't store insignificant entries. Follows
+   * the same format as CandidateForkConfig.Threshold
    */
   private static final short VOTES_THRESHOLD_TO_STORE_RESULT = 5000; /* 50.00% */
+
+  /** Follows the same format as CandidateForkConfig.Threshold */
+  private static final int ONE_HUNDRED_PERCENT = 10000;
 
   private final SubstateDeserialization substateDeserialization;
 
@@ -129,7 +133,7 @@ public final class CandidateForkVotesPostProcessor implements PostProcessor<Ledg
             e -> {
               final var percentagePower =
                   e.getValue()
-                      .multiply(UInt256.from(10000))
+                      .multiply(UInt256.from(ONE_HUNDRED_PERCENT))
                       .divide(totalPower)
                       .toBigInt()
                       .shortValue();

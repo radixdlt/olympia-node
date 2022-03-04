@@ -76,8 +76,16 @@ public record CandidateForkConfig(
     long maxEpoch)
     implements ForkConfig {
 
+  /**
+   * A threshold specifying candidate fork's required number of epochs and a required stake (in
+   * percentage value * 100), i.e. a value of 100 is 1%, 5000 is 50%, 10000 is 100%, etc.
+   */
   public static record Threshold(short requiredStake, int numEpochsBeforeEnacted) {
     public Threshold {
+      if (requiredStake < 1 || requiredStake > 10000) {
+        throw new IllegalArgumentException(
+            "Required stake must be between 1 (0.01%) and 10000 (100%)");
+      }
       if (numEpochsBeforeEnacted < 1) {
         throw new IllegalArgumentException("Num epochs before enacted must be at least 1");
       }

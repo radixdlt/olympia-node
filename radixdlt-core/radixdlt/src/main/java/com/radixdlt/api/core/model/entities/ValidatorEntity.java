@@ -100,39 +100,46 @@ import java.util.OptionalLong;
 import java.util.function.Supplier;
 
 public record ValidatorEntity(
-    ECPublicKey validatorKey, Optional<CandidateForkConfig> maybeCandidateFork) implements Entity {
+    ECPublicKey validatorKey, Optional<CandidateForkConfig> candidateForkOpt) implements Entity {
 
   @Override
   public void overwriteDataObject(
       ParsedDataObject parsedDataObject, TxBuilder builder, Supplier<RERulesConfig> config)
       throws TxBuilderException {
     var dataObject = parsedDataObject.dataObject();
-    if (dataObject instanceof PreparedValidatorRegistered preparedValidatorRegistered) {
-      updateRegistered(builder, preparedValidatorRegistered);
-    } else if (dataObject instanceof PreparedValidatorOwner) {
-      var owner = parsedDataObject.getParsed(REAddr.class);
-      updateOwner(builder, owner);
-    } else if (dataObject instanceof PreparedValidatorFee preparedValidatorFee) {
-      updateValidatorFee(builder, preparedValidatorFee, config);
-    } else if (dataObject instanceof ValidatorMetadata metadata) {
-      updateMetadata(builder, metadata);
-      updateValidatorSystemMetadataVote(builder);
-    } else if (dataObject instanceof ValidatorAllowDelegation allowDelegation) {
-      updateAllowDelegation(builder, allowDelegation);
-    } else if (dataObject
-        instanceof com.radixdlt.api.core.openapitools.model.ValidatorSystemMetadata metadata) {
-      if (metadata.getData().isEmpty()) {
+
+    switch (dataObject) {
+      case PreparedValidatorRegistered preparedValidatorRegistered:
+        updateRegistered(builder, preparedValidatorRegistered);
+        break;
+      case PreparedValidatorOwner preparedValidatorOwner:
+        var owner = parsedDataObject.getParsed(REAddr.class);
+        updateOwner(builder, owner);
+        break;
+      case PreparedValidatorFee preparedValidatorFee:
+        updateValidatorFee(builder, preparedValidatorFee, config);
+        break;
+      case ValidatorMetadata metadata:
+        updateMetadata(builder, metadata);
         updateValidatorSystemMetadataVote(builder);
-      } else if (Bytes.allZeros(Bytes.fromHexString(metadata.getData()))) {
-        updateValidatorSystemMetadataWithdrawVote(builder);
-      } else {
-        throw new InvalidDataObjectException(
-            parsedDataObject,
-            "ValidatorSystemMetadata \"data\" field must either be empty (to vote) or consist of"
-                + " only zero bytes (to withdraw a vote)");
-      }
-    } else {
-      throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
+        break;
+      case ValidatorAllowDelegation allowDelegation:
+        updateAllowDelegation(builder, allowDelegation);
+        break;
+      case com.radixdlt.api.core.openapitools.model.ValidatorSystemMetadata metadata:
+        if (metadata.getData().isEmpty()) {
+          updateValidatorSystemMetadataVote(builder);
+        } else if (Bytes.allZeros(Bytes.fromHexString(metadata.getData()))) {
+          updateValidatorSystemMetadataWithdrawVote(builder);
+        } else {
+          throw new InvalidDataObjectException(
+              parsedDataObject,
+              "ValidatorSystemMetadata \"data\" field must either be empty (to vote) or consist of"
+                  + " only zero bytes (to withdraw a vote)");
+        }
+        break;
+      default:
+        throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
     }
   }
 
@@ -142,7 +149,7 @@ public record ValidatorEntity(
     builder.up(
         new com.radixdlt.application.validators.state.ValidatorSystemMetadata(
             validatorKey,
-            maybeCandidateFork
+            candidateForkOpt
                 .map(
                     candidateFork ->
                         CandidateForkVote.create(validatorKey, candidateFork).payload())
