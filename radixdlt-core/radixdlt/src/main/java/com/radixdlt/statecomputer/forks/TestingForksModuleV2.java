@@ -89,7 +89,7 @@ public final class TestingForksModuleV2 extends AbstractModule {
     return new ForkBuilder(
         "fork-2",
         ImmutableSet.of(new CandidateForkConfig.Threshold((short) 6000 /* 60% */, 1)),
-        5L,
+        7L,
         Long.MAX_VALUE,
         RERulesVersion.OLYMPIA_V1,
         RERulesConfig.testingDefault(
