@@ -475,25 +475,28 @@ public final class Forks {
     ForkVotingResult next = forkVotingResultsCursor.next();
     long previousEpoch = next.epoch() - 1;
 
+    final var initialNext = next;
     final var thresholdEpochsMap =
         new HashMap<>(
             candidateFork.thresholds().stream()
                 .collect(
                     Collectors.toMap(
                         el -> el,
-                        el -> next.stakePercentageVoted() >= el.requiredStake() ? 1 : 0)));
+                        el -> initialNext.stakePercentageVoted() >= el.requiredStake() ? 1 : 0)));
 
     while (forkVotingResultsCursor.hasNext() && next.epoch() <= nextEpoch) {
       if (next.epoch() != previousEpoch + 1) {
         // there's a gap in fork voting results (no votes for the given epoch); reset the counters
         thresholdEpochsMap.replaceAll((threshold, numEpochs) -> 0);
       } else {
+        final var finalNext = next;
         thresholdEpochsMap.replaceAll(
             (threshold, numEpochs) ->
-                next.stakePercentageVoted() >= threshold.requiredStake()
+                finalNext.stakePercentageVoted() >= threshold.requiredStake()
                     ? numEpochs + 1 // threshold passes: increment numEpochs
                     : 0); // threshold doesn't pass: reset to 0
       }
+      next = forkVotingResultsCursor.next();
     }
 
     return next.epoch() == nextEpoch

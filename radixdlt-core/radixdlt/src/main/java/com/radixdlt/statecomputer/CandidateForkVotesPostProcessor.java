@@ -84,6 +84,9 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -91,6 +94,8 @@ import java.util.Optional;
 
 /** Adds forksVotingResults at epoch boundary to the result metadata. */
 public final class CandidateForkVotesPostProcessor implements PostProcessor<LedgerAndBFTProof> {
+  private static final Logger log = LogManager.getLogger();
+
   /**
    * Specifies a minimum stake that needs to vote for a fork to be added to the resulting stored
    * map. Acts as a storage size optimization so that we don't store insignificant entries. Follows
@@ -114,7 +119,11 @@ public final class CandidateForkVotesPostProcessor implements PostProcessor<Ledg
       List<REProcessedTxn> txns)
       throws PostProcessorException {
     if (metadata.getProof().getNextValidatorSet().isPresent()) {
-      return metadata.withForksVotingResults(prepareForksVotingResults(engineStore, metadata));
+      final var forkVotingResults = prepareForksVotingResults(engineStore, metadata);
+      if (!forkVotingResults.isEmpty() && log.isInfoEnabled()) {
+        log.info("Forks votes results: {}", forkVotingResults);
+      }
+      return metadata.withForksVotingResults(forkVotingResults);
     } else {
       return metadata;
     }
