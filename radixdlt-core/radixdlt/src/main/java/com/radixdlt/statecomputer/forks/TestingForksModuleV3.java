@@ -87,7 +87,7 @@ public final class TestingForksModuleV3 extends AbstractModule {
   @ProvidesIntoSet
   ForkBuilder fork2() {
     return new ForkBuilder(
-        "fork-2", 5L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
+        "fork-2", 7L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
   }
 
   @ProvidesIntoSet
@@ -95,7 +95,7 @@ public final class TestingForksModuleV3 extends AbstractModule {
     return new ForkBuilder(
         "fork-3",
         ImmutableSet.of(new CandidateForkConfig.Threshold((short) 8000 /* 80% */, 1)),
-        5L,
+        9L,
         Long.MAX_VALUE,
         RERulesVersion.OLYMPIA_V1,
         RERulesConfig.testingDefault(
