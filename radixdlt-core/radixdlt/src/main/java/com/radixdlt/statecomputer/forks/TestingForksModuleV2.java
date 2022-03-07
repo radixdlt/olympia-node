@@ -92,7 +92,6 @@ public final class TestingForksModuleV2 extends AbstractModule {
         7L,
         Long.MAX_VALUE,
         RERulesVersion.OLYMPIA_V1,
-        RERulesConfig.testingDefault(
-            500, FeeTable.create(Amount.ofMicroTokens(200), Collections.emptyMap())));
+        RERulesConfig.testingDefault(500));
   }
 }
