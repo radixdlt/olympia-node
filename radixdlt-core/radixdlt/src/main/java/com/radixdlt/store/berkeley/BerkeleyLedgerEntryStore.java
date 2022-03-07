@@ -419,10 +419,20 @@ public final class BerkeleyLedgerEntryStore
   public CloseableCursor<ForkVotingResult> forkVotingResultsCursor(
       long fromEpoch, long toEpoch, HashCode candidateForkId) {
     final Cursor underlyingCursor = forksVotingResultsDatabase.openCursor(null, null);
-    OperationStatus cursorStatus =
-        underlyingCursor.getSearchKeyRange(
-            new DatabaseEntry(Longs.toByteArray(fromEpoch)), null, DEFAULT);
+
+    OperationStatus cursorStatus;
+    try {
+      cursorStatus =
+          underlyingCursor.getSearchKeyRange(
+              new DatabaseEntry(Longs.toByteArray(fromEpoch)), null, DEFAULT);
+    } catch (Exception e) {
+      // close the cursor and re-throw
+      underlyingCursor.close();
+      throw e;
+    }
+
     if (cursorStatus != SUCCESS) {
+      underlyingCursor.close();
       return CloseableCursor.empty();
     }
 
