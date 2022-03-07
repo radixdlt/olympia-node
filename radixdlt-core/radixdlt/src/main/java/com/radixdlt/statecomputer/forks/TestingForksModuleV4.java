@@ -96,8 +96,7 @@ public final class TestingForksModuleV4 extends AbstractModule {
         "fork-4",
         ImmutableSet.of(
             new CandidateForkConfig.Threshold((short) 7500 /* 75% */, 3),
-            new CandidateForkConfig.Threshold((short) 9000 /* 90% */, 1)
-        ),
+            new CandidateForkConfig.Threshold((short) 9000 /* 90% */, 1)),
         11L,
         Long.MAX_VALUE,
         RERulesVersion.OLYMPIA_V1,
