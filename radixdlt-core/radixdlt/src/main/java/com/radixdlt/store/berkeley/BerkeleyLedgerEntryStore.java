@@ -423,6 +423,7 @@ public final class BerkeleyLedgerEntryStore
         underlyingCursor.getSearchKeyRange(
             new DatabaseEntry(Longs.toByteArray(fromEpoch)), null, DEFAULT);
     if (cursorStatus != SUCCESS) {
+      underlyingCursor.close();
       return CloseableCursor.empty();
     }
 
