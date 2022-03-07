@@ -84,13 +84,12 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Adds forksVotingResults at epoch boundary to the result metadata. */
 public final class CandidateForkVotesPostProcessor implements PostProcessor<LedgerAndBFTProof> {

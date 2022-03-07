@@ -317,9 +317,12 @@ public final class Forks {
             .orElse(1);
 
     final var fromEpoch = candidateFork.minEpoch() - longestThresholdEpochs;
+    final var toEpoch =
+        candidateFork.maxEpoch() + 1 < candidateFork.maxEpoch() // check for overflows
+            ? Long.MAX_VALUE
+            : candidateFork.maxEpoch() + 1;
     try (final var forkVotingResultsCursor =
-        forksEpochStore.forkVotingResultsCursor(
-            fromEpoch, candidateFork.maxEpoch() + 1, candidateForkId)) {
+        forksEpochStore.forkVotingResultsCursor(fromEpoch, toEpoch, candidateForkId)) {
 
       if (!forkVotingResultsCursor.hasNext()) {
         return Optional.empty();
@@ -344,10 +347,10 @@ public final class Forks {
           thresholdEpochsMap.replaceAll((threshold, numEpochs) -> 0);
         }
 
-        if (thresholdEpochsMap.entrySet().stream()
-                .anyMatch(e -> e.getValue() >= e.getKey().numEpochsBeforeEnacted())
-            && next.epoch() >= candidateFork.minEpoch()
-            && next.epoch() <= candidateFork.maxEpoch()) {
+        if (next.epoch() >= candidateFork.minEpoch()
+            && next.epoch() <= candidateFork.maxEpoch()
+            && thresholdEpochsMap.entrySet().stream()
+                .anyMatch(e -> e.getValue() >= e.getKey().numEpochsBeforeEnacted())) {
           return Optional.of(next.epoch());
         }
 
