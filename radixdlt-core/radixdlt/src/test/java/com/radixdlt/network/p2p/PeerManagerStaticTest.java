@@ -62,105 +62,114 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.messaging;
+package com.radixdlt.network.p2p;
 
-import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
-import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
+import static com.radixdlt.utils.TypedMocks.cmock;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.google.inject.TypeLiteral;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.PeerManager;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.network.messaging.InboundMessage;
+import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
+import com.radixdlt.network.p2p.addressbook.AddressBook;
+import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
+import com.radixdlt.network.p2p.addressbook.InMemoryAddressBookPersistence;
 import com.radixdlt.network.p2p.transport.PeerChannel;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.utils.Compress;
-import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.utils.functional.Result;
-import com.radixdlt.utils.functional.Tuple.Unit;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.radix.network.messaging.Message;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
+import com.radixdlt.properties.RuntimeProperties;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Observable;
+import java.util.Optional;
+import java.util.Set;
+import org.apache.commons.cli.ParseException;
+import org.json.JSONObject;
+import org.junit.Assert;
+import org.junit.Test;
 
-/*
- * This could be moved into MessageCentralImpl at some stage, but has been
- * separated out so that we can check if all the functionality here is
- * required, and remove the stuff we don't want to keep.
- */
-class MessageDispatcher {
-  private static final Logger log = LogManager.getLogger();
+public class PeerManagerStaticTest {
 
-  private final long messageTtlMs;
-  private final SystemCounters counters;
-  private final Serialization serialization;
-  private final TimeSupplier timeSource;
-  private final PeerManager peerManager;
+  @Test
+  public void should_cleanup_existing_entries_from_same_host_port_on_successful_connect() {
+    var self = makeNodeUri("10.0.0.1", 30000);
+    var addressBook =
+        new AddressBook(
+            self,
+            cmock(new TypeLiteral<EventDispatcher<PeerEvent>>() {}),
+            new InMemoryAddressBookPersistence());
+    var peerManager =
+        new PeerManager(
+            self,
+            P2PConfig.fromRuntimeProperties(defaultProperties()),
+            Addressing.ofNetwork(Network.LOCALNET),
+            () -> addressBook,
+            () -> mock(PendingOutboundChannelsManager.class),
+            mock(SystemCounters.class));
 
-  MessageDispatcher(
-      SystemCounters counters,
-      MessageCentralConfiguration config,
-      Serialization serialization,
-      TimeSupplier timeSource,
-      PeerManager peerManager) {
-    this.messageTtlMs = Objects.requireNonNull(config).messagingTimeToLive(30_000L);
-    this.counters = Objects.requireNonNull(counters);
-    this.serialization = Objects.requireNonNull(serialization);
-    this.timeSource = Objects.requireNonNull(timeSource);
-    this.peerManager = Objects.requireNonNull(peerManager);
+    var peer1 = makeNodeUri("10.0.0.2", 30000);
+    // second address for same peer
+    var peer2 = makeNodeUri(peer1.getNodeId().getPublicKey(), "10.0.0.2", 30001);
+
+    addressBook.addUncheckedPeers(Set.of(peer1, peer2));
+
+    // Before connect
+    addressBook
+        .findById(peer2.getNodeId())
+        .ifPresentOrElse(
+            entry -> assertEquals(2L, entry.getKnownAddresses().stream().count()), Assert::fail);
+
+    var peerChanel = mock(PeerChannel.class);
+    var inboundMessages = cmock(new TypeLiteral<Flowable<InboundMessage>>() {});
+    // new key, but same host/port as peer2
+    var peer = makeNodeUri("10.0.0.2", 30000);
+
+    when(peerChanel.getUri()).thenReturn(Optional.of(peer));
+    when(peerChanel.inboundMessages()).thenReturn(inboundMessages);
+    when(inboundMessages.toObservable())
+        .thenReturn(cmock(new TypeLiteral<Observable<InboundMessage>>() {}));
+    when(peerChanel.getRemoteNodeId()).thenReturn(peer.getNodeId());
+
+    peerManager.peerEventProcessor().process(new PeerConnected(peerChanel));
+
+    // One address is removed
+    addressBook
+        .findById(peer2.getNodeId())
+        .ifPresentOrElse(
+            entry -> assertEquals(1L, entry.getKnownAddresses().stream().count()), Assert::fail);
+    addressBook
+        .findById(peer2.getNodeId())
+        .ifPresentOrElse(
+            entry ->
+                assertEquals(
+                    peer2,
+                    entry.getKnownAddresses().stream()
+                        .map(PeerAddressEntry::getUri)
+                        .iterator()
+                        .next()),
+            Assert::fail);
   }
 
-  CompletableFuture<Result<Unit>> send(final OutboundMessageEvent outboundMessage) {
-    final var message = outboundMessage.message();
-    final var receiver = outboundMessage.receiver();
-
-    if (timeSource.currentTime() - message.getTimestamp() > messageTtlMs) {
-      String msg =
-          String.format(
-              "TTL for %s message to %s has expired", message.getClass().getSimpleName(), receiver);
-      log.warn(msg);
-      this.counters.increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
-      return CompletableFuture.completedFuture(MESSAGE_EXPIRED.result());
-    }
-
-    final var bytes = serialize(message);
-
-    return peerManager
-        .findOrCreateChannel(outboundMessage.receiver())
-        .thenApply(channel -> send(channel, bytes))
-        .thenApply(this::updateStatistics)
-        .exceptionally(t -> completionException(t, receiver, message));
+  private RadixNodeUri makeNodeUri(String host, int port) {
+    return makeNodeUri(ECKeyPair.generateNew().getPublicKey(), host, port);
   }
 
-  private Result<Unit> send(PeerChannel channel, byte[] bytes) {
-    this.counters.add(CounterType.NETWORKING_BYTES_SENT, bytes.length);
-    return channel.send(bytes);
+  private RadixNodeUri makeNodeUri(ECPublicKey pubKey, String host, int port) {
+    return RadixNodeUri.fromPubKeyAndAddress(Network.LOCALNET.getId(), pubKey, host, port);
   }
 
-  private Result<Unit> completionException(Throwable cause, NodeId receiver, Message message) {
-    final var msg =
-        String.format("Send %s to %s failed", message.getClass().getSimpleName(), receiver);
-    log.warn("{}: {}", msg, cause.getMessage());
-    return IO_ERROR.result();
-  }
-
-  private Result<Unit> updateStatistics(Result<Unit> result) {
-    this.counters.increment(CounterType.MESSAGES_OUTBOUND_PROCESSED);
-    if (result.isSuccess()) {
-      this.counters.increment(CounterType.MESSAGES_OUTBOUND_SENT);
-    }
-    return result;
-  }
-
-  private byte[] serialize(Message out) {
+  private static RuntimeProperties defaultProperties() {
     try {
-      byte[] uncompressed = serialization.toDson(out, Output.WIRE);
-      return Compress.compress(uncompressed);
-    } catch (IOException e) {
-      throw new UncheckedIOException("While serializing message", e);
+      final var props = new RuntimeProperties(new JSONObject(), new String[] {});
+      props.set("network.p2p.max_inbound_channels", 10);
+      props.set("network.p2p.max_outbound_channels", 10);
+      return props;
+    } catch (ParseException e) {
+      throw new RuntimeException(e);
     }
   }
 }
