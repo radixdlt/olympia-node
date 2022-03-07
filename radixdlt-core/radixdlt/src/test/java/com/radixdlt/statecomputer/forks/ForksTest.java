@@ -228,6 +228,43 @@ public final class ForksTest {
             emptyForksEpochStore));
   }
 
+  @Test
+  public void forks_should_correctly_test_candidate_with_epochs_before_enacted() {
+    final var threshold = new CandidateForkConfig.Threshold((short) 8000, 4);
+    final var candidate =
+        new CandidateForkConfig(
+            "candidate",
+            OLYMPIA_V1.create(RERulesConfig.testingDefault()),
+            ImmutableSet.of(threshold),
+            10L,
+            20L);
+    final var candidateForkId = CandidateForkVote.candidateForkId(candidate);
+
+    final var forksEpochStore = new InMemoryForksEpochStore(new InMemoryForksEpochStore.Store());
+
+    final var proofAtEpoch15 =
+        proofForCandidate(
+            15L, /* proof at epoch 15 */
+            votesFor(16L /* contains votes for epoch 16 */, candidate, threshold.requiredStake()));
+
+    assertFalse(Forks.testCandidate(candidate, proofAtEpoch15, forksEpochStore));
+
+    // adding votes for epoch 15, threshold passing for 2 epochs - not enough
+    forksEpochStore.storeForkVotingResult(
+        new ForkVotingResult(15L, candidateForkId, threshold.requiredStake()));
+    assertFalse(Forks.testCandidate(candidate, proofAtEpoch15, forksEpochStore));
+
+    // adding votes for epoch 14, threshold passing for 3 epochs - still not enough
+    forksEpochStore.storeForkVotingResult(
+        new ForkVotingResult(14L, candidateForkId, threshold.requiredStake()));
+    assertFalse(Forks.testCandidate(candidate, proofAtEpoch15, forksEpochStore));
+
+    // adding votes for epoch 13, threshold passing for 4 epochs - just enough
+    forksEpochStore.storeForkVotingResult(
+        new ForkVotingResult(13L, candidateForkId, threshold.requiredStake()));
+    assertTrue(Forks.testCandidate(candidate, proofAtEpoch15, forksEpochStore));
+  }
+
   private LedgerAndBFTProof proofForCandidate(
       long epoch, ImmutableSet<ForkVotingResult> forksVotingResults) {
     final var ledgerProof = mock(LedgerProof.class);
