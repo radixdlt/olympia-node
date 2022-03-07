@@ -96,7 +96,7 @@ public final class TestingForksModuleV3 extends AbstractModule {
         "fork-3",
         ImmutableSet.of(new CandidateForkConfig.Threshold((short) 8000 /* 80% */, 1)),
         9L,
-        Long.MAX_VALUE,
+        10L,
         RERulesVersion.OLYMPIA_V1,
         RERulesConfig.testingDefault(
             500, FeeTable.create(Amount.ofMicroTokens(200), Collections.emptyMap())));
