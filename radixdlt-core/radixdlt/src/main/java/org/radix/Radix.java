@@ -240,8 +240,9 @@ public final class Radix {
     final var self = injector.getInstance(Key.get(BFTNode.class, Self.class));
     System.out.println("Node " + self + " is shutting down...");
 
-    injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }))
-      .forEach((k, moduleRunner) -> moduleRunner.stop());
+    injector
+        .getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}))
+        .forEach((k, moduleRunner) -> moduleRunner.stop());
 
     try {
       injector.getInstance(BerkeleyAddressBookPersistence.class).close();
