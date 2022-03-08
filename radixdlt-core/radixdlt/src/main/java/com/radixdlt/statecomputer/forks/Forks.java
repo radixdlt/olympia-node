@@ -146,8 +146,9 @@ public final class Forks {
   }
 
   private static boolean ensureUniqueNames(Set<ForkConfig> forks) {
-    final var namesSet = forks.stream().map(ForkConfig::name).collect(Collectors.toSet());
-    return forks.size() == namesSet.size();
+    final var namesWithoutDuplicates =
+        forks.stream().map(ForkConfig::name).collect(Collectors.toSet());
+    return forks.size() == namesWithoutDuplicates.size();
   }
 
   private static boolean sanityCheckFixedEpochs(ImmutableList<FixedEpochForkConfig> forkConfigs) {

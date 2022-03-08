@@ -67,9 +67,6 @@ package com.radixdlt.statecomputer.forks;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.tokens.Amount;
-import java.util.Collections;
 
 public final class TestingForksModuleV2 extends AbstractModule {
   @ProvidesIntoSet
