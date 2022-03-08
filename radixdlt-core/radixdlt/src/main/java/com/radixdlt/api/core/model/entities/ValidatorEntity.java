@@ -144,10 +144,9 @@ public record ValidatorEntity(
   }
 
   private void updateValidatorSystemMetadataVote(TxBuilder builder) {
-    builder.down(
-        com.radixdlt.application.validators.state.ValidatorSystemMetadata.class, validatorKey);
+    builder.down(ValidatorSystemMetadata.class, validatorKey);
     builder.up(
-        new com.radixdlt.application.validators.state.ValidatorSystemMetadata(
+        new ValidatorSystemMetadata(
             validatorKey,
             candidateForkOpt
                 .map(
@@ -158,11 +157,8 @@ public record ValidatorEntity(
   }
 
   private void updateValidatorSystemMetadataWithdrawVote(TxBuilder builder) {
-    builder.down(
-        com.radixdlt.application.validators.state.ValidatorSystemMetadata.class, validatorKey);
-    builder.up(
-        new com.radixdlt.application.validators.state.ValidatorSystemMetadata(
-            validatorKey, HashUtils.zero256().asBytes()));
+    builder.down(ValidatorSystemMetadata.class, validatorKey);
+    builder.up(new ValidatorSystemMetadata(validatorKey, HashUtils.zero256().asBytes()));
   }
 
   private void updateAllowDelegation(TxBuilder builder, ValidatorAllowDelegation allowDelegation) {

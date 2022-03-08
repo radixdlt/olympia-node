@@ -151,19 +151,10 @@ public final class ForkBuilder {
     return new ForkBuilder(name, fixedEpoch, reRulesVersion, reRulesConfig);
   }
 
-  public ForkBuilder withStakeVoting(
-      ImmutableSet<CandidateForkConfig.Threshold> thresholds, long minEpoch, long maxEpoch) {
-    return new ForkBuilder(name, thresholds, minEpoch, maxEpoch, reRulesVersion, reRulesConfig);
-  }
-
   public long minEpoch() {
     return candidateForkBuilderOpts
         .map(CandidateForkBuildersOpts::minEpoch)
         .orElseGet(() -> fixedEpochForkBuilderOpts.get().epoch);
-  }
-
-  public Optional<Long> maxEpoch() {
-    return candidateForkBuilderOpts.map(CandidateForkBuildersOpts::maxEpoch);
   }
 
   public ForkConfig build() {

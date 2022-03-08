@@ -156,8 +156,6 @@ allprojects {
             // optionally, Spotless can set copyright years by digging
             // through git history (see "license" section below)
             licenseHeaderFile("${project.rootDir}/licence-header.txt")
-
-            toggleOffOn()
         }
     }
 

@@ -217,7 +217,7 @@ public final class CoordinatedForkSanityTest {
 
   private void updateValidatorWithLatestFork(RunningNetwork network, BFTNode node) {
     final var forks = network.getInstance(Forks.class, node);
-    final var maybeForkVote =
+    final var forkVoteOpt =
         forks.getCandidateFork().map(f -> CandidateForkVote.create(node.getKey(), f));
     final var keyPair = network.getInstance(ECKeyPair.class, node);
     try {
@@ -228,7 +228,7 @@ public final class CoordinatedForkSanityTest {
                   TxnConstructionRequest.create()
                       .updateValidatorSystemMetadata(
                           node.getKey(),
-                          maybeForkVote
+                          forkVoteOpt
                               .map(CandidateForkVote::payload)
                               .orElseGet(HashUtils::zero256)))
               .signAndBuild(keyPair::sign);

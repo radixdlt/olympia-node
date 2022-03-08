@@ -340,50 +340,53 @@ public final class ForksTest {
 
   @Test
   public void it_should_correctly_calculate_execute_epoch_for_a_candidate_fork() {
-    // spotless:off just to make the test cases a little nicer to read
     final var engineRules = OLYMPIA_V1.create(RERulesConfig.testingDefault());
     final var genesis = new FixedEpochForkConfig("genesis", engineRules, 0L);
     final var candidate =
-      new CandidateForkConfig(
-        "candidate", engineRules,
-        ImmutableSet.of(
-            new CandidateForkConfig.Threshold((short) 8000, 4), /* 80% for 4 epochs */
-            new CandidateForkConfig.Threshold((short) 9000, 2) /* or 90% for 2 epochs */),
-        10 /* min epoch */, 20 /* max epoch */);
+        new CandidateForkConfig(
+            "candidate",
+            engineRules,
+            ImmutableSet.of(
+                new CandidateForkConfig.Threshold((short) 8000, 4), /* 80% for 4 epochs */
+                new CandidateForkConfig.Threshold((short) 9000, 2) /* or 90% for 2 epochs */),
+            10 /* min epoch */,
+            20 /* max epoch */);
     final var candidateForkId = CandidateForkVote.candidateForkId(candidate);
     final var sut = Forks.create(Set.of(genesis, candidate));
 
     /* contains pairs of (expectedResult, input), where input is an array of pairs: (epoch, percentage_stake_voted) */
     final var testCases =
-      ImmutableList.of(
-        Pair.of(Optional.of(10L), new Object[][]
-          {{6L, 8000}, {7L, 8000}, {8L, 8000}, {9L, 8000}, {10L, 8000}}),
-        Pair.of(Optional.empty(), new Object[][]
-          {{6L, 8000}, {7L, 8000}, {8L, 8000}, {9L, 8000}, {11L /* one epoch gap */, 8000}}),
-        Pair.of(Optional.empty(), new Object[][]
-          {{6L, 3000}, {7L, 3000}, {8L, 8000}, {9L, 8000}, {10L, 8000}}),
-        Pair.of(Optional.of(10L), new Object[][]
-          {{9L, 9000}, {10L, 9000}}),
-        Pair.of(Optional.empty(), new Object[][]
-          {{8L, 9000}, {9L, 9000}}),
-        Pair.of(Optional.empty(), new Object[][]
-          {{19L, 8500}, {20L, 9000}, {21L, 9000}}),
-        Pair.of(Optional.of(20L), new Object[][]
-          {{19L, 9900}, {20L, 9000}}),
-        Pair.of(Optional.empty(), new Object[][]
-          {}));
+        ImmutableList.of(
+            Pair.of(
+                Optional.of(10L),
+                new Object[][] {{6L, 8000}, {7L, 8000}, {8L, 8000}, {9L, 8000}, {10L, 8000}}),
+            Pair.of(
+                Optional.empty(),
+                new Object[][] {
+                  {6L, 8000}, {7L, 8000}, {8L, 8000}, {9L, 8000}, {11L /* one epoch gap */, 8000}
+                }),
+            Pair.of(
+                Optional.empty(),
+                new Object[][] {{6L, 3000}, {7L, 3000}, {8L, 8000}, {9L, 8000}, {10L, 8000}}),
+            Pair.of(Optional.of(10L), new Object[][] {{9L, 9000}, {10L, 9000}}),
+            Pair.of(Optional.empty(), new Object[][] {{8L, 9000}, {9L, 9000}}),
+            Pair.of(Optional.empty(), new Object[][] {{19L, 8500}, {20L, 9000}, {21L, 9000}}),
+            Pair.of(Optional.of(20L), new Object[][] {{19L, 9900}, {20L, 9000}}),
+            Pair.of(Optional.empty(), new Object[][] {}));
 
     testCases.forEach(
         pair -> {
           final var votingResults =
-            Arrays.stream(pair.getSecond())
-              .map(arr -> new ForkVotingResult((long) arr[0], candidateForkId, (short) (int) arr[1]))
-              .toList();
+              Arrays.stream(pair.getSecond())
+                  .map(
+                      arr ->
+                          new ForkVotingResult(
+                              (long) arr[0], candidateForkId, (short) (int) arr[1]))
+                  .toList();
           assertEquals(
               pair.getFirst(),
               sut.findExecuteEpochForCandidate(forksEpochStoreWithResults(votingResults)));
         });
-    // spotless:on
   }
 
   private ForksEpochStore forksEpochStoreWithResults(
