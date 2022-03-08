@@ -66,6 +66,7 @@ package com.radixdlt.network.p2p.transport;
 
 import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
 import static com.radixdlt.utils.functional.Tuple.unitResult;
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.counters.SystemCounters;
@@ -102,7 +103,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.SecureRandom;
 import java.time.Duration;
-import java.util.Objects;
 import java.util.Optional;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -154,32 +154,33 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
       Optional<RadixNodeUri> uri,
       SocketChannel nettyChannel,
       Optional<InetSocketAddress> remoteAddress) {
-    this.counters = Objects.requireNonNull(counters);
-    this.addressing = Objects.requireNonNull(addressing);
-    this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
-    this.uri = Objects.requireNonNull(uri);
-    uri.ifPresent(u -> this.remoteNodeId = u.getNodeId());
+    this.counters = requireNonNull(counters);
+    this.addressing = requireNonNull(addressing);
+    this.peerEventDispatcher = requireNonNull(peerEventDispatcher);
+    this.uri = requireNonNull(uri);
+
+    uri.map(RadixNodeUri::getNodeId).ifPresent(nodeId -> this.remoteNodeId = nodeId);
+
     this.authHandshaker = new AuthHandshaker(serialization, secureRandom, ecKeyOps, networkId);
-    this.nettyChannel = Objects.requireNonNull(nettyChannel);
-    this.remoteAddress = Objects.requireNonNull(remoteAddress);
+    this.nettyChannel = requireNonNull(nettyChannel);
+    this.remoteAddress = requireNonNull(remoteAddress);
 
     this.isInitiator = uri.isPresent();
 
     this.inboundMessages =
         inboundMessageSink.onBackpressureBuffer(
-            config.channelBufferSize(),
-            () -> {
-              this.counters.increment(SystemCounters.CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
-              final var logLevel =
-                  droppedMessagesRateLimiter.tryAcquire() ? Level.WARN : Level.TRACE;
-              if (log.isEnabled(logLevel)) {
-                log.log(logLevel, "TCP msg buffer overflow, dropping msg on {}", this);
-              }
-            },
-            BackpressureOverflowStrategy.DROP_LATEST);
+            config.channelBufferSize(), this::onOverflow, BackpressureOverflowStrategy.DROP_LATEST);
 
     if (this.nettyChannel.isActive()) {
       this.init();
+    }
+  }
+
+  private void onOverflow() {
+    this.counters.increment(SystemCounters.CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
+    final var logLevel = droppedMessagesRateLimiter.tryAcquire() ? Level.WARN : Level.TRACE;
+    if (log.isEnabled(logLevel)) {
+      log.log(logLevel, "TCP msg buffer overflow, dropping msg on {}", this);
     }
   }
 
@@ -198,16 +199,14 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   }
 
   private void handleHandshakeData(ByteBuf data) throws IOException {
+    if (log.isTraceEnabled()) {
+      log.trace("Auth {} from {}", this.isInitiator ? "response" : "initiate", this);
+    }
+
     if (this.isInitiator) {
-      if (log.isTraceEnabled()) {
-        log.trace("Auth response from {}", this);
-      }
       final var handshakeResult = this.authHandshaker.handleResponseMessage(data);
       this.finalizeHandshake(handshakeResult);
     } else {
-      if (log.isTraceEnabled()) {
-        log.trace("Auth initiate from {}", this);
-      }
       final var result = this.authHandshaker.handleInitialMessage(data);
       this.write(Unpooled.wrappedBuffer(result.getFirst()));
       this.finalizeHandshake(result.getSecond());
@@ -286,6 +285,11 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     if (prevState == ChannelState.ACTIVE) {
       // only send out event if peer was previously active
       this.peerEventDispatcher.dispatch(new PeerDisconnected(this));
+    }
+
+    // we initiated connection, but handshake is not completed in time
+    if (prevState == ChannelState.AUTH_HANDSHAKE && this.isInitiator) {
+      this.peerEventDispatcher.dispatch(new PeerHandshakeFailed(this));
     }
   }
 
