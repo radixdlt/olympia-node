@@ -66,6 +66,7 @@ package com.radixdlt.network.p2p;
 
 import static com.radixdlt.network.messaging.MessagingErrors.PEER_BANNED;
 import static com.radixdlt.network.messaging.MessagingErrors.SELF_CONNECTION_ATTEMPT;
+import static com.radixdlt.utils.functional.Tuple.unitResult;
 import static java.util.function.Predicate.not;
 
 import com.google.common.collect.ImmutableSet;
@@ -88,6 +89,7 @@ import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
+import com.radixdlt.utils.functional.Tuple.Unit;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.Collection;
@@ -181,7 +183,7 @@ public final class PeerManager {
     }
   }
 
-  private Result<Object> canConnectTo(NodeId nodeId) {
+  private Result<Unit> canConnectTo(NodeId nodeId) {
     if (nodeId.equals(self)) {
       log.info("Ignoring self connection attempt");
       return SELF_CONNECTION_ATTEMPT.result();
@@ -191,7 +193,7 @@ public final class PeerManager {
       return PEER_BANNED.result();
     }
 
-    return Result.ok(new Object());
+    return unitResult();
   }
 
   private Optional<PeerChannel> channelFor(NodeId nodeId) {
