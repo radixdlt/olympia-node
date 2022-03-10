@@ -84,6 +84,7 @@ import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** Manages system information to be consumed by clients such as the api. */
@@ -92,7 +93,8 @@ public final class InMemorySystemInfo {
   private final AtomicReference<EpochView> currentView =
       new AtomicReference<>(EpochView.of(0L, View.genesis()));
   private final AtomicReference<QuorumCertificate> highQC = new AtomicReference<>();
-  private final AtomicReference<ValidatorBFTDataEvent> missedProposals = new AtomicReference<>();
+  private final AtomicMarkableReference<Optional<ValidatorBFTDataEvent>> missedProposals =
+      new AtomicMarkableReference<>(Optional.empty(), false);
   private final AtomicReference<LedgerProof> ledgerProof;
   private final AtomicReference<LedgerProof> epochsLedgerProof;
   private final BFTNode self;
@@ -131,17 +133,18 @@ public final class InMemorySystemInfo {
           .filter(ValidatorBFTDataEvent.class::isInstance)
           .map(ValidatorBFTDataEvent.class::cast)
           .filter(event -> event.validatorKey().equals(self.getKey()))
-          .forEach(missedProposals::set);
+          .map(Optional::of)
+          .forEach(event -> missedProposals.set(event, true));
     };
   }
 
-  public ValidatorBFTDataEvent getValidatorBFTData() {
-    if (missedProposals.get() == null) {
+  public Optional<ValidatorBFTDataEvent> getValidatorBFTData() {
+    if (!missedProposals.isMarked()) {
       // There were no relevant events yet
-      getProposalStats().ifPresent(missedProposals::set);
+      missedProposals.set(getProposalStats(), true);
     }
 
-    return missedProposals.get();
+    return missedProposals.getReference();
   }
 
   private Optional<ValidatorBFTDataEvent> getProposalStats() {

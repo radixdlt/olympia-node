@@ -97,8 +97,9 @@ public class InMemorySystemInfoTest {
     when(radixEngine.read(any())).thenReturn(validatorBFTData);
 
     var result = systemInfo.getValidatorBFTData();
+    var expected = Optional.of(new ValidatorBFTDataEvent(self.getKey(), 10, 1));
 
-    assertEquals(new ValidatorBFTDataEvent(self.getKey(), 10, 1), result);
+    assertEquals(expected, result);
   }
 
   @Test
@@ -113,8 +114,9 @@ public class InMemorySystemInfoTest {
     when(radixEngine.read(any())).thenReturn(validatorBFTData);
 
     var result1 = systemInfo.getValidatorBFTData();
+    var expected = Optional.of(new ValidatorBFTDataEvent(self.getKey(), 10, 1));
 
-    assertEquals(new ValidatorBFTDataEvent(self.getKey(), 10, 1), result1);
+    assertEquals(expected, result1);
 
     var result2 = systemInfo.getValidatorBFTData();
 
@@ -132,8 +134,9 @@ public class InMemorySystemInfoTest {
     systemInfo.ledgerUpdateEventProcessor().process(createLedgerUpdate(self));
 
     var result = systemInfo.getValidatorBFTData();
+    var expected = Optional.of(new ValidatorBFTDataEvent(self.getKey(), 10, 1));
 
-    assertEquals(new ValidatorBFTDataEvent(self.getKey(), 10, 1), result);
+    assertEquals(expected, result);
 
     verifyNoInteractions(radixEngine);
   }

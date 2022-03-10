@@ -239,7 +239,9 @@ public final class PeerManager {
           this.activeChannels.computeIfAbsent(
               channel.getRemoteNodeId(), unused -> Sets.newConcurrentHashSet());
       channels.add(channel);
-      channel.getUri().ifPresent(this.addressBook.get()::addOrUpdatePeerWithSuccessfulConnection);
+      if (channel.isOutbound()) {
+        channel.getUri().ifPresent(this.addressBook.get()::addOrUpdatePeerWithSuccessfulConnection);
+      }
       inboundMessagesFromChannels.onNext(channel.inboundMessages().toObservable());
 
       if (channel.isInbound() && !this.shouldAcceptInboundPeer(channel.getRemoteNodeId())) {

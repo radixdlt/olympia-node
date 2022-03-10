@@ -73,6 +73,7 @@ import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.REAddr;
@@ -244,12 +245,12 @@ public class PrometheusService {
   private void exportCounters(StringBuilder builder) {
     EXPORT_LIST.forEach(counterType -> generateCounterEntry(counterType, builder));
 
-    addProposalsCounters(builder);
+    inMemorySystemInfo
+        .getValidatorBFTData()
+        .ifPresent(proposals -> addProposalsCounters(builder, proposals));
   }
 
-  private void addProposalsCounters(StringBuilder builder) {
-    var proposals = inMemorySystemInfo.getValidatorBFTData();
-
+  private void addProposalsCounters(StringBuilder builder, ValidatorBFTDataEvent proposals) {
     appendCounter(builder, COMPLETED_PROPOSALS, proposals.completedProposals());
     appendCounter(builder, MISSED_PROPOSALS, proposals.missedProposals());
   }
