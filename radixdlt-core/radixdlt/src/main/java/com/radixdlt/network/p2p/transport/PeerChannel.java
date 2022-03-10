@@ -169,14 +169,16 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 
     this.inboundMessages =
         inboundMessageSink.onBackpressureBuffer(
-            config.channelBufferSize(), this::onOverflow, BackpressureOverflowStrategy.DROP_LATEST);
+            config.channelBufferSize(),
+            this::onInboundMessageBufferOverflow,
+            BackpressureOverflowStrategy.DROP_LATEST);
 
     if (this.nettyChannel.isActive()) {
       this.init();
     }
   }
 
-  private void onOverflow() {
+  private void onInboundMessageBufferOverflow() {
     this.counters.increment(SystemCounters.CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
     final var logLevel = droppedMessagesRateLimiter.tryAcquire() ? Level.WARN : Level.TRACE;
     if (log.isEnabled(logLevel)) {

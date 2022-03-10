@@ -145,8 +145,7 @@ public final class PendingOutboundChannelsManager {
           .map(RadixNodeUri::getNodeId)
           .flatMap(nodeId -> Optional.ofNullable(this.pendingChannels.remove(nodeId)))
           .ifPresent(
-              maybeFuture ->
-                  maybeFuture.completeExceptionally(new IOException("Peer connection failed")));
+              future -> future.completeExceptionally(new IOException("Peer connection failed")));
     }
   }
 

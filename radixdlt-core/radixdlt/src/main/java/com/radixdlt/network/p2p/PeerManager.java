@@ -339,14 +339,14 @@ public final class PeerManager {
   private void handlePeerBanned(PeerBanned event) {
     this.activeChannels().stream()
         .filter(peerChannel -> isSameNodeId(peerChannel, event.nodeId()))
-        .forEach(this::disconnectPeer);
+        .forEach(this::handlePeerBanned);
   }
 
   private boolean isSameNodeId(PeerChannel peerChannel, NodeId nodeId) {
     return peerChannel.getRemoteNodeId().equals(nodeId);
   }
 
-  private void disconnectPeer(PeerChannel peerChannel) {
+  private void handlePeerBanned(PeerChannel peerChannel) {
     var nodeAddress = nodeAddress(peerChannel.getRemoteNodeId());
 
     log.info("Closing channel to peer {} because peer has been banned", nodeAddress);
