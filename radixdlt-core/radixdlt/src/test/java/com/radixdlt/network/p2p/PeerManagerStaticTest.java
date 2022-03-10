@@ -132,6 +132,7 @@ public class PeerManagerStaticTest {
     when(peerChanel.inboundMessages()).thenReturn(inboundMessages);
     when(inboundMessages.toObservable())
         .thenReturn(cmock(new TypeLiteral<Observable<InboundMessage>>() {}));
+    when(peerChanel.isOutbound()).thenReturn(true);
     when(peerChanel.getRemoteNodeId()).thenReturn(peer.getNodeId());
 
     peerManager.peerEventProcessor().process(new PeerConnected(peerChanel));
