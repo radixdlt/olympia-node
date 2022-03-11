@@ -92,6 +92,7 @@ import com.radixdlt.statecomputer.forks.CandidateForkVote;
 import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.UInt256;
@@ -192,6 +193,20 @@ public final class CoordinatedForkSanityTest {
                     // (idx 3)
                     if (!verifyCurrentFork(network, forks.get(3))) {
                       reportError.accept("Expected to be at a different fork (3) at epoch 21");
+                    }
+
+                    // verify that the nodes have actually forked at epoch 20
+                    final var allForkedAtEpoch20 =
+                        network.getNodes().stream()
+                            .allMatch(
+                                node ->
+                                    network
+                                        .getInstance(ForksEpochStore.class, node)
+                                        .getStoredForks()
+                                        .get(20L)
+                                        .equals(forks.get(3).name()));
+                    if (!allForkedAtEpoch20) {
+                      reportError.accept("All validators should have forked at epoch 20");
                     }
                   }
                 });

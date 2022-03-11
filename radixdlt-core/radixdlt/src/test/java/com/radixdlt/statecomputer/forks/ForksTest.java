@@ -265,6 +265,30 @@ public final class ForksTest {
     assertTrue(Forks.testCandidate(candidate, proofAtEpoch15, forksEpochStore));
   }
 
+  @Test
+  public void forks_should_test_candidate_with_both_past_and_current_results() {
+    final var ignoredThreshold = new CandidateForkConfig.Threshold((short) 7000, 3);
+    final var threshold = new CandidateForkConfig.Threshold((short) 9000, 1);
+    final var candidate =
+        new CandidateForkConfig(
+            "candidate",
+            OLYMPIA_V1.create(RERulesConfig.testingDefault()),
+            ImmutableSet.of(ignoredThreshold, threshold),
+            10L,
+            20L);
+    final var candidateForkId = CandidateForkVote.candidateForkId(candidate);
+
+    final var forksEpochStore = new InMemoryForksEpochStore(new InMemoryForksEpochStore.Store());
+
+    final var proofAtEpoch15 =
+        proofForCandidate(
+            15L, /* proof at epoch 15 */
+            votesFor(16L /* contains votes for epoch 16 */, candidate, threshold.requiredStake()));
+
+    forksEpochStore.storeForkVotingResult(new ForkVotingResult(13L, candidateForkId, (short) 7500));
+    assertTrue(Forks.testCandidate(candidate, proofAtEpoch15, forksEpochStore));
+  }
+
   private LedgerAndBFTProof proofForCandidate(
       long epoch, ImmutableSet<ForkVotingResult> forksVotingResults) {
     final var ledgerProof = mock(LedgerProof.class);

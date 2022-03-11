@@ -338,14 +338,17 @@ public final class Forks {
       do {
         final ForkVotingResult next = forkVotingResultsCursor.next();
         if (previousEpoch.isEmpty() || previousEpoch.get() + 1 == next.epoch()) {
+          // there's no gap: increment the threshold if it passes, or reset back to 0
           thresholdEpochsMap.replaceAll(
               (threshold, numEpochs) ->
                   next.stakePercentageVoted() >= threshold.requiredStake()
                       ? numEpochs + 1 // threshold passes: increment numEpochs
                       : 0); // threshold doesn't pass: reset to 0
         } else {
-          // there's a gap in fork voting results (no votes for the given epoch); reset the counters
-          thresholdEpochsMap.replaceAll((threshold, numEpochs) -> 0);
+          // there's a gap in fork voting results: re-initialize the counters
+          thresholdEpochsMap.replaceAll(
+              (threshold, numEpochs) ->
+                  next.stakePercentageVoted() >= threshold.requiredStake() ? 1 : 0);
         }
 
         if (next.epoch() >= candidateFork.minEpoch()
@@ -487,21 +490,25 @@ public final class Forks {
                                 : 0)));
 
     ForkVotingResult next = initialForkVotingResult;
-    long previousEpoch = next.epoch() - 1;
+    long previousEpoch;
     while (forkVotingResultsCursor.hasNext() && next.epoch() <= nextEpoch) {
+      previousEpoch = next.epoch();
+      next = forkVotingResultsCursor.next();
+      final var finalNextForClosure = next;
+
       if (next.epoch() != previousEpoch + 1) {
-        // there's a gap in fork voting results (no votes for the given epoch); reset the counters
-        thresholdEpochsMap.replaceAll((threshold, numEpochs) -> 0);
+        // there's a gap in fork voting results: re-initialize the counters
+        thresholdEpochsMap.replaceAll(
+            (threshold, numEpochs) ->
+                finalNextForClosure.stakePercentageVoted() >= threshold.requiredStake() ? 1 : 0);
       } else {
-        final var finalNextForClosure = next;
+        // there's no gap: increment the threshold if it passes, or reset back to 0
         thresholdEpochsMap.replaceAll(
             (threshold, numEpochs) ->
                 finalNextForClosure.stakePercentageVoted() >= threshold.requiredStake()
                     ? numEpochs + 1 // threshold passes: increment numEpochs
                     : 0); // threshold doesn't pass: reset to 0
       }
-      previousEpoch = next.epoch();
-      next = forkVotingResultsCursor.next();
     }
 
     return next.epoch() == nextEpoch // the cursor ended up right at the correct epoch
