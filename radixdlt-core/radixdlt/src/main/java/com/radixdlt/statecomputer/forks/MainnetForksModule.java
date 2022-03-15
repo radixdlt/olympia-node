@@ -64,6 +64,8 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.system.FeeTable;
@@ -117,8 +119,8 @@ public final class MainnetForksModule extends AbstractModule {
             500, // Two weeks worth of epochs for unstaking delay
             Amount.ofTokens(0), // No rewards in first epoch
             9800, // 98.00% threshold for completed proposals to get any rewards,
-            100 // 100 max validators
-            ));
+            100, // 100 max validators
+            MSG.maxLength()));
   }
 
   @ProvidesIntoSet
@@ -151,7 +153,7 @@ public final class MainnetForksModule extends AbstractModule {
             500, // Two weeks worth of epochs
             Amount.ofMicroTokens(2307700), // 2.3077XRD Rewards per proposal
             9800, // 98.00% threshold for completed proposals to get any rewards
-            100 // 100 max validators
-            ));
+            100, // 100 max validators
+            MSG.maxLength()));
   }
 }

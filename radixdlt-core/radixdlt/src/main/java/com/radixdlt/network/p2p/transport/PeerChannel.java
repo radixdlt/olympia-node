@@ -65,6 +65,8 @@
 package com.radixdlt.network.p2p.transport;
 
 import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
+import static com.radixdlt.utils.functional.Tuple.unitResult;
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
@@ -87,6 +89,7 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.RateCalculator;
 import com.radixdlt.utils.functional.Result;
+import com.radixdlt.utils.functional.Tuple.Unit;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -101,7 +104,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.SecureRandom;
 import java.time.Duration;
-import java.util.Objects;
 import java.util.Optional;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -155,33 +157,36 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
       Optional<RadixNodeUri> uri,
       SocketChannel nettyChannel,
       Optional<InetSocketAddress> remoteAddress) {
-    this.counters = Objects.requireNonNull(counters);
-    this.addressing = Objects.requireNonNull(addressing);
-    this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
-    this.uri = Objects.requireNonNull(uri);
-    uri.ifPresent(u -> this.remoteNodeId = u.getNodeId());
+    this.counters = requireNonNull(counters);
+    this.addressing = requireNonNull(addressing);
+    this.peerEventDispatcher = requireNonNull(peerEventDispatcher);
+    this.uri = requireNonNull(uri);
+
+    uri.map(RadixNodeUri::getNodeId).ifPresent(nodeId -> this.remoteNodeId = nodeId);
+
     this.authHandshaker =
         new AuthHandshaker(serialization, secureRandom, ecKeyOps, networkId, latestForkHash);
-    this.nettyChannel = Objects.requireNonNull(nettyChannel);
-    this.remoteAddress = Objects.requireNonNull(remoteAddress);
+    this.nettyChannel = requireNonNull(nettyChannel);
+    this.remoteAddress = requireNonNull(remoteAddress);
 
     this.isInitiator = uri.isPresent();
 
     this.inboundMessages =
         inboundMessageSink.onBackpressureBuffer(
             config.channelBufferSize(),
-            () -> {
-              this.counters.increment(SystemCounters.CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
-              final var logLevel =
-                  droppedMessagesRateLimiter.tryAcquire() ? Level.WARN : Level.TRACE;
-              if (log.isEnabled(logLevel)) {
-                log.log(logLevel, "TCP msg buffer overflow, dropping msg on {}", this);
-              }
-            },
+            this::onInboundMessageBufferOverflow,
             BackpressureOverflowStrategy.DROP_LATEST);
 
     if (this.nettyChannel.isActive()) {
       this.init();
+    }
+  }
+
+  private void onInboundMessageBufferOverflow() {
+    this.counters.increment(SystemCounters.CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
+    final var logLevel = droppedMessagesRateLimiter.tryAcquire() ? Level.WARN : Level.TRACE;
+    if (log.isEnabled(logLevel)) {
+      log.log(logLevel, "TCP msg buffer overflow, dropping msg on {}", this);
     }
   }
 
@@ -200,16 +205,14 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   }
 
   private void handleHandshakeData(ByteBuf data) throws IOException {
+    if (log.isTraceEnabled()) {
+      log.trace("Auth {} from {}", this.isInitiator ? "response" : "initiate", this);
+    }
+
     if (this.isInitiator) {
-      if (log.isTraceEnabled()) {
-        log.trace("Auth response from {}", this);
-      }
       final var handshakeResult = this.authHandshaker.handleResponseMessage(data);
       this.finalizeHandshake(handshakeResult);
     } else {
-      if (log.isTraceEnabled()) {
-        log.trace("Auth initiate from {}", this);
-      }
       final var result = this.authHandshaker.handleInitialMessage(data);
       this.write(Unpooled.wrappedBuffer(result.getFirst()));
       this.finalizeHandshake(result.getSecond());
@@ -290,6 +293,11 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
       // only send out event if peer was previously active
       this.peerEventDispatcher.dispatch(new PeerDisconnected(this));
     }
+
+    // we initiated connection, but handshake is not completed in time
+    if (prevState == ChannelState.AUTH_HANDSHAKE && this.isInitiator) {
+      this.peerEventDispatcher.dispatch(new PeerHandshakeFailed(this));
+    }
   }
 
   @Override
@@ -302,7 +310,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     this.nettyChannel.writeAndFlush(data);
   }
 
-  public Result<Object> send(byte[] data) {
+  public Result<Unit> send(byte[] data) {
     synchronized (this.lock) {
       if (this.state != ChannelState.ACTIVE) {
         return IO_ERROR.result();
@@ -316,7 +324,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
           }
           this.write(buf);
           this.outMessagesStats.tick();
-          return Result.ok(new Object());
+          return unitResult();
         } catch (IOException e) {
           return IO_ERROR.result();
         }

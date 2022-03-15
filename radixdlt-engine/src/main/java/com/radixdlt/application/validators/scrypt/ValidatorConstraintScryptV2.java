@@ -87,37 +87,20 @@ import java.util.Objects;
 
 public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 
-  private static class UpdatingValidatorHashMetadata implements ReducerState {
-    private final ValidatorSystemMetadata prevState;
-
-    private UpdatingValidatorHashMetadata(ValidatorSystemMetadata prevState) {
-      this.prevState = prevState;
-    }
-
+  private record UpdatingValidatorHashMetadata(ValidatorSystemMetadata prevState)
+      implements ReducerState {
     void update(ValidatorSystemMetadata next) throws ProcedureException {
-      if (!prevState.getValidatorKey().equals(next.getValidatorKey())) {
+      if (!prevState.validatorKey().equals(next.validatorKey())) {
         throw new ProcedureException("Invalid key");
       }
     }
   }
 
-  private static class UpdatingValidatorInfo implements ReducerState {
-    private final ValidatorMetaData prevState;
+  private record UpdatingValidatorInfo(ValidatorMetaData prevState) implements ReducerState {}
 
-    private UpdatingValidatorInfo(ValidatorMetaData prevState) {
-      this.prevState = prevState;
-    }
-  }
-
-  private static class UpdatingDelegationFlag implements ReducerState {
-    private final AllowDelegationFlag current;
-
-    private UpdatingDelegationFlag(AllowDelegationFlag current) {
-      this.current = current;
-    }
-
+  private record UpdatingDelegationFlag(AllowDelegationFlag current) implements ReducerState {
     void update(AllowDelegationFlag next) throws ProcedureException {
-      if (!current.getValidatorKey().equals(next.getValidatorKey())) {
+      if (!current.validatorKey().equals(next.validatorKey())) {
         throw new ProcedureException("Invalid key update");
       }
     }
@@ -137,8 +120,8 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
             },
             (s, buf) -> {
               REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeKey(buf, s.getValidatorKey());
-              REFieldSerialization.serializeFixedLengthBytes(buf, s.getData());
+              REFieldSerialization.serializeKey(buf, s.validatorKey());
+              REFieldSerialization.serializeFixedLengthBytes(buf, s.data());
             },
             REFieldSerialization::deserializeKey,
             (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
@@ -152,7 +135,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
                 new Authorization(
                     PermissionLevel.USER,
                     (r, c) -> {
-                      if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
+                      if (!c.key().map(d.validatorKey()::equals).orElse(false)) {
                         throw new AuthorizationException("Key does not match.");
                       }
                     }),
@@ -180,9 +163,9 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
             },
             (s, buf) -> {
               REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeKey(buf, s.getValidatorKey());
-              REFieldSerialization.serializeString(buf, s.getName());
-              REFieldSerialization.serializeString(buf, s.getUrl());
+              REFieldSerialization.serializeKey(buf, s.validatorKey());
+              REFieldSerialization.serializeString(buf, s.name());
+              REFieldSerialization.serializeString(buf, s.url());
             },
             buf -> REFieldSerialization.deserializeKey(buf),
             (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
@@ -196,7 +179,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
                 new Authorization(
                     PermissionLevel.USER,
                     (r, c) -> {
-                      if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
+                      if (!c.key().map(d.validatorKey()::equals).orElse(false)) {
                         throw new AuthorizationException("Key does not match.");
                       }
                     }),
@@ -208,11 +191,11 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
             ValidatorMetaData.class,
             u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
             (s, u, c, r) -> {
-              if (!Objects.equals(s.prevState.getValidatorKey(), u.getValidatorKey())) {
+              if (!Objects.equals(s.prevState.validatorKey(), u.validatorKey())) {
                 throw new ProcedureException(
                     String.format(
                         "validator addresses do not match: %s != %s",
-                        s.prevState.getValidatorKey(), u.getValidatorKey()));
+                        s.prevState.validatorKey(), u.validatorKey()));
               }
               return ReducerResult.complete();
             }));
@@ -233,7 +216,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
             },
             (s, buf) -> {
               REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeKey(buf, s.getValidatorKey());
+              REFieldSerialization.serializeKey(buf, s.validatorKey());
               buf.put((byte) (s.allowsDelegation() ? 1 : 0));
             },
             buf -> REFieldSerialization.deserializeKey(buf),
@@ -248,7 +231,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
                 new Authorization(
                     PermissionLevel.USER,
                     (r, c) -> {
-                      if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
+                      if (!c.key().map(d.validatorKey()::equals).orElse(false)) {
                         throw new AuthorizationException("Key does not match.");
                       }
                     }),

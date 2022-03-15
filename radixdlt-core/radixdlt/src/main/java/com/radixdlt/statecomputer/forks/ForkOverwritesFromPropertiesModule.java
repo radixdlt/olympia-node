@@ -119,7 +119,7 @@ public class ForkOverwritesFromPropertiesModule extends AbstractModule {
                       "Overwriting views of "
                           + c.getName()
                           + " from "
-                          + c.getEngineRulesConfig().getMaxRounds()
+                          + c.getEngineRulesConfig().maxRounds()
                           + " to "
                           + view);
                   c = c.withEngineRulesConfig(c.getEngineRulesConfig().overrideMaxRounds(view));

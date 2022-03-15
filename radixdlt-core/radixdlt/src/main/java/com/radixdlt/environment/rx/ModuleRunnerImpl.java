@@ -225,13 +225,14 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 
   private void shutdownAndAwaitTermination() {
     this.executorService.shutdown(); // Disable new tasks from being submitted
+
     try {
       // Wait a while for existing tasks to terminate
-      if (!this.executorService.awaitTermination(2, TimeUnit.SECONDS)) {
+      if (!this.executorService.awaitTermination(500, TimeUnit.MILLISECONDS)) {
         this.executorService.shutdownNow(); // Cancel currently executing tasks
         // Wait a while for tasks to respond to being cancelled
-        if (!this.executorService.awaitTermination(2, TimeUnit.SECONDS)) {
-          logger.error("Pool {}  did not terminate", this.threadName);
+        if (!this.executorService.awaitTermination(500, TimeUnit.MILLISECONDS)) {
+          System.err.println("Pool " + this.threadName + " did not terminate");
         }
       }
     } catch (InterruptedException ie) {

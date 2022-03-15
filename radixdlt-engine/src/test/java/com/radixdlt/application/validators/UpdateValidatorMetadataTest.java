@@ -64,6 +64,8 @@
 
 package com.radixdlt.application.validators;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
@@ -71,8 +73,6 @@ import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.validators.construction.UpdateValidatorMetadataConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.actions.CreateSystem;
-import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;

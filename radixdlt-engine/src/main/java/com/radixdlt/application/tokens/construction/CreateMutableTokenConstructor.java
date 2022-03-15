@@ -64,42 +64,39 @@
 
 package com.radixdlt.application.tokens.construction;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.CreateMutableToken;
 import java.nio.charset.StandardCharsets;
 
-public final class CreateMutableTokenConstructor implements ActionConstructor<CreateMutableToken> {
-  private final int maxSymbolLength;
-
-  public CreateMutableTokenConstructor(int maxSymbolLength) {
-    this.maxSymbolLength = maxSymbolLength;
-  }
+public record CreateMutableTokenConstructor(int maxSymbolLength)
+    implements ActionConstructor<CreateMutableToken> {
 
   @Override
   public void construct(CreateMutableToken action, TxBuilder txBuilder) throws TxBuilderException {
-    if (action.getSymbol().length() > maxSymbolLength) {
-      throw new SymbolLengthException(maxSymbolLength, action.getSymbol().length());
+    if (action.symbol().length() > maxSymbolLength) {
+      throw new SymbolLengthException(maxSymbolLength, action.symbol().length());
     }
 
-    final var reAddress = action.getResourceAddress();
+    final var reAddress = action.resourceAddress();
     txBuilder
         .toLowLevelBuilder()
-        .syscall(Syscall.READDR_CLAIM, action.getSymbol().getBytes(StandardCharsets.UTF_8));
+        .syscall(Syscall.READDR_CLAIM, action.symbol().getBytes(StandardCharsets.UTF_8));
     txBuilder.downREAddr(reAddress);
-    txBuilder.up(TokenResource.createMutableSupplyResource(reAddress, action.getOwner()));
+    txBuilder.up(TokenResource.createMutableSupplyResource(reAddress, action.owner()));
     txBuilder.up(
         new TokenResourceMetadata(
             reAddress,
-            action.getSymbol(),
-            action.getName(),
-            action.getDescription(),
-            action.getIconUrl(),
-            action.getTokenUrl()));
+            action.symbol(),
+            action.name(),
+            action.description(),
+            action.iconUrl(),
+            action.tokenUrl()));
     txBuilder.end();
   }
 }

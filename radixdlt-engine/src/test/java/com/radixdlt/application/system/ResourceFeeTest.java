@@ -64,6 +64,7 @@
 
 package com.radixdlt.application.system;
 
+import static com.radixdlt.atom.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
@@ -79,12 +80,6 @@ import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atom.actions.CreateSystem;
-import com.radixdlt.atom.actions.FeeReserveComplete;
-import com.radixdlt.atom.actions.FeeReservePut;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -164,7 +159,7 @@ public final class ResourceFeeTest {
             .construct(
                 TxnConstructionRequest.create()
                     .action(new FeeReservePut(accountAddr, Amount.ofTokens(1).toSubunits()))
-                    .action(new CreateMutableToken(tokDef)))
+                    .action(fromMutableTokenDefinition(tokDef)))
             .signAndBuild(key::sign);
 
     // Act
@@ -182,9 +177,9 @@ public final class ResourceFeeTest {
             .construct(
                 TxnConstructionRequest.create()
                     .action(new FeeReservePut(accountAddr, Amount.ofTokens(3).toSubunits()))
-                    .action(new CreateMutableToken(tokDef1))
-                    .action(new CreateMutableToken(tokDef2))
-                    .action(new CreateMutableToken(tokDef3)))
+                    .action(fromMutableTokenDefinition(tokDef1))
+                    .action(fromMutableTokenDefinition(tokDef2))
+                    .action(fromMutableTokenDefinition(tokDef3)))
             .signAndBuild(key::sign);
 
     // Act
@@ -201,11 +196,22 @@ public final class ResourceFeeTest {
                 TxnConstructionRequest.create()
                     .action(
                         new FeeReservePut(accountAddr, Amount.ofMicroTokens(999999).toSubunits()))
-                    .action(new CreateMutableToken(tokDef)))
+                    .action(fromMutableTokenDefinition(tokDef)))
             .signAndBuild(key::sign);
 
     // Act
     assertThatThrownBy(() -> this.engine.execute(List.of(create)))
         .hasRootCauseInstanceOf(DepletedFeeReserveException.class);
+  }
+
+  private static CreateMutableToken fromMutableTokenDefinition(MutableTokenDefinition def) {
+    return new CreateMutableToken(
+        def.getResourceAddress(),
+        def.getSymbol(),
+        def.getName(),
+        def.getDescription(),
+        def.getIconUrl(),
+        def.getTokenUrl(),
+        def.getOwner());
   }
 }

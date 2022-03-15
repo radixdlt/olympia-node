@@ -64,6 +64,8 @@
 
 package com.radixdlt.statecomputer.checkpoint;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.UnsignedBytes;
@@ -71,12 +73,6 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
-import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
@@ -93,6 +89,7 @@ import org.apache.logging.log4j.Logger;
 import org.radix.TokenIssuance;
 
 /** Generates a genesis atom */
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
   private static final Logger logger = LogManager.getLogger();
   private final ImmutableList<TokenIssuance> tokenIssuances;
@@ -150,9 +147,9 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
       stakeTokens.stream()
           .sorted(
               Comparator.<StakeTokens, byte[]>comparing(
-                      t -> t.from().getBytes(), UnsignedBytes.lexicographicalComparator())
+                      t -> t.fromAddr().getBytes(), UnsignedBytes.lexicographicalComparator())
                   .thenComparing(
-                      t -> t.from().getBytes(), UnsignedBytes.lexicographicalComparator())
+                      t -> t.fromAddr().getBytes(), UnsignedBytes.lexicographicalComparator())
                   .thenComparing(StakeTokens::amount))
           .forEach(actions::add);
 

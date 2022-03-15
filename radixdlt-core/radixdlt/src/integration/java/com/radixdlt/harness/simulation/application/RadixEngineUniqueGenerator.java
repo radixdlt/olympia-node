@@ -94,7 +94,8 @@ public class RadixEngineUniqueGenerator implements TxnGenerator {
     var builder =
         TxBuilder.newBuilder(
                 parser.getSubstateDeserialization(),
-                currentForkView.currentForkConfig().engineRules().getSerialization())
+                currentForkView.currentForkConfig().engineRules().serialization(),
+                255)
             .toLowLevelBuilder()
             .syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
             .virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())

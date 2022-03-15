@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.full_function_forks;
+package com.radixdlt.integration.steady_state.simulation.full_function_forks;
 
 import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
@@ -103,7 +103,8 @@ public final class MockedForksModule extends AbstractModule {
                 1,
                 Amount.zero(),
                 9800,
-                10));
+                10,
+                255));
   }
 
   @Override

@@ -64,6 +64,7 @@
 
 package com.radixdlt.integration.steady_state.simulation.full_function;
 
+import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.application.system.FeeTable;
@@ -128,7 +129,8 @@ public class OneOutOfBoundsTest {
                         1,
                         Amount.ofTokens(10),
                         9800,
-                        10)),
+                        10,
+                        MSG.maxLength())),
                 new ForksModule(),
                 new MainnetForksModule())
             .addNodeModule(MempoolConfig.asModule(1000, 10))

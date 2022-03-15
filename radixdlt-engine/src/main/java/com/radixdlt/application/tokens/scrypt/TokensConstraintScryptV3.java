@@ -65,7 +65,6 @@
 package com.radixdlt.application.tokens.scrypt;
 
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
-import com.radixdlt.application.tokens.ResourceCreatedEvent;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.application.tokens.state.TokensInAccount;
@@ -74,15 +73,8 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
-import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.DownProcedure;
-import com.radixdlt.constraintmachine.EndProcedure;
-import com.radixdlt.constraintmachine.ExecutionContext;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.UpProcedure;
-import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.constraintmachine.*;
+import com.radixdlt.constraintmachine.REEvent.ResourceCreatedEvent;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.ReservedSymbolException;
 import com.radixdlt.serialization.DeserializeException;
@@ -125,10 +117,10 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
             },
             (s, buf) -> {
               REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeREAddr(buf, s.getAddr());
+              REFieldSerialization.serializeREAddr(buf, s.addr());
               REFieldSerialization.serializeUInt256(buf, UInt256.ONE);
               REFieldSerialization.serializeBoolean(buf, s.isMutable());
-              REFieldSerialization.serializeOptionalKey(buf, s.getOwner());
+              REFieldSerialization.serializeOptionalKey(buf, s.optionalOwner());
             }));
 
     os.substate(
@@ -147,12 +139,12 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
             },
             (s, buf) -> {
               REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeREAddr(buf, s.getAddr());
-              REFieldSerialization.serializeString(buf, s.getSymbol());
-              REFieldSerialization.serializeString(buf, s.getName());
-              REFieldSerialization.serializeString(buf, s.getDescription());
-              REFieldSerialization.serializeString(buf, s.getUrl());
-              REFieldSerialization.serializeString(buf, s.getIconUrl());
+              REFieldSerialization.serializeREAddr(buf, s.addr());
+              REFieldSerialization.serializeString(buf, s.symbol());
+              REFieldSerialization.serializeString(buf, s.name());
+              REFieldSerialization.serializeString(buf, s.description());
+              REFieldSerialization.serializeString(buf, s.url());
+              REFieldSerialization.serializeString(buf, s.iconUrl());
             }));
 
     os.substate(
@@ -168,9 +160,9 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
             },
             (s, buf) -> {
               REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeREAddr(buf, s.getHoldingAddr());
-              REFieldSerialization.serializeREAddr(buf, s.getResourceAddr());
-              buf.put(s.getAmount().toByteArray());
+              REFieldSerialization.serializeREAddr(buf, s.holdingAddress());
+              REFieldSerialization.serializeREAddr(buf, s.resourceAddr());
+              buf.put(s.amount().toByteArray());
             }));
   }
 
@@ -195,12 +187,12 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 
     void metadata(TokenResourceMetadata metadata, ExecutionContext context)
         throws ProcedureException {
-      if (!metadata.getAddr().equals(tokenResource.getAddr())) {
+      if (!metadata.addr().equals(tokenResource.addr())) {
         throw new ProcedureException("Addresses don't match.");
       }
 
       var symbol = new String(arg, StandardCharsets.UTF_8);
-      if (!symbol.equals(metadata.getSymbol())) {
+      if (!symbol.equals(metadata.symbol())) {
         throw new ProcedureException("Symbols don't match.");
       }
       context.emitEvent(new ResourceCreatedEvent(symbol, tokenResource, metadata));
@@ -214,7 +206,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
             TokenResource.class,
             u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
             (s, u, c, r) -> {
-              if (!u.getAddr().equals(s.getAddr())) {
+              if (!u.addr().equals(s.getAddr())) {
                 throw new ProcedureException("Addresses don't match");
               }
 
@@ -230,7 +222,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
                 return ReducerResult.incomplete(new NeedMetadata(s.getArg(), u));
               }
 
-              if (!u.getGranularity().equals(UInt256.ONE)) {
+              if (!u.granularity().equals(UInt256.ONE)) {
                 throw new ProcedureException("Granularity must be one.");
               }
 
@@ -243,7 +235,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
             TokensInAccount.class,
             u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
             (s, u, c, r) -> {
-              if (!u.getResourceAddr().equals(s.tokenResource.getAddr())) {
+              if (!u.resourceAddr().equals(s.tokenResource.addr())) {
                 throw new ProcedureException("Addresses don't match.");
               }
               return ReducerResult.incomplete(new NeedMetadata(s.arg, s.tokenResource));
@@ -267,14 +259,14 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
             VoidReducerState.class,
             TokensInAccount.class,
             u -> {
-              if (u.getResourceAddr().isNativeToken()) {
+              if (u.resourceAddr().isNativeToken()) {
                 return new Authorization(PermissionLevel.SYSTEM, (r, c) -> {});
               }
 
               return new Authorization(
                   PermissionLevel.USER,
                   (r, c) -> {
-                    var tokenResource = r.loadResource(u.getResourceAddr());
+                    var tokenResource = r.loadResource(u.resourceAddr());
                     tokenResource.verifyMintAuthorization(c.key());
                   });
             },
@@ -328,7 +320,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
             TokensInAccount.class,
             u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
             (s, u, c, r) -> {
-              s.withdraw(u.getResourceAddr(), u.getAmount());
+              s.withdraw(u.resourceAddr(), u.amount());
               return ReducerResult.incomplete(s);
             }));
   }

@@ -99,43 +99,43 @@ public final class RERules {
     this.config = config;
   }
 
-  public RERulesVersion getVersion() {
+  public RERulesVersion version() {
     return version;
   }
 
-  public ConstraintMachineConfig getConstraintMachineConfig() {
+  public ConstraintMachineConfig constraintMachineConfig() {
     return constraintMachineConfig;
   }
 
-  public SubstateSerialization getSerialization() {
+  public SubstateSerialization serialization() {
     return serialization;
   }
 
-  public REConstructor getActionConstructors() {
+  public REConstructor actionConstructors() {
     return actionConstructors;
   }
 
-  public PostProcessor<LedgerAndBFTProof> getPostProcessor() {
+  public PostProcessor<LedgerAndBFTProof> postProcessor() {
     return postProcessor;
   }
 
-  public REParser getParser() {
+  public REParser parser() {
     return parser;
   }
 
-  public View getMaxRounds() {
-    return View.of(config.getMaxRounds());
+  public View maxRounds() {
+    return View.of(config.maxRounds());
   }
 
-  public OptionalInt getMaxSigsPerRound() {
-    return config.getMaxSigsPerRound();
+  public OptionalInt maxSigsPerRound() {
+    return config.maxSigsPerRound();
   }
 
-  public int getMaxValidators() {
-    return config.getMaxValidators();
+  public int maxValidators() {
+    return config.maxValidators();
   }
 
-  public RERulesConfig getConfig() {
+  public RERulesConfig config() {
     return config;
   }
 

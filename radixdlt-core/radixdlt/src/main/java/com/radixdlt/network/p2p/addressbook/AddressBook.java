@@ -157,31 +157,30 @@ public final class AddressBook {
   // filtering was added
   private void cleanup() {
     final var cleanedUpEntries = new ImmutableMap.Builder<NodeId, AddressBookEntry>();
-    this.knownPeers
-        .values()
-        .forEach(
-            entry -> {
-              final var filteredKnownAddresses =
-                  entry.getKnownAddresses().stream()
-                      .filter(addr -> sameNetworkHrp(addr.getUri()))
-                      .collect(ImmutableSet.toImmutableSet());
-
-              if (filteredKnownAddresses.isEmpty() && !entry.isBanned()) {
-                // there are no known addresses and no ban info for peer so just remove it
-                this.persistence.removeEntry(entry.getNodeId());
-              } else if (filteredKnownAddresses.size() != entry.getKnownAddresses().size()) {
-                // some addresses got filtered out, need to persist a new entry
-                final var updatedEntry =
-                    new AddressBookEntry(
-                        entry.getNodeId(), entry.bannedUntil(), filteredKnownAddresses);
-                cleanedUpEntries.put(entry.getNodeId(), updatedEntry);
-                persistEntry(updatedEntry);
-              } else {
-                cleanedUpEntries.put(entry.getNodeId(), entry);
-              }
-            });
+    this.knownPeers.values().forEach(entry -> cleanupAddressBookEntry(entry, cleanedUpEntries));
     this.knownPeers.clear();
     this.knownPeers.putAll(cleanedUpEntries.build());
+  }
+
+  private void cleanupAddressBookEntry(
+      AddressBookEntry entry, ImmutableMap.Builder<NodeId, AddressBookEntry> cleanedUpEntries) {
+    final var filteredKnownAddresses =
+        entry.getKnownAddresses().stream()
+            .filter(addr -> sameNetworkHrp(addr.getUri()))
+            .collect(ImmutableSet.toImmutableSet());
+
+    if (filteredKnownAddresses.isEmpty() && !entry.isBanned()) {
+      // there are no known addresses and no ban info for peer so just remove it
+      this.persistence.removeEntry(entry.getNodeId());
+    } else if (filteredKnownAddresses.size() != entry.getKnownAddresses().size()) {
+      // some addresses got filtered out, need to persist a new entry
+      final var updatedEntry =
+          new AddressBookEntry(entry.getNodeId(), entry.bannedUntil(), filteredKnownAddresses);
+      cleanedUpEntries.put(entry.getNodeId(), updatedEntry);
+      persistEntry(updatedEntry);
+    } else {
+      cleanedUpEntries.put(entry.getNodeId(), entry);
+    }
   }
 
   public void addUncheckedPeers(Set<RadixNodeUri> peers) {
@@ -189,22 +188,19 @@ public final class AddressBook {
       peers.stream()
           .filter(not(uri -> uri.getNodeId().equals(this.self.getNodeId())))
           .filter(this::sameNetworkHrp)
-          .forEach(
-              uri -> {
-                final var maybeExistingEntry = this.knownPeers.get(uri.getNodeId());
-                if (maybeExistingEntry == null) {
-                  final var newEntry = AddressBookEntry.create(uri);
-                  this.knownPeers.put(uri.getNodeId(), newEntry);
-                  persistEntry(newEntry);
-                } else {
-                  final var updatedEntry =
-                      maybeExistingEntry.cleanupExpiredBlacklsitedUris().addUriIfNotExists(uri);
-                  if (!updatedEntry.equals(maybeExistingEntry)) {
-                    this.knownPeers.put(uri.getNodeId(), updatedEntry);
-                    persistEntry(updatedEntry);
-                  }
-                }
-              });
+          .forEach(this::addUncheckedPeer);
+    }
+  }
+
+  private void addUncheckedPeer(RadixNodeUri uri) {
+    final var maybeExistingEntry = this.knownPeers.get(uri.getNodeId());
+    final var newOrUpdatedEntry =
+        maybeExistingEntry == null
+            ? AddressBookEntry.create(uri)
+            : maybeExistingEntry.cleanupExpiredBlacklsitedUris().addUriIfNotExists(uri);
+
+    if (!newOrUpdatedEntry.equals(maybeExistingEntry)) {
+      upsertAddressBookEntry(uri.getNodeId(), newOrUpdatedEntry);
     }
   }
 
@@ -229,8 +225,42 @@ public final class AddressBook {
   }
 
   public void addOrUpdatePeerWithSuccessfulConnection(RadixNodeUri radixNodeUri) {
+    this.cleanupPeerEntriesFromRemoteHostPort(radixNodeUri.getHost(), radixNodeUri.getPort());
     this.addOrUpdatePeerWithLatestConnectionStatus(radixNodeUri, LatestConnectionStatus.SUCCESS);
     this.addressEntryComparator.resetFailures(radixNodeUri);
+  }
+
+  private void cleanupPeerEntriesFromRemoteHostPort(String host, int port) {
+    synchronized (lock) {
+      for (var entry : knownPeers.entrySet()) {
+        calculateUpdatedEntry(entry.getValue(), host, port)
+            .ifPresent(updatedEntry -> upsertAddressBookEntry(entry.getKey(), updatedEntry));
+      }
+    }
+  }
+
+  private Optional<AddressBookEntry> calculateUpdatedEntry(
+      AddressBookEntry inputEntry, String host, int port) {
+
+    var existingAddresses = inputEntry.getKnownAddresses();
+    var filteredAddresses = filterMatchingAddresses(existingAddresses, host, port);
+
+    if (filteredAddresses.size() == existingAddresses.size()) {
+      return Optional.empty();
+    }
+
+    return Optional.of(inputEntry.withReplacedKnownAddresses(filteredAddresses));
+  }
+
+  private ImmutableSet<PeerAddressEntry> filterMatchingAddresses(
+      ImmutableSet<PeerAddressEntry> knownAddresses, String host, int port) {
+    return knownAddresses.stream()
+        .filter(peerAddress -> doesNotMatchHostAndPort(peerAddress, host, port))
+        .collect(ImmutableSet.toImmutableSet());
+  }
+
+  private boolean doesNotMatchHostAndPort(PeerAddressEntry peerAddress, String host, int port) {
+    return peerAddress.getUri().getPort() != port || !peerAddress.getUri().getHost().equals(host);
   }
 
   public void addOrUpdatePeerWithFailedConnection(RadixNodeUri radixNodeUri) {
@@ -242,20 +272,26 @@ public final class AddressBook {
       RadixNodeUri radixNodeUri, LatestConnectionStatus latestConnectionStatus) {
     synchronized (lock) {
       final var maybeExistingEntry = this.knownPeers.get(radixNodeUri.getNodeId());
-      if (maybeExistingEntry == null) {
-        final var newEntry =
-            AddressBookEntry.createWithLatestConnectionStatus(radixNodeUri, latestConnectionStatus);
-        this.knownPeers.put(radixNodeUri.getNodeId(), newEntry);
-        persistEntry(newEntry);
-      } else {
-        final var updatedEntry =
-            maybeExistingEntry
-                .cleanupExpiredBlacklsitedUris()
-                .withLatestConnectionStatusForUri(radixNodeUri, latestConnectionStatus);
-        this.knownPeers.put(radixNodeUri.getNodeId(), updatedEntry);
-        persistEntry(updatedEntry);
-      }
+      final var entry =
+          calculateNewOrUpdatedEntry(radixNodeUri, latestConnectionStatus, maybeExistingEntry);
+      upsertAddressBookEntry(radixNodeUri.getNodeId(), entry);
     }
+  }
+
+  private void upsertAddressBookEntry(NodeId nodeId, AddressBookEntry entry) {
+    this.knownPeers.put(nodeId, entry);
+    persistEntry(entry);
+  }
+
+  private AddressBookEntry calculateNewOrUpdatedEntry(
+      RadixNodeUri radixNodeUri,
+      LatestConnectionStatus latestConnectionStatus,
+      AddressBookEntry maybeExistingEntry) {
+    return maybeExistingEntry == null
+        ? AddressBookEntry.createWithLatestConnectionStatus(radixNodeUri, latestConnectionStatus)
+        : maybeExistingEntry
+            .cleanupExpiredBlacklsitedUris()
+            .withLatestConnectionStatusForUri(radixNodeUri, latestConnectionStatus);
   }
 
   public Stream<RadixNodeUri> bestCandidatesToConnect() {
@@ -304,18 +340,14 @@ public final class AddressBook {
     synchronized (lock) {
       final var blacklistUntil = Instant.now().plus(Duration.ofMinutes(30));
       final var maybeExistingEntry = this.knownPeers.get(uri.getNodeId());
-      if (maybeExistingEntry == null) {
-        final var newEntry = AddressBookEntry.createBlacklisted(uri, blacklistUntil);
-        this.knownPeers.put(uri.getNodeId(), newEntry);
-        persistEntry(newEntry);
-      } else {
-        final var updatedEntry =
-            maybeExistingEntry
-                .cleanupExpiredBlacklsitedUris()
-                .withBlacklistedUri(uri, blacklistUntil);
-        this.knownPeers.put(uri.getNodeId(), updatedEntry);
-        persistEntry(updatedEntry);
-      }
+      final var newOrUpdatedEntry =
+          maybeExistingEntry == null
+              ? AddressBookEntry.createBlacklisted(uri, blacklistUntil)
+              : maybeExistingEntry
+                  .cleanupExpiredBlacklsitedUris()
+                  .withBlacklistedUri(uri, blacklistUntil);
+
+      upsertAddressBookEntry(uri.getNodeId(), newOrUpdatedEntry);
     }
   }
 

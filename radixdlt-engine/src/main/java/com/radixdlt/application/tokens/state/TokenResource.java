@@ -64,28 +64,23 @@
 
 package com.radixdlt.application.tokens.state;
 
+import static java.util.Objects.requireNonNull;
+
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
-import java.util.Objects;
 import java.util.Optional;
 
 /** Particle representing a fixed supply token definition */
-public final class TokenResource implements ResourceData {
-  private final REAddr addr;
-  private final UInt256 granularity;
-  private final boolean isMutable;
-  private final ECPublicKey owner;
-
-  public TokenResource(REAddr addr, UInt256 granularity, boolean isMutable, ECPublicKey owner) {
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+public record TokenResource(REAddr addr, UInt256 granularity, boolean isMutable, ECPublicKey owner)
+    implements ResourceData {
+  public TokenResource {
     if (!isMutable && owner != null) {
       throw new IllegalArgumentException("Can't have fixed supply and minter");
     }
-    this.addr = Objects.requireNonNull(addr);
-    this.granularity = granularity;
-    this.isMutable = isMutable;
-    this.owner = owner;
+    requireNonNull(addr);
   }
 
   public static TokenResource createFixedSupplyResource(REAddr addr) {
@@ -97,58 +92,18 @@ public final class TokenResource implements ResourceData {
   }
 
   public void verifyMintAuthorization(Optional<ECPublicKey> key) throws AuthorizationException {
-    if (!key.flatMap(p -> getOwner().map(p::equals)).orElse(false)) {
+    if (!key.flatMap(p -> optionalOwner().map(p::equals)).orElse(false)) {
       throw new AuthorizationException("Key not authorized: " + key);
     }
   }
 
   public void verifyBurnAuthorization(Optional<ECPublicKey> key) throws AuthorizationException {
-    if (!key.flatMap(p -> getOwner().map(p::equals)).orElse(false)) {
+    if (!key.flatMap(p -> optionalOwner().map(p::equals)).orElse(false)) {
       throw new AuthorizationException("Key not authorized: " + key);
     }
   }
 
-  public UInt256 getGranularity() {
-    return granularity;
-  }
-
-  public Optional<ECPublicKey> getOwner() {
+  public Optional<ECPublicKey> optionalOwner() {
     return Optional.ofNullable(owner);
-  }
-
-  public boolean isMutable() {
-    return isMutable;
-  }
-
-  @Override
-  public REAddr getAddr() {
-    return addr;
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{addr=%s granularity=%s isMutable=%s owner=%s}",
-        getClass().getSimpleName(), this.addr, this.granularity, isMutable, owner);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof TokenResource)) {
-      return false;
-    }
-    TokenResource that = (TokenResource) o;
-    return Objects.equals(addr, that.addr)
-        && Objects.equals(this.granularity, that.granularity)
-        && this.isMutable == that.isMutable
-        && Objects.equals(owner, that.owner);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(addr, granularity, isMutable, owner);
   }
 }

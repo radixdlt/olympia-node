@@ -64,6 +64,9 @@
 
 package com.radixdlt.integration.targeted.statemachine;
 
+import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
+
 import com.google.common.base.Stopwatch;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -71,7 +74,6 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
@@ -83,11 +85,6 @@ import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.NextEpoch;
-import com.radixdlt.atom.actions.NextRound;
-import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -96,6 +93,7 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
@@ -169,8 +167,8 @@ public class LargeEpochChangeTest {
                 150, // Two weeks worth of epochs
                 Amount.ofTokens(10), // Rewards per proposal
                 9800, // 98.00% threshold for completed proposals to get any rewards
-                100 // 100 max validators
-                )),
+                100, // 100 max validators
+                MSG.maxLength())),
         new ForksModule(),
         new MainnetForksModule(),
         new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
@@ -295,8 +293,8 @@ public class LargeEpochChangeTest {
     sut.deleteBranches();
     var nextValidatorSet =
         result.getProcessedTxn().getEvents().stream()
-            .filter(NextValidatorSetEvent.class::isInstance)
-            .map(NextValidatorSetEvent.class::cast)
+            .filter(REEvent.NextValidatorSetEvent.class::isInstance)
+            .map(REEvent.NextValidatorSetEvent.class::cast)
             .findFirst()
             .map(
                 e ->
@@ -305,7 +303,7 @@ public class LargeEpochChangeTest {
                             .map(
                                 v ->
                                     BFTValidator.from(
-                                        BFTNode.create(v.getValidatorKey()), v.getAmount()))));
+                                        BFTNode.create(v.validatorKey()), v.amount()))));
     var stateUpdates = result.getProcessedTxn().stateUpdates().count();
     construction.stop();
     logger.info(

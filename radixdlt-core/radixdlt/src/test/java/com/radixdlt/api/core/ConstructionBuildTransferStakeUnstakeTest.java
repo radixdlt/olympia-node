@@ -249,8 +249,8 @@ public final class ConstructionBuildTransferStakeUnstakeTest extends ApiTest {
             forks
                 .genesisFork()
                 .engineRules()
-                .getConfig()
-                .getMinimumStake()
+                .config()
+                .minimumStake()
                 .toSubunits()
                 .subtract(UInt128.ONE),
             coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),

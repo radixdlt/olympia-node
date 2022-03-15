@@ -64,5 +64,215 @@
 
 package com.radixdlt.atom;
 
-/** Marker interface for RadixEngine actions. */
-public interface TxAction {}
+import static com.radixdlt.utils.Strings.asEmptyIfNull;
+import static java.util.Objects.requireNonNull;
+
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.UInt256;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.function.LongFunction;
+
+/** RadixEngine actions. */
+public sealed interface TxAction {
+  record BurnToken(REAddr resourceAddr, REAddr fromAddr, UInt256 amount) implements TxAction {
+    public BurnToken {
+      ensureNonZeroAmount(amount);
+    }
+  }
+
+  record CreateFixedToken(
+      REAddr resourceAddr,
+      REAddr accountAddr,
+      String symbol,
+      String name,
+      String description,
+      String iconUrl,
+      String tokenUrl,
+      UInt256 supply)
+      implements TxAction {
+    public CreateFixedToken {
+      ensureResourceAddressIsHashedKey(resourceAddr);
+      ensureNonZeroSupply(supply);
+      requireNonNull(accountAddr);
+      requireNonNull(symbol);
+      requireNonNull(name);
+      requireNonNull(description);
+      requireNonNull(iconUrl);
+      requireNonNull(tokenUrl);
+    }
+  }
+
+  record CreateMutableToken(
+      REAddr resourceAddress,
+      String symbol,
+      String name,
+      String description,
+      String iconUrl,
+      String tokenUrl,
+      ECPublicKey owner)
+      implements TxAction {
+    public CreateMutableToken(
+        REAddr resourceAddress,
+        String symbol,
+        String name,
+        String description,
+        String iconUrl,
+        String tokenUrl,
+        ECPublicKey owner) {
+      this.resourceAddress = resourceAddress;
+      this.symbol = symbol.toLowerCase();
+      this.owner = owner;
+
+      this.name = asEmptyIfNull(name);
+      this.description = asEmptyIfNull(description);
+      this.iconUrl = asEmptyIfNull(iconUrl);
+      this.tokenUrl = asEmptyIfNull(tokenUrl);
+    }
+  }
+
+  record CreateSystem(long timestamp) implements TxAction {}
+
+  record FeeReserveComplete(REAddr toAddr) implements TxAction {
+    public FeeReserveComplete {
+      ensureAddressIsAccount(toAddr);
+    }
+  }
+
+  record FeeReservePut(REAddr fromAddr, UInt256 amount) implements TxAction {}
+
+  record FeeReserveTake(REAddr toAddr, UInt256 amount) implements TxAction {}
+
+  record MintToken(REAddr resourceAddr, REAddr toAddr, UInt256 amount) implements TxAction {
+    public MintToken {
+      ensureNonZeroAmount(amount);
+    }
+  }
+
+  record NextEpoch(long timestamp) implements TxAction {}
+
+  record NextRound(
+      long view, boolean isTimeout, long timestamp, LongFunction<ECPublicKey> leaderMapping)
+      implements TxAction {}
+
+  record RegisterValidator(ECPublicKey validatorKey) implements TxAction {
+    @Override
+    public String toString() {
+      return String.format("%s{key=%s}", this.getClass().getSimpleName(), validatorKey.toHex());
+    }
+  }
+
+  record SplitToken(REAddr rri, REAddr userAcct, UInt256 minSize) implements TxAction {}
+
+  record StakeTokens(REAddr fromAddr, ECPublicKey toDelegate, UInt256 amount) implements TxAction {
+    public StakeTokens {
+      ensureNonZeroAmount(amount);
+    }
+  }
+
+  record TransferToken(REAddr resourceAddr, REAddr fromAddr, REAddr toAddr, UInt256 amount)
+      implements TxAction {
+    public TransferToken {
+      ensureNonZeroAmount(amount);
+    }
+  }
+
+  record UnregisterValidator(ECPublicKey validatorKey) implements TxAction {
+    public UnregisterValidator {
+      requireNonNull(validatorKey);
+    }
+  }
+
+  record UnstakeOwnership(REAddr accountAddr, ECPublicKey fromDelegate, UInt256 amount)
+      implements TxAction {
+    public UnstakeOwnership {
+      ensureNonZeroAmount(amount);
+    }
+  }
+
+  record UnstakeTokens(ECPublicKey fromDelegate, REAddr accountAddr, UInt256 amount)
+      implements TxAction {
+    public UnstakeTokens {
+      ensureNonZeroAmount(amount);
+    }
+  }
+
+  record UpdateAllowDelegationFlag(ECPublicKey validatorKey, boolean allowDelegation)
+      implements TxAction {}
+
+  /**
+   * @see com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt for details
+   */
+  record UpdateValidatorFee(ECPublicKey validatorKey, int feePercentage) implements TxAction {}
+
+  record UpdateValidatorMetadata(ECPublicKey validatorKey, String name, String url)
+      implements TxAction {
+    public UpdateValidatorMetadata {
+      requireNonNull(validatorKey);
+    }
+  }
+
+  record UpdateValidatorOwner(ECPublicKey validatorKey, REAddr ownerAddress) implements TxAction {}
+
+  record UpdateValidatorSystemMetadata(ECPublicKey validatorKey, byte[] bytes) implements TxAction {
+    public UpdateValidatorSystemMetadata {
+      requireNonNull(validatorKey);
+    }
+
+    // Special case - class contains array,
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+
+      return (o instanceof UpdateValidatorSystemMetadata that)
+          && validatorKey.equals(that.validatorKey)
+          && Arrays.equals(bytes, that.bytes);
+    }
+
+    @Override
+    public int hashCode() {
+      int result = Objects.hash(validatorKey);
+      result = 31 * result + Arrays.hashCode(bytes);
+      return result;
+    }
+
+    @Override
+    public String toString() {
+      return String.format(
+          "%s{key=%s, bytes=%s}",
+          this.getClass().getSimpleName(),
+          validatorKey.toHex(),
+          bytes == null ? "null" : Bytes.toHexString(bytes));
+    }
+  }
+
+  static void ensureAddressIsAccount(REAddr toAddr) {
+    if (!toAddr.isAccount()) {
+      throw new IllegalArgumentException("Address must be an account");
+    }
+  }
+
+  static void ensureResourceAddressIsHashedKey(REAddr resourceAddr) {
+    if (resourceAddr.getType() != REAddr.REAddrType.HASHED_KEY) {
+      throw new IllegalArgumentException("Invalid resource address.");
+    }
+  }
+
+  static void ensureNonZeroAmount(UInt256 amount) {
+    ensureNonZeroValue(amount, "Amount");
+  }
+
+  static void ensureNonZeroSupply(UInt256 supply) {
+    ensureNonZeroValue(supply, "Supply");
+  }
+
+  static void ensureNonZeroValue(UInt256 value, String name) {
+    if (value.isZero()) {
+      throw new IllegalArgumentException(name + " must be > 0.");
+    }
+  }
+}

@@ -96,14 +96,14 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
     }
 
     void update(ValidatorOwnerCopy update) throws ProcedureException {
-      if (!update.getValidatorKey().equals(validatorKey)) {
+      if (!update.validatorKey().equals(validatorKey)) {
         throw new ProcedureException("Invalid key update");
       }
 
-      var expectedEpoch = epochData.getEpoch() + 1;
-      if (update.getEpochUpdate().orElseThrow() != expectedEpoch) {
+      var expectedEpoch = epochData.epoch() + 1;
+      if (update.epochUpdate().orElseThrow() != expectedEpoch) {
         throw new ProcedureException(
-            "Expected epoch to be " + expectedEpoch + " but is " + update.getEpochUpdate());
+            "Expected epoch to be " + expectedEpoch + " but is " + update.epochUpdate());
       }
     }
   }
@@ -136,9 +136,9 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
             },
             (s, buf) -> {
               REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeOptionalLong(buf, s.getEpochUpdate());
-              REFieldSerialization.serializeKey(buf, s.getValidatorKey());
-              REFieldSerialization.serializeREAddr(buf, s.getOwner());
+              REFieldSerialization.serializeOptionalLong(buf, s.epochUpdate());
+              REFieldSerialization.serializeKey(buf, s.validatorKey());
+              REFieldSerialization.serializeREAddr(buf, s.owner());
             },
             buf -> REFieldSerialization.deserializeKey(buf),
             (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
@@ -152,12 +152,12 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
                 new Authorization(
                     PermissionLevel.USER,
                     (r, c) -> {
-                      if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
+                      if (!c.key().map(d.validatorKey()::equals).orElse(false)) {
                         throw new AuthorizationException("Key does not match.");
                       }
                     }),
             (d, s, r, c) ->
-                ReducerResult.incomplete(new UpdatingOwnerNeedToReadEpoch(d.getValidatorKey()))));
+                ReducerResult.incomplete(new UpdatingOwnerNeedToReadEpoch(d.validatorKey()))));
 
     os.procedure(
         new ReadProcedure<>(

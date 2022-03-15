@@ -152,7 +152,7 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
   @Override
   public void execute(TxBuilder txBuilder) throws TxBuilderException {
     final var configSupplier =
-        Suppliers.memoize(() -> currentForkView.currentForkConfig().engineRules().getConfig());
+        Suppliers.memoize(() -> currentForkView.currentForkConfig().engineRules().config());
     for (var operationGroup : this.operationGroups) {
       for (var operation : operationGroup) {
         execute(operation, txBuilder, configSupplier);
@@ -161,7 +161,7 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
     }
 
     if (this.message != null) {
-      txBuilder.message(Bytes.fromHexString(message));
+      txBuilder.message(Bytes.fromHexString(this.message));
     }
   }
 }

@@ -65,43 +65,11 @@
 package com.radixdlt.application.validators.state;
 
 import com.radixdlt.crypto.ECPublicKey;
-import java.util.Objects;
 
-public final class AllowDelegationFlag implements ValidatorData {
-  private final ECPublicKey validatorKey;
-  private final boolean allowDelegation;
-
-  public AllowDelegationFlag(ECPublicKey validatorKey, boolean allowDelegation) {
-    this.validatorKey = validatorKey;
-    this.allowDelegation = allowDelegation;
-  }
+public record AllowDelegationFlag(ECPublicKey validatorKey, boolean allowsDelegation)
+    implements ValidatorData {
 
   public static AllowDelegationFlag createVirtual(ECPublicKey validatorKey) {
     return new AllowDelegationFlag(validatorKey, false);
-  }
-
-  @Override
-  public ECPublicKey getValidatorKey() {
-    return validatorKey;
-  }
-
-  public boolean allowsDelegation() {
-    return allowDelegation;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(validatorKey, allowDelegation);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof AllowDelegationFlag)) {
-      return false;
-    }
-
-    var other = (AllowDelegationFlag) o;
-    return Objects.equals(this.validatorKey, other.validatorKey)
-        && this.allowDelegation == other.allowDelegation;
   }
 }
