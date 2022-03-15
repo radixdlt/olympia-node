@@ -226,8 +226,9 @@ public final class RadixEngineStateComputer implements StateComputer {
         .forEach(
             txn -> {
               try {
-                addToMempool(txn);
-              } catch (MempoolRejectedException ignored) {
+                addToMempool(txn, origin);
+              } catch (MempoolRejectedException ex) {
+                log.debug("Txn rejected from the mempool", ex);
               }
             });
   }
