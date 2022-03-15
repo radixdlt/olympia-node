@@ -65,9 +65,12 @@
 package com.radixdlt.network.p2p;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
+import com.radixdlt.network.p2p.test.P2PTestNetworkRunner.TestCounters;
+import com.radixdlt.networks.Network;
 import java.time.Duration;
 import java.util.Set;
 import org.junit.After;
@@ -208,5 +211,69 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
     // assert connection closed
     assertEquals(0L, testNetworkRunner.peerManager(0).activeChannels().size());
     assertEquals(0L, testNetworkRunner.peerManager(1).activeChannels().size());
+  }
+
+  @Test
+  public void should_try_more_than_one_peer_address_to_connect() throws Exception {
+    final var props = defaultProperties();
+    setupTestRunner(2, props);
+
+    final var validUri = uriOfNode(1);
+    final var invalidPortOffset =
+        20; /* just to be sure that it's not assigned to any other peer in the test network */
+    final var invalidUri1 = copyWithPortOffset(validUri, invalidPortOffset);
+    final var invalidUri2 = copyWithPortOffset(validUri, invalidPortOffset + 1);
+    final var invalidUri3 = copyWithPortOffset(validUri, invalidPortOffset + 2);
+
+    testNetworkRunner
+        .addressBook(0)
+        .addUncheckedPeers(Set.of(invalidUri1, invalidUri2, invalidUri3));
+
+    final var channelFuture1 =
+        testNetworkRunner.peerManager(0).findOrCreateChannel(uriOfNode(1).getNodeId());
+    processAll();
+
+    /* the connection failed and 3 attempts were made (3 URIs tried) */
+    assertTrue(channelFuture1.isCompletedExceptionally());
+    assertEquals(
+        3, testNetworkRunner.getInstance(0, TestCounters.class).outboundChannelsBootstrapped);
+
+    /* try same thing again */
+    final var channelFuture2 =
+        testNetworkRunner.peerManager(0).findOrCreateChannel(uriOfNode(1).getNodeId());
+    processAll();
+
+    /* still failing but no more connect attempts as URIs got blacklisted previously */
+    assertTrue(channelFuture2.isCompletedExceptionally());
+    assertEquals(
+        3, testNetworkRunner.getInstance(0, TestCounters.class).outboundChannelsBootstrapped);
+
+    /* add some more invalid URIs and a valid one */
+    final var invalidUri4 = copyWithPortOffset(validUri, invalidPortOffset + 3);
+    final var invalidUri5 = copyWithPortOffset(validUri, invalidPortOffset + 4);
+    final var invalidUri6 = copyWithPortOffset(validUri, invalidPortOffset + 5);
+
+    testNetworkRunner
+        .addressBook(0)
+        .addUncheckedPeers(Set.of(invalidUri4, invalidUri5, invalidUri6, validUri));
+
+    final var channelFuture3 =
+        testNetworkRunner.peerManager(0).findOrCreateChannel(uriOfNode(1).getNodeId());
+    processAll();
+
+    /* the connection succeeds and between 1-4 new connect attempts were made */
+    assertTrue(channelFuture3.isDone());
+    assertFalse(channelFuture3.isCompletedExceptionally());
+    final var channelsCounterAtTheEnd =
+        testNetworkRunner.getInstance(0, TestCounters.class).outboundChannelsBootstrapped;
+    assertTrue(channelsCounterAtTheEnd >= 4 && channelsCounterAtTheEnd <= 7);
+  }
+
+  private RadixNodeUri copyWithPortOffset(RadixNodeUri base, int portOffset) {
+    return RadixNodeUri.fromPubKeyAndAddress(
+        Network.MAINNET.getId(),
+        base.getNodeId().getPublicKey(),
+        base.getHost(),
+        base.getPort() + portOffset);
   }
 }
