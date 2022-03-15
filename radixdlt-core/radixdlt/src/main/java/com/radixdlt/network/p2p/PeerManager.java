@@ -89,6 +89,7 @@ import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.utils.Lists;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Tuple.Unit;
 import io.reactivex.rxjava3.core.Observable;
@@ -171,11 +172,7 @@ public final class PeerManager {
       final var nextAddr = remainingAddresses.get(0);
       final var channelFuture = connect(nextAddr);
       return channelFuture.exceptionallyCompose(
-          ex -> {
-            final var newRemainingAddresses =
-                remainingAddresses.stream().skip(1).collect(ImmutableList.toImmutableList());
-            return tryConnectWithRetries(newRemainingAddresses, triesLeft - 1);
-          });
+          ex -> tryConnectWithRetries(Lists.tail(remainingAddresses), triesLeft - 1));
     }
   }
 
