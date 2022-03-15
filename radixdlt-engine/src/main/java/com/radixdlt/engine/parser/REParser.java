@@ -178,7 +178,6 @@ public final class REParser {
     }
   }
 
-  @SuppressWarnings("rawtypes")
   public ParsedTxn parse(Txn txn) throws TxnParseException {
     UInt256 feePaid = null;
     ECDSASignature sig = null;
@@ -191,14 +190,9 @@ public final class REParser {
         throw new TxnParseException(parserState, "Signature must be last");
       }
 
-      int curPos = buf.position();
+      var curPos = buf.position();
       parserState.pos(curPos);
-      final REInstruction inst;
-      try {
-        inst = REInstruction.readFrom(parserState, buf);
-      } catch (Exception e) {
-        throw new TxnParseException(parserState, "Could not read instruction", e);
-      }
+      final var inst = readInstruction(parserState, buf);
       parserState.nextInstruction(inst);
 
       if (inst.isStateUpdate()) {
@@ -210,7 +204,7 @@ public final class REParser {
         parserState.header(inst.getData());
       } else if (inst.getMicroOp() == REInstruction.REMicroOp.SYSCALL) {
         try {
-          CallData callData = inst.getData();
+          var callData = inst.<CallData>getData();
           byte id = callData.get(0);
           var syscall =
               Syscall.of(id)
@@ -258,21 +252,25 @@ public final class REParser {
 
     parserState.finish();
 
-    final Pair<HashCode, ECDSASignature> payloadHashAndSig;
-    if (sig != null) {
-      var payloadHash = HashUtils.sha256(txn.getPayload(), 0, sigPosition); // This is a double hash
-      payloadHashAndSig = Pair.of(payloadHash, sig);
-
-    } else {
-      payloadHashAndSig = null;
-    }
-
     return new ParsedTxn(
         txn,
         feePaid,
         parserState.instructions,
         parserState.msg,
-        payloadHashAndSig,
+        sig == null ? null : Pair.of(calculatePayloadHash(txn, sigPosition), sig),
         parserState.disableResourceAllocAndDestroy);
+  }
+
+  private HashCode calculatePayloadHash(Txn txn, int sigPosition) {
+    return HashUtils.sha256(txn.getPayload(), 0, sigPosition); // This is a double hash
+  }
+
+  private REInstruction readInstruction(ParserState parserState, ByteBuffer buf)
+      throws TxnParseException {
+    try {
+      return REInstruction.readFrom(parserState, buf);
+    } catch (Exception e) {
+      throw new TxnParseException(parserState, "Could not read instruction", e);
+    }
   }
 }

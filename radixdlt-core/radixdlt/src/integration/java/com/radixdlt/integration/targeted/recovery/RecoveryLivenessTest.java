@@ -64,6 +64,7 @@
 
 package com.radixdlt.integration.targeted.recovery;
 
+import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ClassToInstanceMap;
@@ -276,7 +277,8 @@ public class RecoveryLivenessTest {
                 1,
                 Amount.ofTokens(10),
                 9800,
-                10)),
+                10,
+                MSG.maxLength())),
         new ForksModule(),
         new MainnetForksModule(),
         new PersistedNodeForTestingModule(),

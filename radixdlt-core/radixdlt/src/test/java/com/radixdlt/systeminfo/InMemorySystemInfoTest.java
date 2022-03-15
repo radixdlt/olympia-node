@@ -62,33 +62,92 @@
  * permissions under this License.
  */
 
-package com.radixdlt.atom.actions;
+package com.radixdlt.systeminfo;
 
-import com.radixdlt.atom.TxValidatorAction;
-import com.radixdlt.crypto.ECPublicKey;
-import java.util.Objects;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
-public class UpdateValidatorMetadata implements TxValidatorAction {
-  private final ECPublicKey validatorKey;
-  private final String name;
-  private final String url;
+import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.atom.TxAction;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.constraintmachine.REEvent;
+import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
+import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.REOutput;
+import com.radixdlt.utils.TypedMocks;
+import java.util.List;
+import java.util.Optional;
+import org.junit.Test;
 
-  public UpdateValidatorMetadata(ECPublicKey validatorKey, String name, String url) {
-    this.validatorKey = Objects.requireNonNull(validatorKey);
-    this.name = name;
-    this.url = url;
+public class InMemorySystemInfoTest {
+
+  @Test
+  public void if_validator_data_missing_then_retrieved_via_radix_engine() {
+    var self = BFTNode.random();
+    var radixEngine = TypedMocks.cmock(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() {});
+    var systemInfo = new InMemorySystemInfo(null, null, self, radixEngine);
+    var validatorBFTData = Optional.of(new ValidatorBFTDataEvent(self.getKey(), 10, 1));
+
+    when(radixEngine.read(any())).thenReturn(validatorBFTData);
+
+    var result = systemInfo.getValidatorBFTData();
+    var expected = Optional.of(new ValidatorBFTDataEvent(self.getKey(), 10, 1));
+
+    assertEquals(expected, result);
   }
 
-  @Override
-  public ECPublicKey validatorKey() {
-    return validatorKey;
+  @Test
+  public void radix_engine_is_not_invoked_on_subsequent_request() {
+    var self = BFTNode.random();
+    var radixEngine = TypedMocks.cmock(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() {});
+    var systemInfo = new InMemorySystemInfo(null, null, self, radixEngine);
+    var validatorBFTData = Optional.of(new ValidatorBFTDataEvent(self.getKey(), 10, 1));
+
+    System.out.println(new TxAction.CreateSystem(1L));
+
+    when(radixEngine.read(any())).thenReturn(validatorBFTData);
+
+    var result1 = systemInfo.getValidatorBFTData();
+    var expected = Optional.of(new ValidatorBFTDataEvent(self.getKey(), 10, 1));
+
+    assertEquals(expected, result1);
+
+    var result2 = systemInfo.getValidatorBFTData();
+
+    assertEquals(result1, result2);
+
+    verify(radixEngine).read(any());
   }
 
-  public String name() {
-    return name;
+  @Test
+  public void if_validator_data_present_then_radix_engine_is_not_invoked() {
+    var self = BFTNode.random();
+    var radixEngine = TypedMocks.cmock(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() {});
+    var systemInfo = new InMemorySystemInfo(null, null, self, radixEngine);
+
+    systemInfo.ledgerUpdateEventProcessor().process(createLedgerUpdate(self));
+
+    var result = systemInfo.getValidatorBFTData();
+    var expected = Optional.of(new ValidatorBFTDataEvent(self.getKey(), 10, 1));
+
+    assertEquals(expected, result);
+
+    verifyNoInteractions(radixEngine);
   }
 
-  public String url() {
-    return url;
+  private LedgerUpdate createLedgerUpdate(BFTNode self) {
+    var events = List.<REEvent>of(new ValidatorBFTDataEvent(self.getKey(), 10, 1));
+    var txn = new REProcessedTxn(null, null, null, events);
+    var output =
+        ImmutableClassToInstanceMap.<Object, REOutput>of(
+            REOutput.class, REOutput.create(List.of(txn)));
+
+    return new LedgerUpdate(mock(VerifiedTxnsAndProof.class), output);
   }
 }

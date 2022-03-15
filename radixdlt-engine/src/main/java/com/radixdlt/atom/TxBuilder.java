@@ -90,6 +90,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Function;
@@ -113,8 +114,10 @@ public final class TxBuilder {
   private TxBuilder(
       SubstateStore remoteSubstate,
       SubstateDeserialization deserialization,
-      SubstateSerialization serialization) {
-    this.lowLevelBuilder = TxLowLevelBuilder.newBuilder(serialization);
+      SubstateSerialization serialization,
+      int maxMessageLen) {
+    this.lowLevelBuilder =
+        TxLowLevelBuilder.newBuilder(serialization, OptionalInt.of(maxMessageLen));
     this.remoteSubstate = remoteSubstate;
     this.deserialization = deserialization;
     this.serialization = serialization;
@@ -123,13 +126,16 @@ public final class TxBuilder {
   public static TxBuilder newBuilder(
       SubstateStore remoteSubstate,
       SubstateDeserialization deserialization,
-      SubstateSerialization serialization) {
-    return new TxBuilder(remoteSubstate, deserialization, serialization);
+      SubstateSerialization serialization,
+      int maxMessageLen) {
+    return new TxBuilder(remoteSubstate, deserialization, serialization, maxMessageLen);
   }
 
   public static TxBuilder newBuilder(
-      SubstateDeserialization deserialization, SubstateSerialization serialization) {
-    return new TxBuilder(SubstateStore.empty(), deserialization, serialization);
+      SubstateDeserialization deserialization,
+      SubstateSerialization serialization,
+      int maxMessageLen) {
+    return new TxBuilder(SubstateStore.empty(), deserialization, serialization, maxMessageLen);
   }
 
   public TxLowLevelBuilder toLowLevelBuilder() {
@@ -191,6 +197,7 @@ public final class TxBuilder {
   }
 
   // For mempool filler
+  @SuppressWarnings("unchecked")
   public <T extends Particle> T downSubstate(Class<T> particleClass, Predicate<T> particlePredicate)
       throws TxBuilderException {
     var localSubstate =
@@ -221,6 +228,7 @@ public final class TxBuilder {
     }
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends Particle> T findSystem(Class<T> substateClass) {
     var typeByte = deserialization.classToByte(substateClass);
     var mapKey = SystemMapKey.ofSystem(typeByte);
@@ -241,6 +249,7 @@ public final class TxBuilder {
         .orElseThrow();
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends Particle> T find(Class<T> substateClass, Object key) throws TxBuilderException {
     var keyBytes = serialization.serializeKey(substateClass, key);
     var typeByte = deserialization.classToByte(substateClass);
@@ -283,6 +292,7 @@ public final class TxBuilder {
     }
   }
 
+  @SuppressWarnings("unchecked")
   private <T extends Particle> T readDownInternal(
       Class<T> substateClass, Object key, boolean down) {
     var keyBytes = serialization.serializeKey(substateClass, key);
@@ -327,6 +337,7 @@ public final class TxBuilder {
     return readDownInternal(substateClass, key, false);
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends Particle> T downSystem(Class<T> substateClass) {
     var typeByte = deserialization.classToByte(substateClass);
     var mapKey = SystemMapKey.ofSystem(typeByte);
@@ -346,6 +357,7 @@ public final class TxBuilder {
     }
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends Particle> T readSystem(Class<T> substateClass) {
     var typeByte = deserialization.classToByte(substateClass);
     var mapKey = SystemMapKey.ofSystem(typeByte);
@@ -387,6 +399,7 @@ public final class TxBuilder {
   }
 
   // FIXME: programmedInTxn is just a hack
+  @SuppressWarnings("unchecked")
   public <T extends Particle> CloseableCursor<T> readIndex(
       SubstateIndex<T> index, boolean programmedInTxn) {
     var comparator = UnsignedBytes.lexicographicalComparator().reversed();
@@ -451,6 +464,7 @@ public final class TxBuilder {
     };
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends Particle, U> U shutdownAll(
       SubstateIndex<T> index, Function<Iterator<T>, U> mapper) {
     try (var cursor = createRemoteSubstateCursor(index)) {
@@ -468,6 +482,7 @@ public final class TxBuilder {
     }
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends ResourceInBucket, X extends Exception> UInt256 downFungible(
       SubstateIndex<T> index,
       Predicate<T> particlePredicate,
@@ -482,7 +497,7 @@ public final class TxBuilder {
       }
       var resource = (T) p;
 
-      spent = spent.add(resource.getAmount());
+      spent = spent.add(resource.amount());
       localDown(l.getIndex());
 
       if (spent.compareTo(amount) >= 0) {
@@ -498,7 +513,7 @@ public final class TxBuilder {
           if (!particlePredicate.test(resource)) {
             continue;
           }
-          spent = spent.add(resource.getAmount());
+          spent = spent.add(resource.amount());
           down(SubstateId.fromBytes(raw.getId()));
           if (spent.compareTo(amount) >= 0) {
             return spent.subtract(amount);
@@ -528,7 +543,7 @@ public final class TxBuilder {
     var remainder =
         downFungible(
             index,
-            p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(feePayer),
+            p -> p.resourceAddr().isNativeToken() && p.holdingAddress().equals(feePayer),
             amount,
             exceptionSupplier);
     lowLevelBuilder.syscall(Syscall.FEE_RESERVE_PUT, amount);

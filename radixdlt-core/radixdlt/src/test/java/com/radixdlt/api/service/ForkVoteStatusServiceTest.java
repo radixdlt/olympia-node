@@ -159,7 +159,7 @@ public final class ForkVoteStatusServiceTest {
     final var substate =
         new ValidatorSystemMetadata(
             pubKey, CandidateForkVote.create(pubKey, forkConfig).payload().asBytes());
-    final var serializedSubstate = reRules.getSerialization().serialize(substate);
+    final var serializedSubstate = reRules.serialization().serialize(substate);
     return new RawSubstateBytes(new byte[] {}, serializedSubstate);
   }
 }

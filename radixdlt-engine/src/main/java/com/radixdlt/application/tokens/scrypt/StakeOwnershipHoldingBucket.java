@@ -82,9 +82,9 @@ public final class StakeOwnershipHoldingBucket implements ReducerState {
 
   public StakeOwnershipHoldingBucket(StakeOwnership stakeOwnership) {
     this(
-        stakeOwnership.getDelegateKey(),
-        stakeOwnership.getOwner(),
-        UInt384.from(stakeOwnership.getAmount()));
+        stakeOwnership.delegateKey(),
+        stakeOwnership.owner(),
+        UInt384.from(stakeOwnership.amount()));
   }
 
   public StakeOwnershipHoldingBucket(ECPublicKey delegate, REAddr accountAddr, UInt384 amount) {
@@ -103,13 +103,13 @@ public final class StakeOwnershipHoldingBucket implements ReducerState {
   }
 
   public void depositOwnership(StakeOwnership stakeOwnership) throws MismatchException {
-    if (!delegate.equals(stakeOwnership.getDelegateKey())) {
+    if (!delegate.equals(stakeOwnership.delegateKey())) {
       throw new MismatchException("Shares must be from same delegate");
     }
-    if (!stakeOwnership.getOwner().equals(accountAddr)) {
+    if (!stakeOwnership.owner().equals(accountAddr)) {
       throw new MismatchException("Shares must be for same account");
     }
-    ownershipAmount = UInt384.from(stakeOwnership.getAmount()).add(ownershipAmount);
+    ownershipAmount = UInt384.from(stakeOwnership.amount()).add(ownershipAmount);
   }
 
   public PreparedUnstakeOwnership unstake(UInt256 amount)

@@ -64,6 +64,8 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
+
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import java.util.Map;
@@ -71,46 +73,20 @@ import java.util.OptionalInt;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-public final class RERulesConfig {
-  private final Set<String> reservedSymbols;
-  private final Pattern tokenSymbolPattern;
-  private final FeeTable feeTable;
-  private final long maxTxnSize;
-  private final long maxRounds;
-  private final OptionalInt maxSigsPerRound;
-  private final long rakeIncreaseDebouncerEpochLength;
-  private final Amount minimumStake;
-  private final long unstakingEpochDelay;
-  private final Amount rewardsPerProposal;
-  private final int minimumCompletedProposalsPercentage;
-  private final int maxValidators;
-
-  public RERulesConfig(
-      Set<String> reservedSymbols,
-      Pattern tokenSymbolPattern,
-      FeeTable feeTable,
-      long maxTxnSize,
-      OptionalInt maxSigsPerRound,
-      long maxRounds,
-      long rakeIncreaseDebouncerEpochLength,
-      Amount minimumStake,
-      long unstakingEpochDelay,
-      Amount rewardsPerProposal,
-      int minimumCompletedProposalsPercentage,
-      int maxValidators) {
-    this.reservedSymbols = reservedSymbols;
-    this.tokenSymbolPattern = tokenSymbolPattern;
-    this.feeTable = feeTable;
-    this.maxTxnSize = maxTxnSize;
-    this.maxSigsPerRound = maxSigsPerRound;
-    this.maxRounds = maxRounds;
-    this.rakeIncreaseDebouncerEpochLength = rakeIncreaseDebouncerEpochLength;
-    this.minimumStake = minimumStake;
-    this.unstakingEpochDelay = unstakingEpochDelay;
-    this.rewardsPerProposal = rewardsPerProposal;
-    this.minimumCompletedProposalsPercentage = minimumCompletedProposalsPercentage;
-    this.maxValidators = maxValidators;
-  }
+public record RERulesConfig(
+    Set<String> reservedSymbols,
+    Pattern tokenSymbolPattern,
+    FeeTable feeTable,
+    long maxTxnSize,
+    OptionalInt maxSigsPerRound,
+    long maxRounds,
+    long rakeIncreaseDebouncerEpochLength,
+    Amount minimumStake,
+    long unstakingEpochDelay,
+    Amount rewardsPerProposal,
+    int minimumCompletedProposalsPercentage,
+    int maxValidators,
+    int maxMessageLen) {
 
   /** epochs last 10 rounds, fee table is empty */
   public static RERulesConfig testingDefault() {
@@ -135,55 +111,8 @@ public final class RERulesConfig {
         1,
         Amount.ofMicroTokens(1000000), // Rewards per proposal
         9800,
-        10);
-  }
-
-  public Pattern getTokenSymbolPattern() {
-    return tokenSymbolPattern;
-  }
-
-  public Set<String> getReservedSymbols() {
-    return reservedSymbols;
-  }
-
-  public OptionalInt getMaxSigsPerRound() {
-    return maxSigsPerRound;
-  }
-
-  public Amount getMinimumStake() {
-    return minimumStake;
-  }
-
-  public long getRakeIncreaseDebouncerEpochLength() {
-    return rakeIncreaseDebouncerEpochLength;
-  }
-
-  public FeeTable getFeeTable() {
-    return feeTable;
-  }
-
-  public long getMaxTxnSize() {
-    return maxTxnSize;
-  }
-
-  public long getMaxRounds() {
-    return maxRounds;
-  }
-
-  public Amount getRewardsPerProposal() {
-    return rewardsPerProposal;
-  }
-
-  public long getUnstakingEpochDelay() {
-    return unstakingEpochDelay;
-  }
-
-  public int getMinimumCompletedProposalsPercentage() {
-    return minimumCompletedProposalsPercentage;
-  }
-
-  public int getMaxValidators() {
-    return maxValidators;
+        10,
+        MSG.maxLength());
   }
 
   public RERulesConfig overrideMinimumStake(Amount minimumStake) {
@@ -199,7 +128,8 @@ public final class RERulesConfig {
         this.unstakingEpochDelay,
         this.rewardsPerProposal,
         this.minimumCompletedProposalsPercentage,
-        this.maxValidators);
+        this.maxValidators,
+        this.maxMessageLen);
   }
 
   public RERulesConfig overrideMaxSigsPerRound(int maxSigsPerRound) {
@@ -215,7 +145,8 @@ public final class RERulesConfig {
         this.unstakingEpochDelay,
         this.rewardsPerProposal,
         this.minimumCompletedProposalsPercentage,
-        this.maxValidators);
+        this.maxValidators,
+        this.maxMessageLen);
   }
 
   public RERulesConfig removeSigsPerRoundLimit() {
@@ -231,7 +162,8 @@ public final class RERulesConfig {
         this.unstakingEpochDelay,
         this.rewardsPerProposal,
         this.minimumCompletedProposalsPercentage,
-        this.maxValidators);
+        this.maxValidators,
+        this.maxMessageLen);
   }
 
   public RERulesConfig overrideFeeTable(FeeTable feeTable) {
@@ -247,7 +179,25 @@ public final class RERulesConfig {
         this.unstakingEpochDelay,
         this.rewardsPerProposal,
         this.minimumCompletedProposalsPercentage,
-        this.maxValidators);
+        this.maxValidators,
+        this.maxMessageLen);
+  }
+
+  public RERulesConfig overrideMaxMessageLen(int maxMessageLen) {
+    return new RERulesConfig(
+        this.reservedSymbols,
+        this.tokenSymbolPattern,
+        this.feeTable,
+        this.maxTxnSize,
+        this.maxSigsPerRound,
+        this.maxRounds,
+        this.rakeIncreaseDebouncerEpochLength,
+        this.minimumStake,
+        this.unstakingEpochDelay,
+        this.rewardsPerProposal,
+        this.minimumCompletedProposalsPercentage,
+        this.maxValidators,
+        maxMessageLen);
   }
 
   public RERulesConfig overrideMaxRounds(long maxRounds) {
@@ -263,6 +213,7 @@ public final class RERulesConfig {
         this.unstakingEpochDelay,
         this.rewardsPerProposal,
         this.minimumCompletedProposalsPercentage,
-        this.maxValidators);
+        this.maxValidators,
+        this.maxMessageLen);
   }
 }

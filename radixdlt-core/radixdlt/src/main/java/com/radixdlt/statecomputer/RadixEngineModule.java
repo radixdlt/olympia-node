@@ -115,7 +115,7 @@ public class RadixEngineModule extends AbstractModule {
   @Provides
   @Singleton
   private REParser parser(CurrentForkView currentForkView) {
-    return currentForkView.currentForkConfig().engineRules().getParser();
+    return currentForkView.currentForkConfig().engineRules().parser();
   }
 
   // TODO: Remove
@@ -123,7 +123,7 @@ public class RadixEngineModule extends AbstractModule {
   @Singleton
   @MaxSigsPerRound
   private OptionalInt maxSigsPerRound(CurrentForkView currentForkView) {
-    return currentForkView.currentForkConfig().engineRules().getMaxSigsPerRound();
+    return currentForkView.currentForkConfig().engineRules().maxSigsPerRound();
   }
 
   // TODO: Remove
@@ -131,7 +131,7 @@ public class RadixEngineModule extends AbstractModule {
   @Singleton
   @EpochCeilingView
   private View epochCeilingHighView(CurrentForkView currentForkView) {
-    return currentForkView.currentForkConfig().engineRules().getMaxRounds();
+    return currentForkView.currentForkConfig().engineRules().maxRounds();
   }
 
   // TODO: Remove
@@ -139,7 +139,7 @@ public class RadixEngineModule extends AbstractModule {
   @Singleton
   @MaxValidators
   private int maxValidators(CurrentForkView currentForkView) {
-    return currentForkView.currentForkConfig().engineRules().getMaxValidators();
+    return currentForkView.currentForkConfig().engineRules().maxValidators();
   }
 
   @Provides
@@ -147,7 +147,7 @@ public class RadixEngineModule extends AbstractModule {
   private RadixEngine<LedgerAndBFTProof> getRadixEngine(
       EngineStore<LedgerAndBFTProof> engineStore, CurrentForkView currentForkView) {
     final var rules = currentForkView.currentForkConfig().engineRules();
-    final var cmConfig = rules.getConstraintMachineConfig();
+    final var cmConfig = rules.constraintMachineConfig();
     var cm =
         new ConstraintMachine(
             cmConfig.getProcedures(),
@@ -155,12 +155,13 @@ public class RadixEngineModule extends AbstractModule {
             cmConfig.getVirtualSubstateDeserialization(),
             cmConfig.getMeter());
     return new RadixEngine<>(
-        rules.getParser(),
-        rules.getSerialization(),
-        rules.getActionConstructors(),
+        rules.parser(),
+        rules.serialization(),
+        rules.actionConstructors(),
         cm,
         engineStore,
-        rules.getPostProcessor());
+        rules.postProcessor(),
+        rules.config().maxMessageLen());
   }
 
   @ProvidesIntoSet

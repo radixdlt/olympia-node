@@ -104,7 +104,7 @@ public class MempoolTransactionHandler
     var substate = radixEngineProvider.get().read(reader -> reader.get(mapKey).orElseThrow());
     // TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
     var tokenResourceMetadata = (TokenResourceMetadata) substate;
-    return tokenResourceMetadata.getSymbol();
+    return tokenResourceMetadata.symbol();
   }
 
   @Override

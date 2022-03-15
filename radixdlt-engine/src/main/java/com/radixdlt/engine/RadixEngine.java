@@ -64,6 +64,8 @@
 
 package com.radixdlt.engine;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.google.common.base.Stopwatch;
 import com.radixdlt.application.system.construction.FeeReserveCompleteException;
 import com.radixdlt.application.tokens.ResourceInBucket;
@@ -76,8 +78,6 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.FeeReserveComplete;
-import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.ExecutionContext;
@@ -123,6 +123,7 @@ public final class RadixEngine<M> {
   private final EngineStore<M> engineStore;
   private final Object stateUpdateEngineLock = new Object();
   private final List<RadixEngineBranch<M>> branches = new ArrayList<>();
+  private final int maxMessageLen;
 
   private REParser parser;
   private SubstateSerialization serialization;
@@ -130,6 +131,7 @@ public final class RadixEngine<M> {
   private REConstructor actionConstructors;
   private ConstraintMachine constraintMachine;
 
+  // Used only in tests
   public RadixEngine(
       REParser parser,
       SubstateSerialization serialization,
@@ -142,7 +144,8 @@ public final class RadixEngine<M> {
         actionConstructors,
         constraintMachine,
         engineStore,
-        PostProcessor.empty());
+        PostProcessor.empty(),
+        255);
   }
 
   public RadixEngine(
@@ -151,13 +154,15 @@ public final class RadixEngine<M> {
       REConstructor actionConstructors,
       ConstraintMachine constraintMachine,
       EngineStore<M> engineStore,
-      PostProcessor<M> postProcessor) {
+      PostProcessor<M> postProcessor,
+      int maxMessageLen) {
     this.parser = Objects.requireNonNull(parser);
     this.serialization = Objects.requireNonNull(serialization);
     this.actionConstructors = Objects.requireNonNull(actionConstructors);
     this.constraintMachine = Objects.requireNonNull(constraintMachine);
     this.engineStore = Objects.requireNonNull(engineStore);
     this.postProcessor = postProcessor;
+    this.maxMessageLen = maxMessageLen;
   }
 
   public void replaceConstraintMachine(
@@ -190,7 +195,8 @@ public final class RadixEngine<M> {
         SubstateSerialization serialization,
         REConstructor actionToConstructorMap,
         ConstraintMachine constraintMachine,
-        EngineStore<M> parentStore) {
+        EngineStore<M> parentStore,
+        int maxMessageLen) {
       var transientEngineStore = new TransientEngineStore<>(parentStore);
 
       this.engine =
@@ -200,7 +206,8 @@ public final class RadixEngine<M> {
               actionToConstructorMap,
               constraintMachine,
               transientEngineStore,
-              PostProcessor.empty());
+              PostProcessor.empty(),
+              maxMessageLen);
     }
 
     private void delete() {
@@ -230,11 +237,6 @@ public final class RadixEngine<M> {
       return engine.execute(txns, null, permissionLevel);
     }
 
-    public TxBuilder construct(TxAction action) throws TxBuilderException {
-      assertNotDeleted();
-      return engine.construct(action);
-    }
-
     public TxBuilder construct(TxnConstructionRequest request) throws TxBuilderException {
       assertNotDeleted();
       return engine.construct(request);
@@ -256,7 +258,8 @@ public final class RadixEngine<M> {
               this.serialization,
               this.actionConstructors,
               this.constraintMachine,
-              this.engineStore);
+              this.engineStore,
+              this.maxMessageLen);
 
       branches.add(branch);
 
@@ -427,7 +430,7 @@ public final class RadixEngine<M> {
 
       var txBuilder =
           TxBuilder.newBuilder(
-              filteredStore, constraintMachine.getDeserialization(), serialization);
+              filteredStore, constraintMachine.getDeserialization(), serialization, maxMessageLen);
 
       executable.execute(txBuilder);
 
@@ -435,30 +438,33 @@ public final class RadixEngine<M> {
     }
   }
 
+  // This method is used only in tests
   public TxBuilder construct(TxAction action) throws TxBuilderException {
     return construct(TxnConstructionRequest.create().action(action));
   }
 
   public TxBuilder construct(TxnConstructionRequest request) throws TxBuilderException {
     var feePayer = request.getFeePayer();
+
     if (feePayer.isPresent()) {
       return constructWithFees(request, feePayer.get());
-    } else {
-      return construct(
-          txBuilder -> {
-            if (request.isDisableResourceAllocAndDestroy()) {
-              txBuilder.toLowLevelBuilder().disableResourceAllocAndDestroy();
-            }
-            for (var action : request.getActions()) {
-              this.actionConstructors.construct(action, txBuilder);
-            }
-            var msg = request.getMsg();
-            if (msg.isPresent()) {
-              txBuilder.message(msg.get());
-            }
-          },
-          request.getSubstatesToAvoid());
     }
+
+    return construct(
+        txBuilder -> {
+          if (request.isDisableResourceAllocAndDestroy()) {
+            txBuilder.toLowLevelBuilder().disableResourceAllocAndDestroy();
+          }
+          for (var action : request.getActions()) {
+            this.actionConstructors.construct(action, txBuilder);
+          }
+
+          var msg = request.getMsg();
+          if (msg.isPresent()) {
+            txBuilder.message(msg.get());
+          }
+        },
+        request.getSubstatesToAvoid());
   }
 
   public TxBuilder constructWithFees(
@@ -586,7 +592,7 @@ public final class RadixEngine<M> {
                   deserialization.index(c),
                   new HashMap<>(),
                   (m, t) -> {
-                    m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
+                    m.merge(keyMapper.apply(t), UInt384.from(t.amount()), UInt384::add);
                     return m;
                   });
             }
@@ -599,12 +605,13 @@ public final class RadixEngine<M> {
                   new HashMap<>(),
                   (m, t) -> {
                     if (predicate.test(t)) {
-                      m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
+                      m.merge(keyMapper.apply(t), UInt384.from(t.amount()), UInt384::add);
                     }
                     return m;
                   });
             }
 
+            @SuppressWarnings("unchecked")
             private <U, T extends Particle> U reduce(
                 SubstateIndex<T> i, U identity, BiFunction<U, T, U> accumulator) {
               var deserialization = constraintMachine.getDeserialization();

@@ -62,75 +62,115 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.forks;
+package com.radixdlt.network.p2p;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Inject;
+import static com.radixdlt.utils.TypedMocks.cmock;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.OptionalBinder;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.network.messaging.InboundMessage;
+import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
+import com.radixdlt.network.p2p.addressbook.AddressBook;
+import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
+import com.radixdlt.network.p2p.addressbook.InMemoryAddressBookPersistence;
+import com.radixdlt.network.p2p.transport.PeerChannel;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.properties.RuntimeProperties;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Observable;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.commons.cli.ParseException;
+import org.json.JSONObject;
+import org.junit.Assert;
+import org.junit.Test;
 
-public class ForkOverwritesFromPropertiesModule extends AbstractModule {
-  private static final String PROPERTIES_PREFIX = "overwrite_forks.";
+public class PeerManagerStaticTest {
 
-  private static final Logger logger = LogManager.getLogger();
+  @Test
+  public void should_cleanup_existing_entries_from_same_host_port_on_successful_connect() {
+    var self = makeNodeUri("10.0.0.1", 30000);
+    var addressBook =
+        new AddressBook(
+            self,
+            cmock(new TypeLiteral<EventDispatcher<PeerEvent>>() {}),
+            new InMemoryAddressBookPersistence());
+    var peerManager =
+        new PeerManager(
+            self,
+            P2PConfig.fromRuntimeProperties(defaultProperties()),
+            Addressing.ofNetwork(Network.LOCALNET),
+            () -> addressBook,
+            () -> mock(PendingOutboundChannelsManager.class),
+            mock(SystemCounters.class));
 
-  private static class ForkOverwrite implements UnaryOperator<Set<ForkBuilder>> {
-    @Inject private RuntimeProperties properties;
+    var peer1 = makeNodeUri("10.0.0.2", 30000);
+    // second address for same peer
+    var peer2 = makeNodeUri(peer1.getNodeId().getPublicKey(), "10.0.0.2", 30001);
 
-    @Override
-    public Set<ForkBuilder> apply(Set<ForkBuilder> forkBuilders) {
-      return forkBuilders.stream()
-          .map(
-              c -> {
-                final var forkDisabledOverwrite =
-                    properties.get(PROPERTIES_PREFIX + c.getName() + ".disabled", "");
-                if (!forkDisabledOverwrite.isBlank()) {
-                  return Optional.<ForkBuilder>empty();
-                }
+    addressBook.addUncheckedPeers(Set.of(peer1, peer2));
 
-                final var epochOverwrite =
-                    properties.get(PROPERTIES_PREFIX + c.getName() + ".epoch", "");
+    // Before connect
+    addressBook
+        .findById(peer2.getNodeId())
+        .ifPresentOrElse(
+            entry -> assertEquals(2L, entry.getKnownAddresses().stream().count()), Assert::fail);
 
-                if (!epochOverwrite.isBlank()) {
-                  final var epoch = Long.parseLong(epochOverwrite);
-                  logger.warn("Overwriting epoch of " + c.getName() + " to " + epoch);
-                  c = c.atFixedEpoch(epoch);
-                }
+    var peerChanel = mock(PeerChannel.class);
+    var inboundMessages = cmock(new TypeLiteral<Flowable<InboundMessage>>() {});
+    // new key, but same host/port as peer2
+    var peer = makeNodeUri("10.0.0.2", 30000);
 
-                final var viewOverwrite =
-                    properties.get(PROPERTIES_PREFIX + c.getName() + ".views", "");
-                if (!viewOverwrite.isBlank()) {
-                  final var view = Long.parseLong(viewOverwrite);
-                  logger.warn(
-                      "Overwriting views of "
-                          + c.getName()
-                          + " from "
-                          + c.getEngineRulesConfig().maxRounds()
-                          + " to "
-                          + view);
-                  c = c.withEngineRulesConfig(c.getEngineRulesConfig().overrideMaxRounds(view));
-                }
+    when(peerChanel.getUri()).thenReturn(Optional.of(peer));
+    when(peerChanel.inboundMessages()).thenReturn(inboundMessages);
+    when(inboundMessages.toObservable())
+        .thenReturn(cmock(new TypeLiteral<Observable<InboundMessage>>() {}));
+    when(peerChanel.isOutbound()).thenReturn(true);
+    when(peerChanel.getRemoteNodeId()).thenReturn(peer.getNodeId());
 
-                return Optional.of(c);
-              })
-          .filter(Optional::isPresent)
-          .map(Optional::get)
-          .collect(Collectors.toSet());
-    }
+    peerManager.peerEventProcessor().process(new PeerConnected(peerChanel));
+
+    // One address is removed
+    addressBook
+        .findById(peer2.getNodeId())
+        .ifPresentOrElse(
+            entry -> assertEquals(1L, entry.getKnownAddresses().stream().count()), Assert::fail);
+    addressBook
+        .findById(peer2.getNodeId())
+        .ifPresentOrElse(
+            entry ->
+                assertEquals(
+                    peer2,
+                    entry.getKnownAddresses().stream()
+                        .map(PeerAddressEntry::getUri)
+                        .iterator()
+                        .next()),
+            Assert::fail);
   }
 
-  @Override
-  protected void configure() {
-    OptionalBinder.newOptionalBinder(
-            binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() {})
-        .setBinding()
-        .to(ForkOverwrite.class);
+  private RadixNodeUri makeNodeUri(String host, int port) {
+    return makeNodeUri(ECKeyPair.generateNew().getPublicKey(), host, port);
+  }
+
+  private RadixNodeUri makeNodeUri(ECPublicKey pubKey, String host, int port) {
+    return RadixNodeUri.fromPubKeyAndAddress(Network.LOCALNET.getId(), pubKey, host, port);
+  }
+
+  private static RuntimeProperties defaultProperties() {
+    try {
+      final var props = new RuntimeProperties(new JSONObject(), new String[] {});
+      props.set("network.p2p.max_inbound_channels", 10);
+      props.set("network.p2p.max_outbound_channels", 10);
+      return props;
+    } catch (ParseException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

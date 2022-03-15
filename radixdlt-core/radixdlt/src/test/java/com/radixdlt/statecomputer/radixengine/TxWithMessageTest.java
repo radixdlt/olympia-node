@@ -62,11 +62,89 @@
  * permissions under this License.
  */
 
-package com.radixdlt.atom;
+package com.radixdlt.statecomputer.radixengine;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.google.inject.Inject;
+import com.radixdlt.api.core.model.EntityOperation;
+import com.radixdlt.api.core.model.NotEnoughNativeTokensForFeesException;
+import com.radixdlt.api.core.model.OperationTxBuilder;
+import com.radixdlt.api.core.model.ResourceOperation;
+import com.radixdlt.api.core.model.TokenResource;
+import com.radixdlt.api.core.model.entities.AccountVaultEntity;
+import com.radixdlt.atom.MessageTooLongException;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
+import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt256;
+import java.util.List;
+import org.junit.Test;
 
-/** Marker interface for actions containing validator key. */
-public interface TxValidatorAction extends TxAction {
-  ECPublicKey validatorKey();
+public class TxWithMessageTest extends AbstractRadixEngineTest {
+  @Inject @LocalSigner private HashSigner hashSigner;
+  @Inject @Self private ECPublicKey self;
+  @Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
+  @Inject private CurrentForkView currentForkView;
+
+  public TxWithMessageTest() {
+    super(1, 511);
+  }
+
+  private Txn buildSignedTxn(REAddr from, REAddr to, String message) throws Exception {
+    var toTransfer = UInt256.ONE;
+
+    var entityOperationGroups =
+        List.of(
+            List.of(
+                EntityOperation.from(
+                    new AccountVaultEntity(from),
+                    ResourceOperation.withdraw(
+                        new TokenResource("xrd", REAddr.ofNativeToken()), toTransfer)),
+                EntityOperation.from(
+                    new AccountVaultEntity(to),
+                    ResourceOperation.deposit(
+                        new TokenResource("xrd", REAddr.ofNativeToken()), toTransfer))));
+    var operationTxBuilder =
+        new OperationTxBuilder(message, entityOperationGroups, currentForkView);
+    var builder =
+        radixEngine.constructWithFees(
+            operationTxBuilder, false, from, NotEnoughNativeTokensForFeesException::new);
+    return builder.signAndBuild(hashSigner::sign);
+  }
+
+  @Test
+  public void txn_with_correct_message_can_be_built() throws Exception {
+    // Arrange
+    var accountAddress = REAddr.ofPubKeyAccount(self);
+    var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+    var message = "aa".repeat(511);
+
+    // Act
+    var signedTxn = buildSignedTxn(accountAddress, otherAddress, message);
+
+    // Assert
+    assertThat(signedTxn).isNotNull();
+  }
+
+  @Test
+  public void txn_with_too_long_message_can_not_be_built() {
+    // Arrange
+    var accountAddress = REAddr.ofPubKeyAccount(self);
+    var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+    var message = "aa".repeat(512);
+
+    // Act
+    // Assert
+    assertThatThrownBy(() -> buildSignedTxn(accountAddress, otherAddress, message))
+        .isInstanceOf(MessageTooLongException.class);
+  }
 }

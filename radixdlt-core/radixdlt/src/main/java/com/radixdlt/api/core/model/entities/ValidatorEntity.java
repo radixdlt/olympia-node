@@ -171,8 +171,8 @@ public record ValidatorEntity(
     builder.up(
         new ValidatorMetaData(
             validatorKey,
-            metadata.getName() == null ? substateDown.getName() : metadata.getName(),
-            metadata.getUrl() == null ? substateDown.getUrl() : metadata.getUrl()));
+            metadata.getName() == null ? substateDown.name() : metadata.getName(),
+            metadata.getUrl() == null ? substateDown.url() : metadata.getUrl()));
   }
 
   private void updateRegistered(
@@ -181,7 +181,7 @@ public record ValidatorEntity(
     var curEpoch = builder.readSystem(EpochData.class);
     builder.up(
         new ValidatorRegisteredCopy(
-            OptionalLong.of(curEpoch.getEpoch() + 1),
+            OptionalLong.of(curEpoch.epoch() + 1),
             validatorKey,
             preparedValidatorRegistered.getRegistered()));
   }
@@ -189,16 +189,14 @@ public record ValidatorEntity(
   private void updateOwner(TxBuilder builder, REAddr owner) {
     builder.down(ValidatorOwnerCopy.class, validatorKey);
     var curEpoch = builder.readSystem(EpochData.class);
-    builder.up(
-        new ValidatorOwnerCopy(OptionalLong.of(curEpoch.getEpoch() + 1), validatorKey, owner));
+    builder.up(new ValidatorOwnerCopy(OptionalLong.of(curEpoch.epoch() + 1), validatorKey, owner));
   }
 
   private void updateValidatorFee(
       TxBuilder builder, PreparedValidatorFee preparedValidatorFee, Supplier<RERulesConfig> config)
       throws InvalidRakeIncreaseException {
     builder.down(ValidatorFeeCopy.class, validatorKey);
-    var curRakePercentage =
-        builder.read(ValidatorStakeData.class, validatorKey).getRakePercentage();
+    var curRakePercentage = builder.read(ValidatorStakeData.class, validatorKey).rakePercentage();
     int validatorFee = preparedValidatorFee.getFee();
     var isIncrease = validatorFee > curRakePercentage;
     var rakeIncrease = validatorFee - curRakePercentage;
@@ -207,10 +205,10 @@ public record ValidatorEntity(
       throw new InvalidRakeIncreaseException(maxRakeIncrease, rakeIncrease);
     }
 
-    var rakeIncreaseDebounceEpochLength = config.get().getRakeIncreaseDebouncerEpochLength();
+    var rakeIncreaseDebounceEpochLength = config.get().rakeIncreaseDebouncerEpochLength();
     var epochDiff = isIncrease ? (1 + rakeIncreaseDebounceEpochLength) : 1;
     var curEpoch = builder.readSystem(EpochData.class);
-    var epoch = curEpoch.getEpoch() + epochDiff;
+    var epoch = curEpoch.epoch() + epochDiff;
     builder.up(new ValidatorFeeCopy(OptionalLong.of(epoch), validatorKey, validatorFee));
   }
 

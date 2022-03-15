@@ -101,7 +101,8 @@ public final class MockedForksModule extends AbstractModule {
                 1,
                 Amount.zero(),
                 9800,
-                10));
+                10,
+                255));
   }
 
   @Override

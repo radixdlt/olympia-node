@@ -64,6 +64,7 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
+import static com.radixdlt.atom.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.inject.AbstractModule;
@@ -77,8 +78,6 @@ import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.constraintmachine.exceptions.ReservedSymbolException;
@@ -152,7 +151,7 @@ public class MutableTokenAndResourceFeeTest {
         sut.construct(
                 TxnConstructionRequest.create()
                     .feePayer(account)
-                    .action(new CreateMutableToken(tokDef)))
+                    .action(fromMutableTokenDefinition(tokDef)))
             .signAndBuild(VALIDATOR_KEY::sign);
 
     // Act/Assert
@@ -188,7 +187,7 @@ public class MutableTokenAndResourceFeeTest {
         sut.construct(
                 TxnConstructionRequest.create()
                     .feePayer(account)
-                    .createMutableToken(tokDef)
+                    .action(fromMutableTokenDefinition(tokDef))
                     .mint(tokenAddr, account, UInt256.SEVEN)
                     .transfer(tokenAddr, account, account, UInt256.FIVE))
             .signAndBuild(VALIDATOR_KEY::sign);
@@ -212,7 +211,7 @@ public class MutableTokenAndResourceFeeTest {
         sut.construct(
                 TxnConstructionRequest.create()
                     .feePayer(account)
-                    .createMutableToken(tokDef)
+                    .action(fromMutableTokenDefinition(tokDef))
                     .mint(
                         tokenAddr,
                         REAddr.ofHashedKey(VALIDATOR_KEY.getPublicKey(), "test"),
@@ -235,11 +234,22 @@ public class MutableTokenAndResourceFeeTest {
         sut.construct(
                 TxnConstructionRequest.create()
                     .feePayer(account)
-                    .action(new CreateMutableToken(tokDef)))
+                    .action(fromMutableTokenDefinition(tokDef)))
             .signAndBuild(VALIDATOR_KEY::sign);
 
     var branch = sut.transientBranch();
     // Act/Assert
     branch.execute(List.of(txn));
+  }
+
+  private static CreateMutableToken fromMutableTokenDefinition(MutableTokenDefinition def) {
+    return new CreateMutableToken(
+        def.getResourceAddress(),
+        def.getSymbol(),
+        def.getName(),
+        def.getDescription(),
+        def.getIconUrl(),
+        def.getTokenUrl(),
+        def.getOwner());
   }
 }

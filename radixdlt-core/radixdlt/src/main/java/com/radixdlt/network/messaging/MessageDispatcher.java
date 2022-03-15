@@ -78,6 +78,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.functional.Result;
+import com.radixdlt.utils.functional.Tuple.Unit;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
@@ -116,7 +117,7 @@ class MessageDispatcher {
     this.addressing = Objects.requireNonNull(addressing);
   }
 
-  CompletableFuture<Result<Object>> send(final OutboundMessageEvent outboundMessage) {
+  CompletableFuture<Result<Unit>> send(final OutboundMessageEvent outboundMessage) {
     final var message = outboundMessage.message();
     final var receiver = outboundMessage.receiver();
 
@@ -140,12 +141,12 @@ class MessageDispatcher {
         .exceptionally(t -> completionException(t, receiver, message));
   }
 
-  private Result<Object> send(PeerChannel channel, byte[] bytes) {
+  private Result<Unit> send(PeerChannel channel, byte[] bytes) {
     this.counters.add(CounterType.NETWORKING_BYTES_SENT, bytes.length);
     return channel.send(bytes);
   }
 
-  private Result<Object> completionException(Throwable cause, NodeId receiver, Message message) {
+  private Result<Unit> completionException(Throwable cause, NodeId receiver, Message message) {
     final var msg =
         String.format(
             "Send %s to %s failed",
@@ -154,7 +155,7 @@ class MessageDispatcher {
     return IO_ERROR.result();
   }
 
-  private Result<Object> updateStatistics(Result<Object> result) {
+  private Result<Unit> updateStatistics(Result<Unit> result) {
     this.counters.increment(CounterType.MESSAGES_OUTBOUND_PROCESSED);
     if (result.isSuccess()) {
       this.counters.increment(CounterType.MESSAGES_OUTBOUND_SENT);

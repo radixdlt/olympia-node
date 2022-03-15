@@ -122,7 +122,7 @@ public final class CandidateForkVotesPostProcessorTest {
           SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class);
 
   private CandidateForkVotesPostProcessor sut =
-      new CandidateForkVotesPostProcessor(reRules.getParser().getSubstateDeserialization());
+      new CandidateForkVotesPostProcessor(reRules.parser().getSubstateDeserialization());
 
   private LedgerAndBFTProof ledgerAndBftProof;
   private EngineStore<LedgerAndBFTProof> engineStore;
@@ -362,7 +362,7 @@ public final class CandidateForkVotesPostProcessorTest {
   private RawSubstateBytes createVoteSubstateBytes(BFTNode node, CandidateForkConfig forkConfig) {
     final var serialized =
         reRules
-            .getSerialization()
+            .serialization()
             .serialize(
                 new ValidatorSystemMetadata(
                     node.getKey(),

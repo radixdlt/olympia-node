@@ -87,8 +87,7 @@ public final class RadixEngineReader {
   public BigInteger getTotalExittingStake() {
     var totalStakeExitting =
         radixEngine.read(
-            reader ->
-                reader.reduce(ExitingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
+            reader -> reader.reduce(ExitingStake.class, UInt256.ZERO, (u, t) -> u.add(t.amount())));
     return new BigInteger(1, totalStakeExitting.toByteArray());
   }
 
@@ -97,7 +96,7 @@ public final class RadixEngineReader {
         radixEngine.read(
             reader ->
                 reader
-                    .reduceResources(TokensInAccount.class, TokensInAccount::getResourceAddr)
+                    .reduceResources(TokensInAccount.class, TokensInAccount::resourceAddr)
                     .get(REAddr.ofNativeToken()));
     return new BigInteger(1, totalTokens.toByteArray());
   }
@@ -114,21 +113,21 @@ public final class RadixEngineReader {
                 reader.reduce(
                     ValidatorStakeData.class,
                     BigInteger.ZERO,
-                    (u, t) -> u.add(toBigInteger(t.getAmount()))));
+                    (u, t) -> u.add(toBigInteger(t.amount()))));
     var totalStakePrepared =
         radixEngine.read(
             reader ->
                 reader.reduce(
                     PreparedStake.class,
                     BigInteger.ZERO,
-                    (u, t) -> u.add(toBigInteger(t.getAmount()))));
+                    (u, t) -> u.add(toBigInteger(t.amount()))));
     var totalStakeExitting =
         radixEngine.read(
             reader ->
                 reader.reduce(
                     ExitingStake.class,
                     BigInteger.ZERO,
-                    (u, t) -> u.add(toBigInteger(t.getAmount()))));
+                    (u, t) -> u.add(toBigInteger(t.amount()))));
     return tokensInAccounts.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting);
   }
 }

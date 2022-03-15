@@ -186,17 +186,16 @@ public final class CandidateForkVotesPostProcessor implements PostProcessor<Ledg
       final var validatorSystemMetadataSubstate =
           (ValidatorSystemMetadata) substateDeserialization.deserialize(rawSubstateBytes.getData());
 
-      if (Bytes.allZeros(validatorSystemMetadataSubstate.getData())) {
+      if (Bytes.allZeros(validatorSystemMetadataSubstate.data())) {
         return Optional.empty();
       }
 
       final var candidateForkVote =
-          new CandidateForkVote(HashCode.fromBytes(validatorSystemMetadataSubstate.getData()));
+          new CandidateForkVote(HashCode.fromBytes(validatorSystemMetadataSubstate.data()));
 
       return Optional.of(
           Pair.of(
-              BFTNode.create(validatorSystemMetadataSubstate.getValidatorKey()),
-              candidateForkVote));
+              BFTNode.create(validatorSystemMetadataSubstate.validatorKey()), candidateForkVote));
     } catch (DeserializeException e) {
       throw new PostProcessorException("Error deserializing ValidatorSystemMetadata");
     }
