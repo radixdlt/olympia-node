@@ -105,7 +105,7 @@ public record PreparedStakeVaultEntity(REAddr accountAddress, ECPublicKey valida
       throw new EntityDoesNotSupportResourceDepositException(this, amount.resource());
     }
 
-    var minStake = config.get().getMinimumStake().toSubunits();
+    var minStake = config.get().minimumStake().toSubunits();
     var attempt = UInt256.from(amount.amount().toByteArray());
     if (attempt.compareTo(minStake) < 0) {
       throw new MinimumStakeException(minStake, attempt);
@@ -114,7 +114,7 @@ public record PreparedStakeVaultEntity(REAddr accountAddress, ECPublicKey valida
     var flag = txBuilder.read(AllowDelegationFlag.class, validatorKey);
     if (!flag.allowsDelegation()) {
       var validator = txBuilder.read(ValidatorOwnerCopy.class, validatorKey);
-      var owner = validator.getOwner();
+      var owner = validator.owner();
       if (!accountAddress.equals(owner)) {
         throw new DelegateStakePermissionException(owner, accountAddress);
       }

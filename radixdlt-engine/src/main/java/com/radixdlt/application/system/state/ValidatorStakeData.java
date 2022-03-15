@@ -74,23 +74,15 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 
-public final class ValidatorStakeData implements ResourceInBucket, ValidatorData {
-  private final UInt256 totalStake;
-  private final UInt256 totalOwnership;
-  private final int rakePercentage;
-  private final REAddr ownerAddr;
-  private final boolean isRegistered;
-
-  // Bucket keys
-  private final ECPublicKey validatorKey;
-
-  private ValidatorStakeData(
-      ECPublicKey validatorKey,
-      UInt256 totalStake,
-      UInt256 totalOwnership,
-      int rakePercentage,
-      REAddr ownerAddr,
-      boolean isRegistered) {
+public record ValidatorStakeData(
+    ECPublicKey validatorKey,
+    UInt256 totalStake,
+    UInt256 totalOwnership,
+    int rakePercentage,
+    REAddr ownerAddr,
+    boolean isRegistered)
+    implements ResourceInBucket, ValidatorData {
+  public ValidatorStakeData {
     if (totalStake.isZero() != totalOwnership.isZero()) {
       throw new IllegalArgumentException(
           "Zero must be equivalent between stake and ownership: "
@@ -98,12 +90,7 @@ public final class ValidatorStakeData implements ResourceInBucket, ValidatorData
               + " "
               + totalOwnership);
     }
-    this.validatorKey = Objects.requireNonNull(validatorKey);
-    this.totalStake = totalStake;
-    this.totalOwnership = totalOwnership;
-    this.rakePercentage = rakePercentage;
-    this.ownerAddr = ownerAddr;
-    this.isRegistered = isRegistered;
+    Objects.requireNonNull(validatorKey);
   }
 
   public static ValidatorStakeData createVirtual(ECPublicKey validatorKey) {
@@ -127,74 +114,13 @@ public final class ValidatorStakeData implements ResourceInBucket, ValidatorData
         validatorKey, totalStake, totalOwnership, rakePercentage, ownerAddress, isRegistered);
   }
 
-  public UInt256 getTotalStake() {
-    return totalStake;
-  }
-
-  public boolean isRegistered() {
-    return isRegistered;
-  }
-
-  public REAddr getOwnerAddr() {
-    return ownerAddr;
-  }
-
-  public int getRakePercentage() {
-    return rakePercentage;
-  }
-
   @Override
-  public ECPublicKey getValidatorKey() {
-    return validatorKey;
-  }
-
-  public UInt256 getTotalOwnership() {
-    return this.totalOwnership;
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{registered=%s stake=%s validator=%s ownership=%s rake=%s owner=%s}",
-        getClass().getSimpleName(),
-        isRegistered,
-        totalStake,
-        validatorKey.toHex().substring(0, 11),
-        totalOwnership,
-        rakePercentage,
-        ownerAddr);
-  }
-
-  @Override
-  public UInt256 getAmount() {
+  public UInt256 amount() {
     return this.totalStake;
   }
 
   @Override
   public Bucket bucket() {
     return new StakeBucket(validatorKey);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof ValidatorStakeData)) {
-      return false;
-    }
-    var that = (ValidatorStakeData) o;
-    return Objects.equals(validatorKey, that.validatorKey)
-        && Objects.equals(totalOwnership, that.totalOwnership)
-        && Objects.equals(totalStake, that.totalStake)
-        && Objects.equals(rakePercentage, that.rakePercentage)
-        && Objects.equals(ownerAddr, that.ownerAddr)
-        && this.isRegistered == that.isRegistered;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        validatorKey, totalOwnership, totalStake, rakePercentage, ownerAddr, isRegistered);
   }
 }

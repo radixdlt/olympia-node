@@ -64,9 +64,9 @@
 
 package com.radixdlt.application.system.scrypt;
 
-import com.radixdlt.application.system.ValidatorMissedProposalsEvent;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -103,25 +103,26 @@ public class UpdatingValidatorBFTData implements ReducerState {
   public ReducerState update(ValidatorBFTData next, ExecutionContext context)
       throws ProcedureException {
     var first = validatorsToUpdate.firstKey();
-    if (!next.getValidatorKey().equals(first)) {
+    if (!next.validatorKey().equals(first)) {
       throw new ProcedureException("Invalid key for validator bft data update");
     }
     var old = validatorsToUpdate.remove(first);
-    if (old.proposalsCompleted() > next.proposalsCompleted()
-        || old.proposalsMissed() > next.proposalsMissed()) {
+    if (old.completedProposals() > next.completedProposals()
+        || old.missedProposals() > next.missedProposals()) {
       throw new ProcedureException("Invalid data for validator bft data update");
     }
 
-    if (old.proposalsCompleted() == next.proposalsCompleted()
-        && old.proposalsMissed() == next.proposalsMissed()) {
+    if (old.completedProposals() == next.completedProposals()
+        && old.missedProposals() == next.missedProposals()) {
       throw new ProcedureException("No update to Validator BFT data");
     }
 
-    var additionalProposalsCompleted = next.proposalsCompleted() - old.proposalsCompleted();
-    var additionalProposalsMissed = next.proposalsMissed() - old.proposalsMissed();
+    var additionalProposalsCompleted = next.completedProposals() - old.completedProposals();
+    var additionalProposalsMissed = next.missedProposals() - old.missedProposals();
     if (additionalProposalsMissed > 0) {
       context.emitEvent(
-          ValidatorMissedProposalsEvent.create(next.getValidatorKey(), additionalProposalsMissed));
+          new REEvent.ValidatorMissedProposalsEvent(
+              next.validatorKey(), additionalProposalsMissed));
     }
 
     incrementViews(additionalProposalsCompleted);

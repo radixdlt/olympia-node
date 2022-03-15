@@ -66,58 +66,13 @@ package com.radixdlt.application.validators.state;
 
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import java.util.Objects;
 import java.util.OptionalLong;
 
-public final class ValidatorOwnerCopy implements ValidatorUpdatingData {
-  private final ECPublicKey validatorKey;
-  private final REAddr owner;
-  private final OptionalLong epochUpdate;
-
-  public ValidatorOwnerCopy(OptionalLong epochUpdate, ECPublicKey validatorKey, REAddr owner) {
-    this.epochUpdate = epochUpdate;
-    this.validatorKey = validatorKey;
-    this.owner = owner;
-  }
-
-  public ValidatorOwnerCopy(ECPublicKey validatorKey, REAddr owner) {
-    this.epochUpdate = OptionalLong.empty();
-    this.validatorKey = validatorKey;
-    this.owner = owner;
-  }
+public record ValidatorOwnerCopy(OptionalLong epochUpdate, ECPublicKey validatorKey, REAddr owner)
+    implements ValidatorUpdatingData {
 
   public static ValidatorOwnerCopy createVirtual(ECPublicKey validatorKey) {
-    return new ValidatorOwnerCopy(validatorKey, REAddr.ofPubKeyAccount(validatorKey));
-  }
-
-  @Override
-  public OptionalLong getEpochUpdate() {
-    return epochUpdate;
-  }
-
-  @Override
-  public ECPublicKey getValidatorKey() {
-    return validatorKey;
-  }
-
-  public REAddr getOwner() {
-    return this.owner;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(epochUpdate, validatorKey, owner);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof ValidatorOwnerCopy)) {
-      return false;
-    }
-
-    var other = (ValidatorOwnerCopy) o;
-    return Objects.equals(this.epochUpdate, other.epochUpdate)
-        && Objects.equals(this.validatorKey, other.validatorKey)
-        && Objects.equals(this.owner, other.owner);
+    return new ValidatorOwnerCopy(
+        OptionalLong.empty(), validatorKey, REAddr.ofPubKeyAccount(validatorKey));
   }
 }

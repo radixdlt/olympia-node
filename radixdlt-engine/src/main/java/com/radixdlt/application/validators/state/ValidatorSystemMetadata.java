@@ -64,40 +64,25 @@
 
 package com.radixdlt.application.validators.state;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import java.util.Arrays;
 import java.util.Objects;
+import org.bouncycastle.util.encoders.Hex;
 
-public final class ValidatorSystemMetadata implements ValidatorData {
-  private final ECPublicKey validatorKey;
-  private final byte[] data;
-
-  public ValidatorSystemMetadata(ECPublicKey validatorKey, byte[] data) {
+public record ValidatorSystemMetadata(ECPublicKey validatorKey, byte[] data)
+    implements ValidatorData {
+  public ValidatorSystemMetadata {
     if (data.length != 32) {
       throw new IllegalArgumentException("Invalid number of bytes in data");
     }
-    this.validatorKey = validatorKey;
-    this.data = data;
   }
 
   public static ValidatorSystemMetadata createVirtual(ECPublicKey validatorKey) {
     return new ValidatorSystemMetadata(validatorKey, HashUtils.zero256().asBytes());
   }
 
-  public byte[] getData() {
-    return data;
-  }
-
-  public HashCode getAsHash() {
-    return HashCode.fromBytes(data);
-  }
-
-  @Override
-  public ECPublicKey getValidatorKey() {
-    return validatorKey;
-  }
+  // Class contains array, explicitly defined hashCode() and equals() are necessary
 
   @Override
   public int hashCode() {
@@ -106,11 +91,21 @@ public final class ValidatorSystemMetadata implements ValidatorData {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof ValidatorSystemMetadata)) {
-      return false;
+    if (o == this) {
+      return true;
     }
-    var other = (ValidatorSystemMetadata) o;
-    return Objects.equals(this.validatorKey, other.validatorKey)
+
+    return o instanceof ValidatorSystemMetadata other
+        && Objects.equals(this.validatorKey, other.validatorKey)
         && Arrays.equals(this.data, other.data);
+  }
+
+  @Override
+  public String toString() {
+    return "ValidatorSystemMetadata[key="
+        + validatorKey.toHex()
+        + ", data="
+        + Hex.toHexString(data)
+        + "]";
   }
 }

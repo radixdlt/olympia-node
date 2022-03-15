@@ -65,25 +65,21 @@
 package com.radixdlt.api.system.prometheus;
 
 import static com.radixdlt.api.system.prometheus.PrometheusService.JmxMetric.jmxMetric;
-import static com.radixdlt.atom.SubstateTypeId.VALIDATOR_BFT_DATA;
 import static org.radix.Radix.SYSTEM_VERSION_KEY;
 import static org.radix.Radix.VERSION_STRING_KEY;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -123,6 +119,10 @@ public class PrometheusService {
 
   private static final String COUNTER = "counter";
   private static final String COUNTER_PREFIX = "info_counters_";
+  private static final String COMPLETED_PROPOSALS =
+      COUNTER_PREFIX + "radix_engine_cur_epoch_completed_proposals";
+  private static final String MISSED_PROPOSALS =
+      COUNTER_PREFIX + "radix_engine_cur_epoch_missed_proposals";
 
   private final SystemCounters systemCounters;
   private final HealthInfoService healthInfoService;
@@ -131,7 +131,6 @@ public class PrometheusService {
   private final BFTNode self;
   private final Map<String, Boolean> endpointStatuses;
   private final PeersView peersView;
-  private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
   @Inject
   public PrometheusService(
@@ -140,10 +139,8 @@ public class PrometheusService {
       PeersView peersView,
       HealthInfoService healthInfoService,
       InMemorySystemInfo inMemorySystemInfo,
-      RadixEngine<LedgerAndBFTProof> radixEngine,
       @Self BFTNode self,
       Addressing addressing) {
-    this.radixEngine = radixEngine;
     boolean enableTransactions = properties.get("api.transactions.enable", false);
     this.endpointStatuses = Map.of("transactions", enableTransactions);
     this.systemCounters = systemCounters;
@@ -248,26 +245,14 @@ public class PrometheusService {
   private void exportCounters(StringBuilder builder) {
     EXPORT_LIST.forEach(counterType -> generateCounterEntry(counterType, builder));
 
-    getProposalStats()
-        .ifPresent(
-            uptime -> {
-              appendCounter(
-                  builder,
-                  COUNTER_PREFIX + "radix_engine_cur_epoch_completed_proposals",
-                  uptime.proposalsCompleted());
-              appendCounter(
-                  builder,
-                  COUNTER_PREFIX + "radix_engine_cur_epoch_missed_proposals",
-                  uptime.proposalsMissed());
-            });
+    inMemorySystemInfo
+        .getValidatorBFTData()
+        .ifPresent(proposals -> addProposalsCounters(builder, proposals));
   }
 
-  private Optional<ValidatorBFTData> getProposalStats() {
-    var validatorBFTKey =
-        SystemMapKey.ofSystem(VALIDATOR_BFT_DATA.id(), self.getKey().getCompressedBytes());
-
-    return radixEngine.read(
-        reader -> reader.get(validatorBFTKey).map(ValidatorBFTData.class::cast));
+  private void addProposalsCounters(StringBuilder builder, ValidatorBFTDataEvent proposals) {
+    appendCounter(builder, COMPLETED_PROPOSALS, proposals.completedProposals());
+    appendCounter(builder, MISSED_PROPOSALS, proposals.missedProposals());
   }
 
   private void generateCounterEntry(CounterType counterType, StringBuilder builder) {

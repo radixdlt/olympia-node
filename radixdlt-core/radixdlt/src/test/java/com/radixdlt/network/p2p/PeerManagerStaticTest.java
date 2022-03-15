@@ -62,99 +62,115 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.service;
+package com.radixdlt.network.p2p;
 
-import static com.radixdlt.api.system.health.ForkVoteStatusService.ForkVoteStatus.NO_ACTION_NEEDED;
-import static com.radixdlt.api.system.health.ForkVoteStatusService.ForkVoteStatus.VOTE_REQUIRED;
-import static com.radixdlt.utils.TypedMocks.rmock;
+import static com.radixdlt.utils.TypedMocks.cmock;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.api.system.health.ForkVoteStatusService;
-import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
-import com.radixdlt.atom.CloseableCursor;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.CandidateForkConfig;
-import com.radixdlt.statecomputer.forks.CurrentForkView;
-import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
-import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.RERules;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.statecomputer.forks.RERulesVersion;
-import com.radixdlt.store.EngineStore;
-import java.util.Arrays;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.network.messaging.InboundMessage;
+import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
+import com.radixdlt.network.p2p.addressbook.AddressBook;
+import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
+import com.radixdlt.network.p2p.addressbook.InMemoryAddressBookPersistence;
+import com.radixdlt.network.p2p.transport.PeerChannel;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
+import com.radixdlt.properties.RuntimeProperties;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Observable;
+import java.util.Optional;
 import java.util.Set;
+import org.apache.commons.cli.ParseException;
+import org.json.JSONObject;
+import org.junit.Assert;
 import org.junit.Test;
 
-public final class ForkVoteStatusServiceTest {
-
-  private final RERules reRules = RERulesVersion.OLYMPIA_V1.create(RERulesConfig.testingDefault());
+public class PeerManagerStaticTest {
 
   @Test
-  public void should_correctly_tell_if_fork_vote_is_needed() {
-    final var self = BFTNode.random();
-    final var otherNode = BFTNode.random();
-    @SuppressWarnings("unchecked")
-    final var engineStore = (EngineStore<LedgerAndBFTProof>) rmock(EngineStore.class);
-    final var initialFork = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), reRules, 0L);
-    final var candidateFork =
-        new CandidateForkConfig("fork2", HashCode.fromInt(2), reRules, 5100, 2L);
-    final var forks = Forks.create(Set.of(initialFork, candidateFork));
+  public void should_cleanup_existing_entries_from_same_host_port_on_successful_connect() {
+    var self = makeNodeUri("10.0.0.1", 30000);
+    var addressBook =
+        new AddressBook(
+            self,
+            cmock(new TypeLiteral<EventDispatcher<PeerEvent>>() {}),
+            new InMemoryAddressBookPersistence());
+    var peerManager =
+        new PeerManager(
+            self,
+            P2PConfig.fromRuntimeProperties(defaultProperties()),
+            Addressing.ofNetwork(Network.LOCALNET),
+            () -> addressBook,
+            () -> mock(PendingOutboundChannelsManager.class),
+            mock(SystemCounters.class));
 
-    final var currentForkView = mock(CurrentForkView.class);
-    when(currentForkView.currentForkConfig()).thenReturn(initialFork);
+    var peer1 = makeNodeUri("10.0.0.2", 30000);
+    // second address for same peer
+    var peer2 = makeNodeUri(peer1.getNodeId().getPublicKey(), "10.0.0.2", 30001);
 
-    when(engineStore.openIndexedCursor(any()))
-        .thenAnswer(unused -> votesOf(candidateFork, otherNode));
+    addressBook.addUncheckedPeers(Set.of(peer1, peer2));
 
-    final var forkVoteStatusService =
-        new ForkVoteStatusService(self, engineStore, forks, currentForkView);
+    // Before connect
+    addressBook
+        .findById(peer2.getNodeId())
+        .ifPresentOrElse(
+            entry -> assertEquals(2L, entry.getKnownAddresses().stream().count()), Assert::fail);
 
-    assertEquals(VOTE_REQUIRED, forkVoteStatusService.forkVoteStatus());
+    var peerChanel = mock(PeerChannel.class);
+    var inboundMessages = cmock(new TypeLiteral<Flowable<InboundMessage>>() {});
+    // new key, but same host/port as peer2
+    var peer = makeNodeUri("10.0.0.2", 30000);
 
-    when(engineStore.openIndexedCursor(any()))
-        .thenAnswer(unused -> votesOf(candidateFork, self, otherNode));
-    assertEquals(NO_ACTION_NEEDED, forkVoteStatusService.forkVoteStatus());
+    when(peerChanel.getUri()).thenReturn(Optional.of(peer));
+    when(peerChanel.inboundMessages()).thenReturn(inboundMessages);
+    when(inboundMessages.toObservable())
+        .thenReturn(cmock(new TypeLiteral<Observable<InboundMessage>>() {}));
+    when(peerChanel.isOutbound()).thenReturn(true);
+    when(peerChanel.getRemoteNodeId()).thenReturn(peer.getNodeId());
+
+    peerManager.peerEventProcessor().process(new PeerConnected(peerChanel));
+
+    // One address is removed
+    addressBook
+        .findById(peer2.getNodeId())
+        .ifPresentOrElse(
+            entry -> assertEquals(1L, entry.getKnownAddresses().stream().count()), Assert::fail);
+    addressBook
+        .findById(peer2.getNodeId())
+        .ifPresentOrElse(
+            entry ->
+                assertEquals(
+                    peer2,
+                    entry.getKnownAddresses().stream()
+                        .map(PeerAddressEntry::getUri)
+                        .iterator()
+                        .next()),
+            Assert::fail);
   }
 
-  @Test
-  public void should_not_require_a_vote_for_non_candidate_fork() {
-    final var self = BFTNode.random();
-    @SuppressWarnings("unchecked")
-    final var engineStore = (EngineStore<LedgerAndBFTProof>) rmock(EngineStore.class);
-    final var initialFork = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), reRules, 0L);
-    final var nextFork = new FixedEpochForkConfig("fork2", HashCode.fromInt(2), reRules, 2L);
-    final var forks = Forks.create(Set.of(initialFork, nextFork));
-
-    final var currentForkView = mock(CurrentForkView.class);
-    when(currentForkView.currentForkConfig()).thenReturn(initialFork);
-
-    final var forkVoteStatusService =
-        new ForkVoteStatusService(self, engineStore, forks, currentForkView);
-
-    assertEquals(NO_ACTION_NEEDED, forkVoteStatusService.forkVoteStatus());
-    verifyNoInteractions(engineStore);
+  private RadixNodeUri makeNodeUri(String host, int port) {
+    return makeNodeUri(ECKeyPair.generateNew().getPublicKey(), host, port);
   }
 
-  private CloseableCursor<RawSubstateBytes> votesOf(ForkConfig forkConfig, BFTNode... nodes) {
-    return CloseableCursor.of(
-        Arrays.stream(nodes)
-            .map(n -> voteOf(n, forkConfig.hash()))
-            .toArray(RawSubstateBytes[]::new));
+  private RadixNodeUri makeNodeUri(ECPublicKey pubKey, String host, int port) {
+    return RadixNodeUri.fromPubKeyAndAddress(Network.LOCALNET.getId(), pubKey, host, port);
   }
 
-  private RawSubstateBytes voteOf(BFTNode validator, HashCode forkHash) {
-    final var pubKey = validator.getKey();
-    final var substate =
-        new ValidatorSystemMetadata(pubKey, ForkConfig.voteHash(pubKey, forkHash).asBytes());
-    final var serializedSubstate = reRules.serialization().serialize(substate);
-    return new RawSubstateBytes(new byte[] {}, serializedSubstate);
+  private static RuntimeProperties defaultProperties() {
+    try {
+      final var props = new RuntimeProperties(new JSONObject(), new String[] {});
+      props.set("network.p2p.max_inbound_channels", 10);
+      props.set("network.p2p.max_outbound_channels", 10);
+      return props;
+    } catch (ParseException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

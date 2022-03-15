@@ -67,12 +67,16 @@ package com.radixdlt.network.p2p;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
+import com.radixdlt.network.p2p.PeerEvent.PeerConnectionTimeout;
+import com.radixdlt.network.p2p.PeerEvent.PeerHandshakeFailed;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import javax.inject.Inject;
 
@@ -115,15 +119,15 @@ public final class PendingOutboundChannelsManager {
 
   public EventProcessor<PeerEvent> peerEventProcessor() {
     return peerEvent -> {
-      if (peerEvent instanceof PeerEvent.PeerConnected peerConnected) {
+      if (peerEvent instanceof PeerConnected peerConnected) {
         this.handlePeerConnected(peerConnected);
-      } else if (peerEvent instanceof PeerEvent.PeerHandshakeFailed peerHandshakeFailed) {
+      } else if (peerEvent instanceof PeerHandshakeFailed peerHandshakeFailed) {
         this.handlePeerHandshakeFailed(peerHandshakeFailed);
       }
     };
   }
 
-  private void handlePeerConnected(PeerEvent.PeerConnected peerConnected) {
+  private void handlePeerConnected(PeerConnected peerConnected) {
     synchronized (lock) {
       final var channel = peerConnected.channel();
       final var maybeFuture = this.pendingChannels.remove(channel.getRemoteNodeId());
@@ -133,18 +137,15 @@ public final class PendingOutboundChannelsManager {
     }
   }
 
-  private void handlePeerHandshakeFailed(PeerEvent.PeerHandshakeFailed peerHandshakeFailed) {
+  private void handlePeerHandshakeFailed(PeerHandshakeFailed peerHandshakeFailed) {
     synchronized (lock) {
       peerHandshakeFailed
           .channel()
           .getUri()
+          .map(RadixNodeUri::getNodeId)
+          .flatMap(nodeId -> Optional.ofNullable(this.pendingChannels.remove(nodeId)))
           .ifPresent(
-              uri -> {
-                final var maybeFuture = this.pendingChannels.remove(uri.getNodeId());
-                if (maybeFuture != null) {
-                  maybeFuture.completeExceptionally(new IOException("Peer connection failed"));
-                }
-              });
+              future -> future.completeExceptionally(new IOException("Peer connection failed")));
     }
   }
 
@@ -155,7 +156,7 @@ public final class PendingOutboundChannelsManager {
         final var maybeFuture = this.pendingChannels.remove(timeout.uri().getNodeId());
         if (maybeFuture != null) {
           maybeFuture.completeExceptionally(new IOException("Peer connection timeout"));
-          peerEventDispatcher.dispatch(new PeerEvent.PeerConnectionTimeout(timeout.uri()));
+          peerEventDispatcher.dispatch(new PeerConnectionTimeout(timeout.uri()));
         }
       }
     };

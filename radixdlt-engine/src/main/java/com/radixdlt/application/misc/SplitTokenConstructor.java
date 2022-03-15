@@ -64,11 +64,12 @@
 
 package com.radixdlt.application.misc;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.SplitToken;
 import com.radixdlt.utils.UInt256;
 
 public final class SplitTokenConstructor implements ActionConstructor<SplitToken> {
@@ -79,12 +80,12 @@ public final class SplitTokenConstructor implements ActionConstructor<SplitToken
         txBuilder.downSubstate(
             TokensInAccount.class,
             p ->
-                p.getResourceAddr().equals(action.rri())
-                    && p.getHoldingAddr().equals(userAccount)
-                    && p.getAmount().compareTo(action.minSize()) > 0);
+                p.resourceAddr().equals(action.rri())
+                    && p.holdingAddress().equals(userAccount)
+                    && p.amount().compareTo(action.minSize()) > 0);
 
-    var amt1 = tokens.getAmount().divide(UInt256.TWO);
-    var amt2 = tokens.getAmount().subtract(amt1);
+    var amt1 = tokens.amount().divide(UInt256.TWO);
+    var amt2 = tokens.amount().subtract(amt1);
     txBuilder.up(new TokensInAccount(userAccount, action.rri(), amt1));
     txBuilder.up(new TokensInAccount(userAccount, action.rri(), amt2));
     txBuilder.end();

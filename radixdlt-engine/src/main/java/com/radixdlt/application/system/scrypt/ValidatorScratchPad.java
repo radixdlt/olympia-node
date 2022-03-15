@@ -81,12 +81,12 @@ public final class ValidatorScratchPad {
   private boolean isRegistered;
 
   public ValidatorScratchPad(ValidatorStakeData validatorStakeData) {
-    this.totalStake = UInt384.from(validatorStakeData.getTotalStake());
-    this.totalOwnership = UInt384.from(validatorStakeData.getTotalOwnership());
-    this.rakePercentage = validatorStakeData.getRakePercentage();
-    this.ownerAddr = validatorStakeData.getOwnerAddr();
+    this.totalStake = UInt384.from(validatorStakeData.totalStake());
+    this.totalOwnership = UInt384.from(validatorStakeData.totalOwnership());
+    this.rakePercentage = validatorStakeData.rakePercentage();
+    this.ownerAddr = validatorStakeData.ownerAddr();
     this.isRegistered = validatorStakeData.isRegistered();
-    this.validatorKey = validatorStakeData.getValidatorKey();
+    this.validatorKey = validatorStakeData.validatorKey();
   }
 
   public ECPublicKey getValidatorKey() {

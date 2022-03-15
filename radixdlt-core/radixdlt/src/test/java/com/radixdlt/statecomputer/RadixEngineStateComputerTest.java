@@ -64,6 +64,7 @@
 
 package com.radixdlt.statecomputer;
 
+import static com.radixdlt.atom.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -77,18 +78,9 @@ import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.NextEpoch;
-import com.radixdlt.atom.actions.NextRound;
-import com.radixdlt.atom.actions.RegisterValidator;
+import com.radixdlt.atom.*;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
@@ -105,6 +97,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.counters.SystemCounters;
@@ -221,8 +214,8 @@ public class RadixEngineStateComputerTest {
     var result = branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
     var genesisValidatorSet =
         result.getProcessedTxns().get(0).getEvents().stream()
-            .filter(NextValidatorSetEvent.class::isInstance)
-            .map(NextValidatorSetEvent.class::cast)
+            .filter(REEvent.NextValidatorSetEvent.class::isInstance)
+            .map(REEvent.NextValidatorSetEvent.class::cast)
             .findFirst()
             .map(
                 e ->
@@ -231,7 +224,7 @@ public class RadixEngineStateComputerTest {
                             .map(
                                 v ->
                                     BFTValidator.from(
-                                        BFTNode.create(v.getValidatorKey()), v.getAmount()))))
+                                        BFTNode.create(v.validatorKey()), v.amount()))))
             .orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
     radixEngine.deleteBranches();
 
@@ -378,7 +371,7 @@ public class RadixEngineStateComputerTest {
             .buildWithoutSignature();
     var illegalTxn =
         TxLowLevelBuilder.newBuilder(
-                currentForkView.currentForkConfig().engineRules().getSerialization())
+                currentForkView.currentForkConfig().engineRules().serialization())
             .down(SubstateId.ofSubstate(txn.getId(), 1))
             .up(new RoundData(2, 0))
             .end()
@@ -400,9 +393,8 @@ public class RadixEngineStateComputerTest {
         .hasValueSatisfying(
             new Condition<>(
                 e -> {
-                  RadixEngineException ex = (RadixEngineException) e;
-                  ConstraintMachineException cmException =
-                      (ConstraintMachineException) ex.getCause();
+                  var ex = (RadixEngineException) e;
+                  var cmException = (ConstraintMachineException) ex.getCause();
                   return cmException.getCause() instanceof InvalidPermissionException;
                 },
                 "Is invalid_execution_permission error"));
@@ -433,7 +425,7 @@ public class RadixEngineStateComputerTest {
   @Test
   public void committing_epoch_change_with_additional_cmds_should_fail() throws Exception {
     // Arrange
-    ECKeyPair keyPair = ECKeyPair.generateNew();
+    var keyPair = ECKeyPair.generateNew();
     var cmd0 = systemUpdateCommand(0, 2);
     var cmd1 = registerCommand(keyPair);
     var ledgerProof =

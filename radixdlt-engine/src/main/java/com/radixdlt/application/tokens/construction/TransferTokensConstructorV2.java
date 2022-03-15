@@ -64,14 +64,11 @@
 
 package com.radixdlt.application.tokens.construction;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.radixdlt.application.tokens.state.AccountBucket;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.NotEnoughResourcesException;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atom.*;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import java.nio.ByteBuffer;
@@ -82,23 +79,23 @@ public class TransferTokensConstructorV2 implements ActionConstructor<TransferTo
     var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
     buf.put(SubstateTypeId.TOKENS.id());
     buf.put((byte) 0);
-    buf.put(action.from().getBytes());
+    buf.put(action.fromAddr().getBytes());
     var index = SubstateIndex.create(buf.array(), TokensInAccount.class);
     var change =
         txBuilder.downFungible(
             index,
             p ->
-                p.getResourceAddr().equals(action.resourceAddr())
-                    && p.getHoldingAddr().equals(action.from()),
+                p.resourceAddr().equals(action.resourceAddr())
+                    && p.holdingAddress().equals(action.fromAddr()),
             action.amount(),
             available -> {
-              var from = AccountBucket.from(action.resourceAddr(), action.from());
+              var from = AccountBucket.from(action.resourceAddr(), action.fromAddr());
               return new NotEnoughResourcesException(from, action.amount(), available);
             });
     if (!change.isZero()) {
-      txBuilder.up(new TokensInAccount(action.from(), action.resourceAddr(), change));
+      txBuilder.up(new TokensInAccount(action.fromAddr(), action.resourceAddr(), change));
     }
-    txBuilder.up(new TokensInAccount(action.to(), action.resourceAddr(), action.amount()));
+    txBuilder.up(new TokensInAccount(action.toAddr(), action.resourceAddr(), action.amount()));
     txBuilder.end();
   }
 }

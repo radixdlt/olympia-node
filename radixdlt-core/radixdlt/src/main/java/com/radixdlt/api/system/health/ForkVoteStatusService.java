@@ -65,6 +65,7 @@
 package com.radixdlt.api.system.health;
 
 import com.google.common.collect.Streams;
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.SubstateTypeId;
@@ -114,7 +115,7 @@ public final class ForkVoteStatusService {
         ForkConfig.voteHash(self.getKey(), forks.getCandidateFork().get());
 
     final var substateDeserialization =
-        currentFork.engineRules().getParser().getSubstateDeserialization();
+        currentFork.engineRules().parser().getSubstateDeserialization();
 
     // TODO: this could be optimized
     try (var validatorMetadataCursor =
@@ -134,9 +135,9 @@ public final class ForkVoteStatusService {
                           "Failed to deserialize ValidatorMetaData substate");
                     }
                   })
-              .filter(vm -> vm.getValidatorKey().equals(self.getKey()))
+              .filter(vm -> vm.validatorKey().equals(self.getKey()))
               .findAny()
-              .map(ValidatorSystemMetadata::getAsHash);
+              .map(substate -> HashCode.fromBytes(substate.data()));
 
       return maybeSelfForkVoteHash.filter(expectedCandidateForkVoteHash::equals).isPresent()
           ? ForkVoteStatus.NO_ACTION_NEEDED

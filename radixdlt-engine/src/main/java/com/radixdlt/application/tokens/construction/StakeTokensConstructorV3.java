@@ -64,29 +64,22 @@
 
 package com.radixdlt.application.tokens.construction;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.radixdlt.application.tokens.state.AccountBucket;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.NotEnoughResourcesException;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.*;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import java.nio.ByteBuffer;
 
-public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> {
-  private final UInt256 minimumStake;
-
-  public StakeTokensConstructorV3(UInt256 minimumStake) {
-    this.minimumStake = minimumStake;
-  }
+public record StakeTokensConstructorV3(UInt256 minimumStake)
+    implements ActionConstructor<StakeTokens> {
 
   @Override
   public void construct(StakeTokens action, TxBuilder builder) throws TxBuilderException {
@@ -98,31 +91,31 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
     var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
     buf.put(SubstateTypeId.TOKENS.id());
     buf.put((byte) 0);
-    buf.put(action.from().getBytes());
+    buf.put(action.fromAddr().getBytes());
 
     var index = SubstateIndex.create(buf.array(), TokensInAccount.class);
     var change =
         builder.downFungible(
             index,
-            p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(action.from()),
+            p -> p.resourceAddr().isNativeToken() && p.holdingAddress().equals(action.fromAddr()),
             action.amount(),
             available -> {
-              var from = AccountBucket.from(REAddr.ofNativeToken(), action.from());
+              var from = AccountBucket.from(REAddr.ofNativeToken(), action.fromAddr());
               return new NotEnoughResourcesException(from, action.amount(), available);
             });
     if (!change.isZero()) {
-      builder.up(new TokensInAccount(action.from(), REAddr.ofNativeToken(), change));
+      builder.up(new TokensInAccount(action.fromAddr(), REAddr.ofNativeToken(), change));
     }
 
-    var flag = builder.read(AllowDelegationFlag.class, action.to());
+    var flag = builder.read(AllowDelegationFlag.class, action.toDelegate());
     if (!flag.allowsDelegation()) {
-      var validator = builder.read(ValidatorOwnerCopy.class, action.to());
-      var owner = validator.getOwner();
-      if (!action.from().equals(owner)) {
-        throw new DelegateStakePermissionException(owner, action.from());
+      var validator = builder.read(ValidatorOwnerCopy.class, action.toDelegate());
+      var owner = validator.owner();
+      if (!action.fromAddr().equals(owner)) {
+        throw new DelegateStakePermissionException(owner, action.fromAddr());
       }
     }
-    builder.up(new PreparedStake(action.amount(), action.from(), action.to()));
+    builder.up(new PreparedStake(action.amount(), action.fromAddr(), action.toDelegate()));
     builder.end();
   }
 }

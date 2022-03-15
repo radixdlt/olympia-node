@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -ex
 
@@ -24,4 +24,4 @@ env | sort
 
 envsubst <"${RADIXDLT_HOME:?}"/default.config.envsubst >"${RADIXDLT_HOME:?}"/default.config
 
-exec su --preserve-environment -c "$*" radixdlt
+exec setuidgid radixdlt $*

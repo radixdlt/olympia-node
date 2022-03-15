@@ -180,7 +180,7 @@ public final class Forks {
                   } else if (candidateFork.isPresent()) {
                     final var nextForkPostProcessor =
                         new NextCandidateForkPostProcessor(
-                            forkConfig.engineRules().getParser(), candidateFork.get());
+                            forkConfig.engineRules().parser(), candidateFork.get());
                     return forkConfig.addPostProcessor(nextForkPostProcessor);
                   } else {
                     return forkConfig;
@@ -324,7 +324,7 @@ public final class Forks {
               .findFirst()
               .orElseThrow();
       final var substateDeserialization =
-          forkAtEpoch.engineRules().getParser().getSubstateDeserialization();
+          forkAtEpoch.engineRules().parser().getSubstateDeserialization();
       try (var cursor = forksEpochStore.validatorsSystemMetadataCursor(epoch)) {
         final var validatorsMetadataAtEpoch =
             Streams.stream(cursor)
@@ -431,14 +431,14 @@ public final class Forks {
 
     final var forkVotesPower =
         validatorsMetadata.stream()
-            .filter(vm -> validatorSet.containsNode(vm.getValidatorKey()))
+            .filter(vm -> validatorSet.containsNode(vm.validatorKey()))
             .filter(
                 vm -> {
                   final var expectedVoteHash =
-                      ForkConfig.voteHash(vm.getValidatorKey(), candidateFork);
-                  return vm.getAsHash().equals(expectedVoteHash);
+                      ForkConfig.voteHash(vm.validatorKey(), candidateFork);
+                  return HashCode.fromBytes(vm.data()).equals(expectedVoteHash);
                 })
-            .map(validatorMetadata -> validatorSet.getPower(validatorMetadata.getValidatorKey()))
+            .map(validatorMetadata -> validatorSet.getPower(validatorMetadata.validatorKey()))
             .reduce(UInt256.ZERO, UInt256::add);
 
     return forkVotesPower.compareTo(requiredPower) >= 0;

@@ -64,10 +64,11 @@
 
 package com.radixdlt.harness.simulation.application;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.engine.RadixEngine;

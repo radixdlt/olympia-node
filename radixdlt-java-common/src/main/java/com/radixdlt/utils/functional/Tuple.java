@@ -77,7 +77,7 @@ import com.radixdlt.utils.functional.Functions.FN9;
 import java.util.Objects;
 
 /** Tuples of various size. */
-public interface Tuple<S extends Tuple<?>> {
+public interface Tuple<S extends Tuple<S>> {
   interface Tuple0 extends Tuple<Tuple0> {
     <T> T map(FN0<T> mapper);
   }
@@ -128,8 +128,10 @@ public interface Tuple<S extends Tuple<?>> {
     <T> T map(FN9<T, T1, T2, T3, T4, T5, T6, T7, T8, T9> mapper);
   }
 
-  Tuple0 UNIT =
-      new Tuple0() {
+  interface Unit extends Tuple0 {}
+
+  Unit UNIT =
+      new Unit() {
         @Override
         public <T> T map(final FN0<T> mapper) {
           return mapper.apply();
@@ -147,9 +149,19 @@ public interface Tuple<S extends Tuple<?>> {
 
         @Override
         public String toString() {
-          return "Tuple()";
+          return "()";
         }
       };
+
+  Result<Unit> UNIT_RESULT = Result.ok(UNIT);
+
+  static Unit unit() {
+    return UNIT;
+  }
+
+  static Result<Unit> unitResult() {
+    return UNIT_RESULT;
+  }
 
   static Tuple0 tuple() {
     return UNIT;

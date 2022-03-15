@@ -64,15 +64,13 @@
 
 package com.radixdlt.application.system.construction;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.VirtualParent;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.CreateSystem;
+import com.radixdlt.atom.*;
 import com.radixdlt.identifiers.REAddr;
 import java.nio.charset.StandardCharsets;
 
@@ -87,7 +85,7 @@ public class CreateSystemConstructorV2 implements ActionConstructor<CreateSystem
         .syscall(Syscall.READDR_CLAIM, "sys".getBytes(StandardCharsets.UTF_8));
     builder.downREAddr(REAddr.ofSystem());
     builder.up(new EpochData(0));
-    builder.up(new RoundData(0, action.getTimestamp()));
+    builder.up(new RoundData(0, action.timestamp()));
     builder.up(new VirtualParent(new byte[] {SubstateTypeId.VALIDATOR_META_DATA.id()}));
     builder.up(new VirtualParent(new byte[] {SubstateTypeId.VALIDATOR_STAKE_DATA.id()}));
     builder.up(new VirtualParent(new byte[] {SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id()}));

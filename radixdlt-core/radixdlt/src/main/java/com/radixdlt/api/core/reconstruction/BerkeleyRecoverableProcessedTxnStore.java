@@ -245,7 +245,7 @@ public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAddit
     txn.stateUpdates()
         .filter(u -> u.getParsed() instanceof RoundData)
         .map(u -> (RoundData) u.getParsed())
-        .filter(r -> r.getTimestamp() > 0)
+        .filter(r -> r.timestamp() > 0)
         .map(RoundData::asInstant)
         .forEach(timestamp::set);
 

@@ -64,18 +64,14 @@
 
 package com.radixdlt.application.unique;
 
+import static com.radixdlt.atom.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.unique.scrypt.MutexConstraintScrypt;
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.CreateSystem;
+import com.radixdlt.atom.*;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -140,7 +136,7 @@ public class UniqueTest {
   public void using_someone_elses_mutex_should_fail() throws Exception {
     var addr = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
     var builder =
-        TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization)
+        TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization, 255)
             .toLowLevelBuilder()
             .syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
             .virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
