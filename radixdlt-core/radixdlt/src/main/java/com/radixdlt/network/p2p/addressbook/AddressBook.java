@@ -66,6 +66,7 @@ package com.radixdlt.network.p2p.addressbook;
 
 import static java.util.function.Predicate.not;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
@@ -212,7 +213,7 @@ public final class AddressBook {
     return Optional.ofNullable(this.knownPeers.get(nodeId));
   }
 
-  public Optional<RadixNodeUri> findBestKnownAddressById(NodeId nodeId) {
+  public ImmutableList<RadixNodeUri> bestKnownAddressesById(NodeId nodeId) {
     synchronized (lock) {
       return Optional.ofNullable(this.knownPeers.get(nodeId)).stream()
           .filter(not(AddressBookEntry::isBanned))
@@ -220,7 +221,7 @@ public final class AddressBook {
           .filter(not(PeerAddressEntry::blacklisted))
           .sorted(addressEntryComparator)
           .map(AddressBookEntry.PeerAddressEntry::getUri)
-          .findFirst();
+          .collect(ImmutableList.toImmutableList());
     }
   }
 
