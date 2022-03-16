@@ -2,7 +2,7 @@ name: Trigger jenkins job that deploys the main branch in the radixdlt repositor
 on:
   push:
     branches:
-      - DO-425-trigger-jenkins-from-ci
+      - main
 jobs:
   trigger-jenkins-main-branch:
     runs-on: ubuntu-latest
