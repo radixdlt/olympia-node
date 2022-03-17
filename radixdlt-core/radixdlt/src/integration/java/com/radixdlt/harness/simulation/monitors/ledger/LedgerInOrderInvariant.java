@@ -68,7 +68,6 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.ledger.LedgerUpdate;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -92,18 +91,19 @@ public class LedgerInOrderInvariant implements TestInvariant {
         .ledgerUpdates()
         .flatMap(
             nodeAndCommand -> {
-              BFTNode node = nodeAndCommand.getFirst();
-              LedgerUpdate ledgerUpdate = nodeAndCommand.getSecond();
-              List<Txn> nodeTxns = commandsPerNode.get(node);
+              final var node = nodeAndCommand.getFirst();
+              final var ledgerUpdate = nodeAndCommand.getSecond();
+              final var nodeTxns = commandsPerNode.computeIfAbsent(node, k -> new ArrayList<>());
               nodeTxns.addAll(ledgerUpdate.getNewTxns());
 
-              return commandsPerNode.values().stream()
-                  .filter(list -> nodeTxns != list)
-                  .filter(list -> list.size() >= nodeTxns.size())
+              return commandsPerNode.entrySet().stream()
+                  .filter(e -> nodeTxns != e.getValue())
+                  .filter(e -> e.getValue().size() >= nodeTxns.size())
                   .findFirst() // Only need to check one node, if passes, guaranteed to pass the
                   // others
                   .flatMap(
-                      list -> {
+                      e -> {
+                        var list = e.getValue();
                         if (Collections.indexOfSubList(list, nodeTxns) != 0) {
                           TestInvariantError err =
                               new TestInvariantError(
