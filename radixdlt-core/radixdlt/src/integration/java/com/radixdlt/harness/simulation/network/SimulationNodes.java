@@ -192,10 +192,13 @@ public class SimulationNodes {
 
     void runModule(BFTNode node, String name);
 
+    void start();
+
     void stop();
   }
 
-  public RunningNetwork start(ImmutableMap<BFTNode, ImmutableSet<String>> disabledModuleRunners) {
+  public RunningNetwork createRunningNetwork(
+      ImmutableMap<BFTNode, ImmutableSet<String>> disabledModuleRunners) {
     return new RunningNetworkImpl(disabledModuleRunners);
   }
 
@@ -221,12 +224,12 @@ public class SimulationNodes {
                   Collectors.toMap(
                       p -> BFTNode.create(p.getFirst().getPublicKey()), Pair::getSecond));
 
-      nodes.entrySet().forEach(e -> init(e.getKey(), e.getValue()));
+      nodes.forEach(this::addObservables);
     }
 
-    private void init(BFTNode node, Injector injector) {
-      this.addObservables(node, injector);
-      this.startRunners(node, injector);
+    @Override
+    public void start() {
+      nodes.forEach(this::startRunners);
     }
 
     private void startRunners(BFTNode node, Injector injector) {
@@ -244,6 +247,7 @@ public class SimulationNodes {
     private void addObservables(BFTNode node, Injector injector) {
       final var ledgerUpdateObservable =
           injector.getInstance(Key.get(new TypeLiteral<Observable<LedgerUpdate>>() {}));
+
       ledgerUpdateObservable.subscribe(update -> ledgerUpdates.onNext(Pair.of(node, update)));
 
       final var epochChangeObservable =
@@ -355,13 +359,15 @@ public class SimulationNodes {
                     extraModule);
         final var injector = Guice.createInjector(module);
         this.nodes.put(bftNode, injector);
-        init(bftNode, injector);
+        this.addObservables(bftNode, injector);
+        this.startRunners(bftNode, injector);
       } else {
         final var baseModule = createBFTModule(key);
         final var module = Modules.override(baseModule).with(extraModule);
         final var injector = Guice.createInjector(module);
         this.nodes.put(bftNode, injector);
-        init(bftNode, injector);
+        this.addObservables(bftNode, injector);
+        this.startRunners(bftNode, injector);
       }
     }
 
