@@ -516,7 +516,8 @@ public final class Forks {
             .anyMatch(e -> e.getValue() >= e.getKey().numEpochsBeforeEnacted());
   }
 
-  private static boolean forkWithinAllowedEpochRange(long nextEpoch, CandidateForkConfig candidateFork) {
+  private static boolean forkWithinAllowedEpochRange(
+      long nextEpoch, CandidateForkConfig candidateFork) {
     return nextEpoch >= candidateFork.minEpoch() && nextEpoch <= candidateFork.maxEpoch();
   }
 }
