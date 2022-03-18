@@ -99,7 +99,7 @@ import com.radixdlt.sync.InMemoryCommittedReader;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.PublishSubject;
+import io.reactivex.rxjava3.subjects.ReplaySubject;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -192,13 +192,10 @@ public class SimulationNodes {
 
     void runModule(BFTNode node, String name);
 
-    void start();
-
     void stop();
   }
 
-  public RunningNetwork createRunningNetwork(
-      ImmutableMap<BFTNode, ImmutableSet<String>> disabledModuleRunners) {
+  public RunningNetwork start(ImmutableMap<BFTNode, ImmutableSet<String>> disabledModuleRunners) {
     return new RunningNetworkImpl(disabledModuleRunners);
   }
 
@@ -206,9 +203,8 @@ public class SimulationNodes {
     private final ImmutableMap<BFTNode, ImmutableSet<String>> disabledModuleRunners;
     private final Map<BFTNode, Injector> nodes;
 
-    private final PublishSubject<Pair<BFTNode, EpochChange>> epochChanges = PublishSubject.create();
-    private final PublishSubject<Pair<BFTNode, LedgerUpdate>> ledgerUpdates =
-        PublishSubject.create();
+    private final ReplaySubject<Observable<Pair<BFTNode, EpochChange>>> epochChangeObservables;
+    private final ReplaySubject<Observable<Pair<BFTNode, LedgerUpdate>>> ledgerUpdateObservables;
 
     RunningNetworkImpl(ImmutableMap<BFTNode, ImmutableSet<String>> disabledModuleRunners) {
       this.disabledModuleRunners = disabledModuleRunners;
@@ -224,11 +220,13 @@ public class SimulationNodes {
                   Collectors.toMap(
                       p -> BFTNode.create(p.getFirst().getPublicKey()), Pair::getSecond));
 
-      nodes.forEach(this::addObservables);
-    }
+      /* Using ReplaySubject so that the initial events that are
+      send in between the module runners are started and rxjava subscriber is started (in awaitCompletion)
+      are not lost. */
+      epochChangeObservables = ReplaySubject.createWithSize(nodes.size());
+      ledgerUpdateObservables = ReplaySubject.createWithSize(nodes.size());
 
-    @Override
-    public void start() {
+      nodes.forEach(this::addObservables);
       nodes.forEach(this::startRunners);
     }
 
@@ -248,7 +246,8 @@ public class SimulationNodes {
       final var ledgerUpdateObservable =
           injector.getInstance(Key.get(new TypeLiteral<Observable<LedgerUpdate>>() {}));
 
-      ledgerUpdateObservable.subscribe(update -> ledgerUpdates.onNext(Pair.of(node, update)));
+      ledgerUpdateObservables.onNext(
+          ledgerUpdateObservable.map(ledgerUpdate -> Pair.of(node, ledgerUpdate)));
 
       final var epochChangeObservable =
           ledgerUpdateObservable.flatMapMaybe(
@@ -256,7 +255,7 @@ public class SimulationNodes {
                 final var e = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
                 return e == null ? Maybe.empty() : Maybe.just(Pair.of(node, e));
               });
-      epochChangeObservable.subscribe(epochChanges::onNext);
+      epochChangeObservables.onNext(epochChangeObservable);
     }
 
     @Override
@@ -277,7 +276,7 @@ public class SimulationNodes {
 
       return Observable.just(initialEpoch)
           .concatWith(
-              epochChanges
+              Observable.merge(epochChangeObservables)
                   .map(Pair::getSecond)
                   .scan(
                       (cur, next) ->
@@ -287,7 +286,7 @@ public class SimulationNodes {
 
     @Override
     public Observable<Pair<BFTNode, LedgerUpdate>> ledgerUpdates() {
-      return ledgerUpdates;
+      return Observable.merge(ledgerUpdateObservables);
     }
 
     @Override

@@ -150,8 +150,7 @@ public final class ForkVoteStatusServiceTest {
 
   private CloseableCursor<RawSubstateBytes> votesOf(
       CandidateForkConfig forkConfig, BFTNode... nodes) {
-    return CloseableCursor.of(
-        Arrays.stream(nodes).map(n -> voteOf(n, forkConfig)).toArray(RawSubstateBytes[]::new));
+    return CloseableCursor.of(Arrays.stream(nodes).map(n -> voteOf(n, forkConfig)).toList());
   }
 
   private RawSubstateBytes voteOf(BFTNode validator, CandidateForkConfig forkConfig) {

@@ -75,12 +75,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Ledger-side safety check. Checks that commands and the order getting persisted are the same
  * across all nodes.
  */
 public class LedgerInOrderInvariant implements TestInvariant {
+  private static final Logger log = LogManager.getLogger();
 
   @Override
   public Observable<TestInvariantError> check(RunningNetwork network) {
@@ -103,11 +106,18 @@ public class LedgerInOrderInvariant implements TestInvariant {
                   // others
                   .flatMap(
                       e -> {
-                        var list = e.getValue();
-                        if (Collections.indexOfSubList(list, nodeTxns) != 0) {
-                          TestInvariantError err =
-                              new TestInvariantError(
-                                  "Two nodes don't agree on commands: " + list + " " + nodeTxns);
+                        var otherNode = e.getKey();
+                        var otherNodeTxns = e.getValue();
+                        if (Collections.indexOfSubList(otherNodeTxns, nodeTxns) != 0) {
+                          log.info(
+                              "Two nodes don't agree on commands. Node {} has commands {} but node"
+                                  + " {} has {}",
+                              node,
+                              nodeTxns,
+                              otherNode,
+                              otherNodeTxns);
+                          final var err =
+                              new TestInvariantError("Two nodes don't agree on commands");
                           return Optional.of(Observable.just(err));
                         }
                         return Optional.empty();

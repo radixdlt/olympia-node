@@ -194,9 +194,8 @@ public interface CloseableCursor<T> extends Iterator<T>, Closeable {
     };
   }
 
-  @SafeVarargs
-  static <T> CloseableCursor<T> of(T... items) {
-    return of(List.of(items));
+  static <T> CloseableCursor<T> single(T item) {
+    return of(List.of(item));
   }
 
   static <T> CloseableCursor<T> of(List<T> items) {

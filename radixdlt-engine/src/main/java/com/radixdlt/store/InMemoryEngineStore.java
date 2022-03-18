@@ -114,7 +114,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
   public <R> R transaction(TransactionEngineStoreConsumer<M, R> consumer)
       throws RadixEngineException {
     return consumer.start(
-        new EngineStoreInTransaction<M>() {
+        new EngineStoreInTransaction<>() {
           @Override
           public void storeTxn(REProcessedTxn txn) {
             synchronized (lock) {

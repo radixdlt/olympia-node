@@ -453,7 +453,7 @@ public final class Forks {
               .map(
                   currentForkVotingResult ->
                       previousVotingResultsCursor.concat(
-                          () -> CloseableCursor.of(currentForkVotingResult)))
+                          () -> CloseableCursor.single(currentForkVotingResult)))
               .orElse(previousVotingResultsCursor);
       return testCandidate(
           candidateFork, ledgerAndBFTProof.getProof(), previousAndCurrentResultsCursor);

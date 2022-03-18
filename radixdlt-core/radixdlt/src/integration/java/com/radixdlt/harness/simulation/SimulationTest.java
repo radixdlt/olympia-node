@@ -730,7 +730,7 @@ public final class SimulationTest {
 
     SimulationNodes bftNetwork =
         new SimulationNodes(initialNodes, simulationNetwork, baseNodeModule, overrideModules);
-    RunningNetwork runningNetwork = bftNetwork.createRunningNetwork(disabledModuleRunners);
+    RunningNetwork runningNetwork = bftNetwork.start(disabledModuleRunners);
 
     final var resultObservable =
         runChecks(runners, checkers, runningNetwork, duration)
@@ -739,8 +739,6 @@ public final class SimulationTest {
                   runners.forEach(SimulationNetworkActor::stop);
                   runningNetwork.stop();
                 });
-
-    runningNetwork.start();
 
     return new RunningSimulationTest(resultObservable, runningNetwork);
   }
