@@ -101,9 +101,10 @@ public final class ForksTest {
         new FixedEpochForkConfig("fork1", OLYMPIA_V1.create(RERulesConfig.testingDefault()), 0L);
     final var fork2 =
         new FixedEpochForkConfig("fork1", OLYMPIA_V1.create(RERulesConfig.testingDefault()), 1L);
+    final var forks = Set.<ForkConfig>of(fork1, fork2);
 
     final var exception =
-        assertThrows(IllegalArgumentException.class, () -> Forks.create(Set.of(fork1, fork2)));
+        assertThrows(IllegalArgumentException.class, () -> Forks.create(forks));
 
     assertTrue(exception.getMessage().contains("duplicate name"));
   }
@@ -112,9 +113,10 @@ public final class ForksTest {
   public void should_fail_when_no_genesis() {
     final var fork1 =
         new FixedEpochForkConfig("fork1", OLYMPIA_V1.create(RERulesConfig.testingDefault()), 1L);
+    final var forks = Set.<ForkConfig>of(fork1);
 
     final var exception =
-        assertThrows(IllegalArgumentException.class, () -> Forks.create(Set.of(fork1)));
+        assertThrows(IllegalArgumentException.class, () -> Forks.create(forks));
 
     assertTrue(exception.getMessage().contains("must start at epoch"));
   }
@@ -127,10 +129,11 @@ public final class ForksTest {
         new FixedEpochForkConfig("fork2", OLYMPIA_V1.create(RERulesConfig.testingDefault()), 2L);
     final var fork3 =
         new FixedEpochForkConfig("fork3", OLYMPIA_V1.create(RERulesConfig.testingDefault()), 2L);
+    final var forks = Set.<ForkConfig>of(fork1, fork2, fork3);
 
     final var exception =
         assertThrows(
-            IllegalArgumentException.class, () -> Forks.create(Set.of(fork1, fork2, fork3)));
+            IllegalArgumentException.class, () -> Forks.create(forks));
 
     assertTrue(exception.getMessage().contains("duplicate epoch"));
   }

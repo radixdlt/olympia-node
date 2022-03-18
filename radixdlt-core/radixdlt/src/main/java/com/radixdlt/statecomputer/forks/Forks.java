@@ -469,7 +469,7 @@ public final class Forks {
     }
 
     final var nextEpoch = ledgerProof.getEpoch() + 1;
-    if (nextEpoch < candidateFork.minEpoch() || nextEpoch > candidateFork.maxEpoch()) {
+    if (!forkWithinAllowedEpochRange(nextEpoch, candidateFork)) {
       return false;
     }
 
@@ -514,5 +514,9 @@ public final class Forks {
     return next.epoch() == nextEpoch // the cursor ended up right at the correct epoch
         && thresholdEpochsMap.entrySet().stream() // and at least one threshold has enough epochs
             .anyMatch(e -> e.getValue() >= e.getKey().numEpochsBeforeEnacted());
+  }
+
+  private static boolean forkWithinAllowedEpochRange(long nextEpoch, CandidateForkConfig candidateFork) {
+    return nextEpoch >= candidateFork.minEpoch() && nextEpoch <= candidateFork.maxEpoch();
   }
 }
