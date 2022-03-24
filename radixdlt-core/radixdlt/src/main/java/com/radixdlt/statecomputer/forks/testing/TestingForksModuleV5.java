@@ -62,13 +62,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.forks;
+package com.radixdlt.statecomputer.forks.testing;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.statecomputer.forks.CandidateForkConfig;
+import com.radixdlt.statecomputer.forks.ForkBuilder;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.statecomputer.forks.RERulesVersion;
 
-public final class TestingForksModuleV2 extends AbstractModule {
+import java.util.Collections;
+
+public final class TestingForksModuleV5 extends AbstractModule {
   @ProvidesIntoSet
   ForkBuilder genesis() {
     return new ForkBuilder(
@@ -84,11 +92,23 @@ public final class TestingForksModuleV2 extends AbstractModule {
   @ProvidesIntoSet
   ForkBuilder fork2() {
     return new ForkBuilder(
-        "fork-2",
-        ImmutableSet.of(new CandidateForkConfig.Threshold((short) 6000 /* 60% */, 1)),
-        7L,
+        "fork-2", 7L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
+  }
+
+  @ProvidesIntoSet
+  ForkBuilder fork4() {
+    return new ForkBuilder(
+        "fork-4", 16L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(
+            500, FeeTable.create(Amount.ofMicroTokens(100), Collections.emptyMap())));
+  }
+
+  @ProvidesIntoSet
+  ForkBuilder fork5() {
+    return new ForkBuilder(
+        "fork-5",
+        ImmutableSet.of(new CandidateForkConfig.Threshold((short) 8000 /* 80% */, 1)),
+        20,
         Long.MAX_VALUE,
-        RERulesVersion.OLYMPIA_V1,
-        RERulesConfig.testingDefault(500));
+        RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
   }
 }

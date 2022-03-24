@@ -101,10 +101,7 @@ import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.StokenetForksModule;
-import com.radixdlt.statecomputer.forks.TestingForksModuleV1;
-import com.radixdlt.statecomputer.forks.TestingForksModuleV2;
-import com.radixdlt.statecomputer.forks.TestingForksModuleV3;
-import com.radixdlt.statecomputer.forks.TestingForksModuleV4;
+import com.radixdlt.statecomputer.forks.testing.TestingForksLoader;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
@@ -271,22 +268,12 @@ public final class RadixNodeModule extends AbstractModule {
       log.info("Using mainnet forks");
       install(new MainnetForksModule());
     } else if (properties.get("testing_forks.enable", false)) {
-      int forkConfigVersion =
-          properties.get(TESTING_FORKS_VERSION_KEY) != null
-                  && !properties.get(TESTING_FORKS_VERSION_KEY).isBlank()
-              ? properties.get(TESTING_FORKS_VERSION_KEY, 1)
-              : 1;
-      log.info("Using testing fork config, version {}", forkConfigVersion);
-      switch (forkConfigVersion) {
-        case 1 -> install(new TestingForksModuleV1());
-        case 2 -> install(new TestingForksModuleV2());
-        case 3 -> install(new TestingForksModuleV3());
-        case 4 -> install(new TestingForksModuleV4());
-        default -> {
-          log.warn("Unknown fork version {}, will use V1", forkConfigVersion);
-          install(new TestingForksModuleV1());
-        }
+      String testingForkConfigName = properties.get("testing_forks.fork_config_name", "TestingForksModuleV1");
+      if (testingForkConfigName.isBlank()) {
+        testingForkConfigName = "TestingForksModuleV1";
       }
+      log.info("Using testing fork config '{}'", testingForkConfigName);
+      install(new TestingForksLoader().createTestingForksModuleConfigFromClassName(testingForkConfigName));
     } else {
       log.info("Using stokenet forks");
       install(new StokenetForksModule());
