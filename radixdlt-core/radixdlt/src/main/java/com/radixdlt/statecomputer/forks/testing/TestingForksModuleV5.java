@@ -106,8 +106,8 @@ public final class TestingForksModuleV5 extends AbstractModule {
   ForkBuilder fork5() {
     return new ForkBuilder(
         "fork-5",
-        ImmutableSet.of(new CandidateForkConfig.Threshold((short) 8000 /* 80% */, 1)),
-        20,
+        ImmutableSet.of(new CandidateForkConfig.Threshold((short) 75 /* 75% */, 1)),
+        24,
         Long.MAX_VALUE,
         RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
   }
