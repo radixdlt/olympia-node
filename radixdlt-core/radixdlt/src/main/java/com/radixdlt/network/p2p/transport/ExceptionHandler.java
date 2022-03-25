@@ -69,11 +69,18 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
 import java.net.SocketAddress;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class ExceptionHandler extends ChannelDuplexHandler {
   private static final Logger log = LogManager.getLogger();
+  private final Optional<PeerChannel> mainHandler;
+
+  public ExceptionHandler(Optional<PeerChannel> mainHandler) {
+    this.mainHandler = mainHandler;
+  }
 
   @Override
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
@@ -95,14 +102,15 @@ public class ExceptionHandler extends ChannelDuplexHandler {
     ctx.write(msg, promise.addListener(future -> handleFailure(future, ctx)));
   }
 
-  private static void handleFailure(Future<?> future, ChannelHandlerContext ctx) {
+  private void handleFailure(Future<?> future, ChannelHandlerContext ctx) {
     if (!future.isSuccess()) {
       logAndCloseChannel(ctx, future.cause());
     }
   }
 
-  private static void logAndCloseChannel(ChannelHandlerContext ctx, Throwable cause) {
-    log.warn("Exception caught in channel, closing channel to prevent resource leak", cause);
+  private void logAndCloseChannel(ChannelHandlerContext ctx, Throwable cause) {
+    var affectedEntity = mainHandler.map(Object::toString).orElse("channel");
+    log.warn("Exception on {} {}, closing channel to prevent resource leak", affectedEntity, cause);
     ctx.close();
   }
 }
