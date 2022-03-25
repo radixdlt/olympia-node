@@ -76,9 +76,7 @@ import io.netty.channel.ChannelPromise;
 import java.net.SocketAddress;
 import java.util.Objects;
 
-/**
- * A {@link io.netty.channel.ChannelHandler} that logs all events using a supplied log sink.
- */
+/** A {@link io.netty.channel.ChannelHandler} that logs all events using a supplied log sink. */
 @Sharable
 public class LoggingHandler extends ChannelDuplexHandler {
 

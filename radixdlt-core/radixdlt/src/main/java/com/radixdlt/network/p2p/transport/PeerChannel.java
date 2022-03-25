@@ -108,8 +108,8 @@ import org.apache.logging.log4j.Logger;
 import org.radix.time.Time;
 
 /**
- * Class that manages TCP connection channel. It takes care of the initial handshake, creating
- * the frame and message codec and forwarding the messages to MessageCentral.
+ * Class that manages TCP connection channel. It takes care of the initial handshake, creating the
+ * frame and message codec and forwarding the messages to MessageCentral.
  */
 @SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "UnstableApiUsage"})
 public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
@@ -204,19 +204,18 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   }
 
   private void finalizeHandshake(AuthHandshakeResult handshakeResult) {
-    switch (handshakeResult) {
-      case AuthHandshakeSuccess successResult -> {
-        this.remoteNodeId = successResult.getRemoteNodeId();
-        this.frameCodec = new FrameCodec(successResult.getSecrets());
-        this.state = ChannelState.ACTIVE;
-        log.trace("Successful auth handshake: {}", this.toString());
-        peerEventDispatcher.dispatch(PeerConnected.create(this));
-      }
-      case final AuthHandshakeError errorResult -> {
-        log.warn("Auth handshake failed on {}: {}", this.toString(), errorResult.getMsg());
-        peerEventDispatcher.dispatch(PeerHandshakeFailed.create(this));
-        this.disconnect();
-      }
+    if (handshakeResult instanceof AuthHandshakeSuccess) {
+      final var successResult = (AuthHandshakeSuccess) handshakeResult;
+      this.remoteNodeId = successResult.getRemoteNodeId();
+      this.frameCodec = new FrameCodec(successResult.getSecrets());
+      this.state = ChannelState.ACTIVE;
+      log.trace("Successful auth handshake: {}", this.toString());
+      peerEventDispatcher.dispatch(PeerConnected.create(this));
+    } else {
+      final var errorResult = (AuthHandshakeError) handshakeResult;
+      log.warn("Auth handshake failed on {}: {}", this.toString(), errorResult.getMsg());
+      peerEventDispatcher.dispatch(PeerHandshakeFailed.create(this));
+      this.disconnect();
     }
   }
 
