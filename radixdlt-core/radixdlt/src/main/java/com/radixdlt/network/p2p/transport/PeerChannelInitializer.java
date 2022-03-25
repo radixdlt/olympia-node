@@ -162,7 +162,8 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
         .pipeline()
         .addLast("decode_proxy_header_line", new LineBasedFrameDecoder(255, true, true))
         .addLast("decode_proxy_header_bytes", new ByteArrayDecoder())
-        .addLast("handle_proxy_header", new ProxyHeaderHandler(socketChannel));
+        .addLast("handle_proxy_header", new ProxyHeaderHandler(socketChannel))
+        .addLast("exception_handler", new ExceptionHandler(Optional.empty()));
   }
 
   private final class ProxyHeaderHandler extends SimpleChannelInboundHandler<byte[]> {
@@ -180,6 +181,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
       ctx.pipeline().remove(LineBasedFrameDecoder.class);
       ctx.pipeline().remove(ByteArrayDecoder.class);
       ctx.pipeline().remove(ProxyHeaderHandler.class);
+      ctx.pipeline().remove(ExceptionHandler.class);
 
       // and create a regular peer channel pipeline
       createPeerChannelPipeline(socketChannel, clientAddress);
@@ -226,6 +228,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
             "unpack",
             new LengthFieldBasedFrameDecoder(packetLength, 0, headerLength, 0, headerLength))
         .addLast("handler", peerChannel)
-        .addLast("pack", new LengthFieldPrepender(headerLength));
+        .addLast("pack", new LengthFieldPrepender(headerLength))
+        .addLast("exception_handler", new ExceptionHandler(Optional.of(peerChannel)));
   }
 }
