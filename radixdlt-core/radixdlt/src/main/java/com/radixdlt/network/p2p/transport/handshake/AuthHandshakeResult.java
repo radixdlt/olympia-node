@@ -68,7 +68,8 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.p2p.NodeId;
 import java.util.Optional;
 
-public interface AuthHandshakeResult {
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+public sealed interface AuthHandshakeResult {
 
   static AuthHandshakeSuccess success(ECPublicKey remotePubKey, Secrets secrets) {
     return new AuthHandshakeSuccess(NodeId.fromPublicKey(remotePubKey), secrets);

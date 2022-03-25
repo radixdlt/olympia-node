@@ -204,18 +204,19 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   }
 
   private void finalizeHandshake(AuthHandshakeResult handshakeResult) {
-    if (handshakeResult instanceof AuthHandshakeSuccess) {
-      final var successResult = (AuthHandshakeSuccess) handshakeResult;
-      this.remoteNodeId = successResult.getRemoteNodeId();
-      this.frameCodec = new FrameCodec(successResult.getSecrets());
-      this.state = ChannelState.ACTIVE;
-      log.trace("Successful auth handshake: {}", this.toString());
-      peerEventDispatcher.dispatch(PeerConnected.create(this));
-    } else {
-      final var errorResult = (AuthHandshakeError) handshakeResult;
-      log.warn("Auth handshake failed on {}: {}", this.toString(), errorResult.getMsg());
-      peerEventDispatcher.dispatch(PeerHandshakeFailed.create(this));
-      this.disconnect();
+    switch (handshakeResult) {
+      case AuthHandshakeSuccess successResult -> {
+        this.remoteNodeId = successResult.getRemoteNodeId();
+        this.frameCodec = new FrameCodec(successResult.getSecrets());
+        this.state = ChannelState.ACTIVE;
+        log.trace("Successful auth handshake: {}", this.toString());
+        peerEventDispatcher.dispatch(PeerConnected.create(this));
+      }
+      case final AuthHandshakeError errorResult -> {
+        log.warn("Auth handshake failed on {}: {}", this.toString(), errorResult.getMsg());
+        peerEventDispatcher.dispatch(PeerHandshakeFailed.create(this));
+        this.disconnect();
+      }
     }
   }
 
