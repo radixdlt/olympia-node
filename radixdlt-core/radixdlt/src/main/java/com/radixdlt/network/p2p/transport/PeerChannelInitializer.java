@@ -187,9 +187,10 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 
     private InetSocketAddress parseProxyHeader(String line) throws IOException {
       /* The proxy protocol line is a single line that ends with a carriage return
-      and line feed ("\r\n"), and has the following form:
-      PROXY_STRING + single space + INET_PROTOCOL + single space + CLIENT_IP + single space
-      + PROXY_IP + single space + CLIENT_PORT + single space + PROXY_PORT + "\r\n" */
+       * and line feed ("\r\n"), and has the following form:
+       * PROXY_STRING + single space + INET_PROTOCOL + single space + CLIENT_IP
+       * + single space + PROXY_IP + single space + CLIENT_PORT + single space + PROXY_PORT + "\r\n"
+       */
       final var components = line.split(" ");
 
       if (!components[0].equals("PROXY") || !components[1].startsWith("TCP")) {

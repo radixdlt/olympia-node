@@ -62,88 +62,56 @@
  * permissions under this License.
  */
 
-import org.apache.tools.ant.taskdefs.condition.Os
+package com.radixdlt.network.p2p.transport;
 
-apply plugin: 'java'
-apply plugin: 'application'
-apply plugin: 'com.adarshr.test-logger'
-apply plugin: 'java-library'
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
+import io.netty.util.concurrent.Future;
+import java.net.SocketAddress;
+import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-configurations {
-    acceptanceTestImplementation.extendsFrom testImplementation
-}
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+public class ExceptionHandler extends ChannelDuplexHandler {
+  private static final Logger log = LogManager.getLogger();
 
-sourceSets {
-    acceptanceTest {
-        java {
-            compileClasspath += main.output + test.output
-            runtimeClasspath += main.output + test.output
-            srcDir file('src/test/java')
-            srcDir file('src/main/java')
-        }
-        resources.srcDir file('src/test/resources')
+  private final Optional<PeerChannel> mainHandler;
+
+  public ExceptionHandler(Optional<PeerChannel> mainHandler) {
+    this.mainHandler = mainHandler;
+  }
+
+  @Override
+  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+    logAndCloseChannel(ctx, cause);
+  }
+
+  @Override
+  public void connect(
+      ChannelHandlerContext ctx,
+      SocketAddress remoteAddress,
+      SocketAddress localAddress,
+      ChannelPromise promise) {
+    ctx.connect(
+        remoteAddress, localAddress, promise.addListener(future -> handleFailure(future, ctx)));
+  }
+
+  @Override
+  public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+    ctx.write(msg, promise.addListener(future -> handleFailure(future, ctx)));
+  }
+
+  private void handleFailure(Future<?> future, ChannelHandlerContext ctx) {
+    if (!future.isSuccess()) {
+      logAndCloseChannel(ctx, future.cause());
     }
-}
+  }
 
-task acceptanceTest(type: Test) {
-    testClassesDirs = sourceSets.acceptanceTest.output.classesDirs
-    classpath = sourceSets.acceptanceTest.runtimeClasspath
-}
-
-test {
-    enabled false
-    jacoco {
-        // Don't attempt to include these in code coverage.
-        enabled false
-    }
-}
-
-acceptanceTest {
-    testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat "full"
-        outputs.upToDateWhen { false }
-        showStandardStreams true
-    }
-    if (Os.isFamily(Os.FAMILY_UNIX)) { // there's no reason to set these properties on windows
-        systemProperty 'java.security.egd', 'file:/dev/urandom'
-        systemProperty 'javax.net.ssl.trustStore', '/etc/ssl/certs/java/cacerts'
-        systemProperty 'javax.net.ssl.trustStoreType', 'jks'
-    }
-    systemProperties System.getProperties()
-    jacoco {
-        // Jacoco plugin fails with an exception if run on these tests.
-        enabled false
-    }
-}
-
-dependencies {
-    api project(':radixdlt-java')
-    api project(':radixdlt')
-
-    api 'com.github.bitcoinj:bitcoinj:7c31dcb'
-    implementation 'org.bouncycastle:bcprov-jdk15on'
-    implementation 'org.bouncycastle:bcpkix-jdk15on'
-
-    implementation 'com.google.guava:guava'
-    implementation 'org.slf4j:slf4j-simple:2.0.0-alpha2'
-    implementation 'com.github.docker-java:docker-java:3.2.12'
-    implementation 'com.github.docker-java:docker-java-transport-httpclient5:3.2.12'
-    implementation 'org.buildobjects:jproc:2.6.2'
-    implementation 'org.awaitility:awaitility:4.1.0'
-    implementation 'com.github.mwiede:jsch:0.1.69'
-    implementation 'com.konghq:unirest-java:3.13.0'
-
-    // the project lobmok dependencies.
-    // Normally the lombok plugin is used, but for some reason
-    // it doesn't work so the deps are added manually
-    compileOnly 'org.projectlombok:lombok:1.18.22'
-    annotationProcessor 'org.projectlombok:lombok:1.18.22'
-    testCompileOnly 'org.projectlombok:lombok:1.18.22'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.22'
-
-    testImplementation 'junit:junit'
-    testImplementation 'org.assertj:assertj-core'
-    testImplementation 'io.cucumber:cucumber-java:6.10.3'
-    testImplementation 'io.cucumber:cucumber-junit:6.10.3'
+  private void logAndCloseChannel(ChannelHandlerContext ctx, Throwable cause) {
+    var affectedEntity = mainHandler.map(Object::toString).orElse("channel");
+    log.warn("Exception on {} {}, closing channel to prevent resource leak", affectedEntity, cause);
+    ctx.close();
+  }
 }
