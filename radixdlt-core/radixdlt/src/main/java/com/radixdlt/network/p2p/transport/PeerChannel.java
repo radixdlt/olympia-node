@@ -111,6 +111,7 @@ import org.radix.time.Time;
  * Class that manages TCP connection channel. It takes care of the initial handshake, creating the
  * frame and message codec and forwarding the messages to MessageCentral.
  */
+@SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "UnstableApiUsage"})
 public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   private static final Logger log = LogManager.getLogger();
 
@@ -275,12 +276,6 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
       // only send out event if peer was previously active
       this.peerEventDispatcher.dispatch(PeerDisconnected.create(this));
     }
-  }
-
-  @Override
-  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-    log.warn("Exception on {}: {}", this.toString(), cause.getMessage());
-    ctx.close();
   }
 
   private void write(ByteBuf data) {

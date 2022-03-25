@@ -162,7 +162,8 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
         .pipeline()
         .addLast("decode_proxy_header_line", new LineBasedFrameDecoder(255, true, true))
         .addLast("decode_proxy_header_bytes", new ByteArrayDecoder())
-        .addLast("handle_proxy_header", new ProxyHeaderHandler(socketChannel));
+        .addLast("handle_proxy_header", new ProxyHeaderHandler(socketChannel))
+        .addLast("exception_handler", new ExceptionHandler(Optional.empty()));
   }
 
   private final class ProxyHeaderHandler extends SimpleChannelInboundHandler<byte[]> {
@@ -180,6 +181,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
       ctx.pipeline().remove(LineBasedFrameDecoder.class);
       ctx.pipeline().remove(ByteArrayDecoder.class);
       ctx.pipeline().remove(ProxyHeaderHandler.class);
+      ctx.pipeline().remove(ExceptionHandler.class);
 
       // and create a regular peer channel pipeline
       createPeerChannelPipeline(socketChannel, clientAddress);
@@ -187,10 +189,9 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 
     private InetSocketAddress parseProxyHeader(String line) throws IOException {
       /* The proxy protocol line is a single line that ends with a carriage return
-       * and line feed ("\r\n"), and has the following form:
-       * PROXY_STRING + single space + INET_PROTOCOL + single space + CLIENT_IP
-       * + single space + PROXY_IP + single space + CLIENT_PORT + single space + PROXY_PORT + "\r\n"
-       */
+      and line feed ("\r\n"), and has the following form:
+      PROXY_STRING + single space + INET_PROTOCOL + single space + CLIENT_IP + single space
+      + PROXY_IP + single space + CLIENT_PORT + single space + PROXY_PORT + "\r\n" */
       final var components = line.split(" ");
 
       if (!components[0].equals("PROXY") || !components[1].startsWith("TCP")) {
@@ -227,6 +228,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
             "unpack",
             new LengthFieldBasedFrameDecoder(packetLength, 0, headerLength, 0, headerLength))
         .addLast("handler", peerChannel)
-        .addLast("pack", new LengthFieldPrepender(headerLength));
+        .addLast("pack", new LengthFieldPrepender(headerLength))
+        .addLast("exception_handler", new ExceptionHandler(Optional.of(peerChannel)));
   }
 }
