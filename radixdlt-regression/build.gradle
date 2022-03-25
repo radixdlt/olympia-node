@@ -121,7 +121,7 @@ dependencies {
     api project(':radixdlt-java')
     api project(':radixdlt')
 
-    api 'com.github.bitcoinj:bitcoinj:7c31dcb'
+    api 'org.bitcoinj:bitcoinj-core:0.15.10'
     implementation 'org.bouncycastle:bcprov-jdk15on'
     implementation 'org.bouncycastle:bcpkix-jdk15on'
 
@@ -135,8 +135,7 @@ dependencies {
     implementation 'com.konghq:unirest-java:3.13.0'
 
     // the project lobmok dependencies.
-    // Normally the lombok plugin is used, but for some reason
-    // it doesn't work so the deps are added manually
+    // Normally the lombok plugin is used, but for some reason it doesn't work so the deps are added manually
     compileOnly 'org.projectlombok:lombok:1.18.22'
     annotationProcessor 'org.projectlombok:lombok:1.18.22'
     testCompileOnly 'org.projectlombok:lombok:1.18.22'

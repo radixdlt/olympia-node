@@ -76,7 +76,6 @@ import org.apache.logging.log4j.Logger;
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class ExceptionHandler extends ChannelDuplexHandler {
   private static final Logger log = LogManager.getLogger();
-
   private final Optional<PeerChannel> mainHandler;
 
   public ExceptionHandler(Optional<PeerChannel> mainHandler) {
