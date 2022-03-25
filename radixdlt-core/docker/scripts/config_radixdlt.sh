@@ -12,6 +12,7 @@ USER_NAME=radixdlt
 getent group $USER_NAME >/dev/null && groupmod -g $USER_ID radixdlt || groupadd -r $USER_NAME -g $USER_ID
 getent passwd $USER_NAME >/dev/null && usermod -u $USER_ID radixdlt || useradd -r -d "$RADIXDLT_HOME" -g $USER_NAME $USER_NAME
 chown -R radixdlt:radixdlt /home/radixdlt/
+chmod u=xr /opt/radixdlt/bin/radixdlt
 
 #check for test network configs
 TEST_CONFIGS="${RADIXDLT_HOME:?}"/test.config
