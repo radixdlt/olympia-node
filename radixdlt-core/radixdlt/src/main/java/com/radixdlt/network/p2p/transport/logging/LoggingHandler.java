@@ -76,7 +76,7 @@ import io.netty.channel.ChannelPromise;
 import java.net.SocketAddress;
 import java.util.Objects;
 
-/** A {@link io.netty.channel.ChannelHandler} that logs all events using a supplied log sink. */
+/** A {@link ChannelHandler} that logs all events using a supplied log sink. */
 @Sharable
 public class LoggingHandler extends ChannelDuplexHandler {
 
@@ -247,7 +247,12 @@ public class LoggingHandler extends ChannelDuplexHandler {
    * @param eventName the name of the event
    */
   protected String format(ChannelHandlerContext ctx, String eventName) {
-    return ctx.channel().toString() + ' ' + eventName;
+    String chStr = ctx.channel().toString();
+    return new StringBuilder(chStr.length() + 1 + eventName.length())
+        .append(chStr)
+        .append(' ')
+        .append(eventName)
+        .toString();
   }
 
   /**
@@ -257,10 +262,10 @@ public class LoggingHandler extends ChannelDuplexHandler {
    * @param arg the argument of the event
    */
   protected String formatDetails(ChannelHandlerContext ctx, String eventName, Object arg) {
-    if (arg instanceof ByteBuf byteBuf) {
-      return formatByteBufDetails(ctx, eventName, byteBuf);
-    } else if (arg instanceof ByteBufHolder byteBufHolder) {
-      return formatByteBufHolderDetails(ctx, eventName, byteBufHolder);
+    if (arg instanceof ByteBuf) {
+      return formatByteBufDetails(ctx, eventName, (ByteBuf) arg);
+    } else if (arg instanceof ByteBufHolder) {
+      return formatByteBufHolderDetails(ctx, eventName, (ByteBufHolder) arg);
     } else {
       return formatSimpleDetails(ctx, eventName, arg);
     }
@@ -273,10 +278,10 @@ public class LoggingHandler extends ChannelDuplexHandler {
    * @param arg the argument of the event
    */
   protected String formatSummary(ChannelHandlerContext ctx, String eventName, Object arg) {
-    if (arg instanceof ByteBuf byteBuf) {
-      return formatByteBufSummary(ctx, eventName, byteBuf);
-    } else if (arg instanceof ByteBufHolder byteBufHolder) {
-      return formatByteBufHolderSummary(ctx, eventName, byteBufHolder);
+    if (arg instanceof ByteBuf) {
+      return formatByteBufSummary(ctx, eventName, (ByteBuf) arg);
+    } else if (arg instanceof ByteBufHolder) {
+      return formatByteBufHolderSummary(ctx, eventName, (ByteBufHolder) arg);
     } else {
       return formatSimpleSummary(ctx, eventName, arg);
     }
@@ -284,8 +289,8 @@ public class LoggingHandler extends ChannelDuplexHandler {
 
   /**
    * Formats an event and returns the formatted message. This method is currently only used for
-   * formatting {@link io.netty.channel.ChannelOutboundHandler#connect(ChannelHandlerContext,
-   * SocketAddress, SocketAddress, ChannelPromise)}.
+   * formatting {@link ChannelOutboundHandler#connect(ChannelHandlerContext, SocketAddress,
+   * SocketAddress, ChannelPromise)}.
    *
    * @param eventName the name of the event
    * @param firstArg the first argument of the event
@@ -297,7 +302,20 @@ public class LoggingHandler extends ChannelDuplexHandler {
       return formatSimpleDetails(ctx, eventName, firstArg);
     }
 
-    return ctx.channel().toString() + ' ' + eventName + ": " + firstArg + ", " + secondArg;
+    String chStr = ctx.channel().toString();
+    String arg1Str = String.valueOf(firstArg);
+    String arg2Str = secondArg.toString();
+    StringBuilder buf =
+        new StringBuilder(
+            chStr.length() + 1 + eventName.length() + 2 + arg1Str.length() + 2 + arg2Str.length());
+    buf.append(chStr)
+        .append(' ')
+        .append(eventName)
+        .append(": ")
+        .append(arg1Str)
+        .append(", ")
+        .append(arg2Str);
+    return buf.toString();
   }
 
   /**
@@ -305,14 +323,15 @@ public class LoggingHandler extends ChannelDuplexHandler {
    */
   private static String formatByteBufDetails(
       ChannelHandlerContext ctx, String eventName, ByteBuf msg) {
-    var chStr = ctx.channel().toString();
-    var length = msg.readableBytes();
-
+    String chStr = ctx.channel().toString();
+    int length = msg.readableBytes();
     if (length == 0) {
-      return chStr + ' ' + eventName + ": 0B";
+      StringBuilder buf = new StringBuilder(chStr.length() + 1 + eventName.length() + 4);
+      buf.append(chStr).append(' ').append(eventName).append(": 0B");
+      return buf.toString();
     } else {
-      var rows = (length + 15) / 16 + 4;
-      var buf =
+      int rows = (length + 15) / 16 + 4;
+      StringBuilder buf =
           new StringBuilder(chStr.length() + 1 + eventName.length() + 2 + 10 + 1 + 2 + rows * 80);
 
       buf.append(chStr)
@@ -333,7 +352,11 @@ public class LoggingHandler extends ChannelDuplexHandler {
    */
   private static String formatByteBufSummary(
       ChannelHandlerContext ctx, String eventName, ByteBuf msg) {
-    return ctx.channel().toString() + ' ' + eventName + ": " + msg.readableBytes() + 'B';
+    String chStr = ctx.channel().toString();
+    int length = msg.readableBytes();
+    StringBuilder buf = new StringBuilder(chStr.length() + 1 + eventName.length() + 20);
+    buf.append(chStr).append(' ').append(eventName).append(": ").append(length).append('B');
+    return buf.toString();
   }
 
   /**
@@ -342,15 +365,17 @@ public class LoggingHandler extends ChannelDuplexHandler {
    */
   private static String formatByteBufHolderDetails(
       ChannelHandlerContext ctx, String eventName, ByteBufHolder msg) {
-    var chStr = ctx.channel().toString();
-    var msgStr = msg.toString();
-    var content = msg.content();
-    var length = content.readableBytes();
-
+    String chStr = ctx.channel().toString();
+    String msgStr = msg.toString();
+    ByteBuf content = msg.content();
+    int length = content.readableBytes();
     if (length == 0) {
-      return chStr + ' ' + eventName + ": " + msgStr + ", 0B";
+      StringBuilder buf =
+          new StringBuilder(chStr.length() + 1 + eventName.length() + 2 + msgStr.length() + 4);
+      buf.append(chStr).append(' ').append(eventName).append(": ").append(msgStr).append(", 0B");
+      return buf.toString();
     } else {
-      var rows = (length + 15) / 16 + 4;
+      int rows = (length + 15) / 16 + 4;
       var buf =
           new StringBuilder(
               chStr.length()
@@ -384,14 +409,21 @@ public class LoggingHandler extends ChannelDuplexHandler {
    */
   private static String formatByteBufHolderSummary(
       ChannelHandlerContext ctx, String eventName, ByteBufHolder msg) {
-    return ctx.channel().toString()
-        + ' '
-        + eventName
-        + ": "
-        + msg.toString()
-        + ", "
-        + msg.content().readableBytes()
-        + 'B';
+    String chStr = ctx.channel().toString();
+    String msgStr = msg.toString();
+    ByteBuf content = msg.content();
+    int length = content.readableBytes();
+    StringBuilder buf =
+        new StringBuilder(chStr.length() + 1 + eventName.length() + 2 + msgStr.length() + 20);
+    buf.append(chStr)
+        .append(' ')
+        .append(eventName)
+        .append(": ")
+        .append(msgStr)
+        .append(", ")
+        .append(length)
+        .append('B');
+    return buf.toString();
   }
 
   /**
@@ -399,7 +431,11 @@ public class LoggingHandler extends ChannelDuplexHandler {
    */
   private static String formatSimpleDetails(
       ChannelHandlerContext ctx, String eventName, Object msg) {
-    return ctx.channel().toString() + ' ' + eventName + ": " + msg;
+    String chStr = ctx.channel().toString();
+    String msgStr = String.valueOf(msg);
+    StringBuilder buf =
+        new StringBuilder(chStr.length() + 1 + eventName.length() + 2 + msgStr.length());
+    return buf.append(chStr).append(' ').append(eventName).append(": ").append(msgStr).toString();
   }
 
   /**
@@ -407,7 +443,10 @@ public class LoggingHandler extends ChannelDuplexHandler {
    */
   private static String formatSimpleSummary(
       ChannelHandlerContext ctx, String eventName, Object msg) {
-    var msgStr = msg == null ? "null" : msg.getClass().getSimpleName();
-    return ctx.channel().toString() + ' ' + eventName + ": " + msgStr;
+    String chStr = ctx.channel().toString();
+    String msgStr = msg == null ? "null" : msg.getClass().getSimpleName();
+    StringBuilder buf =
+        new StringBuilder(chStr.length() + 1 + eventName.length() + 2 + msgStr.length());
+    return buf.append(chStr).append(' ').append(eventName).append(": ").append(msgStr).toString();
   }
 }
