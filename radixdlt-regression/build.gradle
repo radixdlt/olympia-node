@@ -135,7 +135,8 @@ dependencies {
     implementation 'com.konghq:unirest-java:3.13.0'
 
     // the project lobmok dependencies.
-    // Normally the lombok plugin is used, but for some reason it doesn't work so the deps are added manually
+    // Normally the lombok plugin is used, but for some reason
+    // it doesn't work so the deps are added manually
     compileOnly 'org.projectlombok:lombok:1.18.22'
     annotationProcessor 'org.projectlombok:lombok:1.18.22'
     testCompileOnly 'org.projectlombok:lombok:1.18.22'

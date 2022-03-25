@@ -108,8 +108,8 @@ import org.apache.logging.log4j.Logger;
 import org.radix.time.Time;
 
 /**
- * Class that manages TCP connection channel. It takes care of the initial handshake, creating the
- * frame and message codec and forwarding the messages to MessageCentral.
+ * Class that manages TCP connection channel. It takes care of the initial handshake, creating
+ * the frame and message codec and forwarding the messages to MessageCentral.
  */
 @SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "UnstableApiUsage"})
 public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {

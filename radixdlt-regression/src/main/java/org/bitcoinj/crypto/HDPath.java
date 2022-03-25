@@ -79,7 +79,7 @@ import javax.annotation.Nonnull;
  * present) not much else. It defaults to {@code false} which is the preferred setting for a
  * relative path.
  *
- * <p>{@code HDPath} is immutable and uses the {@code Collections.UnmodifiableList} type internally.
+ * <p> {@code HDPath} is immutable and uses the {@code Collections.UnmodifiableList} type internally.
  *
  * <p>It implements {@code java.util.List<ChildNumber>} to ease migration from the previous Guava
  * {@code ImmutableList<ChildNumber>}. It should be a minor breaking change to replace {@code
