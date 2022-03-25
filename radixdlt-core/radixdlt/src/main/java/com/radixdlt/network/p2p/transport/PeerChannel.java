@@ -216,22 +216,28 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   }
 
   private void finalizeHandshake(AuthHandshakeResult handshakeResult) {
-    if (handshakeResult instanceof final AuthHandshakeSuccess successResult) {
-      this.remoteNodeId = successResult.remoteNodeId();
-      this.frameCodec = new FrameCodec(successResult.secrets());
-      this.state = ChannelState.ACTIVE;
-
-      if (log.isTraceEnabled()) {
-        log.trace("Successful auth handshake: {}", this);
-      }
-      peerEventDispatcher.dispatch(new PeerConnected(this));
-    } else {
-      final var errorResult = (AuthHandshakeError) handshakeResult;
-
-      log.warn("Auth handshake failed on {}: {}", this, errorResult.msg());
-      peerEventDispatcher.dispatch(new PeerHandshakeFailed(this));
-      this.disconnect();
+    switch (handshakeResult) {
+      case AuthHandshakeSuccess successResult -> finalizeSuccessfulHandshake(successResult);
+      case final AuthHandshakeError errorResult -> finalizeFailedHandshake(errorResult);
     }
+  }
+
+  private void finalizeSuccessfulHandshake(AuthHandshakeSuccess successResult) {
+    this.remoteNodeId = successResult.remoteNodeId();
+    this.frameCodec = new FrameCodec(successResult.secrets());
+    this.state = ChannelState.ACTIVE;
+
+    if (log.isTraceEnabled()) {
+      log.trace("Successful auth handshake: {}", this);
+    }
+
+    peerEventDispatcher.dispatch(new PeerConnected(this));
+  }
+
+  private void finalizeFailedHandshake(AuthHandshakeError errorResult) {
+    log.warn("Auth handshake failed on {}: {}", this, errorResult.msg());
+    peerEventDispatcher.dispatch(new PeerHandshakeFailed(this));
+    this.disconnect();
   }
 
   private void handleMessage(ByteBuf buf) throws IOException {
@@ -293,12 +299,6 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     if (prevState == ChannelState.AUTH_HANDSHAKE && this.isInitiator) {
       this.peerEventDispatcher.dispatch(new PeerHandshakeFailed(this));
     }
-  }
-
-  @Override
-  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-    log.warn("Exception on {}: {}", this, cause.getMessage());
-    ctx.close();
   }
 
   private void write(ByteBuf data) {
