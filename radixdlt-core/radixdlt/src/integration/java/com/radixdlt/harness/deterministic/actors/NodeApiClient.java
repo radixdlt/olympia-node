@@ -71,6 +71,7 @@ import com.radixdlt.api.core.handlers.ConstructionSubmitHandler;
 import com.radixdlt.api.core.handlers.EngineConfigurationHandler;
 import com.radixdlt.api.core.handlers.EngineStatusHandler;
 import com.radixdlt.api.core.handlers.EntityHandler;
+import com.radixdlt.api.core.handlers.ForksVotingResultsHandler;
 import com.radixdlt.api.core.handlers.KeyListHandler;
 import com.radixdlt.api.core.handlers.KeySignHandler;
 import com.radixdlt.api.core.handlers.NetworkConfigurationHandler;
@@ -91,6 +92,8 @@ import com.radixdlt.api.core.openapitools.model.EngineStatusRequest;
 import com.radixdlt.api.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.openapitools.model.EntityRequest;
 import com.radixdlt.api.core.openapitools.model.EntityResponse;
+import com.radixdlt.api.core.openapitools.model.ForkVotingResult;
+import com.radixdlt.api.core.openapitools.model.ForksVotingResultsRequest;
 import com.radixdlt.api.core.openapitools.model.KeyListRequest;
 import com.radixdlt.api.core.openapitools.model.KeySignRequest;
 import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
@@ -121,6 +124,7 @@ final class NodeApiClient {
   private final ConstructionSubmitHandler constructionSubmitHandler;
   private final EngineConfigurationHandler engineConfigurationHandler;
   private final EngineStatusHandler engineStatusHandler;
+  private final ForksVotingResultsHandler forksVotingResultsHandler;
   private final TransactionsHandler transactionsHandler;
   private final CoreModelMapper coreModelMapper;
 
@@ -136,6 +140,7 @@ final class NodeApiClient {
       ConstructionSubmitHandler constructionSubmitHandler,
       EngineConfigurationHandler engineConfigurationHandler,
       EngineStatusHandler engineStatusHandler,
+      ForksVotingResultsHandler forksVotingResultsHandler,
       TransactionsHandler transactionsHandler,
       CoreModelMapper coreModelMapper) {
     this.networkConfigurationHandler = networkConfigurationHandler;
@@ -148,6 +153,7 @@ final class NodeApiClient {
     this.constructionSubmitHandler = constructionSubmitHandler;
     this.engineConfigurationHandler = engineConfigurationHandler;
     this.engineStatusHandler = engineStatusHandler;
+    this.forksVotingResultsHandler = forksVotingResultsHandler;
     this.transactionsHandler = transactionsHandler;
     this.coreModelMapper = coreModelMapper;
   }
@@ -341,5 +347,11 @@ final class NodeApiClient {
         new ConstructionSubmitRequest()
             .networkIdentifier(networkIdentifier)
             .signedTransaction(response.getSignedTransaction()));
+  }
+
+  public List<ForkVotingResult> forksVotingResults(long epoch) throws CoreApiException {
+    return forksVotingResultsHandler
+        .handleRequest(new ForksVotingResultsRequest().epoch(epoch))
+        .getForksVotingResults();
   }
 }

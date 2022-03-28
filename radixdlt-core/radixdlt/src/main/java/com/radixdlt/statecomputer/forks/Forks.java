@@ -67,6 +67,7 @@ package com.radixdlt.statecomputer.forks;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -313,13 +314,7 @@ public final class Forks {
     final var candidateFork = maybeCandidateFork.get();
     final var candidateForkId = CandidateForkVote.candidateForkId(candidateFork);
 
-    final var longestThresholdEpochs =
-        candidateFork.thresholds().stream()
-            .mapToInt(CandidateForkConfig.Threshold::numEpochsBeforeEnacted)
-            .max()
-            .orElse(1);
-
-    final var fromEpoch = candidateFork.minEpoch() - longestThresholdEpochs;
+    final var fromEpoch = candidateFork.minEpoch() - candidateFork.longestThresholdEpochs();
     final var toEpoch =
         candidateFork.maxEpoch() + 1 < candidateFork.maxEpoch() // check for overflows
             ? Long.MAX_VALUE
@@ -430,6 +425,10 @@ public final class Forks {
       return false;
     }
 
+    if (ledgerAndBFTProof.getProof().getNextValidatorSet().isEmpty()) {
+      return false;
+    }
+
     final var nextEpoch = ledgerAndBFTProof.getProof().getEpoch() + 1;
     final var candidateForkId = CandidateForkVote.candidateForkId(candidateFork);
 
@@ -438,13 +437,7 @@ public final class Forks {
             .filter(votingResult -> votingResult.candidateForkId().equals(candidateForkId))
             .findAny();
 
-    final var longestThresholdEpochs =
-        candidateFork.thresholds().stream()
-            .mapToInt(CandidateForkConfig.Threshold::numEpochsBeforeEnacted)
-            .max()
-            .orElse(1);
-
-    final var fromEpoch = nextEpoch - longestThresholdEpochs;
+    final var fromEpoch = nextEpoch - candidateFork.longestThresholdEpochs();
     try (final var previousVotingResultsCursor =
         forksEpochStore.forkVotingResultsCursor(
             fromEpoch, candidateFork.maxEpoch(), candidateForkId)) {
@@ -464,23 +457,36 @@ public final class Forks {
       CandidateForkConfig candidateFork,
       LedgerProof ledgerProof,
       CloseableCursor<ForkVotingResult> forkVotingResultsCursor) {
-    if (ledgerProof.getNextValidatorSet().isEmpty()) {
-      return false;
-    }
-
     final var nextEpoch = ledgerProof.getEpoch() + 1;
     if (!forkWithinAllowedEpochRange(nextEpoch, candidateFork)) {
       return false;
     }
 
+    final var thresholdsPassingEpochs =
+        calculateThresholdsPassingEpochs(
+            candidateFork.thresholds(), forkVotingResultsCursor, nextEpoch);
+
+    // at least one threshold has enough epochs
+    return thresholdsPassingEpochs.entrySet().stream()
+        .anyMatch(e -> e.getValue() >= e.getKey().numEpochsBeforeEnacted());
+  }
+
+  public static ImmutableMap<CandidateForkConfig.Threshold, Integer>
+      calculateThresholdsPassingEpochs(
+          ImmutableSet<CandidateForkConfig.Threshold> thresholds,
+          CloseableCursor<ForkVotingResult> forkVotingResultsCursor,
+          long atEpoch) {
+    final var emptyResult =
+        thresholds.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> 0));
     if (!forkVotingResultsCursor.hasNext()) {
-      return false;
+      return emptyResult;
     }
 
     final var initialForkVotingResult = forkVotingResultsCursor.next();
+
     final var thresholdEpochsMap =
         new HashMap<>(
-            candidateFork.thresholds().stream()
+            thresholds.stream()
                 .collect(
                     Collectors.toMap(
                         el -> el,
@@ -491,7 +497,7 @@ public final class Forks {
 
     ForkVotingResult next = initialForkVotingResult;
     long previousEpoch;
-    while (forkVotingResultsCursor.hasNext() && next.epoch() <= nextEpoch) {
+    while (forkVotingResultsCursor.hasNext() && next.epoch() <= atEpoch) {
       previousEpoch = next.epoch();
       next = forkVotingResultsCursor.next();
       final var finalNextForClosure = next;
@@ -511,9 +517,14 @@ public final class Forks {
       }
     }
 
-    return next.epoch() == nextEpoch // the cursor ended up right at the correct epoch
-        && thresholdEpochsMap.entrySet().stream() // and at least one threshold has enough epochs
-            .anyMatch(e -> e.getValue() >= e.getKey().numEpochsBeforeEnacted());
+    if (next.epoch() == atEpoch) {
+      // the cursor has finished at the correct epoch (there's no gap between the epoch and the
+      // latest result)
+      return ImmutableMap.copyOf(thresholdEpochsMap);
+    } else {
+      // there was a gap, so reset all thresholds to 0 (just return an empty result)
+      return emptyResult;
+    }
   }
 
   private static boolean forkWithinAllowedEpochRange(

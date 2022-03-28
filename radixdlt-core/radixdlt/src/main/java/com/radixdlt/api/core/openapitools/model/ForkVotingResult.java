@@ -17,115 +17,108 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * EngineStatusResponse
+ * ForkVotingResult
  */
 @JsonPropertyOrder({
-  EngineStatusResponse.JSON_PROPERTY_ENGINE_STATE_IDENTIFIER,
-  EngineStatusResponse.JSON_PROPERTY_VALIDATOR_SET,
-  EngineStatusResponse.JSON_PROPERTY_UPCOMING_FORK
+  ForkVotingResult.JSON_PROPERTY_EPOCH,
+  ForkVotingResult.JSON_PROPERTY_CANDIDATE_FORK_ID,
+  ForkVotingResult.JSON_PROPERTY_STAKE_PERCENTAGE_VOTED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-03-25T15:26:03.075102278+01:00[Europe/Warsaw]")
-public class EngineStatusResponse {
-  public static final String JSON_PROPERTY_ENGINE_STATE_IDENTIFIER = "engine_state_identifier";
-  private EngineStateIdentifier engineStateIdentifier;
+public class ForkVotingResult {
+  public static final String JSON_PROPERTY_EPOCH = "epoch";
+  private Long epoch;
 
-  public static final String JSON_PROPERTY_VALIDATOR_SET = "validator_set";
-  private List<Validator> validatorSet = new ArrayList<>();
+  public static final String JSON_PROPERTY_CANDIDATE_FORK_ID = "candidate_fork_id";
+  private String candidateForkId;
 
-  public static final String JSON_PROPERTY_UPCOMING_FORK = "upcoming_fork";
-  private UpcomingFork upcomingFork;
+  public static final String JSON_PROPERTY_STAKE_PERCENTAGE_VOTED = "stake_percentage_voted";
+  private Float stakePercentageVoted;
 
-  public EngineStatusResponse engineStateIdentifier(EngineStateIdentifier engineStateIdentifier) {
-    this.engineStateIdentifier = engineStateIdentifier;
+  public ForkVotingResult epoch(Long epoch) {
+    this.epoch = epoch;
     return this;
   }
 
    /**
-   * Get engineStateIdentifier
-   * @return engineStateIdentifier
+   * Get epoch
+   * @return epoch
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ENGINE_STATE_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EngineStateIdentifier getEngineStateIdentifier() {
-    return engineStateIdentifier;
+  public Long getEpoch() {
+    return epoch;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ENGINE_STATE_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEngineStateIdentifier(EngineStateIdentifier engineStateIdentifier) {
-    this.engineStateIdentifier = engineStateIdentifier;
+  public void setEpoch(Long epoch) {
+    this.epoch = epoch;
   }
 
 
-  public EngineStatusResponse validatorSet(List<Validator> validatorSet) {
-    this.validatorSet = validatorSet;
-    return this;
-  }
-
-  public EngineStatusResponse addValidatorSetItem(Validator validatorSetItem) {
-    this.validatorSet.add(validatorSetItem);
+  public ForkVotingResult candidateForkId(String candidateForkId) {
+    this.candidateForkId = candidateForkId;
     return this;
   }
 
    /**
-   * Get validatorSet
-   * @return validatorSet
+   * Get candidateForkId
+   * @return candidateForkId
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
+  @JsonProperty(JSON_PROPERTY_CANDIDATE_FORK_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<Validator> getValidatorSet() {
-    return validatorSet;
+  public String getCandidateForkId() {
+    return candidateForkId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
+  @JsonProperty(JSON_PROPERTY_CANDIDATE_FORK_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidatorSet(List<Validator> validatorSet) {
-    this.validatorSet = validatorSet;
+  public void setCandidateForkId(String candidateForkId) {
+    this.candidateForkId = candidateForkId;
   }
 
 
-  public EngineStatusResponse upcomingFork(UpcomingFork upcomingFork) {
-    this.upcomingFork = upcomingFork;
+  public ForkVotingResult stakePercentageVoted(Float stakePercentageVoted) {
+    this.stakePercentageVoted = stakePercentageVoted;
     return this;
   }
 
    /**
-   * Get upcomingFork
-   * @return upcomingFork
+   * Get stakePercentageVoted
+   * @return stakePercentageVoted
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_UPCOMING_FORK)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_STAKE_PERCENTAGE_VOTED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public UpcomingFork getUpcomingFork() {
-    return upcomingFork;
+  public Float getStakePercentageVoted() {
+    return stakePercentageVoted;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_UPCOMING_FORK)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setUpcomingFork(UpcomingFork upcomingFork) {
-    this.upcomingFork = upcomingFork;
+  @JsonProperty(JSON_PROPERTY_STAKE_PERCENTAGE_VOTED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setStakePercentageVoted(Float stakePercentageVoted) {
+    this.stakePercentageVoted = stakePercentageVoted;
   }
 
 
   /**
-   * Return true if this EngineStatusResponse object is equal to o.
+   * Return true if this ForkVotingResult object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -135,24 +128,24 @@ public class EngineStatusResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EngineStatusResponse engineStatusResponse = (EngineStatusResponse) o;
-    return Objects.equals(this.engineStateIdentifier, engineStatusResponse.engineStateIdentifier) &&
-        Objects.equals(this.validatorSet, engineStatusResponse.validatorSet) &&
-        Objects.equals(this.upcomingFork, engineStatusResponse.upcomingFork);
+    ForkVotingResult forkVotingResult = (ForkVotingResult) o;
+    return Objects.equals(this.epoch, forkVotingResult.epoch) &&
+        Objects.equals(this.candidateForkId, forkVotingResult.candidateForkId) &&
+        Objects.equals(this.stakePercentageVoted, forkVotingResult.stakePercentageVoted);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(engineStateIdentifier, validatorSet, upcomingFork);
+    return Objects.hash(epoch, candidateForkId, stakePercentageVoted);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EngineStatusResponse {\n");
-    sb.append("    engineStateIdentifier: ").append(toIndentedString(engineStateIdentifier)).append("\n");
-    sb.append("    validatorSet: ").append(toIndentedString(validatorSet)).append("\n");
-    sb.append("    upcomingFork: ").append(toIndentedString(upcomingFork)).append("\n");
+    sb.append("class ForkVotingResult {\n");
+    sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
+    sb.append("    candidateForkId: ").append(toIndentedString(candidateForkId)).append("\n");
+    sb.append("    stakePercentageVoted: ").append(toIndentedString(stakePercentageVoted)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -65,6 +65,7 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atom.CloseableCursor;
 
@@ -84,4 +85,6 @@ public interface ForksEpochStore {
    */
   CloseableCursor<ForkVotingResult> forkVotingResultsCursor(
       long fromEpoch, long toEpoch, HashCode candidateForkId);
+
+  ImmutableSet<ForkVotingResult> getForksVotingResultsForEpoch(long epoch);
 }

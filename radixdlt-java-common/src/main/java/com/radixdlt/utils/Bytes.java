@@ -64,6 +64,7 @@
 
 package com.radixdlt.utils;
 
+import com.google.common.hash.HashCode;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Base64;
@@ -290,5 +291,10 @@ public class Bytes {
       }
     }
     return true;
+  }
+
+  /** Returns the first n bytes from the given HashCode */
+  public static HashCode take(HashCode bytes, int n) {
+    return HashCode.fromBytes(Arrays.copyOfRange(bytes.asBytes(), 0, n));
   }
 }

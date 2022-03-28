@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.service;
+package com.radixdlt.api.system.health;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -72,7 +72,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.api.system.health.PeersForksInfoService;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;

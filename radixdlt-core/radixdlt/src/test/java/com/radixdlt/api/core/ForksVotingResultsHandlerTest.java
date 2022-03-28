@@ -62,80 +62,93 @@
  * permissions under this License.
  */
 
-package com.radixdlt.middleware2;
+package com.radixdlt.api.core;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import com.google.common.collect.ImmutableSet;
+import com.google.common.hash.HashCode;
+import com.google.inject.Inject;
+import com.radixdlt.api.ApiTest;
+import com.radixdlt.api.core.handlers.ForksVotingResultsHandler;
+import com.radixdlt.api.core.openapitools.model.ForksVotingResultsRequest;
+import com.radixdlt.api.core.openapitools.model.ForksVotingResultsResponse;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.forks.ForkVotingResult;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.utils.Bytes;
+import java.util.List;
+import java.util.Map;
+import org.junit.Test;
 
-@SerializerId2("different_client_atom")
-public class TestDifferentClientAtom implements TestLedgerAtom {
-  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
-  @DsonOutput({Output.ALL})
-  SerializerDummy serializer = SerializerDummy.DUMMY;
+public final class ForksVotingResultsHandlerTest extends ApiTest {
+  @Inject private ForksVotingResultsHandler sut;
+  @Inject private BerkeleyLedgerEntryStore berkeleyLedgerEntryStore;
 
-  @JsonProperty("datameta")
-  @DsonOutput({Output.ALL})
-  private final String metaData;
+  @Test
+  public void forks_voting_results_should_return_correct_data() throws Exception {
+    // Arrange
+    final var candidateForkId = Bytes.take(HashUtils.random256(), 8);
+    start();
+    storeMetadataWithForks(
+        2L, ImmutableSet.of(new ForkVotingResult(3L, candidateForkId, (short) 8050)));
 
-  @JsonProperty("dia")
-  @DsonOutput({Output.ALL})
-  private final AID aid;
+    // Act
+    var request = new ForksVotingResultsRequest().epoch(3L);
+    var response =
+        handleRequestWithExpectedResponse(sut, request, ForksVotingResultsResponse.class);
 
-  @JsonCreator
-  private TestDifferentClientAtom(
-      @JsonProperty("dia") AID aid, @JsonProperty("datameta") String metaData) {
-    this.aid = aid;
-    this.metaData = metaData == null ? "no metadata" : metaData;
+    // Assert
+    assertThat(response.getForksVotingResults())
+        .containsExactly(
+            new com.radixdlt.api.core.openapitools.model.ForkVotingResult()
+                .epoch(3L)
+                .candidateForkId(candidateForkId.toString())
+                .stakePercentageVoted(80.5f));
   }
 
-  public static TestDifferentClientAtom create(String metadata) {
-    var id = AID.from(HashUtils.random256().asBytes());
-    return new TestDifferentClientAtom(id, metadata);
-  }
+  private void storeMetadataWithForks(
+      long epoch, ImmutableSet<com.radixdlt.statecomputer.forks.ForkVotingResult> forkVotingResults)
+      throws RadixEngineException {
+    final var fakeTx = mock(REProcessedTxn.class);
+    final var txn = mock(Txn.class);
+    when(txn.getId()).thenReturn(AID.from(HashUtils.random256().asBytes()));
+    when(fakeTx.getTxn()).thenReturn(txn);
+    when(fakeTx.getTxnId()).thenReturn(AID.ZERO);
+    when(fakeTx.getGroupedStateUpdates()).thenReturn(List.of());
+    when(txn.getPayload()).thenReturn(HashUtils.random256().asBytes());
 
-  public AID aid() {
-    return aid;
-  }
+    final var proof1 =
+        LedgerAndBFTProof.create(
+                new LedgerProof(
+                    HashUtils.random256(),
+                    LedgerHeader.create(
+                        epoch,
+                        View.of(0L),
+                        new AccumulatorState(
+                            epoch /* using same state version as epoch */,
+                            HashCode.fromInt(1) /* unused */),
+                        0L),
+                    new TimestampedECDSASignatures(Map.of())))
+            .withForksVotingResults(forkVotingResults);
 
-  public String metaData() {
-    return metaData;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-
-    if (!(o instanceof TestDifferentClientAtom)) {
-      return false;
-    }
-
-    TestDifferentClientAtom that = (TestDifferentClientAtom) o;
-
-    if (!metaData.equals(that.metaData)) {
-      return false;
-    }
-
-    return aid.equals(that.aid);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = metaData.hashCode();
-    result = 31 * result + aid.hashCode();
-    return result;
-  }
-
-  @Override
-  public String toString() {
-    return "DifferentClientAtom(metaData: '" + metaData + "', aid: " + aid + ')';
+    berkeleyLedgerEntryStore.transaction(
+        tx -> {
+          tx.storeTxn(fakeTx);
+          tx.storeMetadata(proof1);
+          return null;
+        });
   }
 }

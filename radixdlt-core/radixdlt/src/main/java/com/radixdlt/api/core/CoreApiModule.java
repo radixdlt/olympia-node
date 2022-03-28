@@ -78,6 +78,7 @@ import com.radixdlt.api.core.handlers.ConstructionSubmitHandler;
 import com.radixdlt.api.core.handlers.EngineConfigurationHandler;
 import com.radixdlt.api.core.handlers.EngineStatusHandler;
 import com.radixdlt.api.core.handlers.EntityHandler;
+import com.radixdlt.api.core.handlers.ForksVotingResultsHandler;
 import com.radixdlt.api.core.handlers.KeyListHandler;
 import com.radixdlt.api.core.handlers.KeySignHandler;
 import com.radixdlt.api.core.handlers.MempoolHandler;
@@ -115,6 +116,9 @@ public class CoreApiModule extends AbstractModule {
         .addBinding(HandlerRoute.post("/engine/configuration"))
         .to(EngineConfigurationHandler.class);
     routeBinder.addBinding(HandlerRoute.post("/engine/status")).to(EngineStatusHandler.class);
+    routeBinder
+        .addBinding(HandlerRoute.get("/engine/forks-voting-results"))
+        .to(ForksVotingResultsHandler.class);
     if (transactionsEnable) {
       bind(BerkeleyRecoverableProcessedTxnStore.class).in(Scopes.SINGLETON);
       Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)

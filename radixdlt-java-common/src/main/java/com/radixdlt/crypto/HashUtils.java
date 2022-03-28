@@ -105,12 +105,7 @@ public final class HashUtils {
 
   /** Returns a random hash of length 32 bytes. */
   public static HashCode random256() {
-    return random(32);
-  }
-
-  /** Returns a random hash of specified length. */
-  public static HashCode random(int length) {
-    byte[] randomBytes = new byte[length];
+    byte[] randomBytes = new byte[32];
     secureRandom.nextBytes(randomBytes);
     return HashCode.fromBytes(shaHashHandler.hash256(randomBytes));
   }

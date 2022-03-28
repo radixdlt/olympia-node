@@ -65,6 +65,7 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atom.CloseableCursor;
 
@@ -83,5 +84,10 @@ public final class NoOpForksEpochStore implements ForksEpochStore {
   public CloseableCursor<ForkVotingResult> forkVotingResultsCursor(
       long fromEpoch, long toEpoch, HashCode candidateForkId) {
     return CloseableCursor.empty();
+  }
+
+  @Override
+  public ImmutableSet<ForkVotingResult> getForksVotingResultsForEpoch(long epoch) {
+    return ImmutableSet.of();
   }
 }

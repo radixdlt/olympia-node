@@ -98,6 +98,13 @@ public record CandidateForkConfig(
     }
   }
 
+  public int longestThresholdEpochs() {
+    return thresholds().stream()
+        .mapToInt(CandidateForkConfig.Threshold::numEpochsBeforeEnacted)
+        .max()
+        .orElseThrow();
+  }
+
   @Override
   public CandidateForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
     return new CandidateForkConfig(

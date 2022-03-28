@@ -14,118 +14,91 @@
 package com.radixdlt.api.core.openapitools.model;
 
 import java.util.Objects;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.HashMap;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonValue;
+import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * EngineStatusResponse
+ * UpcomingFork
  */
 @JsonPropertyOrder({
-  EngineStatusResponse.JSON_PROPERTY_ENGINE_STATE_IDENTIFIER,
-  EngineStatusResponse.JSON_PROPERTY_VALIDATOR_SET,
-  EngineStatusResponse.JSON_PROPERTY_UPCOMING_FORK
+  UpcomingFork.JSON_PROPERTY_NAME,
+  UpcomingFork.JSON_PROPERTY_EPOCHS_REMAINING
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-03-25T15:26:03.075102278+01:00[Europe/Warsaw]")
-public class EngineStatusResponse {
-  public static final String JSON_PROPERTY_ENGINE_STATE_IDENTIFIER = "engine_state_identifier";
-  private EngineStateIdentifier engineStateIdentifier;
+public class UpcomingFork {
+  public static final String JSON_PROPERTY_NAME = "name";
+  private String name;
 
-  public static final String JSON_PROPERTY_VALIDATOR_SET = "validator_set";
-  private List<Validator> validatorSet = new ArrayList<>();
+  public static final String JSON_PROPERTY_EPOCHS_REMAINING = "epochs_remaining";
+  private Long epochsRemaining;
 
-  public static final String JSON_PROPERTY_UPCOMING_FORK = "upcoming_fork";
-  private UpcomingFork upcomingFork;
+  public UpcomingFork() { 
+  }
 
-  public EngineStatusResponse engineStateIdentifier(EngineStateIdentifier engineStateIdentifier) {
-    this.engineStateIdentifier = engineStateIdentifier;
+  public UpcomingFork name(String name) {
+    this.name = name;
     return this;
   }
 
    /**
-   * Get engineStateIdentifier
-   * @return engineStateIdentifier
+   * Get name
+   * @return name
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ENGINE_STATE_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EngineStateIdentifier getEngineStateIdentifier() {
-    return engineStateIdentifier;
+  public String getName() {
+    return name;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ENGINE_STATE_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEngineStateIdentifier(EngineStateIdentifier engineStateIdentifier) {
-    this.engineStateIdentifier = engineStateIdentifier;
+  public void setName(String name) {
+    this.name = name;
   }
 
 
-  public EngineStatusResponse validatorSet(List<Validator> validatorSet) {
-    this.validatorSet = validatorSet;
-    return this;
-  }
-
-  public EngineStatusResponse addValidatorSetItem(Validator validatorSetItem) {
-    this.validatorSet.add(validatorSetItem);
+  public UpcomingFork epochsRemaining(Long epochsRemaining) {
+    this.epochsRemaining = epochsRemaining;
     return this;
   }
 
    /**
-   * Get validatorSet
-   * @return validatorSet
+   * Get epochsRemaining
+   * @return epochsRemaining
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
+  @JsonProperty(JSON_PROPERTY_EPOCHS_REMAINING)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<Validator> getValidatorSet() {
-    return validatorSet;
+  public Long getEpochsRemaining() {
+    return epochsRemaining;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
+  @JsonProperty(JSON_PROPERTY_EPOCHS_REMAINING)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidatorSet(List<Validator> validatorSet) {
-    this.validatorSet = validatorSet;
-  }
-
-
-  public EngineStatusResponse upcomingFork(UpcomingFork upcomingFork) {
-    this.upcomingFork = upcomingFork;
-    return this;
-  }
-
-   /**
-   * Get upcomingFork
-   * @return upcomingFork
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_UPCOMING_FORK)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public UpcomingFork getUpcomingFork() {
-    return upcomingFork;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_UPCOMING_FORK)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setUpcomingFork(UpcomingFork upcomingFork) {
-    this.upcomingFork = upcomingFork;
+  public void setEpochsRemaining(Long epochsRemaining) {
+    this.epochsRemaining = epochsRemaining;
   }
 
 
   /**
-   * Return true if this EngineStatusResponse object is equal to o.
+   * Return true if this UpcomingFork object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -135,24 +108,22 @@ public class EngineStatusResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EngineStatusResponse engineStatusResponse = (EngineStatusResponse) o;
-    return Objects.equals(this.engineStateIdentifier, engineStatusResponse.engineStateIdentifier) &&
-        Objects.equals(this.validatorSet, engineStatusResponse.validatorSet) &&
-        Objects.equals(this.upcomingFork, engineStatusResponse.upcomingFork);
+    UpcomingFork upcomingFork = (UpcomingFork) o;
+    return Objects.equals(this.name, upcomingFork.name) &&
+        Objects.equals(this.epochsRemaining, upcomingFork.epochsRemaining);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(engineStateIdentifier, validatorSet, upcomingFork);
+    return Objects.hash(name, epochsRemaining);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EngineStatusResponse {\n");
-    sb.append("    engineStateIdentifier: ").append(toIndentedString(engineStateIdentifier)).append("\n");
-    sb.append("    validatorSet: ").append(toIndentedString(validatorSet)).append("\n");
-    sb.append("    upcomingFork: ").append(toIndentedString(upcomingFork)).append("\n");
+    sb.append("class UpcomingFork {\n");
+    sb.append("    name: ").append(toIndentedString(name)).append("\n");
+    sb.append("    epochsRemaining: ").append(toIndentedString(epochsRemaining)).append("\n");
     sb.append("}");
     return sb.toString();
   }

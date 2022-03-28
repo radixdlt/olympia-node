@@ -1,4 +1,4 @@
-openapi: 3.1.0
+openapi: 3.0.0
 info:
   version: 1.0.0
   title: Radix Core API
@@ -1411,6 +1411,30 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/UnexpectedError"
+  "/engine/forks-voting-results":
+    post:
+      summary: Get forks voting results for the given epoch
+      tags:
+        - engine
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ForksVotingResultsRequest"
+      responses:
+        '200':
+          description: Forks voting results for the given epoch
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ForksVotingResultsResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
   "/engine/status":
     post:
       summary: Get Engine Current Status
@@ -2235,6 +2259,40 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Validator"
+        upcoming_fork:
+          $ref: "#/components/schemas/UpcomingFork"
+    ForksVotingResultsRequest:
+      type: object
+      required:
+        - epoch
+      properties:
+        epoch:
+          type: integer
+          format: int64
+    ForksVotingResultsResponse:
+      type: object
+      required:
+        - forks_voting_results
+      properties:
+        forks_voting_results:
+          type: array
+          items:
+            $ref: "#/components/schemas/ForkVotingResult"
+    ForkVotingResult:
+      type: object
+      required:
+        - epoch
+        - candidate_fork_id
+        - stake_percentage_voted
+      properties:
+        epoch:
+          type: integer
+          format: int64
+        candidate_fork_id:
+          type: string
+        stake_percentage_voted:
+          type: number
+          format: float
     Validator:
       type: object
       required:
@@ -2271,6 +2329,17 @@ components:
           type: integer
           format: int64
         timestamp:
+          type: integer
+          format: int64
+    UpcomingFork:
+      type: object
+      required:
+        - name
+        - epochs_remaining
+      properties:
+        name:
+          type: string
+        epochs_remaining:
           type: integer
           format: int64
     KeyListRequest:

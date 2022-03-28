@@ -65,6 +65,7 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.atom.CloseableCursor;
@@ -134,6 +135,11 @@ public final class InMemoryForksEpochStore implements ForksEpochStore {
     }
 
     return CloseableCursor.of(result);
+  }
+
+  @Override
+  public ImmutableSet<ForkVotingResult> getForksVotingResultsForEpoch(long epoch) {
+    return ImmutableSet.copyOf(store.forksVotingResults.getOrDefault(epoch, Set.of()));
   }
 
   public void storeForkVotingResult(ForkVotingResult forkVotingResult) {

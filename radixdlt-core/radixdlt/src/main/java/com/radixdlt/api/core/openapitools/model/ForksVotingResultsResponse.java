@@ -23,109 +23,49 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * EngineStatusResponse
+ * ForksVotingResultsResponse
  */
 @JsonPropertyOrder({
-  EngineStatusResponse.JSON_PROPERTY_ENGINE_STATE_IDENTIFIER,
-  EngineStatusResponse.JSON_PROPERTY_VALIDATOR_SET,
-  EngineStatusResponse.JSON_PROPERTY_UPCOMING_FORK
+  ForksVotingResultsResponse.JSON_PROPERTY_FORKS_VOTING_RESULTS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-03-25T15:26:03.075102278+01:00[Europe/Warsaw]")
-public class EngineStatusResponse {
-  public static final String JSON_PROPERTY_ENGINE_STATE_IDENTIFIER = "engine_state_identifier";
-  private EngineStateIdentifier engineStateIdentifier;
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-03-25T15:32:25.714064249+01:00[Europe/Warsaw]")
+public class ForksVotingResultsResponse {
+  public static final String JSON_PROPERTY_FORKS_VOTING_RESULTS = "forks_voting_results";
+  private List<ForkVotingResult> forksVotingResults = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_VALIDATOR_SET = "validator_set";
-  private List<Validator> validatorSet = new ArrayList<>();
+  public ForksVotingResultsResponse forksVotingResults(List<ForkVotingResult> forksVotingResults) {
+    this.forksVotingResults = forksVotingResults;
+    return this;
+  }
 
-  public static final String JSON_PROPERTY_UPCOMING_FORK = "upcoming_fork";
-  private UpcomingFork upcomingFork;
-
-  public EngineStatusResponse engineStateIdentifier(EngineStateIdentifier engineStateIdentifier) {
-    this.engineStateIdentifier = engineStateIdentifier;
+  public ForksVotingResultsResponse addForksVotingResultsItem(ForkVotingResult forksVotingResultsItem) {
+    this.forksVotingResults.add(forksVotingResultsItem);
     return this;
   }
 
    /**
-   * Get engineStateIdentifier
-   * @return engineStateIdentifier
+   * Get forksVotingResults
+   * @return forksVotingResults
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ENGINE_STATE_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_FORKS_VOTING_RESULTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EngineStateIdentifier getEngineStateIdentifier() {
-    return engineStateIdentifier;
+  public List<ForkVotingResult> getForksVotingResults() {
+    return forksVotingResults;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ENGINE_STATE_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_FORKS_VOTING_RESULTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEngineStateIdentifier(EngineStateIdentifier engineStateIdentifier) {
-    this.engineStateIdentifier = engineStateIdentifier;
-  }
-
-
-  public EngineStatusResponse validatorSet(List<Validator> validatorSet) {
-    this.validatorSet = validatorSet;
-    return this;
-  }
-
-  public EngineStatusResponse addValidatorSetItem(Validator validatorSetItem) {
-    this.validatorSet.add(validatorSetItem);
-    return this;
-  }
-
-   /**
-   * Get validatorSet
-   * @return validatorSet
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public List<Validator> getValidatorSet() {
-    return validatorSet;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidatorSet(List<Validator> validatorSet) {
-    this.validatorSet = validatorSet;
-  }
-
-
-  public EngineStatusResponse upcomingFork(UpcomingFork upcomingFork) {
-    this.upcomingFork = upcomingFork;
-    return this;
-  }
-
-   /**
-   * Get upcomingFork
-   * @return upcomingFork
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_UPCOMING_FORK)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public UpcomingFork getUpcomingFork() {
-    return upcomingFork;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_UPCOMING_FORK)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setUpcomingFork(UpcomingFork upcomingFork) {
-    this.upcomingFork = upcomingFork;
+  public void setForksVotingResults(List<ForkVotingResult> forksVotingResults) {
+    this.forksVotingResults = forksVotingResults;
   }
 
 
   /**
-   * Return true if this EngineStatusResponse object is equal to o.
+   * Return true if this ForksVotingResultsResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -135,24 +75,20 @@ public class EngineStatusResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EngineStatusResponse engineStatusResponse = (EngineStatusResponse) o;
-    return Objects.equals(this.engineStateIdentifier, engineStatusResponse.engineStateIdentifier) &&
-        Objects.equals(this.validatorSet, engineStatusResponse.validatorSet) &&
-        Objects.equals(this.upcomingFork, engineStatusResponse.upcomingFork);
+    ForksVotingResultsResponse forksVotingResultsResponse = (ForksVotingResultsResponse) o;
+    return Objects.equals(this.forksVotingResults, forksVotingResultsResponse.forksVotingResults);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(engineStateIdentifier, validatorSet, upcomingFork);
+    return Objects.hash(forksVotingResults);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EngineStatusResponse {\n");
-    sb.append("    engineStateIdentifier: ").append(toIndentedString(engineStateIdentifier)).append("\n");
-    sb.append("    validatorSet: ").append(toIndentedString(validatorSet)).append("\n");
-    sb.append("    upcomingFork: ").append(toIndentedString(upcomingFork)).append("\n");
+    sb.append("class ForksVotingResultsResponse {\n");
+    sb.append("    forksVotingResults: ").append(toIndentedString(forksVotingResults)).append("\n");
     sb.append("}");
     return sb.toString();
   }

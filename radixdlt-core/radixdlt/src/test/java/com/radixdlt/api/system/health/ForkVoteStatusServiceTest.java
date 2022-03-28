@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.service;
+package com.radixdlt.api.system.health;
 
 import static com.radixdlt.api.system.health.ForkVoteStatusService.ForkVoteStatus.NO_ACTION_NEEDED;
 import static com.radixdlt.api.system.health.ForkVoteStatusService.ForkVoteStatus.VOTE_REQUIRED;
@@ -74,7 +74,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.api.system.health.ForkVoteStatusService;
 import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.consensus.bft.BFTNode;

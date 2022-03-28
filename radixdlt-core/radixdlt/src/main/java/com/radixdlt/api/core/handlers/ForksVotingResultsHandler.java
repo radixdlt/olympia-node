@@ -62,80 +62,45 @@
  * permissions under this License.
  */
 
-package com.radixdlt.middleware2;
+package com.radixdlt.api.core.handlers;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.Inject;
+import com.radixdlt.api.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.model.CoreApiException;
+import com.radixdlt.api.core.model.CoreModelMapper;
+import com.radixdlt.api.core.openapitools.model.ForksVotingResultsRequest;
+import com.radixdlt.api.core.openapitools.model.ForksVotingResultsResponse;
+import com.radixdlt.statecomputer.forks.ForkVotingResult;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 
-@SerializerId2("different_client_atom")
-public class TestDifferentClientAtom implements TestLedgerAtom {
-  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
-  @DsonOutput({Output.ALL})
-  SerializerDummy serializer = SerializerDummy.DUMMY;
+public class ForksVotingResultsHandler
+    extends CoreJsonRpcHandler<ForksVotingResultsRequest, ForksVotingResultsResponse> {
+  private final ForksEpochStore forksEpochStore;
+  private final CoreModelMapper modelMapper;
 
-  @JsonProperty("datameta")
-  @DsonOutput({Output.ALL})
-  private final String metaData;
+  @Inject
+  public ForksVotingResultsHandler(ForksEpochStore forksEpochStore, CoreModelMapper modelMapper) {
+    super(ForksVotingResultsRequest.class);
 
-  @JsonProperty("dia")
-  @DsonOutput({Output.ALL})
-  private final AID aid;
-
-  @JsonCreator
-  private TestDifferentClientAtom(
-      @JsonProperty("dia") AID aid, @JsonProperty("datameta") String metaData) {
-    this.aid = aid;
-    this.metaData = metaData == null ? "no metadata" : metaData;
+    this.forksEpochStore = forksEpochStore;
+    this.modelMapper = modelMapper;
   }
 
-  public static TestDifferentClientAtom create(String metadata) {
-    var id = AID.from(HashUtils.random256().asBytes());
-    return new TestDifferentClientAtom(id, metadata);
-  }
-
-  public AID aid() {
-    return aid;
-  }
-
-  public String metaData() {
-    return metaData;
+  private ImmutableSet<ForkVotingResult> getForksVotingResults(long epoch) {
+    return forksEpochStore.getForksVotingResultsForEpoch(epoch);
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
+  public ForksVotingResultsResponse handleRequest(ForksVotingResultsRequest request)
+      throws CoreApiException {
+    var response = new ForksVotingResultsResponse();
 
-    if (!(o instanceof TestDifferentClientAtom)) {
-      return false;
-    }
+    getForksVotingResults(request.getEpoch())
+        .forEach(
+            forkVotingResult ->
+                response.addForksVotingResultsItem(modelMapper.forkVotingResult(forkVotingResult)));
 
-    TestDifferentClientAtom that = (TestDifferentClientAtom) o;
-
-    if (!metaData.equals(that.metaData)) {
-      return false;
-    }
-
-    return aid.equals(that.aid);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = metaData.hashCode();
-    result = 31 * result + aid.hashCode();
-    return result;
-  }
-
-  @Override
-  public String toString() {
-    return "DifferentClientAtom(metaData: '" + metaData + "', aid: " + aid + ')';
+    return response;
   }
 }

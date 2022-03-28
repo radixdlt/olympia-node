@@ -178,7 +178,7 @@ public class RegisterValidatorTest {
                             key.getPublicKey(), "some_name", "http://test.com"))
                     .action(
                         new UpdateValidatorSystemMetadata(
-                            key.getPublicKey(), HashUtils.random(32).asBytes()))
+                            key.getPublicKey(), HashUtils.random256().asBytes()))
                     .action(new UpdateValidatorFee(key.getPublicKey(), 2000)))
             .signAndBuild(key::sign);
     this.engine.execute(List.of(txn));

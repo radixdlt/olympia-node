@@ -1276,4 +1276,12 @@ public final class CoreModelMapper {
             .message(cause.getMessage())
             .type(InvalidTransactionError.class.getSimpleName()));
   }
+
+  public ForkVotingResult forkVotingResult(
+      com.radixdlt.statecomputer.forks.ForkVotingResult forkVotingResult) {
+    return new ForkVotingResult()
+        .epoch(forkVotingResult.epoch())
+        .candidateForkId(forkVotingResult.candidateForkId().toString())
+        .stakePercentageVoted((float) forkVotingResult.stakePercentageVoted() / 100);
+  }
 }

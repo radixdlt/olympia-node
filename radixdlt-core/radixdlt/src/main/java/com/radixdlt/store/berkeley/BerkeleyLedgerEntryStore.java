@@ -409,10 +409,7 @@ public final class BerkeleyLedgerEntryStore
             forksVotingResultsDatabase.put(
                 dbTxn,
                 new DatabaseEntry(Longs.toByteArray(forkVotingResult.epoch())),
-                new DatabaseEntry(
-                    Bytes.concat(
-                        forkVotingResult.candidateForkId().asBytes(),
-                        Shorts.toByteArray(forkVotingResult.stakePercentageVoted())))));
+                new DatabaseEntry(encodeForkVotingResult(forkVotingResult))));
   }
 
   @Override
@@ -475,14 +472,9 @@ public final class BerkeleyLedgerEntryStore
     long epoch = Longs.fromByteArray(key.getData());
 
     while (operationStatus == SUCCESS && epoch < toEpoch) {
-      final var data = value.getData();
-      final var nextCandidateForkId =
-          HashCode.fromBytes(Arrays.copyOfRange(data, 0, CandidateForkVote.CANDIDATE_FORK_ID_LEN));
-      if (nextCandidateForkId.equals(candidateForkId)) {
-        final var stakePercentageVoted =
-            Shorts.fromByteArray(
-                Arrays.copyOfRange(data, CandidateForkVote.CANDIDATE_FORK_ID_LEN, data.length));
-        return Optional.of(new ForkVotingResult(epoch, nextCandidateForkId, stakePercentageVoted));
+      final var nextForkVotingResult = decodeForkVotingResult(epoch, value.getData());
+      if (nextForkVotingResult.candidateForkId().equals(candidateForkId)) {
+        return Optional.of(nextForkVotingResult);
       }
       operationStatus = cursor.getNext(key, value, DEFAULT);
       if (operationStatus == SUCCESS) {
@@ -493,12 +485,42 @@ public final class BerkeleyLedgerEntryStore
     return Optional.empty();
   }
 
+  private byte[] encodeForkVotingResult(ForkVotingResult forkVotingResult) {
+    return Bytes.concat(
+        forkVotingResult.candidateForkId().asBytes(),
+        Shorts.toByteArray(forkVotingResult.stakePercentageVoted()));
+  }
+
+  private ForkVotingResult decodeForkVotingResult(long epoch, byte[] data) {
+    final var candidateForkId =
+        HashCode.fromBytes(Arrays.copyOfRange(data, 0, CandidateForkVote.CANDIDATE_FORK_ID_LEN));
+    final var stakePercentageVoted =
+        Shorts.fromByteArray(
+            Arrays.copyOfRange(data, CandidateForkVote.CANDIDATE_FORK_ID_LEN, data.length));
+    return new ForkVotingResult(epoch, candidateForkId, stakePercentageVoted);
+  }
+
   private void storeForkAtEpoch(Transaction dbTxn, long epoch, String forkName) {
     final var key = new DatabaseEntry(Longs.toByteArray(epoch));
     final var entry = new DatabaseEntry(forkName.getBytes(ForkConfig.FORK_NAME_CHARSET));
     if (forkConfigDatabase.putNoOverwrite(dbTxn, key, entry) != SUCCESS) {
       throw new BerkeleyStoreException("Duplicate fork hash stored for epoch " + epoch);
     }
+  }
+
+  @Override
+  public ImmutableSet<ForkVotingResult> getForksVotingResultsForEpoch(long epoch) {
+    final var result = new ImmutableSet.Builder<ForkVotingResult>();
+    final var value = new DatabaseEntry();
+    try (final var cursor = forksVotingResultsDatabase.openCursor(null, null)) {
+      OperationStatus status =
+          cursor.getSearchKey(new DatabaseEntry(Longs.toByteArray(epoch)), value, DEFAULT);
+      while (status == SUCCESS) {
+        result.add(decodeForkVotingResult(epoch, value.getData()));
+        status = cursor.getNextDup(null, value, DEFAULT);
+      }
+    }
+    return result.build();
   }
 
   @Override
