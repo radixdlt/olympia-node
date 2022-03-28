@@ -73,7 +73,6 @@ import com.radixdlt.statecomputer.forks.CandidateForkConfig;
 import com.radixdlt.statecomputer.forks.ForkBuilder;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RERulesVersion;
-
 import java.util.Collections;
 
 public final class TestingForksModuleV3 extends AbstractModule {

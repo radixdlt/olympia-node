@@ -73,7 +73,6 @@ import com.radixdlt.statecomputer.forks.CandidateForkConfig;
 import com.radixdlt.statecomputer.forks.ForkBuilder;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RERulesVersion;
-
 import java.util.Collections;
 
 public final class TestingForksModuleV5 extends AbstractModule {
@@ -98,7 +97,10 @@ public final class TestingForksModuleV5 extends AbstractModule {
   @ProvidesIntoSet
   ForkBuilder fork4() {
     return new ForkBuilder(
-        "fork-4", 16L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(
+        "fork-4",
+        16L,
+        RERulesVersion.OLYMPIA_V1,
+        RERulesConfig.testingDefault(
             500, FeeTable.create(Amount.ofMicroTokens(100), Collections.emptyMap())));
   }
 
@@ -109,6 +111,7 @@ public final class TestingForksModuleV5 extends AbstractModule {
         ImmutableSet.of(new CandidateForkConfig.Threshold((short) 75 /* 75% */, 1)),
         24,
         Long.MAX_VALUE,
-        RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
+        RERulesVersion.OLYMPIA_V1,
+        RERulesConfig.testingDefault(500));
   }
 }

@@ -268,12 +268,15 @@ public final class RadixNodeModule extends AbstractModule {
       log.info("Using mainnet forks");
       install(new MainnetForksModule());
     } else if (properties.get("testing_forks.enable", false)) {
-      String testingForkConfigName = properties.get("testing_forks.fork_config_name", "TestingForksModuleV1");
+      String testingForkConfigName =
+          properties.get("testing_forks.fork_config_name", "TestingForksModuleV1");
       if (testingForkConfigName.isBlank()) {
         testingForkConfigName = "TestingForksModuleV1";
       }
       log.info("Using testing fork config '{}'", testingForkConfigName);
-      install(new TestingForksLoader().createTestingForksModuleConfigFromClassName(testingForkConfigName));
+      install(
+          new TestingForksLoader()
+              .createTestingForksModuleConfigFromClassName(testingForkConfigName));
     } else {
       log.info("Using stokenet forks");
       install(new StokenetForksModule());
