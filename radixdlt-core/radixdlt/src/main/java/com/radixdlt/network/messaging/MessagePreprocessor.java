@@ -121,6 +121,7 @@ final class MessagePreprocessor {
   }
 
   Result<MessageFromPeer<Message>> processMessage(NodeId source, Message message) {
+    log.info("Received {} from {}", message, source);
     final var currentTime = timeSource.currentTime();
 
     if (currentTime - message.getTimestamp() > messageTtlMs) {

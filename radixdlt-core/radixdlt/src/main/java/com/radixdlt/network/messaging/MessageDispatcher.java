@@ -114,6 +114,7 @@ class MessageDispatcher {
   }
 
   CompletableFuture<Result<Unit>> send(final OutboundMessageEvent outboundMessage) {
+    log.info("Sending {} to {}", outboundMessage.message(), outboundMessage.receiver());
     final var message = outboundMessage.message();
     final var receiver = outboundMessage.receiver();
 
