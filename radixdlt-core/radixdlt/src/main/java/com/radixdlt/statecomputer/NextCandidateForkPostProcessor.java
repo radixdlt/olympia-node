@@ -95,7 +95,7 @@ public final class NextCandidateForkPostProcessor implements PostProcessor<Ledge
       List<REProcessedTxn> txns)
       throws PostProcessorException {
     if (metadata.getProof().getNextValidatorSet().isPresent()
-        && Forks.testCandidate(nextFork, metadata, forksEpochStoreSupplier.get())) {
+        && Forks.shouldCandidateForkBeEnacted(nextFork, metadata, forksEpochStoreSupplier.get())) {
       return metadata.withNextForkName(nextFork.name());
     } else {
       return metadata;

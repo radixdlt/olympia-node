@@ -72,7 +72,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
+public final class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
   private final RERulesConfig config;
 
   public ForkOverwritesWithShorterEpochsModule(RERulesConfig config) {

@@ -228,7 +228,7 @@ public final class RadixEngine<M> {
     public RadixEngineResult<M> execute(List<Txn> txns, boolean skipAuthorization)
         throws RadixEngineException {
       assertNotDeleted();
-      return engine.execute(txns, null, PermissionLevel.USER, skipAuthorization);
+      return engine.execute(txns, Optional.empty(), PermissionLevel.USER, skipAuthorization);
     }
 
     public RadixEngineResult<M> execute(List<Txn> txns, PermissionLevel permissionLevel)
@@ -315,7 +315,7 @@ public final class RadixEngine<M> {
 
   public RadixEngineResult<M> execute(List<Txn> txns, M meta, PermissionLevel permissionLevel)
       throws RadixEngineException {
-    return execute(txns, meta, permissionLevel, false);
+    return execute(txns, Optional.ofNullable(meta), permissionLevel, false);
   }
 
   /**
@@ -327,7 +327,7 @@ public final class RadixEngine<M> {
    * @throws RadixEngineException on state conflict or dependency issues
    */
   public RadixEngineResult<M> execute(
-      List<Txn> txns, M meta, PermissionLevel permissionLevel, boolean skipAuthorization)
+      List<Txn> txns, Optional<M> meta, PermissionLevel permissionLevel, boolean skipAuthorization)
       throws RadixEngineException {
     synchronized (stateUpdateEngineLock) {
       if (!branches.isEmpty()) {
@@ -345,7 +345,7 @@ public final class RadixEngine<M> {
   private RadixEngineResult<M> executeInternal(
       EngineStore.EngineStoreInTransaction<M> engineStoreInTransaction,
       List<Txn> txns,
-      M meta,
+      Optional<M> metaOpt,
       PermissionLevel permissionLevel,
       boolean skipAuthorization)
       throws RadixEngineException {
@@ -353,7 +353,7 @@ public final class RadixEngine<M> {
 
     // FIXME: This is quite the hack to increase sigsLeft for execution on noncommits (e.g. mempool)
     // FIXME: Should probably just change metering
-    var sigsLeft = meta != null ? 0 : 1000; // Start with 0
+    var sigsLeft = metaOpt.isPresent() ? 0 : 1000; // Start with 0
     var storageStopwatch = Stopwatch.createUnstarted();
     var verificationStopwatch = Stopwatch.createUnstarted();
 
@@ -386,14 +386,20 @@ public final class RadixEngine<M> {
     }
 
     try {
-      final var postProcessedMetadata =
-          postProcessor.process(meta, engineStoreInTransaction, processedTxns);
-      if (postProcessedMetadata != null) {
-        engineStoreInTransaction.storeMetadata(postProcessedMetadata);
-      }
+      final var resultMetadata =
+          metaOpt
+              .map(
+                  meta -> {
+                    final var postProcessedMetadata =
+                        postProcessor.process(meta, engineStoreInTransaction, processedTxns);
+                    engineStoreInTransaction.storeMetadata(postProcessedMetadata);
+                    return postProcessedMetadata;
+                  })
+              .orElse(null);
+
       return RadixEngineResult.create(
           processedTxns,
-          postProcessedMetadata,
+          resultMetadata,
           verificationStopwatch.elapsed(TimeUnit.MILLISECONDS),
           storageStopwatch.elapsed(TimeUnit.MILLISECONDS));
     } catch (PostProcessorException e) {

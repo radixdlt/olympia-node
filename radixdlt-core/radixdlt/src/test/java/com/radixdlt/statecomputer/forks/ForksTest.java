@@ -146,35 +146,35 @@ public final class ForksTest {
             5L);
 
     assertFalse(
-        Forks.testCandidate(
+        Forks.shouldCandidateForkBeEnacted(
             candidate,
             proofForCandidate(
                 1L /* next epoch = 2; minEpoch <!= 2 <= maxEpoch */,
                 votesFor(2L, candidate, threshold.requiredStake())),
             emptyForksEpochStore));
     assertTrue(
-        Forks.testCandidate(
+        Forks.shouldCandidateForkBeEnacted(
             candidate,
             proofForCandidate(
                 2L /* next epoch = 3; minEpoch <= 3 <= maxEpoch */,
                 votesFor(3L, candidate, threshold.requiredStake())),
             emptyForksEpochStore));
     assertTrue(
-        Forks.testCandidate(
+        Forks.shouldCandidateForkBeEnacted(
             candidate,
             proofForCandidate(
                 3L /* next epoch = 4; minEpoch <= 4 <= maxEpoch */,
                 votesFor(4L, candidate, threshold.requiredStake())),
             emptyForksEpochStore));
     assertTrue(
-        Forks.testCandidate(
+        Forks.shouldCandidateForkBeEnacted(
             candidate,
             proofForCandidate(
                 4L /* next epoch = 5; minEpoch <= 5 <= maxEpoch */,
                 votesFor(5L, candidate, threshold.requiredStake())),
             emptyForksEpochStore));
     assertFalse(
-        Forks.testCandidate(
+        Forks.shouldCandidateForkBeEnacted(
             candidate,
             proofForCandidate(
                 5L /* next epoch = 6; minEpoch <= 6 <!= maxEpoch */,
@@ -194,7 +194,7 @@ public final class ForksTest {
             5L);
 
     assertFalse(
-        Forks.testCandidate(
+        Forks.shouldCandidateForkBeEnacted(
             candidate,
             proofForCandidate(
                 candidate.minEpoch() - 1,
@@ -205,7 +205,7 @@ public final class ForksTest {
             emptyForksEpochStore));
 
     assertTrue(
-        Forks.testCandidate(
+        Forks.shouldCandidateForkBeEnacted(
             candidate,
             proofForCandidate(
                 candidate.minEpoch() - 1,
@@ -216,7 +216,7 @@ public final class ForksTest {
             emptyForksEpochStore));
 
     assertTrue(
-        Forks.testCandidate(
+        Forks.shouldCandidateForkBeEnacted(
             candidate,
             proofForCandidate(
                 candidate.minEpoch() - 1,
@@ -246,22 +246,22 @@ public final class ForksTest {
             15L, /* proof at epoch 15 */
             votesFor(16L /* contains votes for epoch 16 */, candidate, threshold.requiredStake()));
 
-    assertFalse(Forks.testCandidate(candidate, proofAtEpoch15, forksEpochStore));
+    assertFalse(Forks.shouldCandidateForkBeEnacted(candidate, proofAtEpoch15, forksEpochStore));
 
     // adding votes for epoch 15, threshold passing for 2 epochs - not enough
     forksEpochStore.storeForkVotingResult(
         new ForkVotingResult(15L, candidateForkId, threshold.requiredStake()));
-    assertFalse(Forks.testCandidate(candidate, proofAtEpoch15, forksEpochStore));
+    assertFalse(Forks.shouldCandidateForkBeEnacted(candidate, proofAtEpoch15, forksEpochStore));
 
     // adding votes for epoch 14, threshold passing for 3 epochs - still not enough
     forksEpochStore.storeForkVotingResult(
         new ForkVotingResult(14L, candidateForkId, threshold.requiredStake()));
-    assertFalse(Forks.testCandidate(candidate, proofAtEpoch15, forksEpochStore));
+    assertFalse(Forks.shouldCandidateForkBeEnacted(candidate, proofAtEpoch15, forksEpochStore));
 
     // adding votes for epoch 13, threshold passing for 4 epochs - just enough
     forksEpochStore.storeForkVotingResult(
         new ForkVotingResult(13L, candidateForkId, threshold.requiredStake()));
-    assertTrue(Forks.testCandidate(candidate, proofAtEpoch15, forksEpochStore));
+    assertTrue(Forks.shouldCandidateForkBeEnacted(candidate, proofAtEpoch15, forksEpochStore));
   }
 
   @Test
@@ -285,7 +285,7 @@ public final class ForksTest {
             votesFor(16L /* contains votes for epoch 16 */, candidate, threshold.requiredStake()));
 
     forksEpochStore.storeForkVotingResult(new ForkVotingResult(13L, candidateForkId, (short) 7500));
-    assertTrue(Forks.testCandidate(candidate, proofAtEpoch15, forksEpochStore));
+    assertTrue(Forks.shouldCandidateForkBeEnacted(candidate, proofAtEpoch15, forksEpochStore));
   }
 
   private LedgerAndBFTProof proofForCandidate(

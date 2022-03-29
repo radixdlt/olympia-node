@@ -526,8 +526,12 @@ public final class BerkeleyLedgerEntryStore
   @Override
   public void storeForkAtEpoch(long epoch, String forkName) {
     final var tx = beginTransaction();
-    storeForkAtEpoch(tx, epoch, forkName);
-    tx.commit();
+    try {
+      storeForkAtEpoch(tx, epoch, forkName);
+      tx.commit();
+    } catch (Exception e) {
+      tx.abort();
+    }
   }
 
   @Override
@@ -720,7 +724,8 @@ public final class BerkeleyLedgerEntryStore
 
       forkConfigDatabase = env.openDatabase(null, FORK_CONFIG_DB, primaryConfig);
       forksVotingResultsDatabase =
-          env.openDatabase(null, FORKS_VOTING_RESULTS_DB, primaryConfig.setSortedDuplicates(true));
+          env.openDatabase(
+              null, FORKS_VOTING_RESULTS_DB, primaryConfig.clone().setSortedDuplicates(true));
 
       txnLog =
           AppendLog.openCompressed(

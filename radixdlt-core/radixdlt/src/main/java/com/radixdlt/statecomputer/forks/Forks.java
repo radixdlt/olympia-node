@@ -167,7 +167,8 @@ public final class Forks {
   private Forks(
       ImmutableList<FixedEpochForkConfig> fixedEpochForks,
       Optional<CandidateForkConfig> maybeCandidateFork) {
-    // decorate base PostProcessor with ForksPostProcessor
+    // For each given fork ruleset F1, if there's a following fork F2, we add a post processor to F1
+    //   to monitor for the condition to F2, and mark that transition on the LedgerAndBFTProof
     this.fixedEpochForks =
         IntStream.range(0, fixedEpochForks.size())
             .mapToObj(
@@ -209,7 +210,7 @@ public final class Forks {
             .findFirst();
 
     if (maybeFixedEpochFork.isPresent()) {
-      // thank you Java for a non-covariant Optional type...
+      // Thank you Java for a non-covariant Optional type...
       return (Optional) maybeFixedEpochFork;
     } else {
       return (Optional) maybeCandidateFork.filter(forkConfig -> forkConfig.name().equals(name));
@@ -239,7 +240,7 @@ public final class Forks {
     executeMissedFixedEpochForks(initialStoredForks, currentEpoch, forksEpochStore);
     executeAndCheckMissedCandidateFork(initialStoredForks, forksEpochStore);
 
-    sanityCheck(forksEpochStore, currentEpoch);
+    sanityCheckStoredForksAgainstConfiguration(forksEpochStore, currentEpoch);
   }
 
   private void executeMissedFixedEpochForks(
@@ -250,8 +251,8 @@ public final class Forks {
               storedForks.entrySet().stream()
                   .anyMatch(e -> e.getValue().equals(fixedEpochFork.name()));
 
-          // simply store the fork if not already in the database
-          // we do not check if the epoch matches here, that'll be caught by sanityCheck
+          // Simply store the fork if not already in the database,
+          //   we do not check if the epoch matches here, that'll be caught by sanityCheck
           if (currentEpoch >= fixedEpochFork.epoch() && !forkAlreadyStored) {
             log.info(
                 "Found a missed fork config {}, inserting at epoch {}",
@@ -316,7 +317,7 @@ public final class Forks {
 
     final var fromEpoch = candidateFork.minEpoch() - candidateFork.longestThresholdEpochs();
     final var toEpoch =
-        candidateFork.maxEpoch() + 1 < candidateFork.maxEpoch() // check for overflows
+        candidateFork.maxEpoch() + 1 < candidateFork.maxEpoch() // Check for overflows
             ? Long.MAX_VALUE
             : candidateFork.maxEpoch() + 1;
     try (final var forkVotingResultsCursor =
@@ -333,14 +334,14 @@ public final class Forks {
       do {
         final ForkVotingResult next = forkVotingResultsCursor.next();
         if (previousEpoch.isEmpty() || previousEpoch.get() + 1 == next.epoch()) {
-          // there's no gap: increment the threshold if it passes, or reset back to 0
+          // There's no gap: increment the threshold if it passes, or reset back to 0
           thresholdEpochsMap.replaceAll(
               (threshold, numEpochs) ->
                   next.stakePercentageVoted() >= threshold.requiredStake()
                       ? numEpochs + 1 // threshold passes: increment numEpochs
                       : 0); // threshold doesn't pass: reset to 0
         } else {
-          // there's a gap in fork voting results: re-initialize the counters
+          // There's a gap in fork voting results: re-initialize the counters
           thresholdEpochsMap.replaceAll(
               (threshold, numEpochs) ->
                   next.stakePercentageVoted() >= threshold.requiredStake() ? 1 : 0);
@@ -360,7 +361,8 @@ public final class Forks {
     }
   }
 
-  private void sanityCheck(ForksEpochStore forksEpochStore, long currentEpoch) {
+  private void sanityCheckStoredForksAgainstConfiguration(
+      ForksEpochStore forksEpochStore, long currentEpoch) {
     final var storedForks = forksEpochStore.getStoredForks();
 
     fixedEpochForks.stream()
@@ -396,6 +398,8 @@ public final class Forks {
               forkName, forkEpoch, currentEpoch));
     }
 
+    // We check that the stored fork either matches a fixed epoch fork, or could be the execution of
+    // the candidate fork
     final var maybeExpectedAtFixedEpoch = Optional.ofNullable(fixedEpochForksMap.get(forkEpoch));
 
     final var maybeExpectedCandidate =
@@ -417,7 +421,7 @@ public final class Forks {
     }
   }
 
-  public static boolean testCandidate(
+  public static boolean shouldCandidateForkBeEnacted(
       CandidateForkConfig candidateFork,
       LedgerAndBFTProof ledgerAndBFTProof,
       ForksEpochStore forksEpochStore) {
@@ -437,23 +441,24 @@ public final class Forks {
             .filter(votingResult -> votingResult.candidateForkId().equals(candidateForkId))
             .findAny();
 
+    if (maybeCurrentForkVotingResult.isEmpty()) {
+      // there are no votes for the fork in the current epoch, so it can't test positive
+      return false;
+    }
+
     final var fromEpoch = nextEpoch - candidateFork.longestThresholdEpochs();
     try (final var previousVotingResultsCursor =
         forksEpochStore.forkVotingResultsCursor(
             fromEpoch, candidateFork.maxEpoch(), candidateForkId)) {
       final var previousAndCurrentResultsCursor =
-          maybeCurrentForkVotingResult
-              .map(
-                  currentForkVotingResult ->
-                      previousVotingResultsCursor.concat(
-                          () -> CloseableCursor.single(currentForkVotingResult)))
-              .orElse(previousVotingResultsCursor);
-      return testCandidate(
+          previousVotingResultsCursor.concat(
+              () -> CloseableCursor.single(maybeCurrentForkVotingResult.orElseThrow()));
+      return shouldCandidateForkBeEnacted(
           candidateFork, ledgerAndBFTProof.getProof(), previousAndCurrentResultsCursor);
     }
   }
 
-  private static boolean testCandidate(
+  private static boolean shouldCandidateForkBeEnacted(
       CandidateForkConfig candidateFork,
       LedgerProof ledgerProof,
       CloseableCursor<ForkVotingResult> forkVotingResultsCursor) {
@@ -466,7 +471,7 @@ public final class Forks {
         calculateThresholdsPassingEpochs(
             candidateFork.thresholds(), forkVotingResultsCursor, nextEpoch);
 
-    // at least one threshold has enough epochs
+    // At least one threshold has enough epochs
     return thresholdsPassingEpochs.entrySet().stream()
         .anyMatch(e -> e.getValue() >= e.getKey().numEpochsBeforeEnacted());
   }
@@ -503,12 +508,12 @@ public final class Forks {
       final var finalNextForClosure = next;
 
       if (next.epoch() != previousEpoch + 1) {
-        // there's a gap in fork voting results: re-initialize the counters
+        // There's a gap in fork voting results: re-initialize the counters
         thresholdEpochsMap.replaceAll(
             (threshold, numEpochs) ->
                 finalNextForClosure.stakePercentageVoted() >= threshold.requiredStake() ? 1 : 0);
       } else {
-        // there's no gap: increment the threshold if it passes, or reset back to 0
+        // There's no gap: increment the threshold if it passes, or reset back to 0
         thresholdEpochsMap.replaceAll(
             (threshold, numEpochs) ->
                 finalNextForClosure.stakePercentageVoted() >= threshold.requiredStake()
@@ -518,11 +523,11 @@ public final class Forks {
     }
 
     if (next.epoch() == atEpoch) {
-      // the cursor has finished at the correct epoch (there's no gap between the epoch and the
+      // The cursor has finished at the correct epoch (there's no gap between the epoch and the
       // latest result)
       return ImmutableMap.copyOf(thresholdEpochsMap);
     } else {
-      // there was a gap, so reset all thresholds to 0 (just return an empty result)
+      // There was a gap, so reset all thresholds to 0 (just return an empty result)
       return emptyResult;
     }
   }

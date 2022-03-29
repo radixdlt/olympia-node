@@ -90,7 +90,7 @@ public final class PeersForksInfoService {
   private static final int MAX_FORK_KEYS = 50;
 
   // max number of reports (peers' public keys) per fork
-  private static final int MAX_REPORTS_PER_FORK = 20;
+  private static final int MAX_REPORTS_PER_FORK = 100;
 
   private final Forks forks;
 
