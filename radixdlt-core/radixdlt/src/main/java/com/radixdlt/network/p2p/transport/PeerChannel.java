@@ -301,6 +301,12 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     }
   }
 
+  @Override
+  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+    log.warn("Exception on {}: {}", this, cause.getMessage());
+    ctx.close();
+  }
+
   private void write(ByteBuf data) {
     this.nettyChannel.writeAndFlush(data);
   }

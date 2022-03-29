@@ -84,7 +84,6 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.bytes.ByteArrayDecoder;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.SecureRandom;
 import java.util.Objects;
@@ -162,8 +161,8 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
         .pipeline()
         .addLast("decode_proxy_header_line", new LineBasedFrameDecoder(255, true, true))
         .addLast("decode_proxy_header_bytes", new ByteArrayDecoder())
-        .addLast("handle_proxy_header", new ProxyHeaderHandler(socketChannel))
-        .addLast("exception_handler", new ExceptionHandler(Optional.empty()));
+        .addLast("handle_proxy_header", new ProxyHeaderHandler(socketChannel));
+//        .addLast("exception_handler", new ExceptionHandler(Optional.empty()));
   }
 
   private final class ProxyHeaderHandler extends SimpleChannelInboundHandler<byte[]> {
@@ -174,33 +173,43 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, byte[] msg) throws IOException {
-      final var clientAddress = parseProxyHeader(new String(msg));
+    protected void channelRead0(ChannelHandlerContext ctx, byte[] msg) {
+      final var clientAddressOpt = parseProxyHeader(new String(msg));
+      clientAddressOpt.
+        ifPresentOrElse(
+          clientAddress -> {
+            // Remove the proxy pipeline
+            ctx.pipeline().remove(LineBasedFrameDecoder.class);
+            ctx.pipeline().remove(ByteArrayDecoder.class);
+            ctx.pipeline().remove(ProxyHeaderHandler.class);
+//            ctx.pipeline().remove(ExceptionHandler.class);
 
-      // remove the proxy pipeline
-      ctx.pipeline().remove(LineBasedFrameDecoder.class);
-      ctx.pipeline().remove(ByteArrayDecoder.class);
-      ctx.pipeline().remove(ProxyHeaderHandler.class);
-      ctx.pipeline().remove(ExceptionHandler.class);
-
-      // and create a regular peer channel pipeline
-      createPeerChannelPipeline(socketChannel, clientAddress);
+            // and create a regular peer channel pipeline
+            createPeerChannelPipeline(socketChannel, clientAddress);
+          },
+          () -> {
+            socketChannel.close(); /* Close the channel if failed to parse */
+            log.warn("Received invalid PROXY protocol header line");
+          }
+      );
     }
 
-    private InetSocketAddress parseProxyHeader(String line) throws IOException {
-      /* The proxy protocol line is a single line that ends with a carriage return
-      and line feed ("\r\n"), and has the following form:
-      PROXY_STRING + single space + INET_PROTOCOL + single space + CLIENT_IP + single space
-      + PROXY_IP + single space + CLIENT_PORT + single space + PROXY_PORT + "\r\n" */
-      final var components = line.split(" ");
+    private Optional<InetSocketAddress> parseProxyHeader(String line) {
+      try {
+        /* The proxy protocol line is a single line that ends with a carriage return
+        and line feed ("\r\n"), and has the following form:
+        PROXY_STRING + single space + INET_PROTOCOL + single space + CLIENT_IP + single space
+        + PROXY_IP + single space + CLIENT_PORT + single space + PROXY_PORT + "\r\n" */
+        final var components = line.split(" ");
 
-      if (!components[0].equals("PROXY") || !components[1].startsWith("TCP")) {
-        log.warn("Received invalid PROXY protocol header line: {}", line);
-        socketChannel.close();
-        throw new IOException("Invalid PROXY header");
+        if (!components[0].equals("PROXY") || !components[1].startsWith("TCP")) {
+          return Optional.empty();
+        } else {
+          return Optional.of(InetSocketAddress.createUnresolved(components[2], Integer.parseInt(components[4])));
+        }
+      } catch (Exception e) {
+        return Optional.empty();
       }
-
-      return InetSocketAddress.createUnresolved(components[2], Integer.parseInt(components[4]));
     }
   }
 
@@ -228,7 +237,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
             "unpack",
             new LengthFieldBasedFrameDecoder(packetLength, 0, headerLength, 0, headerLength))
         .addLast("handler", peerChannel)
-        .addLast("pack", new LengthFieldPrepender(headerLength))
-        .addLast("exception_handler", new ExceptionHandler(Optional.of(peerChannel)));
+        .addLast("pack", new LengthFieldPrepender(headerLength));
+//        .addLast("exception_handler", new ExceptionHandler(Optional.of(peerChannel)));
   }
 }
