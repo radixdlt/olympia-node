@@ -227,9 +227,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     this.frameCodec = new FrameCodec(successResult.secrets());
     this.state = ChannelState.ACTIVE;
 
-    if (log.isTraceEnabled()) {
-      log.trace("Successful auth handshake: {}", this);
-    }
+    log.info("Successful auth handshake: {}", this);
 
     peerEventDispatcher.dispatch(new PeerConnected(this));
   }
@@ -243,10 +241,15 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   private void handleMessage(ByteBuf buf) throws IOException {
     final var receiveTime = Time.currentTimestamp();
 
+    log.info("Received a message from {}", this);
     synchronized (this.lock) {
+      log.info("Received a message from {} (inside lock)", this);
       final var maybeFrame = this.frameCodec.tryReadSingleFrame(buf);
       maybeFrame.ifPresentOrElse(
-          frame -> inboundMessageSink.onNext(new InboundMessage(receiveTime, remoteNodeId, frame)),
+          frame -> {
+            log.info("Got a frame from {}, calling onNext", this);
+            inboundMessageSink.onNext(new InboundMessage(receiveTime, remoteNodeId, frame));
+          },
           () -> log.error("Failed to read a complete frame: {}", this));
     }
   }

@@ -160,6 +160,7 @@ public final class MessageCentralImpl implements MessageCentral {
   }
 
   private Optional<MessageFromPeer<Message>> processInboundMessage(InboundMessage inboundMessage) {
+    log.info("Process inbound message from {}", inboundMessage.source());
     final var messageQueuedTime = Time.currentTimestamp() - inboundMessage.receiveTime();
     avgMessageQueuedTime.update(messageQueuedTime);
     totalMessageQueuedTime = Math.max(totalMessageQueuedTime + messageQueuedTime, 0L);
