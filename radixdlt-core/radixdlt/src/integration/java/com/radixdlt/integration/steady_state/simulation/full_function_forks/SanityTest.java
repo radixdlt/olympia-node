@@ -121,6 +121,7 @@ public class SanityTest {
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
             .fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
             .addRadixEngineConfigModules(
+                new MainnetForksModule(),
                 new ForkOverwritesWithShorterEpochsModule(
                     new RERulesConfig(
                         Set.of("xrd"),
@@ -136,8 +137,7 @@ public class SanityTest {
                         9800,
                         10,
                         MSG.maxLength())),
-                new ForksModule(),
-                new MainnetForksModule())
+                new ForksModule())
             .addNodeModule(MempoolConfig.asModule(1000, 10))
             .addTestModules(
                 ConsensusMonitors.safety(),

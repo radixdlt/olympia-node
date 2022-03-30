@@ -89,9 +89,9 @@ public class SanityTest {
           .numNodes(4)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
           .addRadixEngineConfigModules(
+              new MainnetForksModule(),
               new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
-              new ForksModule(),
-              new MainnetForksModule())
+              new ForksModule())
           .ledgerAndRadixEngineWithEpochHighView()
           .addTestModules(
               ConsensusMonitors.safety(),

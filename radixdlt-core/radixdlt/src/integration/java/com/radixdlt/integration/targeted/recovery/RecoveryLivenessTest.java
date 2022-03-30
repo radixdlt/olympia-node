@@ -264,6 +264,7 @@ public class RecoveryLivenessTest {
             Amount.ofTokens(100000),
             Amount.ofTokens(1000)),
         MempoolConfig.asModule(10, 10),
+        new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(
             new RERulesConfig(
                 Set.of("xrd"),
@@ -280,7 +281,6 @@ public class RecoveryLivenessTest {
                 10,
                 MSG.maxLength())),
         new ForksModule(),
-        new MainnetForksModule(),
         new PersistedNodeForTestingModule(),
         new LastEventsModule(EpochViewUpdate.class),
         new AbstractModule() {

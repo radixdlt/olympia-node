@@ -141,6 +141,7 @@ public class LargeEpochChangeTest {
   private Injector createInjector() {
     return Guice.createInjector(
         MempoolConfig.asModule(1000, 10),
+        new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(
             new RERulesConfig(
                 Set.of("xrd"),
@@ -170,7 +171,6 @@ public class LargeEpochChangeTest {
                 100, // 100 max validators
                 MSG.maxLength())),
         new ForksModule(),
-        new MainnetForksModule(),
         new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
         new MockedGenesisModule(
             Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(100000), Amount.ofTokens(1000)),

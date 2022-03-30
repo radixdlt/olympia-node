@@ -129,7 +129,7 @@ public class FProposalsPerViewDropperTest {
       given_incorrect_module_where_vertex_sync_is_disabled__then_test_should_fail_against_drop_proposal_adversary() {
     SimulationTest test =
         bftTestBuilder
-            .addOverrideModuleToAll(
+            .addOverrideModuleToAllInitialNodes(
                 new AbstractModule() {
                   @Override
                   protected void configure() {
@@ -173,7 +173,7 @@ public class FProposalsPerViewDropperTest {
     SimulationTest test =
         bftTestBuilder
             .addNetworkModule(NetworkDroppers.bftSyncMessagesDropped(0.1))
-            .addOverrideModuleToAll(
+            .addOverrideModuleToAllInitialNodes(
                 new AbstractModule() {
                   @Override
                   protected void configure() {

@@ -130,11 +130,11 @@ public class MempoolTest {
 
   private Injector getInjector() {
     return Guice.createInjector(
+        new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(
             RERulesConfig.testingDefault().removeSigsPerRoundLimit()),
-        MempoolConfig.asModule(10, 10, 200, 500, 10),
         new ForksModule(),
-        new MainnetForksModule(),
+        MempoolConfig.asModule(10, 10, 200, 500, 10),
         new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY, NUM_PEERS),
         new MockedGenesisModule(
             Set.of(VALIDATOR_KEY.getPublicKey()), Amount.ofTokens(1000), Amount.ofTokens(100)),

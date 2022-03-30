@@ -224,6 +224,7 @@ public class OneNodeAlwaysAliveSafetyTest {
             Amount.ofTokens(1000000),
             Amount.ofTokens(10000)),
         MempoolConfig.asModule(10, 10),
+        new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(
             new RERulesConfig(
                 Set.of("xrd"),
@@ -240,7 +241,6 @@ public class OneNodeAlwaysAliveSafetyTest {
                 10,
                 MSG.maxLength())),
         new ForksModule(),
-        new MainnetForksModule(),
         new PersistedNodeForTestingModule(),
         new AbstractModule() {
           @Override

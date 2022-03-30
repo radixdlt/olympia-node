@@ -131,7 +131,7 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
                       ImmutableList.of(nonValidatorSyncNodeKey));
                 })
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed(10))
-            .addOverrideModuleToAll(
+            .addOverrideModuleToAllInitialNodes(
                 new AbstractModule() { // TODO: remove this hack
                   @Provides
                   public BFTValidatorSet genesisValidatorSet(

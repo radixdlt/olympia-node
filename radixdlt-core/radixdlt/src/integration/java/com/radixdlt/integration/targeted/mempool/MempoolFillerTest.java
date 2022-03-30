@@ -114,10 +114,10 @@ public class MempoolFillerTest {
 
   private Injector getInjector() {
     return Guice.createInjector(
-        new RadixEngineForksLatestOnlyModule(),
-        MempoolConfig.asModule(10, 10),
         new MainnetForksModule(),
+        new RadixEngineForksLatestOnlyModule(),
         new ForksModule(),
+        MempoolConfig.asModule(10, 10),
         new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
         new MockedGenesisModule(
             Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(100)),

@@ -108,7 +108,7 @@ public class SanityTest {
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
             .fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
             .addRadixEngineConfigModules(
-                new RadixEngineForksLatestOnlyModule(), new ForksModule(), new MainnetForksModule())
+                new MainnetForksModule(), new RadixEngineForksLatestOnlyModule(), new ForksModule())
             .addNodeModule(MempoolConfig.asModule(1000, 10))
             .addTestModules(
                 ConsensusMonitors.safety(),

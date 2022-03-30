@@ -240,7 +240,7 @@ public final class SimulationTest {
 
     private Builder() {}
 
-    public Builder addNodesOverrideModule(
+    public Builder addOverrideModuleToInitialNodes(
         Function<ImmutableList<ECKeyPair>, ImmutableList<ECPublicKey>> nodesSelector,
         Module overrideModule) {
       final var nodes = nodesSelector.apply(this.initialNodes);
@@ -248,8 +248,8 @@ public final class SimulationTest {
       return this;
     }
 
-    public Builder addOverrideModuleToAll(Module overrideModule) {
-      addNodesOverrideModule(
+    public Builder addOverrideModuleToAllInitialNodes(Module overrideModule) {
+      addOverrideModuleToInitialNodes(
           nodes ->
               nodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()),
           overrideModule);
@@ -282,6 +282,12 @@ public final class SimulationTest {
       return this;
     }
 
+    /**
+     * Setup the test with nodes.
+     *
+     * @param initialStakes iterator of nodes initial stakes; if initialStakes.length < numNodes
+     *     the last element is repeated for the remaining nodes
+     */
     public Builder numNodes(int numNodes, Iterable<UInt256> initialStakes) {
       this.initialNodes =
           Stream.generate(ECKeyPair::generateNew)

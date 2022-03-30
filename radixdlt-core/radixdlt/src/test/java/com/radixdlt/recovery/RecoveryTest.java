@@ -185,6 +185,7 @@ public class RecoveryTest {
     return Guice.createInjector(
         new MockedGenesisModule(
             Set.of(ecKeyPair.getPublicKey()), Amount.ofTokens(1000), Amount.ofTokens(100)),
+        new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(
             new RERulesConfig(
                 Set.of("xrd"),
@@ -201,7 +202,6 @@ public class RecoveryTest {
                 10,
                 MSG.maxLength())),
         new ForksModule(),
-        new MainnetForksModule(),
         MempoolConfig.asModule(10, 10),
         new LastEventsModule(EpochViewUpdate.class, Vote.class),
         new AbstractModule() {

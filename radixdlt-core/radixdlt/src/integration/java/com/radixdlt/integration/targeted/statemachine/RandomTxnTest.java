@@ -107,9 +107,9 @@ public class RandomTxnTest {
   private Injector createInjector() {
     return Guice.createInjector(
         MempoolConfig.asModule(1000, 10),
+        new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(),
         new ForksModule(),
-        new MainnetForksModule(),
         new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
         new MockedGenesisModule(
             Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(100000), Amount.ofTokens(1000)),

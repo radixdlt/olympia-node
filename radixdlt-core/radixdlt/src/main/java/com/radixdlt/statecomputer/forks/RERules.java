@@ -73,55 +73,14 @@ import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import java.util.OptionalInt;
 
-public final class RERules {
-  private final RERulesVersion version;
-  private final REParser parser;
-  private final SubstateSerialization serialization;
-  private final ConstraintMachineConfig constraintMachineConfig;
-  private final REConstructor actionConstructors;
-  private final PostProcessor<LedgerAndBFTProof> postProcessor;
-  private final RERulesConfig config;
-
-  public RERules(
-      RERulesVersion version,
-      REParser parser,
-      SubstateSerialization serialization,
-      ConstraintMachineConfig constraintMachineConfig,
-      REConstructor actionConstructors,
-      PostProcessor<LedgerAndBFTProof> postProcessor,
-      RERulesConfig config) {
-    this.version = version;
-    this.parser = parser;
-    this.serialization = serialization;
-    this.constraintMachineConfig = constraintMachineConfig;
-    this.actionConstructors = actionConstructors;
-    this.postProcessor = postProcessor;
-    this.config = config;
-  }
-
-  public RERulesVersion version() {
-    return version;
-  }
-
-  public ConstraintMachineConfig constraintMachineConfig() {
-    return constraintMachineConfig;
-  }
-
-  public SubstateSerialization serialization() {
-    return serialization;
-  }
-
-  public REConstructor actionConstructors() {
-    return actionConstructors;
-  }
-
-  public PostProcessor<LedgerAndBFTProof> postProcessor() {
-    return postProcessor;
-  }
-
-  public REParser parser() {
-    return parser;
-  }
+public final record RERules(
+    RERulesVersion version,
+    REParser parser,
+    SubstateSerialization serialization,
+    ConstraintMachineConfig constraintMachineConfig,
+    REConstructor actionConstructors,
+    PostProcessor<LedgerAndBFTProof> postProcessor,
+    RERulesConfig config) {
 
   public View maxRounds() {
     return View.of(config.maxRounds());
@@ -133,10 +92,6 @@ public final class RERules {
 
   public int maxValidators() {
     return config.maxValidators();
-  }
-
-  public RERulesConfig config() {
-    return config;
   }
 
   public RERules addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {

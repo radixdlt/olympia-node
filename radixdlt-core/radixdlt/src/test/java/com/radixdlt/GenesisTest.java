@@ -112,8 +112,8 @@ public class GenesisTest {
   @Test
   public void genesis_should_be_a_valid_transaction() throws RadixEngineException {
     Guice.createInjector(
-            new ForksModule(),
             new MainnetForksModule(),
+            new ForksModule(),
             new CryptoModule(),
             new AbstractModule() {
               @Override

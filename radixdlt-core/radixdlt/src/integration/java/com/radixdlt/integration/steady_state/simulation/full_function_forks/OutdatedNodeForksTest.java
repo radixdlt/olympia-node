@@ -116,7 +116,7 @@ public final class OutdatedNodeForksTest {
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
             .fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
             .addRadixEngineConfigModules(new MockedForksModule(2L), new ForksModule())
-            .addNodesOverrideModule(
+            .addOverrideModuleToInitialNodes(
                 nodes -> {
                   final var node = nodes.get(0).getPublicKey();
                   // a little hack to set the node under test key

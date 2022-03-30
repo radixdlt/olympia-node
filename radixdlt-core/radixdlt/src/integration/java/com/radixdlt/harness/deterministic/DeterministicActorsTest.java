@@ -134,10 +134,10 @@ public abstract class DeterministicActorsTest {
   private List<ActorConfiguration> actorConfigurations = new ArrayList<>();
   private MultiNodeDeterministicRunner deterministicRunner;
 
-  public DeterministicActorsTest(Module forkModule, Module byzantineModule) {
+  public DeterministicActorsTest(Module forkOverrideModule, Module byzantineModule) {
     this.nodeKeys = PrivateKeys.numeric(1).limit(20).collect(ImmutableList.toImmutableList());
     this.radixEngineConfiguration =
-        Modules.combine(new MainnetForksModule(), new ForksModule(), forkModule);
+        Modules.combine(new MainnetForksModule(), forkOverrideModule, new ForksModule());
     this.byzantineModule = byzantineModule;
   }
 

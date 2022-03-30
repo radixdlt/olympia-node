@@ -95,6 +95,7 @@ public class RandomValidatorsTest {
           .numNodes(10)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
           .addRadixEngineConfigModules(
+              new MainnetForksModule(),
               new RadixEngineForksLatestOnlyModule(
                   new RERulesConfig(
                       Set.of("xrd"),
@@ -110,8 +111,7 @@ public class RandomValidatorsTest {
                       9800,
                       50,
                       MSG.maxLength())),
-              new ForksModule(),
-              new MainnetForksModule())
+              new ForksModule())
           .ledgerAndRadixEngineWithEpochHighView()
           .addTestModules(
               ConsensusMonitors.safety(),

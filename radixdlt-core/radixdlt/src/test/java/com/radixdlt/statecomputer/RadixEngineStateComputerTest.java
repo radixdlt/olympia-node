@@ -183,9 +183,9 @@ public class RadixEngineStateComputerTest {
         bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 
         install(MempoolConfig.asModule(10, 10));
-        install(new ForksModule());
         install(new MainnetForksModule());
         install(new RadixEngineForksLatestOnlyModule());
+        install(new ForksModule());
 
         // HACK
         bind(CommittedReader.class).toInstance(new NoOpCommittedReader());

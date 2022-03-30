@@ -91,10 +91,10 @@ public class IncreasingValidatorsTest {
           .numNodes(50) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware
           // pacemaker
           .addRadixEngineConfigModules(
+              new MainnetForksModule(),
               new RadixEngineForksLatestOnlyModule(
                   RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
-              new ForksModule(),
-              new MainnetForksModule())
+              new ForksModule())
           .ledgerAndRadixEngineWithEpochHighView()
           .addTestModules(
               ConsensusMonitors.safety(),

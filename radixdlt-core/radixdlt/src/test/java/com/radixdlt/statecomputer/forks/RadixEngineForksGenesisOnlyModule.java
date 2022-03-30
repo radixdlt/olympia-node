@@ -67,22 +67,11 @@ package com.radixdlt.statecomputer.forks;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 
 /** For testing only, only tests the genesis state computer configuration */
 public class RadixEngineForksGenesisOnlyModule extends AbstractModule {
-  private final Optional<RERulesConfig> configOverride;
-
-  public RadixEngineForksGenesisOnlyModule() {
-    this.configOverride = Optional.empty();
-  }
-
-  public RadixEngineForksGenesisOnlyModule(RERulesConfig config) {
-    this.configOverride = Optional.of(config);
-  }
-
   @Override
   protected void configure() {
     OptionalBinder.newOptionalBinder(
@@ -93,7 +82,7 @@ public class RadixEngineForksGenesisOnlyModule extends AbstractModule {
               final var genesisFork =
                   forkBuilders.stream().min((a, b) -> (int) (a.minEpoch() - b.minEpoch()));
               final var baseFork = genesisFork.get().atFixedEpoch(0L);
-              return Set.of(configOverride.map(baseFork::withEngineRulesConfig).orElse(baseFork));
+              return Set.of(baseFork);
             });
   }
 }

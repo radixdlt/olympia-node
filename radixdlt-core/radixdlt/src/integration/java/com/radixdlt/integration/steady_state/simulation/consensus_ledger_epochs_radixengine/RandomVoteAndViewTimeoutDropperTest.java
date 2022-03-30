@@ -100,10 +100,10 @@ public class RandomVoteAndViewTimeoutDropperTest {
               NetworkLatencies.fixed(),
               NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.2))
           .addRadixEngineConfigModules(
+              new MainnetForksModule(),
               new RadixEngineForksLatestOnlyModule(
                   RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
-              new ForksModule(),
-              new MainnetForksModule())
+              new ForksModule())
           .ledgerAndRadixEngineWithEpochHighView()
           .addTestModules(
               ConsensusMonitors.safety(),

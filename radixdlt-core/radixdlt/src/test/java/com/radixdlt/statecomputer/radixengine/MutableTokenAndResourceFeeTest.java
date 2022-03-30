@@ -120,13 +120,13 @@ public class MutableTokenAndResourceFeeTest {
   private Injector createInjector() {
     return Guice.createInjector(
         MempoolConfig.asModule(1000, 10),
+        new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(
             RERulesConfig.testingDefault()
                 .overrideFeeTable(
                     FeeTable.create(
                         Amount.zero(), Map.of(TokenResource.class, Amount.ofTokens(1))))),
         new ForksModule(),
-        new MainnetForksModule(),
         new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY, 0),
         new MockedGenesisModule(
             Set.of(VALIDATOR_KEY.getPublicKey()), Amount.ofTokens(101), Amount.ofTokens(100)),

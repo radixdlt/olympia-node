@@ -106,7 +106,7 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
         SimulationTest.builder()
             .numNodes(3)
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed(10))
-            .addOverrideModuleToAll(
+            .addOverrideModuleToAllInitialNodes(
                 new AbstractModule() {
                   @Provides
                   public BFTValidatorSet genesisValidatorSet(

@@ -116,6 +116,7 @@ public class OneOutOfBoundsTest {
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.oneOutOfBounds(50, 10000))
             .fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
             .addRadixEngineConfigModules(
+                new MainnetForksModule(),
                 new RadixEngineForksLatestOnlyModule(
                     new RERulesConfig(
                         Set.of("xrd"),
@@ -131,8 +132,7 @@ public class OneOutOfBoundsTest {
                         9800,
                         10,
                         MSG.maxLength())),
-                new ForksModule(),
-                new MainnetForksModule())
+                new ForksModule())
             .addNodeModule(MempoolConfig.asModule(1000, 10))
             .addTestModules(
                 ConsensusMonitors.safety(),

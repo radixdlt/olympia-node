@@ -91,7 +91,7 @@ public class OneByzantineGenesisTest {
     SimulationTest bftTest =
         bftTestBuilder
             .numNodes(3)
-            .addNodesOverrideModule(
+            .addOverrideModuleToInitialNodes(
                 nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
                 new MockedRecoveryModule(HashUtils.random256()))
             .addTestModules(ConsensusMonitors.noneCommitted())
@@ -118,7 +118,7 @@ public class OneByzantineGenesisTest {
     SimulationTest bftTest =
         bftTestBuilder
             .numNodes(4)
-            .addNodesOverrideModule(
+            .addOverrideModuleToInitialNodes(
                 nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
                 new MockedRecoveryModule(HashUtils.random256()))
             .addTestModules(ConsensusMonitors.liveness(5, TimeUnit.SECONDS))
