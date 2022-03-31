@@ -171,8 +171,8 @@ public final class PeerManager {
     } else {
       final var nextAddr = remainingAddresses.get(0);
       final var channelFuture = connect(nextAddr);
-      return channelFuture.exceptionallyCompose(
-          ex -> tryConnectWithRetries(Lists.tail(remainingAddresses), triesLeft - 1));
+      return channelFuture.exceptionallyCompose(ex ->
+        tryConnectWithRetries(Lists.tail(remainingAddresses), triesLeft - 1));
     }
   }
 

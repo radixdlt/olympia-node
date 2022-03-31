@@ -128,37 +128,37 @@ public final class PendingOutboundChannelsManager {
   }
 
   private void handlePeerConnected(PeerConnected peerConnected) {
+    final var channel = peerConnected.channel();
+    final Optional<CompletableFuture<PeerChannel>> channelFutureOpt;
     synchronized (lock) {
-      final var channel = peerConnected.channel();
-      final var maybeFuture = this.pendingChannels.remove(channel.getRemoteNodeId());
-      if (maybeFuture != null) {
-        maybeFuture.complete(channel);
-      }
+      channelFutureOpt = Optional.ofNullable(this.pendingChannels.remove(channel.getRemoteNodeId()));
     }
+    channelFutureOpt.ifPresent(channelFuture -> channelFuture.complete(channel));
   }
 
   private void handlePeerHandshakeFailed(PeerHandshakeFailed peerHandshakeFailed) {
+    final Optional<CompletableFuture<PeerChannel>> channelFutureOpt;
     synchronized (lock) {
-      peerHandshakeFailed
+      channelFutureOpt = peerHandshakeFailed
           .channel()
           .getUri()
           .map(RadixNodeUri::getNodeId)
-          .flatMap(nodeId -> Optional.ofNullable(this.pendingChannels.remove(nodeId)))
-          .ifPresent(
-              future -> future.completeExceptionally(new IOException("Peer connection failed")));
+          .flatMap(nodeId -> Optional.ofNullable(this.pendingChannels.remove(nodeId)));
     }
+    channelFutureOpt.ifPresent(channelFuture -> channelFuture.completeExceptionally(new IOException("Peer connection failed")));
   }
 
   public EventProcessor<PeerOutboundConnectionTimeout>
       peerOutboundConnectionTimeoutEventProcessor() {
     return timeout -> {
+      final Optional<CompletableFuture<PeerChannel>> channelFutureOpt;
       synchronized (lock) {
-        final var maybeFuture = this.pendingChannels.remove(timeout.uri().getNodeId());
-        if (maybeFuture != null) {
-          maybeFuture.completeExceptionally(new IOException("Peer connection timeout"));
-          peerEventDispatcher.dispatch(new PeerConnectionTimeout(timeout.uri()));
-        }
+        channelFutureOpt = Optional.ofNullable(this.pendingChannels.remove(timeout.uri().getNodeId()));
       }
+      channelFutureOpt.ifPresent(channelFuture -> {
+        channelFuture.completeExceptionally(new IOException("Peer connection timeout"));
+        peerEventDispatcher.dispatch(new PeerConnectionTimeout(timeout.uri()));
+      });
     };
   }
 
