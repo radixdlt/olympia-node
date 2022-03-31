@@ -151,12 +151,30 @@ public final class MessageCentralImpl implements MessageCentral {
     this.peerMessages =
         peerManager
             .messages()
+                .doOnComplete(() -> {
+                  log.info("[xyz] Peer messages onComplete...");
+                })
+                .doOnError(err -> {
+                  log.info("[xyz] Peer messages error");
+                })
+            .map(msg -> {
+              log.info("[xyz] Received a message (before setting a scheduler)");
+              return msg;
+            })
             .observeOn(Schedulers.computation())
+            .map(msg -> {
+              log.info("[xyz] Received a message (after setting a scheduler)");
+              return msg;
+            })
             .map(this::processInboundMessage)
             .filter(Optional::isPresent)
             .map(Optional::get)
+              .doOnComplete(() -> {
+                log.info("[xyz] Peer messages onComplete...");
+              })
             .publish()
             .autoConnect();
+
   }
 
   private Optional<MessageFromPeer<Message>> processInboundMessage(InboundMessage inboundMessage) {
