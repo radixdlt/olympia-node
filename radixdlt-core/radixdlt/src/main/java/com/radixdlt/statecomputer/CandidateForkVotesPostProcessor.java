@@ -100,7 +100,7 @@ public final class CandidateForkVotesPostProcessor implements PostProcessor<Ledg
    * map. Acts as a storage size optimization so that we don't store insignificant entries. Follows
    * the same format as CandidateForkConfig.Threshold
    */
-  private static final short VOTES_THRESHOLD_TO_STORE_RESULT = 5000; /* 50.00% */
+  private static final short VOTES_THRESHOLD_TO_STORE_RESULT = 1000; /* 10.00% */
 
   /** Follows the same format as CandidateForkConfig.Threshold */
   private static final int ONE_HUNDRED_PERCENT = 10000;
