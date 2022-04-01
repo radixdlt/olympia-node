@@ -101,20 +101,27 @@ public final class PendingOutboundChannelsManager {
   }
 
   public CompletableFuture<PeerChannel> connectTo(RadixNodeUri uri) {
-    synchronized (lock) {
-      final var remoteNodeId = uri.getNodeId();
+    final var remoteNodeId = uri.getNodeId();
+    final CompletableFuture<PeerChannel> channelFuture;
+    final boolean pendingChannelAlreadyPresent;
 
-      if (this.pendingChannels.containsKey(remoteNodeId)) {
-        return this.pendingChannels.get(remoteNodeId);
+    synchronized (lock) {
+      pendingChannelAlreadyPresent = this.pendingChannels.containsKey(remoteNodeId);
+      if (pendingChannelAlreadyPresent) {
+        channelFuture = this.pendingChannels.get(remoteNodeId);
       } else {
-        final var channelFuture = new CompletableFuture<PeerChannel>();
+        channelFuture = new CompletableFuture<>();
         this.pendingChannels.put(remoteNodeId, channelFuture);
-        this.peerOutboundBootstrap.initOutboundConnection(uri);
-        this.timeoutEventDispatcher.dispatch(
-            new PeerOutboundConnectionTimeout(uri), config.peerConnectionTimeout());
-        return channelFuture;
       }
     }
+
+    if (!pendingChannelAlreadyPresent) {
+      this.peerOutboundBootstrap.initOutboundConnection(uri);
+      this.timeoutEventDispatcher.dispatch(
+          new PeerOutboundConnectionTimeout(uri), config.peerConnectionTimeout());
+    }
+
+    return channelFuture;
   }
 
   public EventProcessor<PeerEvent> peerEventProcessor() {
