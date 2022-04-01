@@ -78,6 +78,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import javax.inject.Inject;
 
 public final class PendingOutboundChannelsManager {
@@ -85,8 +87,8 @@ public final class PendingOutboundChannelsManager {
   private final PeerOutboundBootstrap peerOutboundBootstrap;
   private final ScheduledEventDispatcher<PeerOutboundConnectionTimeout> timeoutEventDispatcher;
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
-  private final Object lock = new Object();
-  private final Map<NodeId, CompletableFuture<PeerChannel>> pendingChannels = new HashMap<>();
+  private final Map<NodeId, CompletableFuture<PeerChannel>> pendingChannels = new ConcurrentHashMap<>() {
+  };
 
   @Inject
   public PendingOutboundChannelsManager(
@@ -102,20 +104,11 @@ public final class PendingOutboundChannelsManager {
 
   public CompletableFuture<PeerChannel> connectTo(RadixNodeUri uri) {
     final var remoteNodeId = uri.getNodeId();
-    final CompletableFuture<PeerChannel> channelFuture;
-    final boolean pendingChannelAlreadyPresent;
+    final CompletableFuture<PeerChannel> channelFuture = new CompletableFuture<>();
 
-    synchronized (lock) {
-      pendingChannelAlreadyPresent = this.pendingChannels.containsKey(remoteNodeId);
-      if (pendingChannelAlreadyPresent) {
-        channelFuture = this.pendingChannels.get(remoteNodeId);
-      } else {
-        channelFuture = new CompletableFuture<>();
-        this.pendingChannels.put(remoteNodeId, channelFuture);
-      }
-    }
+    var previousChannel = this.pendingChannels.putIfAbsent(remoteNodeId, channelFuture);
 
-    if (!pendingChannelAlreadyPresent) {
+    if (previousChannel == null) {
       this.peerOutboundBootstrap.initOutboundConnection(uri);
       this.timeoutEventDispatcher.dispatch(
           new PeerOutboundConnectionTimeout(uri), config.peerConnectionTimeout());
@@ -137,23 +130,19 @@ public final class PendingOutboundChannelsManager {
   private void handlePeerConnected(PeerConnected peerConnected) {
     final var channel = peerConnected.channel();
     final Optional<CompletableFuture<PeerChannel>> channelFutureOpt;
-    synchronized (lock) {
       channelFutureOpt =
           Optional.ofNullable(this.pendingChannels.remove(channel.getRemoteNodeId()));
-    }
     channelFutureOpt.ifPresent(channelFuture -> channelFuture.complete(channel));
   }
 
   private void handlePeerHandshakeFailed(PeerHandshakeFailed peerHandshakeFailed) {
     final Optional<CompletableFuture<PeerChannel>> channelFutureOpt;
-    synchronized (lock) {
       channelFutureOpt =
           peerHandshakeFailed
               .channel()
               .getUri()
               .map(RadixNodeUri::getNodeId)
               .flatMap(nodeId -> Optional.ofNullable(this.pendingChannels.remove(nodeId)));
-    }
     channelFutureOpt.ifPresent(
         channelFuture ->
             channelFuture.completeExceptionally(new IOException("Peer connection failed")));
@@ -163,10 +152,8 @@ public final class PendingOutboundChannelsManager {
       peerOutboundConnectionTimeoutEventProcessor() {
     return timeout -> {
       final Optional<CompletableFuture<PeerChannel>> channelFutureOpt;
-      synchronized (lock) {
         channelFutureOpt =
             Optional.ofNullable(this.pendingChannels.remove(timeout.uri().getNodeId()));
-      }
       channelFutureOpt.ifPresent(
           channelFuture -> {
             channelFuture.completeExceptionally(new IOException("Peer connection timeout"));
