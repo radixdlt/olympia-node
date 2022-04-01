@@ -107,6 +107,8 @@ public final class PendingOutboundChannelsManager {
     var existingChannelFutureOpt =
         Optional.ofNullable(this.pendingChannels.putIfAbsent(remoteNodeId, newChannelFuture));
 
+    // There was no existing channel future that has already been initialized for this node ID
+    //   so we init a new outbound connection
     if (existingChannelFutureOpt.isEmpty()) {
       this.peerOutboundBootstrap.initOutboundConnection(uri);
       this.timeoutEventDispatcher.dispatch(
