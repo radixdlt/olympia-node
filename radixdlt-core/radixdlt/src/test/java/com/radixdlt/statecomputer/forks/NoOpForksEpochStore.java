@@ -76,7 +76,7 @@ public final class NoOpForksEpochStore implements ForksEpochStore {
   }
 
   @Override
-  public void storeForkAtEpoch(long epoch, String forkName) {
+  public void storeForkAtEpoch(long newEpoch, String forkName) {
     // no-op
   }
 

@@ -72,7 +72,7 @@ import com.radixdlt.atom.CloseableCursor;
 public interface ForksEpochStore {
   ImmutableMap<Long, String> getStoredForks();
 
-  void storeForkAtEpoch(long epoch, String forkName);
+  void storeForkAtEpoch(long newEpoch, String forkName);
 
   /**
    * Returns a cursor of ForkVotingResults for a particular candidateForkId. The results are for

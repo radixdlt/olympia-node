@@ -510,11 +510,11 @@ public final class BerkeleyLedgerEntryStore
     return new ForkVotingResult(epoch, candidateForkId, stakePercentageVoted);
   }
 
-  private void storeForkAtEpoch(Transaction dbTxn, long epoch, String forkName) {
-    final var key = new DatabaseEntry(Longs.toByteArray(epoch));
+  private void storeForkAtEpoch(Transaction dbTxn, long newEpoch, String forkName) {
+    final var key = new DatabaseEntry(Longs.toByteArray(newEpoch));
     final var entry = new DatabaseEntry(forkName.getBytes(ForkConfig.FORK_NAME_CHARSET));
     if (forkConfigDatabase.putNoOverwrite(dbTxn, key, entry) != SUCCESS) {
-      throw new BerkeleyStoreException("Duplicate fork hash stored for epoch " + epoch);
+      throw new BerkeleyStoreException("Duplicate fork hash stored for epoch " + newEpoch);
     }
   }
 
@@ -534,10 +534,10 @@ public final class BerkeleyLedgerEntryStore
   }
 
   @Override
-  public void storeForkAtEpoch(long epoch, String forkName) {
+  public void storeForkAtEpoch(long newEpoch, String forkName) {
     final var tx = beginTransaction();
     try {
-      storeForkAtEpoch(tx, epoch, forkName);
+      storeForkAtEpoch(tx, newEpoch, forkName);
       tx.commit();
     } catch (Exception e) {
       tx.abort();

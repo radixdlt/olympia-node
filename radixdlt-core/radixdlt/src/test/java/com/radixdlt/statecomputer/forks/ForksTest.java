@@ -425,11 +425,11 @@ public final class ForksTest {
     final var candidateForkId = CandidateForkVote.candidateForkId(candidate);
     final var sut = Forks.create(Set.of(genesis, candidate));
 
-    /* contains pairs of (expectedResult, input), where input is an array of pairs: (epoch, percentage_stake_voted) */
+    /* Contains pairs of (expectedResult, input), where input is an array of pairs: (epoch, percentage_stake_voted) */
     final var testCases =
         ImmutableList.of(
             Pair.of(
-                Optional.of(10L),
+                Optional.of(10L) /* Minimum epoch */,
                 new Object[][] {{6L, 8000}, {7L, 8000}, {8L, 8000}, {9L, 8000}, {10L, 8000}}),
             Pair.of(
                 Optional.empty(),

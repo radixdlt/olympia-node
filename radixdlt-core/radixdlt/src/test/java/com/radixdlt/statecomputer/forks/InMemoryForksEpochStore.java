@@ -115,9 +115,9 @@ public final class InMemoryForksEpochStore implements ForksEpochStore {
   }
 
   @Override
-  public void storeForkAtEpoch(long epoch, String forkName) {
+  public void storeForkAtEpoch(long newEpoch, String forkName) {
     synchronized (lock) {
-      this.store.storedForks.put(epoch, forkName);
+      this.store.storedForks.put(newEpoch, forkName);
     }
   }
 
