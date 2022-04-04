@@ -111,6 +111,9 @@ public record ValidatorEntity(
     switch (dataObject) {
       case PreparedValidatorRegistered preparedValidatorRegistered:
         updateRegistered(builder, preparedValidatorRegistered);
+        if (preparedValidatorRegistered.getRegistered()) {
+          updateValidatorSystemMetadataVote(builder);
+        }
         break;
       case PreparedValidatorOwner preparedValidatorOwner:
         var owner = parsedDataObject.getParsed(REAddr.class);

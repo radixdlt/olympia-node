@@ -285,8 +285,8 @@ public final class SimulationTest {
     /**
      * Setup the test with nodes.
      *
-     * @param initialStakes iterator of nodes initial stakes; if initialStakes.length < numNodes
-     *     the last element is repeated for the remaining nodes
+     * @param initialStakes iterator of nodes initial stakes; if initialStakes.length < numNodes the
+     *     last element is repeated for the remaining nodes
      */
     public Builder numNodes(int numNodes, Iterable<UInt256> initialStakes) {
       this.initialNodes =
