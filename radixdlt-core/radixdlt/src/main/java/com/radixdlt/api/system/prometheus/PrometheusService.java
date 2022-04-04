@@ -239,19 +239,17 @@ public class PrometheusService {
   }
 
   private void addCandidateForkRemainingEpochs(StringBuilder builder) {
-    engineStatusService
-        .getCandidateForkRemainingEpochs()
-        .ifPresent(
-            candidateForkRemainingEpochs ->
-                appendField(
-                    builder, "candidate_fork_remaining_epochs", candidateForkRemainingEpochs));
+    final var candidateForkRemainingEpochs =
+        engineStatusService.getCandidateForkRemainingEpochs().orElse(0L);
+
+    appendField(builder, "candidate_fork_remaining_epochs", candidateForkRemainingEpochs);
   }
 
   private void addCandidateForkVotingResult(StringBuilder builder) {
     appendField(
         builder,
-        "candidate_fork_voting_result",
-        engineStatusService.getCandidateForkVotingResult());
+        "candidate_fork_voting_result_percentage",
+        engineStatusService.getCandidateForkVotingResultPercentage());
   }
 
   private void addAccumulatorState(StringBuilder builder) {

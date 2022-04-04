@@ -122,15 +122,28 @@ public final class BerkeleyLedgerEntryStoreTest {
 
   @Test
   public void test_forks_voting_results() throws RadixEngineException {
+    final var threshold = new CandidateForkConfig.Threshold((short) 8000, 10);
     final var candidateFork1 =
         new CandidateForkConfig(
-            "fork1", OLYMPIA_V1.create(RERulesConfig.testingDefault()), ImmutableSet.of(), 1L, 5L);
+            "fork1",
+            OLYMPIA_V1.create(RERulesConfig.testingDefault()),
+            ImmutableSet.of(threshold),
+            1L,
+            5L);
     final var candidateFork2 =
         new CandidateForkConfig(
-            "fork2", OLYMPIA_V1.create(RERulesConfig.testingDefault()), ImmutableSet.of(), 1L, 5L);
+            "fork2",
+            OLYMPIA_V1.create(RERulesConfig.testingDefault()),
+            ImmutableSet.of(threshold),
+            1L,
+            5L);
     final var candidateFork3 =
         new CandidateForkConfig(
-            "fork3", OLYMPIA_V1.create(RERulesConfig.testingDefault()), ImmutableSet.of(), 1L, 5L);
+            "fork3",
+            OLYMPIA_V1.create(RERulesConfig.testingDefault()),
+            ImmutableSet.of(threshold),
+            1L,
+            5L);
     final var candidateFork1Id = CandidateForkVote.candidateForkId(candidateFork1);
     final var candidateFork2Id = CandidateForkVote.candidateForkId(candidateFork2);
     final var candidateFork3Id = CandidateForkVote.candidateForkId(candidateFork3);

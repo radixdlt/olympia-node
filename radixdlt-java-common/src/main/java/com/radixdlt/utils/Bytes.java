@@ -284,7 +284,7 @@ public class Bytes {
   }
 
   /** Checks whether a given array consists of only zero bytes. */
-  public static boolean allZeros(byte[] arr) {
+  public static boolean isAllZeros(byte[] arr) {
     for (byte b : arr) {
       if (b != 0) {
         return false;

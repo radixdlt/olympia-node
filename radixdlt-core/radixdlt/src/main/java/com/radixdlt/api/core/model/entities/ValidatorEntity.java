@@ -131,7 +131,7 @@ public record ValidatorEntity(
       case com.radixdlt.api.core.openapitools.model.ValidatorSystemMetadata metadata:
         if (metadata.getData().isEmpty()) {
           updateValidatorSystemMetadataVote(builder);
-        } else if (Bytes.allZeros(Bytes.fromHexString(metadata.getData()))) {
+        } else if (Bytes.isAllZeros(Bytes.fromHexString(metadata.getData()))) {
           updateValidatorSystemMetadataWithdrawVote(builder);
         } else {
           throw new InvalidDataObjectException(

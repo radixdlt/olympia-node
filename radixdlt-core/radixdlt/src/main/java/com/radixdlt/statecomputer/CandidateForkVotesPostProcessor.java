@@ -192,7 +192,7 @@ public final class CandidateForkVotesPostProcessor implements PostProcessor<Ledg
       final var validatorSystemMetadataSubstate =
           (ValidatorSystemMetadata) substateDeserialization.deserialize(rawSubstateBytes.getData());
 
-      if (Bytes.allZeros(validatorSystemMetadataSubstate.data())) {
+      if (Bytes.isAllZeros(validatorSystemMetadataSubstate.data())) {
         return Optional.empty();
       }
 

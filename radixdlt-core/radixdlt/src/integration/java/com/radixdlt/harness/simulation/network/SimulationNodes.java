@@ -234,8 +234,16 @@ public class SimulationNodes {
       epochChangeObservables = ReplaySubject.createWithSize(nodes.size());
       ledgerUpdateObservables = ReplaySubject.createWithSize(nodes.size());
       testScheduler = Schedulers.from(Executors.newSingleThreadExecutor());
-      epochChanges = Observable.merge(epochChangeObservables).replay(1024).autoConnect().observeOn(testScheduler);
-      ledgerUpdates = Observable.merge(ledgerUpdateObservables).replay(1024).autoConnect().observeOn(testScheduler);
+      epochChanges =
+          Observable.merge(epochChangeObservables)
+              .replay(1024)
+              .autoConnect()
+              .observeOn(testScheduler);
+      ledgerUpdates =
+          Observable.merge(ledgerUpdateObservables)
+              .replay(1024)
+              .autoConnect()
+              .observeOn(testScheduler);
       epochAndLedgerUpdatesDisposable =
           new CompositeDisposable(epochChanges.subscribe(), ledgerUpdates.subscribe());
 

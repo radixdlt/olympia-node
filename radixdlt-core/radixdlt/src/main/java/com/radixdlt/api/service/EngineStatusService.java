@@ -87,9 +87,9 @@ public final class EngineStatusService {
   private final Forks forks;
   private final ForksEpochStore forksEpochStore;
 
-  private long cachedForksValuesLastEpoch;
-  private short cachedCandidateForkVotingResult;
-  private Optional<Long> cachedUpcomingForkRemainingEpochs;
+  private long cachedForksValuesLastEpoch = -1;
+  private short cachedCandidateForkVotingResult = 0;
+  private Optional<Long> cachedUpcomingForkRemainingEpochs = Optional.empty();
 
   @Inject
   public EngineStatusService(
@@ -106,9 +106,7 @@ public final class EngineStatusService {
     this.forks = forks;
     this.forksEpochStore = forksEpochStore;
 
-    this.cachedUpcomingForkRemainingEpochs = calculateCandidateForkRemainingEpochs();
-    this.cachedCandidateForkVotingResult = getCandidateForkVotingResult();
-    this.cachedForksValuesLastEpoch = getCurrentProof().getEpoch();
+    refreshForksCachedValues();
   }
 
   public LedgerProof getEpochProof(long epoch) {
@@ -182,9 +180,9 @@ public final class EngineStatusService {
             });
   }
 
-  public short getCandidateForkVotingResult() {
+  public float getCandidateForkVotingResultPercentage() {
     refreshForksCachedValues();
-    return cachedCandidateForkVotingResult;
+    return (float) cachedCandidateForkVotingResult / 100;
   }
 
   private short calculateCandidateForkVotingResult() {

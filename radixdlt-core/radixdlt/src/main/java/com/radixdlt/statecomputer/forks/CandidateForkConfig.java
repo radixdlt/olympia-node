@@ -96,6 +96,9 @@ public record CandidateForkConfig(
     if (name.getBytes(ForkConfig.FORK_NAME_CHARSET).length > 16) {
       throw new IllegalArgumentException("Fork name can't be longer than 16 bytes");
     }
+    if (thresholds.size() < 1) {
+      throw new IllegalArgumentException("Candidate fork requires at least one threshold");
+    }
   }
 
   public int longestThresholdEpochs() {

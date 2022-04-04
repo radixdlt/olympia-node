@@ -500,7 +500,8 @@ public final class BerkeleyLedgerEntryStore
             Arrays.copyOfRange(
                 data,
                 FORK_VOTING_RESULT_VERSION_PREFIX.length,
-                CandidateForkVote.CANDIDATE_FORK_ID_LEN + FORK_VOTING_RESULT_VERSION_PREFIX.length));
+                CandidateForkVote.CANDIDATE_FORK_ID_LEN
+                    + FORK_VOTING_RESULT_VERSION_PREFIX.length));
     final var stakePercentageVoted =
         Shorts.fromByteArray(
             Arrays.copyOfRange(

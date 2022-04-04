@@ -268,25 +268,25 @@ public final class ForksTest {
   public void forks_should_correctly_test_candidate_with_epochs_before_enacted_with_a_gap() {
     final var threshold = new CandidateForkConfig.Threshold((short) 8000, 3);
     final var candidate =
-      new CandidateForkConfig(
-        "candidate",
-        OLYMPIA_V1.create(RERulesConfig.testingDefault()),
-        ImmutableSet.of(threshold),
-        1L,
-        100L);
+        new CandidateForkConfig(
+            "candidate",
+            OLYMPIA_V1.create(RERulesConfig.testingDefault()),
+            ImmutableSet.of(threshold),
+            1L,
+            100L);
     final var candidateForkId = CandidateForkVote.candidateForkId(candidate);
 
     final var forksEpochStore1 = new InMemoryForksEpochStore(new InMemoryForksEpochStore.Store());
     forksEpochStore1.storeForkVotingResult(
-      new ForkVotingResult(13L, candidateForkId, threshold.requiredStake()));
+        new ForkVotingResult(13L, candidateForkId, threshold.requiredStake()));
     forksEpochStore1.storeForkVotingResult(
-      new ForkVotingResult(14L, candidateForkId, threshold.requiredStake()));
+        new ForkVotingResult(14L, candidateForkId, threshold.requiredStake()));
     forksEpochStore1.storeForkVotingResult(
-      new ForkVotingResult(15L, candidateForkId, (short) (threshold.requiredStake() - 1)));
+        new ForkVotingResult(15L, candidateForkId, (short) (threshold.requiredStake() - 1)));
     final var proofAtEpoch15 =
-      proofForCandidate(
-        15L, /* Proof at epoch 15 */
-        votesFor(16L /* Contains votes for epoch 16 */, candidate, threshold.requiredStake()));
+        proofForCandidate(
+            15L, /* Proof at epoch 15 */
+            votesFor(16L /* Contains votes for epoch 16 */, candidate, threshold.requiredStake()));
 
     // Votes for epoch 13, 14, gap at epoch 15, and then another vote at epoch 16.
     // The gap should reset the counter, so the fork shouldn't be enacted.
@@ -294,19 +294,19 @@ public final class ForksTest {
 
     final var forksEpochStore2 = new InMemoryForksEpochStore(new InMemoryForksEpochStore.Store());
     forksEpochStore2.storeForkVotingResult(
-      new ForkVotingResult(13L, candidateForkId, threshold.requiredStake()));
+        new ForkVotingResult(13L, candidateForkId, threshold.requiredStake()));
     forksEpochStore2.storeForkVotingResult(
-      new ForkVotingResult(14L, candidateForkId, threshold.requiredStake()));
+        new ForkVotingResult(14L, candidateForkId, threshold.requiredStake()));
     forksEpochStore2.storeForkVotingResult(
-      new ForkVotingResult(15L, candidateForkId, (short) (threshold.requiredStake() - 1)));
+        new ForkVotingResult(15L, candidateForkId, (short) (threshold.requiredStake() - 1)));
     forksEpochStore2.storeForkVotingResult(
-      new ForkVotingResult(16L, candidateForkId, threshold.requiredStake()));
+        new ForkVotingResult(16L, candidateForkId, threshold.requiredStake()));
     forksEpochStore2.storeForkVotingResult(
-      new ForkVotingResult(17L, candidateForkId, threshold.requiredStake()));
+        new ForkVotingResult(17L, candidateForkId, threshold.requiredStake()));
     final var proofAtEpoch17 =
-      proofForCandidate(
-        17L, /* Proof at epoch 17 */
-        votesFor(18L /* Contains votes for epoch 18 */, candidate, threshold.requiredStake()));
+        proofForCandidate(
+            17L, /* Proof at epoch 17 */
+            votesFor(18L /* Contains votes for epoch 18 */, candidate, threshold.requiredStake()));
 
     // Votes for epoch 13, 14, gap at epoch 15, and then three consecutive votes in e16, e17 and e18
     assertTrue(Forks.shouldCandidateForkBeEnacted(candidate, proofAtEpoch17, forksEpochStore2));
