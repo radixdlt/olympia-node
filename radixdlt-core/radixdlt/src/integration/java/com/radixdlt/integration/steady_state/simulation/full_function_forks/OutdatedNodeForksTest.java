@@ -89,11 +89,9 @@ import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksGenesisOnlyModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.UInt256;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -155,12 +153,9 @@ public final class OutdatedNodeForksTest {
         };
 
     final var latestEpochChange = new AtomicReference<EpochChange>();
-    final var testExecutor = Executors.newSingleThreadExecutor();
     final var testErrorsDisposable =
         network
             .latestEpochChanges()
-            /* required so that when the bft runner restarts at epoch 12 it doesn't happen at the bft runner thread */
-            .observeOn(Schedulers.from(testExecutor))
             .subscribe(
                 epochChange -> {
                   latestEpochChange.set(epochChange);
@@ -236,7 +231,5 @@ public final class OutdatedNodeForksTest {
 
     // just a sanity check to make sure that at least 14 epochs have passed
     assertTrue(latestEpochChange.get().getEpoch() > 14);
-
-    testExecutor.shutdownNow();
   }
 }

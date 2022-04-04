@@ -303,7 +303,7 @@ public final class CandidateForkVotesPostProcessorTest {
   @Test
   public void should_ignore_votes_from_nodes_outside_the_validator_set()
       throws RadixEngineException {
-    final var singleNodeVset =
+    final var validatorSet =
         BFTValidatorSet.from(
             List.of(
                 BFTValidator.from(bftNode(0), UInt256.ONE),
@@ -312,7 +312,7 @@ public final class CandidateForkVotesPostProcessorTest {
 
     // a vote from a single node in a validator set and two other nodes
     setup(
-        singleNodeVset,
+        validatorSet,
         Map.of(
             bftNode(0), fork1,
             bftNode(3 /* not in the validator set */), fork1,
@@ -323,7 +323,7 @@ public final class CandidateForkVotesPostProcessorTest {
 
     // votes from two nodes in a validator set and two other nodes
     setup(
-        singleNodeVset,
+        validatorSet,
         Map.of(
             bftNode(0), fork1,
             bftNode(1), fork1,

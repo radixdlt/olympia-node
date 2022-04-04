@@ -99,10 +99,13 @@ import com.radixdlt.sync.InMemoryCommittedReader;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /** A multi-node bft test network where the network and latencies of each message is simulated. */
@@ -204,6 +207,7 @@ public class SimulationNodes {
     private final ImmutableMap<BFTNode, ImmutableSet<String>> disabledModuleRunners;
     private final Map<BFTNode, Injector> nodes;
 
+    private final Scheduler testScheduler;
     private final ReplaySubject<Observable<Pair<BFTNode, EpochChange>>> epochChangeObservables;
     private final ReplaySubject<Observable<Pair<BFTNode, LedgerUpdate>>> ledgerUpdateObservables;
     private final Observable<Pair<BFTNode, EpochChange>> epochChanges;
@@ -229,8 +233,9 @@ public class SimulationNodes {
       are not lost. */
       epochChangeObservables = ReplaySubject.createWithSize(nodes.size());
       ledgerUpdateObservables = ReplaySubject.createWithSize(nodes.size());
-      epochChanges = Observable.merge(epochChangeObservables).replay(1024).autoConnect();
-      ledgerUpdates = Observable.merge(ledgerUpdateObservables).replay(1024).autoConnect();
+      testScheduler = Schedulers.from(Executors.newSingleThreadExecutor());
+      epochChanges = Observable.merge(epochChangeObservables).replay(1024).autoConnect().observeOn(testScheduler);
+      ledgerUpdates = Observable.merge(ledgerUpdateObservables).replay(1024).autoConnect().observeOn(testScheduler);
       epochAndLedgerUpdatesDisposable =
           new CompositeDisposable(epochChanges.subscribe(), ledgerUpdates.subscribe());
 
@@ -382,6 +387,7 @@ public class SimulationNodes {
     public void stop() {
       this.nodes.values().forEach(this::stopNode);
       epochAndLedgerUpdatesDisposable.dispose();
+      testScheduler.shutdown();
     }
 
     private void stopNode(Injector injector) {
