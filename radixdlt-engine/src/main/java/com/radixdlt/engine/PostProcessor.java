@@ -83,7 +83,7 @@ public interface PostProcessor<M> {
   }
 
   @SafeVarargs
-  static <M> PostProcessor<M> combine(PostProcessor<M>... postProcessors) {
+  static <M> PostProcessor<M> append(PostProcessor<M>... postProcessors) {
     return new PostProcessor<>() {
       @Override
       public M process(

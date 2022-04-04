@@ -101,7 +101,7 @@ public final record RERules(
         serialization,
         constraintMachineConfig,
         actionConstructors,
-        PostProcessor.combine(postProcessor, newPostProcessor),
+        PostProcessor.append(postProcessor, newPostProcessor),
         config);
   }
 }

@@ -204,7 +204,7 @@ public enum RERulesVersion {
           serialization,
           constraintMachineConfig,
           actionConstructors,
-          PostProcessor.combine(
+          PostProcessor.append(
               new EpochProofVerifierV2(),
               new CandidateForkVotesPostProcessor(parser.getSubstateDeserialization())),
           config);

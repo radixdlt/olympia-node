@@ -91,7 +91,13 @@ import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/** Adds forksVotingResults at epoch boundary to the result metadata. */
+/**
+ * Adds forksVotingResults at epoch boundary to the result metadata. It's required for this
+ * PostProcessor to run before NextCandidateForkPostProcessor and NextFixedEpochForkPostProcessor,
+ * which rely on this processor's results. The order is guaranteed by using the PostProcessor.append
+ * to add the other PostProcessors in Forks.java, while this this one is already present in the base
+ * RERules.
+ */
 public final class CandidateForkVotesPostProcessor implements PostProcessor<LedgerAndBFTProof> {
   private static final Logger log = LogManager.getLogger();
 
