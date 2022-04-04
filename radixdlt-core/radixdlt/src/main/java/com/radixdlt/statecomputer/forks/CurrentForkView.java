@@ -78,6 +78,11 @@ public final class CurrentForkView {
     this.currentForkConfig = Objects.requireNonNull(initialForkConfig);
   }
 
+  /**
+   * Returns the fork configuration currently in use by the engine. The value is updated
+   * asynchronously, so there might be a short period of time when it still returns an old fork
+   * configuration but the engine has already forked to a newer one.
+   */
   public ForkConfig currentForkConfig() {
     return currentForkConfig;
   }

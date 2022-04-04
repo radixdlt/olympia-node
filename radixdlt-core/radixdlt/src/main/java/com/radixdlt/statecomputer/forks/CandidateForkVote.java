@@ -76,8 +76,13 @@ import java.util.Arrays;
 import java.util.stream.Stream;
 
 public record CandidateForkVote(HashCode payload) {
+  /**
+   * A constant nonce added to the fork vote. Each software version is supposed to have the same
+   * nonce, but it is not taken into account when the system counts the votes.
+   */
   public static final HashCode FORK_VOTE_NONCE =
       HashUtils.sha256("olympia".getBytes(StandardCharsets.US_ASCII));
+
   public static final int NAME_LEN = 16;
   public static final int CANDIDATE_FORK_ID_LEN = 8;
   public static final int NONCE_HASH_LEN = 8;
