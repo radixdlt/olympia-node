@@ -77,8 +77,8 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.properties.RuntimeProperties;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import org.json.JSONObject;
@@ -106,23 +106,11 @@ public final class PendingOutboundChannelsManagerTest {
     for (int i = 0; i < 200; i++) {
       final var futureRef1 = new AtomicReference<CompletableFuture<PeerChannel>>();
       final var futureRef2 = new AtomicReference<CompletableFuture<PeerChannel>>();
-      final var cdl = new CountDownLatch(2);
+      executorService.invokeAll(
+          List.of(
+              Executors.callable(() -> futureRef1.set(sut.connectTo(remoteNodeUri))),
+              Executors.callable(() -> futureRef2.set(sut.connectTo(remoteNodeUri)))));
 
-      // Submit connect requests from two threads to the same node URI
-      executorService.submit(
-          () -> {
-            futureRef1.set(sut.connectTo(remoteNodeUri));
-            cdl.countDown();
-          });
-
-      executorService.submit(
-          () -> {
-            futureRef2.set(sut.connectTo(remoteNodeUri));
-            cdl.countDown();
-          });
-
-      // Await for async threads to call connectTo
-      cdl.await();
       assertNotNull(futureRef1.get());
       assertNotNull(futureRef2.get());
 
