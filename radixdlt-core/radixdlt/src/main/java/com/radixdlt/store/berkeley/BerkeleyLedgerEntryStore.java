@@ -178,6 +178,8 @@ public final class BerkeleyLedgerEntryStore
   private static final String TXN_DB_NAME = "radix.txn_db";
   private static final String FORK_CONFIG_DB = "radix.fork_config_db";
   private static final String FORKS_VOTING_RESULTS_DB = "radix.forks_voting_results";
+  // A constant prefix to make any storage format changes easier in the future
+  private static final byte[] FORK_VOTING_RESULT_VERSION_PREFIX = {0x01};
 
   private Database vertexStoreDatabase; // Write/Delete
   private Database proofDatabase; // Write/Delete
@@ -487,16 +489,24 @@ public final class BerkeleyLedgerEntryStore
 
   private byte[] encodeForkVotingResult(ForkVotingResult forkVotingResult) {
     return Bytes.concat(
+        FORK_VOTING_RESULT_VERSION_PREFIX,
         forkVotingResult.candidateForkId().asBytes(),
         Shorts.toByteArray(forkVotingResult.stakePercentageVoted()));
   }
 
   private ForkVotingResult decodeForkVotingResult(long epoch, byte[] data) {
     final var candidateForkId =
-        HashCode.fromBytes(Arrays.copyOfRange(data, 0, CandidateForkVote.CANDIDATE_FORK_ID_LEN));
+        HashCode.fromBytes(
+            Arrays.copyOfRange(
+                data,
+                FORK_VOTING_RESULT_VERSION_PREFIX.length,
+                CandidateForkVote.CANDIDATE_FORK_ID_LEN + FORK_VOTING_RESULT_VERSION_PREFIX.length));
     final var stakePercentageVoted =
         Shorts.fromByteArray(
-            Arrays.copyOfRange(data, CandidateForkVote.CANDIDATE_FORK_ID_LEN, data.length));
+            Arrays.copyOfRange(
+                data,
+                FORK_VOTING_RESULT_VERSION_PREFIX.length + CandidateForkVote.CANDIDATE_FORK_ID_LEN,
+                data.length));
     return new ForkVotingResult(epoch, candidateForkId, stakePercentageVoted);
   }
 
