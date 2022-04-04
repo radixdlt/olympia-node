@@ -109,13 +109,13 @@ final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
 
   @Override
   public HealthResponse handleRequest() {
-    final var networkStatus =
+    final var status =
         switch (healthInfoService.nodeStatus()) {
-          case UP -> HealthResponse.NetworkStatusEnum.UP;
-          case BOOTING -> HealthResponse.NetworkStatusEnum.BOOTING;
-          case SYNCING -> HealthResponse.NetworkStatusEnum.SYNCING;
-          case STALLED -> HealthResponse.NetworkStatusEnum.STALLED;
-          case OUT_OF_SYNC -> HealthResponse.NetworkStatusEnum.OUT_OF_SYNC;
+          case UP -> HealthResponse.StatusEnum.UP;
+          case BOOTING -> HealthResponse.StatusEnum.BOOTING;
+          case SYNCING -> HealthResponse.StatusEnum.SYNCING;
+          case STALLED -> HealthResponse.StatusEnum.STALLED;
+          case OUT_OF_SYNC -> HealthResponse.StatusEnum.OUT_OF_SYNC;
         };
 
     // just a small cache so that we don't access the DB on every call
@@ -132,7 +132,7 @@ final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
           case NO_ACTION_NEEDED -> HealthResponse.ForkVoteStatusEnum.NO_ACTION_NEEDED;
         };
     return new HealthResponse()
-        .networkStatus(networkStatus)
+        .status(status)
         .currentForkName(currentForkView.currentForkConfig().name())
         .executedForks(prepareExecutedForks())
         .forkVoteStatus(forkVoteStatus)

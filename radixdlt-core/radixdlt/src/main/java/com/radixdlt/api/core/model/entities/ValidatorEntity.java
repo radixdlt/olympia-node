@@ -97,14 +97,13 @@ import com.radixdlt.utils.Bytes;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.function.Supplier;
 
 public record ValidatorEntity(
     ECPublicKey validatorKey, Optional<CandidateForkConfig> candidateForkOpt) implements Entity {
 
   @Override
   public void overwriteDataObject(
-      ParsedDataObject parsedDataObject, TxBuilder builder, Supplier<RERulesConfig> config)
+      ParsedDataObject parsedDataObject, TxBuilder builder, RERulesConfig config)
       throws TxBuilderException {
     var dataObject = parsedDataObject.dataObject();
 
@@ -196,7 +195,7 @@ public record ValidatorEntity(
   }
 
   private void updateValidatorFee(
-      TxBuilder builder, PreparedValidatorFee preparedValidatorFee, Supplier<RERulesConfig> config)
+      TxBuilder builder, PreparedValidatorFee preparedValidatorFee, RERulesConfig config)
       throws InvalidRakeIncreaseException {
     builder.down(ValidatorFeeCopy.class, validatorKey);
     var curRakePercentage = builder.read(ValidatorStakeData.class, validatorKey).rakePercentage();
@@ -208,7 +207,7 @@ public record ValidatorEntity(
       throw new InvalidRakeIncreaseException(maxRakeIncrease, rakeIncrease);
     }
 
-    var rakeIncreaseDebounceEpochLength = config.get().rakeIncreaseDebouncerEpochLength();
+    var rakeIncreaseDebounceEpochLength = config.rakeIncreaseDebouncerEpochLength();
     var epochDiff = isIncrease ? (1 + rakeIncreaseDebounceEpochLength) : 1;
     var curEpoch = builder.readSystem(EpochData.class);
     var epoch = curEpoch.epoch() + epochDiff;

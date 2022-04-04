@@ -75,7 +75,7 @@ public class HealthHandlerTest extends ApiTest {
   @Inject private HealthHandler sut;
 
   @Test
-  public void can_retrieve_peers() throws Exception {
+  public void can_retrieve_health_response() throws Exception {
     // Arrange
     start();
 
@@ -83,6 +83,6 @@ public class HealthHandlerTest extends ApiTest {
     var response = handleRequestWithExpectedResponse(sut, HealthResponse.class);
 
     // Assert
-    assertThat(response.getNetworkStatus()).isNotNull();
+    assertThat(response.getStatus()).isNotNull();
   }
 }

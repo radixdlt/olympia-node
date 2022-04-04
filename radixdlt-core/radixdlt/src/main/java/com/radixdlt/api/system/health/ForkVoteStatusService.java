@@ -117,7 +117,6 @@ public final class ForkVoteStatusService {
     final var substateDeserialization =
         currentFork.engineRules().parser().getSubstateDeserialization();
 
-    // TODO: this could be optimized
     try (var validatorMetadataCursor =
         engineStore.openIndexedCursor(
             SubstateIndex.create(

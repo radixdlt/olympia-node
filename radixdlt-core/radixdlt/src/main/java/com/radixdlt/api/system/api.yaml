@@ -129,13 +129,13 @@ components:
     HealthResponse:
       type: object
       required:
-        - network_status
+        - status
         - current_fork_name
         - executed_forks
         - fork_vote_status
         - unknown_reported_forks
       properties:
-        network_status:
+        status:
           type: string
           enum:
             - BOOTING

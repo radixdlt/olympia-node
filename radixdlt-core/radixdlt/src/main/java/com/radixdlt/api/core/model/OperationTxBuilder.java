@@ -64,7 +64,6 @@
 
 package com.radixdlt.api.core.model;
 
-import com.google.common.base.Suppliers;
 import com.radixdlt.api.core.openapitools.model.Data;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
@@ -75,7 +74,6 @@ import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
   private final List<List<EntityOperation>> operationGroups;
@@ -92,10 +90,7 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
   }
 
   private void executeResourceOperation(
-      Entity entity,
-      ResourceOperation operation,
-      TxBuilder txBuilder,
-      Supplier<RERulesConfig> config)
+      Entity entity, ResourceOperation operation, TxBuilder txBuilder, RERulesConfig config)
       throws TxBuilderException {
     if (operation == null) {
       return;
@@ -123,7 +118,7 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
   }
 
   private void executeDataOperation(
-      Entity entity, DataOperation operation, TxBuilder txBuilder, Supplier<RERulesConfig> config)
+      Entity entity, DataOperation operation, TxBuilder txBuilder, RERulesConfig config)
       throws TxBuilderException {
     if (operation == null) {
       return;
@@ -138,9 +133,8 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
     }
   }
 
-  private void execute(
-      EntityOperation operation, TxBuilder txBuilder, Supplier<RERulesConfig> config)
-      throws TxBuilderException {
+  private void execute(EntityOperation operation, TxBuilder txBuilder) throws TxBuilderException {
+    final var config = currentForkView.currentForkConfig().engineRules().config();
     var entity = operation.entity();
     var resourceOperation = operation.resourceOperation();
     executeResourceOperation(entity, resourceOperation, txBuilder, config);
@@ -151,11 +145,9 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
 
   @Override
   public void execute(TxBuilder txBuilder) throws TxBuilderException {
-    final var configSupplier =
-        Suppliers.memoize(() -> currentForkView.currentForkConfig().engineRules().config());
     for (var operationGroup : this.operationGroups) {
       for (var operation : operationGroup) {
-        execute(operation, txBuilder, configSupplier);
+        execute(operation, txBuilder);
       }
       txBuilder.end();
     }

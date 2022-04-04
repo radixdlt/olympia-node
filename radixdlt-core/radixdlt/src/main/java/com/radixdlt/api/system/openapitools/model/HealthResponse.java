@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * HealthResponse
  */
 @JsonPropertyOrder({
-        HealthResponse.JSON_PROPERTY_NETWORK_STATUS,
+        HealthResponse.JSON_PROPERTY_STATUS,
         HealthResponse.JSON_PROPERTY_CURRENT_FORK_NAME,
         HealthResponse.JSON_PROPERTY_EXECUTED_FORKS,
         HealthResponse.JSON_PROPERTY_FORK_VOTE_STATUS,
@@ -37,9 +37,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-01-21T16:46:19.630902293+01:00[Europe/Warsaw]")
 public class HealthResponse {
   /**
-   * Gets or Sets networkStatus
+   * Gets or Sets status
    */
-  public enum NetworkStatusEnum {
+  public enum StatusEnum {
     BOOTING("BOOTING"),
 
     SYNCING("SYNCING"),
@@ -52,7 +52,7 @@ public class HealthResponse {
 
     private String value;
 
-    NetworkStatusEnum(String value) {
+    StatusEnum(String value) {
       this.value = value;
     }
 
@@ -67,8 +67,8 @@ public class HealthResponse {
     }
 
     @JsonCreator
-    public static NetworkStatusEnum fromValue(String value) {
-      for (NetworkStatusEnum b : NetworkStatusEnum.values()) {
+    public static StatusEnum fromValue(String value) {
+      for (StatusEnum b : StatusEnum.values()) {
         if (b.value.equals(value)) {
           return b;
         }
@@ -77,8 +77,8 @@ public class HealthResponse {
     }
   }
 
-  public static final String JSON_PROPERTY_NETWORK_STATUS = "network_status";
-  private NetworkStatusEnum networkStatus;
+  public static final String JSON_PROPERTY_STATUS = "status";
+  private StatusEnum status;
 
   public static final String JSON_PROPERTY_CURRENT_FORK_NAME = "current_fork_name";
   private String currentForkName;
@@ -127,29 +127,29 @@ public class HealthResponse {
   public static final String JSON_PROPERTY_UNKNOWN_REPORTED_FORKS = "unknown_reported_forks";
   private List<HealthResponseUnknownReportedForks> unknownReportedForks = new ArrayList<>();
 
-  public HealthResponse networkStatus(NetworkStatusEnum networkStatus) {
-    this.networkStatus = networkStatus;
+  public HealthResponse status(StatusEnum status) {
+    this.status = status;
     return this;
   }
 
   /**
-   * Get networkStatus
-   * @return networkStatus
+   * Get status
+   * @return status
    **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NETWORK_STATUS)
+  @JsonProperty(JSON_PROPERTY_STATUS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public NetworkStatusEnum getNetworkStatus() {
-    return networkStatus;
+  public StatusEnum getStatus() {
+    return status;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NETWORK_STATUS)
+  @JsonProperty(JSON_PROPERTY_STATUS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNetworkStatus(NetworkStatusEnum networkStatus) {
-    this.networkStatus = networkStatus;
+  public void setStatus(StatusEnum status) {
+    this.status = status;
   }
 
 
@@ -279,7 +279,7 @@ public class HealthResponse {
       return false;
     }
     HealthResponse healthResponse = (HealthResponse) o;
-    return Objects.equals(this.networkStatus, healthResponse.networkStatus) &&
+    return Objects.equals(this.status, healthResponse.status) &&
             Objects.equals(this.currentForkName, healthResponse.currentForkName) &&
             Objects.equals(this.executedForks, healthResponse.executedForks) &&
             Objects.equals(this.forkVoteStatus, healthResponse.forkVoteStatus) &&
@@ -288,14 +288,14 @@ public class HealthResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(networkStatus, currentForkName, executedForks, forkVoteStatus, unknownReportedForks);
+    return Objects.hash(status, currentForkName, executedForks, forkVoteStatus, unknownReportedForks);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class HealthResponse {\n");
-    sb.append("    networkStatus: ").append(toIndentedString(networkStatus)).append("\n");
+    sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    currentForkName: ").append(toIndentedString(currentForkName)).append("\n");
     sb.append("    executedForks: ").append(toIndentedString(executedForks)).append("\n");
     sb.append("    forkVoteStatus: ").append(toIndentedString(forkVoteStatus)).append("\n");
