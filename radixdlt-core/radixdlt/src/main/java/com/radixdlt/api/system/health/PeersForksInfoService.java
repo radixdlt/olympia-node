@@ -80,7 +80,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Collects other peers' latest known forks names (received during the handshake) and compares it
+ * Collects other peers' newest known forks names (received during the handshake) and compares it
  * against local list of forks. Signals with a flag, when there's a known fork on any of the
  * validator nodes that local node is not aware of, which means that there's potentially a newer app
  * version to download.
@@ -117,15 +117,15 @@ public final class PeersForksInfoService {
       if (peerEvent instanceof PeerEvent.PeerConnected peerConnected) {
         final var peerChannel = peerConnected.channel();
         peerChannel
-            .getRemoteLatestForkName()
+            .getRemoteNewestForkName()
             .ifPresent(
-                peerLatestForkName -> {
+                peerNewestForkName -> {
                   final var peerPubKey = peerChannel.getRemoteNodeId().getPublicKey();
-                  final var isPeerForkKnown = forks.getByName(peerLatestForkName).isPresent();
+                  final var isPeerForkKnown = forks.getByName(peerNewestForkName).isPresent();
                   final var peerIsInValidatorSet =
                       currentValidatorSet.containsNode(BFTNode.create(peerPubKey));
                   if (peerIsInValidatorSet && !isPeerForkKnown) {
-                    addUnknownReportedForkName(peerPubKey, peerLatestForkName);
+                    addUnknownReportedForkName(peerPubKey, peerNewestForkName);
                   }
                 });
       }

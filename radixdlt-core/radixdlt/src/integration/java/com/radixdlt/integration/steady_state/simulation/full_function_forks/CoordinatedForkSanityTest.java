@@ -169,7 +169,7 @@ public final class CoordinatedForkSanityTest {
 
                   if (epochChange.getEpoch() == 10L) {
                     // half nodes vote in epoch 10
-                    halfOfTheNodes.forEach(node -> updateValidatorWithLatestFork(network, node));
+                    halfOfTheNodes.forEach(node -> updateValidatorWithNewestFork(network, node));
                   } else if (epochChange.getEpoch() == 11L) {
                     // verify that at epoch 11 the network is still at fork idx 2
                     if (!verifyCurrentFork(network, forks.get(2))) {
@@ -182,7 +182,7 @@ public final class CoordinatedForkSanityTest {
                     }
 
                     // one more node votes in epoch 12
-                    updateValidatorWithLatestFork(network, oneMoreNode);
+                    updateValidatorWithNewestFork(network, oneMoreNode);
                   } else if (epochChange.getEpoch() == 19L) {
                     // still no change at epoch 19 (min epoch is 20)
                     if (!verifyCurrentFork(network, forks.get(2))) {
@@ -230,7 +230,7 @@ public final class CoordinatedForkSanityTest {
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
   }
 
-  private void updateValidatorWithLatestFork(RunningNetwork network, BFTNode node) {
+  private void updateValidatorWithNewestFork(RunningNetwork network, BFTNode node) {
     final var forks = network.getInstance(Forks.class, node);
     final var forkVoteOpt =
         forks.getCandidateFork().map(f -> CandidateForkVote.create(node.getKey(), f));

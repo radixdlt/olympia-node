@@ -71,15 +71,15 @@ import java.util.Optional;
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public sealed interface AuthHandshakeResult {
   static AuthHandshakeSuccess success(
-      ECPublicKey remotePubKey, Secrets secrets, Optional<String> latestForkName) {
-    return new AuthHandshakeSuccess(NodeId.fromPublicKey(remotePubKey), secrets, latestForkName);
+      ECPublicKey remotePubKey, Secrets secrets, Optional<String> newestForkName) {
+    return new AuthHandshakeSuccess(NodeId.fromPublicKey(remotePubKey), secrets, newestForkName);
   }
 
   static AuthHandshakeError error(String msg, Optional<NodeId> maybeNodeId) {
     return new AuthHandshakeError(msg, maybeNodeId);
   }
 
-  record AuthHandshakeSuccess(NodeId remoteNodeId, Secrets secrets, Optional<String> latestForkName)
+  record AuthHandshakeSuccess(NodeId remoteNodeId, Secrets secrets, Optional<String> newestForkName)
       implements AuthHandshakeResult {}
 
   record AuthHandshakeError(String msg, Optional<NodeId> maybeNodeId)

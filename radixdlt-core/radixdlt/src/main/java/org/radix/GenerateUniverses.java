@@ -93,8 +93,8 @@ import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForkBuilder;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.LatestForkConfig;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.NewestForkConfig;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
@@ -201,9 +201,9 @@ public final class GenerateUniverses {
 
                           @Provides
                           @Singleton
-                          @LatestForkConfig
-                          private ForkConfig latestForkConfig(Forks forks) {
-                            return forks.latestFork();
+                          @NewestForkConfig
+                          private ForkConfig newestForkConfig(Forks forks) {
+                            return forks.newestFork();
                           }
                         });
                     install(new MainnetForksModule());

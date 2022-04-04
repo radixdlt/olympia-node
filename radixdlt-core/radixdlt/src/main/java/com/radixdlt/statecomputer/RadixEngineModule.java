@@ -79,7 +79,7 @@ import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksEpochStore;
-import com.radixdlt.statecomputer.forks.LatestForkConfig;
+import com.radixdlt.statecomputer.forks.NewestForkConfig;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
 import java.util.Map;
@@ -93,22 +93,22 @@ public class RadixEngineModule extends AbstractModule {
       CommittedReader committedReader, ForksEpochStore forksEpochStore, Forks forks) {
     forks.init(committedReader, forksEpochStore);
 
-    final var latestForkNameOpt =
+    final var latestStoredForkNameOpt =
         forksEpochStore.getStoredForks().entrySet().stream()
             .max((a, b) -> (int) (a.getKey() - b.getKey()))
             .map(Map.Entry::getValue);
 
     final var initialForkConfig =
-        latestForkNameOpt.flatMap(forks::getByName).orElseGet(forks::genesisFork);
+        latestStoredForkNameOpt.flatMap(forks::getByName).orElseGet(forks::genesisFork);
 
     return new CurrentForkView(forks, initialForkConfig);
   }
 
   @Provides
   @Singleton
-  @LatestForkConfig
-  private ForkConfig latestForkConfig(Forks forks) {
-    return forks.latestFork();
+  @NewestForkConfig
+  private ForkConfig newestForkConfig(Forks forks) {
+    return forks.newestFork();
   }
 
   // TODO: Remove

@@ -221,7 +221,7 @@ public final class Forks {
     return this.fixedEpochForks.get(0);
   }
 
-  public ForkConfig latestFork() {
+  public ForkConfig newestFork() {
     if (maybeCandidateFork.isPresent()) {
       return maybeCandidateFork.get();
     } else {

@@ -139,7 +139,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   private ChannelState state = ChannelState.INACTIVE;
   private NodeId remoteNodeId;
   private FrameCodec frameCodec;
-  private Optional<String> remoteLatestForkName = Optional.empty();
+  private Optional<String> remoteNewestForkName = Optional.empty();
 
   private final RateCalculator outMessagesStats = new RateCalculator(Duration.ofSeconds(10), 128);
 
@@ -147,7 +147,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
       P2PConfig config,
       Addressing addressing,
       int networkId,
-      String latestForkName,
+      String newestForkName,
       SystemCounters counters,
       Serialization serialization,
       SecureRandom secureRandom,
@@ -164,7 +164,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     uri.map(RadixNodeUri::getNodeId).ifPresent(nodeId -> this.remoteNodeId = nodeId);
 
     this.authHandshaker =
-        new AuthHandshaker(serialization, secureRandom, ecKeyOps, networkId, latestForkName);
+        new AuthHandshaker(serialization, secureRandom, ecKeyOps, networkId, newestForkName);
     this.nettyChannel = requireNonNull(nettyChannel);
     this.remoteAddress = requireNonNull(remoteAddress);
 
@@ -228,7 +228,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   private void finalizeSuccessfulHandshake(AuthHandshakeSuccess successResult) {
     this.remoteNodeId = successResult.remoteNodeId();
     this.frameCodec = new FrameCodec(successResult.secrets());
-    this.remoteLatestForkName = successResult.latestForkName();
+    this.remoteNewestForkName = successResult.newestForkName();
     this.state = ChannelState.ACTIVE;
 
     if (log.isTraceEnabled()) {
@@ -365,8 +365,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     return remoteAddress.map(InetSocketAddress::getPort).orElse(0);
   }
 
-  public Optional<String> getRemoteLatestForkName() {
-    return remoteLatestForkName;
+  public Optional<String> getRemoteNewestForkName() {
+    return remoteNewestForkName;
   }
 
   @Override

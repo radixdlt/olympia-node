@@ -89,9 +89,9 @@ public class RadixEngineForksLatestOnlyModule extends AbstractModule {
         .setBinding()
         .toInstance(
             forkBuilders -> {
-              final var latestFork =
+              final var newestFork =
                   forkBuilders.stream().max((a, b) -> (int) (a.minEpoch() - b.minEpoch()));
-              return Set.of(latestFork.get().withEngineRulesConfig(config).atFixedEpoch(0L));
+              return Set.of(newestFork.get().withEngineRulesConfig(config).atFixedEpoch(0L));
             });
   }
 }
