@@ -84,36 +84,38 @@ public record CandidateForkVote(HashCode payload) {
       HashUtils.sha256("olympia".getBytes(StandardCharsets.US_ASCII));
 
   public static final int NAME_LEN = 16;
-  public static final int CANDIDATE_FORK_ID_LEN = 8;
+  public static final int CANDIDATE_FORK_HASH_LEN = 8;
+  public static final int CANDIDATE_FORK_ID_LEN = NAME_LEN + CANDIDATE_FORK_HASH_LEN;
   public static final int NONCE_HASH_LEN = 8;
-  public static final int TOTAL_LEN = NAME_LEN + CANDIDATE_FORK_ID_LEN + NONCE_HASH_LEN;
+  public static final int TOTAL_LEN = CANDIDATE_FORK_ID_LEN + NONCE_HASH_LEN;
 
   public static CandidateForkVote create(ECPublicKey publicKey, CandidateForkConfig forkConfig) {
     final var payload = new byte[TOTAL_LEN];
-
-    final var nameEncoded = forkConfig.name().getBytes(ForkConfig.FORK_NAME_CHARSET);
-    System.arraycopy(nameEncoded, 0, payload, 0, nameEncoded.length);
-
-    final var candidateForkId = candidateForkId(forkConfig).asBytes();
-    System.arraycopy(candidateForkId, 0, payload, NAME_LEN, CANDIDATE_FORK_ID_LEN);
-
-    final var nonceHash =
-        HashUtils.sha256(Bytes.concat(FORK_VOTE_NONCE.asBytes(), publicKey.getBytes())).asBytes();
-    System.arraycopy(nonceHash, 0, payload, NAME_LEN + CANDIDATE_FORK_ID_LEN, NONCE_HASH_LEN);
-
+    System.arraycopy(nameBytesWithPadding(forkConfig), 0, payload, 0, NAME_LEN);
+    System.arraycopy(candidateForkHash(forkConfig), 0, payload, NAME_LEN, CANDIDATE_FORK_HASH_LEN);
+    System.arraycopy(
+        nonceHash(publicKey), 0, payload, NAME_LEN + CANDIDATE_FORK_HASH_LEN, NONCE_HASH_LEN);
     return new CandidateForkVote(HashCode.fromBytes(payload));
   }
 
   public String name() {
-    return new String(payloadSlice(0, NAME_LEN), ForkConfig.FORK_NAME_CHARSET).trim();
+    return new String(nameBytes(), ForkConfig.FORK_NAME_CHARSET).trim();
+  }
+
+  private byte[] nameBytes() {
+    return payloadSlice(0, NAME_LEN);
   }
 
   public byte[] candidateForkId() {
-    return payloadSlice(NAME_LEN, CANDIDATE_FORK_ID_LEN);
+    return Bytes.concat(nameBytes(), candidateForkHash());
+  }
+
+  public byte[] candidateForkHash() {
+    return payloadSlice(NAME_LEN, CANDIDATE_FORK_HASH_LEN);
   }
 
   public byte[] nonceHash() {
-    return payloadSlice(NAME_LEN + CANDIDATE_FORK_ID_LEN, NONCE_HASH_LEN);
+    return payloadSlice(NAME_LEN + CANDIDATE_FORK_HASH_LEN, NONCE_HASH_LEN);
   }
 
   private byte[] payloadSlice(int from, int len) {
@@ -123,6 +125,24 @@ public record CandidateForkVote(HashCode payload) {
   }
 
   public static HashCode candidateForkId(CandidateForkConfig candidateForkConfig) {
+    return HashCode.fromBytes(
+        Bytes.concat(
+            nameBytesWithPadding(candidateForkConfig), candidateForkHash(candidateForkConfig)));
+  }
+
+  private static byte[] nameBytesWithPadding(CandidateForkConfig candidateForkConfig) {
+    final var nameBytesWithPadding = new byte[NAME_LEN];
+    final var nameEncoded = candidateForkConfig.name().getBytes(ForkConfig.FORK_NAME_CHARSET);
+    System.arraycopy(nameEncoded, 0, nameBytesWithPadding, 0, nameEncoded.length);
+    return nameBytesWithPadding;
+  }
+
+  private static byte[] nonceHash(ECPublicKey publicKey) {
+    return HashUtils.sha256(Bytes.concat(FORK_VOTE_NONCE.asBytes(), publicKey.getBytes()))
+        .asBytes();
+  }
+
+  private static byte[] candidateForkHash(CandidateForkConfig candidateForkConfig) {
     final var nameBytes = candidateForkConfig.name().getBytes(ForkConfig.FORK_NAME_CHARSET);
     final var thresholdsBytes =
         candidateForkConfig.thresholds().stream()
@@ -140,6 +160,6 @@ public record CandidateForkVote(HashCode payload) {
                 thresholdsBytes,
                 Longs.toByteArray(candidateForkConfig.minEpoch()),
                 Longs.toByteArray(candidateForkConfig.maxEpoch())));
-    return HashCode.fromBytes(Arrays.copyOfRange(fullHash.asBytes(), 0, CANDIDATE_FORK_ID_LEN));
+    return Arrays.copyOfRange(fullHash.asBytes(), 0, CANDIDATE_FORK_HASH_LEN);
   }
 }

@@ -86,6 +86,7 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.forks.CandidateForkVote;
 import com.radixdlt.statecomputer.forks.ForkVotingResult;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.Bytes;
@@ -100,7 +101,8 @@ public final class ForksVotingResultsHandlerTest extends ApiTest {
   @Test
   public void forks_voting_results_should_return_correct_data() throws Exception {
     // Arrange
-    final var candidateForkId = Bytes.take(HashUtils.random256(), 8);
+    final var candidateForkId =
+        Bytes.take(HashUtils.random256(), CandidateForkVote.CANDIDATE_FORK_ID_LEN);
     start();
     storeMetadataWithForks(
         2L, ImmutableSet.of(new ForkVotingResult(3L, candidateForkId, (short) 8050)));
