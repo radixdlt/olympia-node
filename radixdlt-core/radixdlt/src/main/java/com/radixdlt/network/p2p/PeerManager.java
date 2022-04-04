@@ -70,6 +70,7 @@ import static com.radixdlt.network.messaging.MessagingErrors.SELF_CONNECTION_ATT
 import static com.radixdlt.utils.functional.Tuple.unitResult;
 import static java.util.function.Predicate.not;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
@@ -88,6 +89,7 @@ import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.utils.Lists;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Tuple.Unit;
 import io.reactivex.rxjava3.core.Observable;
@@ -106,6 +108,8 @@ import org.apache.logging.log4j.Logger;
 /** Manages active connections to other peers. */
 public final class PeerManager {
   private static final Logger log = LogManager.getLogger();
+
+  private static final int MAX_URIS_TO_TRY_FOR_SINGLE_CONNECT_TRIGGER = 5;
 
   private final NodeId self;
   private final P2PConfig config;
@@ -154,14 +158,21 @@ public final class PeerManager {
     if (maybeActiveChannel.isPresent()) {
       return CompletableFuture.completedFuture(maybeActiveChannel.get());
     } else {
-      final var maybeAddress = this.addressBook.get().findBestKnownAddressById(nodeId);
+      final var addresses = this.addressBook.get().bestKnownAddressesById(nodeId);
+      return tryConnectWithRetries(addresses, MAX_URIS_TO_TRY_FOR_SINGLE_CONNECT_TRIGGER);
+    }
+  }
 
-      if (maybeAddress.isPresent()) {
-        return connect(maybeAddress.get());
-      } else {
-        return CompletableFuture.failedFuture(
-            new RuntimeException("Unknown peer " + nodeAddress(nodeId)));
-      }
+  private CompletableFuture<PeerChannel> tryConnectWithRetries(
+      ImmutableList<RadixNodeUri> remainingAddresses, int triesLeft) {
+    if (remainingAddresses.isEmpty() || triesLeft <= 0) {
+      return CompletableFuture.failedFuture(
+          new RuntimeException("No valid address available for peer"));
+    } else {
+      final var nextAddr = remainingAddresses.get(0);
+      final var channelFuture = connect(nextAddr);
+      return channelFuture.exceptionallyCompose(
+          ex -> tryConnectWithRetries(Lists.tail(remainingAddresses), triesLeft - 1));
     }
   }
 

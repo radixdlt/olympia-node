@@ -67,7 +67,9 @@ package com.radixdlt.statecomputer;
 import static com.radixdlt.atom.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
@@ -115,6 +117,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
@@ -156,6 +159,8 @@ public class RadixEngineStateComputerTest {
   @Inject private CurrentForkView currentForkView;
 
   @Inject private ProposerElection proposerElection;
+
+  @Inject private EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
 
   private Serialization serialization = DefaultSerialization.getInstance();
   private InMemoryEngineStore<LedgerAndBFTProof> engineStore;
@@ -489,5 +494,20 @@ public class RadixEngineStateComputerTest {
     // Assert
     assertThatThrownBy(() -> sut.commit(commandsAndProof, null))
         .isInstanceOf(ByzantineQuorumException.class);
+  }
+
+  @Test
+  public void add_to_mempool__should_forward_the_origin_to_the_event() throws TxBuilderException {
+    // Arrange
+    final var origin = BFTNode.random();
+    var txn = registerCommand(ECKeyPair.generateNew());
+
+    // Act
+    sut.addToMempool(MempoolAdd.create(txn), origin);
+
+    // Assert
+    verify(mempoolAddSuccessEventDispatcher)
+        .dispatch(
+            argThat(ev -> ev.getOrigin().orElseThrow().equals(origin) && ev.getTxn().equals(txn)));
   }
 }

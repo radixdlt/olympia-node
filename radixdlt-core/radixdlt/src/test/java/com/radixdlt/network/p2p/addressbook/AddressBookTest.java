@@ -117,23 +117,23 @@ public final class AddressBookTest {
     sut.addUncheckedPeers(ImmutableSet.of(addr1, addr2, addr3, addr4));
 
     sut.addOrUpdatePeerWithSuccessfulConnection(addr1);
-    final var bestAddr = sut.findBestKnownAddressById(peerId).orElseThrow();
+    final var bestAddr = sut.bestKnownAddressesById(peerId).get(0);
     assertEquals(addr1, bestAddr);
 
     sut.addOrUpdatePeerWithSuccessfulConnection(addr2);
-    final var bestAddr2 = sut.findBestKnownAddressById(peerId).orElseThrow();
+    final var bestAddr2 = sut.bestKnownAddressesById(peerId).get(0);
     assertTrue(bestAddr2 == addr1 || bestAddr2 == addr2);
 
     sut.addOrUpdatePeerWithFailedConnection(addr1);
-    final var bestAddr3 = sut.findBestKnownAddressById(peerId).orElseThrow();
+    final var bestAddr3 = sut.bestKnownAddressesById(peerId).get(0);
     assertEquals(addr2, bestAddr3);
 
     sut.addOrUpdatePeerWithFailedConnection(addr2);
-    final var bestAddr4 = sut.findBestKnownAddressById(peerId).orElseThrow();
+    final var bestAddr4 = sut.bestKnownAddressesById(peerId).get(0);
     assertTrue(bestAddr4 == addr3 || bestAddr4 == addr4);
 
     sut.addOrUpdatePeerWithSuccessfulConnection(addr4);
-    final var bestAddr5 = sut.findBestKnownAddressById(peerId).orElseThrow();
+    final var bestAddr5 = sut.bestKnownAddressesById(peerId).get(0);
     assertEquals(addr4, bestAddr5);
   }
 
@@ -153,12 +153,12 @@ public final class AddressBookTest {
 
     sut.addUncheckedPeers(ImmutableSet.of(addr1, addr2, addr3));
 
-    var prevPrevBestAddr = sut.findBestKnownAddressById(peerId).orElseThrow();
+    var prevPrevBestAddr = sut.bestKnownAddressesById(peerId).get(0);
     sut.addOrUpdatePeerWithFailedConnection(prevPrevBestAddr);
-    var prevBestAddr = sut.findBestKnownAddressById(peerId).orElseThrow();
+    var prevBestAddr = sut.bestKnownAddressesById(peerId).get(0);
     for (int i = 0; i < 50; i++) {
       sut.addOrUpdatePeerWithFailedConnection(prevBestAddr);
-      final var currBestAddr = sut.findBestKnownAddressById(peerId).orElseThrow();
+      final var currBestAddr = sut.bestKnownAddressesById(peerId).get(0);
       assertNotEquals(prevBestAddr, currBestAddr);
       assertNotEquals(prevPrevBestAddr, prevBestAddr);
       prevPrevBestAddr = prevBestAddr;
