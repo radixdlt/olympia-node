@@ -69,6 +69,9 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 
 public final class InetUtils {
+  private InetUtils() {
+  }
+
   public static boolean isLocalAddress(InetAddress inetAddress) {
     // Check if the address isn't a valid special local or loop back
     if (inetAddress.isAnyLocalAddress() || inetAddress.isLoopbackAddress()) {
