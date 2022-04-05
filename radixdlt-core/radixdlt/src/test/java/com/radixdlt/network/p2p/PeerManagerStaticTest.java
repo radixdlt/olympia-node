@@ -100,6 +100,7 @@ public class PeerManagerStaticTest {
     var addressBook =
         new AddressBook(
             self,
+            mock(P2PConfig.class),
             cmock(new TypeLiteral<EventDispatcher<PeerEvent>>() {}),
             new InMemoryAddressBookPersistence());
     var peerManager =

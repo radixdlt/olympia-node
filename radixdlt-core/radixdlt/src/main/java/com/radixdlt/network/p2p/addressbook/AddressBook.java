@@ -73,11 +73,15 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.PeerEvent.PeerBanned;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
+import com.radixdlt.utils.InetUtils;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
@@ -135,6 +139,7 @@ public final class AddressBook {
   }
 
   private final RadixNodeUri self;
+  private final P2PConfig p2pConfig;
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
   private final AddressBookPersistence persistence;
   private final Object lock = new Object();
@@ -145,9 +150,11 @@ public final class AddressBook {
   @Inject
   public AddressBook(
       @Self RadixNodeUri self,
+      P2PConfig p2pConfig,
       EventDispatcher<PeerEvent> peerEventDispatcher,
       AddressBookPersistence persistence) {
     this.self = Objects.requireNonNull(self);
+    this.p2pConfig = Objects.requireNonNull(p2pConfig);
     this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
     this.persistence = Objects.requireNonNull(persistence);
     persistence.getAllEntries().forEach(e -> knownPeers.put(e.getNodeId(), e));
@@ -185,15 +192,19 @@ public final class AddressBook {
   }
 
   public void addUncheckedPeers(Set<RadixNodeUri> peers) {
+    final var filteredUris =
+        peers.stream()
+            .filter(not(uri -> uri.getNodeId().equals(this.self.getNodeId())))
+            .filter(this::sameNetworkHrp)
+            .filter(this::isPeerIpAddressValid)
+            .collect(ImmutableList.toImmutableList());
+
     synchronized (lock) {
-      peers.stream()
-          .filter(not(uri -> uri.getNodeId().equals(this.self.getNodeId())))
-          .filter(this::sameNetworkHrp)
-          .forEach(this::addUncheckedPeer);
+      filteredUris.forEach(this::insertOrUpdateAddressBookEntryWithUri);
     }
   }
 
-  private void addUncheckedPeer(RadixNodeUri uri) {
+  private void insertOrUpdateAddressBookEntryWithUri(RadixNodeUri uri) {
     final var maybeExistingEntry = this.knownPeers.get(uri.getNodeId());
     final var newOrUpdatedEntry =
         maybeExistingEntry == null
@@ -214,15 +225,42 @@ public final class AddressBook {
   }
 
   public ImmutableList<RadixNodeUri> bestKnownAddressesById(NodeId nodeId) {
+    final Optional<AddressBookEntry> addressBookEntryOpt;
     synchronized (lock) {
-      return Optional.ofNullable(this.knownPeers.get(nodeId)).stream()
-          .filter(not(AddressBookEntry::isBanned))
-          .flatMap(e -> e.getKnownAddresses().stream())
-          .filter(not(PeerAddressEntry::blacklisted))
-          .sorted(addressEntryComparator)
-          .map(AddressBookEntry.PeerAddressEntry::getUri)
-          .collect(ImmutableList.toImmutableList());
+      addressBookEntryOpt = Optional.ofNullable(this.knownPeers.get(nodeId));
     }
+    return onlyValidUrisSorted(addressBookEntryOpt.stream())
+        .collect(ImmutableList.toImmutableList());
+  }
+
+  private Stream<RadixNodeUri> onlyValidUrisSorted(Stream<AddressBookEntry> entries) {
+    return entries
+        .filter(not(AddressBookEntry::isBanned))
+        .flatMap(e -> e.getKnownAddresses().stream())
+        .filter(not(PeerAddressEntry::blacklisted))
+        .filter(addressBookEntry -> this.isPeerIpAddressValid(addressBookEntry.getUri()))
+        .sorted(addressEntryComparator)
+        .map(AddressBookEntry.PeerAddressEntry::getUri);
+  }
+
+  private boolean isPeerIpAddressValid(RadixNodeUri uri) {
+    final InetAddress inetAddr;
+    try {
+      inetAddr = InetAddress.getByName(uri.getHost());
+    } catch (UnknownHostException e) {
+      return false;
+    }
+
+    // To filter out any local interface IP addresses (using the actual listen bind port)
+    final var isLocalSelf =
+        p2pConfig.listenPort() == uri.getPort() && InetUtils.isLocalAddress(inetAddr);
+
+    // To filter out a public IP address (possibly running behind a NAT, hence using an advertised
+    // "broadcast port")
+    final var isPublicSelf =
+        p2pConfig.broadcastPort() == uri.getPort() && self.getHost().equals(uri.getHost());
+
+    return !isLocalSelf && !isPublicSelf;
   }
 
   public void addOrUpdatePeerWithSuccessfulConnection(RadixNodeUri radixNodeUri) {
@@ -296,12 +334,7 @@ public final class AddressBook {
   }
 
   public Stream<RadixNodeUri> bestCandidatesToConnect() {
-    return this.knownPeers.values().stream()
-        .filter(not(AddressBookEntry::isBanned))
-        .flatMap(e -> e.getKnownAddresses().stream())
-        .filter(not(PeerAddressEntry::blacklisted))
-        .sorted(addressEntryComparator)
-        .map(AddressBookEntry.PeerAddressEntry::getUri);
+    return onlyValidUrisSorted(this.knownPeers.values().stream());
   }
 
   private void persistEntry(AddressBookEntry entry) {
