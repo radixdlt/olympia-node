@@ -69,16 +69,23 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 
 public final class InetUtils {
-  private InetUtils() {
-  }
+  private InetUtils() {}
 
+  /**
+   * @return true if the specified inet address is either a local loopback address or is bound to
+   *     any local network interface, false otherwise.
+   */
   public static boolean isLocalAddress(InetAddress inetAddress) {
-    // Check if the address isn't a valid special local or loop back
+    // Check if the address is a valid special local or loop back
     if (inetAddress.isAnyLocalAddress() || inetAddress.isLoopbackAddress()) {
       return true;
+    } else {
+      return isBoundToAnyNetworkInterface(inetAddress);
     }
+  }
 
-    // Check if the address isn't defined on any interface
+  /** @return true if the specified inet address is bound to any local network interface */
+  private static boolean isBoundToAnyNetworkInterface(InetAddress inetAddress) {
     try {
       return NetworkInterface.getByInetAddress(inetAddress) != null;
     } catch (SocketException e) {

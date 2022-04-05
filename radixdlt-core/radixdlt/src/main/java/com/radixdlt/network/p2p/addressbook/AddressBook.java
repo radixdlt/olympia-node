@@ -192,16 +192,19 @@ public final class AddressBook {
   }
 
   public void addUncheckedPeers(Set<RadixNodeUri> peers) {
+    final var filteredUris =
+        peers.stream()
+            .filter(not(uri -> uri.getNodeId().equals(this.self.getNodeId())))
+            .filter(this::sameNetworkHrp)
+            .filter(this::isPeerIpAddressValid)
+            .collect(ImmutableList.toImmutableList());
+
     synchronized (lock) {
-      peers.stream()
-          .filter(not(uri -> uri.getNodeId().equals(this.self.getNodeId())))
-          .filter(this::sameNetworkHrp)
-          .filter(this::isPeerIpAddressValid)
-          .forEach(this::addUncheckedPeer);
+      filteredUris.forEach(this::insertOrUpdateAddressBookEntryWithUri);
     }
   }
 
-  private void addUncheckedPeer(RadixNodeUri uri) {
+  private void insertOrUpdateAddressBookEntryWithUri(RadixNodeUri uri) {
     final var maybeExistingEntry = this.knownPeers.get(uri.getNodeId());
     final var newOrUpdatedEntry =
         maybeExistingEntry == null
@@ -222,10 +225,12 @@ public final class AddressBook {
   }
 
   public ImmutableList<RadixNodeUri> bestKnownAddressesById(NodeId nodeId) {
+    final Optional<AddressBookEntry> addressBookEntryOpt;
     synchronized (lock) {
-      return onlyValidUrisSorted(Optional.ofNullable(this.knownPeers.get(nodeId)).stream())
-          .collect(ImmutableList.toImmutableList());
+      addressBookEntryOpt = Optional.ofNullable(this.knownPeers.get(nodeId));
     }
+    return onlyValidUrisSorted(addressBookEntryOpt.stream())
+        .collect(ImmutableList.toImmutableList());
   }
 
   private Stream<RadixNodeUri> onlyValidUrisSorted(Stream<AddressBookEntry> entries) {
