@@ -541,7 +541,9 @@ public final class BerkeleyLedgerEntryStore
       storeForkAtEpoch(tx, newEpoch, forkName);
       tx.commit();
     } catch (Exception e) {
+      log.error("Failed to store fork {} at epoch {}", forkName, newEpoch);
       tx.abort();
+      throw new RuntimeException(e);
     }
   }
 
