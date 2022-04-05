@@ -119,8 +119,9 @@ public final class EngineStatusServiceTest {
 
   @Test
   public void test_no_votes() {
-    setup(50);
-    assertTrue(sut.calculateCandidateForkRemainingEpochs().isEmpty());
+    final var currentEpoch = 50;
+    setup(currentEpoch);
+    assertTrue(sut.calculateCandidateForkRemainingEpochs(currentEpoch).isEmpty());
   }
 
   @Test
@@ -135,7 +136,8 @@ public final class EngineStatusServiceTest {
         new ForkVotingResult(currentEpoch - 1, candidateForkId, threshold2.requiredStake()));
 
     // but since the minEpoch is in 10 epochs (40-30), that's the remaining epochs value
-    assertEquals(10L, sut.calculateCandidateForkRemainingEpochs().orElseThrow().longValue());
+    assertEquals(
+        10L, sut.calculateCandidateForkRemainingEpochs(currentEpoch).orElseThrow().longValue());
 
     // if there's a gap though, than minEpoch doesn't matter
     setup(currentEpoch);
@@ -144,7 +146,7 @@ public final class EngineStatusServiceTest {
     forksEpochStore.storeForkVotingResult(
         new ForkVotingResult(currentEpoch - 1, candidateForkId, threshold2.requiredStake()));
 
-    assertTrue(sut.calculateCandidateForkRemainingEpochs().isEmpty());
+    assertTrue(sut.calculateCandidateForkRemainingEpochs(currentEpoch).isEmpty());
   }
 
   @Test
@@ -158,7 +160,7 @@ public final class EngineStatusServiceTest {
         new ForkVotingResult(currentEpoch - 1, candidateForkId, threshold1.requiredStake()));
 
     // ...and that's after the maxEpoch
-    assertTrue(sut.calculateCandidateForkRemainingEpochs().isEmpty());
+    assertTrue(sut.calculateCandidateForkRemainingEpochs(currentEpoch).isEmpty());
 
     // but if we have 2 votes on the threshold2, it can still happen
     setup(currentEpoch);
@@ -168,7 +170,8 @@ public final class EngineStatusServiceTest {
     forksEpochStore.storeForkVotingResult(
         new ForkVotingResult(currentEpoch - 1, candidateForkId, threshold2.requiredStake()));
 
-    assertEquals(3L, sut.calculateCandidateForkRemainingEpochs().orElseThrow().longValue());
+    assertEquals(
+        3L, sut.calculateCandidateForkRemainingEpochs(currentEpoch).orElseThrow().longValue());
   }
 
   @Test
@@ -183,7 +186,8 @@ public final class EngineStatusServiceTest {
     forksEpochStore.storeForkVotingResult(
         new ForkVotingResult(currentEpoch - 3, candidateForkId, threshold2.requiredStake()));
 
-    assertEquals(8L, sut.calculateCandidateForkRemainingEpochs().orElseThrow().longValue());
+    assertEquals(
+        8L, sut.calculateCandidateForkRemainingEpochs(currentEpoch).orElseThrow().longValue());
   }
 
   @Test
@@ -198,7 +202,7 @@ public final class EngineStatusServiceTest {
         new ForkVotingResult(currentEpoch - 3, candidateForkId, threshold2.requiredStake()));
 
     // no vote at current epoch == empty
-    assertTrue(sut.calculateCandidateForkRemainingEpochs().isEmpty());
+    assertTrue(sut.calculateCandidateForkRemainingEpochs(currentEpoch).isEmpty());
   }
 
   @Test
@@ -215,7 +219,7 @@ public final class EngineStatusServiceTest {
     forksEpochStore.storeForkVotingResult(
         new ForkVotingResult(currentEpoch - 3, candidateForkId, threshold2.requiredStake()));
 
-    assertTrue(sut.calculateCandidateForkRemainingEpochs().isEmpty());
+    assertTrue(sut.calculateCandidateForkRemainingEpochs(currentEpoch).isEmpty());
   }
 
   @Test
@@ -232,6 +236,7 @@ public final class EngineStatusServiceTest {
         new ForkVotingResult(currentEpoch - 3, candidateForkId, threshold2.requiredStake()));
 
     // 5 epochs required - 4 epochs (including the current one) with votes == 1 remaining epoch
-    assertEquals(1L, sut.calculateCandidateForkRemainingEpochs().orElseThrow().longValue());
+    assertEquals(
+        1L, sut.calculateCandidateForkRemainingEpochs(currentEpoch).orElseThrow().longValue());
   }
 }

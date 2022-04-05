@@ -87,6 +87,7 @@ public final class EngineStatusService {
   private final Forks forks;
   private final ForksEpochStore forksEpochStore;
 
+  private final Object cachedForksValuesCalculationLock = new Object();
   private long cachedForksValuesLastEpoch = -1;
   private short cachedCandidateForkVotingResult = 0;
   private Optional<Long> cachedUpcomingForkRemainingEpochs = Optional.empty();
@@ -125,15 +126,19 @@ public final class EngineStatusService {
 
   private void refreshForksCachedValues() {
     final long currentEpoch = getCurrentProof().getEpoch();
-    if (currentEpoch > cachedForksValuesLastEpoch) {
-      this.cachedUpcomingForkRemainingEpochs = calculateCandidateForkRemainingEpochs();
-      this.cachedCandidateForkVotingResult = calculateCandidateForkVotingResult();
-      this.cachedForksValuesLastEpoch = currentEpoch;
+
+    synchronized (cachedForksValuesCalculationLock) {
+      if (currentEpoch > cachedForksValuesLastEpoch) {
+        this.cachedUpcomingForkRemainingEpochs =
+            calculateCandidateForkRemainingEpochs(currentEpoch);
+        this.cachedCandidateForkVotingResult = calculateCandidateForkVotingResult(currentEpoch);
+        this.cachedForksValuesLastEpoch = currentEpoch;
+      }
     }
   }
 
   @VisibleForTesting
-  Optional<Long> calculateCandidateForkRemainingEpochs() {
+  Optional<Long> calculateCandidateForkRemainingEpochs(long currentEpoch) {
     if (forks.getCandidateFork().isEmpty()) {
       return Optional.empty();
     }
@@ -145,7 +150,6 @@ public final class EngineStatusService {
       return Optional.empty();
     }
 
-    final var currentEpoch = getCurrentProof().getEpoch();
     final var fromEpoch = currentEpoch - candidateFork.longestThresholdEpochs();
 
     final var thresholdsPassingEpochs =
@@ -185,15 +189,14 @@ public final class EngineStatusService {
     return (float) cachedCandidateForkVotingResult / 100;
   }
 
-  private short calculateCandidateForkVotingResult() {
+  private short calculateCandidateForkVotingResult(long currentEpoch) {
     if (forks.getCandidateFork().isEmpty()) {
       return 0;
     }
 
     final var candidateForkId =
         CandidateForkVote.candidateForkId(forks.getCandidateFork().orElseThrow());
-    final var forksVotingResults =
-        forksEpochStore.getForksVotingResultsForEpoch(getCurrentProof().getEpoch());
+    final var forksVotingResults = forksEpochStore.getForksVotingResultsForEpoch(currentEpoch);
     return forksVotingResults.stream()
         .filter(result -> result.candidateForkId().equals(candidateForkId))
         .map(ForkVotingResult::stakePercentageVoted)
