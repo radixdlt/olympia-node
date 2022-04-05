@@ -94,4 +94,9 @@ public interface Entity extends Serializable {
       throws TxBuilderException {
     throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
   }
+
+  default void executeAdditionalActions(
+      EntityOperation operation, TxBuilder builder, RERulesConfig config) {
+    // no-op
+  }
 }

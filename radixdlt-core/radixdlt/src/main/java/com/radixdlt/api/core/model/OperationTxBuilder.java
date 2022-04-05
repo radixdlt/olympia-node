@@ -133,8 +133,8 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
     }
   }
 
-  private void execute(EntityOperation operation, TxBuilder txBuilder) throws TxBuilderException {
-    final var config = currentForkView.currentForkConfig().engineRules().config();
+  private void execute(EntityOperation operation, TxBuilder txBuilder, RERulesConfig config)
+      throws TxBuilderException {
     var entity = operation.entity();
     var resourceOperation = operation.resourceOperation();
     executeResourceOperation(entity, resourceOperation, txBuilder, config);
@@ -145,11 +145,19 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
 
   @Override
   public void execute(TxBuilder txBuilder) throws TxBuilderException {
+    final var config = currentForkView.currentForkConfig().engineRules().config();
+
     for (var operationGroup : this.operationGroups) {
       for (var operation : operationGroup) {
-        execute(operation, txBuilder);
+        execute(operation, txBuilder, config);
       }
       txBuilder.end();
+    }
+
+    for (var operationGroup : this.operationGroups) {
+      for (var operation : operationGroup) {
+        operation.entity().executeAdditionalActions(operation, txBuilder, config);
+      }
     }
 
     if (this.message != null) {

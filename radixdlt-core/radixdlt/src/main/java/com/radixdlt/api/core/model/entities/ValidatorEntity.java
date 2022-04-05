@@ -67,6 +67,7 @@ package com.radixdlt.api.core.model.entities;
 import static com.radixdlt.atom.SubstateTypeId.*;
 
 import com.radixdlt.api.core.model.Entity;
+import com.radixdlt.api.core.model.EntityOperation;
 import com.radixdlt.api.core.model.KeyQuery;
 import com.radixdlt.api.core.model.ParsedDataObject;
 import com.radixdlt.api.core.model.ResourceQuery;
@@ -110,9 +111,6 @@ public record ValidatorEntity(
     switch (dataObject) {
       case PreparedValidatorRegistered preparedValidatorRegistered:
         updateRegistered(builder, preparedValidatorRegistered);
-        if (preparedValidatorRegistered.getRegistered()) {
-          updateValidatorSystemMetadataVote(builder);
-        }
         break;
       case PreparedValidatorOwner preparedValidatorOwner:
         var owner = parsedDataObject.getParsed(REAddr.class);
@@ -123,7 +121,6 @@ public record ValidatorEntity(
         break;
       case ValidatorMetadata metadata:
         updateMetadata(builder, metadata);
-        updateValidatorSystemMetadataVote(builder);
         break;
       case ValidatorAllowDelegation allowDelegation:
         updateAllowDelegation(builder, allowDelegation);
@@ -232,5 +229,28 @@ public record ValidatorEntity(
             validatorKey, VALIDATOR_OWNER_COPY, ValidatorOwnerCopy::createVirtual),
         KeyQuery.fromValidator(
             validatorKey, VALIDATOR_SYSTEM_META_DATA, ValidatorSystemMetadata::createVirtual));
+  }
+
+  @Override
+  public void executeAdditionalActions(
+      EntityOperation operation, TxBuilder builder, RERulesConfig config) {
+    if (operation.dataOperation() == null) {
+      return;
+    }
+
+    switch (operation.dataOperation().getParsedDataObject().dataObject()) {
+      case PreparedValidatorRegistered preparedValidatorRegistered:
+        if (preparedValidatorRegistered.getRegistered()) {
+          updateValidatorSystemMetadataVote(builder);
+          builder.end();
+        }
+        break;
+      case ValidatorMetadata metadata:
+        updateValidatorSystemMetadataVote(builder);
+        builder.end();
+        break;
+      default:
+        // no-op
+    }
   }
 }
