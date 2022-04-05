@@ -85,6 +85,12 @@ import org.json.JSONObject;
 import org.junit.Test;
 
 public final class PendingOutboundChannelsManagerTest {
+
+  /*
+   * Tests whether the PendingOutboundChannelsManager can be safely accessed from multiple threads by
+   *   calling `connectTo` from two threads and ensuring that only a single outbound connection
+   *   request was triggered, and a single CompletableFuture object was returned to both callers.
+   */
   @Test
   public void
       pending_outbound_channels_manager_should_return_the_same_future_when_called_from_diff_threads()
@@ -103,6 +109,8 @@ public final class PendingOutboundChannelsManagerTest {
     final var remoteNodeUri =
         RadixNodeUri.fromPubKeyAndAddress(1, remoteNodeId.getPublicKey(), "127.0.0.1", 30000);
 
+    // Using 200 iterations as this provides reasonable probability of failure
+    //   in case of invalid concurrent access, but doesn't take too long in a happy scenario.
     for (int i = 0; i < 200; i++) {
       final var futureRef1 = new AtomicReference<CompletableFuture<PeerChannel>>();
       final var futureRef2 = new AtomicReference<CompletableFuture<PeerChannel>>();
