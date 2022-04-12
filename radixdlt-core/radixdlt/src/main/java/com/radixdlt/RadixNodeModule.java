@@ -101,6 +101,7 @@ import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.StokenetForkConfigsModule;
+import com.radixdlt.statecomputer.substatehash.SubStateAccumulatorHashModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
@@ -296,5 +297,11 @@ public final class RadixNodeModule extends AbstractModule {
     var enableTransactions = properties.get("api.transactions.enable", false);
     var enableSign = properties.get("api.sign.enable", false);
     install(new ApiModule(bindAddress, port, enableTransactions, enableSign));
+
+    // SubState Hash Accumulator
+    if (properties.get("substate.hash.accumulator.enable", false)) {
+      log.info("Enabling SubState Hash Accumulator");
+      install(new SubStateAccumulatorHashModule());
+    }
   }
 }
