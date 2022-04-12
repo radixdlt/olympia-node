@@ -187,11 +187,12 @@ public class BerkeleySubStateAccumulatorHashStore implements BerkeleyAdditionalS
   }
 
   private long getEpoch() {
-    Cursor cursor = this.epochHashDatabase.openCursor(null, null);
-    var key = new DatabaseEntry();
-    var data = new DatabaseEntry();
-    cursor.getLast(key, data, null);
-    return key.getData() == null ? 0 : Longs.fromByteArray(key.getData());
+    try (Cursor cursor = this.epochHashDatabase.openCursor(null, null)) {
+      var key = new DatabaseEntry();
+      var data = new DatabaseEntry();
+      cursor.getLast(key, data, null);
+      return key.getData() == null ? 0 : Longs.fromByteArray(key.getData());
+    }
   }
 
   private byte[] getBytes(REStateUpdate reStateUpdate) {
