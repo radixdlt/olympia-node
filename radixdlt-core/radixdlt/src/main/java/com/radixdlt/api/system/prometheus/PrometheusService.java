@@ -73,6 +73,7 @@ import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.REAddr;
@@ -82,11 +83,7 @@ import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.util.AbstractCollection;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
@@ -100,16 +97,17 @@ import org.radix.Radix;
 public class PrometheusService {
   private static final Logger log = LogManager.getLogger();
 
-  private static final List<CounterType> EXPORT_LIST = Arrays.asList(CounterType.values());
+  private static final List<CounterType> EXPORT_LIST = List.of(CounterType.values());
 
+  public static final String USAGE = "Usage";
   private static final List<JmxMetric> JMX_METRICS =
       List.of(
-          jmxMetric("java.lang:type=MemoryPool,name=G1 Eden Space", "Usage"),
-          jmxMetric("java.lang:type=MemoryPool,name=G1 Survivor Space", "Usage"),
-          jmxMetric("java.lang:type=MemoryPool,name=G1 Old Gen", "Usage"),
-          jmxMetric("java.lang:type=MemoryPool,name=Metaspace", "Usage"),
-          jmxMetric("java.lang:type=GarbageCollector,name=G1 Old Generation", "Usage"),
-          jmxMetric("java.lang:type=GarbageCollector,name=G1 Young Generation", "Usage"),
+          jmxMetric("java.lang:type=MemoryPool,name=G1 Eden Space", USAGE),
+          jmxMetric("java.lang:type=MemoryPool,name=G1 Survivor Space", USAGE),
+          jmxMetric("java.lang:type=MemoryPool,name=G1 Old Gen", USAGE),
+          jmxMetric("java.lang:type=MemoryPool,name=Metaspace", USAGE),
+          jmxMetric("java.lang:type=GarbageCollector,name=G1 Old Generation", USAGE),
+          jmxMetric("java.lang:type=GarbageCollector,name=G1 Young Generation", USAGE),
           jmxMetric(
               "java.lang:type=OperatingSystem",
               "SystemCpuLoad",
@@ -121,6 +119,10 @@ public class PrometheusService {
 
   private static final String COUNTER = "counter";
   private static final String COUNTER_PREFIX = "info_counters_";
+  private static final String COMPLETED_PROPOSALS =
+      COUNTER_PREFIX + "radix_engine_cur_epoch_completed_proposals";
+  private static final String MISSED_PROPOSALS =
+      COUNTER_PREFIX + "radix_engine_cur_epoch_missed_proposals";
 
   private final SystemCounters systemCounters;
   private final HealthInfoService healthInfoService;
@@ -242,6 +244,15 @@ public class PrometheusService {
 
   private void exportCounters(StringBuilder builder) {
     EXPORT_LIST.forEach(counterType -> generateCounterEntry(counterType, builder));
+
+    inMemorySystemInfo
+        .getValidatorBFTData()
+        .ifPresent(proposals -> addProposalsCounters(builder, proposals));
+  }
+
+  private void addProposalsCounters(StringBuilder builder, ValidatorBFTDataEvent proposals) {
+    appendCounter(builder, COMPLETED_PROPOSALS, proposals.completedProposals());
+    appendCounter(builder, MISSED_PROPOSALS, proposals.missedProposals());
   }
 
   private void generateCounterEntry(CounterType counterType, StringBuilder builder) {
@@ -296,7 +307,7 @@ public class PrometheusService {
         for (var attribute : attributes) {
           var name = attribute.getName();
 
-          if (name.equals("Usage")) {
+          if (name.equals(USAGE)) {
             name = objectName.getKeyProperty("name");
           }
 

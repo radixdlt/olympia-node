@@ -69,6 +69,7 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.utils.LedgerHeaderMock;
 
 public class VoteDataSerializeTest extends SerializeObject<VoteData> {
   public VoteDataSerializeTest() {
@@ -77,7 +78,7 @@ public class VoteDataSerializeTest extends SerializeObject<VoteData> {
 
   private static VoteData get() {
     View view = View.of(1234567890L);
-    LedgerHeader ledgerHeader = LedgerHeader.mocked();
+    LedgerHeader ledgerHeader = LedgerHeaderMock.get();
     BFTHeader committed = new BFTHeader(view, HashUtils.random256(), ledgerHeader);
     BFTHeader parent = new BFTHeader(view.next(), HashUtils.random256(), ledgerHeader);
     BFTHeader proposed = new BFTHeader(view.next().next(), HashUtils.random256(), ledgerHeader);

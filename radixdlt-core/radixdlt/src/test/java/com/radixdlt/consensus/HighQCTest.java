@@ -70,6 +70,7 @@ import static org.mockito.Mockito.mock;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.utils.LedgerHeaderMock;
 import java.util.Optional;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
@@ -83,7 +84,7 @@ public class HighQCTest extends SerializeObject<HighQC> {
   private static HighQC get() {
     View view = View.of(1234567891L);
     HashCode id = HashUtils.random256();
-    LedgerHeader ledgerHeader = LedgerHeader.mocked();
+    LedgerHeader ledgerHeader = LedgerHeaderMock.get();
     BFTHeader header = new BFTHeader(view, id, ledgerHeader);
     BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
     BFTHeader commit = new BFTHeader(View.of(1234567889L), HashUtils.random256(), ledgerHeader);

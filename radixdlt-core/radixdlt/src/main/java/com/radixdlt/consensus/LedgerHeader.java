@@ -73,7 +73,6 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -138,12 +137,6 @@ public final class LedgerHeader {
     this.accumulatorState = requireNonNull(accumulatorState);
     this.nextValidators = nextValidators;
     this.timestamp = timestamp;
-  }
-
-  // TODO: used only for tests, move elsewhere https://radixdlt.atlassian.net/browse/NT-2
-  public static LedgerHeader mocked() {
-    return new LedgerHeader(
-        0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0, null);
   }
 
   public static LedgerHeader genesis(

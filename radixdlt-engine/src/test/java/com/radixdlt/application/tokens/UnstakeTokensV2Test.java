@@ -64,6 +64,7 @@
 
 package com.radixdlt.application.tokens;
 
+import static com.radixdlt.atom.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
@@ -89,15 +90,6 @@ import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atom.actions.CreateSystem;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.NextEpoch;
-import com.radixdlt.atom.actions.NextRound;
-import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -207,8 +199,7 @@ public class UnstakeTokensV2Test {
       List<ConstraintScrypt> scrypts,
       ActionConstructor<StakeTokens> stakeTokensConstructor,
       ActionConstructor<UnstakeOwnership> unstakeTokensConstructor) {
-    this.stakes =
-        stakes.stream().map(i -> Amount.ofTokens(i * 10).toSubunits()).collect(Collectors.toList());
+    this.stakes = stakes.stream().map(i -> Amount.ofTokens(i * 10).toSubunits()).toList();
     this.totalStakes = this.stakes.stream().reduce(UInt256::add).orElseThrow();
     this.unstakeAmt = Amount.ofTokens(unstakeAmt * 10L).toSubunits();
     this.scrypts = scrypts;

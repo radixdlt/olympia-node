@@ -76,7 +76,6 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.utils.UInt256;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
@@ -196,7 +195,7 @@ public class BFTValidatorSetTest {
               .map(ECKeyPair::getPublicKey)
               .map(BFTNode::create)
               .map(node -> BFTValidator.from(node, UInt256.ONE))
-              .collect(Collectors.toList());
+              .toList();
 
       final var validatorSet = BFTValidatorSet.from(validators);
       final var setValidators = Lists.newArrayList(validatorSet.getValidators());

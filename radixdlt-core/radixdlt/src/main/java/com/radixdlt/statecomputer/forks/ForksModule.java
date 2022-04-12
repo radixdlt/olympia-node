@@ -69,10 +69,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
-import java.util.Collection;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -86,13 +83,13 @@ public final class ForksModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private Forks forks(TreeMap<Long, ForkConfig> forkConfigs) {
-    return new Forks(asTreeMap(forkConfigs.values(), e -> e.getVersion().create(e.getConfig())));
+  private Forks forks(NavigableMap<Long, ForkConfig> forkConfigs) {
+    return new Forks(asTreeMap(forkConfigs.values(), e -> e.version().create(e.config())));
   }
 
   @Provides
   @Singleton
-  private TreeMap<Long, ForkConfig> forkConfigMap(
+  private NavigableMap<Long, ForkConfig> forkConfigMap(
       Set<ForkConfig> forkConfigs, Optional<UnaryOperator<Set<ForkConfig>>> transformer) {
     return asTreeMap(
         transformer.map(o -> o.apply(forkConfigs)).orElse(forkConfigs), Function.identity());
@@ -100,6 +97,6 @@ public final class ForksModule extends AbstractModule {
 
   private static <T> TreeMap<Long, T> asTreeMap(
       Collection<ForkConfig> input, Function<ForkConfig, T> mapper) {
-    return new TreeMap<>(input.stream().collect(Collectors.toMap(ForkConfig::getEpoch, mapper)));
+    return new TreeMap<>(input.stream().collect(Collectors.toMap(ForkConfig::epoch, mapper)));
   }
 }

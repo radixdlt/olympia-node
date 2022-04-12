@@ -173,18 +173,23 @@ public final class AddressBookEntry {
     return new AddressBookEntry(nodeId, Optional.of(banUntil), knownAddresses);
   }
 
+  public AddressBookEntry withReplacedKnownAddresses(
+      ImmutableSet<PeerAddressEntry> knownAddresses) {
+    return new AddressBookEntry(this.nodeId, this.bannedUntil, knownAddresses);
+  }
+
   public AddressBookEntry addUriIfNotExists(RadixNodeUri uri) {
     if (entryFor(uri).isPresent()) {
       return this;
-    } else {
-      final var newAddressEntry = new PeerAddressEntry(uri, Optional.empty(), Optional.empty());
-      final var newKnownAddresses =
-          ImmutableSet.<PeerAddressEntry>builder()
-              .addAll(this.knownAddresses)
-              .add(newAddressEntry)
-              .build();
-      return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
     }
+
+    final var newAddressEntry = new PeerAddressEntry(uri, Optional.empty(), Optional.empty());
+    final var newKnownAddresses =
+        ImmutableSet.<PeerAddressEntry>builder()
+            .addAll(this.knownAddresses)
+            .add(newAddressEntry)
+            .build();
+    return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
   }
 
   public Optional<PeerAddressEntry> entryFor(RadixNodeUri uri) {

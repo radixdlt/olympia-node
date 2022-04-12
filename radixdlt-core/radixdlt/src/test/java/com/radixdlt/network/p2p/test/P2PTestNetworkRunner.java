@@ -69,6 +69,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
@@ -105,16 +106,18 @@ import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import java.io.IOException;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.commons.cli.ParseException;
 import org.json.JSONObject;
 import org.junit.rules.TemporaryFolder;
 
 public final class P2PTestNetworkRunner {
-
   private final ImmutableList<TestNode> nodes;
   private final DeterministicNetwork deterministicNetwork;
+
+  public static final class TestCounters {
+    public int outboundChannelsBootstrapped;
+  }
 
   private P2PTestNetworkRunner(
       ImmutableList<TestNode> nodes, DeterministicNetwork deterministicNetwork) {
@@ -130,9 +133,7 @@ public final class P2PTestNetworkRunner {
 
     final var network =
         new DeterministicNetwork(
-            nodesKeys.stream()
-                .map(key -> BFTNode.create(key.getPublicKey()))
-                .collect(Collectors.toList()),
+            nodesKeys.stream().map(key -> BFTNode.create(key.getPublicKey())).toList(),
             MessageSelector.firstSelector(),
             MessageMutator.nothing());
 
@@ -170,11 +171,18 @@ public final class P2PTestNetworkRunner {
                 new AbstractModule() {
                   @Override
                   protected void configure() {
-                    bind(PeerOutboundBootstrap.class)
-                        .toInstance(uri -> p2pNetwork.createChannel(selfNodeIndex, uri));
+                    bind(TestCounters.class).toInstance(new TestCounters());
                     bind(P2PConfig.class).toInstance(p2pConfig);
                     bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
                     bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+                  }
+
+                  @Provides
+                  public PeerOutboundBootstrap peerOutboundBootstrap(TestCounters testCounters) {
+                    return uri -> {
+                      testCounters.outboundChannelsBootstrapped += 1;
+                      p2pNetwork.createChannel(selfNodeIndex, uri);
+                    };
                   }
                 }),
         new PeerDiscoveryModule(),

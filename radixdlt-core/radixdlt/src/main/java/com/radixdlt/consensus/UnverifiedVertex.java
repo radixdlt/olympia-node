@@ -79,7 +79,6 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import javax.annotation.concurrent.Immutable;
 
 /** Vertex in a Vertex graph */
@@ -161,7 +160,7 @@ public final class UnverifiedVertex {
       throw new IllegalArgumentException("Only genesis can have view 0.");
     }
 
-    var txnBytes = txns.stream().map(Txn::getPayload).collect(Collectors.toList());
+    var txnBytes = txns.stream().map(Txn::getPayload).toList();
 
     return new UnverifiedVertex(qc, view, txnBytes, proposer, false);
   }

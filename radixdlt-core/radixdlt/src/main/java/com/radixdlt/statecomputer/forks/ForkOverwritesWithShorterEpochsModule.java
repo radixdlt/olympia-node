@@ -88,10 +88,8 @@ public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
         .toInstance(
             s ->
                 s.stream()
-                    .sorted(Comparator.comparingLong(ForkConfig::getEpoch))
-                    .map(
-                        c ->
-                            new ForkConfig(epoch.getAndAdd(5), c.getName(), c.getVersion(), config))
+                    .sorted(Comparator.comparingLong(ForkConfig::epoch))
+                    .map(c -> new ForkConfig(epoch.getAndAdd(5), c.name(), c.version(), config))
                     .collect(Collectors.toSet()));
   }
 }

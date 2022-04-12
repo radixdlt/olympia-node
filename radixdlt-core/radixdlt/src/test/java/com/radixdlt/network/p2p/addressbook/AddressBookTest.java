@@ -68,11 +68,14 @@ import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import java.util.Set;
 import org.junit.Test;
@@ -91,7 +94,8 @@ public final class AddressBookTest {
     final var persistence = new InMemoryAddressBookPersistence();
     persistence.saveEntry(AddressBookEntry.create(invalidPeer)); // insert directly into storage
 
-    final var sut = new AddressBook(self, rmock(EventDispatcher.class), persistence);
+    final var sut =
+        new AddressBook(self, mock(P2PConfig.class), rmock(EventDispatcher.class), persistence);
     assertTrue(sut.knownPeers().isEmpty()); // invalid peer should be filtered out at init
     assertTrue(sut.findById(invalidPeer.getNodeId()).isEmpty());
 
@@ -112,28 +116,32 @@ public final class AddressBookTest {
     final var addr4 = RadixNodeUri.fromPubKeyAndAddress(1, peerKey, "127.0.0.4", 30303);
 
     final var sut =
-        new AddressBook(self, rmock(EventDispatcher.class), new InMemoryAddressBookPersistence());
+        new AddressBook(
+            self,
+            mock(P2PConfig.class),
+            rmock(EventDispatcher.class),
+            new InMemoryAddressBookPersistence());
 
     sut.addUncheckedPeers(ImmutableSet.of(addr1, addr2, addr3, addr4));
 
     sut.addOrUpdatePeerWithSuccessfulConnection(addr1);
-    final var bestAddr = sut.findBestKnownAddressById(peerId).orElseThrow();
+    final var bestAddr = sut.bestKnownAddressesById(peerId).get(0);
     assertEquals(addr1, bestAddr);
 
     sut.addOrUpdatePeerWithSuccessfulConnection(addr2);
-    final var bestAddr2 = sut.findBestKnownAddressById(peerId).orElseThrow();
+    final var bestAddr2 = sut.bestKnownAddressesById(peerId).get(0);
     assertTrue(bestAddr2 == addr1 || bestAddr2 == addr2);
 
     sut.addOrUpdatePeerWithFailedConnection(addr1);
-    final var bestAddr3 = sut.findBestKnownAddressById(peerId).orElseThrow();
+    final var bestAddr3 = sut.bestKnownAddressesById(peerId).get(0);
     assertEquals(addr2, bestAddr3);
 
     sut.addOrUpdatePeerWithFailedConnection(addr2);
-    final var bestAddr4 = sut.findBestKnownAddressById(peerId).orElseThrow();
+    final var bestAddr4 = sut.bestKnownAddressesById(peerId).get(0);
     assertTrue(bestAddr4 == addr3 || bestAddr4 == addr4);
 
     sut.addOrUpdatePeerWithSuccessfulConnection(addr4);
-    final var bestAddr5 = sut.findBestKnownAddressById(peerId).orElseThrow();
+    final var bestAddr5 = sut.bestKnownAddressesById(peerId).get(0);
     assertEquals(addr4, bestAddr5);
   }
 
@@ -149,20 +157,54 @@ public final class AddressBookTest {
     final var addr3 = RadixNodeUri.fromPubKeyAndAddress(1, peerKey, "127.0.0.3", 30303);
 
     final var sut =
-        new AddressBook(self, rmock(EventDispatcher.class), new InMemoryAddressBookPersistence());
+        new AddressBook(
+            self,
+            mock(P2PConfig.class),
+            rmock(EventDispatcher.class),
+            new InMemoryAddressBookPersistence());
 
     sut.addUncheckedPeers(ImmutableSet.of(addr1, addr2, addr3));
 
-    var prevPrevBestAddr = sut.findBestKnownAddressById(peerId).orElseThrow();
+    var prevPrevBestAddr = sut.bestKnownAddressesById(peerId).get(0);
     sut.addOrUpdatePeerWithFailedConnection(prevPrevBestAddr);
-    var prevBestAddr = sut.findBestKnownAddressById(peerId).orElseThrow();
+    var prevBestAddr = sut.bestKnownAddressesById(peerId).get(0);
     for (int i = 0; i < 50; i++) {
       sut.addOrUpdatePeerWithFailedConnection(prevBestAddr);
-      final var currBestAddr = sut.findBestKnownAddressById(peerId).orElseThrow();
+      final var currBestAddr = sut.bestKnownAddressesById(peerId).get(0);
       assertNotEquals(prevBestAddr, currBestAddr);
       assertNotEquals(prevPrevBestAddr, prevBestAddr);
       prevPrevBestAddr = prevBestAddr;
       prevBestAddr = currBestAddr;
     }
+  }
+
+  @Test
+  public void unchecked_localhost_uri_should_not_be_added() {
+    final var self =
+        RadixNodeUri.fromPubKeyAndAddress(
+            1, ECKeyPair.generateNew().getPublicKey(), "192.168.50.50", 30303);
+    final var localAddrSamePort =
+        RadixNodeUri.fromPubKeyAndAddress(
+            1, ECKeyPair.generateNew().getPublicKey(), "127.0.0.1", 30303);
+    final var publicAddrSamePort =
+        RadixNodeUri.fromPubKeyAndAddress(
+            1, ECKeyPair.generateNew().getPublicKey(), self.getHost(), 30303);
+    final var localAddrDifferentPort =
+        RadixNodeUri.fromPubKeyAndAddress(
+            1, ECKeyPair.generateNew().getPublicKey(), "127.0.0.1", 30304);
+
+    final var persistence = new InMemoryAddressBookPersistence();
+    final var p2pConfig = mock(P2PConfig.class);
+    when(p2pConfig.broadcastPort()).thenReturn(30303);
+    when(p2pConfig.listenPort()).thenReturn(30303);
+    final var sut = new AddressBook(self, p2pConfig, rmock(EventDispatcher.class), persistence);
+
+    // Self addresses with the same port shouldn't be added
+    sut.addUncheckedPeers(ImmutableSet.of(localAddrSamePort, publicAddrSamePort));
+    assertTrue(persistence.getAllEntries().isEmpty());
+
+    // Self address with a different port should be added
+    sut.addUncheckedPeers(ImmutableSet.of(localAddrDifferentPort));
+    assertEquals(1, persistence.getAllEntries().size());
   }
 }

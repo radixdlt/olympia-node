@@ -73,69 +73,28 @@ import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import java.util.OptionalInt;
 
-public final class RERules {
-  private final String name;
-  private final REParser parser;
-  private final SubstateSerialization serialization;
-  private final ConstraintMachineConfig constraintMachineConfig;
-  private final REConstructor actionConstructors;
-  private final BatchVerifier<LedgerAndBFTProof> batchVerifier;
-  private final RERulesConfig config;
+public record RERules(
+    String name,
+    REParser parser,
+    SubstateSerialization serialization,
+    ConstraintMachineConfig constraintMachineConfig,
+    REConstructor actionConstructors,
+    BatchVerifier<LedgerAndBFTProof> batchVerifier,
+    RERulesConfig config) {
 
-  public RERules(
-      String name,
-      REParser parser,
-      SubstateSerialization serialization,
-      ConstraintMachineConfig constraintMachineConfig,
-      REConstructor actionConstructors,
-      BatchVerifier<LedgerAndBFTProof> batchVerifier,
-      RERulesConfig config) {
-    this.name = name;
-    this.parser = parser;
-    this.serialization = serialization;
-    this.constraintMachineConfig = constraintMachineConfig;
-    this.actionConstructors = actionConstructors;
-    this.batchVerifier = batchVerifier;
-    this.config = config;
+  public View maxRounds() {
+    return View.of(config.maxRounds());
   }
 
-  public String name() {
-    return name;
+  public OptionalInt maxSigsPerRound() {
+    return config.maxSigsPerRound();
   }
 
-  public ConstraintMachineConfig getConstraintMachineConfig() {
-    return constraintMachineConfig;
+  public int maxValidators() {
+    return config.maxValidators();
   }
 
-  public SubstateSerialization getSerialization() {
-    return serialization;
-  }
-
-  public REConstructor getActionConstructors() {
-    return actionConstructors;
-  }
-
-  public BatchVerifier<LedgerAndBFTProof> getBatchVerifier() {
-    return batchVerifier;
-  }
-
-  public REParser getParser() {
-    return parser;
-  }
-
-  public View getMaxRounds() {
-    return View.of(config.getMaxRounds());
-  }
-
-  public OptionalInt getMaxSigsPerRound() {
-    return config.getMaxSigsPerRound();
-  }
-
-  public int getMaxValidators() {
-    return config.getMaxValidators();
-  }
-
-  public RERulesConfig getConfig() {
-    return config;
+  public int maxMessageLen() {
+    return config.maxMessageLen();
   }
 }

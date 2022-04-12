@@ -65,14 +65,20 @@
 package com.radixdlt.atom;
 
 public final class MessageTooLongException extends TxBuilderException {
+  private final int limit;
   private final int attemptedLength;
 
-  public MessageTooLongException(int attemptedLength) {
-    super("Message max lenghth is 255 but message length is " + attemptedLength);
+  public MessageTooLongException(int limit, int attemptedLength) {
+    super("Message max length is " + limit + " but message length is " + attemptedLength);
+    this.limit = limit;
     this.attemptedLength = attemptedLength;
   }
 
   public int getAttemptedLength() {
     return attemptedLength;
+  }
+
+  public int getLimit() {
+    return limit;
   }
 }

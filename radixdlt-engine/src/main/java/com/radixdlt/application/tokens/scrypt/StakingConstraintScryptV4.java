@@ -116,9 +116,9 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
             },
             (s, buf) -> {
               REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeKey(buf, s.getDelegateKey());
-              REFieldSerialization.serializeREAddr(buf, s.getOwner());
-              buf.put(s.getAmount().toByteArray());
+              REFieldSerialization.serializeKey(buf, s.delegateKey());
+              REFieldSerialization.serializeREAddr(buf, s.owner());
+              buf.put(s.amount().toByteArray());
             }));
 
     os.substate(
@@ -134,9 +134,9 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
             },
             (s, buf) -> {
               REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeKey(buf, s.getDelegateKey());
-              REFieldSerialization.serializeREAddr(buf, s.getOwner());
-              buf.put(s.getAmount().toByteArray());
+              REFieldSerialization.serializeKey(buf, s.delegateKey());
+              REFieldSerialization.serializeREAddr(buf, s.owner());
+              buf.put(s.amount().toByteArray());
             }));
 
     defineStaking(os);
@@ -153,12 +153,12 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
     }
 
     ReducerState readOwner(ValidatorOwnerCopy ownerCopy) throws ProcedureException {
-      if (!allowDelegationFlag.getValidatorKey().equals(ownerCopy.getValidatorKey())) {
+      if (!allowDelegationFlag.validatorKey().equals(ownerCopy.validatorKey())) {
         throw new ProcedureException("Not matching validator keys");
       }
-      var owner = ownerCopy.getOwner();
+      var owner = ownerCopy.owner();
       return new StakePrepare(
-          tokenHoldingBucket, allowDelegationFlag.getValidatorKey(), owner::equals);
+          tokenHoldingBucket, allowDelegationFlag.validatorKey(), owner::equals);
     }
   }
 
@@ -180,16 +180,16 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
         throws MinimumStakeException, NotEnoughResourcesException, InvalidResourceException,
             InvalidDelegationException, MismatchException {
 
-      tokenHoldingBucket.withdraw(preparedStake.getResourceAddr(), preparedStake.getAmount());
+      tokenHoldingBucket.withdraw(preparedStake.resourceAddr(), preparedStake.amount());
 
-      if (preparedStake.getAmount().compareTo(minimumStake) < 0) {
-        throw new MinimumStakeException(minimumStake, preparedStake.getAmount());
+      if (preparedStake.amount().compareTo(minimumStake) < 0) {
+        throw new MinimumStakeException(minimumStake, preparedStake.amount());
       }
-      if (!preparedStake.getDelegateKey().equals(validatorKey)) {
+      if (!preparedStake.delegateKey().equals(validatorKey)) {
         throw new MismatchException("Not matching validator keys");
       }
 
-      if (!delegateAllowed.test(preparedStake.getOwner())) {
+      if (!delegateAllowed.test(preparedStake.owner())) {
         throw new InvalidDelegationException();
       }
 
@@ -208,7 +208,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
               var nextState =
                   (!d.allowsDelegation())
                       ? new OwnerStakePrepare(s, d)
-                      : new StakePrepare(s, d.getValidatorKey(), p -> true);
+                      : new StakePrepare(s, d.validatorKey(), p -> true);
               return ReducerResult.incomplete(nextState);
             }));
     os.procedure(
@@ -254,7 +254,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
             StakeOwnership.class,
             u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
             (s, u, c, r) -> {
-              var ownership = s.withdrawOwnership(u.getAmount());
+              var ownership = s.withdrawOwnership(u.amount());
               if (!ownership.equals(u)) {
                 throw new MismatchException(ownership, u);
               }
@@ -266,7 +266,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
             PreparedUnstakeOwnership.class,
             u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
             (s, u, c, r) -> {
-              var unstake = s.unstake(u.getAmount());
+              var unstake = s.unstake(u.amount());
               if (!unstake.equals(u)) {
                 throw new MismatchException(unstake, u);
               }

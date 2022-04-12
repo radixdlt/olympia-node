@@ -64,14 +64,8 @@
 
 package com.radixdlt.atom;
 
-import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atom.actions.FeeReservePut;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.atom.actions.SplitToken;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnregisterValidator;
+import static com.radixdlt.atom.TxAction.*;
+
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -127,11 +121,6 @@ public class TxnConstructionRequest {
 
   public TxnConstructionRequest actions(List<TxAction> actions) {
     this.actions.addAll(actions);
-    return this;
-  }
-
-  public TxnConstructionRequest createMutableToken(MutableTokenDefinition def) {
-    actions.add(new CreateMutableToken(def));
     return this;
   }
 

@@ -64,4 +64,33 @@
 
 package com.radixdlt.constraintmachine;
 
-public interface REEvent {}
+import com.radixdlt.application.system.state.ValidatorBFTData;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.tokens.state.TokenResource;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.crypto.ECPublicKey;
+import java.util.List;
+
+public sealed interface REEvent {
+  record NextValidatorSetEvent(List<ValidatorStakeData> nextValidators) implements REEvent {
+    public NextValidatorSetEvent(List<ValidatorStakeData> nextValidators) {
+      this.nextValidators = List.copyOf(nextValidators);
+    }
+  }
+
+  record ResourceCreatedEvent(
+      String symbol, TokenResource tokenResource, TokenResourceMetadata metadata)
+      implements REEvent {}
+
+  record ValidatorBFTDataEvent(
+      ECPublicKey validatorKey, long completedProposals, long missedProposals) implements REEvent {
+
+    public static ValidatorBFTDataEvent fromData(ValidatorBFTData data) {
+      return new ValidatorBFTDataEvent(
+          data.validatorKey(), data.completedProposals(), data.missedProposals());
+    }
+  }
+
+  record ValidatorMissedProposalsEvent(ECPublicKey validatorKey, long missedProposals)
+      implements REEvent {}
+}

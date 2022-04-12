@@ -97,7 +97,7 @@ public final class DeterministicProcessor {
   }
 
   public void start() {
-    startProcessors.forEach(p -> p.getProcessor().start());
+    startProcessors.forEach(p -> p.processor().start());
   }
 
   @SuppressWarnings("unchecked")

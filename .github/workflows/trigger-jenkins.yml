@@ -1,0 +1,21 @@
+name: Trigger jenkins job that deploys the main branch in the radixdlt repository
+on:
+  push:
+    branches:
+      - main
+jobs:
+  trigger-jenkins-main-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set Event type
+        run: |
+          echo "EVENT_TYPE=radixdlt_main_branch" >> $GITHUB_ENV
+      - name: Trigger the jenkins_main_branch event ${{ github.ref }}
+        run: |
+          curl --silent --show-error --fail --location --request POST 'https://github-worker.radixdlt.com/repos/radixdlt/${{secrets.DISPATCH_REPO}}/dispatches' \
+            --header 'Accept: application/vnd.github.v3+json' \
+            --header 'Authorization: Basic ${{secrets.CF_GITHUB_WORKER_ENCODED_BASIC_AUTH}}' \
+            --header 'Content-Type: application/json' \
+            --data-raw '{
+                "event_type": "${{env.EVENT_TYPE}}"
+            }'

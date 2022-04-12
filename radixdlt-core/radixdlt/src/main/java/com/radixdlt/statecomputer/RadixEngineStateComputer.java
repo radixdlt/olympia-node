@@ -64,17 +64,14 @@
 
 package com.radixdlt.statecomputer;
 
+import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.counters.SystemCounters.*;
+
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.radixdlt.application.system.NextValidatorSetEvent;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.NextEpoch;
-import com.radixdlt.atom.actions.NextRound;
+import com.radixdlt.atom.*;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
@@ -90,6 +87,7 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
@@ -118,7 +116,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.LongFunction;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -177,26 +174,8 @@ public final class RadixEngineStateComputer implements StateComputer {
     this.proposerElection = proposerElection;
   }
 
-  public static class RadixEngineTxn implements PreparedTxn {
-    private final Txn txn;
-    private final REProcessedTxn processed;
-    private final PermissionLevel permissionLevel;
-
-    public RadixEngineTxn(Txn txn, REProcessedTxn processed, PermissionLevel permissionLevel) {
-      this.txn = txn;
-      this.processed = processed;
-      this.permissionLevel = permissionLevel;
-    }
-
-    REProcessedTxn processedTxn() {
-      return processed;
-    }
-
-    @Override
-    public Txn txn() {
-      return txn;
-    }
-  }
+  public record RadixEngineTxn(Txn txn, REProcessedTxn processed, PermissionLevel permissionLevel)
+      implements PreparedTxn {}
 
   public REProcessedTxn test(byte[] payload, boolean isSigned) throws RadixEngineException {
     synchronized (lock) {
@@ -204,10 +183,11 @@ public final class RadixEngineStateComputer implements StateComputer {
           isSigned
               ? Txn.create(payload)
               : TxLowLevelBuilder.newBuilder(payload).sig(ECDSASignature.zeroSignature()).build();
+
       var checker = radixEngine.transientBranch();
+
       try {
-        var result = checker.execute(List.of(txn), !isSigned);
-        return result.getProcessedTxn();
+        return checker.execute(List.of(txn), !isSigned).getProcessedTxn();
       } finally {
         radixEngine.deleteBranches();
       }
@@ -220,22 +200,22 @@ public final class RadixEngineStateComputer implements StateComputer {
 
   public REProcessedTxn addToMempool(Txn txn, BFTNode origin) throws MempoolRejectedException {
     synchronized (lock) {
-      REProcessedTxn processed;
       try {
-        processed = mempool.add(txn);
+        var processed = mempool.add(txn);
+
+        systemCounters.increment(CounterType.MEMPOOL_ADD_SUCCESS);
+        systemCounters.set(CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+
+        var success = MempoolAddSuccess.create(txn, processed, origin);
+        mempoolAddSuccessEventDispatcher.dispatch(success);
+
+        return processed;
       } catch (MempoolDuplicateException e) {
         throw e;
       } catch (MempoolRejectedException e) {
-        systemCounters.increment(SystemCounters.CounterType.MEMPOOL_ADD_FAILURE);
+        systemCounters.increment(CounterType.MEMPOOL_ADD_FAILURE);
         throw e;
       }
-
-      systemCounters.increment(SystemCounters.CounterType.MEMPOOL_ADD_SUCCESS);
-      systemCounters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
-      var success = MempoolAddSuccess.create(txn, processed, origin);
-      mempoolAddSuccessEventDispatcher.dispatch(success);
-
-      return processed;
     }
   }
 
@@ -246,8 +226,9 @@ public final class RadixEngineStateComputer implements StateComputer {
         .forEach(
             txn -> {
               try {
-                addToMempool(txn);
-              } catch (MempoolRejectedException ignored) {
+                addToMempool(txn, origin);
+              } catch (MempoolRejectedException ex) {
+                log.debug("Txn rejected from the mempool", ex);
               }
             });
   }
@@ -256,10 +237,7 @@ public final class RadixEngineStateComputer implements StateComputer {
   public List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
     synchronized (lock) {
       var cmds =
-          prepared.stream()
-              .map(p -> (RadixEngineTxn) p)
-              .map(RadixEngineTxn::processedTxn)
-              .collect(Collectors.toList());
+          prepared.stream().map(RadixEngineTxn.class::cast).map(RadixEngineTxn::processed).toList();
 
       // TODO: only return commands which will not cause a missing dependency error
       return mempool.getTxns(maxSigsPerRound.orElse(50), cmds);
@@ -289,6 +267,7 @@ public final class RadixEngineStateComputer implements StateComputer {
     final RadixEngineResult result;
     try {
       // TODO: combine construct/execute
+
       systemUpdate = branch.construct(systemActions).buildWithoutSignature();
       result = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
     } catch (RadixEngineException | TxBuilderException e) {
@@ -336,28 +315,31 @@ public final class RadixEngineStateComputer implements StateComputer {
     synchronized (lock) {
       var next = vertex.getTxns();
       var transientBranch = this.radixEngine.transientBranch();
-      for (PreparedTxn command : previous) {
+
+      for (var command : previous) {
         // TODO: fix this cast with generics. Currently the fix would become a bit too messy
         final var radixEngineCommand = (RadixEngineTxn) command;
         try {
           transientBranch.execute(
-              List.of(radixEngineCommand.txn), radixEngineCommand.permissionLevel);
+              List.of(radixEngineCommand.txn()), radixEngineCommand.permissionLevel());
         } catch (RadixEngineException e) {
           throw new IllegalStateException(
-              "Re-execution of already prepared atom failed: "
+              "Re-execution of already prepared transaction failed: "
                   + radixEngineCommand.processed.getTxn().getId(),
               e);
         }
       }
 
       var systemTxn = this.executeSystemUpdate(transientBranch, vertex, timestamp);
-      final ImmutableList.Builder<PreparedTxn> successBuilder = ImmutableList.builder();
+      var successBuilder = ImmutableList.<PreparedTxn>builder();
+
       successBuilder.add(systemTxn);
-      final ImmutableMap.Builder<Txn, Exception> exceptionBuilder = ImmutableMap.builder();
+
+      var exceptionBuilder = ImmutableMap.<Txn, Exception>builder();
       var nextValidatorSet =
-          systemTxn.processedTxn().getEvents().stream()
-              .filter(NextValidatorSetEvent.class::isInstance)
-              .map(NextValidatorSetEvent.class::cast)
+          systemTxn.processed().getEvents().stream()
+              .filter(REEvent.NextValidatorSetEvent.class::isInstance)
+              .map(REEvent.NextValidatorSetEvent.class::cast)
               .findFirst()
               .map(
                   e ->
@@ -366,7 +348,7 @@ public final class RadixEngineStateComputer implements StateComputer {
                               .map(
                                   v ->
                                       BFTValidator.from(
-                                          BFTNode.create(v.getValidatorKey()), v.getAmount()))));
+                                          BFTNode.create(v.validatorKey()), v.amount()))));
       // Don't execute command if changing epochs
       if (nextValidatorSet.isEmpty()) {
         this.executeUserCommands(
@@ -403,27 +385,24 @@ public final class RadixEngineStateComputer implements StateComputer {
               rules -> {
                 log.info("Epoch {} Forking RadixEngine to {}", proof.getEpoch() + 1, rules.name());
                 this.radixEngine.replaceConstraintMachine(
-                    rules.getConstraintMachineConfig(),
-                    rules.getSerialization(),
-                    rules.getActionConstructors(),
-                    rules.getBatchVerifier(),
-                    rules.getParser());
-                this.epochCeilingView = rules.getMaxRounds();
-                this.maxSigsPerRound = rules.getMaxSigsPerRound();
+                    rules.constraintMachineConfig(),
+                    rules.serialization(),
+                    rules.actionConstructors(),
+                    rules.batchVerifier(),
+                    rules.parser());
+                this.epochCeilingView = rules.maxRounds();
+                this.maxSigsPerRound = rules.maxSigsPerRound();
               });
     }
 
     result
         .getProcessedTxns()
         .forEach(
-            t -> {
-              if (t.isSystemOnly()) {
+            t ->
                 systemCounters.increment(
-                    SystemCounters.CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS);
-              } else {
-                systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_USER_TRANSACTIONS);
-              }
-            });
+                    t.isSystemOnly()
+                        ? CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS
+                        : CounterType.RADIX_ENGINE_USER_TRANSACTIONS));
 
     return result.getProcessedTxns();
   }
@@ -435,10 +414,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 
       // TODO: refactor mempool to be less generic and make this more efficient
       // TODO: Move this into engine
-      List<Txn> removed = this.mempool.committed(txCommitted);
-      systemCounters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+      var removed = this.mempool.committed(txCommitted);
+      systemCounters.set(CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
       if (!removed.isEmpty()) {
-        TxnsRemovedFromMempool atomsRemovedFromMempool = TxnsRemovedFromMempool.create(removed);
+        var atomsRemovedFromMempool = TxnsRemovedFromMempool.create(removed);
         mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);
       }
 

@@ -64,20 +64,20 @@
 
 package com.radixdlt.statecomputer.checkpoint;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.google.inject.Inject;
-import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.CreateSystem;
-import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -96,7 +96,7 @@ public final class GenesisBuilder {
   @Inject
   public GenesisBuilder(RERules rules, LedgerAccumulator ledgerAccumulator) {
     this.ledgerAccumulator = ledgerAccumulator;
-    var cmConfig = rules.getConstraintMachineConfig();
+    var cmConfig = rules.constraintMachineConfig();
     var cm =
         new ConstraintMachine(
             cmConfig.getProcedures(),
@@ -105,12 +105,13 @@ public final class GenesisBuilder {
             cmConfig.getMeter());
     this.radixEngine =
         new RadixEngine<>(
-            rules.getParser(),
-            rules.getSerialization(),
-            rules.getActionConstructors(),
+            rules.parser(),
+            rules.serialization(),
+            rules.actionConstructors(),
             cm,
             new InMemoryEngineStore<>(),
-            rules.getBatchVerifier());
+            rules.batchVerifier(),
+            rules.maxMessageLen());
   }
 
   public Txn build(String message, long timestamp, List<TxAction> actions)
@@ -136,8 +137,8 @@ public final class GenesisBuilder {
     radixEngine.deleteBranches();
     var genesisValidatorSet =
         result.getProcessedTxn().getEvents().stream()
-            .filter(NextValidatorSetEvent.class::isInstance)
-            .map(NextValidatorSetEvent.class::cast)
+            .filter(REEvent.NextValidatorSetEvent.class::isInstance)
+            .map(REEvent.NextValidatorSetEvent.class::cast)
             .findFirst()
             .map(
                 e ->
@@ -146,7 +147,7 @@ public final class GenesisBuilder {
                             .map(
                                 v ->
                                     BFTValidator.from(
-                                        BFTNode.create(v.getValidatorKey()), v.getAmount()))))
+                                        BFTNode.create(v.validatorKey()), v.amount()))))
             .orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
 
     var init = new AccumulatorState(0, HashUtils.zero256());

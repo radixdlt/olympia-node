@@ -73,7 +73,6 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.ViewVotingResult.FormedQC;
 import com.radixdlt.consensus.bft.ViewVotingResult.FormedTC;
@@ -88,7 +87,6 @@ import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
-import com.radixdlt.utils.Pair;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -127,7 +125,7 @@ public final class BFTSync implements BFTSyncer {
 
     SyncState(HighQC highQC, BFTNode author, Hasher hasher) {
       this.localSyncId = highQC.highestQC().getProposed().getVertexId();
-      Pair<BFTHeader, LedgerProof> pair =
+      var pair =
           highQC
               .highestCommittedQC()
               .getCommittedAndLedgerStateProof(hasher)
@@ -213,25 +211,17 @@ public final class BFTSync implements BFTSyncer {
     return viewQuorumReached -> {
       this.runOnThreads.add(Thread.currentThread().getName());
 
-      final HighQC highQC;
-      // TODO: extract into dedicated method, this method has too many responsibilities
-      if (viewQuorumReached.votingResult() instanceof FormedQC) {
-        highQC =
-            HighQC.from(
+      final var highQC =
+          switch (viewQuorumReached.votingResult()) {
+            case FormedQC formedQc -> HighQC.from(
                 ((FormedQC) viewQuorumReached.votingResult()).getQC(),
                 this.vertexStore.highQC().highestCommittedQC(),
                 this.vertexStore.getHighestTimeoutCertificate());
-      } else if (viewQuorumReached.votingResult() instanceof FormedTC) {
-        highQC =
-            HighQC.from(
+            case FormedTC formedTc -> HighQC.from(
                 this.vertexStore.highQC().highestQC(),
                 this.vertexStore.highQC().highestCommittedQC(),
                 Optional.of(((FormedTC) viewQuorumReached.votingResult()).getTC()));
-      } else {
-        // TODO: cleanup this mess
-        throw new IllegalStateException(
-            "Unknown voting result: " + viewQuorumReached.votingResult());
-      }
+          };
 
       syncToQC(highQC, viewQuorumReached.lastAuthor());
     };
@@ -240,8 +230,7 @@ public final class BFTSync implements BFTSyncer {
   @Override
   public SyncResult syncToQC(HighQC highQC, @Nullable BFTNode author) {
     this.runOnThreads.add(Thread.currentThread().getName());
-    final QuorumCertificate qc = highQC.highestQC();
-    final HashCode vertexId = qc.getProposed().getVertexId();
+    final var qc = highQC.highestQC();
 
     if (qc.getProposed().getView().compareTo(vertexStore.getRoot().getView()) < 0) {
       return SyncResult.INVALID;
@@ -269,7 +258,7 @@ public final class BFTSync implements BFTSyncer {
 
     log.trace("SYNC_TO_QC: Need sync: {}", highQC);
 
-    if (syncing.containsKey(vertexId)) {
+    if (syncing.containsKey(qc.getProposed().getVertexId())) {
       return SyncResult.IN_PROGRESS;
     }
 
@@ -283,9 +272,10 @@ public final class BFTSync implements BFTSyncer {
   }
 
   private boolean requiresLedgerSync(SyncState syncState) {
-    final BFTHeader committedHeader = syncState.committedHeader;
+    final var committedHeader = syncState.committedHeader;
+
     if (!vertexStore.containsVertex(committedHeader.getVertexId())) {
-      View rootView = vertexStore.getRoot().getView();
+      var rootView = vertexStore.getRoot().getView();
       return rootView.compareTo(committedHeader.getView()) < 0;
     }
 
@@ -293,8 +283,10 @@ public final class BFTSync implements BFTSyncer {
   }
 
   private void startSync(HighQC highQC, BFTNode author) {
-    final SyncState syncState = new SyncState(highQC, author, hasher);
+    final var syncState = new SyncState(highQC, author, hasher);
+
     syncing.put(syncState.localSyncId, syncState);
+
     if (requiresLedgerSync(syncState)) {
       this.doCommittedSync(syncState);
     } else {
@@ -305,6 +297,7 @@ public final class BFTSync implements BFTSyncer {
   private void doQCSync(SyncState syncState) {
     syncState.setSyncStage(SyncStage.GET_QC_VERTICES);
     log.debug("SYNC_VERTICES: QC: Sending initial GetVerticesRequest for sync={}", syncState);
+
     final var authors =
         Stream.concat(
                 Stream.of(syncState.author),
@@ -322,9 +315,9 @@ public final class BFTSync implements BFTSyncer {
   }
 
   private void doCommittedSync(SyncState syncState) {
-    final HashCode committedQCId =
-        syncState.highQC().highestCommittedQC().getProposed().getVertexId();
+    final var committedQCId = syncState.highQC().highestCommittedQC().getProposed().getVertexId();
     final var commitedView = syncState.highQC().highestCommittedQC().getView();
+
     syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
     log.debug(
         "SYNC_VERTICES: Committed: Sending initial GetVerticesRequest for sync={}", syncState);
@@ -351,9 +344,9 @@ public final class BFTSync implements BFTSyncer {
   private void processGetVerticesLocalTimeout(VertexRequestTimeout timeout) {
     this.runOnThreads.add(Thread.currentThread().getName());
 
-    final GetVerticesRequest request = highestQCRequest(this.bftSyncing.entrySet());
+    final var request = highestQCRequest(this.bftSyncing.entrySet());
+    var syncRequestState = bftSyncing.remove(request);
 
-    SyncRequestState syncRequestState = bftSyncing.remove(request);
     if (syncRequestState == null) {
       return;
     }
@@ -368,7 +361,8 @@ public final class BFTSync implements BFTSyncer {
     //noinspection UnstableApiUsage
     for (var syncId : syncIds) {
       systemCounters.increment(CounterType.BFT_SYNC_REQUEST_TIMEOUTS);
-      SyncState syncState = syncing.remove(syncId);
+      var syncState = syncing.remove(syncId);
+
       if (syncState == null) {
         // TODO: remove once we figure this out
         final var msg = new StringBuilder();
@@ -400,18 +394,19 @@ public final class BFTSync implements BFTSyncer {
 
   private <T> T randomFrom(List<T> elements) {
     final var size = elements.size();
+
     if (size <= 0) {
       return null;
     }
-    int nextIndex = random.nextInt(size);
-    return elements.get(nextIndex);
+
+    return elements.get(random.nextInt(size));
   }
 
   private void sendBFTSyncRequest(
       View view, HashCode vertexId, int count, ImmutableList<BFTNode> authors, HashCode syncId) {
-    GetVerticesRequest request = new GetVerticesRequest(vertexId, count);
-    SyncRequestState syncRequestState =
-        bftSyncing.getOrDefault(request, new SyncRequestState(authors, view));
+    var request = new GetVerticesRequest(vertexId, count);
+    var syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors, view));
+
     if (syncRequestState.syncIds.isEmpty()) {
       if (this.syncRequestRateLimiter.tryAcquire()) {
         VertexRequestTimeout scheduledTimeout = VertexRequestTimeout.create(request);
@@ -472,27 +467,26 @@ public final class BFTSync implements BFTSyncer {
     if (syncState.committedProof.getStateVersion() <= this.currentLedgerHeader.getStateVersion()) {
       rebuildAndSyncQC(syncState);
     } else {
-      ImmutableList<BFTNode> signers = syncState.committedProof.getSignersWithout(self);
       syncState.setSyncStage(SyncStage.LEDGER_SYNC);
       ledgerSyncing.compute(
           syncState.committedProof.getRaw(),
-          (header, syncing) -> {
-            if (syncing == null) {
-              syncing = new ArrayList<>();
-            }
-            syncing.add(syncState.localSyncId);
-            return syncing;
+          (header, existingList) -> {
+            var list = (existingList == null) ? new ArrayList<HashCode>() : existingList;
+            list.add(syncState.localSyncId);
+            return list;
           });
-      LocalSyncRequest localSyncRequest = new LocalSyncRequest(syncState.committedProof, signers);
+      var signers = syncState.committedProof.getSignersWithout(self);
+      var localSyncRequest = new LocalSyncRequest(syncState.committedProof, signers);
 
       localSyncRequestEventDispatcher.dispatch(localSyncRequest);
     }
   }
 
   private void processVerticesResponseForQCSync(SyncState syncState, GetVerticesResponse response) {
-    VerifiedVertex vertex = response.getVertices().get(0);
+    var vertex = response.getVertices().get(0);
     syncState.fetched.addFirst(vertex);
-    HashCode parentId = vertex.getParentId();
+
+    var parentId = vertex.getParentId();
 
     if (vertexStore.containsVertex(parentId)) {
       vertexStore.insertVertexChain(VerifiedVertexChain.create(syncState.fetched));
@@ -557,32 +551,26 @@ public final class BFTSync implements BFTSyncer {
 
     log.debug("SYNC_VERTICES: Received GetVerticesResponse {}", response);
 
-    VerifiedVertex firstVertex = response.getVertices().get(0);
-    GetVerticesRequest requestInfo =
-        new GetVerticesRequest(firstVertex.getId(), response.getVertices().size());
-    SyncRequestState syncRequestState = bftSyncing.remove(requestInfo);
+    var firstVertex = response.getVertices().get(0);
+    var requestInfo = new GetVerticesRequest(firstVertex.getId(), response.getVertices().size());
+    var syncRequestState = bftSyncing.remove(requestInfo);
+
     if (syncRequestState != null) {
-      for (HashCode syncTo : syncRequestState.syncIds) {
-        SyncState syncState = syncing.get(syncTo);
+      for (var syncTo : syncRequestState.syncIds) {
+        var syncState = syncing.get(syncTo);
         if (syncState == null) {
           continue; // sync requirements already satisfied by another sync
         }
-        // TODO: replace with enhanced switch
+
         switch (syncState.syncStage) {
-          case GET_COMMITTED_VERTICES:
-            processVerticesResponseForCommittedSync(syncState, sender, response);
-            break;
-          case GET_QC_VERTICES:
-            processVerticesResponseForQCSync(syncState, response);
-            break;
-          default:
-            throw new IllegalStateException("Unknown sync stage: " + syncState.syncStage);
+          case GET_COMMITTED_VERTICES -> processVerticesResponseForCommittedSync(
+              syncState, sender, response);
+          case GET_QC_VERTICES -> processVerticesResponseForQCSync(syncState, response);
+          default -> throw new IllegalStateException("Unknown sync stage: " + syncState.syncStage);
         }
       }
     }
   }
-
-  public void processBFTUpdate(BFTInsertUpdate update) {}
 
   public EventProcessor<LedgerUpdate> baseLedgerUpdateEventProcessor() {
     return this::processLedgerUpdate;
@@ -596,13 +584,14 @@ public final class BFTSync implements BFTSyncer {
 
     this.currentLedgerHeader = ledgerUpdate.getTail();
 
-    Collection<List<HashCode>> listeners =
-        this.ledgerSyncing.headMap(ledgerUpdate.getTail().getRaw(), true).values();
-    Iterator<List<HashCode>> listenersIterator = listeners.iterator();
+    var listeners = this.ledgerSyncing.headMap(ledgerUpdate.getTail().getRaw(), true).values();
+    var listenersIterator = listeners.iterator();
+
     while (listenersIterator.hasNext()) {
-      List<HashCode> syncs = listenersIterator.next();
-      for (HashCode syncTo : syncs) {
-        SyncState syncState = syncing.get(syncTo);
+      var syncs = listenersIterator.next();
+      for (var syncTo : syncs) {
+
+        var syncState = syncing.get(syncTo);
         if (syncState != null) {
           rebuildAndSyncQC(syncState);
         }

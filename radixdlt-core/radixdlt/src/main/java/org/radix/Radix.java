@@ -66,6 +66,7 @@ package org.radix;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Guice;
+import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.ModuleRunner;
@@ -76,6 +77,9 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.network.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.store.berkeley.BerkeleyAddressBookPersistence;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.store.berkeley.BerkeleySafetyStateStore;
 import com.radixdlt.utils.MemoryLeakDetector;
 import io.undertow.Undertow;
 import java.io.IOException;
@@ -225,7 +229,40 @@ public final class Radix {
     long finish = System.currentTimeMillis();
     var systemCounters = injector.getInstance(SystemCounters.class);
     systemCounters.set(SystemCounters.CounterType.STARTUP_TIME_MS, finish - start);
+
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(injector)));
+
     log.info("Node '{}' started successfully in {} seconds", self, (finish - start) / 1000);
+  }
+
+  private static void shutdown(Injector injector) {
+    // using System.out.println as logger no longer works reliably in a shutdown hook
+    final var self = injector.getInstance(Key.get(BFTNode.class, Self.class));
+    System.out.println("Node " + self + " is shutting down...");
+
+    injector
+        .getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}))
+        .forEach((k, moduleRunner) -> moduleRunner.stop());
+
+    try {
+      injector.getInstance(BerkeleyAddressBookPersistence.class).close();
+    } catch (Exception e) {
+      // no-op
+    }
+
+    try {
+      injector.getInstance(BerkeleySafetyStateStore.class).close();
+    } catch (Exception e) {
+      // no-op
+    }
+
+    try {
+      injector.getInstance(BerkeleyLedgerEntryStore.class).close();
+    } catch (Exception e) {
+      // no-op
+    }
+
+    System.out.println("Node shutdown completed");
   }
 
   private static void dumpExecutionLocation() {

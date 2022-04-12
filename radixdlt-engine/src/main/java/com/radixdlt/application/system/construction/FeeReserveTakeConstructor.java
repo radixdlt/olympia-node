@@ -64,15 +64,16 @@
 
 package com.radixdlt.application.system.construction;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.FeeReserveTake;
 
 public class FeeReserveTakeConstructor implements ActionConstructor<FeeReserveTake> {
   @Override
   public void construct(FeeReserveTake action, TxBuilder builder) throws TxBuilderException {
-    builder.takeFeeReserve(action.to(), action.amount());
+    builder.takeFeeReserve(action.toAddr(), action.amount());
     builder.end();
   }
 }

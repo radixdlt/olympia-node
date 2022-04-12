@@ -64,6 +64,8 @@
 
 package org.radix;
 
+import static com.radixdlt.atom.TxAction.*;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -75,7 +77,6 @@ import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
@@ -151,8 +152,7 @@ public final class GenerateUniverses {
     }
     final int validatorsCount =
         cmd.getOptionValue("v") != null ? Integer.parseInt(cmd.getOptionValue("v")) : 0;
-    var generatedValidatorKeys =
-        PrivateKeys.numeric(6).limit(validatorsCount).collect(Collectors.toList());
+    var generatedValidatorKeys = PrivateKeys.numeric(6).limit(validatorsCount).toList();
     generatedValidatorKeys.stream().map(ECKeyPair::getPublicKey).forEach(validatorKeys::add);
 
     // Issuances to mnemomic account, keys 1-5, and 1st validator

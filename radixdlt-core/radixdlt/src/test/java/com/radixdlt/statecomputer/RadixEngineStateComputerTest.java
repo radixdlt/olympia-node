@@ -64,9 +64,12 @@
 
 package com.radixdlt.statecomputer;
 
+import static com.radixdlt.atom.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
@@ -77,18 +80,9 @@ import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.NextEpoch;
-import com.radixdlt.atom.actions.NextRound;
-import com.radixdlt.atom.actions.RegisterValidator;
+import com.radixdlt.atom.*;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
@@ -105,6 +99,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.counters.SystemCounters;
@@ -122,6 +117,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
@@ -160,6 +156,8 @@ public class RadixEngineStateComputerTest {
   @Inject private RERules rules;
 
   @Inject private ProposerElection proposerElection;
+
+  @Inject private EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
 
   private Serialization serialization = DefaultSerialization.getInstance();
   private InMemoryEngineStore<LedgerAndBFTProof> engineStore;
@@ -219,8 +217,8 @@ public class RadixEngineStateComputerTest {
     var processed = branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
     var genesisValidatorSet =
         processed.getProcessedTxns().get(0).getEvents().stream()
-            .filter(NextValidatorSetEvent.class::isInstance)
-            .map(NextValidatorSetEvent.class::cast)
+            .filter(REEvent.NextValidatorSetEvent.class::isInstance)
+            .map(REEvent.NextValidatorSetEvent.class::cast)
             .findFirst()
             .map(
                 e ->
@@ -229,7 +227,7 @@ public class RadixEngineStateComputerTest {
                             .map(
                                 v ->
                                     BFTValidator.from(
-                                        BFTNode.create(v.getValidatorKey()), v.getAmount()))))
+                                        BFTNode.create(v.validatorKey()), v.amount()))))
             .orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
     radixEngine.deleteBranches();
 
@@ -375,7 +373,7 @@ public class RadixEngineStateComputerTest {
                 new NextRound(1, false, 0, i -> proposerElection.getProposer(View.of(i)).getKey()))
             .buildWithoutSignature();
     var illegalTxn =
-        TxLowLevelBuilder.newBuilder(rules.getSerialization())
+        TxLowLevelBuilder.newBuilder(rules.serialization())
             .down(SubstateId.ofSubstate(txn.getId(), 1))
             .up(new RoundData(2, 0))
             .end()
@@ -397,9 +395,8 @@ public class RadixEngineStateComputerTest {
         .hasValueSatisfying(
             new Condition<>(
                 e -> {
-                  RadixEngineException ex = (RadixEngineException) e;
-                  ConstraintMachineException cmException =
-                      (ConstraintMachineException) ex.getCause();
+                  var ex = (RadixEngineException) e;
+                  var cmException = (ConstraintMachineException) ex.getCause();
                   return cmException.getCause() instanceof InvalidPermissionException;
                 },
                 "Is invalid_execution_permission error"));
@@ -430,7 +427,7 @@ public class RadixEngineStateComputerTest {
   @Test
   public void committing_epoch_change_with_additional_cmds_should_fail() throws Exception {
     // Arrange
-    ECKeyPair keyPair = ECKeyPair.generateNew();
+    var keyPair = ECKeyPair.generateNew();
     var cmd0 = systemUpdateCommand(0, 2);
     var cmd1 = registerCommand(keyPair);
     var ledgerProof =
@@ -492,5 +489,20 @@ public class RadixEngineStateComputerTest {
     // Assert
     assertThatThrownBy(() -> sut.commit(commandsAndProof, null))
         .isInstanceOf(ByzantineQuorumException.class);
+  }
+
+  @Test
+  public void add_to_mempool__should_forward_the_origin_to_the_event() throws TxBuilderException {
+    // Arrange
+    final var origin = BFTNode.random();
+    var txn = registerCommand(ECKeyPair.generateNew());
+
+    // Act
+    sut.addToMempool(MempoolAdd.create(txn), origin);
+
+    // Assert
+    verify(mempoolAddSuccessEventDispatcher)
+        .dispatch(
+            argThat(ev -> ev.getOrigin().orElseThrow().equals(origin) && ev.getTxn().equals(txn)));
   }
 }

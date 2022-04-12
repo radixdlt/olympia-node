@@ -108,4 +108,8 @@ public final class Strings {
     }
     return new String(chars);
   }
+
+  public static String asEmptyIfNull(String value) {
+    return value == null ? "" : value;
+  }
 }

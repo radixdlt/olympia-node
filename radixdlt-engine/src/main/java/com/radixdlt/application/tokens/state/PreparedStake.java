@@ -64,33 +64,24 @@
 
 package com.radixdlt.application.tokens.state;
 
+import static java.util.Objects.requireNonNull;
+
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
-import java.util.Objects;
 
 /**
  * A particle which represents an amount of staked fungible tokens owned by some key owner, stored
  * in an account and staked to a delegate address.
  */
-public final class PreparedStake implements ResourceInBucket {
-  private final UInt256 amount;
-
-  // Bucket keys
-  private final REAddr owner;
-  private final ECPublicKey delegateKey;
-
-  public PreparedStake(UInt256 amount, REAddr owner, ECPublicKey delegateKey) {
-    this.delegateKey = Objects.requireNonNull(delegateKey);
-    this.owner = Objects.requireNonNull(owner);
-    this.amount = Objects.requireNonNull(amount);
-  }
-
-  @Override
-  public UInt256 getAmount() {
-    return this.amount;
+public record PreparedStake(UInt256 amount, REAddr owner, ECPublicKey delegateKey)
+    implements ResourceInBucket {
+  public PreparedStake {
+    requireNonNull(delegateKey);
+    requireNonNull(owner);
+    requireNonNull(amount);
   }
 
   @Override
@@ -98,39 +89,7 @@ public final class PreparedStake implements ResourceInBucket {
     return new PreparedStakeBucket(owner, delegateKey);
   }
 
-  public REAddr getResourceAddr() {
+  public REAddr resourceAddr() {
     return REAddr.ofNativeToken();
-  }
-
-  public ECPublicKey getDelegateKey() {
-    return delegateKey;
-  }
-
-  public REAddr getOwner() {
-    return this.owner;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s[%s:%s:%s]", getClass().getSimpleName(), amount, owner, delegateKey);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof PreparedStake)) {
-      return false;
-    }
-    PreparedStake that = (PreparedStake) o;
-    return Objects.equals(delegateKey, that.delegateKey)
-        && Objects.equals(owner, that.owner)
-        && Objects.equals(amount, that.amount);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(delegateKey, owner, amount);
   }
 }

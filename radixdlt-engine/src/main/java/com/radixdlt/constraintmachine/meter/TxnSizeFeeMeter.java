@@ -103,7 +103,7 @@ public class TxnSizeFeeMeter implements Meter {
     if (procedureKey.opSignature().op() == REOp.DOWN) {
       if (param instanceof TokensInAccount) {
         var tokensInAccount = (TokensInAccount) param;
-        if (tokensInAccount.getResourceAddr().isNativeToken()) {
+        if (tokensInAccount.resourceAddr().isNativeToken()) {
           return;
         }
       }

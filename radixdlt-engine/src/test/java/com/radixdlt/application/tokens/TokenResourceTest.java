@@ -64,6 +64,7 @@
 
 package com.radixdlt.application.tokens;
 
+import static com.radixdlt.atom.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
@@ -75,14 +76,7 @@ import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atom.actions.CreateSystem;
-import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.*;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -247,7 +241,7 @@ public class TokenResourceTest {
     var tokenDefinitionParticle =
         TokenResource.createMutableSupplyResource(addr, keyPair.getPublicKey());
     var builder =
-        TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization)
+        TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization, 255)
             .toLowLevelBuilder()
             .syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
             .virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())

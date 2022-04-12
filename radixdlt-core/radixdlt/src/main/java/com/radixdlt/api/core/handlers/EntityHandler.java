@@ -107,7 +107,7 @@ public class EntityHandler extends CoreJsonRpcHandler<EntityRequest, EntityRespo
                     SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
                 var substate = reader.get(mapKey).orElseThrow();
                 var tokenResource = (TokenResourceMetadata) substate;
-                return tokenResource.getSymbol();
+                return tokenResource.symbol();
               };
           var proof = reader.getMetadata().getProof();
           var response =
