@@ -74,7 +74,7 @@ public final class REStateUpdate {
   private final REOp op;
   private final SubstateId id;
   private final byte typeByte;
-  private final Object parsed;
+  private final Particle parsed;
   private final Supplier<ByteBuffer> stateBuf;
   private final int instructionIndex;
 
@@ -83,7 +83,7 @@ public final class REStateUpdate {
       int instructionIndex,
       SubstateId id,
       byte typeByte,
-      Object parsed,
+      Particle parsed,
       Supplier<ByteBuffer> stateBuf) {
     Objects.requireNonNull(op);
 
@@ -100,7 +100,7 @@ public final class REStateUpdate {
       int instructionIndex,
       SubstateId substateId,
       byte typeByte,
-      Object parsed,
+      Particle parsed,
       Supplier<ByteBuffer> stateBuf) {
     if (op != REOp.DOWN && op != REOp.UP) {
       throw new IllegalArgumentException();
@@ -132,15 +132,20 @@ public final class REStateUpdate {
     return this.op == REOp.DOWN;
   }
 
-  public Object getParsed() {
+  public Particle getParsed() {
     return parsed;
   }
 
   public RawSubstateBytes getRawSubstateBytes() {
-    var buffer = stateBuf.get();
-    int remaining = buffer.remaining();
-    var buf = new byte[remaining];
-    buffer.get(buf);
+    var buffer = getStateBuf();
+    byte[] buf;
+    if (buffer == null) {
+      buf = new byte[0];
+    } else {
+      int remaining = buffer.remaining();
+      buf = new byte[remaining];
+      buffer.get(buf);
+    }
     return new RawSubstateBytes(id.asBytes(), buf);
   }
 

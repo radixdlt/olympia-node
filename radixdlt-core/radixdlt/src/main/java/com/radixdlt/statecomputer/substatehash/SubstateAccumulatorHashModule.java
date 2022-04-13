@@ -69,13 +69,13 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
-public class SubStateAccumulatorHashModule extends AbstractModule {
+public class SubstateAccumulatorHashModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    bind(BerkeleySubStateAccumulatorHashStore.class).in(Scopes.SINGLETON);
+    bind(BerkeleySubstateAccumulatorHashStore.class).in(Scopes.SINGLETON);
     Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
         .addBinding()
-        .to(BerkeleySubStateAccumulatorHashStore.class);
+        .to(BerkeleySubstateAccumulatorHashStore.class);
   }
 }

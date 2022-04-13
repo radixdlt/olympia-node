@@ -84,25 +84,30 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.Arrays;
 
-public class BerkeleySubStateAccumulatorHashStore implements BerkeleyAdditionalStore {
+public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalStore {
 
   private static final Logger logger = LogManager.getLogger();
-  protected static final byte[] SUBSTATE_ACCUMULATOR_HASH =
+  protected static final byte[] SUBSTATE_ACCUMULATOR_HASH_KEY =
       "substate_accumulator_hash_key".getBytes(StandardCharsets.UTF_8);
 
-  private Database subStateAccumulatorHashDatabase;
+  private Database substateAccumulatorHashDatabase;
   private Database epochHashDatabase;
 
-  private byte[] currentSubStateAccumulatorHash;
+  private byte[] currentSubstateAccumulatorHash;
   private long epoch;
 
   private final Stopwatch watch = Stopwatch.createUnstarted();
 
-  @Inject private Forks forks;
+  private Forks forks;
+
+  @Inject
+  public BerkeleySubstateAccumulatorHashStore(Forks forks) {
+    this.forks = forks;
+  }
 
   @Override
   public void open(DatabaseEnvironment dbEnv) {
-    this.subStateAccumulatorHashDatabase =
+    this.substateAccumulatorHashDatabase =
         dbEnv
             .getEnvironment()
             .openDatabase(
@@ -124,14 +129,14 @@ public class BerkeleySubStateAccumulatorHashStore implements BerkeleyAdditionalS
                     .setTransactional(true)
                     .setKeyPrefixing(true)
                     .setBtreeComparator(lexicographicalComparator()));
-    this.currentSubStateAccumulatorHash =
+    this.currentSubstateAccumulatorHash =
         getPreviousSubStateAccumulatorHash(null).orElse(new byte[0]);
-    this.epoch = getEpoch();
+    this.epoch = getLatestStoredEpoch();
   }
 
   @Override
   public void close() {
-    this.subStateAccumulatorHashDatabase.close();
+    this.substateAccumulatorHashDatabase.close();
     this.epochHashDatabase.close();
   }
 
@@ -153,22 +158,22 @@ public class BerkeleySubStateAccumulatorHashStore implements BerkeleyAdditionalS
       }
     }
 
-    this.currentSubStateAccumulatorHash =
-        HashUtils.sha256(Arrays.concatenate(this.currentSubStateAccumulatorHash, subStateBytes))
+    this.currentSubstateAccumulatorHash =
+        HashUtils.sha256(Arrays.concatenate(this.currentSubstateAccumulatorHash, subStateBytes))
             .asBytes();
-    var key = new DatabaseEntry(SUBSTATE_ACCUMULATOR_HASH);
-    this.subStateAccumulatorHashDatabase.put(
-        dbTxn, key, new DatabaseEntry(this.currentSubStateAccumulatorHash));
+    var key = new DatabaseEntry(SUBSTATE_ACCUMULATOR_HASH_KEY);
+    this.substateAccumulatorHashDatabase.put(
+        dbTxn, key, new DatabaseEntry(this.currentSubstateAccumulatorHash));
 
     if (isEpochChange) {
       epochHashDatabase.put(
           dbTxn,
           new DatabaseEntry(Longs.toByteArray(epoch)),
-          new DatabaseEntry(this.currentSubStateAccumulatorHash));
+          new DatabaseEntry(this.currentSubstateAccumulatorHash));
       if (logger.isInfoEnabled()) {
         logger.info(
             "Epoch Hash: {} for epoch {}. Time spent since last epoch: {} s.",
-            Bytes.toHexString(this.currentSubStateAccumulatorHash),
+            Bytes.toHexString(this.currentSubstateAccumulatorHash),
             epoch,
             watch.elapsed().toSeconds());
       }
@@ -180,13 +185,13 @@ public class BerkeleySubStateAccumulatorHashStore implements BerkeleyAdditionalS
   }
 
   private Optional<byte[]> getPreviousSubStateAccumulatorHash(Transaction dbTxn) {
-    var previousSubStateAccumulatorHash = new DatabaseEntry();
-    var key = new DatabaseEntry(SUBSTATE_ACCUMULATOR_HASH);
-    this.subStateAccumulatorHashDatabase.get(dbTxn, key, previousSubStateAccumulatorHash, null);
-    return Optional.ofNullable(previousSubStateAccumulatorHash.getData());
+    var previousSubstateAccumulatorHash = new DatabaseEntry();
+    var key = new DatabaseEntry(SUBSTATE_ACCUMULATOR_HASH_KEY);
+    this.substateAccumulatorHashDatabase.get(dbTxn, key, previousSubstateAccumulatorHash, null);
+    return Optional.ofNullable(previousSubstateAccumulatorHash.getData());
   }
 
-  private long getEpoch() {
+  private long getLatestStoredEpoch() {
     try (Cursor cursor = this.epochHashDatabase.openCursor(null, null)) {
       var key = new DatabaseEntry();
       var data = new DatabaseEntry();
@@ -199,23 +204,13 @@ public class BerkeleySubStateAccumulatorHashStore implements BerkeleyAdditionalS
     var op = reStateUpdate.isBootUp() ? new byte[] {0} : new byte[] {1};
     var id = reStateUpdate.getId() != null ? reStateUpdate.getId().asBytes() : new byte[0];
     var type = new byte[] {reStateUpdate.typeByte()};
-    var parsed = getParticleBytes(getParticle(reStateUpdate.getParsed()));
-    var stateBuf =
-        reStateUpdate.getStateBuf() != null
-            ? reStateUpdate.getRawSubstateBytes().getData()
-            : new byte[0];
+    var parsed = getBytes(reStateUpdate.getParsed());
+    var stateBuf = reStateUpdate.getRawSubstateBytes().getData();
     var instructionIndex = new byte[] {(byte) reStateUpdate.getInstructionIndex()};
     return Arrays.concatenate(Arrays.concatenate(op, id, type, parsed), stateBuf, instructionIndex);
   }
 
-  private Particle getParticle(Object parsed) {
-    if (!(parsed instanceof Particle)) {
-      throw new IllegalStateException("REStateUpdate parsed field should be a Particle");
-    }
-    return (Particle) parsed;
-  }
-
-  private byte[] getParticleBytes(Particle particle) {
+  private byte[] getBytes(Particle particle) {
     return getSubstateSerializer().serialize(particle);
   }
 
