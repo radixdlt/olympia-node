@@ -152,9 +152,6 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
         execute(operation, txBuilder, config);
       }
       txBuilder.end();
-    }
-
-    for (var operationGroup : this.operationGroups) {
       for (var operation : operationGroup) {
         operation.entity().executeAdditionalActions(operation, txBuilder, config);
       }
