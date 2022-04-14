@@ -62,100 +62,109 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.model;
+package com.radixdlt.api.core.handlers;
 
-import com.radixdlt.api.core.openapitools.model.Data;
+import static java.util.Objects.requireNonNull;
+
+import com.google.inject.Inject;
+import com.radixdlt.api.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.model.CoreApiException;
+import com.radixdlt.api.core.model.CoreModelMapper;
+import com.radixdlt.api.core.model.NotEnoughNativeTokensForFeesException;
+import com.radixdlt.api.core.openapitools.model.UpdateVoteRequest;
+import com.radixdlt.api.core.openapitools.model.UpdateVoteResponse;
+import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.statecomputer.forks.CurrentForkView;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.UInt256;
-import java.util.List;
-import java.util.Optional;
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.mempool.MempoolDuplicateException;
+import com.radixdlt.mempool.MempoolFullException;
+import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.radixdlt.statecomputer.forks.CandidateForkVote;
+import com.radixdlt.statecomputer.forks.Forks;
 
-public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
-  private final List<List<EntityOperation>> operationGroups;
-  private final String message;
-  private final CurrentForkView currentForkView;
+public final class VoteHandler extends CoreJsonRpcHandler<UpdateVoteRequest, UpdateVoteResponse> {
+  private final ECPublicKey validatorKey;
+  private final CoreModelMapper coreModelMapper;
+  private final Forks forks;
+  private final RadixEngine<LedgerAndBFTProof> radixEngine;
+  private final RadixEngineStateComputer radixEngineStateComputer;
+  private final HashSigner hashSigner;
 
-  public OperationTxBuilder(
-      String message,
-      List<List<EntityOperation>> operationGroups,
-      CurrentForkView currentForkView) {
-    this.message = message;
-    this.operationGroups = operationGroups;
-    this.currentForkView = currentForkView;
-  }
+  @Inject
+  VoteHandler(
+      @Self ECPublicKey validatorKey,
+      CoreModelMapper coreModelMapper,
+      Forks forks,
+      RadixEngine<LedgerAndBFTProof> radixEngine,
+      RadixEngineStateComputer radixEngineStateComputer,
+      @LocalSigner HashSigner hashSigner) {
+    super(UpdateVoteRequest.class);
 
-  private void executeResourceOperation(
-      Entity entity, ResourceOperation operation, TxBuilder txBuilder, RERulesConfig config)
-      throws TxBuilderException {
-    if (operation == null) {
-      return;
-    }
-
-    var amount = operation.getAmount();
-    if (operation.isDeposit()) {
-      entity.deposit(amount, txBuilder, config);
-    } else {
-      var withdrawal = entity.withdraw(amount.resource());
-      var feeInReserve = Optional.ofNullable(txBuilder.getFeeReserve()).orElse(UInt256.ZERO);
-      var change =
-          withdrawal.execute(
-              txBuilder,
-              amount.amount(),
-              available ->
-                  new NotEnoughResourcesException(
-                      amount.resource(), amount.amount(), available, feeInReserve));
-
-      if (!change.isZero()) {
-        var changeAmount = new ResourceUnsignedAmount(amount.resource(), change);
-        entity.deposit(changeAmount, txBuilder, config);
-      }
-    }
-  }
-
-  private void executeDataOperation(
-      Entity entity, DataOperation operation, TxBuilder txBuilder, RERulesConfig config)
-      throws TxBuilderException {
-    if (operation == null) {
-      return;
-    }
-
-    var dataAction = operation.getDataAction();
-    if (dataAction == Data.ActionEnum.CREATE) {
-      var parsedDataObject = operation.getParsedDataObject();
-      entity.overwriteDataObject(parsedDataObject, txBuilder, config);
-    } else {
-      throw new IllegalStateException("DataAction: " + dataAction + " not supported yet.");
-    }
-  }
-
-  private void execute(EntityOperation operation, TxBuilder txBuilder, RERulesConfig config)
-      throws TxBuilderException {
-    var entity = operation.entity();
-    var resourceOperation = operation.resourceOperation();
-    executeResourceOperation(entity, resourceOperation, txBuilder, config);
-
-    var dataOperation = operation.dataOperation();
-    executeDataOperation(entity, dataOperation, txBuilder, config);
+    this.validatorKey = requireNonNull(validatorKey);
+    this.coreModelMapper = requireNonNull(coreModelMapper);
+    this.forks = requireNonNull(forks);
+    this.radixEngine = requireNonNull(radixEngine);
+    this.radixEngineStateComputer = requireNonNull(radixEngineStateComputer);
+    this.hashSigner = requireNonNull(hashSigner);
   }
 
   @Override
-  public void execute(TxBuilder txBuilder) throws TxBuilderException {
-    final var config = currentForkView.currentForkConfig().engineRules().config();
+  public UpdateVoteResponse handleRequest(UpdateVoteRequest request) throws CoreApiException {
+    coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-    for (var operationGroup : this.operationGroups) {
-      for (var operation : operationGroup) {
-        execute(operation, txBuilder, config);
-      }
-      txBuilder.end();
+    final var feePayer = coreModelMapper.feePayerEntity(request.getFeePayer());
+
+    final Txn signedTx;
+    try {
+      signedTx =
+          radixEngine
+              .constructWithFees(
+                  this::buildVote,
+                  false,
+                  feePayer.accountAddress(),
+                  NotEnoughNativeTokensForFeesException::new)
+              .signAndBuild(hashSigner::sign);
+    } catch (TxBuilderException e) {
+      throw CoreApiException.badRequest(coreModelMapper.builderErrorDetails(e));
     }
 
-    if (this.message != null) {
-      txBuilder.message(Bytes.fromHexString(this.message));
+    try {
+      radixEngineStateComputer.addToMempool(signedTx);
+      return new UpdateVoteResponse()
+          .transactionIdentifier(coreModelMapper.transactionIdentifier(signedTx.getId()))
+          .duplicate(false);
+    } catch (MempoolDuplicateException e) {
+      return new UpdateVoteResponse()
+          .transactionIdentifier(coreModelMapper.transactionIdentifier(signedTx.getId()))
+          .duplicate(true);
+    } catch (MempoolFullException e) {
+      throw coreModelMapper.mempoolFullException(e);
+    } catch (MempoolRejectedException e) {
+      throw coreModelMapper.radixEngineException((RadixEngineException) e.getCause());
     }
+  }
+
+  private void buildVote(TxBuilder builder) {
+    builder.down(ValidatorSystemMetadata.class, validatorKey);
+    builder.up(
+        new ValidatorSystemMetadata(
+            validatorKey,
+            forks
+                .getCandidateFork()
+                .map(
+                    candidateFork ->
+                        CandidateForkVote.create(validatorKey, candidateFork).payload())
+                .orElseGet(HashUtils::zero256)
+                .asBytes()));
   }
 }

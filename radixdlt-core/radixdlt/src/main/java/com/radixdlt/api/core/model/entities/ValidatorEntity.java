@@ -67,7 +67,6 @@ package com.radixdlt.api.core.model.entities;
 import static com.radixdlt.atom.SubstateTypeId.*;
 
 import com.radixdlt.api.core.model.Entity;
-import com.radixdlt.api.core.model.EntityOperation;
 import com.radixdlt.api.core.model.KeyQuery;
 import com.radixdlt.api.core.model.ParsedDataObject;
 import com.radixdlt.api.core.model.ResourceQuery;
@@ -89,18 +88,13 @@ import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.statecomputer.forks.CandidateForkConfig;
-import com.radixdlt.statecomputer.forks.CandidateForkVote;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.Bytes;
 import java.util.List;
-import java.util.Optional;
 import java.util.OptionalLong;
 
-public record ValidatorEntity(
-    ECPublicKey validatorKey, Optional<CandidateForkConfig> candidateForkOpt) implements Entity {
+public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
 
   @Override
   public void overwriteDataObject(
@@ -125,39 +119,20 @@ public record ValidatorEntity(
       case ValidatorAllowDelegation allowDelegation:
         updateAllowDelegation(builder, allowDelegation);
         break;
-      case com.radixdlt.api.core.openapitools.model.ValidatorSystemMetadata metadata:
-        if (metadata.getData().isEmpty()) {
-          updateValidatorSystemMetadataVote(builder);
-        } else if (Bytes.isAllZeros(Bytes.fromHexString(metadata.getData()))) {
-          updateValidatorSystemMetadataWithdrawVote(builder);
-        } else {
-          throw new InvalidDataObjectException(
-              parsedDataObject,
-              "ValidatorSystemMetadata \"data\" field must either be empty (to vote) or consist of"
-                  + " only zero bytes (to withdraw a vote)");
-        }
+      case com.radixdlt.api.core.openapitools.model.ValidatorSystemMetadata systemMetadata:
+        updateValidatorSystemMetadata(builder, systemMetadata);
         break;
       default:
         throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
     }
   }
 
-  private void updateValidatorSystemMetadataVote(TxBuilder builder) {
+  private void updateValidatorSystemMetadata(
+      TxBuilder builder,
+      com.radixdlt.api.core.openapitools.model.ValidatorSystemMetadata systemMetadata) {
     builder.down(ValidatorSystemMetadata.class, validatorKey);
     builder.up(
-        new ValidatorSystemMetadata(
-            validatorKey,
-            candidateForkOpt
-                .map(
-                    candidateFork ->
-                        CandidateForkVote.create(validatorKey, candidateFork).payload())
-                .orElseGet(HashUtils::zero256)
-                .asBytes()));
-  }
-
-  private void updateValidatorSystemMetadataWithdrawVote(TxBuilder builder) {
-    builder.down(ValidatorSystemMetadata.class, validatorKey);
-    builder.up(new ValidatorSystemMetadata(validatorKey, HashUtils.zero256().asBytes()));
+        new ValidatorSystemMetadata(validatorKey, Bytes.fromHexString(systemMetadata.getData())));
   }
 
   private void updateAllowDelegation(TxBuilder builder, ValidatorAllowDelegation allowDelegation) {
@@ -229,28 +204,5 @@ public record ValidatorEntity(
             validatorKey, VALIDATOR_OWNER_COPY, ValidatorOwnerCopy::createVirtual),
         KeyQuery.fromValidator(
             validatorKey, VALIDATOR_SYSTEM_META_DATA, ValidatorSystemMetadata::createVirtual));
-  }
-
-  @Override
-  public void executeAdditionalActions(
-      EntityOperation operation, TxBuilder builder, RERulesConfig config) {
-    if (operation.dataOperation() == null) {
-      return;
-    }
-
-    switch (operation.dataOperation().getParsedDataObject().dataObject()) {
-      case PreparedValidatorRegistered preparedValidatorRegistered:
-        if (preparedValidatorRegistered.getRegistered()) {
-          updateValidatorSystemMetadataVote(builder);
-          builder.end();
-        }
-        break;
-      case ValidatorMetadata metadata:
-        updateValidatorSystemMetadataVote(builder);
-        builder.end();
-        break;
-      default:
-        // no-op
-    }
   }
 }

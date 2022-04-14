@@ -86,6 +86,8 @@ import com.radixdlt.api.core.handlers.MempoolTransactionHandler;
 import com.radixdlt.api.core.handlers.NetworkConfigurationHandler;
 import com.radixdlt.api.core.handlers.NetworkStatusHandler;
 import com.radixdlt.api.core.handlers.TransactionsHandler;
+import com.radixdlt.api.core.handlers.VoteHandler;
+import com.radixdlt.api.core.handlers.WithdrawVoteHandler;
 import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import io.undertow.server.HttpHandler;
@@ -147,6 +149,8 @@ public class CoreApiModule extends AbstractModule {
     routeBinder.addBinding(HandlerRoute.post("/key/list")).to(KeyListHandler.class);
     if (signEnable) {
       routeBinder.addBinding(HandlerRoute.post("/key/sign")).to(KeySignHandler.class);
+      routeBinder.addBinding(HandlerRoute.post("/key/vote")).to(VoteHandler.class);
+      routeBinder.addBinding(HandlerRoute.post("/key/withdraw-vote")).to(WithdrawVoteHandler.class);
     }
   }
 }
