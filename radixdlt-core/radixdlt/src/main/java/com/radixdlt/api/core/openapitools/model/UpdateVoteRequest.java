@@ -25,16 +25,12 @@ import java.util.Objects;
  * UpdateVoteRequest
  */
 @JsonPropertyOrder({
-  UpdateVoteRequest.JSON_PROPERTY_NETWORK_IDENTIFIER,
-  UpdateVoteRequest.JSON_PROPERTY_FEE_PAYER
+  UpdateVoteRequest.JSON_PROPERTY_NETWORK_IDENTIFIER
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-24T23:25:44.231186-06:00[America/Chicago]")
 public class UpdateVoteRequest {
   public static final String JSON_PROPERTY_NETWORK_IDENTIFIER = "network_identifier";
   private NetworkIdentifier networkIdentifier;
-
-  public static final String JSON_PROPERTY_FEE_PAYER = "fee_payer";
-  private EntityIdentifier feePayer;
 
 
   public UpdateVoteRequest networkIdentifier(NetworkIdentifier networkIdentifier) {
@@ -62,31 +58,6 @@ public class UpdateVoteRequest {
     this.networkIdentifier = networkIdentifier;
   }
 
-  public UpdateVoteRequest feePayer(EntityIdentifier feePayer) {
-    this.feePayer = feePayer;
-    return this;
-  }
-
-   /**
-   * Get feePayer
-   * @return feePayer
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FEE_PAYER)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public EntityIdentifier getFeePayer() {
-    return feePayer;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_FEE_PAYER)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFeePayer(EntityIdentifier feePayer) {
-    this.feePayer = feePayer;
-  }
-
   /**
    * Return true if this UpdateVoteRequest object is equal to o.
    */
@@ -99,13 +70,12 @@ public class UpdateVoteRequest {
       return false;
     }
     UpdateVoteRequest updateVoteRequest = (UpdateVoteRequest) o;
-    return Objects.equals(this.networkIdentifier, updateVoteRequest.networkIdentifier) &&
-        Objects.equals(this.feePayer, updateVoteRequest.feePayer);
+    return Objects.equals(this.networkIdentifier, updateVoteRequest.networkIdentifier);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(networkIdentifier, feePayer);
+    return Objects.hash(networkIdentifier);
   }
 
   @Override
@@ -113,7 +83,6 @@ public class UpdateVoteRequest {
     StringBuilder sb = new StringBuilder();
     sb.append("class UpdateVoteRequest {\n");
     sb.append("    networkIdentifier: ").append(toIndentedString(networkIdentifier)).append("\n");
-    sb.append("    feePayer: ").append(toIndentedString(feePayer)).append("\n");
     sb.append("}");
     return sb.toString();
   }

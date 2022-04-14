@@ -83,6 +83,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
@@ -118,8 +119,6 @@ public final class WithdrawVoteHandler
   public UpdateVoteResponse handleRequest(UpdateVoteRequest request) throws CoreApiException {
     coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-    final var feePayer = coreModelMapper.feePayerEntity(request.getFeePayer());
-
     final Txn signedTx;
     try {
       signedTx =
@@ -127,7 +126,7 @@ public final class WithdrawVoteHandler
               .constructWithFees(
                   this::buildWithdrawVote,
                   false,
-                  feePayer.accountAddress(),
+                  REAddr.ofPubKeyAccount(validatorKey),
                   NotEnoughNativeTokensForFeesException::new)
               .signAndBuild(hashSigner::sign);
     } catch (TxBuilderException e) {

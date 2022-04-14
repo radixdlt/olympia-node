@@ -2438,14 +2438,10 @@ components:
       type: object
       required:
         - network_identifier
-        - fee_payer
       properties:
         network_identifier:
           $ref: "#/components/schemas/NetworkIdentifier"
           description: The name of the network
-        fee_payer:
-          description: The address from which fees will be subtracted.
-          "$ref": "#/components/schemas/EntityIdentifier"
     UpdateVoteResponse:
       type: object
       required:
