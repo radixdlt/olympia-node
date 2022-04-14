@@ -205,8 +205,6 @@ tags:
       An account is represented by its Bech32 account address.
       * **Validator** is an entity representing a validating node on the network. The subentity `system` holds XRD
       tokens which have been staked to this validator. A validator is represented by its Bech32 validator address.
-      ValidatorSystemMetadata is a system data object that the Core API automatically adds to your transaction
-      alongside ValidatorMetadata or PreparedValidatorRegistered data objects.
       * **Token** is an entity representing a Token Definition, represented by its Radix Resource Identifier ("RRI").
       * **System** is an entity representing system level data such as current epoch and round, represented by the string "system".
 
@@ -273,8 +271,7 @@ tags:
       the unlocking period is over the system will move that XRD from the `exiting_stake` entity into your
       account.
       4. **Validator Updates** may be started by destroying the current data object and creating a new
-      data object with the same type. For some actions (specifically: registering and updating the metadata)
-      Core API can additionally inject a system metadata update action (ValidatorSystemMetadata data object).
+      data object with the same type.
       5. **New Token Definitions** may be created by destroying an `UnclaimedREAddr` and creating a
       `TokenData` and `TokenMetadata` data object.
   - name: xrd_transfer_example
