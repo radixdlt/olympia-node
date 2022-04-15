@@ -165,5 +165,6 @@ public final class VoteHandler extends CoreJsonRpcHandler<UpdateVoteRequest, Upd
                         CandidateForkVote.create(validatorKey, candidateFork).payload())
                 .orElseGet(HashUtils::zero256)
                 .asBytes()));
+    builder.end();
   }
 }

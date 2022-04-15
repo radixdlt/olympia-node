@@ -152,5 +152,6 @@ public final class WithdrawVoteHandler
   private void buildWithdrawVote(TxBuilder builder) {
     builder.down(ValidatorSystemMetadata.class, validatorKey);
     builder.up(new ValidatorSystemMetadata(validatorKey, HashUtils.zero256().asBytes()));
+    builder.end();
   }
 }
