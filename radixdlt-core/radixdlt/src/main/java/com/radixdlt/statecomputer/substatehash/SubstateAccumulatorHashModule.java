@@ -62,95 +62,20 @@
  * permissions under this License.
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.statecomputer.substatehash;
 
-import com.radixdlt.atom.SubstateId;
-import java.nio.ByteBuffer;
-import java.util.Objects;
-import java.util.function.Supplier;
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
-/** Instruction which has been parsed and state checked by Radix Engine */
-public final class REStateUpdate {
-  private final REOp op;
-  private final SubstateId id;
-  private final byte typeByte;
-  private final Particle parsed;
-  private final Supplier<ByteBuffer> stateBuf;
-  private final int instructionIndex;
-
-  private REStateUpdate(
-      REOp op,
-      int instructionIndex,
-      SubstateId id,
-      byte typeByte,
-      Particle parsed,
-      Supplier<ByteBuffer> stateBuf) {
-    Objects.requireNonNull(op);
-
-    this.op = op;
-    this.instructionIndex = instructionIndex;
-    this.id = id;
-    this.typeByte = typeByte;
-    this.parsed = parsed;
-    this.stateBuf = stateBuf;
-  }
-
-  public static REStateUpdate of(
-      REOp op,
-      int instructionIndex,
-      SubstateId substateId,
-      byte typeByte,
-      Particle parsed,
-      Supplier<ByteBuffer> stateBuf) {
-    if (op != REOp.DOWN && op != REOp.UP) {
-      throw new IllegalArgumentException();
-    }
-    return new REStateUpdate(op, instructionIndex, substateId, typeByte, parsed, stateBuf);
-  }
-
-  public byte typeByte() {
-    return typeByte;
-  }
-
-  public int getInstructionIndex() {
-    return instructionIndex;
-  }
-
-  public SubstateId getId() {
-    return id;
-  }
-
-  public ByteBuffer getStateBuf() {
-    return stateBuf != null ? stateBuf.get() : null;
-  }
-
-  public boolean isBootUp() {
-    return this.op == REOp.UP;
-  }
-
-  public boolean isShutDown() {
-    return this.op == REOp.DOWN;
-  }
-
-  public Particle getParsed() {
-    return parsed;
-  }
-
-  public RawSubstateBytes getRawSubstateBytes() {
-    var buffer = getStateBuf();
-    byte[] buf;
-    if (buffer == null) {
-      buf = new byte[0];
-    } else {
-      int remaining = buffer.remaining();
-      buf = new byte[remaining];
-      buffer.get(buf);
-    }
-    return new RawSubstateBytes(id.asBytes(), buf);
-  }
+public class SubstateAccumulatorHashModule extends AbstractModule {
 
   @Override
-  public String toString() {
-    return String.format("%s{op=%s state=%s}", getClass().getSimpleName(), op, parsed);
+  protected void configure() {
+    bind(BerkeleySubstateAccumulatorHashStore.class).in(Scopes.SINGLETON);
+    Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
+        .addBinding()
+        .to(BerkeleySubstateAccumulatorHashStore.class);
   }
 }
