@@ -228,7 +228,8 @@ public final class RadixEngineStateComputer implements StateComputer {
               try {
                 addToMempool(txn, origin);
               } catch (MempoolDuplicateException ex) {
-                log.trace("Transaction {} was not added as it was already in the mempool", txn.getId());
+                log.trace(
+                    "Transaction {} was not added as it was already in the mempool", txn.getId());
               } catch (MempoolRejectedException ex) {
                 log.debug("Transaction {} was not added to the mempool", txn.getId(), ex);
               }
