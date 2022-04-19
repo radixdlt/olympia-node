@@ -186,6 +186,9 @@ public class PrometheusService {
 
     appendCounter(builder, "total_validators", totalValidators);
 
+    appendCandidateForkRemainingEpochs(builder);
+    appendCandidateForkVotingResult(builder);
+
     appendJMXCounters(builder);
 
     appendCounterExtended(
@@ -197,6 +200,20 @@ public class PrometheusService {
         0.0);
   }
 
+  private void appendCandidateForkRemainingEpochs(StringBuilder builder) {
+    final var candidateForkRemainingEpochs =
+        engineStatusService.getCandidateForkRemainingEpochs().orElse(0L);
+
+    appendCounter(builder, "candidate_fork_remaining_epochs", candidateForkRemainingEpochs);
+  }
+
+  private void appendCandidateForkVotingResult(StringBuilder builder) {
+    appendCounter(
+        builder,
+        "candidate_fork_voting_result_percentage",
+        engineStatusService.getCandidateForkVotingResultPercentage());
+  }
+
   private String prepareNodeInfo() {
     var builder = new StringBuilder("nodeinfo{");
     addEndpontStatuses(builder);
@@ -206,10 +223,7 @@ public class PrometheusService {
         addressing.forAccounts().of(REAddr.ofPubKeyAccount(self.getKey())));
     addBranchAndCommit(builder);
     addValidatorAddress(builder);
-    addAccumulatorState(builder);
     addCurrentFork(builder);
-    addCandidateForkRemainingEpochs(builder);
-    addCandidateForkVotingResult(builder);
     appendField(builder, "health", healthInfoService.nodeStatus().name());
     appendField(builder, "key", self.getKey().toHex());
 
@@ -236,31 +250,6 @@ public class PrometheusService {
 
   private void addCurrentFork(StringBuilder builder) {
     appendField(builder, "current_fork_name", currentForkView.currentForkConfig().name());
-  }
-
-  private void addCandidateForkRemainingEpochs(StringBuilder builder) {
-    final var candidateForkRemainingEpochs =
-        engineStatusService.getCandidateForkRemainingEpochs().orElse(0L);
-
-    appendField(builder, "candidate_fork_remaining_epochs", candidateForkRemainingEpochs);
-  }
-
-  private void addCandidateForkVotingResult(StringBuilder builder) {
-    appendField(
-        builder,
-        "candidate_fork_voting_result_percentage",
-        engineStatusService.getCandidateForkVotingResultPercentage());
-  }
-
-  private void addAccumulatorState(StringBuilder builder) {
-    var accumulatorState = inMemorySystemInfo.getCurrentProof().getAccumulatorState();
-
-    appendField(
-        builder,
-        "version_accumulator",
-        accumulatorState.getStateVersion()
-            + "/"
-            + accumulatorState.getAccumulatorHash().toString());
   }
 
   private void addEndpontStatuses(StringBuilder builder) {
