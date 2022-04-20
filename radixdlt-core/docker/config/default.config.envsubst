@@ -19,4 +19,4 @@ api.transactions.enable=$RADIXDLT_TRANSACTIONS_API_ENABLE
 api.sign.enable=$RADIXDLT_SIGN_ENABLE
 
 testing_forks.enable=true
-testing_forks.fork_config_name=MilestonenetForksModuleV1
+testing_forks.fork_config_name=MilestonenetForksModuleV0
