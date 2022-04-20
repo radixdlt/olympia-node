@@ -77,6 +77,9 @@ import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.CommittedReader;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.Optional;
 
 public final class EngineStatusService {
@@ -129,6 +132,7 @@ public final class EngineStatusService {
 
     synchronized (cachedForksValuesCalculationLock) {
       if (currentEpoch > cachedForksValuesLastEpoch) {
+        log.info("[xyz] refresh candidate forks stuff");
         this.cachedUpcomingForkRemainingEpochs =
             calculateCandidateForkRemainingEpochs(currentEpoch);
         this.cachedCandidateForkVotingResult = calculateCandidateForkVotingResult(currentEpoch);
@@ -137,9 +141,12 @@ public final class EngineStatusService {
     }
   }
 
+  private static final Logger log = LogManager.getLogger();
+
   @VisibleForTesting
   Optional<Long> calculateCandidateForkRemainingEpochs(long currentEpoch) {
     if (forks.getCandidateFork().isEmpty()) {
+      log.info("[xyz] no candidate fork");
       return Optional.empty();
     }
 
@@ -147,10 +154,12 @@ public final class EngineStatusService {
 
     if (forksEpochStore.getStoredForks().containsValue(candidateFork.name())) {
       // candidate fork is already executed
+      log.info("[xyz] candidate fork already executed");
       return Optional.empty();
     }
 
     final var fromEpoch = currentEpoch - candidateFork.longestThresholdEpochs();
+    log.info("[xyz] from epoch {}", fromEpoch);
 
     final var thresholdsPassingEpochs =
         Forks.calculateThresholdsPassingEpochs(
@@ -167,11 +176,16 @@ public final class EngineStatusService {
         .min(Integer::compare)
         .flatMap(
             shortestRemainingByNumBeforeEnacted -> {
+              log.info("[xyz] shortestRemainingByNumBeforeEnacted {}", shortestRemainingByNumBeforeEnacted);
+
               final var expectedEpochByNumBeforeEnacted =
                   currentEpoch + shortestRemainingByNumBeforeEnacted;
 
+              log.info("[xyz] expectedEpochByNumBeforeEnacted {}", expectedEpochByNumBeforeEnacted);
+
               if (expectedEpochByNumBeforeEnacted > candidateFork.maxEpoch()) {
                 // expected epoch by epochsBeforeEnacted will be past the maxEpoch
+                log.info("[xyz] expectedEpochByNumBeforeEnacted > maxEpoch, return empty()");
                 return Optional.empty();
               }
 
@@ -179,7 +193,11 @@ public final class EngineStatusService {
               final var expectedEpoch =
                   Math.max(candidateFork.minEpoch(), expectedEpochByNumBeforeEnacted);
 
+              log.info("[xyz] expectedEpoch {}", expectedEpoch);
+
               final var remainingEpochs = expectedEpoch - currentEpoch;
+              log.info("[xyz] remainingEpochs {}", remainingEpochs);
+
               return remainingEpochs <= 0 ? Optional.empty() : Optional.of(remainingEpochs);
             });
   }
