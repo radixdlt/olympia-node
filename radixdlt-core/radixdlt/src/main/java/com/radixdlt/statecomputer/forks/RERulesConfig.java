@@ -89,13 +89,17 @@ public record RERulesConfig(
     int maxMessageLen) {
 
   public static RERulesConfig testingDefault() {
+    return testingDefault(10);
+  }
+
+  public static RERulesConfig testingDefault(int maxRounds) {
     return new RERulesConfig(
         Set.of("xrd"),
         Pattern.compile("[a-z0-9]+"),
         FeeTable.create(Amount.zero(), Map.of()),
         (long) 1024 * 1024,
         OptionalInt.of(2),
-        10,
+        maxRounds,
         1,
         Amount.ofTokens(10),
         1,
