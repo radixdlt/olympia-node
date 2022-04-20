@@ -92,6 +92,6 @@ public final class StokenetForkConfigsModule extends AbstractModule {
 
   @ProvidesIntoSet
   ForkConfig milestonenet2() {
-    return new ForkConfig(2L,"milestonenet-2", RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(100));
+    return new ForkConfig(2L,"milestonenet-2", RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(10));
   }
 }
