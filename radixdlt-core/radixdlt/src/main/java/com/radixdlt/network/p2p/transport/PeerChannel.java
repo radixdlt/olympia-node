@@ -298,11 +298,6 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
       // only send out event if peer was previously active
       this.peerEventDispatcher.dispatch(new PeerDisconnected(this));
     }
-
-    // we initiated connection, but handshake is not completed in time
-    if (prevState == ChannelState.AUTH_HANDSHAKE && this.isInitiator) {
-      this.peerEventDispatcher.dispatch(new PeerHandshakeFailed(this));
-    }
   }
 
   private void write(ByteBuf data) {
