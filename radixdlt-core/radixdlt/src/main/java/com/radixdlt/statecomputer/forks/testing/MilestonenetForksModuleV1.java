@@ -95,7 +95,7 @@ public final class MilestonenetForksModuleV1 extends AbstractModule {
         "milestonenet-3",
         ImmutableSet.of(new CandidateForkConfig.Threshold((short) 7000 /* 70% */, 80000)),
         64000,
-        64000,
+        65000,
         RERulesVersion.OLYMPIA_V1,
         RERulesConfig.testingDefault(
             10000, FeeTable.create(Amount.ofMicroTokens(200), Collections.emptyMap())));
