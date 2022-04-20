@@ -300,9 +300,9 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     // we initiated connection, but handshake is not completed in time
-    if (prevState == ChannelState.AUTH_HANDSHAKE && this.isInitiator) {
-      this.peerEventDispatcher.dispatch(new PeerHandshakeFailed(this));
-    }
+    //if (prevState == ChannelState.AUTH_HANDSHAKE && this.isInitiator) {
+    //  this.peerEventDispatcher.dispatch(new PeerHandshakeFailed(this));
+    //}
   }
 
   private void write(ByteBuf data) {
