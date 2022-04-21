@@ -150,7 +150,7 @@ public final class EngineStatusService {
       return Optional.empty();
     }
 
-    final var fromEpoch = currentEpoch - candidateFork.longestThresholdEpochs();
+    final var fromEpoch = Math.max(0, currentEpoch - candidateFork.longestThresholdEpochs());
 
     final var thresholdsPassingEpochs =
         Forks.calculateThresholdsPassingEpochs(

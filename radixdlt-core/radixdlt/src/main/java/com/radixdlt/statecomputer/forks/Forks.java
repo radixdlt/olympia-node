@@ -315,7 +315,7 @@ public final class Forks {
     final var candidateFork = maybeCandidateFork.get();
     final var candidateForkId = CandidateForkVote.candidateForkId(candidateFork);
 
-    final var fromEpoch = candidateFork.minEpoch() - candidateFork.longestThresholdEpochs();
+    final var fromEpoch = Math.max(0, candidateFork.minEpoch() - candidateFork.longestThresholdEpochs());
     final var toEpoch =
         candidateFork.maxEpoch() + 1 < candidateFork.maxEpoch() // Check for overflows
             ? Long.MAX_VALUE
@@ -446,7 +446,7 @@ public final class Forks {
       return false;
     }
 
-    final var fromEpoch = nextEpoch - candidateFork.longestThresholdEpochs();
+    final var fromEpoch = Math.max(0, nextEpoch - candidateFork.longestThresholdEpochs());
     try (final var previousVotingResultsCursor =
         forksEpochStore.forkVotingResultsCursor(
             fromEpoch, candidateFork.maxEpoch(), candidateForkId)) {
