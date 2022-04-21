@@ -243,10 +243,10 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
         testNetworkRunner.peerManager(0).findOrCreateChannel(uriOfNode(1).getNodeId());
     processAll();
 
-    /* still failing but no more connect attempts as URIs got blacklisted previously */
+    /* still failing with 3 more attempts (no URIs got blacklisted) */
     assertTrue(channelFuture2.isCompletedExceptionally());
     assertEquals(
-        3, testNetworkRunner.getInstance(0, TestCounters.class).outboundChannelsBootstrapped);
+        6, testNetworkRunner.getInstance(0, TestCounters.class).outboundChannelsBootstrapped);
 
     /* add some more invalid URIs and a valid one */
     final var invalidUri4 = copyWithPortOffset(validUri, invalidPortOffset + 3);
@@ -266,7 +266,7 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
     assertFalse(channelFuture3.isCompletedExceptionally());
     final var channelsCounterAtTheEnd =
         testNetworkRunner.getInstance(0, TestCounters.class).outboundChannelsBootstrapped;
-    assertTrue(channelsCounterAtTheEnd >= 4 && channelsCounterAtTheEnd <= 7);
+    assertTrue(channelsCounterAtTheEnd >= 7 && channelsCounterAtTheEnd <= 10);
   }
 
   private RadixNodeUri copyWithPortOffset(RadixNodeUri base, int portOffset) {
