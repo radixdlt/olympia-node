@@ -93,8 +93,8 @@ public final class MilestonenetForksModuleV1 extends AbstractModule {
   ForkBuilder milestonenet3() {
     return new ForkBuilder(
         "milestonenet-3",
-        ImmutableSet.of(new CandidateForkConfig.Threshold((short) 7000 /* 70% */, 70000)),
-        71000,
+        ImmutableSet.of(new CandidateForkConfig.Threshold((short) 7000 /* 70% */, 30000)),
+        31000,
         Integer.MAX_VALUE,
         RERulesVersion.OLYMPIA_V1,
         RERulesConfig.testingDefault(
