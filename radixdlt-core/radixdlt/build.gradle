@@ -171,8 +171,8 @@ jacocoTestReport {
 dependencies {
     // If dependencies on other projects appear, do not forget to update
     // generateDevUniverse task to depend on those projects
-    implementation project(':radixdlt-engine')
-    implementation project(':radixdlt-java-common')
+    implementation project(':engine')
+    implementation project(':common')
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 
     implementation 'io.swagger:swagger-annotations:1.5.0'
@@ -219,8 +219,8 @@ task generateDevUniverse(type: Exec) {
 
     //Alternative solution (slower, but does not require manual maintenance):
     //dependsOn tasks.withType(Jar)
-    dependsOn ':radixdlt-java-common:jar'
-    dependsOn ':radixdlt-engine:jar'
+    dependsOn ':common:jar'
+    dependsOn ':engine:jar'
     group = "Execution"
     description = "Generate development universe"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
@@ -230,8 +230,8 @@ task generateDevUniverse(type: Exec) {
 
 task generateGenesisFile(type: Exec) {
     dependsOn compileJava
-    dependsOn ':radixdlt-java-common:jar'
-    dependsOn ':radixdlt-engine:jar'
+    dependsOn ':common:jar'
+    dependsOn ':engine:jar'
     group = "Execution"
     description = "Generate development universe"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),

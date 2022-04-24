@@ -65,7 +65,7 @@
 apply plugin: 'java-library'
 
 dependencies {
-    api project(':radixdlt-java-common')
+    api project(':common')
 
     testImplementation 'junit:junit'
     testImplementation 'org.mockito:mockito-core'

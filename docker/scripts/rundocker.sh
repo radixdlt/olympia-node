@@ -19,7 +19,7 @@ fi
 reporoot="${scriptdir}/../.."
 
 # Load environment
-eval $(${reporoot}/gradlew -q -p "${reporoot}/radixdlt-core/radixdlt" -P "validators=${validators}" :radixdlt:clean :radixdlt:generateDevUniverse)
+eval $(${reporoot}/gradlew -q -p "${reporoot}/radixdlt-core/radixdlt" -P "validators=${validators}" :core:clean :core:generateDevUniverse)
 
 # Launch
 ${reporoot}/gradlew -p "${reporoot}" deb4docker && \

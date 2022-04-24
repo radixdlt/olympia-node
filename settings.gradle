@@ -1,10 +1,10 @@
-rootProject.name='radixdlt-parent'
-include ':radixdlt'
-include ':radixdlt-cli'
-include ':radixdlt-engine'
-include ':radixdlt-java-common'
+rootProject.name='java-node'
+include ':core'
+include ':cli-tools'
+include ':engine'
+include ':common'
 
-project(':radixdlt').projectDir = new File('radixdlt-core/radixdlt')
-project(':radixdlt-cli').projectDir = new File('radixdlt-java/radixdlt-cli')
-project(':radixdlt-engine').projectDir = new File('radixdlt-engine')
-project(':radixdlt-java-common').projectDir = new File('radixdlt-java-common')
+project(':core').projectDir = new File('radixdlt-core/radixdlt')
+project(':cli-tools').projectDir = new File('cli-tools')
+project(':engine').projectDir = new File('radixdlt-engine')
+project(':common').projectDir = new File('radixdlt-java-common')

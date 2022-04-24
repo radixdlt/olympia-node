@@ -72,7 +72,7 @@ compileTestJava {
 }
 
 dependencies {
-    implementation project(':radixdlt-java-common')
+    implementation project(':common')
 
     implementation 'commons-cli:commons-cli'
 
@@ -99,7 +99,7 @@ def nodeNames = project.getProperties().get('nodeNames', "")
 
 task generateNodeKey(type: Exec) {
     dependsOn compileJava
-    dependsOn ':radixdlt-java-common:jar'
+    dependsOn ':common:jar'
 
     group = "Execution"
     description = "Generate Node key"
