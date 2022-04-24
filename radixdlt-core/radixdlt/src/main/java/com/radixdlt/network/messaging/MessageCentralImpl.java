@@ -74,6 +74,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.core.Observable;
@@ -123,7 +124,8 @@ public final class MessageCentralImpl implements MessageCentral {
       TimeSupplier timeSource,
       EventQueueFactory<OutboundMessageEvent> outboundEventQueueFactory,
       SystemCounters counters,
-      Provider<PeerControl> peerControl) {
+      Provider<PeerControl> peerControl,
+      Addressing addressing) {
     this.counters = Objects.requireNonNull(counters);
     this.outboundQueue =
         outboundEventQueueFactory.createEventQueue(
@@ -133,10 +135,11 @@ public final class MessageCentralImpl implements MessageCentral {
     Objects.requireNonNull(serialization);
 
     this.messageDispatcher =
-        new MessageDispatcher(counters, config, serialization, timeSource, peerManager);
+        new MessageDispatcher(counters, config, serialization, timeSource, peerManager, addressing);
 
     this.messagePreprocessor =
-        new MessagePreprocessor(counters, config, timeSource, serialization, peerControl);
+        new MessagePreprocessor(
+            counters, config, timeSource, serialization, peerControl, addressing);
 
     // Start outbound processing thread
     this.outboundThreadPool =

@@ -101,6 +101,9 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
+import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.NewestForkConfig;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
@@ -222,6 +225,9 @@ public final class P2PTestNetworkRunner {
             bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
             bind(DeterministicProcessor.class);
             Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
+            bind(ForkConfig.class)
+                .annotatedWith(NewestForkConfig.class)
+                .toInstance(new FixedEpochForkConfig("genesis", null, 0L));
           }
         });
   }

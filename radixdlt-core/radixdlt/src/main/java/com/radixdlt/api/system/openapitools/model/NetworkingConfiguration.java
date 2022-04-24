@@ -13,14 +13,13 @@
 
 package com.radixdlt.api.system.openapitools.model;
 
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.annotations.ApiModelProperty;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
@@ -41,7 +40,7 @@ import java.util.Objects;
   NetworkingConfiguration.JSON_PROPERTY_SEED_NODES,
   NetworkingConfiguration.JSON_PROPERTY_NODE_ADDRESS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T15:21:53.191235-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-01-20T22:11:26.095756951+01:00[Europe/Warsaw]")
 public class NetworkingConfiguration {
   public static final String JSON_PROPERTY_DEFAULT_PORT = "default_port";
   private Integer defaultPort;
@@ -81,7 +80,6 @@ public class NetworkingConfiguration {
 
   public static final String JSON_PROPERTY_NODE_ADDRESS = "node_address";
   private String nodeAddress;
-
 
   public NetworkingConfiguration defaultPort(Integer defaultPort) {
     this.defaultPort = defaultPort;

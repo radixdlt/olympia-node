@@ -95,6 +95,8 @@ import com.radixdlt.middleware2.network.SyncRequestMessage;
 import com.radixdlt.middleware2.network.SyncResponseMessage;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
@@ -146,7 +148,12 @@ public class MessagePreprocessorTest {
   private final PeerControl peerControl = mock(PeerControl.class);
   private final MessagePreprocessor messagePreprocessor =
       new MessagePreprocessor(
-          counters, config, System::currentTimeMillis, SERIALIZATION, () -> peerControl);
+          counters,
+          config,
+          System::currentTimeMillis,
+          SERIALIZATION,
+          () -> peerControl,
+          Addressing.ofNetwork(Network.LOCALNET));
 
   private final Class<?> clazz;
   private final InboundMessage inboundMessage;

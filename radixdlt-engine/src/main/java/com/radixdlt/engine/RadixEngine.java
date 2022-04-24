@@ -127,7 +127,7 @@ public final class RadixEngine<M> {
 
   private REParser parser;
   private SubstateSerialization serialization;
-  private BatchVerifier<M> batchVerifier;
+  private PostProcessor<M> postProcessor;
   private REConstructor actionConstructors;
   private ConstraintMachine constraintMachine;
 
@@ -144,7 +144,7 @@ public final class RadixEngine<M> {
         actionConstructors,
         constraintMachine,
         engineStore,
-        BatchVerifier.empty(),
+        PostProcessor.empty(),
         255);
   }
 
@@ -154,14 +154,14 @@ public final class RadixEngine<M> {
       REConstructor actionConstructors,
       ConstraintMachine constraintMachine,
       EngineStore<M> engineStore,
-      BatchVerifier<M> batchVerifier,
+      PostProcessor<M> postProcessor,
       int maxMessageLen) {
     this.parser = Objects.requireNonNull(parser);
     this.serialization = Objects.requireNonNull(serialization);
     this.actionConstructors = Objects.requireNonNull(actionConstructors);
     this.constraintMachine = Objects.requireNonNull(constraintMachine);
     this.engineStore = Objects.requireNonNull(engineStore);
-    this.batchVerifier = batchVerifier;
+    this.postProcessor = postProcessor;
     this.maxMessageLen = maxMessageLen;
   }
 
@@ -169,7 +169,7 @@ public final class RadixEngine<M> {
       ConstraintMachineConfig constraintMachineConfig,
       SubstateSerialization serialization,
       REConstructor actionToConstructorMap,
-      BatchVerifier<M> batchVerifier,
+      PostProcessor<M> postProcessor,
       REParser parser) {
     synchronized (stateUpdateEngineLock) {
       this.constraintMachine =
@@ -179,7 +179,7 @@ public final class RadixEngine<M> {
               constraintMachineConfig.getVirtualSubstateDeserialization(),
               constraintMachineConfig.getMeter());
       this.actionConstructors = actionToConstructorMap;
-      this.batchVerifier = batchVerifier;
+      this.postProcessor = postProcessor;
       this.parser = parser;
       this.serialization = serialization;
     }
@@ -206,7 +206,7 @@ public final class RadixEngine<M> {
               actionToConstructorMap,
               constraintMachine,
               transientEngineStore,
-              BatchVerifier.empty(),
+              PostProcessor.empty(),
               maxMessageLen);
     }
 
@@ -220,18 +220,18 @@ public final class RadixEngine<M> {
       }
     }
 
-    public RadixEngineResult execute(List<Txn> txns) throws RadixEngineException {
+    public RadixEngineResult<M> execute(List<Txn> txns) throws RadixEngineException {
       assertNotDeleted();
       return engine.execute(txns);
     }
 
-    public RadixEngineResult execute(List<Txn> txns, boolean skipAuthorization)
+    public RadixEngineResult<M> execute(List<Txn> txns, boolean skipAuthorization)
         throws RadixEngineException {
       assertNotDeleted();
-      return engine.execute(txns, null, PermissionLevel.USER, skipAuthorization);
+      return engine.execute(txns, Optional.empty(), PermissionLevel.USER, skipAuthorization);
     }
 
-    public RadixEngineResult execute(List<Txn> txns, PermissionLevel permissionLevel)
+    public RadixEngineResult<M> execute(List<Txn> txns, PermissionLevel permissionLevel)
         throws RadixEngineException {
       assertNotDeleted();
       return engine.execute(txns, null, permissionLevel);
@@ -309,13 +309,13 @@ public final class RadixEngine<M> {
         parsedTxn, signedByKey.orElse(null), stateUpdates, context.getEvents());
   }
 
-  public RadixEngineResult execute(List<Txn> txns) throws RadixEngineException {
+  public RadixEngineResult<M> execute(List<Txn> txns) throws RadixEngineException {
     return execute(txns, null, PermissionLevel.USER);
   }
 
-  public RadixEngineResult execute(List<Txn> txns, M meta, PermissionLevel permissionLevel)
+  public RadixEngineResult<M> execute(List<Txn> txns, M meta, PermissionLevel permissionLevel)
       throws RadixEngineException {
-    return execute(txns, meta, permissionLevel, false);
+    return execute(txns, Optional.ofNullable(meta), permissionLevel, false);
   }
 
   /**
@@ -326,8 +326,8 @@ public final class RadixEngine<M> {
    * @param permissionLevel permission level to execute on
    * @throws RadixEngineException on state conflict or dependency issues
    */
-  public RadixEngineResult execute(
-      List<Txn> txns, M meta, PermissionLevel permissionLevel, boolean skipAuthorization)
+  public RadixEngineResult<M> execute(
+      List<Txn> txns, Optional<M> meta, PermissionLevel permissionLevel, boolean skipAuthorization)
       throws RadixEngineException {
     synchronized (stateUpdateEngineLock) {
       if (!branches.isEmpty()) {
@@ -342,10 +342,10 @@ public final class RadixEngine<M> {
     }
   }
 
-  private RadixEngineResult executeInternal(
+  private RadixEngineResult<M> executeInternal(
       EngineStore.EngineStoreInTransaction<M> engineStoreInTransaction,
       List<Txn> txns,
-      M meta,
+      Optional<M> metaOpt,
       PermissionLevel permissionLevel,
       boolean skipAuthorization)
       throws RadixEngineException {
@@ -353,7 +353,7 @@ public final class RadixEngine<M> {
 
     // FIXME: This is quite the hack to increase sigsLeft for execution on noncommits (e.g. mempool)
     // FIXME: Should probably just change metering
-    var sigsLeft = meta != null ? 0 : 1000; // Start with 0
+    var sigsLeft = metaOpt.isPresent() ? 0 : 1000; // Start with 0
     var storageStopwatch = Stopwatch.createUnstarted();
     var verificationStopwatch = Stopwatch.createUnstarted();
 
@@ -386,20 +386,26 @@ public final class RadixEngine<M> {
     }
 
     try {
-      batchVerifier.testMetadata(meta, processedTxns);
-    } catch (MetadataException e) {
+      final var resultMetadata =
+          metaOpt
+              .map(
+                  meta -> {
+                    final var postProcessedMetadata =
+                        postProcessor.process(meta, engineStoreInTransaction, processedTxns);
+                    engineStoreInTransaction.storeMetadata(postProcessedMetadata);
+                    return postProcessedMetadata;
+                  })
+              .orElse(null);
+
+      return RadixEngineResult.create(
+          processedTxns,
+          resultMetadata,
+          verificationStopwatch.elapsed(TimeUnit.MILLISECONDS),
+          storageStopwatch.elapsed(TimeUnit.MILLISECONDS));
+    } catch (PostProcessorException e) {
       logger.error("Invalid metadata: " + processedTxns);
       throw e;
     }
-
-    if (meta != null) {
-      engineStoreInTransaction.storeMetadata(meta);
-    }
-
-    return RadixEngineResult.create(
-        processedTxns,
-        verificationStopwatch.elapsed(TimeUnit.MILLISECONDS),
-        storageStopwatch.elapsed(TimeUnit.MILLISECONDS));
   }
 
   public interface TxBuilderExecutable {

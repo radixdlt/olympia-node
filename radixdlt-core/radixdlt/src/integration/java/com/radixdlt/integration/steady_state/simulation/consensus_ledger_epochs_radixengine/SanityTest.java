@@ -76,7 +76,7 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import java.util.concurrent.TimeUnit;
@@ -89,9 +89,9 @@ public class SanityTest {
           .numNodes(4)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
           .addRadixEngineConfigModules(
-              new MainnetForkConfigsModule(),
-              new ForksModule(),
-              new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()))
+              new MainnetForksModule(),
+              new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
+              new ForksModule())
           .ledgerAndRadixEngineWithEpochHighView()
           .addTestModules(
               ConsensusMonitors.safety(),

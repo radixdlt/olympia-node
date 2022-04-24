@@ -93,42 +93,46 @@ import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.Bytes;
 import java.util.List;
 import java.util.OptionalLong;
-import java.util.function.Supplier;
 
 public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
 
   @Override
   public void overwriteDataObject(
-      ParsedDataObject parsedDataObject, TxBuilder builder, Supplier<RERulesConfig> config)
+      ParsedDataObject parsedDataObject, TxBuilder builder, RERulesConfig config)
       throws TxBuilderException {
     var dataObject = parsedDataObject.dataObject();
-    if (dataObject instanceof PreparedValidatorRegistered preparedValidatorRegistered) {
-      updateRegistered(builder, preparedValidatorRegistered);
-    } else if (dataObject instanceof PreparedValidatorOwner) {
-      var owner = parsedDataObject.getParsed(REAddr.class);
-      updateOwner(builder, owner);
-    } else if (dataObject instanceof PreparedValidatorFee preparedValidatorFee) {
-      updateValidatorFee(builder, preparedValidatorFee, config);
-    } else if (dataObject instanceof ValidatorMetadata metadata) {
-      updateMetadata(builder, metadata);
-    } else if (dataObject instanceof ValidatorAllowDelegation allowDelegation) {
-      updateAllowDelegation(builder, allowDelegation);
-    } else if (dataObject
-        instanceof com.radixdlt.api.core.openapitools.model.ValidatorSystemMetadata metadata) {
-      updateValidatorSystemMetadata(builder, metadata);
-    } else {
-      throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
+
+    switch (dataObject) {
+      case PreparedValidatorRegistered preparedValidatorRegistered:
+        updateRegistered(builder, preparedValidatorRegistered);
+        break;
+      case PreparedValidatorOwner preparedValidatorOwner:
+        var owner = parsedDataObject.getParsed(REAddr.class);
+        updateOwner(builder, owner);
+        break;
+      case PreparedValidatorFee preparedValidatorFee:
+        updateValidatorFee(builder, preparedValidatorFee, config);
+        break;
+      case ValidatorMetadata metadata:
+        updateMetadata(builder, metadata);
+        break;
+      case ValidatorAllowDelegation allowDelegation:
+        updateAllowDelegation(builder, allowDelegation);
+        break;
+      case com.radixdlt.api.core.openapitools.model.ValidatorSystemMetadata systemMetadata:
+        updateValidatorSystemMetadata(builder, systemMetadata);
+        break;
+      default:
+        throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
     }
   }
 
   private void updateValidatorSystemMetadata(
       TxBuilder builder,
-      com.radixdlt.api.core.openapitools.model.ValidatorSystemMetadata metadata) {
-    builder.down(
-        com.radixdlt.application.validators.state.ValidatorSystemMetadata.class, validatorKey);
+      com.radixdlt.api.core.openapitools.model.ValidatorSystemMetadata systemMetadata) {
+    builder.down(ValidatorSystemMetadata.class, validatorKey);
     builder.up(
-        new com.radixdlt.application.validators.state.ValidatorSystemMetadata(
-            validatorKey, Bytes.fromHexString(metadata.getData())));
+        new ValidatorSystemMetadata(validatorKey, Bytes.fromHexString(systemMetadata.getData())));
   }
 
   private void updateAllowDelegation(TxBuilder builder, ValidatorAllowDelegation allowDelegation) {
@@ -163,7 +167,7 @@ public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
   }
 
   private void updateValidatorFee(
-      TxBuilder builder, PreparedValidatorFee preparedValidatorFee, Supplier<RERulesConfig> config)
+      TxBuilder builder, PreparedValidatorFee preparedValidatorFee, RERulesConfig config)
       throws InvalidRakeIncreaseException {
     builder.down(ValidatorFeeCopy.class, validatorKey);
     var curRakePercentage = builder.read(ValidatorStakeData.class, validatorKey).rakePercentage();
@@ -175,7 +179,7 @@ public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
       throw new InvalidRakeIncreaseException(maxRakeIncrease, rakeIncrease);
     }
 
-    var rakeIncreaseDebounceEpochLength = config.get().rakeIncreaseDebouncerEpochLength();
+    var rakeIncreaseDebounceEpochLength = config.rakeIncreaseDebouncerEpochLength();
     var epochDiff = isIncrease ? (1 + rakeIncreaseDebounceEpochLength) : 1;
     var curEpoch = builder.readSystem(EpochData.class);
     var epoch = curEpoch.epoch() + epochDiff;

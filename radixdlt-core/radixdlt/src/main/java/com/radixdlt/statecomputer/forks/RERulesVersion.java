@@ -105,7 +105,9 @@ import com.radixdlt.constraintmachine.meter.Meters;
 import com.radixdlt.constraintmachine.meter.SigsPerRoundMeter;
 import com.radixdlt.constraintmachine.meter.TxnSizeFeeMeter;
 import com.radixdlt.constraintmachine.meter.UpSubstateFeeMeter;
+import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.statecomputer.CandidateForkVotesPostProcessor;
 import com.radixdlt.statecomputer.EpochProofVerifierV2;
 
 public enum RERulesVersion {
@@ -144,7 +146,7 @@ public enum RERulesVersion {
               Meters.combine(
                   TxnSizeFeeMeter.create(perByteFee, config.maxTxnSize()),
                   UpSubstateFeeMeter.create(perUpSubstateFee)));
-      var betanet4 =
+      var constraintMachineConfig =
           new ConstraintMachineConfig(
               v4.getProcedures(),
               v4.buildSubstateDeserialization(),
@@ -197,12 +199,14 @@ public enum RERulesVersion {
               .build();
 
       return new RERules(
-          "mainnet",
+          this,
           parser,
           serialization,
-          betanet4,
+          constraintMachineConfig,
           actionConstructors,
-          new EpochProofVerifierV2(),
+          PostProcessor.append(
+              new EpochProofVerifierV2(),
+              new CandidateForkVotesPostProcessor(parser.getSubstateDeserialization())),
           config);
     }
   };

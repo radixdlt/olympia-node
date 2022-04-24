@@ -13,12 +13,11 @@
 
 package com.radixdlt.api.system.openapitools.model;
 
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.annotations.ApiModelProperty;
-
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
@@ -28,14 +27,13 @@ import java.util.Objects;
   MempoolConfiguration.JSON_PROPERTY_MAX_SIZE,
   MempoolConfiguration.JSON_PROPERTY_THROTTLE
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T15:21:53.191235-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-01-20T22:11:26.095756951+01:00[Europe/Warsaw]")
 public class MempoolConfiguration {
   public static final String JSON_PROPERTY_MAX_SIZE = "max_size";
   private Integer maxSize;
 
   public static final String JSON_PROPERTY_THROTTLE = "throttle";
   private Long throttle;
-
 
   public MempoolConfiguration maxSize(Integer maxSize) {
     this.maxSize = maxSize;

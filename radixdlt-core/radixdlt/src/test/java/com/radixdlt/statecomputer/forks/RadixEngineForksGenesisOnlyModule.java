@@ -62,50 +62,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.utils;
+package com.radixdlt.statecomputer.forks;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import java.nio.ByteBuffer;
-import java.util.Objects;
+import com.google.inject.AbstractModule;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.OptionalBinder;
+import java.util.Set;
+import java.util.function.UnaryOperator;
 
-public class POW {
-  private final int magic;
-  private final HashCode seed;
-  private final long nonce;
-  private final ByteBuffer buffer = ByteBuffer.allocate(32 + 4 + Long.BYTES);
-
-  public POW(int magic, HashCode seed) {
-    this(magic, seed, Long.MIN_VALUE);
-  }
-
-  public POW(int magic, HashCode seed, long nonce) {
-    Objects.requireNonNull(seed);
-
-    this.magic = magic;
-    this.seed = seed;
-    this.nonce = nonce;
-  }
-
-  public int getMagic() {
-    return magic;
-  }
-
-  public HashCode getSeed() {
-    return seed;
-  }
-
-  public long getNonce() {
-    return nonce;
-  }
-
-  public synchronized HashCode getHash() {
-    buffer.clear();
-    buffer.putInt(magic);
-    buffer.put(seed.asBytes());
-    buffer.putLong(nonce);
-    buffer.flip();
-
-    return HashUtils.sha256(buffer.array());
+/** For testing only, only tests the genesis state computer configuration */
+public class RadixEngineForksGenesisOnlyModule extends AbstractModule {
+  @Override
+  protected void configure() {
+    OptionalBinder.newOptionalBinder(
+            binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() {})
+        .setBinding()
+        .toInstance(
+            forkBuilders -> {
+              final var genesisFork =
+                  forkBuilders.stream().min((a, b) -> (int) (a.minEpoch() - b.minEpoch()));
+              final var baseFork = genesisFork.get().atFixedEpoch(0L);
+              return Set.of(baseFork);
+            });
   }
 }

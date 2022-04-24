@@ -96,9 +96,9 @@ import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RERules;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
@@ -124,17 +124,17 @@ public class MempoolTest {
   @Inject private RadixEngineStateComputer stateComputer;
   @Inject private SystemCounters systemCounters;
   @Inject private PeersView peersView;
-  @Inject private RERules rules;
+  @Inject private CurrentForkView currentForkView;
   @Inject @MempoolRelayInitialDelay private long initialDelay;
   @Inject @MempoolRelayRepeatDelay private long repeatDelay;
 
   private Injector getInjector() {
     return Guice.createInjector(
+        new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(
             RERulesConfig.testingDefault().removeSigsPerRoundLimit()),
-        MempoolConfig.asModule(10, 10, 200, 500, 10),
-        new MainnetForkConfigsModule(),
         new ForksModule(),
+        MempoolConfig.asModule(10, 10, 200, 500, 10),
         new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY, NUM_PEERS),
         new MockedGenesisModule(
             Set.of(VALIDATOR_KEY.getPublicKey()), Amount.ofTokens(1000), Amount.ofTokens(100)),
@@ -153,8 +153,9 @@ public class MempoolTest {
   }
 
   private Txn createTxn(ECKeyPair keyPair, int numMutexes) throws Exception {
-    var atomBuilder = TxLowLevelBuilder.newBuilder(rules.serialization());
-
+    final var atomBuilder =
+        TxLowLevelBuilder.newBuilder(
+            currentForkView.currentForkConfig().engineRules().serialization());
     for (int i = 0; i < numMutexes; i++) {
       var symbol = "test" + (char) ('c' + i);
       var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);

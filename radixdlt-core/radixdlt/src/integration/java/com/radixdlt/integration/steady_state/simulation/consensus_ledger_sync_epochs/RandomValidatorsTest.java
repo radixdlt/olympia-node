@@ -95,7 +95,7 @@ public class RandomValidatorsTest {
               goodRandomEpochToNodesMapper(),
               syncConfig) // TODO: investigate why this fails with View.of(10)
           .pacemakerTimeout(5000)
-          .numNodes(numNodes, 2)
+          .numNodes(numNodes)
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(5, TimeUnit.SECONDS),

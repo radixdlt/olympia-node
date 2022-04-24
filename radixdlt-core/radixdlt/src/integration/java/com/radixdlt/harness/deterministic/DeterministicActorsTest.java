@@ -100,7 +100,7 @@ import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
@@ -134,10 +134,10 @@ public abstract class DeterministicActorsTest {
   private List<ActorConfiguration> actorConfigurations = new ArrayList<>();
   private MultiNodeDeterministicRunner deterministicRunner;
 
-  public DeterministicActorsTest(Module forkModule, Module byzantineModule) {
+  public DeterministicActorsTest(Module forkOverrideModule, Module byzantineModule) {
     this.nodeKeys = PrivateKeys.numeric(1).limit(20).collect(ImmutableList.toImmutableList());
     this.radixEngineConfiguration =
-        Modules.combine(new MainnetForkConfigsModule(), new ForksModule(), forkModule);
+        Modules.combine(new MainnetForksModule(), forkOverrideModule, new ForksModule());
     this.byzantineModule = byzantineModule;
   }
 

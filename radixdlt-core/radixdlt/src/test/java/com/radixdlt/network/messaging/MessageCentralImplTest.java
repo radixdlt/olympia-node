@@ -74,6 +74,8 @@ import com.radixdlt.middleware2.network.ConsensusEventMessage;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.TimeSupplier;
@@ -137,7 +139,8 @@ public class MessageCentralImplTest {
             timeSupplier,
             outboundEventQueueFactory,
             systemCounters,
-            peerControl);
+            peerControl,
+            Addressing.ofNetwork(Network.LOCALNET));
 
     TestObserver<String> observer = TestObserver.create();
 

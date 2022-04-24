@@ -82,7 +82,6 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /** Registers nodes in order as validators */
@@ -92,21 +91,18 @@ public final class NodeValidatorRegistrator implements SimulationTest.Simulation
 
   @Override
   public void start(SimulationNodes.RunningNetwork network) {
-    List<BFTNode> nodes = network.getNodes();
     this.disposable =
-        Observable.fromIterable(nodes)
+        Observable.fromIterable(network.getNodes())
             .concatMap(i -> Observable.timer(3, TimeUnit.SECONDS).map(l -> i))
             .doOnNext(validationRegistrations::onNext)
             .subscribe(
                 node -> {
                   var radixEngine =
-                      network
-                          .getNodeInjector(node)
-                          .getInstance(
-                              Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() {}));
+                      network.getInstance(
+                          Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() {}), node);
                   var radixEngineStateComputer =
-                      network.getNodeInjector(node).getInstance(RadixEngineStateComputer.class);
-                  var hashSigner = network.getNodeInjector(node).getInstance(HashSigner.class);
+                      network.getInstance(RadixEngineStateComputer.class, node);
+                  var hashSigner = network.getInstance(HashSigner.class, node);
                   var request =
                       TxnConstructionRequest.create()
                           .action(new RegisterValidator(node.getKey()))

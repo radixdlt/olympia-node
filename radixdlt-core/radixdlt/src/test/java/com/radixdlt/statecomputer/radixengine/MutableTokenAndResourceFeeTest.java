@@ -90,7 +90,7 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
@@ -120,7 +120,7 @@ public class MutableTokenAndResourceFeeTest {
   private Injector createInjector() {
     return Guice.createInjector(
         MempoolConfig.asModule(1000, 10),
-        new MainnetForkConfigsModule(),
+        new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(
             RERulesConfig.testingDefault()
                 .overrideFeeTable(

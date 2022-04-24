@@ -71,12 +71,16 @@ import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.api.HandlerRoute;
+import com.radixdlt.api.system.health.ForkVoteStatusService;
 import com.radixdlt.api.system.health.HealthInfoService;
+import com.radixdlt.api.system.health.PeersForksInfoService;
 import com.radixdlt.api.system.health.ScheduledStatsCollecting;
 import com.radixdlt.api.system.prometheus.PrometheusApiModule;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.network.p2p.PeerEvent;
 import io.undertow.server.HttpHandler;
 
 public class SystemApiModule extends AbstractModule {
@@ -87,6 +91,8 @@ public class SystemApiModule extends AbstractModule {
             .permitDuplicates();
     eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
     bind(HealthInfoService.class).in(Scopes.SINGLETON);
+    bind(ForkVoteStatusService.class).in(Scopes.SINGLETON);
+    bind(PeersForksInfoService.class).in(Scopes.SINGLETON);
 
     var binder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class);
     binder.addBinding(HandlerRoute.get("/system/configuration")).to(ConfigurationHandler.class);
@@ -102,5 +108,21 @@ public class SystemApiModule extends AbstractModule {
   public EventProcessorOnRunner<?> healthInfoService(HealthInfoService healthInfoService) {
     return new EventProcessorOnRunner<>(
         Runners.SYSTEM_INFO, ScheduledStatsCollecting.class, healthInfoService.updateStats());
+  }
+
+  @ProvidesIntoSet
+  public EventProcessorOnRunner<?> peerEventPeersForksHashesInfoService(
+      PeersForksInfoService peersForksInfoService) {
+    return new EventProcessorOnRunner<>(
+        Runners.SYSTEM_INFO, PeerEvent.class, peersForksInfoService.peerEventProcessor());
+  }
+
+  @ProvidesIntoSet
+  public EventProcessorOnRunner<?> ledgerUpdatePeersForksHashesInfoService(
+      PeersForksInfoService peersForksInfoService) {
+    return new EventProcessorOnRunner<>(
+        Runners.SYSTEM_INFO,
+        LedgerUpdate.class,
+        peersForksInfoService.ledgerUpdateEventProcessor());
   }
 }

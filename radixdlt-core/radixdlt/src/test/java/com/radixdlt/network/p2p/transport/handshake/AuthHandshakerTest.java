@@ -87,10 +87,10 @@ public final class AuthHandshakerTest {
     final var nodeKey2 = ECKeyPair.generateNew();
     final var handshaker1 =
         new AuthHandshaker(
-            serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01);
+            serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01, "fork1");
     final var handshaker2 =
         new AuthHandshaker(
-            serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x01);
+            serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x01, "fork1");
 
     final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
     final var handshaker2ResultPair =
@@ -112,10 +112,10 @@ public final class AuthHandshakerTest {
     final var nodeKey2 = ECKeyPair.generateNew();
     final var handshaker1 =
         new AuthHandshaker(
-            serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01);
+            serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01, "fork1");
     final var handshaker2 =
         new AuthHandshaker(
-            serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x02);
+            serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x02, "fork1");
 
     final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
     final var handshaker2ResultPair =

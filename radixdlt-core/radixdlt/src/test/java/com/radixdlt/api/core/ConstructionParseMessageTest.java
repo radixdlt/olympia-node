@@ -83,7 +83,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
@@ -94,7 +94,7 @@ public class ConstructionParseMessageTest extends ApiTest {
   @Inject private ConstructionParseHandler sut;
   @Inject @Self private ECPublicKey self;
   @Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
-  @Inject private Forks forks;
+  @Inject private CurrentForkView currentForkView;
 
   private byte[] buildUnsignedTxnWithMessage(String message) throws Exception {
     var accountAddress = REAddr.ofPubKeyAccount(self);
@@ -110,7 +110,8 @@ public class ConstructionParseMessageTest extends ApiTest {
                     new AccountVaultEntity(otherAddress),
                     ResourceOperation.deposit(
                         new TokenResource("xrd", REAddr.ofNativeToken()), UInt256.ONE))));
-    var operationTxBuilder = new OperationTxBuilder(message, entityOperationGroups, forks);
+    var operationTxBuilder =
+        new OperationTxBuilder(message, entityOperationGroups, currentForkView);
     var builder =
         radixEngine.constructWithFees(
             operationTxBuilder, false, accountAddress, NotEnoughNativeTokensForFeesException::new);

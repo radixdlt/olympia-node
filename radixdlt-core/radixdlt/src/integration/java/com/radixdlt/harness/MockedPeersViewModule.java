@@ -70,31 +70,30 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.p2p.PeersView;
+import java.util.Objects;
 
 public class MockedPeersViewModule extends AbstractModule {
+  private final ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> nodes;
 
-  private final ImmutableMap<Integer, ImmutableList<Integer>> nodes;
-
-  public MockedPeersViewModule(ImmutableMap<Integer, ImmutableList<Integer>> nodes) {
-    this.nodes = nodes;
+  public MockedPeersViewModule(ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> nodes) {
+    this.nodes = Objects.requireNonNull(nodes);
   }
 
   @Provides
-  public PeersView peersView(@Self BFTNode self, ImmutableList<BFTNode> nodes) {
-    final var nodesFiltered = filterNodes(self, nodes);
-    return () ->
-        nodesFiltered.stream().filter(n -> !n.equals(self)).map(PeersView.PeerInfo::fromBftNode);
-  }
+  public PeersView peersView(@Self BFTNode self, ImmutableList<BFTNode> allNodes) {
+    final var peersForNode =
+        nodes.containsKey(self.getKey())
+            ? nodes // Use a specific set of peers for the given node, if defined
+                .get(self.getKey())
+                .stream()
+                .map(BFTNode::create)
+                .collect(ImmutableList.toImmutableList())
+            : allNodes; // Else return all the nodes in the network
 
-  private ImmutableList<BFTNode> filterNodes(BFTNode self, ImmutableList<BFTNode> allNodes) {
-    final var selfIndex = allNodes.indexOf(self);
-    if (nodes != null && nodes.containsKey(selfIndex)) {
-      return nodes.get(selfIndex).stream()
-          .map(allNodes::get)
-          .collect(ImmutableList.toImmutableList());
-    } else {
-      return allNodes;
-    }
+    final var peersForNodeWithoutSelf = peersForNode.stream().filter(n -> !n.equals(self));
+
+    return () -> peersForNodeWithoutSelf.map(PeersView.PeerInfo::fromBftNode);
   }
 }

@@ -84,7 +84,7 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.RERules;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.InMemoryEngineStore;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -94,8 +94,9 @@ public final class GenesisBuilder {
   private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
   @Inject
-  public GenesisBuilder(RERules rules, LedgerAccumulator ledgerAccumulator) {
+  public GenesisBuilder(Forks forks, LedgerAccumulator ledgerAccumulator) {
     this.ledgerAccumulator = ledgerAccumulator;
+    final var rules = forks.genesisFork().engineRules();
     var cmConfig = rules.constraintMachineConfig();
     var cm =
         new ConstraintMachine(
@@ -110,8 +111,8 @@ public final class GenesisBuilder {
             rules.actionConstructors(),
             cm,
             new InMemoryEngineStore<>(),
-            rules.batchVerifier(),
-            rules.maxMessageLen());
+            rules.postProcessor(),
+            rules.config().maxMessageLen());
   }
 
   public Txn build(String message, long timestamp, List<TxAction> actions)

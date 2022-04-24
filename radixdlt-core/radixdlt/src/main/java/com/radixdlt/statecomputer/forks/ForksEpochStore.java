@@ -64,32 +64,27 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.OptionalBinder;
-import java.util.Comparator;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.hash.HashCode;
+import com.radixdlt.atom.CloseableCursor;
 
-public class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
-  private final RERulesConfig config;
+public interface ForksEpochStore {
+  ImmutableMap<Long, String> getStoredForks();
 
-  public ForkOverwritesWithShorterEpochsModule(RERulesConfig config) {
-    this.config = config;
-  }
+  void storeForkAtEpoch(long newEpoch, String forkName);
 
-  @Override
-  protected void configure() {
-    var epoch = new AtomicLong(0);
-    OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkConfig>>>() {})
-        .setBinding()
-        .toInstance(
-            s ->
-                s.stream()
-                    .sorted(Comparator.comparingLong(ForkConfig::epoch))
-                    .map(c -> new ForkConfig(epoch.getAndAdd(5), c.name(), c.version(), config))
-                    .collect(Collectors.toSet()));
-  }
+  /**
+   * Returns a cursor of ForkVotingResults for a particular candidateForkId. The results are for
+   * increasing epochs, but there can be gaps (including the first item, which can be for a higher
+   * epoch than fromEpoch).
+   *
+   * @param fromEpoch minimum epoch, inclusive
+   * @param toEpoch maximum epoch, exclusive
+   * @param candidateForkId id of the candidate fork
+   */
+  CloseableCursor<ForkVotingResult> forkVotingResultsCursor(
+      long fromEpoch, long toEpoch, HashCode candidateForkId);
+
+  ImmutableSet<ForkVotingResult> getForksVotingResultsForEpoch(long epoch);
 }

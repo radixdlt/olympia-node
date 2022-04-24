@@ -62,25 +62,37 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.statecomputer.forks.testing;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.environment.EventProcessorOnDispatch;
-import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.statecomputer.forks.CandidateForkConfig;
+import com.radixdlt.statecomputer.forks.ForkBuilder;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.statecomputer.forks.RERulesVersion;
 
-public class MockedCommittedReaderModule extends AbstractModule {
-  @Override
-  public void configure() {
-    bind(CommittedReader.class).to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
-    bind(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
+public final class TestingForksModuleV2 extends AbstractModule {
+  @ProvidesIntoSet
+  ForkBuilder genesis() {
+    return new ForkBuilder(
+        "genesis", 0L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
   }
 
-  @Singleton
   @ProvidesIntoSet
-  public EventProcessorOnDispatch<?> eventProcessor(InMemoryCommittedReader reader) {
-    return new EventProcessorOnDispatch<>(LedgerUpdate.class, reader.updateProcessor());
+  ForkBuilder fork1() {
+    return new ForkBuilder(
+        "fork-1", 2L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
+  }
+
+  @ProvidesIntoSet
+  ForkBuilder fork2() {
+    return new ForkBuilder(
+        "fork-2",
+        ImmutableSet.of(new CandidateForkConfig.Threshold((short) 6000 /* 60% */, 1)),
+        7L,
+        Long.MAX_VALUE,
+        RERulesVersion.OLYMPIA_V1,
+        RERulesConfig.testingDefault(500));
   }
 }

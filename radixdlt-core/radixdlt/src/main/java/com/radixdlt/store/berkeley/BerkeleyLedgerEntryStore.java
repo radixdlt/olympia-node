@@ -72,7 +72,11 @@ import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
+import com.google.common.hash.HashCode;
+import com.google.common.primitives.Bytes;
 import com.google.inject.Inject;
 import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.system.state.VirtualParent;
@@ -106,6 +110,10 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.forks.CandidateForkVote;
+import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.ForkVotingResult;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.ResourceStore;
@@ -113,6 +121,7 @@ import com.radixdlt.store.StoreConfig;
 import com.radixdlt.store.berkeley.atom.AppendLog;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Longs;
+import com.radixdlt.utils.Shorts;
 import com.radixdlt.utils.UInt256;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -138,7 +147,6 @@ import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -146,7 +154,8 @@ public final class BerkeleyLedgerEntryStore
     implements EngineStore<LedgerAndBFTProof>,
         ResourceStore,
         CommittedReader,
-        PersistentVertexStore {
+        PersistentVertexStore,
+        ForksEpochStore {
   private static final Logger log = LogManager.getLogger();
 
   private final Serialization serialization;
@@ -167,9 +176,16 @@ public final class BerkeleyLedgerEntryStore
   // Metadata databases
   private static final String VERTEX_STORE_DB_NAME = "radix.vertex_store";
   private static final String TXN_DB_NAME = "radix.txn_db";
+  private static final String FORK_CONFIG_DB = "radix.fork_config_db";
+  private static final String FORKS_VOTING_RESULTS_DB = "radix.forks_voting_results";
+  // A constant prefix to make any storage format changes easier in the future
+  private static final byte[] FORK_VOTING_RESULT_VERSION_PREFIX = {0x01};
+
   private Database vertexStoreDatabase; // Write/Delete
   private Database proofDatabase; // Write/Delete
   private SecondaryDatabase epochProofDatabase;
+  private Database forkConfigDatabase;
+  private Database forksVotingResultsDatabase;
 
   // Syncing Ledger databases
   private static final String PROOF_DB_NAME = "radix.proof_db";
@@ -208,6 +224,10 @@ public final class BerkeleyLedgerEntryStore
     safeClose(proofDatabase);
 
     safeClose(vertexStoreDatabase);
+
+    safeClose(forkConfigDatabase);
+
+    safeClose(forksVotingResultsDatabase);
 
     additionalStores.forEach(BerkeleyAdditionalStore::close);
 
@@ -292,32 +312,6 @@ public final class BerkeleyLedgerEntryStore
     return getLastProof().map(LedgerAndBFTProof::create).orElse(null);
   }
 
-  public Stream<RawSubstateBytes> scanner() {
-    var cursor = substatesDatabase.openCursor(null, null);
-    var iterator =
-        new Iterator<RawSubstateBytes>() {
-          final DatabaseEntry key = new DatabaseEntry();
-          final DatabaseEntry data = new DatabaseEntry();
-          OperationStatus status = cursor.getFirst(key, data, null);
-
-          @Override
-          public boolean hasNext() {
-            return status == SUCCESS;
-          }
-
-          @Override
-          public RawSubstateBytes next() {
-            if (status != SUCCESS) {
-              throw new NoSuchElementException();
-            }
-            var next = new RawSubstateBytes(key.getData(), data.getData());
-            status = cursor.getNext(key, data, null);
-            return next;
-          }
-        };
-    return Streams.stream(iterator).onClose(cursor::close);
-  }
-
   @Override
   public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
     return BerkeleyLedgerEntryStore.this.openIndexedCursor(null, index);
@@ -398,6 +392,174 @@ public final class BerkeleyLedgerEntryStore
     }
 
     ledgerAndBFTProof.vertexStoreState().ifPresent(v -> doSave(dbTxn, v));
+
+    final var nextEpoch = ledgerAndBFTProof.getProof().getEpoch() + 1;
+
+    ledgerAndBFTProof
+        .getForksVotingResults()
+        .ifPresent(forksVotingResults -> storeForksVotingResults(dbTxn, forksVotingResults));
+
+    ledgerAndBFTProof
+        .getNextForkName()
+        .ifPresent(nextForkName -> this.storeForkAtEpoch(dbTxn, nextEpoch, nextForkName));
+  }
+
+  private void storeForksVotingResults(
+      Transaction dbTxn, ImmutableSet<ForkVotingResult> forksVotingResults) {
+    forksVotingResults.forEach(
+        forkVotingResult ->
+            forksVotingResultsDatabase.put(
+                dbTxn,
+                new DatabaseEntry(Longs.toByteArray(forkVotingResult.epoch())),
+                new DatabaseEntry(encodeForkVotingResult(forkVotingResult))));
+  }
+
+  @Override
+  public CloseableCursor<ForkVotingResult> forkVotingResultsCursor(
+      long fromEpoch, long toEpoch, HashCode candidateForkId) {
+    final Cursor underlyingCursor = forksVotingResultsDatabase.openCursor(null, null);
+
+    OperationStatus cursorStatus;
+    try {
+      cursorStatus =
+          underlyingCursor.getSearchKeyRange(
+              new DatabaseEntry(Longs.toByteArray(fromEpoch)), null, DEFAULT);
+    } catch (Exception e) {
+      // close the cursor and re-throw
+      underlyingCursor.close();
+      throw e;
+    }
+
+    if (cursorStatus != SUCCESS) {
+      underlyingCursor.close();
+      return CloseableCursor.empty();
+    }
+
+    return new CloseableCursor<>() {
+      private Optional<ForkVotingResult> nextOpt =
+          findNextForkVotingResult(toEpoch, candidateForkId, underlyingCursor, true);
+
+      @Override
+      public boolean hasNext() {
+        return nextOpt.isPresent();
+      }
+
+      @Override
+      public ForkVotingResult next() {
+        final var res = nextOpt.orElseThrow(NoSuchElementException::new);
+        nextOpt = findNextForkVotingResult(toEpoch, candidateForkId, underlyingCursor, false);
+        return res;
+      }
+
+      @Override
+      public void close() {
+        underlyingCursor.close();
+      }
+    };
+  }
+
+  private Optional<ForkVotingResult> findNextForkVotingResult(
+      long toEpoch, HashCode candidateForkId, Cursor cursor, boolean startWithCurrent) {
+    final DatabaseEntry key = new DatabaseEntry();
+    final DatabaseEntry value = new DatabaseEntry();
+    OperationStatus operationStatus =
+        startWithCurrent
+            ? cursor.getCurrent(key, value, DEFAULT)
+            : cursor.getNext(key, value, DEFAULT);
+
+    if (operationStatus != SUCCESS) {
+      return Optional.empty();
+    }
+
+    long epoch = Longs.fromByteArray(key.getData());
+
+    while (operationStatus == SUCCESS && epoch < toEpoch) {
+      final var nextForkVotingResult = decodeForkVotingResult(epoch, value.getData());
+      if (nextForkVotingResult.candidateForkId().equals(candidateForkId)) {
+        return Optional.of(nextForkVotingResult);
+      }
+      operationStatus = cursor.getNext(key, value, DEFAULT);
+      if (operationStatus == SUCCESS) {
+        epoch = Longs.fromByteArray(key.getData());
+      }
+    }
+
+    return Optional.empty();
+  }
+
+  private byte[] encodeForkVotingResult(ForkVotingResult forkVotingResult) {
+    return Bytes.concat(
+        FORK_VOTING_RESULT_VERSION_PREFIX,
+        forkVotingResult.candidateForkId().asBytes(),
+        Shorts.toByteArray(forkVotingResult.stakePercentageVoted()));
+  }
+
+  private ForkVotingResult decodeForkVotingResult(long epoch, byte[] data) {
+    final var candidateForkId =
+        HashCode.fromBytes(
+            Arrays.copyOfRange(
+                data,
+                FORK_VOTING_RESULT_VERSION_PREFIX.length,
+                CandidateForkVote.CANDIDATE_FORK_ID_LEN
+                    + FORK_VOTING_RESULT_VERSION_PREFIX.length));
+    final var stakePercentageVoted =
+        Shorts.fromByteArray(
+            Arrays.copyOfRange(
+                data,
+                FORK_VOTING_RESULT_VERSION_PREFIX.length + CandidateForkVote.CANDIDATE_FORK_ID_LEN,
+                data.length));
+    return new ForkVotingResult(epoch, candidateForkId, stakePercentageVoted);
+  }
+
+  private void storeForkAtEpoch(Transaction dbTxn, long newEpoch, String forkName) {
+    final var key = new DatabaseEntry(Longs.toByteArray(newEpoch));
+    final var entry = new DatabaseEntry(forkName.getBytes(ForkConfig.FORK_NAME_CHARSET));
+    if (forkConfigDatabase.putNoOverwrite(dbTxn, key, entry) != SUCCESS) {
+      throw new BerkeleyStoreException("Duplicate fork hash stored for epoch " + newEpoch);
+    }
+  }
+
+  @Override
+  public ImmutableSet<ForkVotingResult> getForksVotingResultsForEpoch(long epoch) {
+    final var result = new ImmutableSet.Builder<ForkVotingResult>();
+    final var value = new DatabaseEntry();
+    try (final var cursor = forksVotingResultsDatabase.openCursor(null, null)) {
+      OperationStatus status =
+          cursor.getSearchKey(new DatabaseEntry(Longs.toByteArray(epoch)), value, DEFAULT);
+      while (status == SUCCESS) {
+        result.add(decodeForkVotingResult(epoch, value.getData()));
+        status = cursor.getNextDup(null, value, DEFAULT);
+      }
+    }
+    return result.build();
+  }
+
+  @Override
+  public void storeForkAtEpoch(long newEpoch, String forkName) {
+    final var tx = beginTransaction();
+    try {
+      storeForkAtEpoch(tx, newEpoch, forkName);
+      tx.commit();
+    } catch (Exception e) {
+      log.error("Failed to store fork {} at epoch {}", forkName, newEpoch);
+      tx.abort();
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public ImmutableMap<Long, String> getStoredForks() {
+    final var builder = ImmutableMap.<Long, String>builder();
+    try (var cursor = forkConfigDatabase.openCursor(null, null)) {
+      var key = entry();
+      var value = entry();
+      while (cursor.getNext(key, value, DEFAULT) == OperationStatus.SUCCESS) {
+        builder.put(
+            Longs.fromByteArray(key.getData()),
+            new String(value.getData(), ForkConfig.FORK_NAME_CHARSET));
+      }
+    }
+    return builder.build();
   }
 
   public Optional<SerializedVertexStoreState> loadLastVertexStoreState() {
@@ -572,6 +734,11 @@ public final class BerkeleyLedgerEntryStore
       epochProofDatabase =
           env.openSecondaryDatabase(
               null, EPOCH_PROOF_DB_NAME, proofDatabase, buildEpochProofConfig());
+
+      forkConfigDatabase = env.openDatabase(null, FORK_CONFIG_DB, primaryConfig);
+      forksVotingResultsDatabase =
+          env.openDatabase(
+              null, FORKS_VOTING_RESULTS_DB, primaryConfig.clone().setSortedDuplicates(true));
 
       txnLog =
           AppendLog.openCompressed(

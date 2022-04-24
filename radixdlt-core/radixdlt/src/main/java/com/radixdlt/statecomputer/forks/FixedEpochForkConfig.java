@@ -62,18 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.statecomputer.forks;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+import com.radixdlt.engine.PostProcessor;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
-public class AtomsRemovedFromMempoolTest {
-  @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(TxnsRemovedFromMempool.class)
-        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-        .verify();
+public record FixedEpochForkConfig(String name, RERules engineRules, long epoch)
+    implements ForkConfig {
+
+  public FixedEpochForkConfig {
+    if (name.getBytes(ForkConfig.FORK_NAME_CHARSET).length > 16) {
+      throw new IllegalArgumentException("Fork name can't be longer than 16 bytes");
+    }
+  }
+
+  @Override
+  public FixedEpochForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
+    return new FixedEpochForkConfig(name, engineRules.addPostProcessor(newPostProcessor), epoch);
   }
 }

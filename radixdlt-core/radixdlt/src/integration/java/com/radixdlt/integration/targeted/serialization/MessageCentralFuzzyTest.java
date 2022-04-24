@@ -85,6 +85,8 @@ import com.radixdlt.network.messaging.SimplePriorityBlockingQueue;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
@@ -131,7 +133,8 @@ public class MessageCentralFuzzyTest {
             Time::currentTimestamp,
             queueFactory,
             new SystemCountersImpl(),
-            () -> peerControl);
+            () -> peerControl,
+            Addressing.ofNetwork(Network.LOCALNET));
 
     var counter = new AtomicLong(0);
 

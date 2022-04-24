@@ -79,12 +79,10 @@ import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import java.util.List;
-import java.util.function.Supplier;
 
 public record PreparedUnstakeVaultEntity(REAddr accountAddress) implements Entity {
   @Override
-  public void deposit(
-      ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
+  public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, RERulesConfig config)
       throws TxBuilderException {
     if (!(amount.resource() instanceof StakeUnitResource stakeUnitResource)) {
       throw new EntityDoesNotSupportResourceDepositException(this, amount.resource());
