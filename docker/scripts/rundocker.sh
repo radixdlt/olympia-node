@@ -16,10 +16,12 @@ if [ ! -f "${dockerfile}" ]; then
   exit 1
 fi
 
+reporoot="${scriptdir}/../.."
+
 # Load environment
-eval $(${scriptdir}/../../../gradlew -q -p "${scriptdir}/../../radixdlt" -P "validators=${validators}" :radixdlt:clean :radixdlt:generateDevUniverse)
+eval $(${reporoot}/gradlew -q -p "${reporoot}/radixdlt-core/radixdlt" -P "validators=${validators}" :radixdlt:clean :radixdlt:generateDevUniverse)
 
 # Launch
-${scriptdir}/../../../gradlew -p "${scriptdir}/../../.." deb4docker && \
+${reporoot}/gradlew -p "${reporoot}" deb4docker && \
   (docker kill $(docker ps -q) || true) 2>/dev/null && \
   docker-compose -f "${dockerfile}" up --build | tee docker.log

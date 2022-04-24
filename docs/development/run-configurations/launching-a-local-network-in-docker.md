@@ -9,7 +9,7 @@ of validators, and spins up the right number of validator docker images via dock
 __NOTE:__ At present, validators create new consensus rounds as fast as latency allows, so on a local
 network, this can be quite a CPU hog.
 
-See [the README in the docker folder](/radixdlt-core/docker) for more detailed documentation.
+See [the README in the docker folder](/docker) for more detailed documentation.
 
 ### Launching local network
 
