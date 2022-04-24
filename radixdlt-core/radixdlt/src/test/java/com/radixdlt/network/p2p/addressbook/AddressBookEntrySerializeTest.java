@@ -73,7 +73,7 @@ import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry.La
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Random;
-import org.radix.serialization.SerializeMessageObject;
+import com.radixdlt.serialization.SerializeMessageObject;
 
 public class AddressBookEntrySerializeTest extends SerializeMessageObject<AddressBookEntry> {
   public AddressBookEntrySerializeTest() {

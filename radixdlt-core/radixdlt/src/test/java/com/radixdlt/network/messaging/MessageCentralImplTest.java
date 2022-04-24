@@ -86,7 +86,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.radix.network.messaging.Message;
+import com.radixdlt.middleware2.network.Message;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MessageCentralImplTest {

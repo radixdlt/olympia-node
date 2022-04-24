@@ -75,7 +75,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;

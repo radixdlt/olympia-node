@@ -74,7 +74,6 @@ import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import java.util.Objects;
 import javax.inject.Inject;
-import org.radix.network.messaging.Message;
 
 /** Network layer for the mempool */
 public final class MessageCentralMempool {

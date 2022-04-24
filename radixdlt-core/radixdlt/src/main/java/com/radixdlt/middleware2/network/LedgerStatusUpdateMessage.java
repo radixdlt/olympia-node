@@ -71,7 +71,6 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
-import org.radix.network.messaging.Message;
 
 /** A push message with the latest ledger status update. */
 @SerializerId2("message.sync.ledger_status_update")

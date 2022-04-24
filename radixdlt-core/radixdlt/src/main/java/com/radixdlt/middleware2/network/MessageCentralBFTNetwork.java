@@ -76,7 +76,6 @@ import com.radixdlt.network.p2p.NodeId;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import java.util.Objects;
-import org.radix.network.messaging.Message;
 
 /** BFT Network sending and receiving layer used on top of the MessageCentral layer. */
 public final class MessageCentralBFTNetwork {

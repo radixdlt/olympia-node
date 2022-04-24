@@ -74,7 +74,7 @@ import com.radixdlt.utils.LedgerHeaderMock;
 import java.util.Optional;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
-import org.radix.serialization.SerializeObject;
+import com.radixdlt.serialization.SerializeObject;
 
 public class HighQCTest extends SerializeObject<HighQC> {
   public HighQCTest() {

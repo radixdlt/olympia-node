@@ -70,7 +70,7 @@ import com.radixdlt.network.p2p.NodeId;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Random;
-import org.radix.serialization.SerializeMessageObject;
+import com.radixdlt.serialization.SerializeMessageObject;
 
 public class AddressBookEntrySerializeEmptyTest extends SerializeMessageObject<AddressBookEntry> {
   public AddressBookEntrySerializeEmptyTest() {

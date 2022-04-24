@@ -72,7 +72,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.List;
 import java.util.Objects;
-import org.radix.network.messaging.Message;
 
 @SerializerId2("message.mempool.add")
 public final class MempoolAddMessage extends Message {

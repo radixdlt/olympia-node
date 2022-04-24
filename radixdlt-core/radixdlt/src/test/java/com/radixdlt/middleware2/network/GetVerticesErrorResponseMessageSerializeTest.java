@@ -73,7 +73,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.utils.LedgerHeaderMock;
 import java.util.Optional;
-import org.radix.serialization.SerializeMessageObject;
+import com.radixdlt.serialization.SerializeMessageObject;
 
 public class GetVerticesErrorResponseMessageSerializeTest
     extends SerializeMessageObject<GetVerticesErrorResponseMessage> {

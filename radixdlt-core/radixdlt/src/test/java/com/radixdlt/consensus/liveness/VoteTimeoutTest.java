@@ -67,7 +67,7 @@ package com.radixdlt.consensus.liveness;
 import com.radixdlt.consensus.bft.View;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
-import org.radix.serialization.SerializeMessageObject;
+import com.radixdlt.serialization.SerializeMessageObject;
 
 public class VoteTimeoutTest extends SerializeMessageObject<VoteTimeout> {
 

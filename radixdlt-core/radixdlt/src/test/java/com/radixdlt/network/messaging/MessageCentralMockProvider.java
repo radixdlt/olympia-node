@@ -69,7 +69,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 import io.reactivex.rxjava3.subjects.PublishSubject;
-import org.radix.network.messaging.Message;
+import com.radixdlt.middleware2.network.Message;
 
 public class MessageCentralMockProvider {
 

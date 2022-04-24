@@ -67,7 +67,7 @@ package com.radixdlt.environment.rx;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.ModuleRunner;
+import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;

@@ -73,9 +73,9 @@ import com.radixdlt.network.p2p.NodeId;
 import java.util.ArrayList;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
-import org.radix.network.messages.PeerPingMessage;
-import org.radix.network.messages.PeerPongMessage;
-import org.radix.network.messaging.Message;
+import com.radixdlt.middleware2.network.PeerPingMessage;
+import com.radixdlt.middleware2.network.PeerPongMessage;
+import com.radixdlt.middleware2.network.Message;
 
 public class OutboundMessageEventTest {
 

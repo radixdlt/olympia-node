@@ -76,8 +76,6 @@ import io.reactivex.rxjava3.core.Flowable;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.radix.network.messages.GetPeersMessage;
-import org.radix.network.messages.PeersResponseMessage;
 
 /** Network interface for peer discovery messages the MessageCentral */
 @Singleton

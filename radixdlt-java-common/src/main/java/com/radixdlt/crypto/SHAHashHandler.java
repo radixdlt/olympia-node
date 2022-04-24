@@ -73,7 +73,7 @@ import java.security.NoSuchAlgorithmException;
 @SecurityCritical(SecurityKind.HASHING)
 class SHAHashHandler implements HashHandler {
   // Note that default provide around 20-25% faster than Bouncy Castle.
-  // See jmh/org.radix.benchmark.HashBenchmark
+  // See jmh folder in Olympia node codebase
   private final ThreadLocal<MessageDigest> hash256DigesterInner =
       ThreadLocal.withInitial(() -> getDigester("SHA-256"));
   private final ThreadLocal<MessageDigest> hash256DigesterOuter =

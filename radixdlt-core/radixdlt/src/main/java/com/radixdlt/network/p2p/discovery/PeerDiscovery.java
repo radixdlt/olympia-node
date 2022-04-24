@@ -88,7 +88,6 @@ import java.util.stream.Stream;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.network.discovery.SeedNodesConfigParser;
 
 /**
  * Discovers peers network addresses and adds them to the address book. Initial (seed) peers are

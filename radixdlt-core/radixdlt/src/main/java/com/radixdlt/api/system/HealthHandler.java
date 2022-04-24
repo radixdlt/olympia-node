@@ -74,9 +74,10 @@ import com.radixdlt.api.system.openapitools.model.HealthResponseUnknownReportedF
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForksEpochStore;
+import com.radixdlt.utils.time.Time;
+
 import java.time.Duration;
 import java.util.List;
-import org.radix.time.Time;
 
 final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
   private static final Duration FORK_VOTE_STATUS_REFRESH_INTERVAL = Duration.ofSeconds(5);

@@ -65,7 +65,7 @@
 package com.radixdlt.middleware2.network;
 
 import com.radixdlt.crypto.HashUtils;
-import org.radix.serialization.SerializeMessageObject;
+import com.radixdlt.serialization.SerializeMessageObject;
 
 public class GetVerticesRequestMessageSerializeTest
     extends SerializeMessageObject<GetVerticesRequestMessage> {

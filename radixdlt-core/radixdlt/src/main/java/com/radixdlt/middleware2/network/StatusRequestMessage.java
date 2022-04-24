@@ -67,7 +67,6 @@ package com.radixdlt.middleware2.network;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
-import org.radix.network.messaging.Message;
 
 /** A status request message. */
 @SerializerId2("message.sync.status_request")

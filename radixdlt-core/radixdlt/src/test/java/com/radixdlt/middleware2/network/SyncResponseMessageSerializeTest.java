@@ -69,7 +69,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoTxnsAndProof;
-import org.radix.serialization.SerializeMessageObject;
+import com.radixdlt.serialization.SerializeMessageObject;
 
 public class SyncResponseMessageSerializeTest extends SerializeMessageObject<SyncResponseMessage> {
   public SyncResponseMessageSerializeTest() {

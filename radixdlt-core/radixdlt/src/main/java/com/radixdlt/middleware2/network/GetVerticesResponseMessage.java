@@ -72,7 +72,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.List;
 import java.util.Objects;
-import org.radix.network.messaging.Message;
 
 /** RPC Response message for GetVertex call */
 @SerializerId2("message.consensus.vertices_response")

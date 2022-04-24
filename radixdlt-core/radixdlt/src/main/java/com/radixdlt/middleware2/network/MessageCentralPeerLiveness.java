@@ -76,8 +76,6 @@ import io.reactivex.rxjava3.core.Flowable;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.radix.network.messages.PeerPingMessage;
-import org.radix.network.messages.PeerPongMessage;
 
 /** Network interface for peer liveness messages using the MessageCentral */
 @Singleton

@@ -107,7 +107,7 @@ import java.util.Optional;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.time.Time;
+import com.radixdlt.utils.time.Time;
 
 /**
  * Class that manages TCP connection channel. It takes care of the initial handshake, creating the

@@ -92,7 +92,7 @@ import org.assertj.core.api.AssertionsForClassTypes;
 import org.assertj.core.api.Condition;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.radix.TokenIssuance;
+import com.radixdlt.statecomputer.checkpoint.TokenIssuance;
 
 /** Runs the chaos mempool filler and verifies that all operations are working normally */
 public class MempoolFillTest {

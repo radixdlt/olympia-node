@@ -71,7 +71,6 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
-import org.radix.network.messaging.Message;
 
 /** Message to request for sync transactions */
 @SerializerId2("message.sync.sync_request")

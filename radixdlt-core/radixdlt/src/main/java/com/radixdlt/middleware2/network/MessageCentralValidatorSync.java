@@ -80,7 +80,6 @@ import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import java.util.Objects;
 import java.util.function.BiFunction;
-import org.radix.network.messaging.Message;
 
 /** Network interface for syncing vertices using the MessageCentral */
 public class MessageCentralValidatorSync {

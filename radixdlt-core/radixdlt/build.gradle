@@ -69,7 +69,6 @@ apply plugin: 'project-report'
 apply plugin: 'nebula.ospackage'
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'com.moowork.node'
-apply plugin: 'me.champeau.jmh'
 apply plugin: 'org.sonarqube'
 apply plugin: 'net.nemerosa.versioning'
 apply plugin: 'com.palantir.git-version'
@@ -78,8 +77,8 @@ node {
     download = true
 }
 
-// Example: ./gradlew run ... -P overrideMainClassName=org.radix.GenerateUniverses
-mainClassName = project.getProperties().get('overrideMainClassName', 'org.radix.Radix')
+// Example: ./gradlew run ... -P overrideMainClassName=com.radixdlt.cli.GenerateUniverses
+mainClassName = project.getProperties().get('overrideMainClassName', 'com.radixdlt.RadixNodeMain')
 def validators = project.getProperties().get('validators', '0')
 def publicKeys = project.getProperties().get('publicKeys', '')
 
@@ -199,15 +198,6 @@ dependencies {
     testImplementation 'nl.jqno.equalsverifier:equalsverifier'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.reflections:reflections'
-    testImplementation 'org.openjdk.jmh:jmh-core'
-    testImplementation 'org.openjdk.jmh:jmh-generator-annprocess'
-}
-
-
-jmh {
-    fork = 2
-    iterations = 3
-    warmupIterations = 1
 }
 
 // More memory
@@ -234,7 +224,7 @@ task generateDevUniverse(type: Exec) {
     group = "Execution"
     description = "Generate development universe"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
-        "org.radix.GenerateUniverses",
+        "com.radixdlt.cli.GenerateUniverses",
         "--validator-count=${validators}"
 }
 
@@ -245,12 +235,12 @@ task generateGenesisFile(type: Exec) {
     group = "Execution"
     description = "Generate development universe"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
-        "org.radix.GenerateUniverses",
+        "com.radixdlt.cli.GenerateUniverses",
         "--public-keys=${publicKeys}"
 }
 
 task createGenerateUniversesScripts(type: CreateStartScripts) {
-  mainClassName = 'org.radix.GenerateUniverses'
+  mainClassName = 'com.radixdlt.cli.GenerateUniverses'
   applicationName = 'generate_universes'
 }
 

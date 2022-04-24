@@ -83,7 +83,7 @@ import java.time.Duration;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.network.messaging.Message;
+import com.radixdlt.middleware2.network.Message;
 
 /** Handles incoming messages. Deserializes raw messages and validates them. */
 final class MessagePreprocessor {

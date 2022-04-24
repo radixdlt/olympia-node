@@ -96,9 +96,9 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.radix.network.messages.PeerPingMessage;
-import org.radix.network.messaging.Message;
-import org.radix.time.Time;
+import com.radixdlt.middleware2.network.PeerPingMessage;
+import com.radixdlt.middleware2.network.Message;
+import com.radixdlt.utils.time.Time;
 
 @Category(Slow.class)
 public class MessageCentralFuzzyTest {

@@ -67,7 +67,7 @@ package com.radixdlt.middleware2.network;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
-import org.radix.serialization.SerializeMessageObject;
+import com.radixdlt.serialization.SerializeMessageObject;
 
 public class SyncRequestMessageSerializeTest extends SerializeMessageObject<SyncRequestMessage> {
   public SyncRequestMessageSerializeTest() {

@@ -85,9 +85,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.network.messaging.Message;
-import org.radix.time.Time;
-import org.radix.utils.SimpleThreadPool;
+import com.radixdlt.middleware2.network.Message;
+import com.radixdlt.utils.time.Time;
 
 public final class MessageCentralImpl implements MessageCentral {
   private static final Logger log = LogManager.getLogger();

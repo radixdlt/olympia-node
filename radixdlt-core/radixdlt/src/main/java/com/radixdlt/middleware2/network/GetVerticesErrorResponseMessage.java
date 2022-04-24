@@ -71,7 +71,6 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
-import org.radix.network.messaging.Message;
 
 @SerializerId2("message.consensus.vertices_error_response")
 public final class GetVerticesErrorResponseMessage extends Message {

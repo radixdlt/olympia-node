@@ -75,7 +75,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.PersistedNodeForTestingModule;
+import com.radixdlt.modules.PersistedNodeForTestingModule;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTNode;

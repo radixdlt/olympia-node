@@ -76,7 +76,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
-import com.radixdlt.PersistedNodeForTestingModule;
+import com.radixdlt.modules.PersistedNodeForTestingModule;
 import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTNode;

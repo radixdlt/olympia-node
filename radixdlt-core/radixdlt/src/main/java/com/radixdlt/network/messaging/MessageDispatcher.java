@@ -85,7 +85,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.network.messaging.Message;
+import com.radixdlt.middleware2.network.Message;
 
 /*
  * This could be moved into MessageCentralImpl at some stage, but has been

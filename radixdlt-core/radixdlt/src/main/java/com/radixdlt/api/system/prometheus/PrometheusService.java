@@ -65,8 +65,8 @@
 package com.radixdlt.api.system.prometheus;
 
 import static com.radixdlt.api.system.prometheus.PrometheusService.JmxMetric.jmxMetric;
-import static org.radix.Radix.SYSTEM_VERSION_KEY;
-import static org.radix.Radix.VERSION_STRING_KEY;
+import static com.radixdlt.RadixNodeMain.SYSTEM_VERSION_KEY;
+import static com.radixdlt.RadixNodeMain.VERSION_STRING_KEY;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.service.EngineStatusService;
@@ -94,7 +94,7 @@ import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeDataSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.Radix;
+import com.radixdlt.RadixNodeMain;
 
 public class PrometheusService {
   private static final Logger log = LogManager.getLogger();
@@ -244,7 +244,7 @@ public class PrometheusService {
   }
 
   private void addBranchAndCommit(StringBuilder builder) {
-    var branchAndCommit = Radix.systemVersionInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
+    var branchAndCommit = RadixNodeMain.systemVersionInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
     appendField(builder, "branch_and_commit", branchAndCommit);
   }
 

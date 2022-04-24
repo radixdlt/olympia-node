@@ -70,7 +70,7 @@ import static org.mockito.Mockito.mock;
 import com.radixdlt.crypto.ECDSASignature;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
-import org.radix.serialization.SerializeObject;
+import com.radixdlt.serialization.SerializeObject;
 
 public class TimestampedECDSASignatureTest extends SerializeObject<TimestampedECDSASignature> {
   public TimestampedECDSASignatureTest() {

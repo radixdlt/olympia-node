@@ -68,7 +68,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.utils.LedgerHeaderMock;
-import org.radix.serialization.SerializeMessageObject;
+import com.radixdlt.serialization.SerializeMessageObject;
 
 public class GetVerticesResponseMessageSerializeTest
     extends SerializeMessageObject<GetVerticesResponseMessage> {

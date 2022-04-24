@@ -69,9 +69,9 @@ import com.radixdlt.network.p2p.NodeId;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
-import org.radix.network.messages.PeerPingMessage;
-import org.radix.network.messages.PeerPongMessage;
-import org.radix.network.messaging.Message;
+import com.radixdlt.middleware2.network.PeerPingMessage;
+import com.radixdlt.middleware2.network.PeerPongMessage;
+import com.radixdlt.middleware2.network.Message;
 
 /**
  * Outbound message wrapper with priority, time and destination.

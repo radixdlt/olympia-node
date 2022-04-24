@@ -111,8 +111,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.radix.network.messaging.Message;
-import org.radix.time.Time;
+import com.radixdlt.middleware2.network.Message;
+import com.radixdlt.utils.time.Time;
 
 @RunWith(Parameterized.class)
 public class MessagePreprocessorTest {
