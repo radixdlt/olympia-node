@@ -44,7 +44,7 @@ jobs:
           java-version: '17'
       - name: Build deb file
         run: |
-          cd radixdlt-core/radixdlt
+          cd core
           ../../gradlew deb4docker
           cd ../..
           find . -name "*.deb"

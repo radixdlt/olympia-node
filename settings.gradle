@@ -4,7 +4,7 @@ include ':cli-tools'
 include ':engine'
 include ':common'
 
-project(':core').projectDir = new File('radixdlt-core/radixdlt')
+project(':core').projectDir = new File('core')
 project(':cli-tools').projectDir = new File('cli-tools')
 project(':engine').projectDir = new File('radixdlt-engine')
 project(':common').projectDir = new File('radixdlt-java-common')

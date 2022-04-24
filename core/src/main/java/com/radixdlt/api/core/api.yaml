@@ -1,0 +1,3722 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Radix Core API
+  description: |
+    This API provides endpoints from a node for integration with the Radix ledger.
+
+    # Overview
+
+    > WARNING
+    >
+    > The Core API is __NOT__ intended to be available on the public web. It is
+    > designed to be accessed in a private network.
+
+    The Core API is separated into three:
+    * The **Data API** is a read-only api which allows you to view and
+    sync to the state of the ledger.
+    * The **Construction API** allows you to construct and submit a transaction
+    to the network.
+    * The **Key API** allows you to use the keys managed by the node to sign transactions.
+
+    The Core API is a low level API primarily designed for network integrations
+    such as exchanges, ledger analytics providers, or hosted ledger data dashboards
+    where detailed ledger data is required and the integrator can be expected to
+    run their node to provide the Core API for their own consumption.
+
+    For a higher level API, see the [Gateway API](https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/radixdlt/radixdlt-network-gateway/main/generation/gateway-api-spec.yaml).
+
+    For node monitoring, see the [System API](https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/radixdlt/radixdlt/main/core/src/main/java/com/radixdlt/api/system/api.yaml).
+
+    ## Rosetta
+
+    The Data API and Construction API is inspired from [Rosetta API](https://www.rosetta-api.org/)
+    most notably:
+      * Use of a JSON-Based RPC protocol on top of HTTP Post requests
+      * Use of Operations, Amounts, and Identifiers as universal language to
+      express asset movement for reading and writing
+
+    There are a few notable exceptions to note:
+      * Fetching of ledger data is through a Transaction stream rather than a
+      Block stream
+      * Use of `EntityIdentifier` rather than `AccountIdentifier`
+      * Use of `OperationGroup` rather than `related_operations` to express related
+      operations
+      * Construction endpoints perform coin selection on behalf of the caller.
+      This has the unfortunate effect of not being able to support high frequency
+      transactions from a single account. This will be addressed in future updates.
+      * Construction endpoints are online rather than offline as required by Rosetta
+
+    Future versions of the api will aim towards a fully-compliant Rosetta API.
+
+    ## Enabling Endpoints
+
+    All endpoints are enabled when running a node with the exception of two endpoints, each of
+    which need to be manually configured to access:
+    * `/transactions` endpoint must be enabled with configuration `api.transaction.enable=true`.
+    This is because the transactions endpoint requires additional database storage which may not
+    be needed for users who aren't using this endpoint
+    * `/key/sign` endpoint must be enable with configuration `api.sign.enable=true`. This is a
+    potentially dangerous endpoint if accessible publicly so it must be enabled manually.
+
+    ## Client Code Generation
+
+    We have found success with generating clients against the
+    [api.yaml specification](https://raw.githubusercontent.com/radixdlt/radixdlt/main/core/src/main/java/com/radixdlt/api/core/api.yaml).
+    See https://openapi-generator.tech/ for more details.
+
+    The OpenAPI generator only supports openapi version 3.0.0 at present, but you can
+    change 3.1.0 to 3.0.0 in the first line of the spec without affecting generation.
+
+    # Data API Flow
+
+    The Data API can be used to synchronize a full or partial view of the ledger,
+    transaction by transaction.
+
+    ![Data API Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/update-documentation/core/src/main/java/com/radixdlt/api/core/documentation/data_sequence_flow.png)
+
+    # Construction API Flow
+
+    The Construction API can be used to construct and submit transactions to the network.
+
+    ![Construction API Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/core/src/main/java/com/radixdlt/api/core/documentation/construction_sequence_flow.png)
+
+    Unlike the Rosetta Construction API [specification](https://www.rosetta-api.org/docs/construction_api_introduction.html),
+    this Construction API selects UTXOs on behalf of the caller. This has the unfortunate
+    side effect of not being able to support high frequency transactions from a single
+    account due to UTXO conflicts. This will be addressed in a future release.
+
+  license:
+    name: The Radix License, Version 1.0
+    url: https://www.radixfoundation.org/licenses/LICENSE-v1
+servers:
+  - url: localhost:3333
+tags:
+  - name: entities
+    x-displayName: Entities
+    description: |
+      Entities represent something that can hold resource balances and data objects.
+      For example, a public key account is an entity which can hold token balances
+      on behalf of a private key holder.
+
+      ![Entity](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/update-documentation/core/src/main/java/com/radixdlt/api/core/documentation/entity.png '#width=500px;')
+
+      An Operation is an update which occurs on an Entity. There are two types of
+      Operations:
+      * A **Resource** Operation which is a balance change on an Entity
+      * A **Data** Operation which is a data object update on an Entity
+
+      ![Operation](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/update-documentation/core/src/main/java/com/radixdlt/api/core/documentation/operation.png '#width=500px;')
+  - name: objects
+    x-displayName: Objects
+    description: |
+      ## State Identifiers
+      The Radix network has no concept of blocks. Instead transactions are
+      managed in a flat ordered list. A hash chain is formed from these transactions
+      called a Transaction Accumulator. A Transaction Accumulator represents a point
+      in time of the ledger with a valid state.
+
+      ![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/update-documentation/core/src/main/java/com/radixdlt/api/core/documentation/state_identifiers.png '#width=500px;')
+
+      The transaction accumulator along with the index forms a State Identifier.
+      <SchemaDefinition schemaRef="#/components/schemas/StateIdentifier" exampleRef="#/components/examples/StateIdentifier" showReadOnly={true} showWriteOnly={true} />
+
+      ## Transactions
+
+      A Transaction is an atomic state update to the ledger. It consists of one or
+      more OperationGroups, each of which consist of one or more Operations.
+
+      ![Transaction Operations](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/update-documentation/core/src/main/java/com/radixdlt/api/core/documentation/transaction_operations.png)
+
+      A Committed Transaction has additional information such as the State Identifier
+      which results after committing the transaction.
+
+      <SchemaDefinition schemaRef="#/components/schemas/CommittedTransaction" exampleRef="#/components/examples/CommittedTransaction" showReadOnly={true} showWriteOnly={true} />
+
+      ## Operation Groups
+
+      Similar to the [Rosetta API](https://www.rosetta-api.org/), both reading and
+      writing to the ledger use the same Address and Operation objects.
+
+      Every state change is expressed as an Operation which operates on a single
+      Entity. Any state change which consists of two accounts (such as
+      a token transfer) thus requires at least two Operations, one which debits
+      the sender and one which credits the receiver.
+
+      Unlike Rosetta, operations are more explicitly linked via Operation Groups. Each
+      Operation Group then represents a well formed accounting entry where credits
+      and debits are equivalent (unless minting or burning occurred).
+
+      <SchemaDefinition schemaRef="#/components/schemas/OperationGroup" exampleRef="#/components/examples/OperationGroup" showReadOnly={true} showWriteOnly={true} />
+
+      ## Operations
+
+      Operations operate on a single Entity and are associated with a single Amount
+      update and/or a single Data update.
+
+      * The `amount` property represents either a positive or negative change in balance of some token.
+      * The `data` property represents either the creation or deletion of a data object.
+
+      <SchemaDefinition schemaRef="#/components/schemas/Operation" exampleRef="#/components/examples/Operation" showReadOnly={true} showWriteOnly={true} />
+
+      ## Entity Identifiers
+
+      An Entity Identifier uniquely describes an entity which may have arbitrary balances and arbitrary data
+      objects. An Entity Identifier may further specify a Sub Address which should be treated as a separate
+      unique entity.
+
+      The interpretation of Entity Identifiers is discussed in detail in the Structure section.
+
+      <SchemaDefinition schemaRef="#/components/schemas/EntityIdentifier" exampleRef="#/components/examples/EntityIdentifier" showReadOnly={true} showWriteOnly={true} />
+
+      ## Amounts
+
+      A signed amount of a resource.
+
+      <SchemaDefinition schemaRef="#/components/schemas/ResourceAmount" exampleRef="#/components/examples/ResourceAmount" showReadOnly={true} showWriteOnly={true} />
+
+      ## Resource Identifiers
+
+      A Resource Identifier uniquely describes either some token or stake units for a validator.
+
+      <SchemaDefinition schemaRef="#/components/schemas/ResourceIdentifier" exampleRef="#/components/examples/ResourceIdentifier" showReadOnly={true} showWriteOnly={true} />
+
+      ## Data Updates
+
+      A Data update is the creation or destruction of a data object.
+
+      At any given time, an address will have up to one created-but-not-deleted data object of each type.
+
+      <SchemaDefinition schemaRef="#/components/schemas/Data" exampleRef="#/components/examples/Data" showReadOnly={true} showWriteOnly={true} />
+  - name: structure
+    x-displayName: Structure
+    description: |
+      There are different types of entities on Radix, each of which can contain certain resources and data
+      objects.
+
+      The following table describes which resources and data objects are allowed for a given type of entity.
+
+      ![Structure](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/update-documentation/core/src/main/java/com/radixdlt/api/core/documentation/structure.png '#width=500px;')
+
+      Overall, there are four main types of entities on Radix:
+      * **Account** is a regular public key account which can contain token balances and contain
+      StakeUnits, which represents a delegated amount of stake to a specific validator. Subentities under
+      an account-address contain assets which the account-address owns but is currently locked by the system.
+      An account is represented by its Bech32 account address.
+      * **Validator** is an entity representing a validating node on the network. The subentity `system` holds XRD
+      tokens which have been staked to this validator. A validator is represented by its Bech32 validator address.
+      * **Token** is an entity representing a Token Definition, represented by its Radix Resource Identifier ("RRI").
+      * **System** is an entity representing system level data such as current epoch and round, represented by the string "system".
+
+      If an entity identifier references a sub-entity, it should be considered a separate entity to the primary entity.
+      For example, for tracking the balance of an Account entity, any operations against an entity identifier
+      with a non-empty `entity_identifier.sub_entity` should be ignored, even if the `entity_identifier.address` matches.
+
+
+
+  - name: addressing
+    x-displayName: Addressing
+    description: |
+      Account addresses, Validator addresses and Token RRIs are all [Bech32 encoded](https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki).
+
+      A Bech32 encoding consists of a prefix which is an ASCII human readable part "HRP", followed by the character "1",
+      followed by an encoded data payload, encoded as 32 values (5 bits) per character.
+
+      Assuming an address is legal, you can extract its HRP as the string before the last '1'. This can be used to
+      distinguish between Account, Validator and Token/RRI addresses.
+
+      * **Accounts** have a fixed HRP for a given Radix network. This is `rdx` on mainnet. The data part encodes the account's public key.
+      * **Validators** have a fixed HRP for a given Radix network. This is `rv` on mainnet. The data part encodes the validator's public key.
+      * **Tokens** have an HRP of the token's (not necessarily unique) symbol, followed by a suffix.
+        The suffix is fixed for a given Radix network, and is `_rr` on mainnet.
+        As an example, the mainnet address of the native token, XRD, is `xrd_rr1qy5wfsfh`.
+        The data part of the Bech32 encoding encodes the token's unique radix engine address on ledger.
+        This radix engine address is hex `01` for XRD,
+        and presently, hex `03 | SHA256(SHA256(signer_public_key_compressed_33_bytes | symbol_in_utf8_bytes)`
+        for user-created tokens, where | denotes the byte concatenation operator.
+
+      The Account and Validator HRPs and the Token HRP suffix for the current network should be fetched from the
+      `/network/configuration` endpoint.
+
+      It likely will not be necessary to actually decode the data parts of the Bech32 encodings, but if you do need to,
+      you should be warned that Radix addresses are *not* Segwit addresses. Many Bech32 libraries assume a Segwit
+      encoding, so may fail to extract the data from a Radix address.
+
+      In particular, the Segwit encoding assumes the first 5-bit-character of the 5-bit-per-character encoded data is a
+      witness version, and that this is followed by the witness programme bytes, encoded into 5-bit chunks, padded
+      with zeroes if necessary. Radix encoding just encodes its data bytes into 5-bit chunks with padded zeroes -
+      _without_ an initial single character version prefix. In other words, the padding and interpretation of the
+      encoded data differs between Radix and Segwit addresses.
+
+  - name: actions
+    x-displayName: Actions
+    description: |
+
+      There are further restrictions on which resource movement and data updates and how operations must
+      be combined. The following table describes what user actions (ledger updates that can be submitted
+      as a transaction) are available.
+
+      ![User Actions](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/update-documentation/core/src/main/java/com/radixdlt/api/core/documentation/user_actions.png '#width=500px;')
+
+      1. **Transfer** of any token resource (including the native token XRD) from an account to another
+      account may be done by debiting an amount from the sending account and crediting the same amount
+      to the receiving account. **Minting** and **Burning** of tokens may also be done if one has
+      permissions to do so.
+      2. **Staking** may be started by transferring XRD from an account to a `prepared_stake` entity
+      with a specific validator. Once XRD is in this entity, at some point the system will move this
+      XRD to a Validator entity and mint StakeUnits into the originating account.
+      3. **Unstaking** may be started by transfering StakeUnits from an account to a `prepared_unstake`
+      entity. Once StakeUnits is in this entity, at some point the system will destroy this
+      StakeUnits and transfer XRD from the Validator entity into your `exiting_stake` entity. Once
+      the unlocking period is over the system will move that XRD from the `exiting_stake` entity into your
+      account.
+      4. **Validator Updates** may be started by destroying the current data object and creating a new
+      data object with the same type.
+      5. **New Token Definitions** may be created by destroying an `UnclaimedREAddr` and creating a
+      `TokenData` and `TokenMetadata` data object.
+  - name: xrd_transfer_example
+    x-displayName: Send XRD
+    description: |
+      Let's now go through an example of how to transfer XRD using the API.
+
+      For the purpose of our example, let's say we want to:
+      > TRANSFER
+      > 10.5 XRD
+      > FROM
+      > rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+      > TO
+      > rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+
+
+      ## Entity Identifiers
+
+      First we need to specify the entities identifiers to be used. In our case,
+      we have two entity identifiers, one for the sender and one for the receiver.
+
+      Sender Entity Identifier:
+      ```
+      EntityIdentifier sender() {
+        return new EntityIdentifier()
+          .address("rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88");
+      }
+      ```
+
+      Receiver Entity Identifier:
+      ```
+      EntityIdentifier receiver() {
+        return new EntityIdentifier()
+          .address("rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33");
+      }
+      ```
+
+      ## Resource Identifiers
+
+      Next we will need the Resource Identifier for the XRD Token which will be transferred.
+      XRD is Radix ledger's native token, used for staking and to pay fees. It is the only
+      token allowed with the symbol `xrd`, and has a reserved radix engine address of `1`
+      (`01` in hex).
+
+      On mainnet, its RRI is xrd_rr1qy5wfsfh and it's resource identifier is:
+      ```
+      TokenResourceIdentifier token() {
+        return new TokenResourceIdentifier()
+          .rri("xrd_rr1qy5wfsfh")
+          .type("Token");
+      }
+      ```
+
+      ## Amounts
+
+      Given our resource identifier we can now create resource balance changes. This will
+      be expressed as a Resource Amount. All amounts are expressed as `10^-18` subunits.
+      Thus, since we are transferring `1.5 XRD` this translates to a value of
+      `1500000000000000000` or the following amounts:
+
+      Sender Amount:
+      ```
+      Amount senderAmount() {
+        return new Amount()
+          .resourceIdentifier(token())
+          .value("-1500000000000000000");
+      }
+      ```
+
+      Receiver Amount:
+      ```
+      Amount receiverAmount() {
+        return new Amount()
+          .resourceIdentifier(token())
+          .value("1500000000000000000");
+      }
+      ```
+
+      ## Operations
+
+      We now combine our amounts with our Entity Identifiers to create Operations.
+      `"Resource"` is the type of our Operation since we are manipulating resource balances.
+
+      Sender Operation:
+      ```
+      Operation senderOperation() {
+        return new Operation()
+          .entityIdentifier(sender())
+          .amount(senderAmount())
+          .type("Resource");
+      }
+      ```
+
+      Receiver Operation:
+      ```
+      Operation receiverOperation() {
+        return new Operation()
+          .entityIdentifier(receiver())
+          .amount(receiverAmount())
+          .type("Resource");
+      }
+      ```
+
+      ## Operation Group
+
+      We then combine operations into a group. Note that the sender operation must be first.
+
+      ```
+      OperationGroup operationGroup() {
+        return new OperationGroup()
+          .addOperationsItem(senderOperation())
+          .addOperationsItem(receiverOperation());
+      }
+      ```
+
+      ## Fee Payer
+
+      The last thing we need to add is to specify the fee payer account entity identifier.
+      In this case it will be the same account as the sender.
+
+      We can now also add the `network_identifier` and with this structure we can submit this
+      to `/construction/build`. This `network_identifier` needs to match the network identifier
+      of the node.
+
+      ```
+      ConstructionBuildRequest constructionBuildRequest() {
+        return new ConstructionBuildRequest()
+          .addOperationsGroupItem(operationGroup())
+          .feePayer(sender())
+          .networkIdentifier(new NetworkIdentifier().network("mainnet"));
+      }
+
+      void main() {
+        ConstructionApi api = new ConstructionApi();
+        ConstructionBuildRequest request = constructionBuildRequest();
+        ConstructionBuildResponse response = api.constructionBuildPost(request);
+      }
+      ```
+
+      ## Unsigned Transaction
+
+      After submitting to `/construction/build`, we can take the `unsigned_transaction` and parse it
+      through `/construction/parse`.
+
+      ```
+      ConstructionApi api = new ConstructionApi();
+
+      ConstructionParseResponse sendParseRequest(String unsignedTransactionHex) {
+        ConstructionParseRequest request = new ConstructionParseRequest()
+          .unsignedTransaction(unsignedTransactionHex);
+        return api.constructionParsePost(request);
+      }
+
+      void main() {
+        ConstructionBuildRequest request = constructionBuildRequest();
+        ConstructionBuildResponse response = api.constructionBuildPost(request);
+        String unsignedTransactionHex = response.getUnsignedTransaction();
+        ConstructionParseResponse response = sendParseRequest(unsigendTransactionHex);
+        System.out.println(response);
+      }
+      ```
+
+      The response in json would look like:
+      ```
+      {
+        "metadata": {
+          "fee": {
+            "resource_identifier": {
+              "rri": "xrd_rr1qy5wfsfh",
+              "type": "Token"
+            },
+            "value": "72000000000000000"
+          }
+        },
+        "operation_groups": [
+          {
+            "operations": [
+              {
+                "amount": {
+                  "resource_identifier": {
+                    "rri": "xrd_rr1qy5wfsfh",
+                    "type": "Token"
+                  },
+                  "value": "-96000000000000000000000000"
+                },
+                "substate": {
+                  "substate_identifier": {
+                    "identifier": "4db58b950fcf446140dd945c6adfd06daa0b520f7eddf0467583d96babff579d00000002"
+                  },
+                  "substate_operation": "SHUTDOWN"
+                },
+                "entity_identifier": {
+                  "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
+                },
+                "type": "Resource"
+              },
+              {
+                "metadata": {
+                  "substate_data_hex": "06000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab010000000000000000000000000000000000000000004f68ca6c8d0d7e082c0000"
+                },
+                "amount": {
+                  "resource_identifier": {
+                    "rri": "xrd_rr1qy5wfsfh",
+                    "type": "Token"
+                  },
+                  "value": "95999999928000000000000000"
+                },
+                "substate": {
+                  "substate_identifier": {
+                    "identifier": "65f61dba3ed40a438c4694e8947f73530c1c6ca6b8115371c05c6565f9fb6a4900000000"
+                  },
+                  "substate_operation": "BOOTUP"
+                },
+                "entity_identifier": {
+                  "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
+                },
+                "type": "Resource"
+              }
+            ]
+          },
+          {
+            "operations": [
+              {
+                "amount": {
+                  "resource_identifier": {
+                    "rri": "xrd_rr1qy5wfsfh",
+                    "type": "Token"
+                  },
+                  "value": "-95999999928000000000000000"
+                },
+                "substate": {
+                  "substate_identifier": {
+                    "identifier": "65f61dba3ed40a438c4694e8947f73530c1c6ca6b8115371c05c6565f9fb6a4900000000"
+                  },
+                  "substate_operation": "SHUTDOWN"
+                },
+                "entity_identifier": {
+                  "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
+                },
+                "type": "Resource"
+              },
+              {
+                "metadata": {
+                  "substate_data_hex": "06000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab010000000000000000000000000000000000000000004f68ca57bbfb708d160000"
+                },
+                "amount": {
+                  "resource_identifier": {
+                    "rri": "xrd_rr1qy5wfsfh",
+                    "type": "Token"
+                  },
+                  "value": "95999998428000000000000000"
+                },
+                "substate": {
+                  "substate_identifier": {
+                    "identifier": "65f61dba3ed40a438c4694e8947f73530c1c6ca6b8115371c05c6565f9fb6a4900000001"
+                  },
+                  "substate_operation": "BOOTUP"
+                },
+                "entity_identifier": {
+                  "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
+                },
+                "type": "Resource"
+              },
+              {
+                "metadata": {
+                  "substate_data_hex": "06000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b60100000000000000000000000000000000000000000000000014d1120d7b160000"
+                },
+                "amount": {
+                  "resource_identifier": {
+                    "rri": "xrd_rr1qy5wfsfh",
+                    "type": "Token"
+                  },
+                  "value": "1500000000000000000"
+                },
+                "substate": {
+                  "substate_identifier": {
+                    "identifier": "65f61dba3ed40a438c4694e8947f73530c1c6ca6b8115371c05c6565f9fb6a4900000002"
+                  },
+                  "substate_operation": "BOOTUP"
+                },
+                "entity_identifier": {
+                  "address": "rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33"
+                },
+                "type": "Resource"
+              }
+            ]
+          }
+        ]
+      }
+      ```
+
+      A couple of things to note above:
+      * There are two operation groups now as opposed to one, the first operation group contains the operations for
+      the fee, which should be paid by the `fee_payer` passed into `/construction/build`
+      * The second operation group contains more than the two original operations. What occurred here is the node
+      selected specific UTXOs to destroy and create (specified by the `substate` property) to perform the intent
+      of the operations initially passed in. That is, the balance changes of each entity should still be equivalent
+      to the original operations.
+
+      ## Signed Transaction
+
+      Once `payload_to_sign` has been signed, the original payload along with signature can be sent to
+      `/construction/finalize` in order to get a `signed_transaction`. This can then be submitted to
+      `construction/submit`. You have successfully submitted an XRD transfer transaction!
+
+      ```
+      ConstructionApi api = new ConstructionApi();
+
+      void main() {
+        ConstructionBuildRequest request = constructionBuildRequest();
+        ConstructionBuildResponse response = api.constructionBuildPost(request);
+        String unsignedTransactionHex = response.getUnsignedTransaction();
+        String payloadToSignHex = response.getPayloadToSign();
+
+        Signature signature = sign(payloadToSignHex);
+
+        ConstructionFinalizeRequest finalizeRequest = new ConstructionFinalizeRequest()
+          .unsignedTransaction(unsignedTransactionHex)
+          .signature(signature)
+          .networkIdentifier(new NetworkIdentifier().network("mainnet"));
+        ConstructionFinalizeResponse finalizeResponse = api.constructionFinalizePost(finalizeRequest);
+
+        String signedTransactionHex = finalizeResponse.getSignedTransaction();
+        ConstructionSubmitRequest submitRequest = new ConstructionSubmitRequest()
+          .networkIdentifier(new NetworkIdentifier().network("mainnet"))
+          .signedTransaction(signedTransactionHex);
+        ConstructionSubmitResponse submitResponse = api.constructionSubmitPost(submitRequest);
+      }
+      ```
+
+  - name: track_xrd_example
+    x-displayName: Track XRD Balances
+    description: |
+
+      This example walks through how to track XRD balances across all accounts. To do this we need the following:
+      * OpenAPI generated client code, in our example we will use the java version: [https://openapi-generator.tech/docs/generators/java]
+      * A database, in our example we will just use a transient Hashmap
+
+      ## Get Transactions
+
+      Let's start by performing a call to `/transactions` with `state_version` of `0` and `limit`
+      of `1000`. This will retrieve the first 1000 transactions on ledger, including the genesis
+      transaction.
+
+      Be sure to also match the `network_identifier` with the network the node is using.
+
+      ```
+      {
+        "network_identifier": {
+          "network": "mainnet"
+        },
+        "state_identifier": {
+          "state_version": 0
+        },
+        "limit": 1000
+      }
+      ```
+
+      The corresponding java client code looks like:
+
+      ```java
+      TransactionsApi api = new TransactionsApi();
+      NetworkIdentifier networkIdentifier = new NetworkIdentifier().network("mainnet");
+
+      void main() {
+        PartialStateIdentifier stateIdentifier = new PartialStateIdentifier().stateVersion(0L);
+
+        CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
+          .networkIdentifier(networkIdentifier)
+          .limit(1000L)
+          .stateIdentifier(stateIdentifier);
+
+        CommittedTransactionsResponse response = api.transactionsPost(committedTransactionsRequest);
+      }
+      ```
+
+      ## Get XRD Balance changes
+
+      Let's now expand our code to extract all XRD balance changes.
+
+      To extract account token balance changes in a transaction:
+      1. Flatmap to operations from all operation groups
+      2. Filter for operations which concern the XRD token, that is:
+          1. `amount` exists
+          2. `amount.resource_identifier.type` is `Token`
+          3. `rri` of the token is `xrd_rr1qy5wfsfh`
+      3. Group by `entity_identifier` and sum each `balance_change`
+
+      This gives us the change in XRD balance in that entity due to the transaction, in units of 10^(-18).
+
+      This forms the basis of tracking account balances over time.
+
+      ```java
+      TransactionsApi api = new TransactionsApi();
+      NetworkIdentifier networkIdentifier = new NetworkIdentifier().network("mainnet");
+
+      /**
+       * Returns true if the operation contains an XRD balance change, otherwise returns false
+       */
+      boolean isXrd(Operation operation) {
+        if (operation.getAmount() == null) {
+          return false;
+        }
+        ResourceIdentifier identifier = op.getAmount().getResourceIdentifier();
+        if (!(identifier instanceof TokenResourceIdentifier)) {
+          return false;
+        }
+        TokenResourceIdentifier tokenResourceIdentifier = (TokenResourceIdentifier) identifier;
+        return tokenResourceIdentifier.getRri().equals("xrd_rr1qy5wfsfh");
+      }
+
+      /**
+       * Returns the XRD balance change which occured on every entity from a set
+       * of operation groups.
+       */
+      Map<EntityIdentifier, BigInteger> operationGroupsToBalanceChanges(Stream<OperationGroup> operationGroups) {
+        return operationGroups
+          .flatMap(group -> group.getOperations().stream())
+          .filter(this::isXrd)
+          .collect(Collectors.groupingBy(
+            Operation::getEntityIdentifier,
+            Collectors.mapping(
+              op -> new BigInteger(op.getAmount().getValue()),
+              Collectors.reducing(BigInteger.ZERO, BigInteger::add)
+            )
+          ));
+      }
+
+      void main() {
+        PartialStateIdentifier stateIdentifier = new PartialStateIdentifier().stateVersion(0L);
+
+        CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
+          .networkIdentifier(networkIdentifier)
+          .limit(1000L)
+          .stateIdentifier(stateIdentifier);
+
+        CommittedTransactionsResponse response = api.transactionsPost(committedTransactionsRequest);
+
+        // Extract out operation groups
+        Stream<OperationGroup> operationGroups = response.getTransactions().stream()
+          .flatMap(txn -> txn.getOperationGroups().stream());
+
+        Map<EntityIdentifier, BigInteger> balanceChanges = operationGroupsToBalanceChanges(operationGroups);
+      }
+      ```
+
+      ## Update Balance Store
+
+      Now that we can compute balance change we can now start updating some balance store.
+
+      In this example we simply use a hash map from entity to balance. In your system you may
+      store these changes in a persistent database.
+
+      ```java
+      TransactionsApi api = new TransactionsApi();
+      NetworkIdentifier networkIdentifier = new NetworkIdentifier().network("mainnet");
+
+      /**
+       * Our balance store
+       */
+      Map<EntityIdentifier, BigInteger> balances = new HashMap<>();
+
+      /**
+       * Returns true if the operation contains an XRD balance change, otherwise returns false
+       */
+      boolean isXrd(Operation operation) {
+        if (operation.getAmount() == null) {
+          return false;
+        }
+        ResourceIdentifier identifier = op.getAmount().getResourceIdentifier();
+        if (!(identifier instanceof TokenResourceIdentifier)) {
+          return false;
+        }
+        TokenResourceIdentifier tokenResourceIdentifier = (TokenResourceIdentifier) identifier;
+        return tokenResourceIdentifier.getRri().equals("xrd_rr1qy5wfsfh");
+      }
+
+      /**
+       * Returns the XRD balance change which occured on every entity from a set
+       * of operation groups.
+       */
+      Map<EntityIdentifier, BigInteger> operationGroupsToBalanceChanges(Stream<OperationGroup> operationGroups) {
+        return operationGroups
+          .flatMap(group -> group.getOperations().stream())
+          .filter(this::isXrd)
+          .collect(Collectors.groupingBy(
+            Operation::getEntityIdentifier,
+            Collectors.mapping(
+              op -> new BigInteger(op.getAmount().getValue()),
+              Collectors.reducing(BigInteger.ZERO, BigInteger::add)
+            )
+          ));
+      }
+
+      /**
+       * Updates the balance store.
+       */
+      void updateStore(Map<EntityIdentifier, BigInteger> balanceChanges) {
+        balanceChanges.forEach((identifier, value) -> balances.merge(identifier, value, BigInteger::add));
+      }
+
+      void main() throws ApiException {
+        PartialStateIdentifier stateIdentifier = new PartialStateIdentifier().stateVersion(0L);
+
+        CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
+          .networkIdentifier(networkIdentifier)
+          .limit(1000L)
+          .stateIdentifier(stateIdentifier);
+
+        CommittedTransactionsResponse response = api.transactionsPost(committedTransactionsRequest);
+
+        // Extract out operation groups
+        Stream<OperationGroup> operationGroups = response.getTransactions().stream()
+          .flatMap(txn -> txn.getOperationGroups().stream());
+
+        Map<EntityIdentifier, BigInteger> balanceChanges = operationGroupsToBalanceChanges(operationGroups);
+        updateStore(balanceChanges);
+      }
+      ```
+
+      ## Continual Sync
+
+      So far we've only been requesting for the initial 1000 transactions on ledger. We will now want to
+      continually sync as the ledger progresses.
+
+      To do this, we will keep our own current stateVersion and update it with the latest stateVersion
+      we've seen. On a persistent database, it will be important to update the stateVersion and ledger updates
+      atomically so that the sync process can handle process crashes gracefully and restart in a consistent
+      manner.
+
+      We can now add continually check for updates on ledger and keep our own state up to date. This can
+      easily look something like a cronjob process which periodically updates a local database.
+
+      ```java
+      TransactionsApi api = new TransactionsApi();
+      NetworkIdentifier networkIdentifier = new NetworkIdentifier().network("mainnet");
+
+      /**
+       * Our balance store
+       */
+      long currentStateVersion = 0;
+      Map<EntityIdentifier, BigInteger> balances = new HashMap<>();
+
+      /**
+       * Returns true if the operation contains an XRD balance change, otherwise returns false
+       */
+      boolean isXrd(Operation operation) {
+        if (operation.getAmount() == null) {
+          return false;
+        }
+        ResourceIdentifier identifier = op.getAmount().getResourceIdentifier();
+        if (!(identifier instanceof TokenResourceIdentifier)) {
+          return false;
+        }
+        TokenResourceIdentifier tokenResourceIdentifier = (TokenResourceIdentifier) identifier;
+        return tokenResourceIdentifier.getRri().equals("xrd_rr1qy5wfsfh");
+      }
+
+      /**
+       * Returns the XRD balance change which occured on every entity from a set
+       * of operation groups.
+       */
+      Map<EntityIdentifier, BigInteger> operationGroupsToBalanceChanges(Stream<OperationGroup> operationGroups) {
+        return operationGroups
+          .flatMap(group -> group.getOperations().stream())
+          .filter(this::isXrd)
+          .collect(Collectors.groupingBy(
+            Operation::getEntityIdentifier,
+            Collectors.mapping(
+              op -> new BigInteger(op.getAmount().getValue()),
+              Collectors.reducing(BigInteger.ZERO, BigInteger::add)
+            )
+          ));
+      }
+
+      /**
+       * Retrieves the current state version
+       */
+      long loadStateVersion() {
+        return this.currentStateVersion;
+      }
+
+      /**
+       * Updates the balance store.
+       */
+      void updateStore(long currentStateVersion, long nextStateVersion, Map<EntityIdentifier, BigInteger> balanceChanges) {
+        // Sanity check, in case we have multiple updater to our store
+        assert(this.currentStateVersion == currentStateVersion);
+
+        this.currentStateVersion = nextStateVersion;
+        balanceChanges.forEach((identifier, value) -> balances.merge(identifier, value, BigInteger::add));
+      }
+
+      /**
+       * Requests for new transactions from a node and then updates the balance store
+       */
+      void update() throws ApiException {
+        long stateVersion = loadStateVersion();
+        PartialStateIdentifier stateIdentifier = new PartialStateIdentifier().stateVersion(stateVersion);
+
+        CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
+          .networkIdentifier(networkIdentifier)
+          .limit(1000L)
+          .stateIdentifier(stateIdentifier);
+
+        CommittedTransactionsResponse response = api.transactionsPost(committedTransactionsRequest);
+
+        // Extract out operation groups
+        Stream<OperationGroup> operationGroups = response.getTransactions().stream()
+          .flatMap(txn -> txn.getOperationGroups().stream());
+        Map<EntityIdentifier, BigInteger> balanceChanges = operationGroupsToBalanceChanges(operationGroups);
+        long nextStateVersion = stateVersion + txns.size();
+
+        // Update stateVersion and balances, on a database these must be updated atomically together
+        updateStore(stateVersion, nextStateVersion, balanceChanges);
+      }
+
+      void main() throws Exception {
+        while (true) {
+          update();
+          Thread.sleep(1000L);
+        }
+      }
+      ```
+
+  - name: track_all_balances_example
+    x-displayName: Track All Balances
+    description: |
+      Building off of the Track XRD Balances example, we can simply remove the filter on only tracking XRD
+      and build a complete mapping of assets owned by every entity `Entity -> Resource -> Amount`.
+
+      ```java
+      TransactionsApi api = new TransactionsApi();
+      NetworkIdentifier networkIdentifier = new NetworkIdentifier().network("mainnet");
+
+      /**
+       * Our balance store
+       */
+      long currentStateVersion = 0;
+      Map<EntityIdentifier, Map<ResourceIdentifier, BigInteger>> balances = new HashMap<>();
+
+      /**
+       * Returns the token balance change which occured on every entity from a set
+       * of operation groups.
+       */
+      Map<EntityIdentifier, Map<ResourceIdentifier, BigInteger>> operationGroupsToBalanceChanges(Stream<OperationGroup> operationGroups) {
+        return operationGroups
+          .flatMap(group -> group.getOperations().stream())
+          .filter(operation -> operation.getAmount() != null)
+          .collect(Collectors.groupingBy(
+            Operation::getEntityIdentifier,
+            Collectors.groupingBy(
+              op -> op.getAmount().getResourceIdentifier(),
+              Collectors.mapping(
+                op -> new BigInteger(op.getAmount().getValue()),
+                Collectors.reducing(BigInteger.ZERO, BigInteger::add)
+              )
+            )
+          )
+        );
+      }
+
+      /**
+       * Retrieves the current state version
+       */
+      long loadStateVersion() {
+        return this.currentStateVersion;
+      }
+
+      /**
+       * Updates the balance store.
+       */
+      void updateStore(long currentStateVersion, long nextStateVersion, Map<EntityIdentifier, Map<ResourceIdentifier, BigInteger>> balanceChanges) {
+        // Sanity check, in case we have multiple updater to our store
+        assert(this.currentStateVersion == currentStateVersion);
+
+        this.currentStateVersion = nextStateVersion;
+        balanceChanges.forEach((identifier, balanceMap) -> {
+          balanceMap.forEach((resource, value) ->
+            balances.merge(identifier, Map.of(resource, value), (b0, b1) ->
+              Stream.concat(b0.entrySet().stream(), b1.entrySet().stream()).collect(
+                Collectors.groupingBy(
+                  Map.Entry::getKey,
+                  Collectors.mapping(Map.Entry::getValue, Collectors.reducing(BigInteger.ZERO, BigInteger::add))
+                )
+              )
+            )
+          );
+        });
+      }
+
+
+      /**
+       * Requests for new transactions from a node and then updates the balance store
+       */
+      void update() throws ApiException {
+        long stateVersion = loadStateVersion();
+        PartialStateIdentifier stateIdentifier = new PartialStateIdentifier().stateVersion(stateVersion);
+
+        CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
+          .networkIdentifier(networkIdentifier)
+          .limit(1000L)
+          .stateIdentifier(stateIdentifier);
+
+        CommittedTransactionsResponse response = api.transactionsPost(committedTransactionsRequest);
+
+        // Extract out operation groups
+        Stream<OperationGroup> operationGroups = response.getTransactions().stream()
+          .flatMap(txn -> txn.getOperationGroups().stream());
+
+        Map<EntityIdentifier, Map<ResourceIdentifier, BigInteger>> balanceChanges = operationGroupsToBalanceChanges(operationGroups);
+        // Update stateVersion and balances, on a database these must be updated atomically together
+        updateStore(stateVersion, nextStateVersion, balanceChanges);
+      }
+
+      void main() throws Exception {
+        while (true) {
+          update();
+          Thread.sleep(1000L);
+        }
+      }
+      ```
+
+      ## Advanced
+
+      ### Filtering to just account balances
+
+      The above examples pull through the balances for any Entity, but typically you'll just want to pull down
+      usable balances in an account - that is, balances against an account entity.
+
+      To do this, we can check filter `entity_identifier` to those which have an `address` starting `rdx1`,
+      and no `sub_entity`. We filter out sub-entities because these are separate entities/balances to the
+      core account, used by the system for staking.
+
+      For more information, and to support non-mainnet addresses, see the Structure and Addressing sections.
+
+      ### Supporting networks other than mainnet
+
+      See the Addressing section for details on determining non-mainnet addresses.
+
+      ### Tracking UTXOs
+
+      The `operation.substate.substate_identifier.identifier` gives a hex-encoded identifier for the UTXO used in that
+      transaction. If `operation.substate.substate_operation` is `BOOTUP`, the UTXO was created, and if `SHUTDOWN`, it
+      was spent.
+
+      This can be used to track live UTXOs.
+
+      ### Consistency checks
+
+      Before saving a copy of a transaction to an index, you should check that the parent accumulator matches the
+      accumulator you have on record. Whilst we don't anticipate a need to rollback the ledger, this accumulator
+      check could be used to detect this (and can be used to rollback an index to the point where the accumulators
+      agree).
+
+      If you wish to also check the consistency of this accumulator, the following should be true:
+
+      `post_transaction_state_accumulator = SHA256(SHA256(pre_transaction_state_accumulator | transaction_identifier_hash))`
+
+      Where `|` is the byte concatenation operator. Note that this uses two rounds of SHA256. The first maps from
+      64 bytes to 32 bytes, the second from 32 bytes to 32 bytes.
+
+      ### Timestamps
+
+      If you care about the timestamps that various transactions were committed, you can track the `RoundData`
+      data object under the `system` entity.
+
+      Then, `timestamp` in `RoundData` gives a UNIX timestamp in milliseconds, derived from votes of each validator
+      of what the current wall clock time is. It is _not_ guaranteed to be increasing and should only be used for
+      convenience and not as an accurate representation of the actual time of commit.
+
+  - name: network
+    x-displayName: Network
+    description: Get info about the node and network.
+  - name: entity
+    x-displayName: Entity
+    description: Get info about an entity.
+  - name: mempool
+    x-displayName: Mempool
+    description: Get info about the mempool
+  - name: transactions
+    x-displayName: Transactions
+    description: Get the stream of committed transactions.
+  - name: construction
+    x-displayName: Construction
+    description: Construct a transaction for submission.
+  - name: key
+    x-displayName: Key
+    description: Sign a transaction
+x-tagGroups:
+  - name: Model
+    tags:
+      - entities
+      - structure
+      - addressing
+      - actions
+      - objects
+  - name: Examples
+    tags:
+      - track_xrd_example
+      - track_all_balances_example
+      - xrd_transfer_example
+  - name: Data API
+    tags:
+      - network
+      - entity
+      - mempool
+      - transactions
+  - name: Construction API
+    tags:
+      - construction
+  - name: Key API
+    tags:
+      - key
+paths:
+  "/network/configuration":
+    post:
+      summary: Get Network Configuration
+      description: Returns the network configuration of the network the node is connected
+        to.
+      tags:
+        - network
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/NetworkConfigurationRequest"
+      responses:
+        '200':
+          description: Network Configuration
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/NetworkConfigurationResponse"
+        '500':
+          description: An unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/network/status":
+    post:
+      summary: Get Network Status
+      description: Returns the current state and status of the node's copy of the ledger.
+        If the node is syncing, the `current_state_X` responses may be behind the global ledger.
+      tags:
+        - network
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/NetworkStatusRequest"
+      responses:
+        '200':
+          description: Network Status
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/NetworkStatusResponse"
+        '500':
+          description: An Unexpected Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/entity":
+    post:
+      summary: Get Entity Information
+      description: Gets the balances and data objects at an entity at the current state of the ledger.
+      tags:
+        - entity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/EntityRequest"
+      responses:
+        '200':
+          description: Entity Balances and Data
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/EntityResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/mempool":
+    post:
+      summary: Get Mempool Transactions
+      description: Gets the transaction identifiers in the mempool
+      tags:
+        - mempool
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/MempoolRequest"
+      responses:
+        '200':
+          description: Mempool Transaction Identifiers
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/MempoolResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/mempool/transaction":
+    post:
+      summary: Get Mempool Transaction
+      description: Gets the transaction from the mempool
+      tags:
+        - mempool
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/MempoolTransactionRequest"
+      responses:
+        '200':
+          description: Mempool Transaction Identifiers
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/MempoolTransactionResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/transactions":
+    post:
+      summary: Get Committed Transactions
+      description: |
+        Returns an ordered sublist of committed transactions. This endpoint
+        is designed for lite clients to sync with the state of the ledger.
+
+        The example response demonstrates a transfer transaction.
+
+        There is a more detailed worked example of reading this endpoint in the
+        examples section.
+      tags:
+        - transactions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/CommittedTransactionsRequest"
+      responses:
+        '200':
+          description: Sublist of Committed Transactions
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/CommittedTransactionsResponse"
+        '500':
+          description: An Unexpected Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/construction/derive":
+    post:
+      summary: Derive Entity Identifier
+      description: Returns the entity identifier for an account, validator, or token given a public key
+      tags:
+        - construction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ConstructionDeriveRequest"
+      responses:
+        '200':
+          description: Entity Identifier
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ConstructionDeriveResponse"
+  "/construction/build":
+    post:
+      summary: Build Transaction
+      tags:
+        - construction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ConstructionBuildRequest"
+      responses:
+        '200':
+          description: An unsigned transaction
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ConstructionBuildResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/construction/parse":
+    post:
+      summary: Parse Transaction
+      tags:
+        - construction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ConstructionParseRequest"
+      responses:
+        '200':
+          description: An unsigned transaction
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ConstructionParseResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/construction/finalize":
+    post:
+      summary: Finalize Transaction
+      tags:
+        - construction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ConstructionFinalizeRequest"
+      responses:
+        '200':
+          description: An unsigned transaction
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ConstructionFinalizeResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/construction/hash":
+    post:
+      summary: Get Transaction Hash
+      description: Get the transaction identifier of a signed transaction
+      tags:
+        - construction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ConstructionHashRequest"
+      responses:
+        '200':
+          description: An unsigned transaction
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ConstructionHashResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/construction/submit":
+    post:
+      summary: Submit Transaction
+      description: Submit a transaction to the mempool
+      tags:
+        - construction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ConstructionSubmitRequest"
+      responses:
+        '200':
+          description: An unsigned transaction
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ConstructionSubmitResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/engine/configuration":
+    post:
+      summary: Get Engine Configuration
+      tags:
+        - engine
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/EngineConfigurationRequest"
+      responses:
+        '200':
+          description: An unsigned transaction
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/EngineConfigurationResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/engine/forks-voting-results":
+    post:
+      summary: Get forks voting results for the given epoch
+      tags:
+        - engine
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ForksVotingResultsRequest"
+      responses:
+        '200':
+          description: Forks voting results for the given epoch
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ForksVotingResultsResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/engine/status":
+    post:
+      summary: Get Engine Current Status
+      tags:
+        - engine
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/EngineStatusRequest"
+      responses:
+        '200':
+          description: Engine Status
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/EngineStatusResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/key/list":
+    post:
+      summary: Get public keys
+      tags:
+        - key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/KeyListRequest"
+      responses:
+        '200':
+          description: The node's public keys
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/KeyListResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/key/sign":
+    post:
+      summary: Sign transaction
+      tags:
+        - key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/KeySignRequest"
+      responses:
+        '200':
+          description: An unsigned transaction
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/KeySignResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/key/vote":
+    post:
+      summary: Vote for the candidate fork (if present)
+      tags:
+        - key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/UpdateVoteRequest"
+      responses:
+        '200':
+          description: Submitted vote transaction information
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UpdateVoteResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/key/withdraw-vote":
+    post:
+      summary: Withdraw the vote for the candidate fork
+      tags:
+        - key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/UpdateVoteRequest"
+      responses:
+        '200':
+          description: Submitted vote withdrawal transaction information
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UpdateVoteResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+components:
+  schemas:
+    NetworkConfigurationRequest:
+      type: object
+      example: {}
+    NetworkConfigurationResponse:
+      type: object
+      required:
+        - version
+        - network_identifier
+        - bech32_human_readable_parts
+      properties:
+        version:
+          description: Different versions regarding the node, network and api.
+          type: object
+          required:
+            - core_version
+            - api_version
+          properties:
+            core_version:
+              type: string
+            api_version:
+              type: string
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+          description: The name of the network.
+        bech32_human_readable_parts:
+          "$ref": "#/components/schemas/Bech32HRPs"
+          description: The unique bech32 hrps used for addressing.
+      example:
+        network_identifier:
+          network: mainnet
+        bech32_human_readable_parts:
+          account_hrp: rdx
+          validator_hrp: rv
+          node_hrp: rn
+          resource_hrp_suffix: _rr
+    NetworkStatusRequest:
+      type: object
+      required:
+        - network_identifier
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+          description: The name of the network.
+      example:
+        network_identifier:
+          network: mainnet
+    NetworkStatusResponse:
+      type: object
+      required:
+        - pre_genesis_state_identifier
+        - genesis_state_identifier
+        - current_state_identifier
+        - sync_status
+        - peers
+      properties:
+        pre_genesis_state_identifier:
+          "$ref": "#/components/schemas/StateIdentifier"
+          description: The ledger state identifier before the genesis transaction.
+        genesis_state_identifier:
+          "$ref": "#/components/schemas/StateIdentifier"
+          description: The ledger state identifier after the genesis transaction.
+        current_state_identifier:
+          "$ref": "#/components/schemas/StateIdentifier"
+          description: The current state identifier at the top of the node's copy of the ledger.
+        sync_status:
+          $ref: "#/components/schemas/SyncStatus"
+          description: Information on how synced the node is to the rest of the network.
+        peers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Peer"
+          description: List of peers of the node.
+      example:
+        pre_genesis_state_identifier:
+          state_version: 0
+          transaction_accumulator: "0000000000000000000000000000000000000000000000000000000000000000"
+        current_state_timestamp: 1627452363772
+        current_state_identifier:
+          state_version: 322001
+          transaction_accumulator: e31f8314a67236076ad6d46391e93a93d7b9d34de2062acc620541c09dd69f95
+        current_state_epoch: 1
+        current_state_round: 321991
+        genesis_state_identifier:
+          state_version: 1
+          transaction_accumulator: 1e62415e5fd95c63aff69142f1359cc6a981ff7169c128d266f45adf614d09b0
+        node_identifiers:
+          account_entity_identifier:
+            address: rdx1qspmwn5n0qyz685f20aevh4wglxxzg9k5t5vql20s4jqa7kj8hz0njclnh0mf
+          validator_entity_identifier:
+            address: rv1qwm5aymcpqk3az2nlwt9atj8e3sjpd4zarq86nu9vs80453acnuuklp5yl2
+        peers: []
+    EntityRequest:
+      type: object
+      required:
+        - network_identifier
+        - entity_identifier
+      properties:
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
+          description: The name of the network.
+        entity_identifier:
+          description: The Entity for which current balance and data information will be retrieved.
+          "$ref": "#/components/schemas/EntityIdentifier"
+      example:
+        network_identifier:
+          network: mainnet
+        entity_identifier:
+          address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+    EntityResponse:
+      type: object
+      required:
+        - state_identifier
+        - balances
+        - data_objects
+      properties:
+        state_identifier:
+          $ref: "#/components/schemas/StateIdentifier"
+        balances:
+          description: Balances associated with the entity.
+          type: array
+          items:
+            "$ref": "#/components/schemas/ResourceAmount"
+        data_objects:
+          description: Data associated with the entity.
+          type: array
+          items:
+            "$ref": "#/components/schemas/DataObject"
+      example:
+        balances:
+          - resource_identifier:
+              rri: xrd_rr1qy5wfsfh
+              type: token
+            value: '13443027000000000000000'
+          - resource_identifier:
+              rri: veri_rr1qdtwzvy8lnfgl9t5tnj8f5fwl2znssnvx27vufcx7u3slv0gce
+              type: token
+            value: '1000000000000000000'
+          - resource_identifier:
+              validator: rv1q04u5zwtgffsqkvr08xqm6vpm3gwxh4uqwtjpx5p47ew0m0v8m5zs3m3jed
+              type: StakeUnit
+            value: '15000000000000000000000'
+        data_objects: []
+    MempoolRequest:
+      type: object
+      required:
+        - network_identifier
+      properties:
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
+          description: The name of the network.
+      example:
+        network_identifier:
+          network: mainnet
+    MempoolResponse:
+      type: object
+      required:
+        - transaction_identifiers
+      properties:
+        transaction_identifiers:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransactionIdentifier"
+          description: List of transaction identifiers currently in the mempool.
+    MempoolTransactionRequest:
+      type: object
+      required:
+        - network_identifier
+        - transaction_identifier
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+          description: The name of the network.
+        transaction_identifier:
+          $ref: "#/components/schemas/TransactionIdentifier"
+          description: Transaction Identifier to retrieve.
+      example:
+        network_identifier:
+          network: mainnet
+        transaction_identifier:
+          hash: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842
+    MempoolTransactionResponse:
+      type: object
+      required:
+        - transaction
+      properties:
+        transaction:
+          $ref: "#/components/schemas/Transaction"
+          description: The transaction found in the mempool.
+    ConstructionDeriveRequest:
+      type: object
+      required:
+        - network_identifier
+        - public_key
+        - metadata
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+          description: The name of the network.
+        public_key:
+          "$ref": "#/components/schemas/PublicKey"
+          description: Public key to be derived from.
+        metadata:
+          "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+          description: Data which specifies the type of entity to derive.
+      example:
+        network_identifier:
+          network: mainnet
+        public_key:
+          hex: 03b74e9378082d1e8953fb965eae47cc6120b6a2e8c07d4f85640efad23dc4f9cb
+        metadata:
+          type: Token
+          symbol: test
+    ConstructionDeriveResponse:
+      type: object
+      required:
+        - entity_identifier
+      properties:
+        entity_identifier:
+          "$ref": "#/components/schemas/EntityIdentifier"
+          description: The derived identifier
+      example:
+        entity_identifier:
+          address: test_rr1q0xjsd8e3ud8dexqntmse9n0mcjhepfr7y404dd3tfqqngerma
+    ConstructionDeriveRequestMetadata:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          Account: "#/components/schemas/ConstructionDeriveRequestMetadataAccount"
+          Validator: "#/components/schemas/ConstructionDeriveRequestMetadataValidator"
+          Token: "#/components/schemas/ConstructionDeriveRequestMetadataToken"
+          PreparedStakes: "#/components/schemas/ConstructionDeriveRequestMetadataPreparedStakes"
+          PreparedUnstakes: "#/components/schemas/ConstructionDeriveRequestMetadataPreparedUnstakes"
+          ExitingUnstakes: "#/components/schemas/ConstructionDeriveRequestMetadataExitingUnstakes"
+          ValidatorSystem: "#/components/schemas/ConstructionDeriveRequestMetadataValidatorSystem"
+    ConstructionDeriveRequestMetadataAccount:
+      allOf:
+        - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+    ConstructionDeriveRequestMetadataValidator:
+      allOf:
+        - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+    ConstructionDeriveRequestMetadataToken:
+      allOf:
+        - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+        - type: object
+          required:
+            - symbol
+          properties:
+            symbol:
+              description: The symbol of the token
+              type: string
+    ConstructionDeriveRequestMetadataPreparedStakes:
+      allOf:
+        - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+        - type: object
+          required:
+            - validator
+          properties:
+            validator:
+              $ref: "#/components/schemas/EntityIdentifier"
+    ConstructionDeriveRequestMetadataPreparedUnstakes:
+      allOf:
+        - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+    ConstructionDeriveRequestMetadataExitingUnstakes:
+      allOf:
+        - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+        - type: object
+          required:
+            - validator
+            - epoch_unlock
+          properties:
+            validator:
+              $ref: "#/components/schemas/EntityIdentifier"
+            epoch_unlock:
+              type: integer
+              format: int64
+    ConstructionDeriveRequestMetadataValidatorSystem:
+      allOf:
+        - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+    ConstructionBuildRequest:
+      type: object
+      required:
+        - network_identifier
+        - operation_groups
+        - fee_payer
+      properties:
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
+          description: The name of the network
+        operation_groups:
+          description: Operation groups which describe the intent of the request.
+          type: array
+          items:
+            "$ref": "#/components/schemas/OperationGroup"
+        fee_payer:
+          description: The address from which fees will be subtracted.
+          "$ref": "#/components/schemas/EntityIdentifier"
+        message:
+          description: An optional message payload encoded in hex with the Radix message encoding scheme.
+          type: string
+        disable_resource_allocate_and_destroy:
+          description: Disallow minting and burning of tokens (except for fees). Useful
+            for verification of transactions without needing to fetch additional substate data,
+            such as when verifying transactions in an offline environment.
+          type: boolean
+      example:
+        network_identifier:
+          network: mainnet
+          description: The name of the network
+        fee_payer:
+          address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+        operation_groups:
+          - operations:
+              - type: Resource
+                entity_identifier:
+                  address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+                amount:
+                  resource_identifier:
+                    type: Token
+                    rri: xrd_rr1qy5wfsfh
+                  value: "-1500"
+              - type: Resource
+                entity_identifier:
+                  address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                amount:
+                  resource_identifier:
+                    type: Token
+                    rri: xrd_rr1qy5wfsfh
+                  value: '1500'
+    ConstructionBuildResponse:
+      type: object
+      required:
+        - unsigned_transaction
+        - payload_to_sign
+      properties:
+        unsigned_transaction:
+          description: Hex encoded unsigned transaction.
+          type: string
+        payload_to_sign:
+          description: Hex encoded hash payload to sign.
+          type: string
+      example:
+        unsigned_transaction: 07ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842000000020100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a636aa8c02c00000008000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a636aa8c02bfa2402004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b60100000000000000000000000000000000000000000000000000000000000005dc00
+        payload_to_sign: 06f82577392151638e059f31b16e52b056358ff9b7b72bedef21d701dc3ffa0f
+    ConstructionParseRequest:
+      type: object
+      required:
+        - network_identifier
+        - transaction
+        - signed
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+          description: The name of the network.
+        transaction:
+          type: string
+          description: Hex encoded transaction to parse.
+        signed:
+          type: boolean
+          description: Whether the transaction is signed or not. If not signed, parsing
+            will skip authorization checks.
+      example:
+        network_identifier:
+          network: mainnet
+        transaction: 0d000107ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000002010021000000000000000000000000000000000000000000000000000101ed50bab1800002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e80000008000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e7f6a02004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000000000000000000000000009600
+        signed: false
+    ConstructionParseResponse:
+      type: object
+      required:
+        - operation_groups
+      properties:
+        operation_groups:
+          type: array
+          items:
+            "$ref": "#/components/schemas/OperationGroup"
+          description: The parsed operation groups.
+        metadata:
+          $ref: "#/components/schemas/ParsedTransactionMetadata"
+          description: Metadata related to the transaction.
+      example:
+        metadata:
+          resource_identifier:
+            rri: xrd_rr1qy5wfsfh
+            type: Token
+          value: '72600000000000000'
+        operation_groups:
+          - operations:
+              - amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: "-24000000000000000000000000"
+                substate:
+                  substate_identifier:
+                    identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000002
+                  substate_operation: SHUTDOWN
+                entity_identifier:
+                  address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+                type: Resource
+              - metadata:
+                  substate_data_hex: 06000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e8000
+                amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: '23999999927400000000000000'
+                substate:
+                  substate_identifier:
+                    identifier: e05bc84170aa74bcb0c7ed0393dc489afd8dbd761f68246d2f8de362b942707800000000
+                  substate_operation: BOOTUP
+                entity_identifier:
+                  address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+                type: Resource
+          - operations:
+              - amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: "-23999999927400000000000000"
+                substate:
+                  substate_identifier:
+                    identifier: e05bc84170aa74bcb0c7ed0393dc489afd8dbd761f68246d2f8de362b942707800000000
+                  substate_operation: SHUTDOWN
+                entity_identifier:
+                  address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+                type: Resource
+              - metadata:
+                  substate_data_hex: 06000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e7f6a
+                amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: '23999999927399999999999850'
+                substate:
+                  substate_identifier:
+                    identifier: e05bc84170aa74bcb0c7ed0393dc489afd8dbd761f68246d2f8de362b942707800000001
+                  substate_operation: BOOTUP
+                entity_identifier:
+                  address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+                type: Resource
+              - metadata:
+                  substate_data_hex: 06000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b6010000000000000000000000000000000000000000000000000000000000000096
+                amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: '150'
+                substate:
+                  substate_identifier:
+                    identifier: e05bc84170aa74bcb0c7ed0393dc489afd8dbd761f68246d2f8de362b942707800000002
+                  substate_operation: BOOTUP
+                entity_identifier:
+                  address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                type: Resource
+    ConstructionFinalizeRequest:
+      type: object
+      required:
+        - network_identifier
+        - unsigned_transaction
+        - signature
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+          description: The name of the network
+        unsigned_transaction:
+          description: Hex encoded unsigned transaction.
+          type: string
+        signature:
+          description: The signature object containing the public key and signature of the `unsigned_transaction` bytes,
+            as detailed in the Signature object schema.
+          "$ref": "#/components/schemas/Signature"
+      example:
+        network_identifier:
+          network: mainnet
+          description: The name of the network
+        unsigned_transaction: 0d000107ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000002010021000000000000000000000000000000000000000000000000000101ed50bab1800002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e80000008000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e7f6a02004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000000000000000000000000009600
+        signature:
+          public_key:
+            hex: ''
+          bytes: ''
+    ConstructionFinalizeResponse:
+      type: object
+      required:
+        - signed_transaction
+      properties:
+        signed_transaction:
+          description: Hex encoded signed transaction which can be submitted.
+          type: string
+      example:
+        signed_transaction: 07030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c0100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c00000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000000b015584aed8375f30b22a2203b77dbe15e5dc0a3618fb45ea30ee54a6ebe0054b673a471ad2214b7bd06c4228083643b57e095787c9fb01443e1c3d6890d28f60cf
+    ConstructionHashRequest:
+      type: object
+      required:
+        - network_identifier
+        - signed_transaction
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+          description: The name of the network
+        signed_transaction:
+          description: Hex encoded signed transaction
+          type: string
+      example:
+        network_identifier:
+          network: mainnet
+        signed_transaction: 07030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c0100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c00000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000000b015584aed8375f30b22a2203b77dbe15e5dc0a3618fb45ea30ee54a6ebe0054b673a471ad2214b7bd06c4228083643b57e095787c9fb01443e1c3d6890d28f60cf
+    ConstructionHashResponse:
+      type: object
+      required:
+        - transaction_identifier
+      properties:
+        transaction_identifier:
+          description: The unique hashed identifier of the transaction
+          "$ref": "#/components/schemas/TransactionIdentifier"
+      example:
+        transaction_identifier:
+          hash: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842
+    ConstructionSubmitRequest:
+      type: object
+      required:
+        - network_identifier
+        - signed_transaction
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+          description: The name of the network
+        signed_transaction:
+          description: Hex encoded signed transaction to be submitted.
+          type: string
+      example:
+        network_identifier:
+          network: mainnet
+        signed_transaction: 07030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c0100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c00000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000000b015584aed8375f30b22a2203b77dbe15e5dc0a3618fb45ea30ee54a6ebe0054b673a471ad2214b7bd06c4228083643b57e095787c9fb01443e1c3d6890d28f60cf
+    ConstructionSubmitResponse:
+      type: object
+      required:
+        - transaction_identifier
+        - duplicate
+      properties:
+        transaction_identifier:
+          description: The unique hashed identifier of the transaction submitted.
+          "$ref": "#/components/schemas/TransactionIdentifier"
+        duplicate:
+          description: Is true if the transaction is a duplicate of an existing transaction
+            in the mempool.
+          type: boolean
+      example:
+        transaction_identifier:
+          hash: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842
+        duplicate: false
+    CommittedTransactionsRequest:
+      description: A request to retrieve a sublist of committed transactions from the
+        ledger.
+      type: object
+      required:
+        - state_identifier
+        - network_identifier
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+          description: The name of the network
+        state_identifier:
+          description: The state identifier point from which transactions should be returned.
+            For example, if you specify a `state_version` of 10, the first transaction in the response
+            will take the ledger from a `state_version` of 10 to 11, and so have a commited `state_version` of 11.
+            The ledger starts from a `state_version` of 0, with the first transaction being the genesis transaction.
+          "$ref": "#/components/schemas/PartialStateIdentifier"
+        limit:
+          description: The maximum number of transactions that will be returned.
+          "$ref": "#/components/schemas/LongNumber"
+      example:
+        network_identifier:
+          network: mainnet
+          description: The name of the network
+        state_identifier:
+          state_version: 40897
+        limit: 1
+    CommittedTransactionsResponse:
+      description: A response of committed transactions which specifies the state
+        updates which have occurred on ledger.
+      type: object
+      required:
+        - state_identifier
+        - transactions
+      properties:
+        state_identifier:
+          description: The committed ledger state identifier from which this transaction
+            list starts from.
+          "$ref": "#/components/schemas/StateIdentifier"
+        transactions:
+          description: A committed transactions list starting from the `state_identifier`.
+          type: array
+          items:
+            "$ref": "#/components/schemas/CommittedTransaction"
+      example:
+        state_identifier:
+          state_version: 40897
+          transaction_accumulator: dd61e3e2c9cdda8bf8973ea7d6dd4e6482c569fff45f0ca5e2bfd196f5bae4c9
+        transactions:
+          - metadata:
+              size: 360
+              signed_by:
+                hex: 02aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b6
+              fee:
+                resource:
+                  rri: xrd_rr1qy5wfsfh
+                  type: Token
+                value: '72000000000000000'
+              hex: 07030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c0100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c00000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000000b015584aed8375f30b22a2203b77dbe15e5dc0a3618fb45ea30ee54a6ebe0054b673a471ad2214b7bd06c4228083643b57e095787c9fb01443e1c3d6890d28f60cf
+              timestamp: 1627407310726
+            committed_state_identifier:
+              state_version: 40898
+              transaction_accumulator: 5ea573f2e31640d177047d14122f1015c262f0d14d522596068784406aa1d88f
+            transaction_identifier:
+              hash: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842
+            operation_groups:
+              - metadata:
+                  action:
+                    amount: '72000000000000000'
+                    rri: xrd_rr1qy5wfsfh
+                    from: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                    type: BurnTokens
+                operations:
+                  - amount:
+                      resource_identifier:
+                        rri: xrd_rr1qy5wfsfh
+                        type: Token
+                      value: "-2400000000000000000000000000"
+                    substate:
+                      substate_identifier:
+                        identifier: 030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c
+                      substate_operation: SHUTDOWN
+                    entity_identifier:
+                      address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                    type: Resource
+                  - metadata:
+                      substate_data_hex: 06000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c0000
+                    amount:
+                      resource_identifier:
+                        rri: xrd_rr1qy5wfsfh
+                        type: Token
+                      value: '2399999999928000000000000000'
+                    substate:
+                      substate_identifier:
+                        identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000000
+                      substate_operation: BOOTUP
+                    entity_identifier:
+                      address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                    type: Resource
+              - metadata:
+                  action:
+                    amount: '24000000000000000000000000'
+                    rri: xrd_rr1qy5wfsfh
+                    from: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                    to: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+                    type: TokenTransfer
+                operations:
+                  - amount:
+                      resource_identifier:
+                        rri: xrd_rr1qy5wfsfh
+                        type: Token
+                      value: "-2399999999928000000000000000"
+                    substate:
+                      substate_identifier:
+                        identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000000
+                      substate_operation: SHUTDOWN
+                    entity_identifier:
+                      address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                    type: Resource
+                  - metadata:
+                      substate_data_hex: 06000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c0000
+                    amount:
+                      resource_identifier:
+                        rri: xrd_rr1qy5wfsfh
+                        type: Token
+                      value: '2375999999928000000000000000'
+                    substate:
+                      substate_identifier:
+                        identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000001
+                      substate_operation: BOOTUP
+                    entity_identifier:
+                      address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                    type: Resource
+                  - metadata:
+                      substate_data_hex: 06000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000
+                    amount:
+                      resource_identifier:
+                        rri: xrd_rr1qy5wfsfh
+                        type: Token
+                      value: '24000000000000000000000000'
+                    substate:
+                      substate_identifier:
+                        identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000002
+                      substate_operation: BOOTUP
+                    entity_identifier:
+                      address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+                    type: Resource
+    EngineConfigurationRequest:
+      type: object
+      required:
+        - network_identifier
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+          description: The name of the network
+      example:
+        network_identifier:
+          network: mainnet
+    EngineConfigurationResponse:
+      type: object
+      required:
+        - forks
+        - checkpoints
+      properties:
+        checkpoints:
+          type: array
+          items:
+            $ref: "#/components/schemas/EngineCheckpoint"
+        forks:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Fork"
+    EngineStatusRequest:
+      type: object
+      required:
+        - network_identifier
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+          description: The name of the network
+      example:
+        network_identifier:
+          network: mainnet
+    EngineStatusResponse:
+      type: object
+      required:
+        - engine_state_identifier
+        - validator_set
+      properties:
+        engine_state_identifier:
+          $ref: "#/components/schemas/EngineStateIdentifier"
+        validator_set:
+          type: array
+          items:
+            $ref: "#/components/schemas/Validator"
+        upcoming_fork:
+          $ref: "#/components/schemas/UpcomingFork"
+    ForksVotingResultsRequest:
+      type: object
+      required:
+        - epoch
+      properties:
+        epoch:
+          type: integer
+          format: int64
+    ForksVotingResultsResponse:
+      type: object
+      required:
+        - forks_voting_results
+      properties:
+        forks_voting_results:
+          type: array
+          items:
+            $ref: "#/components/schemas/ForkVotingResult"
+    ForkVotingResult:
+      type: object
+      required:
+        - epoch
+        - candidate_fork_id
+        - stake_percentage_voted
+      properties:
+        epoch:
+          type: integer
+          format: int64
+        candidate_fork_id:
+          type: string
+        stake_percentage_voted:
+          type: number
+          format: float
+    Validator:
+      type: object
+      required:
+        - validator_address
+        - stake
+      properties:
+        validator_address:
+          type: string
+        stake:
+          $ref: "#/components/schemas/BigInteger"
+    EngineCheckpoint:
+      type: object
+      required:
+        - engine_state_identifier
+      properties:
+        engine_state_identifier:
+          $ref: "#/components/schemas/EngineStateIdentifier"
+        checkpoint_transaction:
+          type: "string"
+    EngineStateIdentifier:
+      type: object
+      required:
+        - state_identifier
+        - epoch
+        - round
+        - timestamp
+      properties:
+        state_identifier:
+          $ref: "#/components/schemas/StateIdentifier"
+        epoch:
+          type: integer
+          format: int64
+        round:
+          type: integer
+          format: int64
+        timestamp:
+          type: integer
+          format: int64
+    UpcomingFork:
+      type: object
+      required:
+        - name
+        - epochs_remaining
+      properties:
+        name:
+          type: string
+        epochs_remaining:
+          type: integer
+          format: int64
+    KeyListRequest:
+      type: object
+      required:
+        - network_identifier
+      properties:
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
+          description: The name of the network.
+    KeyListResponse:
+      type: object
+      required:
+        - public_keys
+      properties:
+        public_keys:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicKeyEntry"
+          description: List of keys the node supports.
+    KeySignRequest:
+      type: object
+      required:
+        - network_identifier
+        - unsigned_transaction
+        - public_key
+      properties:
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
+          description: The name of the network.
+        unsigned_transaction:
+          type: string
+          description: Byte array of the unsigned transaction encoded in hex.
+        public_key:
+          $ref: "#/components/schemas/PublicKey"
+          description: The public key to use to sign the transaction.
+    KeySignResponse:
+      type: object
+      required:
+        - signed_transaction
+      properties:
+        signed_transaction:
+          type: string
+          description: Byte array of the signed transaction encoded in hex.
+      example:
+        signed_transaction: 07030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c0100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c00000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000000b015584aed8375f30b22a2203b77dbe15e5dc0a3618fb45ea30ee54a6ebe0054b673a471ad2214b7bd06c4228083643b57e095787c9fb01443e1c3d6890d28f60cf
+    UpdateVoteRequest:
+      type: object
+      required:
+        - network_identifier
+      properties:
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
+          description: The name of the network
+    UpdateVoteResponse:
+      type: object
+      required:
+        - transaction_identifier
+        - duplicate
+      properties:
+        transaction_identifier:
+          description: The unique hashed identifier of the transaction submitted.
+          "$ref": "#/components/schemas/TransactionIdentifier"
+        duplicate:
+          description: Is true if the transaction is a duplicate of an existing transaction
+            in the mempool.
+          type: boolean
+      example:
+        transaction_identifier:
+          hash: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842
+        duplicate: false
+    PublicKeyEntry:
+      type: object
+      required:
+        - public_key
+        - public_key_identifiers
+      properties:
+        public_key:
+          $ref: "#/components/schemas/PublicKey"
+        identifiers:
+          $ref: "#/components/schemas/PublicKeyIdentifiers"
+    PublicKeyIdentifiers:
+      type: object
+      required:
+        - account_entity_identifier
+        - validator_entity_identifier
+        - p2p_node
+      properties:
+        account_entity_identifier:
+          $ref: "#/components/schemas/EntityIdentifier"
+        validator_entity_identifier:
+          $ref: "#/components/schemas/EntityIdentifier"
+        p2p_node:
+          $ref: "#/components/schemas/Peer"
+    Fork:
+      type: object
+      required:
+        - name
+        - is_candidate
+        - engine_identifier
+        - engine_configuration
+      properties:
+        name:
+          type: string
+        is_candidate:
+          type: boolean
+        engine_identifier:
+          "$ref": "#/components/schemas/EngineIdentifier"
+        engine_configuration:
+          "$ref": "#/components/schemas/EngineConfiguration"
+    EngineConfiguration:
+      type: object
+      required:
+        - native_token
+        - maximum_message_length
+        - maximum_validators
+        - token_symbol_pattern
+        - unstaking_delay_epoch_length
+        - minimum_completed_proposals_percentage
+        - maximum_transaction_size
+        - maximum_transactions_per_round
+        - validator_fee_increase_debouncer_epoch_length
+        - maximum_rounds_per_epoch
+        - maximum_validator_fee_increase
+        - minimum_stake
+        - rewards_per_proposal
+        - reserved_symbols
+        - fee_table
+      properties:
+        native_token:
+          $ref: "#/components/schemas/TokenResourceIdentifier"
+        maximum_message_length:
+          type: integer
+        maximum_validators:
+          type: integer
+        token_symbol_pattern:
+          type: string
+        unstaking_delay_epoch_length:
+          type: integer
+          format: int64
+        minimum_completed_proposals_percentage:
+          type: integer
+        maximum_transaction_size:
+          type: integer
+          format: int64
+        maximum_transactions_per_round:
+          type: integer
+        validator_fee_increase_debouncer_epoch_length:
+          type: integer
+          format: int64
+        maximum_rounds_per_epoch:
+          type: integer
+          format: int64
+        maximum_validator_fee_increase:
+          type: integer
+        minimum_stake:
+          "$ref": "#/components/schemas/ResourceAmount"
+        rewards_per_proposal:
+          "$ref": "#/components/schemas/ResourceAmount"
+        reserved_symbols:
+          type: array
+          items:
+            type: string
+        fee_table:
+          "$ref": "#/components/schemas/FeeTable"
+    FeeTable:
+      type: object
+      required:
+        - per_up_substate_fee
+        - per_byte_fee
+      properties:
+        per_up_substate_fee:
+          type: array
+          items:
+            "$ref": "#/components/schemas/UpSubstateFeeEntry"
+        per_byte_fee:
+          "$ref": "#/components/schemas/ResourceAmount"
+    UpSubstateFeeEntry:
+      type: object
+      required:
+        - substate_type_identifier
+        - fee
+      properties:
+        substate_type_identifier:
+          "$ref": "#/components/schemas/SubstateTypeIdentifier"
+        fee:
+          "$ref": "#/components/schemas/ResourceAmount"
+    SubstateTypeIdentifier:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+    EngineIdentifier:
+      type: object
+      required:
+        - engine
+      properties:
+        engine:
+          type: string
+    Transaction:
+      type: object
+      required:
+        - transaction_identifier
+        - operation_groups
+        - metadata
+      properties:
+        transaction_identifier:
+          description: The unique identifier for the transaction.
+          "$ref": "#/components/schemas/TransactionIdentifier"
+        operation_groups:
+          description: Transactions are split into operation groups which are roughly
+            equivalent to ledger accounting entries where all credits have an equivalent
+            debit amount.
+          type: array
+          items:
+            "$ref": "#/components/schemas/OperationGroup"
+        metadata:
+          description: Metadata about the transaction, such as size and fee paid.
+          "$ref": "#/components/schemas/CommittedTransactionMetadata"
+    CommittedTransaction:
+      description: A transaction which has been committed on ledger.
+      type: object
+      required:
+        - transaction_identifier
+        - committed_state_identifier
+        - operation_groups
+        - metadata
+      properties:
+        transaction_identifier:
+          description: The unique identifier for the transaction.
+          "$ref": "#/components/schemas/TransactionIdentifier"
+        committed_state_identifier:
+          description: The ledger state identifier following the commit of this
+            transaction.
+          "$ref": "#/components/schemas/StateIdentifier"
+        operation_groups:
+          description: Transactions are split into operation groups which are roughly
+            equivalent to ledger accounting entries where all credits have an equivalent
+            debit amount.
+          type: array
+          items:
+            "$ref": "#/components/schemas/OperationGroup"
+        metadata:
+          description: Metadata about the transaction, such as size and fee paid.
+          "$ref": "#/components/schemas/CommittedTransactionMetadata"
+    CommittedTransactionMetadata:
+      type: object
+      required:
+        - size
+        - hex
+      properties:
+        size:
+          description: The size of the transaction in bytes.
+          type: integer
+        hex:
+          description: The raw transaction bytes in hex encoding.
+          type: string
+        fee:
+          description: The fee paid for the transaction. If empty,
+            then the transaction was produced by the system.
+          "$ref": "#/components/schemas/ResourceAmount"
+        signed_by:
+          description: Optional public key which signed the transaction. If empty,
+            then the transaction was produced by the system.
+          "$ref": "#/components/schemas/PublicKey"
+        message:
+          description: Optional hex encoded byte array in the transaction.
+          type: string
+    ParsedTransactionMetadata:
+      type: object
+      required:
+        - fee
+      properties:
+        fee:
+          $ref: "#/components/schemas/ResourceAmount"
+        message:
+          type: string
+    OperationGroup:
+      type: object
+      required:
+        - operations
+      properties:
+        operations:
+          description: A group of operations representing a complete state update.
+          type: array
+          items:
+            "$ref": "#/components/schemas/Operation"
+        metadata:
+          description: Metadata for the operation group.
+          type: object
+    Operation:
+      type: object
+      required:
+        - type
+        - entity_identifier
+      properties:
+        type:
+          description: 'The type of operation: Resource, Data, or ResourceAndData.'
+          type: string
+        entity_identifier:
+          description: The entity on which the operation is acting on.
+          "$ref": "#/components/schemas/EntityIdentifier"
+        substate:
+          description: The substate (similar to UTXO) which this operation represents.
+          "$ref": "#/components/schemas/Substate"
+        amount:
+          description: A balance change on the entity represented by the `entity_identifier`.
+          "$ref": "#/components/schemas/ResourceAmount"
+        data:
+          description: A data update on the entity represented by the `entity_identifier`.
+          "$ref": "#/components/schemas/Data"
+        metadata:
+          description: Metadata for the operation.
+          type: object
+    Substate:
+      type: object
+      required:
+        - substate_identifier
+        - substate_operation
+      properties:
+        substate_operation:
+          description: The type of substate operation (equivalent to UTXO create/spend).
+          type: string
+          enum:
+            - BOOTUP
+            - SHUTDOWN
+        substate_identifier:
+          "$ref": "#/components/schemas/SubstateIdentifier"
+    TransactionIdentifier:
+      type: object
+      required:
+        - hash
+      properties:
+        hash:
+          "$ref": "#/components/schemas/TransactionIdentifierHash"
+    SubstateIdentifier:
+      description: Hex encoded unique identifier for the substate.
+      type: object
+      required:
+        - identifier
+      properties:
+        identifier:
+          type: string
+    ResourceAmount:
+      type: object
+      required:
+        - value
+        - resource_identifier
+      properties:
+        value:
+          description: A signed big integer representing an amount of resources in
+            10^18 subunits.
+          "$ref": "#/components/schemas/BigInteger"
+        resource_identifier:
+          description: The resource this amount represents.
+          "$ref": "#/components/schemas/ResourceIdentifier"
+    Data:
+      type: object
+      required:
+        - action
+        - data_object
+      properties:
+        action:
+          description: Data action to take on `data_object`.
+          type: string
+          enum:
+            - CREATE
+            - DELETE
+        data_object:
+          description: The object of the data action.
+          "$ref": "#/components/schemas/DataObject"
+    DataObject:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          description: The type of the data object. Each address may own up to one current
+            object of a given type.
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          VirtualParentData: "#/components/schemas/VirtualParentData"
+          UnclaimedRadixEngineAddress: "#/components/schemas/UnclaimedRadixEngineAddress"
+          RoundData: "#/components/schemas/RoundData"
+          EpochData: "#/components/schemas/EpochData"
+          TokenData: "#/components/schemas/TokenData"
+          TokenMetadata: "#/components/schemas/TokenMetadata"
+          PreparedValidatorRegistered: "#/components/schemas/PreparedValidatorRegistered"
+          PreparedValidatorOwner: "#/components/schemas/PreparedValidatorOwner"
+          PreparedValidatorFee: "#/components/schemas/PreparedValidatorFee"
+          ValidatorMetadata: "#/components/schemas/ValidatorMetadata"
+          ValidatorBFTData: "#/components/schemas/ValidatorBFTData"
+          ValidatorAllowDelegation: "#/components/schemas/ValidatorAllowDelegation"
+          ValidatorData: "#/components/schemas/ValidatorData"
+          ValidatorSystemMetadata: "#/components/schemas/ValidatorSystemMetadata"
+    TokenData:
+      allOf:
+        - "$ref": "#/components/schemas/DataObject"
+        - type: object
+          required:
+            - granularity
+            - is_mutable
+          properties:
+            granularity:
+              description: The granularity of a token given subunits of 10^18 (ie a
+                granularity of 10^17 means that the token can be split into 0.1 chunks
+                but no less.
+              "$ref": "#/components/schemas/BigInteger"
+            is_mutable:
+              description: If true, the `owner` is able to mint/burn tokens. Otherwise,
+                the token is a fixed supply token.
+              type: boolean
+            owner:
+              description: The owner of the token who can mint/burn.
+                This is only available for mutable tokens.
+              $ref: "#/components/schemas/EntityIdentifier"
+    TokenMetadata:
+      allOf:
+        - "$ref": "#/components/schemas/DataObject"
+        - type: object
+          required:
+            - symbol
+          properties:
+            symbol:
+              description: The symbol of the token (not unique in the system).
+              type: string
+            name:
+              description: The name of the token.
+              type: string
+            description:
+              description: Description describing the token.
+              type: string
+            url:
+              description: A url which points to more information about the token.
+              type: string
+            icon_url:
+              description: A url which points to the icon of the token.
+              type: string
+    EntitySetIdentifier:
+      type: object
+      required:
+        - address_regex
+      properties:
+        address_regex:
+          type: string
+    VirtualParentData:
+      allOf:
+        - "$ref": "#/components/schemas/DataObject"
+        - type: object
+          required:
+            - entity_set_identifier
+            - virtual_data_object
+          properties:
+            entity_set_identifier:
+              $ref: "#/components/schemas/EntitySetIdentifier"
+            virtual_data_object:
+              $ref: "#/components/schemas/DataObject"
+    UnclaimedRadixEngineAddress:
+      allOf:
+        - "$ref": "#/components/schemas/DataObject"
+    RoundData:
+      allOf:
+        - "$ref": "#/components/schemas/DataObject"
+        - type: object
+          required:
+            - round
+            - timestamp
+          properties:
+            round:
+              description: The round of the system in the current epoch (ie resets to 0 at the start of the next epoch).
+              "$ref": "#/components/schemas/LongNumber"
+            timestamp:
+              description: A unix timestamp in milliseconds.
+              "$ref": "#/components/schemas/LongNumber"
+    EpochData:
+      allOf:
+        - "$ref": "#/components/schemas/DataObject"
+        - type: object
+          required:
+            - epoch
+          properties:
+            epoch:
+              description: The epoch number of the system.
+              "$ref": "#/components/schemas/LongNumber"
+    PreparedValidatorRegistered:
+      allOf:
+        - "$ref": "#/components/schemas/DataObject"
+        - type: object
+          required:
+            - registered
+          properties:
+            registered:
+              description: The registered flag of the validator which will be updated
+                by the end of `epoch`.
+              type: boolean
+            epoch:
+              description: Optional field, when non-empty describes the epoch the `registered`
+                flag will update, otherwise no update is scheduled.
+              "$ref": "#/components/schemas/LongNumber"
+    PreparedValidatorOwner:
+      allOf:
+        - "$ref": "#/components/schemas/DataObject"
+        - type: object
+          required:
+            - owner
+          properties:
+            owner:
+              description: The owner of the validator which will be updated by the end
+                of `epoch`.
+              $ref: "#/components/schemas/EntityIdentifier"
+            epoch:
+              description: Optional field, when non-empty describes the epoch the `owner`
+                field will update, otherwise no update is scheduled.
+              "$ref": "#/components/schemas/LongNumber"
+    PreparedValidatorFee:
+      allOf:
+        - "$ref": "#/components/schemas/DataObject"
+        - type: object
+          required:
+            - fee
+          properties:
+            fee:
+              description: The fee percentage of the validator which will be updated
+                in the future epoch.
+              type: integer
+            epoch:
+              description: Optional field, when non-empty describes the epoch the `fee`
+                field will update, otherwise no update is scheduled.
+              "$ref": "#/components/schemas/LongNumber"
+    ValidatorMetadata:
+      allOf:
+        - "$ref": "#/components/schemas/DataObject"
+        - type: object
+          required:
+            - name
+            - url
+          properties:
+            name:
+              description: The name for the validator.
+              type: string
+            url:
+              description: A url which points to more information about the validator.
+              type: string
+    ValidatorBFTData:
+      allOf:
+        - "$ref": "#/components/schemas/DataObject"
+        - type: object
+          required:
+            - proposals_completed
+            - proposals_missed
+          properties:
+            proposals_completed:
+              description: The number of completed proposals by this validator as a
+                leader in the current epoch.
+              "$ref": "#/components/schemas/LongNumber"
+            proposals_missed:
+              description: The number of missed proposals by this validator as a leader
+                in the current epoch.
+              "$ref": "#/components/schemas/LongNumber"
+    ValidatorAllowDelegation:
+      allOf:
+        - "$ref": "#/components/schemas/DataObject"
+        - type: object
+          required:
+            - allow_delegation
+          properties:
+            allow_delegation:
+              description: Flag indicating whether stakers besides the owner of the
+                validator can stake to this validator.
+              type: boolean
+    ValidatorData:
+      allOf:
+        - "$ref": "#/components/schemas/DataObject"
+        - type: object
+          required:
+            - owner
+            - registered
+            - fee
+          properties:
+            owner:
+              description: The owner of the validator who receives the fees when others
+                stake to the validator.
+              $ref: "#/components/schemas/EntityIdentifier"
+            registered:
+              description: Flag indicating whether a validator is registered to be part
+                of the validator set.
+              type: boolean
+            fee:
+              description: The fee percentage of the validator in 0.01% subunits (ie
+                10000 == 100%).
+              type: integer
+    ValidatorSystemMetadata:
+      allOf:
+        - "$ref": "#/components/schemas/DataObject"
+        - type: object
+          required:
+            - data
+          properties:
+            data:
+              description: A hex encoded byte array.
+              type: string
+    PublicKey:
+      type: object
+      required:
+        - hex
+      properties:
+        hex:
+          description: Compressed ECSDA Public Key hex encoded.
+          type: string
+    NetworkIdentifier:
+      type: object
+      required:
+        - network
+      properties:
+        network:
+          type: string
+      example:
+        network: mainnet
+    StateIdentifier:
+      type: object
+      required:
+        - state_version
+        - transaction_accumulator
+      properties:
+        state_version:
+          description: The `state_version` represents some valid committed state on
+            ledger (similar to block height).
+          "$ref": "#/components/schemas/LongNumber"
+        transaction_accumulator:
+          description: Accumulator hash representing all transactions which occurred
+            up to `state_version`. Hex encoded.
+          type: string
+      example:
+        state_version: 0
+        transaction_accumulator: "0000000000000000000000000000000000000000000000000000000000000000"
+    PartialStateIdentifier:
+      type: object
+      required:
+        - state_version
+      properties:
+        state_version:
+          description: The `state_version` represents some valid committed state on
+            ledger (similar to block height).
+          "$ref": "#/components/schemas/LongNumber"
+        transaction_accumulator:
+          description: Accumulator hash representing all transactions which occurred
+            up to `state_version`. Hex encoded.
+          type: string
+    EntityIdentifier:
+      type: object
+      required:
+        - address
+      properties:
+        address:
+          description: The top level identifier for an entity.
+          type: string
+        sub_entity:
+          description: Further drill down into an entity. Can be treated as an entirely
+            separate address from `address` or as a child of `address`.
+          "$ref": "#/components/schemas/SubEntity"
+    SubEntity:
+      type: object
+      required:
+        - address
+      properties:
+        address:
+          description: The subentity.
+          type: string
+        metadata:
+          description: Any additional data required to drill down to a particular
+            address is added here.
+          "$ref": "#/components/schemas/SubEntityMetadata"
+    SubEntityMetadata:
+      type: object
+      properties:
+        validator_address:
+          type: string
+        epoch_unlock:
+          "$ref": "#/components/schemas/LongNumber"
+    ResourceIdentifier:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          description: The type of resource.
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          Token: "#/components/schemas/TokenResourceIdentifier"
+          StakeUnit: "#/components/schemas/StakeUnitResourceIdentifier"
+    TokenResourceIdentifier:
+      allOf:
+        - "$ref": "#/components/schemas/ResourceIdentifier"
+        - type: object
+          required:
+            - rri
+          properties:
+            rri:
+              description: The Radix Resource Identifier "RRI" of the token.
+              type: string
+    StakeUnitResourceIdentifier:
+      allOf:
+        - "$ref": "#/components/schemas/ResourceIdentifier"
+        - type: object
+          required:
+            - validator_address
+          properties:
+            validator_address:
+              description: The validator associated with this stake unit.
+              type: string
+    Signature:
+      type: object
+      required:
+        - public_key
+        - bytes
+      properties:
+        public_key:
+          "$ref": "#/components/schemas/PublicKey"
+        bytes:
+          type: string
+          description: An ECDSA signature of with the given `public_key`. The ECDSA signature
+            should be created using the secp256k1 curve and should be encoded in DER format, and
+            then encoded as a hex string.
+    SyncStatus:
+      type: object
+      required:
+        - current_state_version
+        - target_state_version
+      properties:
+        current_state_version:
+          type: integer
+          format: int64
+        target_state_version:
+          type: integer
+          format: int64
+    Peer:
+      type: object
+      required:
+        - peer_id
+      properties:
+        peer_id:
+          type: string
+    Bech32HRPs:
+      type: object
+      required:
+        - account_hrp
+        - validator_hrp
+        - node_hrp
+        - resource_hrp_suffix
+      properties:
+        account_hrp:
+          type: string
+        validator_hrp:
+          type: string
+        node_hrp:
+          type: string
+        resource_hrp_suffix:
+          type: string
+    LongNumber:
+      type: integer
+      format: int64
+    BigInteger:
+      type: string
+      pattern: "^-?[0-9]+$"
+    TransactionIdentifierHash:
+      type: string
+      pattern: "^[0123456789abcdef]{64}$"
+      maxLength: 64
+      minLength: 64
+    NetworkNotSupportedError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - supported_networks
+          properties:
+            supported_networks:
+              type: array
+              items:
+                $ref: "#/components/schemas/NetworkIdentifier"
+    PublicKeyNotSupportedError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - unsupported_public_key
+          properties:
+            unsupported_public_key:
+              $ref: "#/components/schemas/PublicKey"
+    InvalidAddressError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - invalid_address
+          properties:
+            invalid_address:
+              type: string
+    InvalidPartialStateIdentifierError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - invalid_partial_state_identifier
+          properties:
+            invalid_partial_state_identifier:
+              $ref: "#/components/schemas/PartialStateIdentifier"
+    InvalidSubEntityError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - invalid_sub_entity
+          properties:
+            invalid_sub_entity:
+              $ref: "#/components/schemas/SubEntity"
+    InvalidTransactionHashError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - invalid_transaction_hash
+          properties:
+            invalid_transaction_hash:
+              type: string
+    InvalidPublicKeyError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - invalid_public_key
+          properties:
+            invalid_public_key:
+              $ref: "#/components/schemas/PublicKey"
+    InvalidFeePayerEntityError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - invalid_fee_payer_entity
+          properties:
+            invalid_fee_payer_entity:
+              $ref: "#/components/schemas/EntityIdentifier"
+    InvalidHexError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - invalid_hex
+          properties:
+            invalid_hex:
+              type: string
+    InvalidSignatureError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - invalid_signature
+          properties:
+            invalid_signature:
+              type: string
+    InvalidTransactionError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - message
+          properties:
+            message:
+              type: string
+    MempoolFullError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - mempool_transaction_count
+          properties:
+            mempool_transaction_count:
+              type: integer
+    NotEnoughNativeTokensForFeesError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - available
+            - fee_estimate
+          properties:
+            available:
+              $ref: "#/components/schemas/ResourceAmount"
+            fee_estimate:
+              $ref: "#/components/schemas/ResourceAmount"
+    NotEnoughResourcesError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - fee
+            - available
+            - attempted_to_take
+          properties:
+            fee:
+              $ref: "#/components/schemas/ResourceAmount"
+            available:
+              $ref: "#/components/schemas/ResourceAmount"
+            attempted_to_take:
+              $ref: "#/components/schemas/ResourceAmount"
+    BelowMinimumStakeError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - minimum_stake
+            - attempted_to_stake
+          properties:
+            minimum_stake:
+              $ref: "#/components/schemas/ResourceAmount"
+            attempted_to_stake:
+              $ref: "#/components/schemas/ResourceAmount"
+    AboveMaximumValidatorFeeIncreaseError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - maximum_validator_fee_increase
+            - attempted_validator_fee_increase
+          properties:
+            maximum_validator_fee_increase:
+              type: integer
+            attempted_validator_fee_increase:
+              type: integer
+    DataObjectNotSupportedByEntityError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - entity_identifier
+            - data_object_not_supported
+          properties:
+            entity_identifier:
+              $ref: "#/components/schemas/EntityIdentifier"
+            data_object_not_supported:
+              $ref: "#/components/schemas/DataObject"
+    ResourceDepositOperationNotSupportedByEntityError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - entity_identifier
+            - resource_deposit_not_supported
+          properties:
+            entity_identifier:
+              $ref: "#/components/schemas/EntityIdentifier"
+            resource_deposit_not_supported:
+              $ref: "#/components/schemas/ResourceIdentifier"
+    ResourceWithdrawOperationNotSupportedByEntityError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - entity_identifier
+            - resource_withdraw_not_supported
+          properties:
+            entity_identifier:
+              $ref: "#/components/schemas/EntityIdentifier"
+            resource_withdraw_not_supported:
+              $ref: "#/components/schemas/ResourceIdentifier"
+    NotValidatorOwnerError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - owner
+            - user
+          properties:
+            owner:
+              $ref: "#/components/schemas/EntityIdentifier"
+            user:
+              $ref: "#/components/schemas/EntityIdentifier"
+    NotValidatorEntityError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - entity
+          properties:
+            entity:
+              $ref: "#/components/schemas/EntityIdentifier"
+    InvalidDataObjectError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - invalid_data_object
+            - message
+          properties:
+            invalid_data_object:
+              $ref: "#/components/schemas/DataObject"
+            message:
+              type: string
+    MessageTooLongError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - maximum_message_length
+            - attempted_message_length
+          properties:
+            maximum_message_length:
+              type: integer
+            attempted_message_length:
+              type: integer
+    FeeConstructionError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - attempts
+          properties:
+            attempts:
+              type: integer
+    SubstateDependencyNotFoundError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - substate_identifier_not_found
+          properties:
+            substate_identifier_not_found:
+              $ref: "#/components/schemas/SubstateIdentifier"
+    TransactionNotFoundError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - transaction_identifier
+          properties:
+            transaction_identifier:
+              $ref: "#/components/schemas/TransactionIdentifier"
+    StateIdentifierNotFoundError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - state_identifier
+          properties:
+            state_identifier:
+              $ref: "#/components/schemas/PartialStateIdentifier"
+    InternalServerError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          properties:
+            exception:
+              type: string
+            cause:
+              type: string
+    InvalidJsonError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          properties:
+            cause:
+              type: string
+    CoreError:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          NetworkNotSupportedError: "#/components/schemas/NetworkNotSupportedError"
+          PublicKeyNotSupportedError: "#/components/schemas/PublicKeyNotSupportedError"
+          InvalidAddressError: "#/components/schemas/InvalidAddressError"
+          InvalidSubEntityError: "#/components/schemas/InvalidSubEntityError"
+          InvalidTransactionHashError: "#/components/schemas/InvalidTransactionHashError"
+          InvalidPartialStateIdentifierError: "#/components/schemas/InvalidPartialStateIdentifierError"
+          InvalidPublicKeyError: "#/components/schemas/InvalidPublicKeyError"
+          InvalidFeePayerEntityError: "#/components/schemas/InvalidFeePayerEntityError"
+          InvalidHexError: "#/components/schemas/InvalidHexError"
+          InvalidSignatureError: "#/components/schemas/InvalidSignatureError"
+          InvalidTransactionError: "#/components/schemas/InvalidTransactionError"
+          MempoolFullError: "#/components/schemas/MempoolFullError"
+          AboveMaximumValidatorFeeIncreaseError: "#/components/schemas/AboveMaximumValidatorFeeIncreaseError"
+          NotEnoughNativeTokensForFeesError: "#/components/schemas/NotEnoughNativeTokensForFeesError"
+          NotEnoughResourcesError: "#/components/schemas/NotEnoughResourcesError"
+          BelowMinimumStakeError: "#/components/schemas/BelowMinimumStakeError"
+          DataObjectNotSupportedByEntityError: "#/components/schemas/DataObjectNotSupportedByEntityError"
+          ResourceDepositOperationNotSupportedByEntityError: "#/components/schemas/ResourceDepositOperationNotSupportedByEntityError"
+          ResourceWithdrawOperationNotSupportedByEntityError: "#/components/schemas/ResourceWithdrawOperationNotSupportedByEntityError"
+          NotValidatorEntityError: "#/components/schemas/NotValidatorEntityError"
+          NotValidatorOwnerError: "#/components/schemas/NotValidatorOwnerError"
+          InvalidDataObjectError: "#/components/schemas/InvalidDataObjectError"
+          MessageTooLongError: "#/components/schemas/MessageTooLongError"
+          FeeConstructionError: "#/components/schemas/FeeConstructionError"
+          SubstateDependencyNotFoundError: "#/components/schemas/SubstateDependencyNotFoundError"
+          TransactionNotFoundError: "#/components/schemas/TransactionNotFoundError"
+          StateIdentifierNotFoundError: "#/components/schemas/StateIdentifierNotFoundError"
+          InternalServerError: "#/components/schemas/InternalServerError"
+          InvalidJsonError: "#/components/schemas/InvalidJsonError"
+    UnexpectedError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: High level error code, similar to HTTP status codes, e.g. NOT_FOUND=404
+        message:
+          type: string
+          description: Message describing the error code
+        details:
+          $ref: "#/components/schemas/CoreError"
+          description: Further details on the error
+      example:
+        code: 501
+        message: Not supported
+        details:
+          supported_networks:
+            - network: mainnet
+          type: NetworkNotSupportedError
+  examples:
+    StateIdentifier:
+      value:
+        state_version: 46001
+        transaction_accumulator: 2892a2359c37ab02116d46f742c684234d5aa9658682815f8221fc0b613101e0
+    CommittedTransaction:
+      value:
+        metadata:
+          size: 360
+          signed_by:
+            hex: 02aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b6
+          fee:
+            resource_identifier:
+              rri: xrd_rr1qy5wfsfh
+              type: Token
+            value: "72000000000000000"
+          hex: 07030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c0100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c00000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000000b015584aed8375f30b22a2203b77dbe15e5dc0a3618fb45ea30ee54a6ebe0054b673a471ad2214b7bd06c4228083643b57e095787c9fb01443e1c3d6890d28f60cf
+          timestamp: 1627407310726
+        committed_state_identifier:
+          state_version: 40898
+          transaction_accumulator: 5ea573f2e31640d177047d14122f1015c262f0d14d522596068784406aa1d88f
+        transaction_identifier:
+          hash: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842
+        operation_groups:
+          - metadata:
+              action:
+                amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: "72000000000000000"
+                from: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                type: BurnTokens
+            operations:
+              - amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: "-2400000000000000000000000000"
+                substate:
+                  substate_identifier:
+                    identifier: 030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c
+                  substate_operation: SHUTDOWN
+                entity_identifier:
+                  address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                type: Resource
+              - metadata:
+                  substate_data_hex: 06000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c0000
+                amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: "2399999999928000000000000000"
+                substate:
+                  substate_identifier:
+                    identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000000
+                  substate_operation: BOOTUP
+                entity_identifier:
+                  address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                type: Resource
+          - metadata:
+              action:
+                amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: "24000000000000000000000000"
+                from: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                to: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+                type: TokenTransfer
+            operations:
+              - amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: "-2399999999928000000000000000"
+                substate:
+                  substate_identifier:
+                    identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000000
+                  substate_operation: SHUTDOWN
+                entity_identifier:
+                  address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                type: Resource
+              - metadata:
+                  substate_data_hex: 06000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c0000
+                amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: "2375999999928000000000000000"
+                substate:
+                  substate_identifier:
+                    identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000001
+                  substate_operation: BOOTUP
+                entity_identifier:
+                  address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                type: Resource
+              - metadata:
+                  substate_data_hex: 06000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000
+                amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: "24000000000000000000000000"
+                substate:
+                  substate_identifier:
+                    identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000002
+                  substate_operation: BOOTUP
+                entity_identifier:
+                  address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+                type: Resource
+    OperationGroup:
+      value:
+        metadata:
+          action:
+            amount:
+              resource_identifier:
+                rri: xrd_rr1qy5wfsfh
+                type: Token
+              value: "24000000000000000000000000"
+            from: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+            to: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+            type: TokenTransfer
+        operations:
+          - amount:
+              resource_identifier:
+                rri: xrd_rr1qy5wfsfh
+                type: Token
+              value: "-2399999999928000000000000000"
+            substate:
+              substate_identifier:
+                identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000000
+              substate_operation: SHUTDOWN
+            entity_identifier:
+              address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+            type: Resource
+          - metadata:
+              substate_data_hex: 06000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c0000
+            amount:
+              resource_identifier:
+                rri: xrd_rr1qy5wfsfh
+                type: Token
+              value: "2375999999928000000000000000"
+            substate:
+              substate_identifier:
+                identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000001
+              substate_operation: BOOTUP
+            entity_identifier:
+              address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+            type: Resource
+          - metadata:
+              substate_data_hex: 06000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000
+            amount:
+              resource_identifier:
+                rri: xrd_rr1qy5wfsfh
+                type: Token
+              value: "24000000000000000000000000"
+            substate:
+              substate_identifier:
+                identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000002
+              substate_operation: BOOTUP
+            entity_identifier:
+              address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+            type: Resource
+    Operation:
+      value:
+        metadata:
+          substate_data_hex: 06000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c0000
+        amount:
+          resource_identifier:
+            rri: xrd_rr1qy5wfsfh
+            type: Token
+          value: "2375999999928000000000000000"
+        substate:
+          substate_identifier:
+            identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000001
+          substate_operation: BOOTUP
+        entity_identifier:
+          address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+        type: Resource
+    EntityIdentifier:
+      value:
+        address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+        sub_entity:
+          address: prepared_stake
+    ResourceAmount:
+      value:
+        resource_identifier:
+          rri: xrd_rr1qy5wfsfh
+          type: Token
+        value: "2375999999928000000000000000"
+    ResourceIdentifier:
+      value:
+        rri: xrd_rr1qy5wfsfh
+        type: Token
+    Data:
+      value:
+        action: CREATE
+        data_object:
+          round: 0
+          type: RoundData
+          timestamp: 1627330381600

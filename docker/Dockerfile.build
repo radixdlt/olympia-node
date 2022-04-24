@@ -31,4 +31,4 @@ USER root
 RUN gradle clean build -x test
 
 FROM scratch AS export-stage
-COPY --from=build-stage /radixdlt/radixdlt-core/radixdlt/build /
+COPY --from=build-stage /core/radixdlt/build /
