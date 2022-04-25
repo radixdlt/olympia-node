@@ -76,7 +76,8 @@ import com.radixdlt.network.p2p.PeersView;
 public class MockedPeersViewModule extends AbstractModule {
   private final ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNodeOrNull;
 
-  public MockedPeersViewModule(ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNodeOrNull) {
+  public MockedPeersViewModule(
+      ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNodeOrNull) {
     this.peersByNodeOrNull = peersByNodeOrNull;
   }
 
