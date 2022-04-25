@@ -104,6 +104,12 @@ def nodeNames = project.getProperties().get('nodeNames', "")
 def validators = project.getProperties().get('validators', '0')
 def publicKeys = project.getProperties().get('publicKeys', '')
 
+task getClassPathForRadixShell {
+    doLast {
+        print sourceSets.main.runtimeClasspath.getAsPath()
+    }
+}
+
 task generateNodeKey(type: Exec) {
     dependsOn compileJava
     dependsOn ':common:jar'
