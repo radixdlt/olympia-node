@@ -72,20 +72,19 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.p2p.PeersView;
-import java.util.Objects;
 
 public class MockedPeersViewModule extends AbstractModule {
-  private final ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> nodes;
+  private final ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNodeOrNull;
 
-  public MockedPeersViewModule(ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> nodes) {
-    this.nodes = Objects.requireNonNull(nodes);
+  public MockedPeersViewModule(ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNodeOrNull) {
+    this.peersByNodeOrNull = peersByNodeOrNull;
   }
 
   @Provides
   public PeersView peersView(@Self BFTNode self, ImmutableList<BFTNode> allNodes) {
     final var peersForNode =
-        nodes.containsKey(self.getKey())
-            ? nodes // Use a specific set of peers for the given node, if defined
+        peersByNodeOrNull != null && peersByNodeOrNull.containsKey(self.getKey())
+            ? peersByNodeOrNull // Use a specific set of peers for the given node, if defined
                 .get(self.getKey())
                 .stream()
                 .map(BFTNode::create)
