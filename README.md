@@ -1,4 +1,4 @@
-# radixdlt
+# Radix Babylon Node - Java
 
 This is the monorepo for consensus, execution, and networking for the [Radix DLT](https://www.radixdlt.com)
 Distributed Ledger.
