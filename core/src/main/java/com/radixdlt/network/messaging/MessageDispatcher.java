@@ -67,8 +67,8 @@ package com.radixdlt.network.messaging;
 import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
 import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
 
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerManager;
 import com.radixdlt.network.p2p.transport.PeerChannel;

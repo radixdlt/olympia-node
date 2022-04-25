@@ -69,7 +69,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.inject.Provider;
-import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.middleware2.network.ConsensusEventMessage;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;

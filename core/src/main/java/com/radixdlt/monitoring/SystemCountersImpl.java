@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.counters;
+package com.radixdlt.monitoring;
 
 import com.google.common.collect.Maps;
 import java.time.Instant;

@@ -70,7 +70,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.harness.simulation.Monitor;
 import com.radixdlt.harness.simulation.NetworkDroppers;

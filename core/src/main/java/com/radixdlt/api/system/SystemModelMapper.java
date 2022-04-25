@@ -64,7 +64,7 @@
 
 package com.radixdlt.api.system;
 
-import static com.radixdlt.counters.SystemCounters.CounterType.*;
+import static com.radixdlt.monitoring.SystemCounters.CounterType.*;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.system.openapitools.model.Address;
@@ -82,7 +82,7 @@ import com.radixdlt.api.system.openapitools.model.Peer;
 import com.radixdlt.api.system.openapitools.model.PeerChannel;
 import com.radixdlt.api.system.openapitools.model.SyncConfiguration;
 import com.radixdlt.api.system.openapitools.model.SyncMetrics;
-import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeersView;

@@ -77,7 +77,7 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;

@@ -66,7 +66,7 @@ package com.radixdlt.api.system;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.system.openapitools.model.SystemMetricsResponse;
-import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters;
 
 public final class MetricsHandler extends SystemGetJsonHandler<SystemMetricsResponse> {
   private final SystemCounters systemCounters;

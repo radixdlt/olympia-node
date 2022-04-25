@@ -64,10 +64,10 @@
 
 package com.radixdlt.store.berkeley.atom;
 
-import static com.radixdlt.counters.SystemCounters.CounterType.PERSISTENCE_ATOM_LOG_WRITE_BYTES;
-import static com.radixdlt.counters.SystemCounters.CounterType.PERSISTENCE_ATOM_LOG_WRITE_COMPRESSED;
+import static com.radixdlt.monitoring.SystemCounters.CounterType.PERSISTENCE_ATOM_LOG_WRITE_BYTES;
+import static com.radixdlt.monitoring.SystemCounters.CounterType.PERSISTENCE_ATOM_LOG_WRITE_COMPRESSED;
 
-import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.Pair;
 import java.io.IOException;

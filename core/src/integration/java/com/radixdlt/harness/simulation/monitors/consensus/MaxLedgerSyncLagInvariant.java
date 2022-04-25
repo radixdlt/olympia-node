@@ -65,8 +65,8 @@
 package com.radixdlt.harness.simulation.monitors.consensus;
 
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.utils.Pair;

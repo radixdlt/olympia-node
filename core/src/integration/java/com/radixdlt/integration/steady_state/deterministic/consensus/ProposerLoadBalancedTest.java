@@ -70,7 +70,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;

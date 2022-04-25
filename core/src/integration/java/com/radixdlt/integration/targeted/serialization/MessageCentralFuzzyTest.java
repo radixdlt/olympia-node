@@ -73,7 +73,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.Slow;
 import com.radixdlt.network.messaging.EventQueueFactory;

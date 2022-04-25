@@ -69,7 +69,7 @@ import static com.radixdlt.store.berkeley.atom.AppendLog.openSimple;
 import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters;
 import java.io.IOException;
 import org.junit.Rule;
 import org.junit.Test;

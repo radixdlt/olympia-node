@@ -70,14 +70,14 @@ import static com.radixdlt.api.system.health.NodeStatus.BOOTING;
 import static com.radixdlt.api.system.health.NodeStatus.STALLED;
 import static com.radixdlt.api.system.health.NodeStatus.SYNCING;
 import static com.radixdlt.api.system.health.NodeStatus.UP;
-import static com.radixdlt.counters.SystemCounters.CounterType;
+import static com.radixdlt.monitoring.SystemCounters.CounterType;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.api.system.health.ScheduledStatsCollecting;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import java.util.stream.IntStream;
 import org.junit.Test;

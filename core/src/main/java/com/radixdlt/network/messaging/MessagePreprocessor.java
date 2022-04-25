@@ -69,8 +69,8 @@ import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
 import static java.util.Optional.ofNullable;
 
 import com.google.inject.Provider;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.networks.Addressing;

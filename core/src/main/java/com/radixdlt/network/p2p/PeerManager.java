@@ -64,7 +64,7 @@
 
 package com.radixdlt.network.p2p;
 
-import static com.radixdlt.counters.SystemCounters.CounterType.*;
+import static com.radixdlt.monitoring.SystemCounters.CounterType.*;
 import static com.radixdlt.network.messaging.MessagingErrors.PEER_BANNED;
 import static com.radixdlt.network.messaging.MessagingErrors.SELF_CONNECTION_ATTEMPT;
 import static com.radixdlt.utils.functional.Tuple.unitResult;
@@ -76,7 +76,7 @@ import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.p2p.PeerEvent.PeerBanned;

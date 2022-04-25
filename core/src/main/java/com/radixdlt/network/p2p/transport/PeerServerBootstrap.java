@@ -65,7 +65,7 @@
 package com.radixdlt.network.p2p.transport;
 
 import com.google.inject.Inject;
-import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.P2PConfig;

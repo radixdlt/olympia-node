@@ -62,15 +62,18 @@
  * permissions under this License.
  */
 
-package com.radixdlt.counters;
+package com.radixdlt.monitoring;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.Assert.assertNotNull;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
 import java.util.Map;
 import java.util.TreeMap;
+
+import com.radixdlt.monitoring.SystemCountersImpl;
 import org.junit.Test;
 
 public class SystemCountersImplTest {

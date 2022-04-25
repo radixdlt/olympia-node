@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.systeminfo;
+package com.radixdlt.monitoring;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -78,6 +78,7 @@ import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.monitoring.InMemorySystemInfo;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.utils.TypedMocks;

@@ -66,7 +66,7 @@ package com.radixdlt.mempool;
 
 import com.google.common.collect.Lists;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;

@@ -70,10 +70,10 @@ import static com.radixdlt.api.system.health.NodeStatus.OUT_OF_SYNC;
 import static com.radixdlt.api.system.health.NodeStatus.STALLED;
 import static com.radixdlt.api.system.health.NodeStatus.SYNCING;
 import static com.radixdlt.api.system.health.NodeStatus.UP;
-import static com.radixdlt.counters.SystemCounters.CounterType;
+import static com.radixdlt.monitoring.SystemCounters.CounterType;
 
 import com.google.inject.Inject;
-import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import java.util.EnumMap;

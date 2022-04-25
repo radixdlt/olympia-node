@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.systeminfo;
+package com.radixdlt.monitoring;
 
 import static com.radixdlt.atom.SubstateTypeId.VALIDATOR_BFT_DATA;
 

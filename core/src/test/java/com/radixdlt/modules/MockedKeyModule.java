@@ -70,7 +70,7 @@ import com.google.inject.Provides;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
 import java.math.BigInteger;
 import java.util.function.Function;

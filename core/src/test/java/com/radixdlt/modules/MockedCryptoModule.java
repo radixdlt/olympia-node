@@ -71,7 +71,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.serialization.DsonOutput.Output;

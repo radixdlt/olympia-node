@@ -72,7 +72,7 @@ import com.radixdlt.api.core.openapitools.model.NetworkStatusRequest;
 import com.radixdlt.api.core.openapitools.model.NetworkStatusResponse;
 import com.radixdlt.api.core.openapitools.model.SyncStatus;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineReader;

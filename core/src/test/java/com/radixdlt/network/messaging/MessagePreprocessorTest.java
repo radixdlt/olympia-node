@@ -80,7 +80,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.DtoTxnsAndProof;

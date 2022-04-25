@@ -73,7 +73,7 @@ import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.modules.RadixNodeModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.network.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.properties.RuntimeProperties;

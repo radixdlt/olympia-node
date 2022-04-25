@@ -79,7 +79,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
