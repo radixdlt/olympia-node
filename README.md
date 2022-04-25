@@ -10,9 +10,10 @@ It includes a variant implementation of the [HotStuff](https://arxiv.org/abs/180
 Here we have:
 
 - [core](core/README.md): The core consensus and networking modules
-- [engine](engine/README.md): The Radix execution layer which provides
-  a UTXO-based state machine
+- [engine](engine/README.md): The Olympia Radix execution layer which provides a UTXO-based state machine
 - [common](common/README.md): Common Java utilities used by various modules
+- [cli-tools](cli-tools): Various basic command line helpers to assist with spinning up nodes and networks
+- [shell](shell): The Radix shell, which can enable you to easily spin up nodes and interact with them on-the-fly
 
 ## Contribute
 
