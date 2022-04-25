@@ -66,7 +66,7 @@ package com.radixdlt.store;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 
 /** Manages conversion of runtime properties to guice type properties */
 public final class DatabasePropertiesModule extends AbstractModule {

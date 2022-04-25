@@ -71,7 +71,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import org.junit.Test;
 
 public class MessageCentralConfigurationTest {

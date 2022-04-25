@@ -82,7 +82,7 @@ import com.radixdlt.network.p2p.addressbook.InMemoryAddressBookPersistence;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Optional;

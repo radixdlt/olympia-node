@@ -91,7 +91,7 @@ import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;

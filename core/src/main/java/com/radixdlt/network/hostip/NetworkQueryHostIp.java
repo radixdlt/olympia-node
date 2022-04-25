@@ -70,7 +70,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 import com.google.common.net.HostAndPort;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;

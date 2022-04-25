@@ -95,7 +95,7 @@ import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.network.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.sync.CommittedReader;

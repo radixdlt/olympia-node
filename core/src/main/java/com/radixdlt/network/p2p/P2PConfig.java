@@ -65,7 +65,7 @@
 package com.radixdlt.network.p2p;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import java.util.Arrays;
 
 /** Static configuration data for P2P layer. */

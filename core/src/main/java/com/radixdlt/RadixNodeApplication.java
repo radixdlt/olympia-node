@@ -76,7 +76,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.network.p2p.transport.PeerServerBootstrap;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import com.radixdlt.store.berkeley.BerkeleyAddressBookPersistence;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.store.berkeley.BerkeleySafetyStateStore;

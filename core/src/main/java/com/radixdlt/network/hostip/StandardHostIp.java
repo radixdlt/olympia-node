@@ -64,7 +64,7 @@
 
 package com.radixdlt.network.hostip;
 
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 
 /** Provides a standard {@link HostIp} retriever. */
 public final class StandardHostIp {

@@ -92,7 +92,7 @@ import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;

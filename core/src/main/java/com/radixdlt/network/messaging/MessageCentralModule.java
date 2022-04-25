@@ -67,7 +67,7 @@ package com.radixdlt.network.messaging;
 import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import java.util.Objects;
 
 /** Guice configuration for {@link MessageCentral} that includes a UDP transport. */

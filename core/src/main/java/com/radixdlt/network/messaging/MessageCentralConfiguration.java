@@ -64,7 +64,7 @@
 
 package com.radixdlt.network.messaging;
 
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 
 /** Static configuration data for {@link MessageCentral}. */
 public interface MessageCentralConfiguration {

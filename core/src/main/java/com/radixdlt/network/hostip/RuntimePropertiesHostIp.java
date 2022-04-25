@@ -66,7 +66,7 @@ package com.radixdlt.network.hostip;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.net.HostAndPort;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Optional;

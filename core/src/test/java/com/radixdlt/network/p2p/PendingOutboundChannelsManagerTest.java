@@ -76,7 +76,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;

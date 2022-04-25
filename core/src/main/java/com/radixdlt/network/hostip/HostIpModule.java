@@ -65,7 +65,7 @@
 package com.radixdlt.network.hostip;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import java.util.Objects;
 
 /** Guice configuration for {@link HostIp}. */

@@ -80,7 +80,7 @@ import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.monitoring.InMemorySystemInfo;
 import java.io.IOException;

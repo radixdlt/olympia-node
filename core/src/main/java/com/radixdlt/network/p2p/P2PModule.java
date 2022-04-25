@@ -84,7 +84,7 @@ import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrapImpl;
 import com.radixdlt.network.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import com.radixdlt.store.berkeley.BerkeleyAddressBookPersistence;
 
 public final class P2PModule extends AbstractModule {

@@ -64,7 +64,7 @@
 
 package com.radixdlt.utils.time;
 
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 
 public final class Time {
 

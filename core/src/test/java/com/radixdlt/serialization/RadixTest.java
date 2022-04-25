@@ -71,7 +71,7 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import org.junit.BeforeClass;
 import org.mockito.stubbing.Answer;
 import com.radixdlt.utils.time.NtpService;

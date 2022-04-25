@@ -67,7 +67,7 @@ package com.radixdlt.network.hostip;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;

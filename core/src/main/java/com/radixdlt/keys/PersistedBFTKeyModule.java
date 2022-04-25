@@ -74,7 +74,7 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 
 import java.util.function.Function;
 

@@ -68,7 +68,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.UnaryOperator;

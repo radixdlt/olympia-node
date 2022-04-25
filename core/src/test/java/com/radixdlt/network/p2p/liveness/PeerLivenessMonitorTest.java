@@ -85,7 +85,7 @@ import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.PeerEvent.PeerLostLiveness;
 import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import java.util.stream.Stream;
 import org.apache.commons.cli.ParseException;
 import org.json.JSONObject;

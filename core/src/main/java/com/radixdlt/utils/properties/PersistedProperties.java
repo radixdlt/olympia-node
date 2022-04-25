@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.properties;
+package com.radixdlt.utils.properties;
 
 import static com.radixdlt.utils.RadixConstants.STANDARD_CHARSET;
 

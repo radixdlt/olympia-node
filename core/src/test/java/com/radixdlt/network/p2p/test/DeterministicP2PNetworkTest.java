@@ -71,7 +71,7 @@ import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.RadixNodeUri;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import io.reactivex.rxjava3.schedulers.Timed;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.ThreadContext;
