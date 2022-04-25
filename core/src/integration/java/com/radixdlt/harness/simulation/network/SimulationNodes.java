@@ -91,7 +91,7 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.harness.simulation.NodeNetworkMessagesModule;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.keys.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.InMemoryForksEpochStore;
 import com.radixdlt.store.InMemoryEngineStore;

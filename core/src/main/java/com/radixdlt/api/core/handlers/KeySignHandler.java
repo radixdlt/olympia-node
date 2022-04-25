@@ -79,7 +79,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
-import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.keys.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Bytes;
 

@@ -88,7 +88,7 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.keys.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;

@@ -73,7 +73,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.harness.simulation.network.LatencyProvider;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
 import com.radixdlt.harness.simulation.network.SimulationNetwork.MessageInTransit;
-import com.radixdlt.qualifier.LatencyProviderBase;
+
 import java.util.Set;
 import java.util.function.Predicate;
 

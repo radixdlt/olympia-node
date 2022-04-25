@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.qualifier;
+package com.radixdlt.harness.simulation;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;

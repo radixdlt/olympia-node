@@ -75,7 +75,7 @@ import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.qualifier.LocalSigner;
+
 import java.util.function.Function;
 
 /** Configures the key to be used for signing things as a BFT validator. */

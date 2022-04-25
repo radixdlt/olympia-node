@@ -99,7 +99,7 @@ prevents logging same information twice.
 |  Package | Functionality |
 | -------- | ------------- |
 |com.radixdlt.consensus| BFT consensus|
-|com.radixdlt.epochs| Epoch management and processing|
+|com.radixdlt.sync.epochs| Epoch management and processing|
 |com.radixdlt.ledger| Ledger management|
 |com.radixdlt.mempool| Memory pool management|
 |com.radixdlt.network| Network communication|

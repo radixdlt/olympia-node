@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.epochs;
+package com.radixdlt.sync.epochs;
 
 import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.SyncState;

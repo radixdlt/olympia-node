@@ -81,7 +81,7 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.keys.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineMempool;
 import com.radixdlt.utils.UInt256;

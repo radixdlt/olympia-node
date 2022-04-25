@@ -90,7 +90,6 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/** Executes chaos related events */
 public final class ModuleRunnerImpl implements ModuleRunner {
   private static final Logger logger = LogManager.getLogger();
   private ScheduledExecutorService executorService;

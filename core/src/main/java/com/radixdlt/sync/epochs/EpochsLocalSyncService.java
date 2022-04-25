@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.epochs;
+package com.radixdlt.sync.epochs;
 
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTNode;

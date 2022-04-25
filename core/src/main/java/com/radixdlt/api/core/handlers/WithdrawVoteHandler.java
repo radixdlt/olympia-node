@@ -87,7 +87,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.keys.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 
