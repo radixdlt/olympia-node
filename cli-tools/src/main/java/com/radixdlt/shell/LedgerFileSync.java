@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.cli.shell;
+package com.radixdlt.shell;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

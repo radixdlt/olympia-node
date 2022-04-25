@@ -100,7 +100,7 @@ public final class ClasspathScanningSerializationPolicy extends ClassScanningSer
   }
 
   private static Set<Class<?>> scanForSerializable() {
-    Reflections reflections = getReflections("org.radix", "com.radixdlt");
+    Reflections reflections = getReflections("com.radixdlt");
     return reflections.getTypesAnnotatedWith(SerializerConstants.SERIALIZER_ID_ANNOTATION);
   }
 

@@ -45,15 +45,15 @@ jobs:
       - name: Build deb file
         run: |
           cd core
-          ../../gradlew deb4docker
-          cd ../..
+          ../gradlew deb4docker
+          cd ..
           find . -name "*.deb"
       - name: Archive deb package
         uses: actions/upload-artifact@v2
         with:
           name: build-deb
           path: |
-            radixdlt-core/docker
+            ./docker
             retention-days: 1
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
@@ -114,11 +114,11 @@ jobs:
       - name: Docker build and push
         uses: docker/build-push-action@v2
         with:
-          file: ./radixdlt-core/docker/Dockerfile.core
+          file: ./docker/Dockerfile.core
           tags: |
             ${{ steps.set_environment.outputs.radixdlt_image }}:${{ steps.get_version.outputs.docker_tag }}
           push: true
-          context: ./radixdlt-core/docker
+          context: ./docker
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
         # Restoring these files from a GitHub Actions cache might cause problems for future builds.

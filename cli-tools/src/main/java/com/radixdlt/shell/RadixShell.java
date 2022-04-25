@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.cli.shell;
+package com.radixdlt.shell;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -115,6 +115,7 @@ import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 import com.radixdlt.middleware2.network.Message;
 
+@SuppressWarnings("unused")
 public final class RadixShell {
   private static final Logger log = LogManager.getLogger();
 

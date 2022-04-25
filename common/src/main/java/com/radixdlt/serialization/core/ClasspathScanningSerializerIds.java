@@ -104,7 +104,7 @@ public final class ClasspathScanningSerializerIds extends ClassScanningSerialize
     ConfigurationBuilder config =
         new ConfigurationBuilder()
             .setUrls(ClasspathHelper.forJavaClassPath())
-            .filterInputsBy(new FilterBuilder().includePackage("org.radix", "com.radixdlt"));
+            .filterInputsBy(new FilterBuilder().includePackage("com.radixdlt"));
     Reflections reflections = new Reflections(config);
     return reflections.getTypesAnnotatedWith(SerializerConstants.SERIALIZER_ID_ANNOTATION);
   }

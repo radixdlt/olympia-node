@@ -1,6 +1,6 @@
-# radixdlt-core
+# Java Node Core
 
-radixdlt-core is Radix's core consensus and networking module for the [Radix](https://www.radixdlt.com)
+The Java Node Core is Radix's core consensus and networking module for the [Radix](https://www.radixdlt.com)
 Distributed Ledger. It includes a variant implementation of the [HotStuff](https://arxiv.org/abs/1803.05069) BFT-style consensus.
 
 ## Table of contents

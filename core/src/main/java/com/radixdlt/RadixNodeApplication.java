@@ -98,10 +98,10 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 import com.radixdlt.utils.IOUtils;
 
-public final class RadixNodeMain {
+public final class RadixNodeApplication {
   private static final Logger log = LogManager.getLogger();
 
-  private RadixNodeMain() {}
+  private RadixNodeApplication() {}
 
   private static final String SYSTEM_VERSION_DISPLAY;
   private static final String SYSTEM_VERSION_BRANCH;
@@ -119,7 +119,7 @@ public final class RadixNodeMain {
     var display = "unknown-version";
     var map = new HashMap<String, Object>();
 
-    try (var is = RadixNodeMain.class.getResourceAsStream("/version.properties")) {
+    try (var is = RadixNodeApplication.class.getResourceAsStream("/version.properties")) {
       if (is != null) {
         var p = new Properties();
         p.load(is);
@@ -268,7 +268,7 @@ public final class RadixNodeMain {
   private static void dumpExecutionLocation() {
     try {
       String jarFile =
-          RadixNodeMain.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+          RadixNodeApplication.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
       System.setProperty("radix.jar", jarFile);
 
       String jarPath = jarFile;
@@ -288,7 +288,7 @@ public final class RadixNodeMain {
   private static RuntimeProperties loadProperties(String[] args)
       throws IOException, ParseException {
     JSONObject runtimeConfigurationJSON = new JSONObject();
-    try (InputStream is = RadixNodeMain.class.getResourceAsStream("/runtime_options.json")) {
+    try (InputStream is = RadixNodeApplication.class.getResourceAsStream("/runtime_options.json")) {
       if (is != null) {
         runtimeConfigurationJSON = new JSONObject(IOUtils.toString(is));
       }

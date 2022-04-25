@@ -71,7 +71,7 @@ jobs:
       - name: Docker build and push
         uses: docker/build-push-action@v2
         with:
-          file: radixdlt-core/docker/Dockerfile.keygen
+          file: docker/Dockerfile.keygen
           tags: |
             ${{ steps.set_environment.outputs.keygen_image }}:${{ steps.get_version.outputs.docker_tag }}
           push: true

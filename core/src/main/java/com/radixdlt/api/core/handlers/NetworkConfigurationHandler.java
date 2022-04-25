@@ -64,8 +64,8 @@
 
 package com.radixdlt.api.core.handlers;
 
-import static com.radixdlt.RadixNodeMain.SYSTEM_VERSION_KEY;
-import static com.radixdlt.RadixNodeMain.VERSION_STRING_KEY;
+import static com.radixdlt.RadixNodeApplication.SYSTEM_VERSION_KEY;
+import static com.radixdlt.RadixNodeApplication.VERSION_STRING_KEY;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.core.CoreJsonRpcHandler;
@@ -75,7 +75,7 @@ import com.radixdlt.api.core.openapitools.model.NetworkConfigurationResponseVers
 import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.RadixNodeMain;
+import com.radixdlt.RadixNodeApplication;
 
 public class NetworkConfigurationHandler
     extends CoreJsonRpcHandler<Void, NetworkConfigurationResponse> {
@@ -101,7 +101,7 @@ public class NetworkConfigurationHandler
             new NetworkConfigurationResponseVersion()
                 .apiVersion("1.0.0")
                 .coreVersion(
-                    RadixNodeMain.systemVersionInfo()
+                    RadixNodeApplication.systemVersionInfo()
                         .get(SYSTEM_VERSION_KEY)
                         .get(VERSION_STRING_KEY)
                         .toString()));

@@ -45,11 +45,11 @@ From the `radixdlt` repo, on the correct branch, run these commands in turn:
 ./gradlew deb4docker
 
 # Check the image has been built - if this command returns nothing, look for errors with the previous command
-ls -l ./radixdlt-core/docker/*.deb 
+ls -l ./docker/*.deb 
 
 # Build and locally store the image.
 # If successful, the last output should read something like "naming to docker.io/radixdlt/radixdlt-core:main"
-docker-compose -f radixdlt-core/docker/node-1.yml build
+docker-compose -f docker/node-1.yml build
 ```
 
 This builds a `radixdlt/radixdlt-core:main` image and stores it locally under docker-compose's registry.

@@ -65,12 +65,12 @@
 package com.radixdlt;
 
 import static org.junit.Assert.*;
-import static com.radixdlt.RadixNodeMain.calculateVersionString;
+import static com.radixdlt.RadixNodeApplication.calculateVersionString;
 
 import java.util.Map;
 import org.junit.Test;
 
-public class RadixNodeMainTest {
+public class RadixNodeApplicationTest {
   @Test
   public void testCalculateVersionForCleanRepo() {
     var details =

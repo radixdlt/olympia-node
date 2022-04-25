@@ -72,9 +72,14 @@ compileTestJava {
 }
 
 dependencies {
+    implementation project(':core')
     implementation project(':common')
+    implementation project(':engine')
 
     implementation 'commons-cli:commons-cli'
+    implementation "com.github.akarnokd:rxjava3-extensions"
+    implementation 'io.reactivex.rxjava3:rxjava'
+    implementation 'io.netty:netty-all'
 
     testImplementation 'junit:junit'
     testImplementation 'org.mockito:mockito-core'
@@ -96,6 +101,8 @@ def nodeNumber = project.getProperties().get('nodeNumber', 0)
 def nodeNamePrefix = project.getProperties().get('nodeNamePrefix', "fullnode")
 def secretPasswordKey = project.getProperties().get('secretPasswordKey', "")
 def nodeNames = project.getProperties().get('nodeNames', "")
+def validators = project.getProperties().get('validators', '0')
+def publicKeys = project.getProperties().get('publicKeys', '')
 
 task generateNodeKey(type: Exec) {
     dependsOn compileJava
@@ -113,3 +120,69 @@ task generateNodeKey(type: Exec) {
             "--node-names=${nodeNames}",
             "--secret-password-key=${secretPasswordKey}"
 }
+
+task generateDevUniverse(type: Exec) {
+    dependsOn compileJava
+
+    dependsOn ':core:jar'
+    dependsOn ':common:jar'
+    dependsOn ':engine:jar'
+    group = "Execution"
+    description = "Generate development universe"
+    commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
+            "-Dlog4j.configurationFile=${projectDir.path + "/src/main/resources/generateuniverses.log4j2.properties"}",
+            "com.radixdlt.cli.GenerateUniverses",
+            "--validator-count=${validators}"
+}
+
+task generateGenesisFile(type: Exec) {
+    dependsOn compileJava
+
+    dependsOn ':core:jar'
+    dependsOn ':common:jar'
+    dependsOn ':engine:jar'
+    group = "Execution"
+    description = "Generate development universe"
+    commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
+            "-Dlog4j.configurationFile=${projectDir.path + "/src/main/resources/generateuniverses.log4j2.properties"}",
+            "com.radixdlt.cli.GenerateUniverses",
+            "--public-keys=${publicKeys}"
+}
+
+task createGenerateUniversesScripts(type: CreateStartScripts) {
+    mainClassName = 'com.radixdlt.cli.GenerateUniverses'
+    applicationName = 'generate_universes'
+}
+
+tasks.getByName("createGenerateUniversesScripts").outputDir = tasks.getByName("startScripts").outputDir
+tasks.getByName("createGenerateUniversesScripts").classpath = tasks.getByName("startScripts").classpath
+tasks.getByName("createGenerateUniversesScripts").optsEnvironmentVar = tasks.getByName("startScripts").optsEnvironmentVar
+tasks.getByName("createGenerateUniversesScripts") {
+    // Make sure all scripts have consistent classpath
+    doLast {
+        def windowsScriptFile = file getWindowsScript()
+        def unixScriptFile = file getUnixScript()
+        windowsScriptFile.text = windowsScriptFile.text.replace('%APP_HOME%\\lib\\resources', '%RADIXDLT_HOME%')
+        unixScriptFile.text = unixScriptFile.text.replace('$APP_HOME/lib/resources', '$RADIXDLT_HOME')
+    }
+}
+tasks.getByName("startScripts").dependsOn createGenerateUniversesScripts
+
+task createGenerateNodeKeyScripts(type: CreateStartScripts) {
+    mainClassName = 'com.radixdlt.keygen.KeyGenerator'
+    applicationName = 'keygen'
+}
+
+tasks.getByName("createGenerateNodeKeyScripts").outputDir = tasks.getByName("startScripts").outputDir
+tasks.getByName("createGenerateNodeKeyScripts").classpath = tasks.getByName("startScripts").classpath
+tasks.getByName("createGenerateNodeKeyScripts").optsEnvironmentVar = tasks.getByName("startScripts").optsEnvironmentVar
+tasks.getByName("createGenerateNodeKeyScripts") {
+    // Make sure all scripts have consistent classpath
+    doLast {
+        def windowsScriptFile = file getWindowsScript()
+        def unixScriptFile = file getUnixScript()
+        windowsScriptFile.text = windowsScriptFile.text.replace('%APP_HOME%\\lib\\resources', '%RADIXDLT_HOME%')
+        unixScriptFile.text = unixScriptFile.text.replace('$APP_HOME/lib/resources', '$RADIXDLT_HOME')
+    }
+}
+tasks.getByName("startScripts").dependsOn createGenerateNodeKeyScripts

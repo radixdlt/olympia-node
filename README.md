@@ -9,10 +9,10 @@ It includes a variant implementation of the [HotStuff](https://arxiv.org/abs/180
 
 Here we have:
 
-- [radixdlt-core](core/README.md): The core consensus and networking modules
-- [radixdlt-engine](radixdlt-engine/README.md): The Radix execution layer which provides
+- [core](core/README.md): The core consensus and networking modules
+- [engine](engine/README.md): The Radix execution layer which provides
   a UTXO-based state machine
-- [radixdlt-java-common](radixdlt-java-common/README.md): Common Java utilities used by various modules
+- [common](common/README.md): Common Java utilities used by various modules
 
 ## Contribute
 
@@ -39,4 +39,4 @@ Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all your interactions
 
 ## License
 
-The `radixdlt-core`, `radixdlt-engine`, `radixdlt-java-common` code is released under the [Radix License](LICENSE).
+The code in this repository is released under the [Radix License](LICENSE).
