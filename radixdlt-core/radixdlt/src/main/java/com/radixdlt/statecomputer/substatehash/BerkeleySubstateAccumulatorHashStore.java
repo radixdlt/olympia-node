@@ -66,7 +66,6 @@ package com.radixdlt.statecomputer.substatehash;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.io.CharSink;
@@ -240,7 +239,7 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
       try {
         writer.write(
             String.format(
-                "%s%s%s\n",
+                "%s%s%s%n",
                 lastEpochInDbOpt.orElseThrow(),
                 EPOCH_HASH_FILE_SEPARATOR,
                 Hex.toHexString(this.currentSubstateAccumulatorHash)));
@@ -311,13 +310,16 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
   }
 
   private Optional<Long> getLastEpochInFile(File file) throws IOException {
-    BufferedReader input = new BufferedReader(new FileReader(file));
-    var last = Optional.<String>empty();
-    String line;
-    while (!Strings.isNullOrEmpty((line = input.readLine()))) {
-      last = Optional.ofNullable(line);
+    try (BufferedReader input = new BufferedReader(new FileReader(file))) {
+      var last = Optional.<String>empty();
+      String line;
+      while (!Strings.isNullOrEmpty((line = input.readLine()))) {
+        last = Optional.ofNullable(line);
+      }
+      return last.map(it -> it.split(EPOCH_HASH_FILE_SEPARATOR))
+          .map(it -> it[0])
+          .map(Long::valueOf);
     }
-    return last.map(it -> it.split(EPOCH_HASH_FILE_SEPARATOR)).map(it -> it[0]).map(Long::valueOf);
   }
 
   private void openEpochsHashFile() {
@@ -326,7 +328,7 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
     try {
       this.lastEpochInFileOpt = getLastEpochInFile(file);
       assertEpochInTheDbIsNotGreaterThanEpochInTheFile(lastEpochInFileOpt);
-      CharSink charSink = Files.asCharSink(file, Charsets.UTF_8, FileWriteMode.APPEND);
+      CharSink charSink = Files.asCharSink(file, StandardCharsets.UTF_8, FileWriteMode.APPEND);
       writer = charSink.openStream();
     } catch (IOException e) {
       throw new IllegalStateException("Error when opening the epochs hash file.", e);
