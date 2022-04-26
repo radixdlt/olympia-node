@@ -76,6 +76,9 @@ import com.radixdlt.network.p2p.PeersView;
 public class MockedPeersViewModule extends AbstractModule {
   private final ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNodeOrNull;
 
+  /**
+   * @param peersByNodeOrNull - If passed a null map, then each node is assumed to have each other node as a peer.
+   */
   public MockedPeersViewModule(
       ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNodeOrNull) {
     this.peersByNodeOrNull = peersByNodeOrNull;
@@ -98,6 +101,8 @@ public class MockedPeersViewModule extends AbstractModule {
             .map(PeersView.PeerInfo::fromBftNode)
             .collect(ImmutableList.toImmutableList());
 
+    // PeersView is a functional interface, so we're actually returning an implementation of PeersView.peers
+    // To avoid exceptions from multiple iterations of a stream, each call to PeersView.peers returns a new stream
     return peersForNodeWithoutSelf::stream;
   }
 }
