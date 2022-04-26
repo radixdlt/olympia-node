@@ -107,11 +107,11 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
   private Optional<Long> lastEpochInDbOpt;
   private Optional<Long> lastEpochInFileOpt;
 
-  private final Stopwatch watch = Stopwatch.createUnstarted();
+  private final Stopwatch timeSpentOnSubstateAccumulatorThisEpoch = Stopwatch.createUnstarted();
 
   private Forks forks;
   private final RuntimeProperties properties;
-  private Writer writer;
+  private Writer epochsHashFileWriter;
 
   private boolean isUpdateEpochHashAccumulatorFileEnabled;
 
@@ -126,11 +126,11 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
     this.substateAccumulatorHashDatabase = openSubstateAccumulatorHashDatabase(dbEnv);
     this.epochHashDatabase = openEpochHashDatabase(dbEnv);
     this.currentSubstateAccumulatorHash =
-        getPreviousSubStateAccumulatorHash(null).orElse(new byte[0]);
+        getPreviousSubStateAccumulatorHash(null).orElse(HashUtils.zero256().asBytes());
     this.lastEpochInDbOpt = getLatestStoredEpoch();
     this.isUpdateEpochHashAccumulatorFileEnabled =
-        properties.get("update_epoch_hash_accumulator_file.enable", false);
-    if (this.isUpdateEpochHashAccumulatorFileEnabled && writer == null) {
+        this.properties.get("update_epoch_hash_accumulator_file.enable", false);
+    if (this.isUpdateEpochHashAccumulatorFileEnabled && this.epochsHashFileWriter == null) {
       openEpochsHashFile();
     }
   }
@@ -165,9 +165,9 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
   public void close() {
     this.substateAccumulatorHashDatabase.close();
     this.epochHashDatabase.close();
-    if (writer != null) {
+    if (this.epochsHashFileWriter != null) {
       try {
-        this.writer.close();
+        this.epochsHashFileWriter.close();
       } catch (IOException e) {
         throw new IllegalStateException("Error when closing the epochs hash file.", e);
       }
@@ -181,34 +181,33 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
       long stateVersion,
       Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
 
-    watch.start();
+    this.timeSpentOnSubstateAccumulatorThisEpoch.start();
     var isEpochChange = false;
-    var subStateBytes = new byte[0];
+    Long currentEpoch = null;
+    var substateBytes = new byte[0];
     for (REStateUpdate reStateUpdate : txn.stateUpdates().toList()) {
-      subStateBytes = Arrays.concatenate(subStateBytes, getBytes(reStateUpdate));
+      substateBytes = Arrays.concatenate(substateBytes, getBytes(reStateUpdate));
       if (reStateUpdate.getParsed() instanceof EpochData epochData) {
-        lastEpochInDbOpt = Optional.of(epochData.epoch());
+        currentEpoch = epochData.epoch();
         isEpochChange = true;
       }
     }
 
     this.currentSubstateAccumulatorHash =
-        HashUtils.sha256(Arrays.concatenate(this.currentSubstateAccumulatorHash, subStateBytes))
+        HashUtils.sha256(Arrays.concatenate(this.currentSubstateAccumulatorHash, substateBytes))
             .asBytes();
     persistCurrentSubstateAccumulatorHash(dbTxn);
 
     if (isEpochChange) {
-      persistEpochHash(dbTxn);
-      if (logger.isInfoEnabled()) {
-        logEpochHash();
-      }
+      persistEpochHash(dbTxn, currentEpoch);
+      logEpochHash();
       if (this.isUpdateEpochHashAccumulatorFileEnabled) {
         handleEpochHashAccumulatorFileUpdate();
       }
-      watch.reset();
+      this.timeSpentOnSubstateAccumulatorThisEpoch.reset();
     }
-    if (watch.isRunning()) {
-      watch.stop();
+    if (this.timeSpentOnSubstateAccumulatorThisEpoch.isRunning()) {
+      this.timeSpentOnSubstateAccumulatorThisEpoch.stop();
     }
   }
 
@@ -219,30 +218,34 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
   }
 
   private void logEpochHash() {
-    logger.info(
-        "Epoch Hash: {} for epoch {}. Time spent since last epoch: {} s.",
-        Bytes.toHexString(this.currentSubstateAccumulatorHash),
-        lastEpochInDbOpt,
-        watch.elapsed().toSeconds());
+    if (logger.isInfoEnabled()) {
+      logger.info(
+          "Epoch Hash: {} for epoch {}. Time spent since last epoch: {} s.",
+          Bytes.toHexString(this.currentSubstateAccumulatorHash),
+          this.lastEpochInDbOpt,
+          this.timeSpentOnSubstateAccumulatorThisEpoch.elapsed().toSeconds());
+    }
   }
 
-  private OperationStatus persistEpochHash(Transaction dbTxn) {
-    return epochHashDatabase.put(
+  private void persistEpochHash(Transaction dbTxn, long currentEpoch) {
+    this.epochHashDatabase.put(
         dbTxn,
-        new DatabaseEntry(Longs.toByteArray(lastEpochInDbOpt.orElseThrow())),
+        new DatabaseEntry(Longs.toByteArray(currentEpoch)),
         new DatabaseEntry(this.currentSubstateAccumulatorHash));
+    this.lastEpochInDbOpt = Optional.of(currentEpoch);
   }
 
   private void handleEpochHashAccumulatorFileUpdate() {
-    // we do not overwrite hashes and only append in a sequential way
-    if (lastEpochInFileOpt.orElse(0L) == lastEpochInDbOpt.orElse(0L) - 1L) {
+    // We do not overwrite hashes and only append in a sequential way
+    if (this.lastEpochInFileOpt.orElse(0L) == this.lastEpochInDbOpt.orElse(0L) - 1L) {
       try {
-        writer.write(
+        this.epochsHashFileWriter.write(
             String.format(
                 "%s%s%s%n",
                 lastEpochInDbOpt.orElseThrow(),
                 EPOCH_HASH_FILE_SEPARATOR,
                 Hex.toHexString(this.currentSubstateAccumulatorHash)));
+        this.epochsHashFileWriter.flush();
         this.lastEpochInFileOpt = lastEpochInDbOpt;
       } catch (IOException e) {
         throw new IllegalStateException("Error when writing to the epochs hash file.", e);
@@ -283,7 +286,7 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
   }
 
   private SubstateSerialization getSubstateSerializer() {
-    return this.forks.get(lastEpochInDbOpt.orElse(0L)).serialization();
+    return this.forks.get(this.lastEpochInDbOpt.orElse(0L)).serialization();
   }
 
   /* When we are updating the epoch hash file (appending new epoch hashes), we must not have processed epochs greater
@@ -293,19 +296,21 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
     boolean isValid = true;
     if (lastEpochInFileOpt.isEmpty()) {
       if (this.lastEpochInDbOpt.isPresent()) {
-        // there is an epoch in db, but none in the file
+        // There is an epoch in db, but none in the file
         isValid = false;
       }
-    } else if (this.lastEpochInDbOpt.map(it -> it > lastEpochInFileOpt.get()).orElse(false)) {
-      // we have an epoch in the file and need to check it is not greater than the one in the db (if
+    } else if (this.lastEpochInDbOpt.map(it -> it > this.lastEpochInFileOpt.get()).orElse(false)) {
+      // We have an epoch in the file and need to check it is not greater than the one in the db (if
       // any)
       isValid = false;
     }
     if (!isValid) {
       throw new IllegalStateException(
           String.format(
-              "Epoch in db %s is greater than epoch in file %s",
-              this.lastEpochInDbOpt, lastEpochInFileOpt));
+              "The substate accumulator by epoch file has got out of sync with the database (the"
+                  + " file is at epoch %s, but the database is at %s) - so the file can't continue"
+                  + " to be written - please clean the ledger and start again.",
+              lastEpochInFileOpt, this.lastEpochInDbOpt));
     }
   }
 
@@ -327,9 +332,9 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
     File file = new File(projectFolder, EPOCH_HASH_FILE_PATH);
     try {
       this.lastEpochInFileOpt = getLastEpochInFile(file);
-      assertEpochInTheDbIsNotGreaterThanEpochInTheFile(lastEpochInFileOpt);
+      assertEpochInTheDbIsNotGreaterThanEpochInTheFile(this.lastEpochInFileOpt);
       CharSink charSink = Files.asCharSink(file, StandardCharsets.UTF_8, FileWriteMode.APPEND);
-      writer = charSink.openStream();
+      this.epochsHashFileWriter = charSink.openStream();
     } catch (IOException e) {
       throw new IllegalStateException("Error when opening the epochs hash file.", e);
     }
