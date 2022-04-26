@@ -1124,7 +1124,7 @@ public final class CoreModelMapper {
 
   public Operation operation(REStateUpdate update, Function<REAddr, String> addressToSymbol) {
     var operation = new Operation();
-    var substate = (Particle) update.getParsed();
+    var substate = update.getParsed();
     operation.type(SubstateTypeMapping.getType(SubstateTypeId.valueOf(update.typeByte())));
     operation.substate(substate(update.getId(), update.isBootUp()));
     operation.entityIdentifier(entityIdentifier(substate, addressToSymbol));
