@@ -56,6 +56,8 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: integration tests
         run: ./gradlew integrationTest --refresh-dependencies
+        env:
+          JAVA_TOOL_OPTIONS: "-XX:ActiveProcessorCount=16"
   targeted-integration:
     name: Targeted integration tests
     runs-on: integration-tests
@@ -77,3 +79,5 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: targeted integration tests
         run: ./gradlew targetedIntegrationTest --refresh-dependencies
+        env:
+          JAVA_TOOL_OPTIONS: "-XX:ActiveProcessorCount=16"
