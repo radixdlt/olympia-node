@@ -72,28 +72,39 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.p2p.PeersView;
-import java.util.Objects;
 
 public class MockedPeersViewModule extends AbstractModule {
-  private final ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> nodes;
+  private final ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNode;
 
-  public MockedPeersViewModule(ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> nodes) {
-    this.nodes = Objects.requireNonNull(nodes);
+  /**
+   * @param peersByNodeOrNull - If passed a null map, then each node is assumed to have each other
+   *     node as a peer.
+   */
+  public MockedPeersViewModule(
+      ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNodeOrNull) {
+    this.peersByNode = peersByNodeOrNull != null ? peersByNodeOrNull : ImmutableMap.of();
   }
 
   @Provides
   public PeersView peersView(@Self BFTNode self, ImmutableList<BFTNode> allNodes) {
     final var peersForNode =
-        nodes.containsKey(self.getKey())
-            ? nodes // Use a specific set of peers for the given node, if defined
+        peersByNode.containsKey(self.getKey())
+            ? peersByNode // Use a specific set of peers for the given node, if defined
                 .get(self.getKey())
                 .stream()
                 .map(BFTNode::create)
                 .collect(ImmutableList.toImmutableList())
             : allNodes; // Else return all the nodes in the network
 
-    final var peersForNodeWithoutSelf = peersForNode.stream().filter(n -> !n.equals(self));
+    final var peersForNodeWithoutSelf =
+        peersForNode.stream()
+            .filter(n -> !n.equals(self))
+            .map(PeersView.PeerInfo::fromBftNode)
+            .collect(ImmutableList.toImmutableList());
 
-    return () -> peersForNodeWithoutSelf.map(PeersView.PeerInfo::fromBftNode);
+    // PeersView is a functional interface, so we're actually returning an implementation of
+    // PeersView.peers. To avoid exceptions from multiple iterations of a stream,
+    // each call to PeersView.peers returns a new stream
+    return peersForNodeWithoutSelf::stream;
   }
 }
