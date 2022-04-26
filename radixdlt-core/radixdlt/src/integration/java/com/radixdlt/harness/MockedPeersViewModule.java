@@ -92,8 +92,12 @@ public class MockedPeersViewModule extends AbstractModule {
                 .collect(ImmutableList.toImmutableList())
             : allNodes; // Else return all the nodes in the network
 
-    final var peersForNodeWithoutSelf = peersForNode.stream().filter(n -> !n.equals(self));
+    final var peersForNodeWithoutSelf =
+        peersForNode.stream()
+            .filter(n -> !n.equals(self))
+            .map(PeersView.PeerInfo::fromBftNode)
+            .collect(ImmutableList.toImmutableList());
 
-    return () -> peersForNodeWithoutSelf.map(PeersView.PeerInfo::fromBftNode);
+    return peersForNodeWithoutSelf::stream;
   }
 }
