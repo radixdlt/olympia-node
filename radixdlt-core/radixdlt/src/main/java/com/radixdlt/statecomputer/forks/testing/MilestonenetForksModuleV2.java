@@ -90,7 +90,7 @@ public final class MilestonenetForksModuleV2 extends AbstractModule {
   @ProvidesIntoSet
   ForkBuilder milestonenet3() {
     return new ForkBuilder(
-        "milestonenet-3", 31000L, RERulesVersion.OLYMPIA_V1,
+        "milestonenet-3", 39813L, RERulesVersion.OLYMPIA_V1,
         RERulesConfig.testingDefault(10000, FeeTable.create(
             Amount.ofMicroTokens(200),
             Collections.emptyMap())));
