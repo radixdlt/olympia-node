@@ -88,11 +88,18 @@ public final class NextFixedEpochForkPostProcessor implements PostProcessor<Ledg
       EngineStore.EngineStoreInTransaction<LedgerAndBFTProof> engineStore,
       List<REProcessedTxn> txns)
       throws PostProcessorException {
-    if (metadata.getProof().getNextValidatorSet().isPresent()
-        && nextFork.epoch() == metadata.getProof().getEpoch() + 1) {
+    if (isEpochChange(metadata) && shouldNextForkBeEnacted(metadata)) {
       return metadata.withNextForkName(nextFork.name());
     } else {
       return metadata;
     }
+  }
+
+  private boolean isEpochChange(LedgerAndBFTProof metadata) {
+    return metadata.getProof().getNextValidatorSet().isPresent();
+  }
+
+  private boolean shouldNextForkBeEnacted(LedgerAndBFTProof metadata) {
+    return nextFork.epoch() == metadata.getProof().getEpoch() + 1;
   }
 }

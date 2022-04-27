@@ -94,11 +94,18 @@ public final class NextCandidateForkPostProcessor implements PostProcessor<Ledge
       EngineStore.EngineStoreInTransaction<LedgerAndBFTProof> engineStore,
       List<REProcessedTxn> txns)
       throws PostProcessorException {
-    if (metadata.getProof().getNextValidatorSet().isPresent()
-        && Forks.shouldCandidateForkBeEnacted(nextFork, metadata, forksEpochStoreSupplier.get())) {
+    if (isEpochChange(metadata) && shouldNextForkBeEnacted(metadata)) {
       return metadata.withNextForkName(nextFork.name());
     } else {
       return metadata;
     }
+  }
+
+  private boolean isEpochChange(LedgerAndBFTProof metadata) {
+    return metadata.getProof().getNextValidatorSet().isPresent();
+  }
+
+  private boolean shouldNextForkBeEnacted(LedgerAndBFTProof metadata) {
+    return Forks.shouldCandidateForkBeEnacted(nextFork, metadata, forksEpochStoreSupplier.get());
   }
 }

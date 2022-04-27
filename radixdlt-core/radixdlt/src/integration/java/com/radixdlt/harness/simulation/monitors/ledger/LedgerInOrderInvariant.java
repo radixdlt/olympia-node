@@ -100,29 +100,29 @@ public class LedgerInOrderInvariant implements TestInvariant {
               nodeTxns.addAll(ledgerUpdate.getNewTxns());
 
               return commandsPerNode.entrySet().stream()
-                  .filter(e -> nodeTxns != e.getValue())
-                  .filter(e -> e.getValue().size() >= nodeTxns.size())
+                  .filter(entry -> nodeTxns != entry.getValue())
+                  .filter(entry -> entry.getValue().size() >= nodeTxns.size())
                   .findFirst() // Only need to check one node, if passes, guaranteed to pass the
                   // others
                   .flatMap(
-                      e -> {
-                        var otherNode = e.getKey();
-                        var otherNodeTxns = e.getValue();
-                        if (Collections.indexOfSubList(otherNodeTxns, nodeTxns) != 0) {
-                          log.info(
-                              "Two nodes don't agree on commands. Node {} has commands {} but node"
-                                  + " {} has {}",
-                              node,
-                              nodeTxns,
-                              otherNode,
-                              otherNodeTxns);
-                          final var err =
-                              new TestInvariantError("Two nodes don't agree on commands");
-                          return Optional.of(Observable.just(err));
-                        }
-                        return Optional.empty();
-                      })
+                      entry ->
+                          ensureNodesAgreeOnTxns(node, nodeTxns, entry.getKey(), entry.getValue()))
                   .orElse(Observable.empty());
             });
+  }
+
+  private Optional<Observable<TestInvariantError>> ensureNodesAgreeOnTxns(
+      BFTNode node, List<Txn> nodeTxns, BFTNode otherNode, List<Txn> otherNodeTxns) {
+    if (Collections.indexOfSubList(otherNodeTxns, nodeTxns) != 0) {
+      log.info(
+          "Two nodes don't agree on commands. Node {} has commands {} but node" + " {} has {}",
+          node,
+          nodeTxns,
+          otherNode,
+          otherNodeTxns);
+      final var err = new TestInvariantError("Two nodes don't agree on commands");
+      return Optional.of(Observable.just(err));
+    }
+    return Optional.empty();
   }
 }

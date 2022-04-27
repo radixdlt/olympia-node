@@ -103,27 +103,18 @@ public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
     var dataObject = parsedDataObject.dataObject();
 
     switch (dataObject) {
-      case PreparedValidatorRegistered preparedValidatorRegistered:
-        updateRegistered(builder, preparedValidatorRegistered);
-        break;
-      case PreparedValidatorOwner preparedValidatorOwner:
-        var owner = parsedDataObject.getParsed(REAddr.class);
-        updateOwner(builder, owner);
-        break;
-      case PreparedValidatorFee preparedValidatorFee:
-        updateValidatorFee(builder, preparedValidatorFee, config);
-        break;
-      case ValidatorMetadata metadata:
-        updateMetadata(builder, metadata);
-        break;
-      case ValidatorAllowDelegation allowDelegation:
-        updateAllowDelegation(builder, allowDelegation);
-        break;
-      case com.radixdlt.api.core.openapitools.model.ValidatorSystemMetadata systemMetadata:
-        updateValidatorSystemMetadata(builder, systemMetadata);
-        break;
-      default:
-        throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
+      case PreparedValidatorRegistered preparedValidatorRegistered -> updateRegistered(
+          builder, preparedValidatorRegistered);
+      case PreparedValidatorOwner preparedValidatorOwner -> updateOwner(
+          builder, parsedDataObject.getParsed(REAddr.class));
+      case PreparedValidatorFee preparedValidatorFee -> updateValidatorFee(
+          builder, preparedValidatorFee, config);
+      case ValidatorMetadata metadata -> updateMetadata(builder, metadata);
+      case ValidatorAllowDelegation allowDelegation -> updateAllowDelegation(
+          builder, allowDelegation);
+      case com.radixdlt.api.core.openapitools.model.ValidatorSystemMetadata
+      systemMetadata -> updateValidatorSystemMetadata(builder, systemMetadata);
+      default -> throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
     }
   }
 

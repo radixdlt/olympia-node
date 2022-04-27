@@ -87,42 +87,45 @@ public class ForkOverwritesFromPropertiesModule extends AbstractModule {
     @Override
     public Set<ForkBuilder> apply(Set<ForkBuilder> forkBuilders) {
       return forkBuilders.stream()
-          .map(
-              c -> {
-                final var forkDisabledOverwrite =
-                    properties.get(PROPERTIES_PREFIX + c.getName() + ".disabled", "");
-                if (!forkDisabledOverwrite.isBlank()) {
-                  return Optional.<ForkBuilder>empty();
-                }
-
-                final var epochOverwrite =
-                    properties.get(PROPERTIES_PREFIX + c.getName() + ".epoch", "");
-
-                if (!epochOverwrite.isBlank()) {
-                  final var epoch = Long.parseLong(epochOverwrite);
-                  logger.warn("Overwriting epoch of " + c.getName() + " to " + epoch);
-                  c = c.atFixedEpoch(epoch);
-                }
-
-                final var viewOverwrite =
-                    properties.get(PROPERTIES_PREFIX + c.getName() + ".views", "");
-                if (!viewOverwrite.isBlank()) {
-                  final var view = Long.parseLong(viewOverwrite);
-                  logger.warn(
-                      "Overwriting views of "
-                          + c.getName()
-                          + " from "
-                          + c.getEngineRulesConfig().maxRounds()
-                          + " to "
-                          + view);
-                  c = c.withEngineRulesConfig(c.getEngineRulesConfig().overrideMaxRounds(view));
-                }
-
-                return Optional.of(c);
-              })
+          .map(this::overwriteForkIfNeeded)
           .filter(Optional::isPresent)
           .map(Optional::get)
           .collect(Collectors.toSet());
+    }
+
+    private Optional<ForkBuilder> overwriteForkIfNeeded(ForkBuilder forkBuilder) {
+      final var forkDisabledOverwrite =
+          properties.get(PROPERTIES_PREFIX + forkBuilder.getName() + ".disabled", "");
+      if (!forkDisabledOverwrite.isBlank()) {
+        return Optional.<ForkBuilder>empty();
+      }
+
+      final var epochOverwrite =
+          properties.get(PROPERTIES_PREFIX + forkBuilder.getName() + ".epoch", "");
+
+      if (!epochOverwrite.isBlank()) {
+        final var epoch = Long.parseLong(epochOverwrite);
+        logger.warn("Overwriting epoch of " + forkBuilder.getName() + " to " + epoch);
+        forkBuilder = forkBuilder.atFixedEpoch(epoch);
+      }
+
+      final var viewOverwrite =
+          properties.get(PROPERTIES_PREFIX + forkBuilder.getName() + ".views", "");
+      if (!viewOverwrite.isBlank()) {
+        final var view = Long.parseLong(viewOverwrite);
+        logger.warn(
+            "Overwriting views of "
+                + forkBuilder.getName()
+                + " from "
+                + forkBuilder.getEngineRulesConfig().maxRounds()
+                + " to "
+                + view);
+        forkBuilder =
+            forkBuilder.withEngineRulesConfig(
+                forkBuilder.getEngineRulesConfig().overrideMaxRounds(view));
+      }
+
+      return Optional.of(forkBuilder);
     }
   }
 
