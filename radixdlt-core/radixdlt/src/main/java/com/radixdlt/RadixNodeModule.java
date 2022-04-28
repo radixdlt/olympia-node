@@ -299,9 +299,13 @@ public final class RadixNodeModule extends AbstractModule {
     install(new ApiModule(bindAddress, port, enableTransactions, enableSign));
 
     // Substate Hash Accumulator
-    if (properties.get("substate_hash_accumulator.enable", false)) {
-      log.info("Enabling Substate Hash Accumulator");
-      install(new SubstateAccumulatorHashModule());
+    boolean isSubstateHashAccumulatorEnabled =
+        properties.get("substate_hash_accumulator.enable", false);
+    if (isSubstateHashAccumulatorEnabled) {
+      log.info("Enabling Substate Hash Accumulator.");
+      boolean isUpdateEpochHashAccumulatorFileEnabled =
+          this.properties.get("update_epoch_hash_accumulator_file.enable", false);
+      install(new SubstateAccumulatorHashModule(isUpdateEpochHashAccumulatorFileEnabled));
     }
   }
 }

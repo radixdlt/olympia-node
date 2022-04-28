@@ -72,10 +72,10 @@ import com.google.common.io.CharSink;
 import com.google.common.io.FileWriteMode;
 import com.google.common.io.Files;
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.constraintmachine.*;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
@@ -110,15 +110,17 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
   private final Stopwatch timeSpentOnSubstateAccumulatorThisEpoch = Stopwatch.createUnstarted();
 
   private Forks forks;
-  private final RuntimeProperties properties;
   private Writer epochsHashFileWriter;
 
   private boolean isUpdateEpochHashAccumulatorFileEnabled;
 
   @Inject
-  public BerkeleySubstateAccumulatorHashStore(Forks forks, RuntimeProperties properties) {
+  public BerkeleySubstateAccumulatorHashStore(
+      Forks forks,
+      @Named("isUpdateEpochHashAccumulatorFileEnabled")
+          boolean isUpdateEpochHashAccumulatorFileEnabled) {
     this.forks = forks;
-    this.properties = properties;
+    this.isUpdateEpochHashAccumulatorFileEnabled = isUpdateEpochHashAccumulatorFileEnabled;
   }
 
   @Override
@@ -129,8 +131,6 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
         getPreviousSubStateAccumulatorHash().orElse(HashUtils.zero256().asBytes());
     this.lastEpochInDbOpt = getLatestStoredEpoch();
     this.lastStateVersionInDbOpt = getPreviousSubStateAccumulatorStateVersion();
-    this.isUpdateEpochHashAccumulatorFileEnabled =
-        this.properties.get("update_epoch_hash_accumulator_file.enable", false);
     if (this.isUpdateEpochHashAccumulatorFileEnabled && this.epochsHashFileWriter == null) {
       openEpochsHashFile();
     }
@@ -241,10 +241,10 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
   private void logEpochHash() {
     if (logger.isInfoEnabled()) {
       logger.info(
-          "Epoch Hash: {} for epoch {}. Time spent since last epoch: {} s.",
+          "Epoch Hash: {} for epoch {}. Time spent since last epoch: {} ms.",
           Bytes.toHexString(this.currentSubstateAccumulatorHash),
           this.lastEpochInDbOpt,
-          this.timeSpentOnSubstateAccumulatorThisEpoch.elapsed().toSeconds());
+          this.timeSpentOnSubstateAccumulatorThisEpoch.elapsed().toMillis());
     }
   }
 
@@ -372,5 +372,9 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
     } catch (IOException e) {
       throw new IllegalStateException("Error when opening the epochs hash file.", e);
     }
+  }
+
+  public Database getEpochHashDatabase() {
+    return epochHashDatabase;
   }
 }
