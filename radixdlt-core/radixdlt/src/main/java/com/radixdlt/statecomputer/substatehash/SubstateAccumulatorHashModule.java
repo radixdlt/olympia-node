@@ -67,9 +67,16 @@ package com.radixdlt.statecomputer.substatehash;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.name.Names;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
 public class SubstateAccumulatorHashModule extends AbstractModule {
+
+  private final boolean isUpdateEpochHashAccumulatorFileEnabled;
+
+  public SubstateAccumulatorHashModule(boolean isUpdateEpochHashAccumulatorFileEnabled) {
+    this.isUpdateEpochHashAccumulatorFileEnabled = isUpdateEpochHashAccumulatorFileEnabled;
+  }
 
   @Override
   protected void configure() {
@@ -77,5 +84,8 @@ public class SubstateAccumulatorHashModule extends AbstractModule {
     Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
         .addBinding()
         .to(BerkeleySubstateAccumulatorHashStore.class);
+    bindConstant()
+        .annotatedWith(Names.named("isUpdateEpochHashAccumulatorFileEnabled"))
+        .to(isUpdateEpochHashAccumulatorFileEnabled);
   }
 }
