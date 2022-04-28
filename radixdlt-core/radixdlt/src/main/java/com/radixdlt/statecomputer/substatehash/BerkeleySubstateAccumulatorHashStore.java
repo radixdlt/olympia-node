@@ -94,8 +94,7 @@ import org.bouncycastle.util.encoders.Hex;
 public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalStore {
 
   private static final Logger logger = LogManager.getLogger();
-  private static final byte[] SUBSTATE_ACCUMULATOR_HASH_KEY =
-      "substate_accumulator_hash_key".getBytes(StandardCharsets.UTF_8);
+
   private static final String EPOCH_HASH_FILE_PATH =
       "radixdlt-core/radixdlt/src/main/resources/epoch-hash";
   public static final String EPOCH_HASH_FILE_SEPARATOR = "=";
@@ -106,6 +105,7 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
   private byte[] currentSubstateAccumulatorHash;
   private Optional<Long> lastEpochInDbOpt;
   private Optional<Long> lastEpochInFileOpt;
+  private Optional<Long> lastStateVersionInDbOpt;
 
   private final Stopwatch timeSpentOnSubstateAccumulatorThisEpoch = Stopwatch.createUnstarted();
 
@@ -126,8 +126,9 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
     this.substateAccumulatorHashDatabase = openSubstateAccumulatorHashDatabase(dbEnv);
     this.epochHashDatabase = openEpochHashDatabase(dbEnv);
     this.currentSubstateAccumulatorHash =
-        getPreviousSubStateAccumulatorHash(null).orElse(HashUtils.zero256().asBytes());
+        getPreviousSubStateAccumulatorHash().orElse(HashUtils.zero256().asBytes());
     this.lastEpochInDbOpt = getLatestStoredEpoch();
+    this.lastStateVersionInDbOpt = getPreviousSubStateAccumulatorStateVersion();
     this.isUpdateEpochHashAccumulatorFileEnabled =
         this.properties.get("update_epoch_hash_accumulator_file.enable", false);
     if (this.isUpdateEpochHashAccumulatorFileEnabled && this.epochsHashFileWriter == null) {
@@ -181,6 +182,8 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
       long stateVersion,
       Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
 
+    assertLastStateVersionIsAsExpected(stateVersion);
+
     this.timeSpentOnSubstateAccumulatorThisEpoch.start();
     var isEpochChange = false;
     Long currentEpoch = null;
@@ -196,7 +199,8 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
     this.currentSubstateAccumulatorHash =
         HashUtils.sha256(Arrays.concatenate(this.currentSubstateAccumulatorHash, substateBytes))
             .asBytes();
-    persistCurrentSubstateAccumulatorHash(dbTxn);
+    persistCurrentSubstateAccumulatorHash(dbTxn, this.lastStateVersionInDbOpt, stateVersion);
+    this.lastStateVersionInDbOpt = Optional.of(stateVersion);
 
     if (isEpochChange) {
       persistEpochHash(dbTxn, currentEpoch);
@@ -211,8 +215,25 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
     }
   }
 
-  private void persistCurrentSubstateAccumulatorHash(Transaction dbTxn) {
-    var key = new DatabaseEntry(SUBSTATE_ACCUMULATOR_HASH_KEY);
+  private void assertLastStateVersionIsAsExpected(long stateVersion) {
+    long expectedStateVersion = stateVersion - 1;
+    if (this.lastStateVersionInDbOpt.orElse(0L) != expectedStateVersion) {
+      throw new IllegalStateException(
+          String.format(
+              "The substate hash accumulator state version has got out of sync with the ledger (It"
+                  + " is expected to be at %s, but is at %s) - please clean the ledger and start"
+                  + " again.",
+              expectedStateVersion, this.lastStateVersionInDbOpt));
+    }
+  }
+
+  private void persistCurrentSubstateAccumulatorHash(
+      Transaction dbTxn, Optional<Long> currentStateVersion, long nextStateVersion) {
+    currentStateVersion.ifPresent(
+        it ->
+            this.substateAccumulatorHashDatabase.delete(
+                dbTxn, new DatabaseEntry(Longs.toByteArray(it))));
+    var key = new DatabaseEntry(Longs.toByteArray(nextStateVersion));
     this.substateAccumulatorHashDatabase.put(
         dbTxn, key, new DatabaseEntry(this.currentSubstateAccumulatorHash));
   }
@@ -253,11 +274,24 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
     }
   }
 
-  private Optional<byte[]> getPreviousSubStateAccumulatorHash(Transaction dbTxn) {
-    var previousSubstateAccumulatorHash = new DatabaseEntry();
-    var key = new DatabaseEntry(SUBSTATE_ACCUMULATOR_HASH_KEY);
-    this.substateAccumulatorHashDatabase.get(dbTxn, key, previousSubstateAccumulatorHash, null);
-    return Optional.ofNullable(previousSubstateAccumulatorHash.getData());
+  private Optional<byte[]> getPreviousSubStateAccumulatorHash() {
+    try (Cursor cursor = this.substateAccumulatorHashDatabase.openCursor(null, null)) {
+      var key = new DatabaseEntry();
+      var data = new DatabaseEntry();
+      cursor.getLast(key, data, null);
+      return data.getData() == null ? Optional.empty() : Optional.of(data.getData());
+    }
+  }
+
+  private Optional<Long> getPreviousSubStateAccumulatorStateVersion() {
+    try (Cursor cursor = this.substateAccumulatorHashDatabase.openCursor(null, null)) {
+      var key = new DatabaseEntry();
+      var data = new DatabaseEntry();
+      cursor.getLast(key, data, null);
+      return key.getData() == null
+          ? Optional.empty()
+          : Optional.of(Longs.fromByteArray(key.getData()));
+    }
   }
 
   private Optional<Long> getLatestStoredEpoch() {
