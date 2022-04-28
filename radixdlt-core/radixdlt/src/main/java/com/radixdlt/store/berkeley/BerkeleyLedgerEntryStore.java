@@ -737,10 +737,19 @@ public final class BerkeleyLedgerEntryStore
 
       forkConfigDatabase = env.openDatabase(null, FORK_CONFIG_DB, primaryConfig);
 
-      try (var c = forkConfigDatabase.openCursor(null, null)) {
-        while (c.getNext(null, null, DEFAULT) == SUCCESS && c.delete() == SUCCESS) {
+      final var tx = beginTransaction();
+      try {
+        try (var c = forkConfigDatabase.openCursor(tx, null)) {
+          while (c.getNext(null, null, DEFAULT) == SUCCESS && c.delete() == SUCCESS) {
+          }
         }
+        tx.commit();
+      } catch (Exception e) {
+        tx.abort();
+        throw new RuntimeException(e);
       }
+
+
 
       forksVotingResultsDatabase =
           env.openDatabase(
