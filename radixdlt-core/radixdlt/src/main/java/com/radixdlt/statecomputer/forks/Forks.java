@@ -235,7 +235,11 @@ public final class Forks {
     final var currentEpoch = committedReader.getLastProof().map(LedgerProof::getEpoch).orElse(0L);
 
     log.info(
-        "Forks init [stored_forks: {}, configured_forks: {}]", initialStoredForks, forkConfigs());
+        "Forks init [stored_forks: {}; configured_forks: {}]",
+        initialStoredForks.entrySet().stream()
+            .map(e -> e.getValue() + " @ " + e.getKey())
+            .collect(Collectors.joining(", ")),
+        forkConfigs());
 
     executeMissedFixedEpochForks(initialStoredForks, currentEpoch, forksEpochStore);
     executeAndCheckMissedCandidateFork(initialStoredForks, forksEpochStore);
@@ -257,7 +261,7 @@ public final class Forks {
             log.info(
                 "Found a missed fork config {}, inserting at epoch {}",
                 fixedEpochFork.name(),
-                fixedEpochFork);
+                fixedEpochFork.epoch());
             forksEpochStore.storeForkAtEpoch(fixedEpochFork.epoch(), fixedEpochFork.name());
           }
         });
