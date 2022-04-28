@@ -78,6 +78,7 @@ import com.radixdlt.api.core.handlers.ConstructionSubmitHandler;
 import com.radixdlt.api.core.handlers.EngineConfigurationHandler;
 import com.radixdlt.api.core.handlers.EngineStatusHandler;
 import com.radixdlt.api.core.handlers.EntityHandler;
+import com.radixdlt.api.core.handlers.ForksVotingResultsHandler;
 import com.radixdlt.api.core.handlers.KeyListHandler;
 import com.radixdlt.api.core.handlers.KeySignHandler;
 import com.radixdlt.api.core.handlers.MempoolHandler;
@@ -85,6 +86,8 @@ import com.radixdlt.api.core.handlers.MempoolTransactionHandler;
 import com.radixdlt.api.core.handlers.NetworkConfigurationHandler;
 import com.radixdlt.api.core.handlers.NetworkStatusHandler;
 import com.radixdlt.api.core.handlers.TransactionsHandler;
+import com.radixdlt.api.core.handlers.VoteHandler;
+import com.radixdlt.api.core.handlers.WithdrawVoteHandler;
 import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import io.undertow.server.HttpHandler;
@@ -115,6 +118,9 @@ public class CoreApiModule extends AbstractModule {
         .addBinding(HandlerRoute.post("/engine/configuration"))
         .to(EngineConfigurationHandler.class);
     routeBinder.addBinding(HandlerRoute.post("/engine/status")).to(EngineStatusHandler.class);
+    routeBinder
+        .addBinding(HandlerRoute.get("/engine/forks-voting-results"))
+        .to(ForksVotingResultsHandler.class);
     if (transactionsEnable) {
       bind(BerkeleyRecoverableProcessedTxnStore.class).in(Scopes.SINGLETON);
       Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
@@ -143,6 +149,8 @@ public class CoreApiModule extends AbstractModule {
     routeBinder.addBinding(HandlerRoute.post("/key/list")).to(KeyListHandler.class);
     if (signEnable) {
       routeBinder.addBinding(HandlerRoute.post("/key/sign")).to(KeySignHandler.class);
+      routeBinder.addBinding(HandlerRoute.post("/key/vote")).to(VoteHandler.class);
+      routeBinder.addBinding(HandlerRoute.post("/key/withdraw-vote")).to(WithdrawVoteHandler.class);
     }
   }
 }

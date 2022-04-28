@@ -90,7 +90,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineMempool;
-import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
@@ -103,7 +103,7 @@ public class ConstructionSubmitTest extends ApiTest {
   @Inject @LocalSigner private HashSigner hashSigner;
   @Inject @Self private ECPublicKey self;
   @Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
-  @Inject private Forks forks;
+  @Inject private CurrentForkView currentForkView;
   @Inject private RadixEngineMempool mempool;
 
   public ConstructionSubmitTest() {
@@ -124,7 +124,7 @@ public class ConstructionSubmitTest extends ApiTest {
                     new AccountVaultEntity(to),
                     ResourceOperation.deposit(
                         new TokenResource("xrd", REAddr.ofNativeToken()), toTransfer))));
-    var operationTxBuilder = new OperationTxBuilder(null, entityOperationGroups, forks);
+    var operationTxBuilder = new OperationTxBuilder(null, entityOperationGroups, currentForkView);
     var builder =
         radixEngine.constructWithFees(
             operationTxBuilder, false, from, NotEnoughNativeTokensForFeesException::new);

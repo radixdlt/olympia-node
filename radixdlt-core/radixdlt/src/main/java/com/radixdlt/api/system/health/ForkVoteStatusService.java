@@ -62,20 +62,86 @@
  * permissions under this License.
  */
 
-package com.radixdlt.engine;
+package com.radixdlt.api.system.health;
 
-import com.radixdlt.constraintmachine.REProcessedTxn;
-import java.util.List;
+import com.google.common.collect.Streams;
+import com.google.common.hash.HashCode;
+import com.google.inject.Inject;
+import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.forks.CandidateForkVote;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.store.EngineStore;
+import java.util.Objects;
 
-/**
- * Verifies that batched atoms executed on Radix Engine follow some specified rules.
- *
- * @param <M> class of metadata
- */
-public interface BatchVerifier<M> {
-  default void testMetadata(M metadata, List<REProcessedTxn> txns) throws MetadataException {}
+public final class ForkVoteStatusService {
+  public enum ForkVoteStatus {
+    VOTE_REQUIRED,
+    NO_ACTION_NEEDED
+  }
 
-  static <M> BatchVerifier<M> empty() {
-    return new BatchVerifier<>() {};
+  private final BFTNode self;
+  private final EngineStore<LedgerAndBFTProof> engineStore;
+  private final Forks forks;
+  private final CurrentForkView currentForkView;
+
+  @Inject
+  public ForkVoteStatusService(
+      @Self BFTNode self,
+      EngineStore<LedgerAndBFTProof> engineStore,
+      Forks forks,
+      CurrentForkView currentForkView) {
+    this.self = Objects.requireNonNull(self);
+    this.engineStore = Objects.requireNonNull(engineStore);
+    this.forks = Objects.requireNonNull(forks);
+    this.currentForkView = Objects.requireNonNull(currentForkView);
+  }
+
+  public ForkVoteStatus forkVoteStatus() {
+    final var currentFork = currentForkView.currentForkConfig();
+
+    if (forks.getCandidateFork().isEmpty()
+        || forks.getCandidateFork().get().name().equals(currentFork.name())) {
+      return ForkVoteStatus.NO_ACTION_NEEDED;
+    }
+
+    final var expectedCandidateForkVote =
+        CandidateForkVote.create(self.getKey(), forks.getCandidateFork().get());
+
+    final var substateDeserialization =
+        currentFork.engineRules().parser().getSubstateDeserialization();
+
+    try (var validatorMetadataCursor =
+        engineStore.openIndexedCursor(
+            SubstateIndex.create(
+                SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class))) {
+
+      final var maybeSelfForkVote =
+          Streams.stream(validatorMetadataCursor)
+              .map(
+                  s -> {
+                    try {
+                      return (ValidatorSystemMetadata)
+                          substateDeserialization.deserialize(s.getData());
+                    } catch (DeserializeException e) {
+                      throw new IllegalStateException(
+                          "Failed to deserialize ValidatorMetaData substate");
+                    }
+                  })
+              .filter(vm -> vm.validatorKey().equals(self.getKey()))
+              .findAny()
+              .map(substate -> HashCode.fromBytes(substate.data()))
+              .map(CandidateForkVote::new);
+
+      return maybeSelfForkVote.filter(expectedCandidateForkVote::equals).isPresent()
+          ? ForkVoteStatus.NO_ACTION_NEEDED
+          : ForkVoteStatus.VOTE_REQUIRED;
+    }
   }
 }

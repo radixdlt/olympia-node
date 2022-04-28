@@ -62,19 +62,36 @@
  * permissions under this License.
  */
 
-package com.radixdlt.identity;
+package com.radixdlt.statecomputer.forks;
 
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
+import com.google.inject.AbstractModule;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.OptionalBinder;
+import java.util.Set;
+import java.util.function.UnaryOperator;
 
-public class LocalRadixIdentity {
-  private final ECKeyPair myKey;
+/** For testing only, only tests the latest state computer configuration */
+public class RadixEngineForksLatestOnlyModule extends AbstractModule {
+  private final RERulesConfig config;
 
-  LocalRadixIdentity(ECKeyPair myKey) {
-    this.myKey = myKey;
+  public RadixEngineForksLatestOnlyModule() {
+    this(RERulesConfig.testingDefault());
   }
 
-  public ECPublicKey getPublicKey() {
-    return myKey.getPublicKey();
+  public RadixEngineForksLatestOnlyModule(RERulesConfig config) {
+    this.config = config;
+  }
+
+  @Override
+  protected void configure() {
+    OptionalBinder.newOptionalBinder(
+            binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() {})
+        .setBinding()
+        .toInstance(
+            forkBuilders -> {
+              final var newestFork =
+                  forkBuilders.stream().max((a, b) -> (int) (a.minEpoch() - b.minEpoch()));
+              return Set.of(newestFork.get().withEngineRulesConfig(config).atFixedEpoch(0L));
+            });
   }
 }

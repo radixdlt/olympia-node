@@ -83,12 +83,11 @@ import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.function.Supplier;
 
 public record TokenEntity(String symbol, REAddr tokenAddr) implements Entity {
   @Override
   public void overwriteDataObject(
-      ParsedDataObject parsedDataObject, TxBuilder builder, Supplier<RERulesConfig> config)
+      ParsedDataObject parsedDataObject, TxBuilder builder, RERulesConfig config)
       throws TxBuilderException {
     var dataObject = parsedDataObject.dataObject();
     if (dataObject instanceof TokenData tokenData) {

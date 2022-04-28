@@ -83,7 +83,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
@@ -93,7 +93,7 @@ public class TxWithMessageTest extends AbstractRadixEngineTest {
   @Inject @LocalSigner private HashSigner hashSigner;
   @Inject @Self private ECPublicKey self;
   @Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
-  @Inject private Forks forks;
+  @Inject private CurrentForkView currentForkView;
 
   public TxWithMessageTest() {
     super(1, 511);
@@ -113,7 +113,8 @@ public class TxWithMessageTest extends AbstractRadixEngineTest {
                     new AccountVaultEntity(to),
                     ResourceOperation.deposit(
                         new TokenResource("xrd", REAddr.ofNativeToken()), toTransfer))));
-    var operationTxBuilder = new OperationTxBuilder(message, entityOperationGroups, forks);
+    var operationTxBuilder =
+        new OperationTxBuilder(message, entityOperationGroups, currentForkView);
     var builder =
         radixEngine.constructWithFees(
             operationTxBuilder, false, from, NotEnoughNativeTokensForFeesException::new);

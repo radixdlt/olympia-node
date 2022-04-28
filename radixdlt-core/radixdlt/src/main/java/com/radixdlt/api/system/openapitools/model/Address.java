@@ -13,14 +13,13 @@
 
 package com.radixdlt.api.system.openapitools.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.annotations.ApiModelProperty;
-
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
@@ -31,7 +30,7 @@ import java.util.Objects;
   Address.JSON_PROPERTY_BLACKLISTED,
   Address.JSON_PROPERTY_LAST_CONNECTION_STATUS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T22:07:16.415557-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-01-20T22:11:26.095756951+01:00[Europe/Warsaw]")
 public class Address {
   public static final String JSON_PROPERTY_URI = "uri";
   private String uri;
@@ -78,7 +77,6 @@ public class Address {
 
   public static final String JSON_PROPERTY_LAST_CONNECTION_STATUS = "last_connection_status";
   private LastConnectionStatusEnum lastConnectionStatus;
-
 
   public Address uri(String uri) {
     this.uri = uri;

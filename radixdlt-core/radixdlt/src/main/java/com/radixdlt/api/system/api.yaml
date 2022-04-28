@@ -130,6 +130,10 @@ components:
       type: object
       required:
         - status
+        - current_fork_name
+        - executed_forks
+        - fork_vote_status
+        - unknown_reported_forks
       properties:
         status:
           type: string
@@ -139,6 +143,31 @@ components:
             - UP
             - STALLED
             - OUT_OF_SYNC
+        current_fork_name:
+          type: string
+        executed_forks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExecutedFork"
+        fork_vote_status:
+          type: string
+          enum:
+            - VOTE_REQUIRED
+            - NO_ACTION_NEEDED
+        unknown_reported_forks:
+          type: array
+          items:
+            type: object
+            required:
+              - name
+              - reported_by
+            properties:
+              name:
+                type: string
+              reported_by:
+                type: array
+                items:
+                  type: string
     SystemConfigurationResponse:
       type: object
       required:
@@ -543,4 +572,15 @@ components:
           type: integer
           format: int32
         message:
+          type: string
+    ExecutedFork:
+      type: object
+      required:
+        - epoch
+        - name
+      properties:
+        epoch:
+          type: integer
+          format: int64
+        name:
           type: string

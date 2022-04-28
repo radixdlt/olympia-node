@@ -89,10 +89,12 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.GenesisProvider;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
+import com.radixdlt.statecomputer.forks.ForkBuilder;
+import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RERules;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.NewestForkConfig;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
@@ -177,17 +179,34 @@ public final class GenerateUniverses {
     var genesisProvider =
         Guice.createInjector(
                 new AbstractModule() {
-                  @Provides
-                  @Singleton
-                  RERules reRules(Forks forks) {
-                    return forks.get(0);
-                  }
-
                   @Override
                   protected void configure() {
                     install(new CryptoModule());
-                    install(new MainnetForkConfigsModule());
-                    install(new ForksModule());
+                    install(
+                        new AbstractModule() {
+                          @Provides
+                          @Singleton
+                          private Forks forks(Set<ForkBuilder> forkBuilders) {
+                            return Forks.create(
+                                forkBuilders.stream()
+                                    .map(ForkBuilder::build)
+                                    .collect(Collectors.toSet()));
+                          }
+
+                          @Provides
+                          @Singleton
+                          private CurrentForkView currentForkView(Forks forks) {
+                            return new CurrentForkView(forks, forks.genesisFork());
+                          }
+
+                          @Provides
+                          @Singleton
+                          @NewestForkConfig
+                          private ForkConfig newestForkConfig(Forks forks) {
+                            return forks.newestFork();
+                          }
+                        });
+                    install(new MainnetForksModule());
                     bind(new TypeLiteral<List<TxAction>>() {})
                         .annotatedWith(Genesis.class)
                         .toInstance(List.of());

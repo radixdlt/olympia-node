@@ -66,6 +66,7 @@ package com.radixdlt.atom;
 
 import static com.radixdlt.atom.TxAction.*;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -126,6 +127,20 @@ public class TxnConstructionRequest {
 
   public TxnConstructionRequest registerAsValidator(ECPublicKey validatorKey) {
     var action = new RegisterValidator(validatorKey);
+    actions.add(action);
+    return this;
+  }
+
+  public TxnConstructionRequest updateValidatorMetadata(
+      ECPublicKey validatorKey, String name, String uri) {
+    var action = new UpdateValidatorMetadata(validatorKey, name, uri);
+    actions.add(action);
+    return this;
+  }
+
+  public TxnConstructionRequest updateValidatorSystemMetadata(
+      ECPublicKey validatorKey, HashCode bytes) {
+    final var action = new UpdateValidatorSystemMetadata(validatorKey, bytes.asBytes());
     actions.add(action);
     return this;
   }

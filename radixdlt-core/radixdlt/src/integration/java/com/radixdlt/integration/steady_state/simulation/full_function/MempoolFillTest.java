@@ -83,7 +83,7 @@ import com.radixdlt.integration.targeted.mempool.MempoolFillerModule;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.sync.SyncConfig;
 import java.util.Optional;
@@ -102,9 +102,7 @@ public class MempoolFillTest {
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
           .fullFunctionNodes(SyncConfig.of(800L, 10, 5000L))
           .addRadixEngineConfigModules(
-              new MainnetForkConfigsModule(),
-              new RadixEngineForksLatestOnlyModule(),
-              new ForksModule())
+              new MainnetForksModule(), new RadixEngineForksLatestOnlyModule(), new ForksModule())
           .addNodeModule(
               new AbstractModule() {
                 @Override
@@ -153,7 +151,7 @@ public class MempoolFillTest {
   @Ignore("Travis not playing nicely with timeouts so disable for now until fixed.")
   public void filler_should_overwhelm_unratelimited_mempool() {
     SimulationTest simulationTest =
-        bftTestBuilder.overrideWithIncorrectModule(MempoolConfig.asModule(100, 0)).build();
+        bftTestBuilder.addOverrideModuleToAllInitialNodes(MempoolConfig.asModule(100, 0)).build();
 
     final var results = simulationTest.run().awaitCompletion();
     assertThat(results).hasValueSatisfying(new Condition<>(Optional::isPresent, "Error exists"));

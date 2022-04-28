@@ -70,31 +70,41 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.p2p.PeersView;
 
 public class MockedPeersViewModule extends AbstractModule {
+  private final ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNode;
 
-  private final ImmutableMap<Integer, ImmutableList<Integer>> nodes;
-
-  public MockedPeersViewModule(ImmutableMap<Integer, ImmutableList<Integer>> nodes) {
-    this.nodes = nodes;
+  /**
+   * @param peersByNodeOrNull - If passed a null map, then each node is assumed to have each other
+   *     node as a peer.
+   */
+  public MockedPeersViewModule(
+      ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNodeOrNull) {
+    this.peersByNode = peersByNodeOrNull != null ? peersByNodeOrNull : ImmutableMap.of();
   }
 
   @Provides
-  public PeersView peersView(@Self BFTNode self, ImmutableList<BFTNode> nodes) {
-    final var nodesFiltered = filterNodes(self, nodes);
-    return () ->
-        nodesFiltered.stream().filter(n -> !n.equals(self)).map(PeersView.PeerInfo::fromBftNode);
-  }
+  public PeersView peersView(@Self BFTNode self, ImmutableList<BFTNode> allNodes) {
+    final var peersForNode =
+        peersByNode.containsKey(self.getKey())
+            ? peersByNode // Use a specific set of peers for the given node, if defined
+                .get(self.getKey())
+                .stream()
+                .map(BFTNode::create)
+                .collect(ImmutableList.toImmutableList())
+            : allNodes; // Else return all the nodes in the network
 
-  private ImmutableList<BFTNode> filterNodes(BFTNode self, ImmutableList<BFTNode> allNodes) {
-    final var selfIndex = allNodes.indexOf(self);
-    if (nodes != null && nodes.containsKey(selfIndex)) {
-      return nodes.get(selfIndex).stream()
-          .map(allNodes::get)
-          .collect(ImmutableList.toImmutableList());
-    } else {
-      return allNodes;
-    }
+    final var peersForNodeWithoutSelf =
+        peersForNode.stream()
+            .filter(n -> !n.equals(self))
+            .map(PeersView.PeerInfo::fromBftNode)
+            .collect(ImmutableList.toImmutableList());
+
+    // PeersView is a functional interface, so we're actually returning an implementation of
+    // PeersView.peers. To avoid exceptions from multiple iterations of a stream,
+    // each call to PeersView.peers returns a new stream
+    return peersForNodeWithoutSelf::stream;
   }
 }

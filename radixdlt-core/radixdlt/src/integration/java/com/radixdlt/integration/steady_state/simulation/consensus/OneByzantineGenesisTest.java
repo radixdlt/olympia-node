@@ -66,6 +66,7 @@ package com.radixdlt.integration.steady_state.simulation.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.harness.simulation.Monitor;
 import com.radixdlt.harness.simulation.NetworkLatencies;
@@ -90,7 +91,9 @@ public class OneByzantineGenesisTest {
     SimulationTest bftTest =
         bftTestBuilder
             .numNodes(3)
-            .addSingleByzantineModule(new MockedRecoveryModule(HashUtils.random256()))
+            .addOverrideModuleToInitialNodes(
+                nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
+                new MockedRecoveryModule(HashUtils.random256()))
             .addTestModules(ConsensusMonitors.noneCommitted())
             .build();
 
@@ -115,7 +118,9 @@ public class OneByzantineGenesisTest {
     SimulationTest bftTest =
         bftTestBuilder
             .numNodes(4)
-            .addSingleByzantineModule(new MockedRecoveryModule(HashUtils.random256()))
+            .addOverrideModuleToInitialNodes(
+                nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
+                new MockedRecoveryModule(HashUtils.random256()))
             .addTestModules(ConsensusMonitors.liveness(5, TimeUnit.SECONDS))
             .build();
 

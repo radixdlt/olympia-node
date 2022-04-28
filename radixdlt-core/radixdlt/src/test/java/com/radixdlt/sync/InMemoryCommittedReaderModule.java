@@ -62,19 +62,25 @@
  * permissions under this License.
  */
 
-package com.radixdlt.crypto;
+package com.radixdlt.sync;
 
-public enum SignatureScheme {
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.environment.EventProcessorOnDispatch;
+import com.radixdlt.ledger.LedgerUpdate;
 
-  /**
-   * Elliptic Curve Digital Signature Algorithm, or ECDSA for short. A good introduction is to be
-   * found <a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">here
-   * on wikipedia</a>.
-   */
-  ECDSA;
-
+public class InMemoryCommittedReaderModule extends AbstractModule {
   @Override
-  public String toString() {
-    return this.name().toLowerCase();
+  public void configure() {
+    bind(InMemoryCommittedReader.Store.class).toInstance(new InMemoryCommittedReader.Store());
+    bind(CommittedReader.class).to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
+  }
+
+  @Singleton
+  @ProvidesIntoSet
+  public EventProcessorOnDispatch<?> eventProcessor(InMemoryCommittedReader reader) {
+    return new EventProcessorOnDispatch<>(LedgerUpdate.class, reader.updateProcessor());
   }
 }

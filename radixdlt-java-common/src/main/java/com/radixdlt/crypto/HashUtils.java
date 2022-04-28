@@ -68,7 +68,6 @@ import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
-import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -106,12 +105,7 @@ public final class HashUtils {
 
   /** Returns a random hash of length 32 bytes. */
   public static HashCode random256() {
-    return random(32);
-  }
-
-  /** Returns a random hash of specified length. */
-  public static HashCode random(int length) {
-    byte[] randomBytes = new byte[length];
+    byte[] randomBytes = new byte[32];
     secureRandom.nextBytes(randomBytes);
     return HashCode.fromBytes(shaHashHandler.hash256(randomBytes));
   }
@@ -176,10 +170,6 @@ public final class HashUtils {
    */
   public static HashCode transactionIdHash(byte[] payload) {
     return sha256(payload);
-  }
-
-  public static HashCode transactionIdHash(ByteBuffer buf) {
-    return sha256(buf.array(), buf.position(), buf.remaining());
   }
 
   private HashUtils() {

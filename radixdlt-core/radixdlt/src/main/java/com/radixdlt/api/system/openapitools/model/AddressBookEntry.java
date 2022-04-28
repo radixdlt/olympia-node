@@ -13,14 +13,13 @@
 
 package com.radixdlt.api.system.openapitools.model;
 
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.annotations.ApiModelProperty;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
@@ -32,7 +31,7 @@ import java.util.Objects;
   AddressBookEntry.JSON_PROPERTY_BANNED_UNTIL,
   AddressBookEntry.JSON_PROPERTY_KNOWN_ADDRESSES
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T22:04:53.682769-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-01-20T22:11:26.095756951+01:00[Europe/Warsaw]")
 public class AddressBookEntry {
   public static final String JSON_PROPERTY_PEER_ID = "peer_id";
   private String peerId;
@@ -45,7 +44,6 @@ public class AddressBookEntry {
 
   public static final String JSON_PROPERTY_KNOWN_ADDRESSES = "known_addresses";
   private List<Address> knownAddresses = new ArrayList<>();
-
 
   public AddressBookEntry peerId(String peerId) {
     this.peerId = peerId;

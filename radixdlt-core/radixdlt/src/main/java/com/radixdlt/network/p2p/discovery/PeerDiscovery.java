@@ -77,6 +77,7 @@ import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
+import com.radixdlt.networks.Addressing;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -107,6 +108,7 @@ public final class PeerDiscovery {
   private final SeedNodesConfigParser seedNodesConfigParser;
   private final RemoteEventDispatcher<GetPeers> getPeersRemoteEventDispatcher;
   private final RemoteEventDispatcher<PeersResponse> peersResponseRemoteEventDispatcher;
+  private final Addressing addressing;
 
   private final Set<NodeId> peersAsked = new HashSet<>();
 
@@ -118,7 +120,8 @@ public final class PeerDiscovery {
       PeerControl peerControl,
       SeedNodesConfigParser seedNodesConfigParser,
       RemoteEventDispatcher<GetPeers> getPeersRemoteEventDispatcher,
-      RemoteEventDispatcher<PeersResponse> peersResponseRemoteEventDispatcher) {
+      RemoteEventDispatcher<PeersResponse> peersResponseRemoteEventDispatcher,
+      Addressing addressing) {
     this.selfUri = Objects.requireNonNull(selfUri);
     this.peerManager = Objects.requireNonNull(peerManager);
     this.addressBook = Objects.requireNonNull(addressBook);
@@ -127,6 +130,7 @@ public final class PeerDiscovery {
     this.getPeersRemoteEventDispatcher = Objects.requireNonNull(getPeersRemoteEventDispatcher);
     this.peersResponseRemoteEventDispatcher =
         Objects.requireNonNull(peersResponseRemoteEventDispatcher);
+    this.addressing = Objects.requireNonNull(addressing);
   }
 
   public EventProcessor<DiscoverPeers> discoverPeersEventProcessor() {
@@ -165,7 +169,9 @@ public final class PeerDiscovery {
     return (sender, peersResponse) -> {
       final var senderNodeId = NodeId.fromPublicKey(sender.getKey());
       if (!peersAsked.contains(senderNodeId)) {
-        log.warn("Received unexpected peers response from {}", senderNodeId);
+        log.warn(
+            "Received unexpected peers response from {}",
+            addressing.forNodes().of(senderNodeId.getPublicKey()));
         this.peerControl.banPeer(senderNodeId, Duration.ofMinutes(15), "Unexpected peers response");
         return;
       }

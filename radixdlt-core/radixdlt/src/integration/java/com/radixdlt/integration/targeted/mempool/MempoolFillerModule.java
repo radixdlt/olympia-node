@@ -106,13 +106,17 @@ public final class MempoolFillerModule extends AbstractModule {
   @ProvidesIntoSet
   public EventProcessorOnRunner<?> mempoolFillerUpdateProcessor(MempoolFiller mempoolFiller) {
     return new EventProcessorOnRunner<>(
-        "Mempool", MempoolFillerUpdate.class, mempoolFiller.mempoolFillerUpdateEventProcessor());
+        Runners.MEMPOOL,
+        MempoolFillerUpdate.class,
+        mempoolFiller.mempoolFillerUpdateEventProcessor());
   }
 
   @ProvidesIntoSet
   public EventProcessorOnRunner<?> scheduledMessageFloodEventProcessor(
       MempoolFiller mempoolFiller) {
     return new EventProcessorOnRunner<>(
-        "Mempool", ScheduledMempoolFill.class, mempoolFiller.scheduledMempoolFillEventProcessor());
+        Runners.MEMPOOL,
+        ScheduledMempoolFill.class,
+        mempoolFiller.scheduledMempoolFillEventProcessor());
   }
 }

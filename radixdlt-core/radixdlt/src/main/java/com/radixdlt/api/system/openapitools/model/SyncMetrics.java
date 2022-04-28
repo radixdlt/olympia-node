@@ -13,12 +13,11 @@
 
 package com.radixdlt.api.system.openapitools.model;
 
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.annotations.ApiModelProperty;
-
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
@@ -31,7 +30,7 @@ import java.util.Objects;
   SyncMetrics.JSON_PROPERTY_INVALID_RESPONSES_RECEIVED,
   SyncMetrics.JSON_PROPERTY_REMOTE_REQUESTS_RECEIVED
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T18:26:53.100586-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-01-20T22:11:26.095756951+01:00[Europe/Warsaw]")
 public class SyncMetrics {
   public static final String JSON_PROPERTY_CURRENT_STATE_VERSION = "current_state_version";
   private Long currentStateVersion;
@@ -47,7 +46,6 @@ public class SyncMetrics {
 
   public static final String JSON_PROPERTY_REMOTE_REQUESTS_RECEIVED = "remote_requests_received";
   private Long remoteRequestsReceived;
-
 
   public SyncMetrics currentStateVersion(Long currentStateVersion) {
     this.currentStateVersion = currentStateVersion;

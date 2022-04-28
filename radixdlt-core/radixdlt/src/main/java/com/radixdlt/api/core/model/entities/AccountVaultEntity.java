@@ -87,13 +87,11 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.function.Supplier;
 import org.bouncycastle.util.Arrays;
 
 public record AccountVaultEntity(REAddr accountAddress) implements Entity {
   @Override
-  public void deposit(
-      ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) {
+  public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, RERulesConfig config) {
     final Particle substate;
     if (amount.resource() instanceof TokenResource tokenResource) {
       var tokenAddress = tokenResource.tokenAddress();

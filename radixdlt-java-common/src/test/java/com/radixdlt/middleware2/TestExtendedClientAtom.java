@@ -89,12 +89,12 @@ public class TestExtendedClientAtom extends TestClientAtom {
   }
 
   public TestExtendedClientAtom(String metaData) {
-    super(AID.from(HashUtils.random(AID.BYTES).asBytes()), metaData);
+    super(AID.from(HashUtils.random256().asBytes()), metaData);
     this.extra = null;
   }
 
   public static TestExtendedClientAtom create(String metadata, String extra) {
-    var id = AID.from(HashUtils.random(AID.BYTES).asBytes());
+    var id = AID.from(HashUtils.random256().asBytes());
     return new TestExtendedClientAtom(id, metadata, extra);
   }
 

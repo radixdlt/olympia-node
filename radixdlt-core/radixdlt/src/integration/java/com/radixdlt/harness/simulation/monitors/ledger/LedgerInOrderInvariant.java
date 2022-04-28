@@ -68,7 +68,6 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.ledger.LedgerUpdate;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -76,12 +75,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Ledger-side safety check. Checks that commands and the order getting persisted are the same
  * across all nodes.
  */
 public class LedgerInOrderInvariant implements TestInvariant {
+  private static final Logger log = LogManager.getLogger();
 
   @Override
   public Observable<TestInvariantError> check(RunningNetwork network) {
@@ -92,27 +94,35 @@ public class LedgerInOrderInvariant implements TestInvariant {
         .ledgerUpdates()
         .flatMap(
             nodeAndCommand -> {
-              BFTNode node = nodeAndCommand.getFirst();
-              LedgerUpdate ledgerUpdate = nodeAndCommand.getSecond();
-              List<Txn> nodeTxns = commandsPerNode.get(node);
+              final var node = nodeAndCommand.getFirst();
+              final var ledgerUpdate = nodeAndCommand.getSecond();
+              final var nodeTxns = commandsPerNode.computeIfAbsent(node, k -> new ArrayList<>());
               nodeTxns.addAll(ledgerUpdate.getNewTxns());
 
-              return commandsPerNode.values().stream()
-                  .filter(list -> nodeTxns != list)
-                  .filter(list -> list.size() >= nodeTxns.size())
+              return commandsPerNode.entrySet().stream()
+                  .filter(entry -> nodeTxns != entry.getValue())
+                  .filter(entry -> entry.getValue().size() >= nodeTxns.size())
                   .findFirst() // Only need to check one node, if passes, guaranteed to pass the
                   // others
                   .flatMap(
-                      list -> {
-                        if (Collections.indexOfSubList(list, nodeTxns) != 0) {
-                          TestInvariantError err =
-                              new TestInvariantError(
-                                  "Two nodes don't agree on commands: " + list + " " + nodeTxns);
-                          return Optional.of(Observable.just(err));
-                        }
-                        return Optional.empty();
-                      })
+                      entry ->
+                          ensureNodesAgreeOnTxns(node, nodeTxns, entry.getKey(), entry.getValue()))
                   .orElse(Observable.empty());
             });
+  }
+
+  private Optional<Observable<TestInvariantError>> ensureNodesAgreeOnTxns(
+      BFTNode node, List<Txn> nodeTxns, BFTNode otherNode, List<Txn> otherNodeTxns) {
+    if (Collections.indexOfSubList(otherNodeTxns, nodeTxns) != 0) {
+      log.info(
+          "Two nodes don't agree on commands. Node {} has commands {} but node" + " {} has {}",
+          node,
+          nodeTxns,
+          otherNode,
+          otherNodeTxns);
+      final var err = new TestInvariantError("Two nodes don't agree on commands");
+      return Optional.of(Observable.just(err));
+    }
+    return Optional.empty();
   }
 }

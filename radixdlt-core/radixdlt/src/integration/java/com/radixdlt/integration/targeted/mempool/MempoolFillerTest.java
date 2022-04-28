@@ -85,7 +85,7 @@ import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.PrivateKeys;
@@ -114,10 +114,10 @@ public class MempoolFillerTest {
 
   private Injector getInjector() {
     return Guice.createInjector(
+        new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(),
-        MempoolConfig.asModule(10, 10),
-        new MainnetForkConfigsModule(),
         new ForksModule(),
+        MempoolConfig.asModule(10, 10),
         new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
         new MockedGenesisModule(
             Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(100)),

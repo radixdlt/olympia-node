@@ -13,14 +13,13 @@
 
 package com.radixdlt.api.system.openapitools.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.annotations.ApiModelProperty;
-
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
@@ -32,7 +31,7 @@ import java.util.Objects;
   PeerChannel.JSON_PROPERTY_IP,
   PeerChannel.JSON_PROPERTY_URI
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T21:16:11.895438-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-01-20T22:11:26.095756951+01:00[Europe/Warsaw]")
 public class PeerChannel {
   /**
    * Gets or Sets type
@@ -80,7 +79,6 @@ public class PeerChannel {
 
   public static final String JSON_PROPERTY_URI = "uri";
   private String uri;
-
 
   public PeerChannel type(TypeEnum type) {
     this.type = type;
