@@ -736,6 +736,12 @@ public final class BerkeleyLedgerEntryStore
               null, EPOCH_PROOF_DB_NAME, proofDatabase, buildEpochProofConfig());
 
       forkConfigDatabase = env.openDatabase(null, FORK_CONFIG_DB, primaryConfig);
+
+      try (var c = forkConfigDatabase.openCursor(null, null)) {
+        while (c.getNext(null, null, DEFAULT) == SUCCESS && c.delete() == SUCCESS) {
+        }
+      }
+
       forksVotingResultsDatabase =
           env.openDatabase(
               null, FORKS_VOTING_RESULTS_DB, primaryConfig.clone().setSortedDuplicates(true));

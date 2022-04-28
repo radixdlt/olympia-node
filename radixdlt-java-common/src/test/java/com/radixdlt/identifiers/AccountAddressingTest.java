@@ -70,7 +70,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.utils.Bytes;
+
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.junit.Test;
 
