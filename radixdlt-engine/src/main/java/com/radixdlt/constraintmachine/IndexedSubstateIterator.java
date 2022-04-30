@@ -64,9 +64,12 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.google.common.collect.Streams;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.utils.Bytes;
 import java.util.Iterator;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 public final class IndexedSubstateIterator<D extends Particle> {
   private SubstateIndex index;
@@ -100,5 +103,25 @@ public final class IndexedSubstateIterator<D extends Particle> {
 
   public Iterator<D> iterator() {
     return iterator;
+  }
+
+  public Stream<D> stream() {
+    return Streams.stream(iterator);
+  }
+
+  public void forEachRemaining(Consumer<? super D> action) {
+    while (iterator.hasNext()) {
+      action.accept(iterator.next());
+    }
+  }
+
+  public interface ThrowingConsumer<T> {
+    void accept(T t) throws ProcedureException;
+  }
+
+  public void forEachThrowing(ThrowingConsumer<? super D> action) throws ProcedureException {
+    while (iterator.hasNext()) {
+      action.accept(iterator.next());
+    }
   }
 }

@@ -70,9 +70,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.ValidationState;
+import com.radixdlt.hotstuff.TimestampedECDSASignatures;
+import com.radixdlt.hotstuff.bft.BFTValidatorSet;
+import com.radixdlt.hotstuff.bft.ValidationState;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.sync.messages.remote.SyncResponse;

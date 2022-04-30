@@ -71,12 +71,12 @@ import static org.radix.Radix.VERSION_STRING_KEY;
 import com.google.inject.Inject;
 import com.radixdlt.api.service.EngineStatusService;
 import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.hotstuff.bft.BFTNode;
+import com.radixdlt.hotstuff.bft.BFTValidatorSet;
+import com.radixdlt.hotstuff.bft.Self;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Addressing;
@@ -224,6 +224,7 @@ public class PrometheusService {
     addBranchAndCommit(builder);
     addValidatorAddress(builder);
     addCurrentFork(builder);
+    addForkVoteStatus(builder);
     appendField(builder, "health", healthInfoService.nodeStatus().name());
     appendField(builder, "key", self.getKey().toHex());
 
@@ -250,6 +251,10 @@ public class PrometheusService {
 
   private void addCurrentFork(StringBuilder builder) {
     appendField(builder, "current_fork_name", currentForkView.currentForkConfig().name());
+  }
+
+  private void addForkVoteStatus(StringBuilder builder) {
+    appendField(builder, "fork_vote_status", engineStatusService.getForkVoteStatus());
   }
 
   private void addEndpontStatuses(StringBuilder builder) {

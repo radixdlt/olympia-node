@@ -64,7 +64,7 @@
 
 package com.radixdlt.sync.validation;
 
-import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.hotstuff.bft.BFTValidatorSet;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import java.util.Objects;
 

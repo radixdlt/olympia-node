@@ -64,16 +64,37 @@
 
 package com.radixdlt.application.tokens.state;
 
+import static com.radixdlt.atom.REFieldSerialization.*;
 import static java.util.Objects.requireNonNull;
 
 import com.radixdlt.application.tokens.Bucket;
-import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.DelegatedResourceInBucket;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 public record PreparedUnstakeOwnership(ECPublicKey delegateKey, REAddr owner, UInt256 amount)
-    implements ResourceInBucket {
+    implements DelegatedResourceInBucket {
+  public static final SubstateDefinition<PreparedUnstakeOwnership> SUBSTATE_DEFINITION =
+      SubstateDefinition.create(
+          PreparedUnstakeOwnership.class,
+          SubstateTypeId.PREPARED_UNSTAKE,
+          buf -> {
+            deserializeReservedByte(buf);
+            var delegate = deserializeKey(buf);
+            var owner = deserializeAccountREAddr(buf);
+            var amount = deserializeNonZeroUInt256(buf);
+            return new PreparedUnstakeOwnership(delegate, owner, amount);
+          },
+          (s, buf) -> {
+            serializeReservedByte(buf);
+            serializeKey(buf, s.delegateKey());
+            serializeREAddr(buf, s.owner());
+            buf.put(s.amount().toByteArray());
+          });
+
   public PreparedUnstakeOwnership {
     requireNonNull(delegateKey);
     requireNonNull(owner);

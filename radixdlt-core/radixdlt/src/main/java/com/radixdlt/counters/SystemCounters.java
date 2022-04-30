@@ -87,6 +87,7 @@ public interface SystemCounters {
     BFT_PACEMAKER_PROPOSED_TRANSACTIONS("bft.pacemaker.proposed_transactions"),
     BFT_PACEMAKER_PROPOSALS_SENT("bft.pacemaker.proposals_sent"),
     BFT_PACEMAKER_TIMED_OUT_ROUNDS("bft.pacemaker.timed_out_rounds"),
+    BFT_PACEMAKER_TIME_SPENT_ON_VERIFYING_CERTS("bft.pacemaker.time_spent_on_verifying_certs"),
 
     BFT_SYNC_REQUESTS_SENT("bft.sync.requests_sent"),
     BFT_SYNC_REQUESTS_RECEIVED("bft.sync.requests_received"),

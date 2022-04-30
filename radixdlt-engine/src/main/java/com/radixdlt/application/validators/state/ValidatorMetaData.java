@@ -64,13 +64,38 @@
 
 package com.radixdlt.application.validators.state;
 
+import static com.radixdlt.atom.REFieldSerialization.*;
 import static com.radixdlt.atom.REFieldSerialization.requireValidUrl;
 import static java.util.Objects.requireNonNull;
 
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.crypto.ECPublicKey;
 
 public record ValidatorMetaData(ECPublicKey validatorKey, String name, String url)
     implements ValidatorData {
+  public static final SubstateDefinition<ValidatorMetaData> SUBSTATE_DEFINITION =
+      SubstateDefinition.create(
+          ValidatorMetaData.class,
+          SubstateTypeId.VALIDATOR_META_DATA,
+          buf -> {
+            deserializeReservedByte(buf);
+            var key = deserializeKey(buf);
+            var name = deserializeString(buf);
+            var url = deserializeUrl(buf);
+            return new ValidatorMetaData(key, name, url);
+          },
+          (s, buf) -> {
+            serializeReservedByte(buf);
+            serializeKey(buf, s.validatorKey());
+            serializeString(buf, s.name());
+            serializeString(buf, s.url());
+          },
+          REFieldSerialization::deserializeKey,
+          (k, buf) -> serializeKey(buf, (ECPublicKey) k),
+          k -> ValidatorMetaData.createVirtual((ECPublicKey) k));
+
   public ValidatorMetaData {
     requireNonNull(validatorKey);
     requireNonNull(name);

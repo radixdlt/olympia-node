@@ -68,11 +68,11 @@ import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
+import com.radixdlt.hotstuff.liveness.NextTxnsGenerator;
 import com.radixdlt.ledger.StateComputerLedger;
 
 public class MempoolReceiverModule extends AbstractModule {

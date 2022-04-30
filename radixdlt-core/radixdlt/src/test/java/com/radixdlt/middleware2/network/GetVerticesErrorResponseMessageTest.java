@@ -69,12 +69,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.hotstuff.HighQC;
+import com.radixdlt.hotstuff.LedgerHeader;
+import com.radixdlt.hotstuff.QuorumCertificate;
+import com.radixdlt.hotstuff.bft.VerifiedVertex;
+import com.radixdlt.hotstuff.bft.View;
 import java.util.Optional;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;

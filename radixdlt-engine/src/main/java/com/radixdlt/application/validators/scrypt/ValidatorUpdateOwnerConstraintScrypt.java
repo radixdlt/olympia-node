@@ -66,11 +66,8 @@ package com.radixdlt.application.validators.scrypt;
 
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
-import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -82,18 +79,11 @@ import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
-import java.util.OptionalLong;
 
 public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 
-  private static class UpdatingValidatorOwner implements ReducerState {
-    private final ECPublicKey validatorKey;
-    private final EpochData epochData;
-
-    UpdatingValidatorOwner(ECPublicKey validatorKey, EpochData epochData) {
-      this.validatorKey = validatorKey;
-      this.epochData = epochData;
-    }
+  private record UpdatingValidatorOwner(ECPublicKey validatorKey, EpochData epochData)
+      implements ReducerState {
 
     void update(ValidatorOwnerCopy update) throws ProcedureException {
       if (!update.validatorKey().equals(validatorKey)) {
@@ -108,13 +98,7 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
     }
   }
 
-  private static class UpdatingOwnerNeedToReadEpoch implements ReducerState {
-    private final ECPublicKey validatorKey;
-
-    UpdatingOwnerNeedToReadEpoch(ECPublicKey validatorKey) {
-      this.validatorKey = validatorKey;
-    }
-
+  private record UpdatingOwnerNeedToReadEpoch(ECPublicKey validatorKey) implements ReducerState {
     ReducerState readEpoch(EpochData epochData) {
       return new UpdatingValidatorOwner(validatorKey, epochData);
     }
@@ -122,27 +106,7 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 
   @Override
   public void main(Loader os) {
-    os.substate(
-        new SubstateDefinition<>(
-            ValidatorOwnerCopy.class,
-            SubstateTypeId.VALIDATOR_OWNER_COPY.id(),
-            buf -> {
-              REFieldSerialization.deserializeReservedByte(buf);
-              OptionalLong epochUpdate =
-                  REFieldSerialization.deserializeOptionalNonNegativeLong(buf);
-              var key = REFieldSerialization.deserializeKey(buf);
-              var owner = REFieldSerialization.deserializeAccountREAddr(buf);
-              return new ValidatorOwnerCopy(epochUpdate, key, owner);
-            },
-            (s, buf) -> {
-              REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeOptionalLong(buf, s.epochUpdate());
-              REFieldSerialization.serializeKey(buf, s.validatorKey());
-              REFieldSerialization.serializeREAddr(buf, s.owner());
-            },
-            buf -> REFieldSerialization.deserializeKey(buf),
-            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
-            k -> ValidatorOwnerCopy.createVirtual((ECPublicKey) k)));
+    os.substate(ValidatorOwnerCopy.SUBSTATE_DEFINITION);
 
     os.procedure(
         new DownProcedure<>(

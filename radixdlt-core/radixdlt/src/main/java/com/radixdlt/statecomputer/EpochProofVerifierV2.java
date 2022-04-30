@@ -65,13 +65,13 @@
 package com.radixdlt.statecomputer;
 
 import com.radixdlt.application.system.state.EpochData;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.PostProcessorException;
+import com.radixdlt.hotstuff.bft.BFTNode;
+import com.radixdlt.hotstuff.bft.BFTValidator;
+import com.radixdlt.hotstuff.bft.BFTValidatorSet;
 import com.radixdlt.store.EngineStore;
 import java.util.List;
 

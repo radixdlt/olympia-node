@@ -65,8 +65,8 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.hotstuff.LedgerHeader;
+import com.radixdlt.hotstuff.UnverifiedVertex;
 import com.radixdlt.utils.LedgerHeaderMock;
 import org.radix.serialization.SerializeMessageObject;
 

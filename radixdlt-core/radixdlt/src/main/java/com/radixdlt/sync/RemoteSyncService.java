@@ -66,13 +66,13 @@ package com.radixdlt.sync;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.hotstuff.LedgerProof;
+import com.radixdlt.hotstuff.bft.BFTNode;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.DtoTxnsAndProof;

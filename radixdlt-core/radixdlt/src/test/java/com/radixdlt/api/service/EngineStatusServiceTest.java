@@ -72,8 +72,9 @@ import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.api.system.health.ForkVoteStatusService;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.hotstuff.LedgerProof;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.CandidateForkConfig;
 import com.radixdlt.statecomputer.forks.CandidateForkConfig.Threshold;
@@ -104,6 +105,7 @@ public final class EngineStatusServiceTest {
 
   private EngineStatusService sut;
   private InMemoryForksEpochStore forksEpochStore;
+  private ForkVoteStatusService forkVoteStatusService;
 
   private void setup(long currentEpoch) {
     final RadixEngine<LedgerAndBFTProof> radixEngine = rmock(RadixEngine.class);
@@ -112,9 +114,16 @@ public final class EngineStatusServiceTest {
     when(lastProof.getEpoch()).thenReturn(currentEpoch);
 
     forksEpochStore = new InMemoryForksEpochStore(new InMemoryForksEpochStore.Store());
+    forkVoteStatusService = mock(ForkVoteStatusService.class);
     sut =
         new EngineStatusService(
-            radixEngine, committedReader, lastProof, lastProof, forks, forksEpochStore);
+            radixEngine,
+            committedReader,
+            lastProof,
+            lastProof,
+            forks,
+            forksEpochStore,
+            forkVoteStatusService);
   }
 
   @Test

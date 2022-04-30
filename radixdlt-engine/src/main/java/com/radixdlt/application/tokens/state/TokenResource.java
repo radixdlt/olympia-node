@@ -64,11 +64,15 @@
 
 package com.radixdlt.application.tokens.state;
 
+import static com.radixdlt.atom.REFieldSerialization.*;
 import static java.util.Objects.requireNonNull;
 
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
 import java.util.Optional;
 
@@ -76,6 +80,29 @@ import java.util.Optional;
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public record TokenResource(REAddr addr, UInt256 granularity, boolean isMutable, ECPublicKey owner)
     implements ResourceData {
+  public static final SubstateDefinition<TokenResource> SUBSTATE_DEFINITION =
+      SubstateDefinition.create(
+          TokenResource.class,
+          SubstateTypeId.TOKEN_RESOURCE,
+          buf -> {
+            deserializeReservedByte(buf);
+            var addr = deserializeResourceAddr(buf);
+            var granularity = deserializeNonZeroUInt256(buf);
+            if (!granularity.equals(UInt256.ONE)) {
+              throw new DeserializeException("Granularity must be one.");
+            }
+            var isMutable = deserializeBoolean(buf);
+            var minter = deserializeOptionalKey(buf);
+            return new TokenResource(addr, granularity, isMutable, minter.orElse(null));
+          },
+          (s, buf) -> {
+            serializeReservedByte(buf);
+            serializeREAddr(buf, s.addr());
+            serializeUInt256(buf, UInt256.ONE);
+            serializeBoolean(buf, s.isMutable());
+            serializeOptionalKey(buf, s.optionalOwner());
+          });
+
   public TokenResource {
     if (!isMutable && owner != null) {
       throw new IllegalArgumentException("Can't have fixed supply and minter");

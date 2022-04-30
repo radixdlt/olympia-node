@@ -69,11 +69,9 @@ import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.UnclaimedREAddr;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
-import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
-import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.ExecutionContext;
@@ -88,7 +86,6 @@ import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.LinkedList;
 
 public final class SystemConstraintScrypt implements ConstraintScrypt {
@@ -157,20 +154,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 
   @Override
   public void main(Loader os) {
-    os.substate(
-        new SubstateDefinition<>(
-            VirtualParent.class,
-            SubstateTypeId.VIRTUAL_PARENT.id(),
-            buf -> {
-              REFieldSerialization.deserializeReservedByte(buf);
-              var data = new byte[buf.remaining()];
-              buf.get(data);
-              return new VirtualParent(data);
-            },
-            (s, buf) -> {
-              REFieldSerialization.serializeReservedByte(buf);
-              buf.put(s.data());
-            }));
+    os.substate(VirtualParent.SUBSTATE_DEFINITION);
 
     // TODO: Down singleton
     os.procedure(
@@ -188,35 +172,8 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
               return ReducerResult.complete();
             }));
 
-    os.substate(
-        new SubstateDefinition<>(
-            EpochData.class,
-            SubstateTypeId.EPOCH_DATA.id(),
-            buf -> {
-              REFieldSerialization.deserializeReservedByte(buf);
-              var epoch = REFieldSerialization.deserializeNonNegativeLong(buf);
-              return new EpochData(epoch);
-            },
-            (s, buf) -> {
-              REFieldSerialization.serializeReservedByte(buf);
-              buf.putLong(s.epoch());
-            }));
-
-    os.substate(
-        new SubstateDefinition<>(
-            RoundData.class,
-            SubstateTypeId.ROUND_DATA.id(),
-            buf -> {
-              REFieldSerialization.deserializeReservedByte(buf);
-              var view = REFieldSerialization.deserializeNonNegativeLong(buf);
-              var timestamp = REFieldSerialization.deserializeNonNegativeLong(buf);
-              return new RoundData(view, timestamp);
-            },
-            (s, buf) -> {
-              REFieldSerialization.serializeReservedByte(buf);
-              buf.putLong(s.view());
-              buf.putLong(s.timestamp());
-            }));
+    os.substate(EpochData.SUBSTATE_DEFINITION);
+    os.substate(RoundData.SUBSTATE_DEFINITION);
 
     os.procedure(
         new SystemCallProcedure<>(
@@ -264,25 +221,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
             }));
 
     // PUB_KEY type is already claimed by accounts
-    var claimableAddrTypes =
-        EnumSet.of(
-            REAddr.REAddrType.NATIVE_TOKEN, REAddr.REAddrType.HASHED_KEY, REAddr.REAddrType.SYSTEM);
-    os.substate(
-        new SubstateDefinition<>(
-            UnclaimedREAddr.class,
-            SubstateTypeId.UNCLAIMED_READDR.id(),
-            buf -> {
-              REFieldSerialization.deserializeReservedByte(buf);
-              var addr = REFieldSerialization.deserializeREAddr(buf, claimableAddrTypes);
-              return new UnclaimedREAddr(addr);
-            },
-            (s, buf) -> {
-              REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeREAddr(buf, s.addr());
-            },
-            buf -> REFieldSerialization.deserializeREAddr(buf, claimableAddrTypes),
-            (a, buf) -> REFieldSerialization.serializeREAddr(buf, (REAddr) a),
-            k -> new UnclaimedREAddr((REAddr) k)));
+    os.substate(UnclaimedREAddr.SUBSTATE_DEFINITION);
 
     os.procedure(
         new DownProcedure<>(

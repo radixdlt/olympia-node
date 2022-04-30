@@ -65,12 +65,12 @@
 package com.radixdlt.store.berkeley;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.hotstuff.Vote;
+import com.radixdlt.hotstuff.bft.View;
+import com.radixdlt.hotstuff.safety.PersistentSafetyStateStore;
+import com.radixdlt.hotstuff.safety.SafetyState;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;

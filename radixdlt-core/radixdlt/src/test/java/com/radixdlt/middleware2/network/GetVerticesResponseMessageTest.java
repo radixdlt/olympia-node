@@ -69,8 +69,8 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.hotstuff.UnverifiedVertex;
 import java.util.ArrayList;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
