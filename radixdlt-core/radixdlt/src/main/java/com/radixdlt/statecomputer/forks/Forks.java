@@ -236,10 +236,10 @@ public final class Forks {
 
     log.info(
         "Forks init [stored_forks: {}; configured_forks: {}]",
-            initialStoredForks.entrySet().stream()
-              .map(e -> e.getValue() + " @ " + e.getKey())
-              .collect(Collectors.joining(", ")),
-            forkConfigs());
+        initialStoredForks.entrySet().stream()
+            .map(e -> e.getValue() + " @ " + e.getKey())
+            .collect(Collectors.joining(", ")),
+        forkConfigs());
 
     executeMissedFixedEpochForks(initialStoredForks, currentEpoch, forksEpochStore);
     executeAndCheckMissedCandidateFork(initialStoredForks, forksEpochStore);
