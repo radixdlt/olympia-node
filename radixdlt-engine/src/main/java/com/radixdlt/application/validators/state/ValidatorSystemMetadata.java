@@ -64,6 +64,11 @@
 
 package com.radixdlt.application.validators.state;
 
+import static com.radixdlt.atom.REFieldSerialization.*;
+
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import java.util.Arrays;
@@ -72,6 +77,25 @@ import org.bouncycastle.util.encoders.Hex;
 
 public record ValidatorSystemMetadata(ECPublicKey validatorKey, byte[] data)
     implements ValidatorData {
+  public static final SubstateDefinition<ValidatorSystemMetadata> SUBSTATE_DEFINITION =
+      SubstateDefinition.create(
+          ValidatorSystemMetadata.class,
+          SubstateTypeId.VALIDATOR_SYSTEM_META_DATA,
+          buf -> {
+            deserializeReservedByte(buf);
+            var key = deserializeKey(buf);
+            var bytes = deserializeFixedLengthBytes(buf, 32);
+            return new ValidatorSystemMetadata(key, bytes);
+          },
+          (s, buf) -> {
+            serializeReservedByte(buf);
+            serializeKey(buf, s.validatorKey());
+            serializeFixedLengthBytes(buf, s.data());
+          },
+          REFieldSerialization::deserializeKey,
+          (k, buf) -> serializeKey(buf, (ECPublicKey) k),
+          k -> new ValidatorSystemMetadata((ECPublicKey) k, HashUtils.zero256().asBytes()));
+
   public ValidatorSystemMetadata {
     if (data.length != 32) {
       throw new IllegalArgumentException("Invalid number of bytes in data");

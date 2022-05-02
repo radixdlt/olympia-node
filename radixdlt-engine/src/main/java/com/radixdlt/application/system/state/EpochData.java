@@ -64,4 +64,22 @@
 
 package com.radixdlt.application.system.state;
 
-public record EpochData(long epoch) implements SystemData, HasEpochData {}
+import static com.radixdlt.atom.REFieldSerialization.*;
+
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atomos.SubstateDefinition;
+
+public record EpochData(long epoch) implements SystemData, HasEpochData {
+  public static final SubstateDefinition<EpochData> SUBSTATE_DEFINITION =
+      SubstateDefinition.create(
+          EpochData.class,
+          SubstateTypeId.EPOCH_DATA,
+          buf -> {
+            deserializeReservedByte(buf);
+            return new EpochData(deserializeNonNegativeLong(buf));
+          },
+          (s, buf) -> {
+            serializeReservedByte(buf);
+            buf.putLong(s.epoch());
+          });
+}
