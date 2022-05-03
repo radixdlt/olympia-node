@@ -72,34 +72,34 @@ import java.util.stream.Collectors;
 
 public final class SubstateSerialization {
   private final Map<Class<? extends Particle>, SubstateSerializer<Particle>> classToSerializer;
-  private final Map<Class<? extends Particle>, VirtualMapper> classToVirtualSerializer;
+  private final Map<Class<? extends Particle>, VirtualMapper<?>> classToVirtualSerializer;
   private final Map<Class<? extends Particle>, KeySerializer> classToKeySerializer;
   private final Map<Class<? extends Particle>, Byte> classToTypeByte;
 
+  @SuppressWarnings("unchecked")
   public SubstateSerialization(Collection<SubstateDefinition<? extends Particle>> definitions) {
     this.classToTypeByte =
         definitions.stream()
             .collect(
-                Collectors.toMap(
-                    SubstateDefinition::getSubstateClass, SubstateDefinition::getTypeByte));
+                Collectors.toMap(SubstateDefinition::substateClass, SubstateDefinition::typeByte));
     this.classToSerializer =
         definitions.stream()
             .collect(
                 Collectors.toMap(
-                    SubstateDefinition::getSubstateClass,
+                    SubstateDefinition::substateClass,
                     d ->
                         (s, buf) ->
-                            ((SubstateSerializer<Particle>) d.getSerializer()).serialize(s, buf)));
+                            ((SubstateSerializer<Particle>) d.serializer()).serialize(s, buf)));
     this.classToKeySerializer =
         definitions.stream()
             .collect(
                 Collectors.toMap(
-                    SubstateDefinition::getSubstateClass, SubstateDefinition::getKeySerializer));
+                    SubstateDefinition::substateClass, SubstateDefinition::keySerializer));
     this.classToVirtualSerializer =
         definitions.stream()
             .collect(
                 Collectors.toMap(
-                    SubstateDefinition::getSubstateClass, SubstateDefinition::getVirtualMapper));
+                    SubstateDefinition::substateClass, SubstateDefinition::virtualMapper));
   }
 
   public byte classToByte(Class<? extends Particle> substateClass) {
@@ -145,6 +145,7 @@ public final class SubstateSerialization {
     return bytes;
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends Particle> T mapVirtual(Class<T> substateClass, Object key) {
     var serializer = classToVirtualSerializer.get(substateClass);
     return (T) serializer.map(key);

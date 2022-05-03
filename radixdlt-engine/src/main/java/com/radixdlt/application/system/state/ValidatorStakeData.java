@@ -65,10 +65,14 @@
 package com.radixdlt.application.system.state;
 
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
+import static com.radixdlt.atom.REFieldSerialization.*;
 
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.validators.state.ValidatorData;
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -82,6 +86,38 @@ public record ValidatorStakeData(
     REAddr ownerAddr,
     boolean isRegistered)
     implements ResourceInBucket, ValidatorData {
+
+  public static final SubstateDefinition<ValidatorStakeData> SUBSTATE_DEFINITION =
+      SubstateDefinition.create(
+          ValidatorStakeData.class,
+          SubstateTypeId.VALIDATOR_STAKE_DATA,
+          buf -> {
+            deserializeReservedByte(buf);
+            var isRegistered = deserializeBoolean(buf);
+            var amount = deserializeUInt256(buf);
+            var delegate = deserializeKey(buf);
+            var ownership = deserializeUInt256(buf);
+            var rakePercentage = deserializeInt(buf);
+            var ownerAddress = deserializeAccountREAddr(buf);
+
+            return ValidatorStakeData.create(
+                delegate, amount, ownership, rakePercentage, ownerAddress, isRegistered);
+          },
+          (substate, buf) -> {
+            serializeReservedByte(buf);
+            serializeBoolean(buf, substate.isRegistered());
+            buf.put(substate.amount().toByteArray());
+
+            serializeKey(buf, substate.validatorKey());
+            buf.put(substate.totalOwnership().toByteArray());
+            buf.putInt(substate.rakePercentage());
+
+            serializeREAddr(buf, substate.ownerAddr());
+          },
+          REFieldSerialization::deserializeKey,
+          (key, buf) -> serializeKey(buf, (ECPublicKey) key),
+          key -> ValidatorStakeData.createVirtual((ECPublicKey) key));
+
   public ValidatorStakeData {
     if (totalStake.isZero() != totalOwnership.isZero()) {
       throw new IllegalArgumentException(

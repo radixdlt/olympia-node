@@ -64,16 +64,38 @@
 
 package com.radixdlt.application.system.state;
 
+import static com.radixdlt.atom.REFieldSerialization.*;
 import static java.util.Objects.requireNonNull;
 
 import com.radixdlt.application.tokens.Bucket;
-import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.DelegatedResourceInBucket;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 public record StakeOwnership(ECPublicKey delegateKey, REAddr owner, UInt256 amount)
-    implements ResourceInBucket {
+    implements DelegatedResourceInBucket {
+
+  public static final SubstateDefinition<StakeOwnership> SUBSTATE_DEFINITION =
+      SubstateDefinition.create(
+          StakeOwnership.class,
+          SubstateTypeId.STAKE_OWNERSHIP,
+          buf -> {
+            deserializeReservedByte(buf);
+            var delegate = deserializeKey(buf);
+            var owner = deserializeAccountREAddr(buf);
+            var amount = deserializeNonZeroUInt256(buf);
+            return new StakeOwnership(delegate, owner, amount);
+          },
+          (substate, buf) -> {
+            serializeReservedByte(buf);
+            serializeKey(buf, substate.delegateKey());
+            serializeREAddr(buf, substate.owner());
+            buf.put(substate.amount().toByteArray());
+          });
+
   public StakeOwnership {
     if (amount.isZero()) {
       throw new IllegalArgumentException("Stake ownership should not be zero");

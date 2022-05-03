@@ -69,11 +69,8 @@ import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
-import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
@@ -94,50 +91,12 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import java.util.function.Predicate;
 
-public final class StakingConstraintScryptV4 implements ConstraintScrypt {
-  private final UInt256 minimumStake;
-
-  public StakingConstraintScryptV4(UInt256 minimumStake) {
-    this.minimumStake = minimumStake;
-  }
+public record StakingConstraintScryptV4(UInt256 minimumStake) implements ConstraintScrypt {
 
   @Override
   public void main(Loader os) {
-    os.substate(
-        new SubstateDefinition<>(
-            PreparedStake.class,
-            SubstateTypeId.PREPARED_STAKE.id(),
-            buf -> {
-              REFieldSerialization.deserializeReservedByte(buf);
-              var delegate = REFieldSerialization.deserializeKey(buf);
-              var owner = REFieldSerialization.deserializeAccountREAddr(buf);
-              var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
-              return new PreparedStake(amount, owner, delegate);
-            },
-            (s, buf) -> {
-              REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeKey(buf, s.delegateKey());
-              REFieldSerialization.serializeREAddr(buf, s.owner());
-              buf.put(s.amount().toByteArray());
-            }));
-
-    os.substate(
-        new SubstateDefinition<>(
-            PreparedUnstakeOwnership.class,
-            SubstateTypeId.PREPARED_UNSTAKE.id(),
-            buf -> {
-              REFieldSerialization.deserializeReservedByte(buf);
-              var delegate = REFieldSerialization.deserializeKey(buf);
-              var owner = REFieldSerialization.deserializeAccountREAddr(buf);
-              var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
-              return new PreparedUnstakeOwnership(delegate, owner, amount);
-            },
-            (s, buf) -> {
-              REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeKey(buf, s.delegateKey());
-              REFieldSerialization.serializeREAddr(buf, s.owner());
-              buf.put(s.amount().toByteArray());
-            }));
+    os.substate(PreparedStake.SUBSTATE_DEFINITION);
+    os.substate(PreparedUnstakeOwnership.SUBSTATE_DEFINITION);
 
     defineStaking(os);
   }

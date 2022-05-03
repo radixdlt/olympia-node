@@ -64,12 +64,36 @@
 
 package com.radixdlt.application.system.state;
 
+import static com.radixdlt.atom.REFieldSerialization.*;
+
 import com.radixdlt.application.validators.state.ValidatorData;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.crypto.ECPublicKey;
 
 public record ValidatorBFTData(
     ECPublicKey validatorKey, long completedProposals, long missedProposals)
     implements ValidatorData {
+
+  public static final SubstateDefinition<ValidatorBFTData> SUBSTATE_DEFINITION =
+      SubstateDefinition.create(
+          ValidatorBFTData.class,
+          SubstateTypeId.VALIDATOR_BFT_DATA,
+          buf -> {
+            deserializeReservedByte(buf);
+            var key = deserializeKey(buf);
+            var proposalsCompleted = deserializeNonNegativeLong(buf);
+            var proposalsMissed = deserializeNonNegativeLong(buf);
+            return new ValidatorBFTData(key, proposalsCompleted, proposalsMissed);
+          },
+          (s, buf) -> {
+            serializeReservedByte(buf);
+            serializeKey(buf, s.validatorKey());
+            buf.putLong(s.completedProposals());
+            buf.putLong(s.missedProposals());
+          },
+          (k, buf) -> serializeKey(buf, (ECPublicKey) k));
+
   public ValidatorBFTData incrementCompletedProposals() {
     return new ValidatorBFTData(validatorKey, completedProposals + 1, missedProposals);
   }

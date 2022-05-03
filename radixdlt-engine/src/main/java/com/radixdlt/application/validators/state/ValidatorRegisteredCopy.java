@@ -64,12 +64,37 @@
 
 package com.radixdlt.application.validators.state;
 
+import static com.radixdlt.atom.REFieldSerialization.*;
+
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.crypto.ECPublicKey;
 import java.util.OptionalLong;
 
 public record ValidatorRegisteredCopy(
     OptionalLong epochUpdate, ECPublicKey validatorKey, boolean isRegistered)
     implements ValidatorUpdatingData {
+  public static final SubstateDefinition<ValidatorRegisteredCopy> SUBSTATE_DEFINITION =
+      SubstateDefinition.create(
+          ValidatorRegisteredCopy.class,
+          SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY,
+          buf -> {
+            deserializeReservedByte(buf);
+            var epochUpdate = deserializeOptionalNonNegativeLong(buf);
+            var key = deserializeKey(buf);
+            var flag = deserializeBoolean(buf);
+            return new ValidatorRegisteredCopy(epochUpdate, key, flag);
+          },
+          (s, buf) -> {
+            serializeReservedByte(buf);
+            serializeOptionalLong(buf, s.epochUpdate());
+            serializeKey(buf, s.validatorKey());
+            buf.put((byte) (s.isRegistered() ? 1 : 0));
+          },
+          REFieldSerialization::deserializeKey,
+          (k, buf) -> serializeKey(buf, (ECPublicKey) k),
+          k -> new ValidatorRegisteredCopy(OptionalLong.empty(), (ECPublicKey) k, false));
 
   public static ValidatorRegisteredCopy createVirtual(ECPublicKey validatorKey) {
     return new ValidatorRegisteredCopy(OptionalLong.empty(), validatorKey, false);

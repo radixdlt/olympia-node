@@ -67,37 +67,20 @@ package com.radixdlt.application.validators.scrypt;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.validators.state.ValidatorFeeCopy;
-import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
-import com.radixdlt.atomos.SubstateDefinition;
-import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.DownProcedure;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ReadProcedure;
-import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.UpProcedure;
-import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.constraintmachine.*;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.serialization.DeserializeException;
 import java.util.Objects;
-import java.util.OptionalLong;
 
-public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScrypt {
+public record ValidatorUpdateRakeConstraintScrypt(long rakeIncreaseDebounceEpochLength)
+    implements ConstraintScrypt {
   public static final int RAKE_PERCENTAGE_GRANULARITY = 10 * 10; // 100 == 1.00%, 1 == 0.01%
   public static final int RAKE_MAX = 100 * RAKE_PERCENTAGE_GRANULARITY;
   public static final int RAKE_MIN = 0;
   public static final int MAX_RAKE_INCREASE = 10 * RAKE_PERCENTAGE_GRANULARITY; // 10%
-
-  private final long rakeIncreaseDebounceEpochLength;
-
-  public ValidatorUpdateRakeConstraintScrypt(long rakeIncreaseDebounceEpochLength) {
-    this.rakeIncreaseDebounceEpochLength = rakeIncreaseDebounceEpochLength;
-  }
 
   private class UpdatingRakeReady implements ReducerState {
     private final EpochData epochData;
@@ -173,31 +156,7 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 
   @Override
   public void main(Loader os) {
-    os.substate(
-        new SubstateDefinition<>(
-            ValidatorFeeCopy.class,
-            SubstateTypeId.VALIDATOR_RAKE_COPY.id(),
-            buf -> {
-              REFieldSerialization.deserializeReservedByte(buf);
-              OptionalLong epochUpdate =
-                  REFieldSerialization.deserializeOptionalNonNegativeLong(buf);
-              var key = REFieldSerialization.deserializeKey(buf);
-              var curRakePercentage = REFieldSerialization.deserializeInt(buf);
-              if (curRakePercentage < RAKE_MIN || curRakePercentage > RAKE_MAX) {
-                throw new DeserializeException("Invalid rake percentage " + curRakePercentage);
-              }
-
-              return new ValidatorFeeCopy(epochUpdate, key, curRakePercentage);
-            },
-            (s, buf) -> {
-              REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeOptionalLong(buf, s.epochUpdate());
-              REFieldSerialization.serializeKey(buf, s.validatorKey());
-              buf.putInt(s.curRakePercentage());
-            },
-            buf -> REFieldSerialization.deserializeKey(buf),
-            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
-            k -> ValidatorFeeCopy.createVirtual((ECPublicKey) k)));
+    os.substate(ValidatorFeeCopy.SUBSTATE_DEFINITION);
 
     os.procedure(
         new DownProcedure<>(
@@ -211,10 +170,8 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
                         throw new AuthorizationException("Key does not match.");
                       }
                     }),
-            (d, s, r, c) -> {
-              return ReducerResult.incomplete(
-                  new UpdatingRakeNeedToReadCurrentRake(d.validatorKey()));
-            }));
+            (d, s, r, c) ->
+                ReducerResult.incomplete(new UpdatingRakeNeedToReadCurrentRake(d.validatorKey()))));
     os.procedure(
         new ReadProcedure<>(
             UpdatingRakeNeedToReadEpoch.class,

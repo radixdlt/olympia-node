@@ -64,15 +64,38 @@
 
 package com.radixdlt.application.system.state;
 
+import static com.radixdlt.atom.REFieldSerialization.*;
 import static com.radixdlt.identifiers.REAddr.HASHED_KEY_BYTES;
 
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.exceptions.InvalidHashedKeyException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import java.util.Arrays;
+import java.util.EnumSet;
 
 public record UnclaimedREAddr(REAddr addr) implements Particle {
+  private static final EnumSet<REAddr.REAddrType> CLAIMABLE_ADDR_TYPES =
+      EnumSet.of(
+          REAddr.REAddrType.NATIVE_TOKEN, REAddr.REAddrType.HASHED_KEY, REAddr.REAddrType.SYSTEM);
+
+  public static final SubstateDefinition<UnclaimedREAddr> SUBSTATE_DEFINITION =
+      SubstateDefinition.create(
+          UnclaimedREAddr.class,
+          SubstateTypeId.UNCLAIMED_READDR,
+          buf -> {
+            deserializeReservedByte(buf);
+            return new UnclaimedREAddr(deserializeREAddr(buf, CLAIMABLE_ADDR_TYPES));
+          },
+          (s, buf) -> {
+            serializeReservedByte(buf);
+            serializeREAddr(buf, s.addr());
+          },
+          buf -> deserializeREAddr(buf, CLAIMABLE_ADDR_TYPES),
+          (a, buf) -> serializeREAddr(buf, (REAddr) a),
+          k -> new UnclaimedREAddr((REAddr) k));
 
   public void verifyHashedKey(ECPublicKey publicKey, byte[] arg) throws InvalidHashedKeyException {
     if (addr.getType() != REAddr.REAddrType.HASHED_KEY) {

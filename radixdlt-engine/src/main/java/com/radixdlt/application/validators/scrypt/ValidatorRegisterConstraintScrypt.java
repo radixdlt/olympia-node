@@ -66,11 +66,8 @@ package com.radixdlt.application.validators.scrypt;
 
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
-import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -82,17 +79,10 @@ import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
-import java.util.OptionalLong;
 
 public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
-  private static class UpdatingRegistered implements ReducerState {
-    private final ECPublicKey validatorKey;
-    private final EpochData epochData;
-
-    UpdatingRegistered(ECPublicKey validatorKey, EpochData epochData) {
-      this.validatorKey = validatorKey;
-      this.epochData = epochData;
-    }
+  private record UpdatingRegistered(ECPublicKey validatorKey, EpochData epochData)
+      implements ReducerState {
 
     void update(ValidatorRegisteredCopy update) throws ProcedureException {
       if (!update.validatorKey().equals(validatorKey)) {
@@ -107,12 +97,8 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
     }
   }
 
-  private static class UpdatingRegisteredNeedToReadEpoch implements ReducerState {
-    private final ECPublicKey validatorKey;
-
-    UpdatingRegisteredNeedToReadEpoch(ECPublicKey validatorKey) {
-      this.validatorKey = validatorKey;
-    }
+  private record UpdatingRegisteredNeedToReadEpoch(ECPublicKey validatorKey)
+      implements ReducerState {
 
     ReducerState readEpoch(EpochData epochData) {
       return new UpdatingRegistered(validatorKey, epochData);
@@ -121,26 +107,7 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 
   @Override
   public void main(Loader os) {
-    os.substate(
-        new SubstateDefinition<>(
-            ValidatorRegisteredCopy.class,
-            SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id(),
-            buf -> {
-              REFieldSerialization.deserializeReservedByte(buf);
-              var epochUpdate = REFieldSerialization.deserializeOptionalNonNegativeLong(buf);
-              var key = REFieldSerialization.deserializeKey(buf);
-              var flag = REFieldSerialization.deserializeBoolean(buf);
-              return new ValidatorRegisteredCopy(epochUpdate, key, flag);
-            },
-            (s, buf) -> {
-              REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeOptionalLong(buf, s.epochUpdate());
-              REFieldSerialization.serializeKey(buf, s.validatorKey());
-              buf.put((byte) (s.isRegistered() ? 1 : 0));
-            },
-            buf -> REFieldSerialization.deserializeKey(buf),
-            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
-            k -> new ValidatorRegisteredCopy(OptionalLong.empty(), (ECPublicKey) k, false)));
+    os.substate(ValidatorRegisteredCopy.SUBSTATE_DEFINITION);
 
     os.procedure(
         new DownProcedure<>(
@@ -154,10 +121,8 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
                         throw new AuthorizationException("Key does not match.");
                       }
                     }),
-            (d, s, r, c) -> {
-              return ReducerResult.incomplete(
-                  new UpdatingRegisteredNeedToReadEpoch(d.validatorKey()));
-            }));
+            (d, s, r, c) ->
+                ReducerResult.incomplete(new UpdatingRegisteredNeedToReadEpoch(d.validatorKey()))));
 
     os.procedure(
         new ReadProcedure<>(

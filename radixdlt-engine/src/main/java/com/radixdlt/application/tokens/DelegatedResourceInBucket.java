@@ -62,66 +62,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.application.tokens;
 
-import com.radixdlt.atomos.SubstateDefinition;
-import com.radixdlt.engine.parser.exceptions.SubstateDeserializationException;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.utils.functional.Functions;
-import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.Map;
-import java.util.stream.Collectors;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 
-public final class SubstateDeserialization {
-  private final Map<Byte, SubstateDefinition<? extends Particle>> byteToDeserializer;
-  private final Map<Class<? extends Particle>, Byte> classToTypeByte;
+public interface DelegatedResourceInBucket extends ResourceInBucket {
+  ECPublicKey delegateKey();
 
-  public SubstateDeserialization(Collection<SubstateDefinition<? extends Particle>> definitions) {
-    this.byteToDeserializer =
-        definitions.stream()
-            .collect(Collectors.toMap(SubstateDefinition::typeByte, Functions::identity));
-    this.classToTypeByte =
-        definitions.stream()
-            .collect(
-                Collectors.toMap(SubstateDefinition::substateClass, SubstateDefinition::typeByte));
-  }
-
-  public Class<? extends Particle> byteToClass(Byte typeByte) throws DeserializeException {
-    var definition = byteToDeserializer.get(typeByte);
-    if (definition == null) {
-      throw new DeserializeException("Unknown substate byte type: " + typeByte);
-    }
-    return definition.substateClass();
-  }
-
-  public byte classToByte(Class<? extends Particle> substateClass) {
-    var b = classToTypeByte.get(substateClass);
-    if (b == null) {
-      throw new IllegalStateException("Unknown substateClass: " + substateClass);
-    }
-    return b;
-  }
-
-  public <T extends Particle> SubstateIndex<T> index(Class<T> substateClass) {
-    return SubstateIndex.create(classToByte(substateClass), substateClass);
-  }
-
-  public Particle deserialize(byte[] b) throws DeserializeException {
-    return deserialize(ByteBuffer.wrap(b));
-  }
-
-  public Particle deserialize(ByteBuffer buf) throws DeserializeException {
-    var typeByte = buf.get();
-    var deserializer = byteToDeserializer.get(typeByte);
-    if (deserializer == null) {
-      throw new DeserializeException("Unknown byte type: " + typeByte);
-    }
-
-    try {
-      return deserializer.deserializer().deserialize(buf);
-    } catch (Exception e) {
-      throw new SubstateDeserializationException(deserializer.substateClass(), e);
-    }
-  }
+  REAddr owner();
 }
