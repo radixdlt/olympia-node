@@ -64,6 +64,8 @@
 
 package com.radixdlt;
 
+import static com.radixdlt.statecomputer.substatehash.BerkeleySubstateAccumulatorHashStore.UPDATE_EPOCH_HASH_FILE_ENABLE_PROPERTY_NAME;
+import static com.radixdlt.statecomputer.substatehash.BerkeleySubstateAccumulatorHashStore.VERIFY_EPOCH_HASH_ENABLE_PROPERTY_NAME;
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
 
 import com.google.inject.AbstractModule;
@@ -299,13 +301,16 @@ public final class RadixNodeModule extends AbstractModule {
     install(new ApiModule(bindAddress, port, enableTransactions, enableSign));
 
     // Substate Hash Accumulator
-    boolean isSubstateHashAccumulatorEnabled =
-        properties.get("substate_hash_accumulator.enable", false);
-    if (isSubstateHashAccumulatorEnabled) {
-      log.info("Enabling Substate Hash Accumulator.");
-      boolean isUpdateEpochHashAccumulatorFileEnabled =
-          this.properties.get("update_epoch_hash_accumulator_file.enable", false);
-      install(new SubstateAccumulatorHashModule(isUpdateEpochHashAccumulatorFileEnabled));
+    boolean isUpdateEpochHashFileEnabled =
+        properties.get(UPDATE_EPOCH_HASH_FILE_ENABLE_PROPERTY_NAME, false);
+    boolean isVerifyEpochHashEnabled =
+        properties.get(VERIFY_EPOCH_HASH_ENABLE_PROPERTY_NAME, false);
+
+    if (isUpdateEpochHashFileEnabled || isVerifyEpochHashEnabled) {
+      SubstateAccumulatorHashModule substateAccumulatorHashModule =
+          new SubstateAccumulatorHashModule(isUpdateEpochHashFileEnabled, isVerifyEpochHashEnabled);
+      log.info("Enabling Substate Hash Accumulator Module.");
+      install(substateAccumulatorHashModule);
     }
   }
 }
