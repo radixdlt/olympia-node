@@ -124,7 +124,7 @@ public final class SubstateDefinition<T extends Particle> {
       SubstateTypeId typeId,
       SubstateDeserializer<T> deserializer,
       SubstateSerializer<T> serializer) {
-    return new SubstateDefinition<T>(
+    return new SubstateDefinition<>(
         substateClass,
         typeId,
         deserializer,
@@ -141,7 +141,7 @@ public final class SubstateDefinition<T extends Particle> {
       SubstateDeserializer<T> deserializer,
       SubstateSerializer<T> serializer,
       KeySerializer keySerializer) {
-    return new SubstateDefinition<T>(
+    return new SubstateDefinition<>(
         substateClass,
         typeId,
         deserializer,
@@ -159,7 +159,7 @@ public final class SubstateDefinition<T extends Particle> {
       KeyDeserializer keyDeserializer,
       KeySerializer keySerializer,
       VirtualMapper<T> virtualMapper) {
-    return new SubstateDefinition<T>(
+    return new SubstateDefinition<>(
         substateClass,
         typeId,
         deserializer,
@@ -193,7 +193,7 @@ public final class SubstateDefinition<T extends Particle> {
     return keyDeserializer;
   }
 
-  public VirtualMapper virtualMapper() {
+  public VirtualMapper<T> virtualMapper() {
     return virtualSerializer;
   }
 }

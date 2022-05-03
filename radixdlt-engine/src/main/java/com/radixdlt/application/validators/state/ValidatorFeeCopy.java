@@ -66,6 +66,7 @@ package com.radixdlt.application.validators.state;
 
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MIN;
+import static com.radixdlt.atom.REFieldSerialization.*;
 
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
@@ -83,10 +84,10 @@ public record ValidatorFeeCopy(
           ValidatorFeeCopy.class,
           SubstateTypeId.VALIDATOR_RAKE_COPY,
           buf -> {
-            REFieldSerialization.deserializeReservedByte(buf);
-            OptionalLong epochUpdate = REFieldSerialization.deserializeOptionalNonNegativeLong(buf);
-            var key = REFieldSerialization.deserializeKey(buf);
-            var curRakePercentage = REFieldSerialization.deserializeInt(buf);
+            deserializeReservedByte(buf);
+            var epochUpdate = deserializeOptionalNonNegativeLong(buf);
+            var key = deserializeKey(buf);
+            var curRakePercentage = deserializeInt(buf);
             if (curRakePercentage < RAKE_MIN || curRakePercentage > RAKE_MAX) {
               throw new DeserializeException("Invalid rake percentage " + curRakePercentage);
             }
@@ -94,13 +95,13 @@ public record ValidatorFeeCopy(
             return new ValidatorFeeCopy(epochUpdate, key, curRakePercentage);
           },
           (s, buf) -> {
-            REFieldSerialization.serializeReservedByte(buf);
-            REFieldSerialization.serializeOptionalLong(buf, s.epochUpdate());
-            REFieldSerialization.serializeKey(buf, s.validatorKey());
+            serializeReservedByte(buf);
+            serializeOptionalLong(buf, s.epochUpdate());
+            serializeKey(buf, s.validatorKey());
             buf.putInt(s.curRakePercentage());
           },
           REFieldSerialization::deserializeKey,
-          (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
+          (k, buf) -> serializeKey(buf, (ECPublicKey) k),
           k -> ValidatorFeeCopy.createVirtual((ECPublicKey) k));
 
   public ValidatorFeeCopy {

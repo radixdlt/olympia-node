@@ -140,6 +140,7 @@ public record EpochUpdateConstraintScrypt(
       super(updatingEpoch);
     }
 
+    @Override
     protected byte[] buildExpectedPrefix() {
       var expectedPrefix = new byte[Long.BYTES + 1];
       expectedPrefix[0] = 0;
@@ -261,26 +262,43 @@ public record EpochUpdateConstraintScrypt(
 
       return new LoadingStake(
           publicKey,
-          // TODO: extract
-          validatorStakeData -> {
-            int rakePercentage = validatorStakeData.getRakePercentage();
-            final UInt256 rakedEmissions;
-            if (rakePercentage != 0) {
-              var rake =
-                  nodeRewards.multiply(UInt256.from(rakePercentage)).divide(UInt256.from(RAKE_MAX));
-              var validatorOwner = validatorStakeData.getOwnerAddr();
-              var initStake = createStakeMap();
-              initStake.put(validatorOwner, rake);
-              preparingStake.put(publicKey, initStake);
-              rakedEmissions = nodeRewards.subtract(rake);
-            } else {
-              rakedEmissions = nodeRewards;
-            }
-            validatorStakeData.addEmission(rakedEmissions);
-            updatingValidators.put(publicKey, validatorStakeData);
-            return next(context);
-          });
+          validatorStakeData -> onDone(context, publicKey, nodeRewards, validatorStakeData));
     }
+
+    private ReducerState onDone(
+        ExecutionContext context,
+        ECPublicKey publicKey,
+        UInt256 nodeRewards,
+        ValidatorScratchPad validatorStakeData) {
+      var rakedEmissions = calculateRakedEmissions(publicKey, nodeRewards, validatorStakeData);
+
+      validatorStakeData.addEmission(rakedEmissions);
+      updatingValidators.put(publicKey, validatorStakeData);
+
+      return next(context);
+    }
+
+    private UInt256 calculateRakedEmissions(
+        ECPublicKey publicKey, UInt256 nodeRewards, ValidatorScratchPad validatorStakeData) {
+      var rakePercentage = validatorStakeData.getRakePercentage();
+
+      if (rakePercentage == 0) {
+        return nodeRewards;
+      }
+
+      var rake = nodeRewards.multiply(UInt256.from(rakePercentage)).divide(UInt256.from(RAKE_MAX));
+      var validatorOwner = validatorStakeData.getOwnerAddr();
+
+      preparingStake.put(publicKey, createStakeMap(validatorOwner, rake));
+
+      return nodeRewards.subtract(rake);
+    }
+  }
+
+  private TreeMap<REAddr, UInt256> createStakeMap(REAddr validatorOwner, UInt256 rake) {
+    var map = createStakeMap();
+    map.put(validatorOwner, rake);
+    return map;
   }
 
   private TreeMap<REAddr, UInt256> createStakeMap() {
