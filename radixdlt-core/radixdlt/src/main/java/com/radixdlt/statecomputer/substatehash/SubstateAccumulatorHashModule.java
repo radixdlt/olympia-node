@@ -64,7 +64,7 @@
 
 package com.radixdlt.statecomputer.substatehash;
 
-import static com.radixdlt.statecomputer.substatehash.BerkeleySubstateAccumulatorHashStore.UPDATE_EPOCH_HASH__FILE_ENABLE_PROPERTY_NAME;
+import static com.radixdlt.statecomputer.substatehash.BerkeleySubstateAccumulatorHashStore.UPDATE_EPOCH_HASH_FILE_ENABLE_PROPERTY_NAME;
 import static com.radixdlt.statecomputer.substatehash.BerkeleySubstateAccumulatorHashStore.VERIFY_EPOCH_HASH_ENABLE_PROPERTY_NAME;
 
 import com.google.inject.AbstractModule;
@@ -96,7 +96,7 @@ public class SubstateAccumulatorHashModule extends AbstractModule {
         .addBinding()
         .to(BerkeleySubstateAccumulatorHashStore.class);
     bindConstant()
-        .annotatedWith(Names.named(UPDATE_EPOCH_HASH__FILE_ENABLE_PROPERTY_NAME))
+        .annotatedWith(Names.named(UPDATE_EPOCH_HASH_FILE_ENABLE_PROPERTY_NAME))
         .to(isUpdateEpochHashFileEnabled);
     bindConstant()
         .annotatedWith(Names.named(VERIFY_EPOCH_HASH_ENABLE_PROPERTY_NAME))

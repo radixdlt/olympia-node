@@ -97,18 +97,30 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
 
   private static final Logger logger = LogManager.getLogger();
 
-  public static final String UPDATE_EPOCH_HASH__FILE_ENABLE_PROPERTY_NAME =
+  public static final String UPDATE_EPOCH_HASH_FILE_ENABLE_PROPERTY_NAME =
       "update_epoch_hash_file.enable";
   public static final String VERIFY_EPOCH_HASH_ENABLE_PROPERTY_NAME = "verify_epoch_hash.enable";
 
-  private static final String EPOCH_HASH_FILE_PATH =
-      "radixdlt-core/radixdlt/src/main/resources/epoch-hash";
+  private static final String EPOCH_HASH_FILE_WRITE_PATH =
+      String.join(
+          File.separator,
+          System.getProperty("user.dir"),
+          "radixdlt-core",
+          "radixdlt",
+          "src",
+          "main",
+          "resources",
+          "epoch-hash");
+
   private static final String EPOCH_HASH_FILE_SEPARATOR = "=";
 
-  private static final String EPOCH_HASH_FILE_RESOURCE_PATH = "/epoch-hash";
+  private static final String EPOCH_HASH_FILE_READ_PATH = File.separator + "epoch-hash";
 
   private static final byte[] LAST_EPOCH_VERIFIED_KEY =
       "last_epoch_verified".getBytes(StandardCharsets.UTF_8);
+
+  public static final String ERROR_WHEN_OPENING_THE_EPOCHS_HASH_FILE =
+      "Error when opening the epochs hash file.";
 
   private Database substateAccumulatorHashDatabase;
   private Database epochHashDatabase;
@@ -132,7 +144,7 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
   @Inject
   public BerkeleySubstateAccumulatorHashStore(
       Forks forks,
-      @Named(UPDATE_EPOCH_HASH__FILE_ENABLE_PROPERTY_NAME) boolean isUpdateEpochHashFileEnabled,
+      @Named(UPDATE_EPOCH_HASH_FILE_ENABLE_PROPERTY_NAME) boolean isUpdateEpochHashFileEnabled,
       @Named(VERIFY_EPOCH_HASH_ENABLE_PROPERTY_NAME) boolean isVerifyEpochHashEnabled) {
     this.forks = forks;
     this.isUpdateEpochHashFileEnabled = isUpdateEpochHashFileEnabled;
@@ -141,8 +153,7 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
       throw new IllegalStateException(
           String.format(
               "Either %s or %s should be enabled.",
-              UPDATE_EPOCH_HASH__FILE_ENABLE_PROPERTY_NAME,
-              VERIFY_EPOCH_HASH_ENABLE_PROPERTY_NAME));
+              UPDATE_EPOCH_HASH_FILE_ENABLE_PROPERTY_NAME, VERIFY_EPOCH_HASH_ENABLE_PROPERTY_NAME));
     }
   }
 
@@ -155,22 +166,22 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
         getPreviousSubStateAccumulatorHash().orElse(HashUtils.zero256().asBytes());
     this.lastEpochInDbOpt = getLatestStoredEpoch();
     this.lastStateVersionInDbOpt = getPreviousSubStateAccumulatorStateVersion();
-    try (BufferedReader bufferedReader = openEpochsHashFileAsRead(EPOCH_HASH_FILE_RESOURCE_PATH)) {
+    try (BufferedReader bufferedReader = openEpochsHashFileAsRead(EPOCH_HASH_FILE_READ_PATH)) {
       this.lastEpochInFileOpt = getLastEpochInFile(bufferedReader);
     } catch (IOException e) {
-      throw new IllegalStateException("Error when opening the epochs hash file.", e);
+      throw new IllegalStateException(ERROR_WHEN_OPENING_THE_EPOCHS_HASH_FILE, e);
     }
     if (this.isUpdateEpochHashFileEnabled) {
       assertEpochInTheDbIsNotGreaterThanEpochInTheFile(this.lastEpochInFileOpt);
       this.epochsHashFileWriter = openEpochsHashFileAsAppend();
     } else if (isVerifyEpochHashEnabled) {
       try {
-        this.epochsHashFileBufferedReader = openEpochsHashFileAsRead(EPOCH_HASH_FILE_RESOURCE_PATH);
+        this.epochsHashFileBufferedReader = openEpochsHashFileAsRead(EPOCH_HASH_FILE_READ_PATH);
         this.lastEpochHashVerified = getLastEpochHashVerified();
         moveFileReaderToLastEpochVerified(
             this.epochsHashFileBufferedReader, this.lastEpochHashVerified);
       } catch (IOException e) {
-        throw new IllegalStateException("Error when opening the epochs hash file.", e);
+        throw new IllegalStateException(ERROR_WHEN_OPENING_THE_EPOCHS_HASH_FILE, e);
       }
     }
   }
@@ -483,20 +494,20 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
 
   private Writer openEpochsHashFileAsAppend() {
     try {
-      var projectFolder = System.getProperty("user.dir");
-      File epochHashFile = new File(projectFolder, EPOCH_HASH_FILE_PATH);
+      File epochHashFile = new File(EPOCH_HASH_FILE_WRITE_PATH);
       CharSink charSink =
           Files.asCharSink(epochHashFile, StandardCharsets.UTF_8, FileWriteMode.APPEND);
       return charSink.openStream();
     } catch (IOException e) {
-      throw new IllegalStateException("Error when opening the epochs hash file.", e);
+      throw new IllegalStateException(ERROR_WHEN_OPENING_THE_EPOCHS_HASH_FILE, e);
     }
   }
 
-  private BufferedReader openEpochsHashFileAsRead(String epochHashFileResourcePath)
-      throws IOException {
+  private BufferedReader openEpochsHashFileAsRead(String epochHashFileResourcePath) {
     return new BufferedReader(
-        new InputStreamReader(this.getClass().getResourceAsStream(epochHashFileResourcePath)));
+        new InputStreamReader(
+            Objects.requireNonNull(
+                this.getClass().getResourceAsStream(epochHashFileResourcePath))));
   }
 
   public Database getEpochHashDatabase() {

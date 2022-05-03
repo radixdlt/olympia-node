@@ -64,7 +64,7 @@
 
 package com.radixdlt;
 
-import static com.radixdlt.statecomputer.substatehash.BerkeleySubstateAccumulatorHashStore.UPDATE_EPOCH_HASH__FILE_ENABLE_PROPERTY_NAME;
+import static com.radixdlt.statecomputer.substatehash.BerkeleySubstateAccumulatorHashStore.UPDATE_EPOCH_HASH_FILE_ENABLE_PROPERTY_NAME;
 import static com.radixdlt.statecomputer.substatehash.BerkeleySubstateAccumulatorHashStore.VERIFY_EPOCH_HASH_ENABLE_PROPERTY_NAME;
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
 
@@ -302,7 +302,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Substate Hash Accumulator
     boolean isUpdateEpochHashFileEnabled =
-        properties.get(UPDATE_EPOCH_HASH__FILE_ENABLE_PROPERTY_NAME, false);
+        properties.get(UPDATE_EPOCH_HASH_FILE_ENABLE_PROPERTY_NAME, false);
     boolean isVerifyEpochHashEnabled =
         properties.get(VERIFY_EPOCH_HASH_ENABLE_PROPERTY_NAME, false);
 
