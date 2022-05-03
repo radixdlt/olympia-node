@@ -72,10 +72,13 @@ import com.google.common.io.CharSink;
 import com.google.common.io.FileWriteMode;
 import com.google.common.io.Files;
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.name.Named;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.constraintmachine.*;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
@@ -135,6 +138,8 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
   private final Stopwatch timeSpentOnSubstateAccumulatorThisEpoch = Stopwatch.createUnstarted();
 
   private Forks forks;
+  private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
+
   private Writer epochsHashFileWriter;
   private BufferedReader epochsHashFileBufferedReader;
 
@@ -144,9 +149,11 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
   @Inject
   public BerkeleySubstateAccumulatorHashStore(
       Forks forks,
+      Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
       @Named(UPDATE_EPOCH_HASH_FILE_ENABLE_PROPERTY_NAME) boolean isUpdateEpochHashFileEnabled,
       @Named(VERIFY_EPOCH_HASH_ENABLE_PROPERTY_NAME) boolean isVerifyEpochHashEnabled) {
     this.forks = forks;
+    this.radixEngineProvider = radixEngineProvider;
     this.isUpdateEpochHashFileEnabled = isUpdateEpochHashFileEnabled;
     this.isVerifyEpochHashEnabled = isVerifyEpochHashEnabled;
     if (this.isUpdateEpochHashFileEnabled && this.isVerifyEpochHashEnabled) {
@@ -432,7 +439,7 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
   }
 
   private SubstateSerialization getSubstateSerializer() {
-    return this.forks.get(this.lastEpochInDbOpt.orElse(0L)).serialization();
+    return this.radixEngineProvider.get().getSubstateSerialization();
   }
 
   /* When we are updating the epoch hash file (appending new epoch hashes), we must not have processed epochs greater
