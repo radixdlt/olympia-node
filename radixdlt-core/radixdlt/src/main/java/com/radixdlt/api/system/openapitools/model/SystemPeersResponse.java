@@ -13,14 +13,13 @@
 
 package com.radixdlt.api.system.openapitools.model;
 
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.annotations.ApiModelProperty;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
@@ -29,11 +28,10 @@ import java.util.Objects;
 @JsonPropertyOrder({
   SystemPeersResponse.JSON_PROPERTY_PEERS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T21:08:05.044733-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-01-20T22:11:26.095756951+01:00[Europe/Warsaw]")
 public class SystemPeersResponse {
   public static final String JSON_PROPERTY_PEERS = "peers";
   private List<Peer> peers = new ArrayList<>();
-
 
   public SystemPeersResponse peers(List<Peer> peers) {
     this.peers = peers;

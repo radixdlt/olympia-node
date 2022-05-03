@@ -62,18 +62,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.statecomputer.forks;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+import com.google.inject.AbstractModule;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.OptionalBinder;
+import java.util.Set;
+import java.util.function.UnaryOperator;
 
-public class AtomsRemovedFromMempoolTest {
-  @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(TxnsRemovedFromMempool.class)
-        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-        .verify();
+/** For testing only, only tests the genesis state computer configuration */
+public class RadixEngineForksGenesisOnlyModule extends AbstractModule {
+  @Override
+  protected void configure() {
+    OptionalBinder.newOptionalBinder(
+            binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() {})
+        .setBinding()
+        .toInstance(
+            forkBuilders -> {
+              final var genesisFork =
+                  forkBuilders.stream().min((a, b) -> (int) (a.minEpoch() - b.minEpoch()));
+              final var baseFork = genesisFork.get().atFixedEpoch(0L);
+              return Set.of(baseFork);
+            });
   }
 }

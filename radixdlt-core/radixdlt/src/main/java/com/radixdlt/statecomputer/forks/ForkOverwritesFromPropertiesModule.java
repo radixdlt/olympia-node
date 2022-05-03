@@ -69,6 +69,7 @@ import com.google.inject.Inject;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.properties.RuntimeProperties;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -76,45 +77,62 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ForkOverwritesFromPropertiesModule extends AbstractModule {
+  private static final String PROPERTIES_PREFIX = "overwrite_forks.";
+
   private static final Logger logger = LogManager.getLogger();
 
-  private static class ForkOverwrite implements UnaryOperator<Set<ForkConfig>> {
+  private static class ForkOverwrite implements UnaryOperator<Set<ForkBuilder>> {
     @Inject private RuntimeProperties properties;
 
     @Override
-    public Set<ForkConfig> apply(Set<ForkConfig> forkConfigs) {
-      return forkConfigs.stream()
-          .map(
-              c -> {
-                var epochOverwrite = properties.get("overwrite_forks." + c.name() + ".epoch", "");
-                if (!epochOverwrite.isBlank()) {
-                  var epoch = Long.parseLong(epochOverwrite);
-                  logger.warn(
-                      "Overwriting epoch of " + c.name() + " from " + c.epoch() + " to " + epoch);
-                  c = c.overrideEpoch(epoch);
-                }
-
-                var viewOverwrite = properties.get("overwrite_forks." + c.name() + ".views", "");
-                if (!viewOverwrite.isBlank()) {
-                  var view = Long.parseLong(viewOverwrite);
-                  logger.warn(
-                      "Overwriting views of "
-                          + c.name()
-                          + " from "
-                          + c.config().maxRounds()
-                          + " to "
-                          + view);
-                  c = c.overrideConfig(c.config().overrideMaxRounds(view));
-                }
-                return c;
-              })
+    public Set<ForkBuilder> apply(Set<ForkBuilder> forkBuilders) {
+      return forkBuilders.stream()
+          .map(this::overwriteForkIfNeeded)
+          .filter(Optional::isPresent)
+          .map(Optional::get)
           .collect(Collectors.toSet());
+    }
+
+    private Optional<ForkBuilder> overwriteForkIfNeeded(ForkBuilder forkBuilder) {
+      final var forkDisabledOverwrite =
+          properties.get(PROPERTIES_PREFIX + forkBuilder.getName() + ".disabled", "");
+      if (!forkDisabledOverwrite.isBlank()) {
+        return Optional.<ForkBuilder>empty();
+      }
+
+      final var epochOverwrite =
+          properties.get(PROPERTIES_PREFIX + forkBuilder.getName() + ".epoch", "");
+
+      if (!epochOverwrite.isBlank()) {
+        final var epoch = Long.parseLong(epochOverwrite);
+        logger.warn("Overwriting epoch of " + forkBuilder.getName() + " to " + epoch);
+        forkBuilder = forkBuilder.atFixedEpoch(epoch);
+      }
+
+      final var viewOverwrite =
+          properties.get(PROPERTIES_PREFIX + forkBuilder.getName() + ".views", "");
+      if (!viewOverwrite.isBlank()) {
+        final var view = Long.parseLong(viewOverwrite);
+        logger.warn(
+            "Overwriting views of "
+                + forkBuilder.getName()
+                + " from "
+                + forkBuilder.getEngineRulesConfig().maxRounds()
+                + " to "
+                + view);
+        forkBuilder =
+            forkBuilder.withEngineRulesConfig(
+                forkBuilder.getEngineRulesConfig().overrideMaxRounds(view));
+      }
+
+      return Optional.of(forkBuilder);
     }
   }
 
   @Override
   protected void configure() {
-    OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkConfig>>>() {})
+    OptionalBinder.newOptionalBinder(
+            binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() {})
         .setBinding()
         .to(ForkOverwrite.class);
   }

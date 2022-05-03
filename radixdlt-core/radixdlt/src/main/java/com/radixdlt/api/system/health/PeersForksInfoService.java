@@ -62,20 +62,98 @@
  * permissions under this License.
  */
 
-package com.radixdlt.engine;
+package com.radixdlt.api.system.health;
 
-import com.radixdlt.constraintmachine.REProcessedTxn;
-import java.util.List;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.Inject;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.network.p2p.PeerEvent;
+import com.radixdlt.statecomputer.forks.Forks;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
 
 /**
- * Verifies that batched atoms executed on Radix Engine follow some specified rules.
- *
- * @param <M> class of metadata
+ * Collects other peers' newest known forks names (received during the handshake) and compares it
+ * against local list of forks. Signals with a flag, when there's a known fork on any of the
+ * validator nodes that local node is not aware of, which means that there's potentially a newer app
+ * version to download.
  */
-public interface BatchVerifier<M> {
-  default void testMetadata(M metadata, List<REProcessedTxn> txns) throws MetadataException {}
+public final class PeersForksInfoService {
+  // max number of map entries (fork names)
+  private static final int MAX_FORK_KEYS = 50;
 
-  static <M> BatchVerifier<M> empty() {
-    return new BatchVerifier<>() {};
+  // max number of reports (peers' public keys) per fork
+  private static final int MAX_REPORTS_PER_FORK = 100;
+
+  private final Forks forks;
+
+  private BFTValidatorSet currentValidatorSet;
+  private final LinkedHashMap<String, ImmutableSet<ECPublicKey>> unknownReportedForks;
+
+  @Inject
+  public PeersForksInfoService(Forks forks, EpochChange initialEpoch) {
+    this.forks = Objects.requireNonNull(forks);
+
+    this.currentValidatorSet = initialEpoch.getBFTConfiguration().getValidatorSet();
+    this.unknownReportedForks =
+        new LinkedHashMap<>() {
+          @Override
+          protected boolean removeEldestEntry(
+              final Map.Entry<String, ImmutableSet<ECPublicKey>> eldest) {
+            return size() > MAX_FORK_KEYS;
+          }
+        };
+  }
+
+  public EventProcessor<PeerEvent> peerEventProcessor() {
+    return peerEvent -> {
+      if (peerEvent instanceof PeerEvent.PeerConnected peerConnected) {
+        final var peerChannel = peerConnected.channel();
+        peerChannel
+            .getRemoteNewestForkName()
+            .ifPresent(
+                peerNewestForkName -> {
+                  final var peerPubKey = peerChannel.getRemoteNodeId().getPublicKey();
+                  final var isPeerForkKnown = forks.getByName(peerNewestForkName).isPresent();
+                  final var peerIsInValidatorSet =
+                      currentValidatorSet.containsNode(BFTNode.create(peerPubKey));
+                  if (peerIsInValidatorSet && !isPeerForkKnown) {
+                    addUnknownReportedForkName(peerPubKey, peerNewestForkName);
+                  }
+                });
+      }
+    };
+  }
+
+  private void addUnknownReportedForkName(ECPublicKey publicKey, String forkName) {
+    final var currentReportsForName =
+        this.unknownReportedForks.getOrDefault(forkName, ImmutableSet.of());
+
+    if (currentReportsForName.size() < MAX_REPORTS_PER_FORK) {
+      final var newReportsForName =
+          ImmutableSet.<ECPublicKey>builder().addAll(currentReportsForName).add(publicKey).build();
+
+      this.unknownReportedForks.put(forkName, newReportsForName);
+    }
+  }
+
+  public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
+    return ledgerUpdate -> {
+      final var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
+      if (epochChange != null) {
+        this.currentValidatorSet = epochChange.getBFTConfiguration().getValidatorSet();
+      }
+    };
+  }
+
+  public ImmutableMap<String, ImmutableSet<ECPublicKey>> getUnknownReportedForks() {
+    return ImmutableMap.copyOf(this.unknownReportedForks);
   }
 }

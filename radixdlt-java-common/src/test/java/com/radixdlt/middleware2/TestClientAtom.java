@@ -96,7 +96,7 @@ public class TestClientAtom implements TestLedgerAtom {
   }
 
   public static TestClientAtom create(String metadata) {
-    var id = AID.from(HashUtils.random(AID.BYTES).asBytes());
+    var id = AID.from(HashUtils.random256().asBytes());
     return new TestClientAtom(id, metadata);
   }
 

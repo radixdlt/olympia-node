@@ -83,16 +83,15 @@ import java.util.OptionalInt;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-/** The forks for betanet and the epochs at which they will occur. */
-public final class MainnetForkConfigsModule extends AbstractModule {
+public final class MainnetForksModule extends AbstractModule {
   private static final Set<String> RESERVED_SYMBOLS =
       Set.of("xrd", "xrds", "exrd", "exrds", "rad", "rads", "rdx", "rdxs", "radix");
 
   @ProvidesIntoSet
-  ForkConfig olympiaFirstEpoch() {
-    return new ForkConfig(
+  ForkBuilder olympiaGenesis() {
+    return new ForkBuilder(
+        "olympia-genesis",
         0L,
-        "olympia-first-epoch",
         RERulesVersion.OLYMPIA_V1,
         new RERulesConfig(
             RESERVED_SYMBOLS,
@@ -122,10 +121,10 @@ public final class MainnetForkConfigsModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  ForkConfig olympia() {
-    return new ForkConfig(
-        2L,
+  ForkBuilder olympia() {
+    return new ForkBuilder(
         "olympia",
+        2L,
         RERulesVersion.OLYMPIA_V1,
         new RERulesConfig(
             RESERVED_SYMBOLS,

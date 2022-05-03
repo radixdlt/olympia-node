@@ -67,69 +67,87 @@ package com.radixdlt.statecomputer;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.LedgerProof;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.environment.EventProcessorOnRunner;
+import com.radixdlt.environment.Runners;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
+import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.RERules;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
+import com.radixdlt.statecomputer.forks.NewestForkConfig;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
+import java.util.Map;
 import java.util.OptionalInt;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /** Module which manages execution of commands */
 public class RadixEngineModule extends AbstractModule {
-  private static final Logger logger = LogManager.getLogger();
+  @Provides
+  @Singleton
+  private CurrentForkView currentForkView(
+      CommittedReader committedReader, ForksEpochStore forksEpochStore, Forks forks) {
+    forks.init(committedReader, forksEpochStore);
+
+    final var latestStoredForkNameOpt =
+        forksEpochStore.getStoredForks().entrySet().stream()
+            .max((a, b) -> (int) (a.getKey() - b.getKey()))
+            .map(Map.Entry::getValue);
+
+    final var initialForkConfig =
+        latestStoredForkNameOpt.flatMap(forks::getByName).orElseGet(forks::genesisFork);
+
+    return new CurrentForkView(forks, initialForkConfig);
+  }
 
   @Provides
   @Singleton
-  RERules reRules(
-      CommittedReader committedReader, // TODO: This is a hack, remove
-      Forks forks) {
-    var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
-    var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-    return forks.get(epoch);
+  @NewestForkConfig
+  private ForkConfig newestForkConfig(Forks forks) {
+    return forks.newestFork();
   }
 
   // TODO: Remove
   @Provides
   @Singleton
-  private REParser parser(RERules rules) {
-    return rules.parser();
+  private REParser parser(CurrentForkView currentForkView) {
+    return currentForkView.currentForkConfig().engineRules().parser();
   }
 
   // TODO: Remove
   @Provides
   @Singleton
   @MaxSigsPerRound
-  private OptionalInt maxSigsPerRound(RERules rules) {
-    return rules.maxSigsPerRound();
+  private OptionalInt maxSigsPerRound(CurrentForkView currentForkView) {
+    return currentForkView.currentForkConfig().engineRules().maxSigsPerRound();
   }
 
   // TODO: Remove
   @Provides
   @Singleton
   @EpochCeilingView
-  private View epochCeilingHighView(RERules rules) {
-    return rules.maxRounds();
+  private View epochCeilingHighView(CurrentForkView currentForkView) {
+    return currentForkView.currentForkConfig().engineRules().maxRounds();
   }
 
   // TODO: Remove
   @Provides
   @Singleton
   @MaxValidators
-  private int maxValidators(RERules rules) {
-    return rules.maxValidators();
+  private int maxValidators(CurrentForkView currentForkView) {
+    return currentForkView.currentForkConfig().engineRules().maxValidators();
   }
 
   @Provides
   @Singleton
   private RadixEngine<LedgerAndBFTProof> getRadixEngine(
-      EngineStore<LedgerAndBFTProof> engineStore, RERules rules) {
-    var cmConfig = rules.constraintMachineConfig();
+      EngineStore<LedgerAndBFTProof> engineStore, CurrentForkView currentForkView) {
+    final var rules = currentForkView.currentForkConfig().engineRules();
+    final var cmConfig = rules.constraintMachineConfig();
     var cm =
         new ConstraintMachine(
             cmConfig.getProcedures(),
@@ -142,7 +160,14 @@ public class RadixEngineModule extends AbstractModule {
         rules.actionConstructors(),
         cm,
         engineStore,
-        rules.batchVerifier(),
-        rules.maxMessageLen());
+        rules.postProcessor(),
+        rules.config().maxMessageLen());
+  }
+
+  @ProvidesIntoSet
+  public EventProcessorOnRunner<?> ledgerUpdateEventProcessorCurrentForkView(
+      CurrentForkView currentForkView) {
+    return new EventProcessorOnRunner<>(
+        Runners.SYSTEM_INFO, LedgerUpdate.class, currentForkView.ledgerUpdateEventProcessor());
   }
 }

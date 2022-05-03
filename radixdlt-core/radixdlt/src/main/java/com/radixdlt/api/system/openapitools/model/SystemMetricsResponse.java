@@ -13,12 +13,11 @@
 
 package com.radixdlt.api.system.openapitools.model;
 
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.annotations.ApiModelProperty;
-
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
@@ -30,7 +29,7 @@ import java.util.Objects;
   SystemMetricsResponse.JSON_PROPERTY_MEMPOOL,
   SystemMetricsResponse.JSON_PROPERTY_NETWORKING
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T18:26:53.100586-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-01-20T22:11:26.095756951+01:00[Europe/Warsaw]")
 public class SystemMetricsResponse {
   public static final String JSON_PROPERTY_BFT = "bft";
   private BFTMetrics bft;
@@ -43,7 +42,6 @@ public class SystemMetricsResponse {
 
   public static final String JSON_PROPERTY_NETWORKING = "networking";
   private NetworkingMetrics networking;
-
 
   public SystemMetricsResponse bft(BFTMetrics bft) {
     this.bft = bft;

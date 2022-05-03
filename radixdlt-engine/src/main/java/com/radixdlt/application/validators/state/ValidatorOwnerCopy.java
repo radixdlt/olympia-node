@@ -64,12 +64,37 @@
 
 package com.radixdlt.application.validators.state;
 
+import static com.radixdlt.atom.REFieldSerialization.*;
+
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import java.util.OptionalLong;
 
 public record ValidatorOwnerCopy(OptionalLong epochUpdate, ECPublicKey validatorKey, REAddr owner)
     implements ValidatorUpdatingData {
+  public static final SubstateDefinition<ValidatorOwnerCopy> SUBSTATE_DEFINITION =
+      SubstateDefinition.create(
+          ValidatorOwnerCopy.class,
+          SubstateTypeId.VALIDATOR_OWNER_COPY,
+          buf -> {
+            deserializeReservedByte(buf);
+            var epochUpdate = deserializeOptionalNonNegativeLong(buf);
+            var key = deserializeKey(buf);
+            var owner = deserializeAccountREAddr(buf);
+            return new ValidatorOwnerCopy(epochUpdate, key, owner);
+          },
+          (s, buf) -> {
+            serializeReservedByte(buf);
+            serializeOptionalLong(buf, s.epochUpdate());
+            serializeKey(buf, s.validatorKey());
+            serializeREAddr(buf, s.owner());
+          },
+          REFieldSerialization::deserializeKey,
+          (k, buf) -> serializeKey(buf, (ECPublicKey) k),
+          k -> ValidatorOwnerCopy.createVirtual((ECPublicKey) k));
 
   public static ValidatorOwnerCopy createVirtual(ECPublicKey validatorKey) {
     return new ValidatorOwnerCopy(

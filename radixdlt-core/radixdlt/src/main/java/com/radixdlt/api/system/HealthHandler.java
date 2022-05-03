@@ -65,28 +65,96 @@
 package com.radixdlt.api.system;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.system.health.ForkVoteStatusService;
 import com.radixdlt.api.system.health.HealthInfoService;
+import com.radixdlt.api.system.health.PeersForksInfoService;
+import com.radixdlt.api.system.openapitools.model.ExecutedFork;
 import com.radixdlt.api.system.openapitools.model.HealthResponse;
+import com.radixdlt.api.system.openapitools.model.HealthResponseUnknownReportedForks;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
+import java.time.Duration;
+import java.util.List;
+import org.radix.time.Time;
 
 final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
+  private static final Duration FORK_VOTE_STATUS_REFRESH_INTERVAL = Duration.ofSeconds(5);
+
   private final HealthInfoService healthInfoService;
+  private final ForkVoteStatusService forkVoteStatusService;
+  private final PeersForksInfoService peersForksInfoService;
+  private final ForksEpochStore forksEpochStore;
+  private final CurrentForkView currentForkView;
+  private final Addressing addressing;
+
+  private ForkVoteStatusService.ForkVoteStatus cachedForkVoteStatus;
+  private Long latestForkVoteStatusRefreshTime;
 
   @Inject
-  HealthHandler(HealthInfoService healthInfoService) {
+  HealthHandler(
+      HealthInfoService healthInfoService,
+      ForkVoteStatusService forkVoteStatusService,
+      PeersForksInfoService peersForksInfoService,
+      ForksEpochStore forksEpochStore,
+      CurrentForkView currentForkView,
+      Addressing addressing) {
     this.healthInfoService = healthInfoService;
+    this.forkVoteStatusService = forkVoteStatusService;
+    this.peersForksInfoService = peersForksInfoService;
+    this.forksEpochStore = forksEpochStore;
+    this.currentForkView = currentForkView;
+    this.addressing = addressing;
   }
 
   @Override
   public HealthResponse handleRequest() {
-    var nodeStatus = healthInfoService.nodeStatus();
-    var status =
-        switch (nodeStatus) {
+    final var status =
+        switch (healthInfoService.nodeStatus()) {
           case UP -> HealthResponse.StatusEnum.UP;
           case BOOTING -> HealthResponse.StatusEnum.BOOTING;
           case SYNCING -> HealthResponse.StatusEnum.SYNCING;
           case STALLED -> HealthResponse.StatusEnum.STALLED;
           case OUT_OF_SYNC -> HealthResponse.StatusEnum.OUT_OF_SYNC;
         };
-    return new HealthResponse().status(status);
+
+    // just a small cache so that we don't access the DB on every call
+    final var now = Time.currentTimestamp();
+    if (cachedForkVoteStatus == null
+        || now - latestForkVoteStatusRefreshTime > FORK_VOTE_STATUS_REFRESH_INTERVAL.toMillis()) {
+      this.cachedForkVoteStatus = forkVoteStatusService.forkVoteStatus();
+      this.latestForkVoteStatusRefreshTime = now;
+    }
+
+    final var forkVoteStatus =
+        switch (cachedForkVoteStatus) {
+          case VOTE_REQUIRED -> HealthResponse.ForkVoteStatusEnum.VOTE_REQUIRED;
+          case NO_ACTION_NEEDED -> HealthResponse.ForkVoteStatusEnum.NO_ACTION_NEEDED;
+        };
+    return new HealthResponse()
+        .status(status)
+        .currentForkName(currentForkView.currentForkConfig().name())
+        .executedForks(prepareExecutedForks())
+        .forkVoteStatus(forkVoteStatus)
+        .unknownReportedForks(prepareUnknownReportedForks());
+  }
+
+  private List<ExecutedFork> prepareExecutedForks() {
+    return forksEpochStore.getStoredForks().entrySet().stream()
+        .map(e -> new ExecutedFork().epoch(e.getKey()).name(e.getValue()))
+        .toList();
+  }
+
+  private List<HealthResponseUnknownReportedForks> prepareUnknownReportedForks() {
+    return peersForksInfoService.getUnknownReportedForks().entrySet().stream()
+        .map(
+            e -> {
+              final var reportedByList =
+                  e.getValue().stream().map(addressing.forValidators()::of).toList();
+              return new HealthResponseUnknownReportedForks()
+                  .name(e.getKey())
+                  .reportedBy(reportedByList);
+            })
+        .toList();
   }
 }

@@ -70,50 +70,31 @@ import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.openapitools.model.EngineStatusRequest;
 import com.radixdlt.api.core.openapitools.model.EngineStatusResponse;
+import com.radixdlt.api.core.openapitools.model.UpcomingFork;
 import com.radixdlt.api.core.openapitools.model.Validator;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineReader;
+import com.radixdlt.api.service.EngineStatusService;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.store.LastProof;
-import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.statecomputer.forks.Forks;
 
 public class EngineStatusHandler
     extends CoreJsonRpcHandler<EngineStatusRequest, EngineStatusResponse> {
+  private final EngineStatusService engineStatusService;
+  private final Forks forks;
   private final Addressing addressing;
-  private final RadixEngine<LedgerAndBFTProof> radixEngine;
-  private final CommittedReader committedReader;
   private final CoreModelMapper modelMapper;
-  private final LedgerProof lastProof;
-  private final LedgerProof lastEpochProof;
 
   @Inject
   public EngineStatusHandler(
-      RadixEngine<LedgerAndBFTProof> radixEngine,
-      CommittedReader committedReader,
-      @LastProof LedgerProof lastProof,
-      @LastEpochProof LedgerProof lastEpochProof,
-      CoreModelMapper modelMapper,
-      Addressing addressing) {
+      EngineStatusService engineStatusService,
+      Forks forks,
+      Addressing addressing,
+      CoreModelMapper modelMapper) {
     super(EngineStatusRequest.class);
 
-    this.radixEngine = radixEngine;
-    this.committedReader = committedReader;
-    this.lastProof = lastProof;
-    this.lastEpochProof = lastEpochProof;
-    this.modelMapper = modelMapper;
+    this.engineStatusService = engineStatusService;
+    this.forks = forks;
     this.addressing = addressing;
-  }
-
-  private LedgerProof getEpochProof(long epoch) {
-    return committedReader.getEpochProof(epoch).orElse(lastEpochProof);
-  }
-
-  private LedgerProof getCurrentProof() {
-    var ledgerAndBFTProof = radixEngine.read(RadixEngineReader::getMetadata);
-    return ledgerAndBFTProof == null ? lastProof : ledgerAndBFTProof.getProof();
+    this.modelMapper = modelMapper;
   }
 
   @Override
@@ -121,12 +102,12 @@ public class EngineStatusHandler
     modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
     var response = new EngineStatusResponse();
-    var currentProof = getCurrentProof();
+    var currentProof = engineStatusService.getCurrentProof();
     var epochProof =
         currentProof
             .getNextValidatorSet()
             .map(v -> currentProof)
-            .orElse(getEpochProof(currentProof.getEpoch()));
+            .orElse(engineStatusService.getEpochProof(currentProof.getEpoch()));
     var validatorSet =
         epochProof
             .getNextValidatorSet()
@@ -143,6 +124,15 @@ public class EngineStatusHandler
                       .stake(v.getPower().toString());
               response.addValidatorSetItem(validator);
             });
+
+    engineStatusService
+        .getCandidateForkRemainingEpochs()
+        .ifPresent(
+            candidateForkRemainingEpochs ->
+                response.upcomingFork(
+                    new UpcomingFork()
+                        .name(forks.getCandidateFork().orElseThrow().name())
+                        .epochsRemaining(candidateForkRemainingEpochs)));
 
     return response;
   }

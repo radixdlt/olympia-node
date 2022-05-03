@@ -62,37 +62,47 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.forks;
+package com.radixdlt.statecomputer.forks.testing;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.OptionalBinder;
-import java.util.Comparator;
-import java.util.Set;
-import java.util.function.UnaryOperator;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.statecomputer.forks.CandidateForkConfig;
+import com.radixdlt.statecomputer.forks.ForkBuilder;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.statecomputer.forks.RERulesVersion;
+import java.util.Collections;
 
-/** For testing only, only tests the latest state computer configuration */
-public class RadixEngineForksLatestOnlyModule extends AbstractModule {
-  private final RERulesConfig config;
-
-  public RadixEngineForksLatestOnlyModule(RERulesConfig config) {
-    this.config = config;
+public final class TestingForksModuleV3 extends AbstractModule {
+  @ProvidesIntoSet
+  ForkBuilder genesis() {
+    return new ForkBuilder(
+        "genesis", 0L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
   }
 
-  public RadixEngineForksLatestOnlyModule() {
-    this(RERulesConfig.testingDefault());
+  @ProvidesIntoSet
+  ForkBuilder fork1() {
+    return new ForkBuilder(
+        "fork-1", 2L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
   }
 
-  @Override
-  protected void configure() {
-    OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkConfig>>>() {})
-        .setBinding()
-        .toInstance(
-            m ->
-                Set.of(
-                    m.stream()
-                        .max(Comparator.comparingLong(ForkConfig::epoch))
-                        .map(f -> new ForkConfig(0L, f.name(), f.version(), config))
-                        .orElseThrow()));
+  @ProvidesIntoSet
+  ForkBuilder fork2() {
+    return new ForkBuilder(
+        "fork-2", 7L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
+  }
+
+  @ProvidesIntoSet
+  ForkBuilder fork3() {
+    return new ForkBuilder(
+        "fork-3",
+        ImmutableSet.of(new CandidateForkConfig.Threshold((short) 8000 /* 80% */, 1)),
+        9L,
+        10L,
+        RERulesVersion.OLYMPIA_V1,
+        RERulesConfig.testingDefault(
+            500, FeeTable.create(Amount.ofMicroTokens(200), Collections.emptyMap())));
   }
 }

@@ -62,50 +62,25 @@
  * permissions under this License.
  */
 
-package com.radixdlt.utils;
+package com.radixdlt.sync;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import java.nio.ByteBuffer;
-import java.util.Objects;
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.environment.EventProcessorOnDispatch;
+import com.radixdlt.ledger.LedgerUpdate;
 
-public class POW {
-  private final int magic;
-  private final HashCode seed;
-  private final long nonce;
-  private final ByteBuffer buffer = ByteBuffer.allocate(32 + 4 + Long.BYTES);
-
-  public POW(int magic, HashCode seed) {
-    this(magic, seed, Long.MIN_VALUE);
+public class InMemoryCommittedReaderModule extends AbstractModule {
+  @Override
+  public void configure() {
+    bind(InMemoryCommittedReader.Store.class).toInstance(new InMemoryCommittedReader.Store());
+    bind(CommittedReader.class).to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
   }
 
-  public POW(int magic, HashCode seed, long nonce) {
-    Objects.requireNonNull(seed);
-
-    this.magic = magic;
-    this.seed = seed;
-    this.nonce = nonce;
-  }
-
-  public int getMagic() {
-    return magic;
-  }
-
-  public HashCode getSeed() {
-    return seed;
-  }
-
-  public long getNonce() {
-    return nonce;
-  }
-
-  public synchronized HashCode getHash() {
-    buffer.clear();
-    buffer.putInt(magic);
-    buffer.put(seed.asBytes());
-    buffer.putLong(nonce);
-    buffer.flip();
-
-    return HashUtils.sha256(buffer.array());
+  @Singleton
+  @ProvidesIntoSet
+  public EventProcessorOnDispatch<?> eventProcessor(InMemoryCommittedReader reader) {
+    return new EventProcessorOnDispatch<>(LedgerUpdate.class, reader.updateProcessor());
   }
 }

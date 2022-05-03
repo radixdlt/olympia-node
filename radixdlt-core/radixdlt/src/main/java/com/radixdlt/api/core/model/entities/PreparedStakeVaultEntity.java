@@ -86,7 +86,6 @@ import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.function.Supplier;
 
 public record PreparedStakeVaultEntity(REAddr accountAddress, ECPublicKey validatorKey)
     implements Entity {
@@ -98,14 +97,13 @@ public record PreparedStakeVaultEntity(REAddr accountAddress, ECPublicKey valida
   }
 
   @Override
-  public void deposit(
-      ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
+  public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, RERulesConfig config)
       throws TxBuilderException {
     if (!amountIsNative(amount)) {
       throw new EntityDoesNotSupportResourceDepositException(this, amount.resource());
     }
 
-    var minStake = config.get().minimumStake().toSubunits();
+    var minStake = config.minimumStake().toSubunits();
     var attempt = UInt256.from(amount.amount().toByteArray());
     if (attempt.compareTo(minStake) < 0) {
       throw new MinimumStakeException(minStake, attempt);

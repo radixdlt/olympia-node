@@ -62,24 +62,78 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.network.p2p;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import static com.radixdlt.utils.TypedMocks.rmock;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-public class MockedRadixEngineStoreModule extends AbstractModule {
-  @Override
-  public void configure() {
-    bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
-  }
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.network.p2p.transport.PeerChannel;
+import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
+import com.radixdlt.properties.RuntimeProperties;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
+import org.json.JSONObject;
+import org.junit.Test;
 
-  @Provides
-  @Singleton
-  private EngineStore<LedgerAndBFTProof> engineStore() {
-    return new InMemoryEngineStore<>();
+public final class PendingOutboundChannelsManagerTest {
+
+  /*
+   * Tests whether the PendingOutboundChannelsManager can be safely accessed from multiple threads by
+   *   calling `connectTo` from two threads and ensuring that only a single outbound connection
+   *   request was triggered, and a single CompletableFuture object was returned to both callers.
+   */
+  @Test
+  public void
+      pending_outbound_channels_manager_should_return_the_same_future_when_called_from_diff_threads()
+          throws Exception {
+    final var executorService = Executors.newFixedThreadPool(2);
+
+    final var sut =
+        new PendingOutboundChannelsManager(
+            P2PConfig.fromRuntimeProperties(
+                new RuntimeProperties(new JSONObject(), new String[] {})),
+            mock(PeerOutboundBootstrap.class),
+            rmock(ScheduledEventDispatcher.class),
+            rmock(EventDispatcher.class));
+
+    final var remoteNodeId = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
+    final var remoteNodeUri =
+        RadixNodeUri.fromPubKeyAndAddress(1, remoteNodeId.getPublicKey(), "127.0.0.1", 30000);
+
+    // Using 200 iterations as this provides reasonable probability of failure
+    //   in case of invalid concurrent access, but doesn't take too long in a happy scenario.
+    for (int i = 0; i < 200; i++) {
+      final var futureRef1 = new AtomicReference<CompletableFuture<PeerChannel>>();
+      final var futureRef2 = new AtomicReference<CompletableFuture<PeerChannel>>();
+      executorService.invokeAll(
+          List.of(
+              Executors.callable(() -> futureRef1.set(sut.connectTo(remoteNodeUri))),
+              Executors.callable(() -> futureRef2.set(sut.connectTo(remoteNodeUri)))));
+
+      assertNotNull(futureRef1.get());
+      assertNotNull(futureRef2.get());
+
+      // Assert the exact same future object is returned
+      assertSame(futureRef1.get(), futureRef2.get());
+
+      // Callback to PendingOutboundChannelsManager with successful connection so that it clears
+      // pendingChannels
+      final var peerChannel = mock(PeerChannel.class);
+      when(peerChannel.getRemoteNodeId()).thenReturn(remoteNodeId);
+      sut.peerEventProcessor().process(new PeerEvent.PeerConnected(peerChannel));
+
+      // Just to make sure the Futures were completed
+      assertTrue(futureRef1.get().isDone());
+      assertTrue(futureRef2.get().isDone());
+    }
   }
 }

@@ -13,12 +13,11 @@
 
 package com.radixdlt.api.system.openapitools.model;
 
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.annotations.ApiModelProperty;
-
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
@@ -30,7 +29,7 @@ import java.util.Objects;
   BFTVertexStoreMetrics.JSON_PROPERTY_REBUILDS,
   BFTVertexStoreMetrics.JSON_PROPERTY_INDIRECT_PARENTS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T18:26:53.100586-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-01-20T22:11:26.095756951+01:00[Europe/Warsaw]")
 public class BFTVertexStoreMetrics {
   public static final String JSON_PROPERTY_SIZE = "size";
   private Long size;
@@ -43,7 +42,6 @@ public class BFTVertexStoreMetrics {
 
   public static final String JSON_PROPERTY_INDIRECT_PARENTS = "indirect_parents";
   private Long indirectParents;
-
 
   public BFTVertexStoreMetrics size(Long size) {
     this.size = size;

@@ -67,11 +67,8 @@ package com.radixdlt.application.validators.scrypt;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
-import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
-import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -81,8 +78,6 @@ import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.HashUtils;
 import java.util.Objects;
 
 public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
@@ -108,24 +103,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 
   @Override
   public void main(Loader os) {
-    os.substate(
-        new SubstateDefinition<>(
-            ValidatorSystemMetadata.class,
-            SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(),
-            buf -> {
-              REFieldSerialization.deserializeReservedByte(buf);
-              var key = REFieldSerialization.deserializeKey(buf);
-              var bytes = REFieldSerialization.deserializeFixedLengthBytes(buf, 32);
-              return new ValidatorSystemMetadata(key, bytes);
-            },
-            (s, buf) -> {
-              REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeKey(buf, s.validatorKey());
-              REFieldSerialization.serializeFixedLengthBytes(buf, s.data());
-            },
-            REFieldSerialization::deserializeKey,
-            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
-            k -> new ValidatorSystemMetadata((ECPublicKey) k, HashUtils.zero256().asBytes())));
+    os.substate(ValidatorSystemMetadata.SUBSTATE_DEFINITION);
 
     os.procedure(
         new DownProcedure<>(
@@ -150,26 +128,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
               return ReducerResult.complete();
             }));
 
-    os.substate(
-        new SubstateDefinition<>(
-            ValidatorMetaData.class,
-            SubstateTypeId.VALIDATOR_META_DATA.id(),
-            buf -> {
-              REFieldSerialization.deserializeReservedByte(buf);
-              var key = REFieldSerialization.deserializeKey(buf);
-              var name = REFieldSerialization.deserializeString(buf);
-              var url = REFieldSerialization.deserializeUrl(buf);
-              return new ValidatorMetaData(key, name, url);
-            },
-            (s, buf) -> {
-              REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeKey(buf, s.validatorKey());
-              REFieldSerialization.serializeString(buf, s.name());
-              REFieldSerialization.serializeString(buf, s.url());
-            },
-            buf -> REFieldSerialization.deserializeKey(buf),
-            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
-            k -> ValidatorMetaData.createVirtual((ECPublicKey) k)));
+    os.substate(ValidatorMetaData.SUBSTATE_DEFINITION);
 
     os.procedure(
         new DownProcedure<>(
@@ -204,24 +163,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
   }
 
   public void registerRakeUpdates(Loader os) {
-    os.substate(
-        new SubstateDefinition<>(
-            AllowDelegationFlag.class,
-            SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id(),
-            buf -> {
-              REFieldSerialization.deserializeReservedByte(buf);
-              var key = REFieldSerialization.deserializeKey(buf);
-              var flag = REFieldSerialization.deserializeBoolean(buf);
-              return new AllowDelegationFlag(key, flag);
-            },
-            (s, buf) -> {
-              REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeKey(buf, s.validatorKey());
-              buf.put((byte) (s.allowsDelegation() ? 1 : 0));
-            },
-            buf -> REFieldSerialization.deserializeKey(buf),
-            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
-            k -> new AllowDelegationFlag((ECPublicKey) k, false)));
+    os.substate(AllowDelegationFlag.SUBSTATE_DEFINITION);
 
     os.procedure(
         new DownProcedure<>(

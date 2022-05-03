@@ -83,7 +83,7 @@ import com.radixdlt.integration.Slow;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
@@ -112,7 +112,7 @@ public final class MempoolFillAndEmptyTest {
   private Injector createInjector() {
     return Guice.createInjector(
         MempoolConfig.asModule(1000, 10),
-        new MainnetForkConfigsModule(),
+        new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
         new ForksModule(),
         new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),

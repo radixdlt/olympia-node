@@ -72,6 +72,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
+import java.util.Optional;
 
 @SerializerId2("message.handshake.auth_response")
 public final class AuthResponseMessage {
@@ -88,16 +89,23 @@ public final class AuthResponseMessage {
   @DsonOutput(DsonOutput.Output.ALL)
   private final HashCode nonce;
 
+  private final Optional<String> newestForkName;
+
   @JsonCreator
   public static AuthResponseMessage deserialize(
       @JsonProperty(value = "ephemeralPublicKey", required = true) HashCode ephemeralPublicKey,
-      @JsonProperty(value = "nonce", required = true) HashCode nonce) {
-    return new AuthResponseMessage(ephemeralPublicKey, nonce);
+      @JsonProperty(value = "nonce", required = true) HashCode nonce,
+      @JsonProperty("newestForkName") String rawNewestForkName) {
+    final var newestForkName =
+        rawNewestForkName == null ? Optional.<String>empty() : Optional.of(rawNewestForkName);
+    return new AuthResponseMessage(ephemeralPublicKey, nonce, newestForkName);
   }
 
-  public AuthResponseMessage(HashCode ephemeralPublicKey, HashCode nonce) {
+  public AuthResponseMessage(
+      HashCode ephemeralPublicKey, HashCode nonce, Optional<String> newestForkName) {
     this.ephemeralPublicKey = ephemeralPublicKey;
     this.nonce = nonce;
+    this.newestForkName = newestForkName;
   }
 
   public HashCode getEphemeralPublicKey() {
@@ -108,6 +116,16 @@ public final class AuthResponseMessage {
     return nonce;
   }
 
+  public Optional<String> getNewestForkName() {
+    return newestForkName;
+  }
+
+  @JsonProperty("newestForkName")
+  @DsonOutput(DsonOutput.Output.ALL)
+  public String rawNewestForkName() {
+    return this.newestForkName.orElse(null);
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -116,11 +134,12 @@ public final class AuthResponseMessage {
 
     return (o instanceof AuthResponseMessage that)
         && Objects.equals(ephemeralPublicKey, that.ephemeralPublicKey)
-        && Objects.equals(nonce, that.nonce);
+        && Objects.equals(nonce, that.nonce)
+        && Objects.equals(newestForkName, that.newestForkName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ephemeralPublicKey, nonce);
+    return Objects.hash(ephemeralPublicKey, nonce, newestForkName);
   }
 }

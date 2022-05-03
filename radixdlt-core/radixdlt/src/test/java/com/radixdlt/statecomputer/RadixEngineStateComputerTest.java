@@ -125,13 +125,16 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RERules;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.NoOpForksEpochStore;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.NoOpCommittedReader;
 import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
@@ -153,7 +156,7 @@ public class RadixEngineStateComputerTest {
 
   @Inject private RadixEngineStateComputer sut;
 
-  @Inject private RERules rules;
+  @Inject private CurrentForkView currentForkView;
 
   @Inject private ProposerElection proposerElection;
 
@@ -185,12 +188,13 @@ public class RadixEngineStateComputerTest {
         bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 
         install(MempoolConfig.asModule(10, 10));
-        install(new MainnetForkConfigsModule());
-        install(new ForksModule());
+        install(new MainnetForksModule());
         install(new RadixEngineForksLatestOnlyModule());
+        install(new ForksModule());
 
         // HACK
-        bind(CommittedReader.class).toInstance(CommittedReader.mocked());
+        bind(CommittedReader.class).toInstance(new NoOpCommittedReader());
+        bind(ForksEpochStore.class).toInstance(new NoOpForksEpochStore());
 
         bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 
@@ -214,9 +218,9 @@ public class RadixEngineStateComputerTest {
 
   private void setupGenesis() throws RadixEngineException {
     var branch = radixEngine.transientBranch();
-    var processed = branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
+    var result = branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
     var genesisValidatorSet =
-        processed.getProcessedTxns().get(0).getEvents().stream()
+        result.getProcessedTxns().get(0).getEvents().stream()
             .filter(REEvent.NextValidatorSetEvent.class::isInstance)
             .map(REEvent.NextValidatorSetEvent.class::cast)
             .findFirst()
@@ -373,7 +377,8 @@ public class RadixEngineStateComputerTest {
                 new NextRound(1, false, 0, i -> proposerElection.getProposer(View.of(i)).getKey()))
             .buildWithoutSignature();
     var illegalTxn =
-        TxLowLevelBuilder.newBuilder(rules.serialization())
+        TxLowLevelBuilder.newBuilder(
+                currentForkView.currentForkConfig().engineRules().serialization())
             .down(SubstateId.ofSubstate(txn.getId(), 1))
             .up(new RoundData(2, 0))
             .end()

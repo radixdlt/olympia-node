@@ -129,8 +129,9 @@ import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
+import com.radixdlt.statecomputer.forks.CandidateForkConfig;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
@@ -154,13 +155,14 @@ public final class CoreModelMapper {
   private static final ECPublicKey MOCK_PUBLIC_KEY = PrivateKeys.ofNumeric(1).getPublicKey();
   private final Addressing addressing;
   private final Network network;
-  private final Forks forks;
+  private final CurrentForkView currentForkView;
 
   @Inject
-  CoreModelMapper(@NetworkId int networkId, Addressing addressing, Forks forks) {
+  CoreModelMapper(
+      @NetworkId int networkId, Addressing addressing, CurrentForkView currentForkView) {
     this.network = Network.ofId(networkId).orElseThrow();
     this.addressing = addressing;
-    this.forks = forks;
+    this.currentForkView = currentForkView;
   }
 
   public void verifyNetwork(NetworkIdentifier networkIdentifier) throws CoreApiException {
@@ -471,7 +473,7 @@ public final class CoreModelMapper {
       entityOperationGroups.add(entityOperationGroup);
     }
 
-    return new OperationTxBuilder(message, entityOperationGroups, forks);
+    return new OperationTxBuilder(message, entityOperationGroups, currentForkView);
   }
 
   public Txn txn(String hex) throws CoreApiException {
@@ -804,9 +806,11 @@ public final class CoreModelMapper {
 
   public Fork fork(ForkConfig forkConfig) {
     return new Fork()
-        .forkIdentifier(new ForkIdentifier().epoch(forkConfig.epoch()).fork(forkConfig.name()))
-        .engineIdentifier(new EngineIdentifier().engine(forkConfig.version().name().toLowerCase()))
-        .engineConfiguration(engineConfiguration(forkConfig.config()));
+        .name(forkConfig.name())
+        .isCandidate(forkConfig instanceof CandidateForkConfig)
+        .engineIdentifier(
+            new EngineIdentifier().engine(forkConfig.engineRules().version().name().toLowerCase()))
+        .engineConfiguration(engineConfiguration(forkConfig.engineRules().config()));
   }
 
   public DataObject tokenData(TokenResource tokenResource) {
@@ -1265,5 +1269,13 @@ public final class CoreModelMapper {
         new InvalidTransactionError()
             .message(cause.getMessage())
             .type(InvalidTransactionError.class.getSimpleName()));
+  }
+
+  public ForkVotingResult forkVotingResult(
+      com.radixdlt.statecomputer.forks.ForkVotingResult forkVotingResult) {
+    return new ForkVotingResult()
+        .epoch(forkVotingResult.epoch())
+        .candidateForkId(forkVotingResult.candidateForkId().toString())
+        .stakePercentageVoted((float) forkVotingResult.stakePercentageVoted() / 100);
   }
 }

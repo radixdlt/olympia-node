@@ -246,7 +246,13 @@ public final class ConstructionBuildTransferStakeUnstakeTest extends ApiTest {
     var request =
         buildTransfer(
             coreModelMapper.nativeToken(),
-            forks.get(1).config().minimumStake().toSubunits().subtract(UInt128.ONE),
+            forks
+                .genesisFork()
+                .engineRules()
+                .config()
+                .minimumStake()
+                .toSubunits()
+                .subtract(UInt128.ONE),
             coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
             coreModelMapper.entityIdentifierPreparedStake(selfAddress, self));
     var response = handleRequestWithExpectedResponse(sut, request, UnexpectedError.class);

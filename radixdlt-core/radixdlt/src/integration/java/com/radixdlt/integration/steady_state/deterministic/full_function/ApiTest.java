@@ -89,8 +89,8 @@ public abstract class ApiTest extends DeterministicActorsTest {
           new ActorConfiguration(ApiBalanceToRadixEngineChecker::new, 1, 200),
           new ActorConfiguration(EpochHashChecker::new, 1, 100));
 
-  public ApiTest(Module forkModule, Module byzantineModule) {
-    super(forkModule, byzantineModule);
+  public ApiTest(Module forkOverrideModule, Module byzantineModule) {
+    super(forkOverrideModule, byzantineModule);
     this.setActorConfigurations(ACTOR_CONFIGURATIONS);
   }
 

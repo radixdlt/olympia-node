@@ -92,7 +92,7 @@ import com.radixdlt.networks.NetworkId;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
@@ -129,7 +129,7 @@ public abstract class AbstractRadixEngineTest {
     var injector =
         Guice.createInjector(
             MempoolConfig.asModule(mempoolMaxSize, 10),
-            new MainnetForkConfigsModule(),
+            new MainnetForksModule(),
             new RadixEngineForksLatestOnlyModule(
                 RERulesConfig.testingDefault()
                     .overrideFeeTable(

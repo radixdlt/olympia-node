@@ -68,18 +68,18 @@ import com.radixdlt.atom.REConstructor;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.engine.BatchVerifier;
+import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import java.util.OptionalInt;
 
-public record RERules(
-    String name,
+public final record RERules(
+    RERulesVersion version,
     REParser parser,
     SubstateSerialization serialization,
     ConstraintMachineConfig constraintMachineConfig,
     REConstructor actionConstructors,
-    BatchVerifier<LedgerAndBFTProof> batchVerifier,
+    PostProcessor<LedgerAndBFTProof> postProcessor,
     RERulesConfig config) {
 
   public View maxRounds() {
@@ -94,7 +94,14 @@ public record RERules(
     return config.maxValidators();
   }
 
-  public int maxMessageLen() {
-    return config.maxMessageLen();
+  public RERules addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
+    return new RERules(
+        version,
+        parser,
+        serialization,
+        constraintMachineConfig,
+        actionConstructors,
+        PostProcessor.append(postProcessor, newPostProcessor),
+        config);
   }
 }

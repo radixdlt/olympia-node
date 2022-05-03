@@ -109,8 +109,12 @@ public class ExceptionHandler extends ChannelDuplexHandler {
   }
 
   private void logAndCloseChannel(ChannelHandlerContext ctx, Throwable cause) {
-    var affectedEntity = mainHandler.map(Object::toString).orElse("channel");
-    log.warn("Exception on {} {}, closing channel to prevent resource leak", affectedEntity, cause);
+    if (log.isTraceEnabled()) {
+      var affectedEntity = mainHandler.map(Object::toString).orElse("(to a peer via proxy)");
+      log.trace("Closing channel {} due to {}", affectedEntity, cause);
+    }
+
+    // The channel is closed to prevent a resource leak
     ctx.close();
   }
 }

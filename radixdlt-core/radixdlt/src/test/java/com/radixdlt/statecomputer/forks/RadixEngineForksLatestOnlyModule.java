@@ -62,19 +62,36 @@
  * permissions under this License.
  */
 
-package com.radixdlt.crypto;
+package com.radixdlt.statecomputer.forks;
 
-public enum SignatureScheme {
+import com.google.inject.AbstractModule;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.OptionalBinder;
+import java.util.Set;
+import java.util.function.UnaryOperator;
 
-  /**
-   * Elliptic Curve Digital Signature Algorithm, or ECDSA for short. A good introduction is to be
-   * found <a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">here
-   * on wikipedia</a>.
-   */
-  ECDSA;
+/** For testing only, only tests the latest state computer configuration */
+public class RadixEngineForksLatestOnlyModule extends AbstractModule {
+  private final RERulesConfig config;
+
+  public RadixEngineForksLatestOnlyModule() {
+    this(RERulesConfig.testingDefault());
+  }
+
+  public RadixEngineForksLatestOnlyModule(RERulesConfig config) {
+    this.config = config;
+  }
 
   @Override
-  public String toString() {
-    return this.name().toLowerCase();
+  protected void configure() {
+    OptionalBinder.newOptionalBinder(
+            binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() {})
+        .setBinding()
+        .toInstance(
+            forkBuilders -> {
+              final var newestFork =
+                  forkBuilders.stream().max((a, b) -> (int) (a.minEpoch() - b.minEpoch()));
+              return Set.of(newestFork.get().withEngineRulesConfig(config).atFixedEpoch(0L));
+            });
   }
 }

@@ -106,7 +106,7 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.recovery.MockedRecoveryModule;
 import com.radixdlt.statecomputer.EpochCeilingView;
-import com.radixdlt.sync.MockedCommittedReaderModule;
+import com.radixdlt.sync.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.TimeSupplier;
@@ -222,7 +222,7 @@ public final class DeterministicTest {
     public DeterministicTest buildWithEpochsAndSync(View epochHighView, SyncConfig syncConfig) {
       Objects.requireNonNull(epochHighView);
       modules.add(new FunctionalNodeModule(true, true, false, false, false, true, true));
-      modules.add(new MockedCommittedReaderModule());
+      modules.add(new InMemoryCommittedReaderModule());
       modules.add(
           new AbstractModule() {
             @Provides

@@ -93,7 +93,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.engine.MetadataException;
+import com.radixdlt.engine.PostProcessorException;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
@@ -158,7 +158,7 @@ public final class RadixEngineStateComputer implements StateComputer {
     }
 
     this.radixEngine = Objects.requireNonNull(radixEngine);
-    this.forks = forks;
+    this.forks = Objects.requireNonNull(forks);
     this.epochCeilingView = epochCeilingView;
     this.maxSigsPerRound = maxSigsPerRound;
     this.mempool = Objects.requireNonNull(mempool);
@@ -227,8 +227,11 @@ public final class RadixEngineStateComputer implements StateComputer {
             txn -> {
               try {
                 addToMempool(txn, origin);
+              } catch (MempoolDuplicateException ex) {
+                log.trace(
+                    "Transaction {} was not added as it was already in the mempool", txn.getId());
               } catch (MempoolRejectedException ex) {
-                log.debug("Txn rejected from the mempool", ex);
+                log.debug("Transaction {} was not added to the mempool", txn.getId(), ex);
               }
             });
   }
@@ -264,10 +267,9 @@ public final class RadixEngineStateComputer implements StateComputer {
     }
 
     final Txn systemUpdate;
-    final RadixEngineResult result;
+    final RadixEngineResult<LedgerAndBFTProof> result;
     try {
       // TODO: combine construct/execute
-
       systemUpdate = branch.construct(systemActions).buildWithoutSignature();
       result = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
     } catch (RadixEngineException | TxBuilderException e) {
@@ -293,7 +295,7 @@ public final class RadixEngineStateComputer implements StateComputer {
     var numToProcess = Integer.min(nextTxns.size(), this.maxSigsPerRound.orElse(Integer.MAX_VALUE));
     for (int i = 0; i < numToProcess; i++) {
       var txn = nextTxns.get(i);
-      final RadixEngineResult result;
+      final RadixEngineResult<LedgerAndBFTProof> result;
       try {
         result = branch.execute(List.of(txn));
       } catch (RadixEngineException e) {
@@ -361,39 +363,24 @@ public final class RadixEngineStateComputer implements StateComputer {
     }
   }
 
-  private List<REProcessedTxn> commitInternal(
+  private RadixEngineResult<LedgerAndBFTProof> commitInternal(
       VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
     var proof = verifiedTxnsAndProof.getProof();
-    var ledgerAndBFTProof = LedgerAndBFTProof.create(proof, vertexStoreState);
 
-    final RadixEngineResult result;
+    final RadixEngineResult<LedgerAndBFTProof> result;
     try {
       result =
           this.radixEngine.execute(
-              verifiedTxnsAndProof.getTxns(), ledgerAndBFTProof, PermissionLevel.SUPER_USER);
+              verifiedTxnsAndProof.getTxns(),
+              LedgerAndBFTProof.create(proof, vertexStoreState),
+              PermissionLevel.SUPER_USER);
     } catch (RadixEngineException e) {
       throw new CommittedBadTxnException(verifiedTxnsAndProof, e);
-    } catch (MetadataException e) {
+    } catch (PostProcessorException e) {
       throw new ByzantineQuorumException(e.getMessage(), e);
     }
 
-    // Next epoch
-    if (proof.getNextValidatorSet().isPresent()) {
-      forks
-          .ifForkGet(proof.getEpoch() + 1)
-          .ifPresent(
-              rules -> {
-                log.info("Epoch {} Forking RadixEngine to {}", proof.getEpoch() + 1, rules.name());
-                this.radixEngine.replaceConstraintMachine(
-                    rules.constraintMachineConfig(),
-                    rules.serialization(),
-                    rules.actionConstructors(),
-                    rules.batchVerifier(),
-                    rules.parser());
-                this.epochCeilingView = rules.maxRounds();
-                this.maxSigsPerRound = rules.maxSigsPerRound();
-              });
-    }
+    result.getMetadata().getNextForkName().ifPresent(this::forkRadixEngine);
 
     result
         .getProcessedTxns()
@@ -404,13 +391,31 @@ public final class RadixEngineStateComputer implements StateComputer {
                         ? CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS
                         : CounterType.RADIX_ENGINE_USER_TRANSACTIONS));
 
-    return result.getProcessedTxns();
+    return result;
+  }
+
+  private void forkRadixEngine(String nextForkName) {
+    final var nextForkConfig =
+        forks.getByName(nextForkName).orElseThrow(); // guaranteed to be present
+    if (log.isInfoEnabled()) {
+      log.info("Forking RadixEngine to {}", nextForkConfig.name());
+    }
+    final var rules = nextForkConfig.engineRules();
+    this.radixEngine.replaceConstraintMachine(
+        rules.constraintMachineConfig(),
+        rules.serialization(),
+        rules.actionConstructors(),
+        rules.postProcessor(),
+        rules.parser());
+    this.epochCeilingView = rules.maxRounds();
+    this.maxSigsPerRound = rules.maxSigsPerRound();
   }
 
   @Override
   public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
     synchronized (lock) {
-      var txCommitted = commitInternal(txnsAndProof, vertexStoreState);
+      final var radixEngineResult = commitInternal(txnsAndProof, vertexStoreState);
+      final var txCommitted = radixEngineResult.getProcessedTxns();
 
       // TODO: refactor mempool to be less generic and make this more efficient
       // TODO: Move this into engine
@@ -458,6 +463,7 @@ public final class RadixEngineStateComputer implements StateComputer {
             outputBuilder.put(EpochChange.class, e);
           });
       outputBuilder.put(REOutput.class, REOutput.create(txCommitted));
+      outputBuilder.put(LedgerAndBFTProof.class, radixEngineResult.getMetadata());
       var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build());
       ledgerUpdateDispatcher.dispatch(ledgerUpdate);
     }

@@ -62,25 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.statecomputer.forks;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.environment.EventProcessorOnDispatch;
-import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.engine.PostProcessor;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
-public class MockedCommittedReaderModule extends AbstractModule {
-  @Override
-  public void configure() {
-    bind(CommittedReader.class).to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
-    bind(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
+public record FixedEpochForkConfig(String name, RERules engineRules, long epoch)
+    implements ForkConfig {
+
+  public FixedEpochForkConfig {
+    if (name.getBytes(ForkConfig.FORK_NAME_CHARSET).length > 16) {
+      throw new IllegalArgumentException("Fork name can't be longer than 16 bytes");
+    }
   }
 
-  @Singleton
-  @ProvidesIntoSet
-  public EventProcessorOnDispatch<?> eventProcessor(InMemoryCommittedReader reader) {
-    return new EventProcessorOnDispatch<>(LedgerUpdate.class, reader.updateProcessor());
+  @Override
+  public FixedEpochForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
+    return new FixedEpochForkConfig(name, engineRules.addPostProcessor(newPostProcessor), epoch);
   }
 }

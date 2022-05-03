@@ -13,12 +13,11 @@
 
 package com.radixdlt.api.system.openapitools.model;
 
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.annotations.ApiModelProperty;
-
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
@@ -30,7 +29,7 @@ import java.util.Objects;
   MempoolMetrics.JSON_PROPERTY_ADD_FAILURE,
   MempoolMetrics.JSON_PROPERTY_RELAYS_SENT
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T18:39:12.472872-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-01-20T22:11:26.095756951+01:00[Europe/Warsaw]")
 public class MempoolMetrics {
   public static final String JSON_PROPERTY_CURRENT_SIZE = "current_size";
   private Long currentSize;
@@ -43,7 +42,6 @@ public class MempoolMetrics {
 
   public static final String JSON_PROPERTY_RELAYS_SENT = "relays_sent";
   private Long relaysSent;
-
 
   public MempoolMetrics currentSize(Long currentSize) {
     this.currentSize = currentSize;

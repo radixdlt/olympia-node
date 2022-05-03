@@ -73,7 +73,7 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 import org.radix.network.messaging.Message;
 
-/** Message to request for sync atoms */
+/** Message to request for sync transactions */
 @SerializerId2("message.sync.sync_request")
 public final class SyncRequestMessage extends Message {
   @JsonProperty("currentHeader")

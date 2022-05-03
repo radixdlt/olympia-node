@@ -78,7 +78,7 @@ import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.sync.SyncConfig;
@@ -116,7 +116,7 @@ public class OneOutOfBoundsTest {
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.oneOutOfBounds(50, 10000))
             .fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
             .addRadixEngineConfigModules(
-                new MainnetForkConfigsModule(),
+                new MainnetForksModule(),
                 new RadixEngineForksLatestOnlyModule(
                     new RERulesConfig(
                         Set.of("xrd"),

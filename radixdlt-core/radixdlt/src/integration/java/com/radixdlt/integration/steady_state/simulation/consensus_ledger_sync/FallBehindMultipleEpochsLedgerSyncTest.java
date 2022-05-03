@@ -72,6 +72,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -105,7 +106,7 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
         SimulationTest.builder()
             .numNodes(3)
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed(10))
-            .overrideWithIncorrectModule(
+            .addOverrideModuleToAllInitialNodes(
                 new AbstractModule() {
                   @Provides
                   public BFTValidatorSet genesisValidatorSet(
@@ -128,24 +129,22 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
   public void given_a_node_that_falls_behind_multiple_epochs__it_should_sync_up() {
     final var simulationTest = testBuilder.build();
 
+    final var nodeUnderTestKey = simulationTest.getInitialNodes().get(NODE_UNDER_TEST_INDEX);
+    final var nodeUnderTest = BFTNode.create(nodeUnderTestKey.getPublicKey());
+
     final var runningTest =
         simulationTest.run(
-            Duration.ofSeconds(15),
-            ImmutableMap.of(NODE_UNDER_TEST_INDEX, ImmutableSet.of(Runners.SYNC)));
+            Duration.ofSeconds(15), ImmutableMap.of(nodeUnderTest, ImmutableSet.of(Runners.SYNC)));
 
     Executors.newSingleThreadScheduledExecutor()
         .schedule(
-            () -> runningTest.getNetwork().runModule(NODE_UNDER_TEST_INDEX, Runners.SYNC),
+            () -> runningTest.getNetwork().runModule(nodeUnderTest, Runners.SYNC),
             SYNC_DELAY,
             TimeUnit.MILLISECONDS);
 
     final var results = runningTest.awaitCompletion();
 
-    final var nodeCounters =
-        runningTest
-            .getNetwork()
-            .getSystemCounters()
-            .get(runningTest.getNetwork().getNodes().get(NODE_UNDER_TEST_INDEX));
+    final var nodeCounters = runningTest.getNetwork().getSystemCounters().get(nodeUnderTest);
 
     assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
 

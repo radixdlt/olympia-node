@@ -100,7 +100,7 @@ public class MovingWindowValidatorsTest {
       given_correct_1_node_bft_with_4_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
     SimulationTest bftTest =
         bftTestBuilder
-            .numNodes(4, 2)
+            .numNodes(4)
             .ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(1, 4))
             .pacemakerTimeout(5000)
             .addTestModules(
@@ -116,7 +116,7 @@ public class MovingWindowValidatorsTest {
       given_correct_3_node_bft_with_4_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
     SimulationTest bftTest =
         bftTestBuilder
-            .numNodes(4, 2)
+            .numNodes(4)
             .ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(3, 4))
             .pacemakerTimeout(1000)
             .addTestModules(
@@ -132,7 +132,7 @@ public class MovingWindowValidatorsTest {
       given_correct_25_node_bft_with_50_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
     SimulationTest bftTest =
         bftTestBuilder
-            .numNodes(100, 2)
+            .numNodes(100)
             .ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(25, 50))
             .pacemakerTimeout(5000)
             .addTestModules(
@@ -150,7 +150,7 @@ public class MovingWindowValidatorsTest {
       given_correct_25_node_bft_with_50_total_nodes_with_changing_epochs_per_1_view__then_should_pass_bft_and_epoch_invariants() {
     SimulationTest bftTest =
         bftTestBuilder
-            .numNodes(100, 2)
+            .numNodes(100)
             .ledgerAndEpochs(View.of(1), windowedEpochToNodesMapper(25, 50))
             .pacemakerTimeout(5000)
             .addTestModules(

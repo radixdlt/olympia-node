@@ -101,8 +101,9 @@ import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.StokenetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.StokenetForksModule;
+import com.radixdlt.statecomputer.forks.testing.TestingForksLoader;
 import com.radixdlt.statecomputer.substatehash.SubstateAccumulatorHashModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
@@ -114,11 +115,13 @@ import java.util.List;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.util.Strings;
 import org.json.JSONObject;
 import org.radix.utils.IOUtils;
 
 /** Module which manages everything in a single node */
 public final class RadixNodeModule extends AbstractModule {
+  private static final String TESTING_FORKS_VERSION_KEY = "testing_forks.version";
   private static final int DEFAULT_CORE_PORT = 3333;
   private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
   private static final Logger log = LogManager.getLogger();
@@ -164,6 +167,10 @@ public final class RadixNodeModule extends AbstractModule {
     if (networkGenesis.isPresent()) {
       validateGenesisConfigIsMissing(genesisTxnHex, genesisFile, network.get());
 
+      if (Strings.isNotBlank(genesisFile)) {
+        throw new IllegalStateException(
+            "Cannot provide genesis file for well-known network " + network.orElseThrow());
+      }
       return networkGenesis.get();
     } else {
       validateGenesisConfigIsPresent(genesisTxnHex, genesisFile);
@@ -202,16 +209,10 @@ public final class RadixNodeModule extends AbstractModule {
       throw new IllegalStateException("Illegal networkId " + networkId);
     }
 
-    bind(Addressing.class).toInstance(Addressing.ofNetworkId(networkId));
+    var addressing = Addressing.ofNetworkId(networkId);
+    bind(Addressing.class).toInstance(addressing);
     bindConstant().annotatedWith(NetworkId.class).to(networkId);
     bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
-
-    if (networkId == Network.MAINNET.getId()) {
-      install(new MainnetForkConfigsModule());
-    } else {
-      install(new StokenetForkConfigsModule());
-    }
-
     bind(RuntimeProperties.class).toInstance(properties);
 
     // Consensus configuration
@@ -265,6 +266,25 @@ public final class RadixNodeModule extends AbstractModule {
 
     // State Computer
     install(new ForksModule());
+
+    if (networkId == Network.MAINNET.getId()) {
+      log.info("Using mainnet forks");
+      install(new MainnetForksModule());
+    } else if (properties.get("testing_forks.enable", false)) {
+      String testingForkConfigName =
+          properties.get("testing_forks.fork_config_name", "TestingForksModuleV1");
+      if (testingForkConfigName.isBlank()) {
+        testingForkConfigName = "TestingForksModuleV1";
+      }
+      log.info("Using testing fork config '{}'", testingForkConfigName);
+      install(
+          new TestingForksLoader()
+              .createTestingForksModuleConfigFromClassName(testingForkConfigName));
+    } else {
+      log.info("Using stokenet forks");
+      install(new StokenetForksModule());
+    }
+
     if (properties.get("overwrite_forks.enable", false)) {
       log.info("Enabling fork overwrites");
       install(new ForkOverwritesFromPropertiesModule());

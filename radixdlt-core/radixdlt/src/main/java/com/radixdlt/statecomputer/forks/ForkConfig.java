@@ -64,14 +64,18 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import com.radixdlt.engine.PostProcessor;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+
 /** Configuration used for hard forks */
-public record ForkConfig(long epoch, String name, RERulesVersion version, RERulesConfig config) {
+public interface ForkConfig {
+  Charset FORK_NAME_CHARSET = StandardCharsets.US_ASCII;
 
-  public ForkConfig overrideEpoch(long epoch) {
-    return new ForkConfig(epoch, this.name, this.version, this.config);
-  }
+  String name();
 
-  public ForkConfig overrideConfig(RERulesConfig config) {
-    return new ForkConfig(this.epoch, this.name, this.version, config);
-  }
+  RERules engineRules();
+
+  ForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor);
 }

@@ -64,11 +64,30 @@
 
 package com.radixdlt.application.system.state;
 
+import static com.radixdlt.atom.REFieldSerialization.deserializeReservedByte;
+import static com.radixdlt.atom.REFieldSerialization.serializeReservedByte;
+
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Particle;
 import java.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
 public record VirtualParent(byte[] data) implements Particle {
+  public static final SubstateDefinition<VirtualParent> SUBSTATE_DEFINITION =
+      SubstateDefinition.create(
+          VirtualParent.class,
+          SubstateTypeId.VIRTUAL_PARENT,
+          buf -> {
+            deserializeReservedByte(buf);
+            var data = new byte[buf.remaining()];
+            buf.get(data);
+            return new VirtualParent(data);
+          },
+          (s, buf) -> {
+            serializeReservedByte(buf);
+            buf.put(s.data());
+          });
 
   // Primitive array member requires explicit hashCode() and equals()
   @Override

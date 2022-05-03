@@ -73,6 +73,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
+import java.util.Optional;
 
 @SerializerId2("message.handshake.auth_initiate")
 public final class AuthInitiateMessage {
@@ -97,21 +98,31 @@ public final class AuthInitiateMessage {
   @DsonOutput(DsonOutput.Output.ALL)
   private final int networkId;
 
+  private final Optional<String> newestForkName;
+
   @JsonCreator
   public static AuthInitiateMessage deserialize(
       @JsonProperty(value = "signature", required = true) ECDSASignature signature,
       @JsonProperty(value = "publicKey", required = true) HashCode publicKey,
       @JsonProperty(value = "nonce", required = true) HashCode nonce,
-      @JsonProperty("networkId") int networkId) {
-    return new AuthInitiateMessage(signature, publicKey, nonce, networkId);
+      @JsonProperty("networkId") int networkId,
+      @JsonProperty("newestForkName") String rawNewestForkName) {
+    final var newestForkName =
+        rawNewestForkName == null ? Optional.<String>empty() : Optional.of(rawNewestForkName);
+    return new AuthInitiateMessage(signature, publicKey, nonce, networkId, newestForkName);
   }
 
   public AuthInitiateMessage(
-      ECDSASignature signature, HashCode publicKey, HashCode nonce, int networkId) {
+      ECDSASignature signature,
+      HashCode publicKey,
+      HashCode nonce,
+      int networkId,
+      Optional<String> newestForkName) {
     this.signature = signature;
     this.publicKey = publicKey;
     this.nonce = nonce;
     this.networkId = networkId;
+    this.newestForkName = newestForkName;
   }
 
   public ECDSASignature getSignature() {
@@ -130,6 +141,16 @@ public final class AuthInitiateMessage {
     return networkId;
   }
 
+  public Optional<String> getNewestForkName() {
+    return newestForkName;
+  }
+
+  @JsonProperty("newestForkName")
+  @DsonOutput(DsonOutput.Output.ALL)
+  public String rawNewestForkName() {
+    return this.newestForkName.orElse(null);
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -140,11 +161,12 @@ public final class AuthInitiateMessage {
         && Objects.equals(signature, that.signature)
         && Objects.equals(publicKey, that.publicKey)
         && Objects.equals(nonce, that.nonce)
-        && networkId == that.networkId;
+        && networkId == that.networkId
+        && Objects.equals(newestForkName, that.newestForkName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(signature, publicKey, nonce, networkId);
+    return Objects.hash(signature, publicKey, nonce, networkId, newestForkName);
   }
 }
