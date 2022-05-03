@@ -193,7 +193,7 @@ public abstract class DeterministicActorsTest {
         new PersistedNodeForTestingModule(),
         new LastEventsModule(LedgerUpdate.class),
         FailOnEvent.asModule(InvalidProposedTxn.class),
-        new SubstateAccumulatorHashModule(false, true),
+        new SubstateAccumulatorHashModule(false, true, Network.LOCALNET),
         new AbstractModule() {
           @Override
           protected void configure() {

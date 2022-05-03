@@ -327,8 +327,14 @@ public final class RadixNodeModule extends AbstractModule {
         properties.get(VERIFY_EPOCH_HASH_ENABLE_PROPERTY_NAME, false);
 
     if (isUpdateEpochHashFileEnabled || isVerifyEpochHashEnabled) {
+      Network currentNetwork =
+          Network.ofId(this.networkId)
+              .orElseThrow(
+                  () ->
+                      new IllegalStateException("It was not possible to get the current network."));
       SubstateAccumulatorHashModule substateAccumulatorHashModule =
-          new SubstateAccumulatorHashModule(isUpdateEpochHashFileEnabled, isVerifyEpochHashEnabled);
+          new SubstateAccumulatorHashModule(
+              isUpdateEpochHashFileEnabled, isVerifyEpochHashEnabled, currentNetwork);
       log.info("Enabling Substate Hash Accumulator Module.");
       install(substateAccumulatorHashModule);
     }

@@ -78,8 +78,8 @@ import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.constraintmachine.*;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.Bytes;
@@ -104,7 +104,11 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
       "update_epoch_hash_file.enable";
   public static final String VERIFY_EPOCH_HASH_ENABLE_PROPERTY_NAME = "verify_epoch_hash.enable";
 
-  private static final String EPOCH_HASH_FILE_WRITE_PATH =
+  public static final String CURRENT_NETWORK = "current_network";
+
+  public static final String EPOCH_HASH_FILENAME = "epoch-hash";
+
+  private static final String EPOCH_HASH_FILE_WRITE_DIR =
       String.join(
           File.separator,
           System.getProperty("user.dir"),
@@ -112,12 +116,9 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
           "radixdlt",
           "src",
           "main",
-          "resources",
-          "epoch-hash");
+          "resources");
 
   private static final String EPOCH_HASH_FILE_SEPARATOR = "=";
-
-  private static final String EPOCH_HASH_FILE_READ_PATH = File.separator + "epoch-hash";
 
   private static final byte[] LAST_EPOCH_VERIFIED_KEY =
       "last_epoch_verified".getBytes(StandardCharsets.UTF_8);
@@ -137,23 +138,24 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
 
   private final Stopwatch timeSpentOnSubstateAccumulatorThisEpoch = Stopwatch.createUnstarted();
 
-  private Forks forks;
   private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 
   private Writer epochsHashFileWriter;
   private BufferedReader epochsHashFileBufferedReader;
 
-  private boolean isUpdateEpochHashFileEnabled;
-  private boolean isVerifyEpochHashEnabled;
+  private final Network currentNetwork;
+
+  private final boolean isUpdateEpochHashFileEnabled;
+  private final boolean isVerifyEpochHashEnabled;
 
   @Inject
   public BerkeleySubstateAccumulatorHashStore(
-      Forks forks,
       Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
+      @Named(CURRENT_NETWORK) Network currentNetwork,
       @Named(UPDATE_EPOCH_HASH_FILE_ENABLE_PROPERTY_NAME) boolean isUpdateEpochHashFileEnabled,
       @Named(VERIFY_EPOCH_HASH_ENABLE_PROPERTY_NAME) boolean isVerifyEpochHashEnabled) {
-    this.forks = forks;
     this.radixEngineProvider = radixEngineProvider;
+    this.currentNetwork = currentNetwork;
     this.isUpdateEpochHashFileEnabled = isUpdateEpochHashFileEnabled;
     this.isVerifyEpochHashEnabled = isVerifyEpochHashEnabled;
     if (this.isUpdateEpochHashFileEnabled && this.isVerifyEpochHashEnabled) {
@@ -173,7 +175,8 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
         getPreviousSubStateAccumulatorHash().orElse(HashUtils.zero256().asBytes());
     this.lastEpochInDbOpt = getLatestStoredEpoch();
     this.lastStateVersionInDbOpt = getPreviousSubStateAccumulatorStateVersion();
-    try (BufferedReader bufferedReader = openEpochsHashFileAsRead(EPOCH_HASH_FILE_READ_PATH)) {
+    try (BufferedReader bufferedReader =
+        openEpochsHashFileAsRead(File.separator + getEpochHashFilenameForCurrentNetwork())) {
       this.lastEpochInFileOpt = getLastEpochInFile(bufferedReader);
     } catch (IOException e) {
       throw new IllegalStateException(ERROR_WHEN_OPENING_THE_EPOCHS_HASH_FILE, e);
@@ -183,7 +186,8 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
       this.epochsHashFileWriter = openEpochsHashFileAsAppend();
     } else if (isVerifyEpochHashEnabled) {
       try {
-        this.epochsHashFileBufferedReader = openEpochsHashFileAsRead(EPOCH_HASH_FILE_READ_PATH);
+        this.epochsHashFileBufferedReader =
+            openEpochsHashFileAsRead(File.separator + getEpochHashFilenameForCurrentNetwork());
         this.lastEpochHashVerified = getLastEpochHashVerified();
         moveFileReaderToLastEpochVerified(
             this.epochsHashFileBufferedReader, this.lastEpochHashVerified);
@@ -501,13 +505,18 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
 
   private Writer openEpochsHashFileAsAppend() {
     try {
-      File epochHashFile = new File(EPOCH_HASH_FILE_WRITE_PATH);
+      File epochHashFile =
+          new File(EPOCH_HASH_FILE_WRITE_DIR, getEpochHashFilenameForCurrentNetwork());
       CharSink charSink =
           Files.asCharSink(epochHashFile, StandardCharsets.UTF_8, FileWriteMode.APPEND);
       return charSink.openStream();
     } catch (IOException e) {
       throw new IllegalStateException(ERROR_WHEN_OPENING_THE_EPOCHS_HASH_FILE, e);
     }
+  }
+
+  private String getEpochHashFilenameForCurrentNetwork() {
+    return EPOCH_HASH_FILENAME + "." + this.currentNetwork.name().toLowerCase();
   }
 
   private BufferedReader openEpochsHashFileAsRead(String epochHashFileResourcePath) {
