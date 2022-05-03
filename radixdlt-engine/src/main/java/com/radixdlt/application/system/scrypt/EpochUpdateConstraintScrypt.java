@@ -295,13 +295,13 @@ public record EpochUpdateConstraintScrypt(
     }
   }
 
-  private TreeMap<REAddr, UInt256> createStakeMap(REAddr validatorOwner, UInt256 rake) {
+  private static TreeMap<REAddr, UInt256> createStakeMap(REAddr validatorOwner, UInt256 rake) {
     var map = createStakeMap();
     map.put(validatorOwner, rake);
     return map;
   }
 
-  private TreeMap<REAddr, UInt256> createStakeMap() {
+  private static TreeMap<REAddr, UInt256> createStakeMap() {
     return new TreeMap<>(
         Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator()));
   }
