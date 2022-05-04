@@ -175,8 +175,7 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
         getPreviousSubStateAccumulatorHash().orElse(HashUtils.zero256().asBytes());
     this.lastEpochInDbOpt = getLatestStoredEpoch();
     this.lastStateVersionInDbOpt = getPreviousSubStateAccumulatorStateVersion();
-    try (BufferedReader bufferedReader =
-        openEpochsHashFileAsRead(File.separator + getEpochHashFilenameForCurrentNetwork())) {
+    try (BufferedReader bufferedReader = openEpochsHashFileAsRead()) {
       this.lastEpochInFileOpt = getLastEpochInFile(bufferedReader);
     } catch (IOException e) {
       throw new IllegalStateException(ERROR_WHEN_OPENING_THE_EPOCHS_HASH_FILE, e);
@@ -186,8 +185,7 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
       this.epochsHashFileWriter = openEpochsHashFileAsAppend();
     } else if (isVerifyEpochHashEnabled) {
       try {
-        this.epochsHashFileBufferedReader =
-            openEpochsHashFileAsRead(File.separator + getEpochHashFilenameForCurrentNetwork());
+        this.epochsHashFileBufferedReader = openEpochsHashFileAsRead();
         this.lastEpochHashVerified = getLastEpochHashVerified();
         moveFileReaderToLastEpochVerified(
             this.epochsHashFileBufferedReader, this.lastEpochHashVerified);
@@ -516,10 +514,11 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
   }
 
   private String getEpochHashFilenameForCurrentNetwork() {
-    return EPOCH_HASH_FILENAME + "." + this.currentNetwork.name().toLowerCase();
+    return EPOCH_HASH_FILENAME + "." + this.currentNetwork.name().toLowerCase() + ".txt";
   }
 
-  private BufferedReader openEpochsHashFileAsRead(String epochHashFileResourcePath) {
+  private BufferedReader openEpochsHashFileAsRead() {
+    var epochHashFileResourcePath = File.separator + getEpochHashFilenameForCurrentNetwork();
     return new BufferedReader(
         new InputStreamReader(
             Objects.requireNonNull(
