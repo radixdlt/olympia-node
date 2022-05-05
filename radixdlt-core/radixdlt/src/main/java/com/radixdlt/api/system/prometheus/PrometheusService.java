@@ -224,6 +224,7 @@ public class PrometheusService {
     addBranchAndCommit(builder);
     addValidatorAddress(builder);
     addCurrentFork(builder);
+    addForkVoteStatus(builder);
     appendField(builder, "health", healthInfoService.nodeStatus().name());
     appendField(builder, "key", self.getKey().toHex());
 
@@ -250,6 +251,10 @@ public class PrometheusService {
 
   private void addCurrentFork(StringBuilder builder) {
     appendField(builder, "current_fork_name", currentForkView.currentForkConfig().name());
+  }
+
+  private void addForkVoteStatus(StringBuilder builder) {
+    appendField(builder, "fork_vote_status", engineStatusService.getForkVoteStatus());
   }
 
   private void addEndpontStatuses(StringBuilder builder) {
