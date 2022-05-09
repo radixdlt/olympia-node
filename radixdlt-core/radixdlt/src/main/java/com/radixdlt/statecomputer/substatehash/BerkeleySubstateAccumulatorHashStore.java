@@ -239,11 +239,13 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
     this.timeSpentOnSubstateAccumulatorThisEpoch.start();
     var isEpochChange = false;
     Long currentEpoch = null;
+    Long nextEpoch;
     var substateBytes = new byte[0];
     for (REStateUpdate reStateUpdate : txn.stateUpdates().toList()) {
       substateBytes = Arrays.concatenate(substateBytes, getBytes(reStateUpdate));
       if (reStateUpdate.getParsed() instanceof EpochData epochData) {
-        currentEpoch = epochData.epoch();
+        nextEpoch = epochData.epoch();
+        currentEpoch = nextEpoch - 1;
         isEpochChange = true;
       }
     }
