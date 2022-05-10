@@ -344,7 +344,9 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
     var lastEpochInDB =
         this.lastEpochInDbOpt.orElseThrow(
             () -> new IllegalStateException("Last epoch in db is not expected to be empty."));
-    if (this.lastEpochInFileOpt.orElse(0L) == lastEpochInDB - 1L) {
+    // Using -1 here as a convenient default value for the if checks bellow
+    var lastEpochInFile = this.lastEpochInFileOpt.orElse(-1L);
+    if (lastEpochInFile == lastEpochInDB - 1L) {
       logger.debug("Writing epoch hash for epoch {} to the epoch file.", lastEpochInDB);
       try {
         this.epochsHashFileWriter.write(
@@ -358,7 +360,7 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
       } catch (IOException e) {
         throw new IllegalStateException("Error when writing to the epochs hash file.", e);
       }
-    } else if (this.lastEpochInFileOpt.orElse(0L) > lastEpochInDB - 1L) {
+    } else if (lastEpochInFile > lastEpochInDB - 1L) {
       logger.debug(
           "Epoch hash for epoch {} is already written in epoch file. Skipping.", lastEpochInDB);
     }
