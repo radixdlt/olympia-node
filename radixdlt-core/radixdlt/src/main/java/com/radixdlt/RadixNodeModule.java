@@ -99,8 +99,9 @@ import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForksModule;
-import com.radixdlt.statecomputer.forks.StokenetForksModule;
+import com.radixdlt.statecomputer.forks.modules.GenericTestnetForksModule;
+import com.radixdlt.statecomputer.forks.modules.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.modules.StokenetForksModule;
 import com.radixdlt.statecomputer.forks.testing.TestingForksLoader;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
@@ -109,6 +110,7 @@ import com.radixdlt.utils.Bytes;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -118,7 +120,18 @@ import org.radix.utils.IOUtils;
 
 /** Module which manages everything in a single node */
 public final class RadixNodeModule extends AbstractModule {
-  private static final String TESTING_FORKS_VERSION_KEY = "testing_forks.version";
+
+  private static final Map<Integer, AbstractModule> FORKS_MODULE_BY_NETWORK_ID =
+      Map.of(
+          Network.MAINNET.getId(), new MainnetForksModule(),
+          Network.STOKENET.getId(), new StokenetForksModule(),
+          Network.RELEASENET.getId(), new GenericTestnetForksModule(),
+          Network.RCNET.getId(), new GenericTestnetForksModule(),
+          Network.MILESTONENET.getId(), new GenericTestnetForksModule(),
+          Network.DEVOPSNET.getId(), new GenericTestnetForksModule(),
+          Network.SANDPITNET.getId(), new GenericTestnetForksModule(),
+          Network.LOCALNET.getId(), new GenericTestnetForksModule());
+
   private static final int DEFAULT_CORE_PORT = 3333;
   private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
   private static final Logger log = LogManager.getLogger();
@@ -264,26 +277,25 @@ public final class RadixNodeModule extends AbstractModule {
     // State Computer
     install(new ForksModule());
 
-    if (networkId == Network.MAINNET.getId()) {
-      log.info("Using mainnet forks");
-      install(new MainnetForksModule());
-    } else if (properties.get("testing_forks.enable", false)) {
-      String testingForkConfigName =
+    if (properties.get("testing_forks.enable", false)) {
+      String testingForksModuleName =
           properties.get("testing_forks.fork_config_name", "TestingForksModuleV1");
-      if (testingForkConfigName.isBlank()) {
-        testingForkConfigName = "TestingForksModuleV1";
+      if (testingForksModuleName.isBlank()) {
+        testingForksModuleName = "TestingForksModuleV1";
       }
-      log.info("Using testing fork config '{}'", testingForkConfigName);
+      log.info("Using testing forks module '{}'", testingForksModuleName);
       install(
           new TestingForksLoader()
-              .createTestingForksModuleConfigFromClassName(testingForkConfigName));
+              .createTestingForksModuleConfigFromClassName(testingForksModuleName));
     } else {
-      log.info("Using stokenet forks");
-      install(new StokenetForksModule());
+      final var forksModule =
+          FORKS_MODULE_BY_NETWORK_ID.getOrDefault(networkId, new GenericTestnetForksModule());
+      log.info("Using a predefined forks module '{}'", forksModule.getClass().getSimpleName());
+      install(forksModule);
     }
 
     if (properties.get("overwrite_forks.enable", false)) {
-      log.info("Enabling fork overwrites");
+      log.info("Enabling fork overwrites from properties");
       install(new ForkOverwritesFromPropertiesModule());
     }
     install(new RadixEngineStateComputerModule());
