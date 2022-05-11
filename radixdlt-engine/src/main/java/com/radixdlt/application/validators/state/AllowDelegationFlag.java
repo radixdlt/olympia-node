@@ -64,10 +64,33 @@
 
 package com.radixdlt.application.validators.state;
 
+import static com.radixdlt.atom.REFieldSerialization.*;
+
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.crypto.ECPublicKey;
 
 public record AllowDelegationFlag(ECPublicKey validatorKey, boolean allowsDelegation)
     implements ValidatorData {
+  public static final SubstateDefinition<AllowDelegationFlag> SUBSTATE_DEFINITION =
+      SubstateDefinition.create(
+          AllowDelegationFlag.class,
+          SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG,
+          buf -> {
+            deserializeReservedByte(buf);
+            var key = deserializeKey(buf);
+            var flag = deserializeBoolean(buf);
+            return new AllowDelegationFlag(key, flag);
+          },
+          (s, buf) -> {
+            serializeReservedByte(buf);
+            serializeKey(buf, s.validatorKey());
+            buf.put((byte) (s.allowsDelegation() ? 1 : 0));
+          },
+          REFieldSerialization::deserializeKey,
+          (k, buf) -> serializeKey(buf, (ECPublicKey) k),
+          k -> new AllowDelegationFlag((ECPublicKey) k, false));
 
   public static AllowDelegationFlag createVirtual(ECPublicKey validatorKey) {
     return new AllowDelegationFlag(validatorKey, false);

@@ -65,14 +65,45 @@
 package com.radixdlt.application.validators.state;
 
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
+import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MIN;
+import static com.radixdlt.atom.REFieldSerialization.*;
 
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.serialization.DeserializeException;
 import java.util.Objects;
 import java.util.OptionalLong;
 
 public record ValidatorFeeCopy(
     OptionalLong epochUpdate, ECPublicKey validatorKey, int curRakePercentage)
     implements ValidatorUpdatingData {
+  public static final SubstateDefinition<ValidatorFeeCopy> SUBSTATE_DEFINITION =
+      SubstateDefinition.create(
+          ValidatorFeeCopy.class,
+          SubstateTypeId.VALIDATOR_RAKE_COPY,
+          buf -> {
+            deserializeReservedByte(buf);
+            var epochUpdate = deserializeOptionalNonNegativeLong(buf);
+            var key = deserializeKey(buf);
+            var curRakePercentage = deserializeInt(buf);
+            if (curRakePercentage < RAKE_MIN || curRakePercentage > RAKE_MAX) {
+              throw new DeserializeException("Invalid rake percentage " + curRakePercentage);
+            }
+
+            return new ValidatorFeeCopy(epochUpdate, key, curRakePercentage);
+          },
+          (s, buf) -> {
+            serializeReservedByte(buf);
+            serializeOptionalLong(buf, s.epochUpdate());
+            serializeKey(buf, s.validatorKey());
+            buf.putInt(s.curRakePercentage());
+          },
+          REFieldSerialization::deserializeKey,
+          (k, buf) -> serializeKey(buf, (ECPublicKey) k),
+          k -> ValidatorFeeCopy.createVirtual((ECPublicKey) k));
+
   public ValidatorFeeCopy {
     Objects.requireNonNull(validatorKey);
   }

@@ -73,8 +73,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 /** SysCall environment for CMAtomOS Constraint Scrypts. */
-// FIXME: unchecked, rawtypes
-@SuppressWarnings({"unchecked", "rawtypes"})
 public final class ConstraintScryptEnv implements Loader {
   private final ImmutableMap<Class<? extends Particle>, SubstateDefinition<? extends Particle>>
       particleDefinitions;
@@ -107,7 +105,8 @@ public final class ConstraintScryptEnv implements Loader {
 
   @Override
   public <T extends Particle> void substate(SubstateDefinition<T> substateDefinition) {
-    var substateClass = substateDefinition.getSubstateClass();
+    var substateClass = substateDefinition.substateClass();
+
     if (particleDefinitionExists(substateClass)) {
       throw new IllegalStateException("Substate " + substateClass + " is already registered");
     }
@@ -118,6 +117,7 @@ public final class ConstraintScryptEnv implements Loader {
   @Override
   public void procedure(Procedure procedure) {
     var key = procedure.key();
+
     if (procedures.containsKey(key)) {
       throw new IllegalStateException(key + " already created");
     }

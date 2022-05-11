@@ -68,29 +68,19 @@ import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
-import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.*;
 import com.radixdlt.constraintmachine.REEvent.ResourceCreatedEvent;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.ReservedSymbolException;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-public final class TokensConstraintScryptV3 implements ConstraintScrypt {
-  private final Set<String> reservedSymbols;
-  private final Pattern tokenSymbolPattern;
-
-  public TokensConstraintScryptV3(Set<String> reservedSymbols, Pattern tokenSymbolPattern) {
-    this.reservedSymbols = reservedSymbols;
-    this.tokenSymbolPattern = tokenSymbolPattern;
-  }
+public record TokensConstraintScryptV3(Set<String> reservedSymbols, Pattern tokenSymbolPattern)
+    implements ConstraintScrypt {
 
   @Override
   public void main(Loader os) {
@@ -100,91 +90,15 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
   }
 
   private void registerParticles(Loader os) {
-    os.substate(
-        new SubstateDefinition<>(
-            TokenResource.class,
-            SubstateTypeId.TOKEN_RESOURCE.id(),
-            buf -> {
-              REFieldSerialization.deserializeReservedByte(buf);
-              var addr = REFieldSerialization.deserializeResourceAddr(buf);
-              var granularity = REFieldSerialization.deserializeNonZeroUInt256(buf);
-              if (!granularity.equals(UInt256.ONE)) {
-                throw new DeserializeException("Granularity must be one.");
-              }
-              var isMutable = REFieldSerialization.deserializeBoolean(buf);
-              var minter = REFieldSerialization.deserializeOptionalKey(buf);
-              return new TokenResource(addr, granularity, isMutable, minter.orElse(null));
-            },
-            (s, buf) -> {
-              REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeREAddr(buf, s.addr());
-              REFieldSerialization.serializeUInt256(buf, UInt256.ONE);
-              REFieldSerialization.serializeBoolean(buf, s.isMutable());
-              REFieldSerialization.serializeOptionalKey(buf, s.optionalOwner());
-            }));
-
-    os.substate(
-        new SubstateDefinition<>(
-            TokenResourceMetadata.class,
-            SubstateTypeId.TOKEN_RESOURCE_METADATA.id(),
-            buf -> {
-              REFieldSerialization.deserializeReservedByte(buf);
-              var addr = REFieldSerialization.deserializeResourceAddr(buf);
-              var symbol = REFieldSerialization.deserializeString(buf);
-              var name = REFieldSerialization.deserializeString(buf);
-              var description = REFieldSerialization.deserializeString(buf);
-              var url = REFieldSerialization.deserializeUrl(buf);
-              var iconUrl = REFieldSerialization.deserializeUrl(buf);
-              return new TokenResourceMetadata(addr, symbol, name, description, iconUrl, url);
-            },
-            (s, buf) -> {
-              REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeREAddr(buf, s.addr());
-              REFieldSerialization.serializeString(buf, s.symbol());
-              REFieldSerialization.serializeString(buf, s.name());
-              REFieldSerialization.serializeString(buf, s.description());
-              REFieldSerialization.serializeString(buf, s.url());
-              REFieldSerialization.serializeString(buf, s.iconUrl());
-            }));
-
-    os.substate(
-        new SubstateDefinition<>(
-            TokensInAccount.class,
-            SubstateTypeId.TOKENS.id(),
-            buf -> {
-              REFieldSerialization.deserializeReservedByte(buf);
-              var holdingAddr = REFieldSerialization.deserializeAccountREAddr(buf);
-              var addr = REFieldSerialization.deserializeResourceAddr(buf);
-              var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
-              return new TokensInAccount(holdingAddr, addr, amount);
-            },
-            (s, buf) -> {
-              REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeREAddr(buf, s.holdingAddress());
-              REFieldSerialization.serializeREAddr(buf, s.resourceAddr());
-              buf.put(s.amount().toByteArray());
-            }));
+    os.substate(TokenResource.SUBSTATE_DEFINITION);
+    os.substate(TokenResourceMetadata.SUBSTATE_DEFINITION);
+    os.substate(TokensInAccount.SUBSTATE_DEFINITION);
   }
 
-  private static class NeedFixedTokenSupply implements ReducerState {
-    private final byte[] arg;
-    private final TokenResource tokenResource;
+  private record NeedFixedTokenSupply(byte[] arg, TokenResource tokenResource)
+      implements ReducerState {}
 
-    private NeedFixedTokenSupply(byte[] arg, TokenResource tokenResource) {
-      this.arg = arg;
-      this.tokenResource = tokenResource;
-    }
-  }
-
-  private static class NeedMetadata implements ReducerState {
-    private final TokenResource tokenResource;
-    private final byte[] arg;
-
-    private NeedMetadata(byte[] arg, TokenResource tokenResource) {
-      this.arg = arg;
-      this.tokenResource = tokenResource;
-    }
-
+  private record NeedMetadata(byte[] arg, TokenResource tokenResource) implements ReducerState {
     void metadata(TokenResourceMetadata metadata, ExecutionContext context)
         throws ProcedureException {
       if (!metadata.addr().equals(tokenResource.addr())) {

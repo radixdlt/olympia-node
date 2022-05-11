@@ -67,6 +67,7 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.engine.parser.exceptions.SubstateDeserializationException;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.functional.Functions;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
@@ -78,12 +79,12 @@ public final class SubstateDeserialization {
 
   public SubstateDeserialization(Collection<SubstateDefinition<? extends Particle>> definitions) {
     this.byteToDeserializer =
-        definitions.stream().collect(Collectors.toMap(SubstateDefinition::getTypeByte, d -> d));
+        definitions.stream()
+            .collect(Collectors.toMap(SubstateDefinition::typeByte, Functions::identity));
     this.classToTypeByte =
         definitions.stream()
             .collect(
-                Collectors.toMap(
-                    SubstateDefinition::getSubstateClass, SubstateDefinition::getTypeByte));
+                Collectors.toMap(SubstateDefinition::substateClass, SubstateDefinition::typeByte));
   }
 
   public Class<? extends Particle> byteToClass(Byte typeByte) throws DeserializeException {
@@ -91,7 +92,7 @@ public final class SubstateDeserialization {
     if (definition == null) {
       throw new DeserializeException("Unknown substate byte type: " + typeByte);
     }
-    return definition.getSubstateClass();
+    return definition.substateClass();
   }
 
   public byte classToByte(Class<? extends Particle> substateClass) {
@@ -118,9 +119,9 @@ public final class SubstateDeserialization {
     }
 
     try {
-      return deserializer.getDeserializer().deserialize(buf);
+      return deserializer.deserializer().deserialize(buf);
     } catch (Exception e) {
-      throw new SubstateDeserializationException(deserializer.getSubstateClass(), e);
+      throw new SubstateDeserializationException(deserializer.substateClass(), e);
     }
   }
 }

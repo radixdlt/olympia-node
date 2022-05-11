@@ -64,14 +64,40 @@
 
 package com.radixdlt.application.tokens.state;
 
-import static com.radixdlt.atom.REFieldSerialization.requireValidUrl;
+import static com.radixdlt.atom.REFieldSerialization.*;
 import static java.util.Objects.requireNonNull;
 
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.identifiers.REAddr;
 
 public record TokenResourceMetadata(
     REAddr addr, String symbol, String name, String description, String iconUrl, String url)
     implements ResourceData {
+  public static final SubstateDefinition<TokenResourceMetadata> SUBSTATE_DEFINITION =
+      SubstateDefinition.create(
+          TokenResourceMetadata.class,
+          SubstateTypeId.TOKEN_RESOURCE_METADATA,
+          buf -> {
+            deserializeReservedByte(buf);
+            var addr = deserializeResourceAddr(buf);
+            var symbol = deserializeString(buf);
+            var name = deserializeString(buf);
+            var description = deserializeString(buf);
+            var url = deserializeUrl(buf);
+            var iconUrl = deserializeUrl(buf);
+            return new TokenResourceMetadata(addr, symbol, name, description, iconUrl, url);
+          },
+          (s, buf) -> {
+            serializeReservedByte(buf);
+            serializeREAddr(buf, s.addr());
+            serializeString(buf, s.symbol());
+            serializeString(buf, s.name());
+            serializeString(buf, s.description());
+            serializeString(buf, s.url());
+            serializeString(buf, s.iconUrl());
+          });
+
   public TokenResourceMetadata {
     requireNonNull(addr);
     requireNonNull(name);

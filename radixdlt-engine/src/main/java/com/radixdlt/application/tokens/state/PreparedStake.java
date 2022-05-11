@@ -64,10 +64,13 @@
 
 package com.radixdlt.application.tokens.state;
 
+import static com.radixdlt.atom.REFieldSerialization.*;
 import static java.util.Objects.requireNonNull;
 
 import com.radixdlt.application.tokens.Bucket;
-import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.DelegatedResourceInBucket;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -77,7 +80,25 @@ import com.radixdlt.utils.UInt256;
  * in an account and staked to a delegate address.
  */
 public record PreparedStake(UInt256 amount, REAddr owner, ECPublicKey delegateKey)
-    implements ResourceInBucket {
+    implements DelegatedResourceInBucket {
+  public static final SubstateDefinition<PreparedStake> SUBSTATE_DEFINITION =
+      SubstateDefinition.create(
+          PreparedStake.class,
+          SubstateTypeId.PREPARED_STAKE,
+          buf -> {
+            deserializeReservedByte(buf);
+            var delegate = deserializeKey(buf);
+            var owner = deserializeAccountREAddr(buf);
+            var amount = deserializeNonZeroUInt256(buf);
+            return new PreparedStake(amount, owner, delegate);
+          },
+          (s, buf) -> {
+            serializeReservedByte(buf);
+            serializeKey(buf, s.delegateKey());
+            serializeREAddr(buf, s.owner());
+            buf.put(s.amount().toByteArray());
+          });
+
   public PreparedStake {
     requireNonNull(delegateKey);
     requireNonNull(owner);

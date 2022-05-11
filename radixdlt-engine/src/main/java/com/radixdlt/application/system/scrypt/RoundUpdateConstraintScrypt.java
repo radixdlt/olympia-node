@@ -66,11 +66,8 @@ package com.radixdlt.application.system.scrypt;
 
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.ValidatorBFTData;
-import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
-import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -83,12 +80,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.KeyComparator;
 import java.util.TreeMap;
 
-public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
-  private final long maxRounds;
-
-  public RoundUpdateConstraintScrypt(long maxRounds) {
-    this.maxRounds = maxRounds;
-  }
+public record RoundUpdateConstraintScrypt(long maxRounds) implements ConstraintScrypt {
 
   private class StartValidatorBFTUpdate implements ReducerState {
     private final long closedRound;
@@ -116,24 +108,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
   @Override
   public void main(Loader os) {
 
-    os.substate(
-        new SubstateDefinition<>(
-            ValidatorBFTData.class,
-            SubstateTypeId.VALIDATOR_BFT_DATA.id(),
-            buf -> {
-              REFieldSerialization.deserializeReservedByte(buf);
-              var key = REFieldSerialization.deserializeKey(buf);
-              var proposalsCompleted = REFieldSerialization.deserializeNonNegativeLong(buf);
-              var proposalsMissed = REFieldSerialization.deserializeNonNegativeLong(buf);
-              return new ValidatorBFTData(key, proposalsCompleted, proposalsMissed);
-            },
-            (s, buf) -> {
-              REFieldSerialization.serializeReservedByte(buf);
-              REFieldSerialization.serializeKey(buf, s.validatorKey());
-              buf.putLong(s.completedProposals());
-              buf.putLong(s.missedProposals());
-            },
-            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)));
+    os.substate(ValidatorBFTData.SUBSTATE_DEFINITION);
 
     os.procedure(
         new DownProcedure<>(

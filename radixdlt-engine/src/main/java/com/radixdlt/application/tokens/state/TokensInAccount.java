@@ -64,11 +64,14 @@
 
 package com.radixdlt.application.tokens.state;
 
+import static com.radixdlt.atom.REFieldSerialization.*;
 import static java.util.Objects.requireNonNull;
 
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.scrypt.Tokens;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
@@ -78,6 +81,24 @@ import com.radixdlt.utils.UInt256;
  */
 public record TokensInAccount(REAddr holdingAddress, REAddr resourceAddr, UInt256 amount)
     implements ResourceInBucket {
+  public static final SubstateDefinition<TokensInAccount> SUBSTATE_DEFINITION =
+      SubstateDefinition.create(
+          TokensInAccount.class,
+          SubstateTypeId.TOKENS,
+          buf -> {
+            deserializeReservedByte(buf);
+            var holdingAddr = deserializeAccountREAddr(buf);
+            var addr = deserializeResourceAddr(buf);
+            var amount = deserializeNonZeroUInt256(buf);
+            return new TokensInAccount(holdingAddr, addr, amount);
+          },
+          (s, buf) -> {
+            serializeReservedByte(buf);
+            serializeREAddr(buf, s.holdingAddress());
+            serializeREAddr(buf, s.resourceAddr());
+            buf.put(s.amount().toByteArray());
+          });
+
   public TokensInAccount {
     requireNonNull(holdingAddress);
     requireNonNull(resourceAddr);

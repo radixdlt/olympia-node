@@ -125,6 +125,8 @@ public class UpdatingValidatorBFTData implements ReducerState {
               next.validatorKey(), additionalProposalsMissed));
     }
 
+    context.emitEvent(REEvent.ValidatorBFTDataEvent.fromData(next));
+
     incrementViews(additionalProposalsCompleted);
     incrementViews(additionalProposalsMissed);
 

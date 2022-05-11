@@ -64,9 +64,29 @@
 
 package com.radixdlt.application.system.state;
 
+import static com.radixdlt.atom.REFieldSerialization.*;
+
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atomos.SubstateDefinition;
 import java.time.Instant;
 
 public record RoundData(long view, long timestamp) implements SystemData {
+  public static final SubstateDefinition<RoundData> SUBSTATE_DEFINITION =
+      SubstateDefinition.create(
+          RoundData.class,
+          SubstateTypeId.ROUND_DATA,
+          buf -> {
+            deserializeReservedByte(buf);
+            var view = deserializeNonNegativeLong(buf);
+            var timestamp = deserializeNonNegativeLong(buf);
+            return new RoundData(view, timestamp);
+          },
+          (s, buf) -> {
+            serializeReservedByte(buf);
+            buf.putLong(s.view());
+            buf.putLong(s.timestamp());
+          });
+
   public Instant asInstant() {
     return Instant.ofEpochMilli(timestamp);
   }

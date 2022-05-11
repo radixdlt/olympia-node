@@ -66,6 +66,7 @@ package com.radixdlt.api.service;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
+import com.radixdlt.api.system.health.ForkVoteStatusService;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineReader;
@@ -77,20 +78,28 @@ import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.CommittedReader;
+import java.time.Duration;
 import java.util.Optional;
+import org.radix.time.Time;
 
 public final class EngineStatusService {
+  private static final Duration FORK_VOTE_STATUS_REFRESH_INTERVAL = Duration.ofSeconds(5);
+
   private final RadixEngine<LedgerAndBFTProof> radixEngine;
   private final CommittedReader committedReader;
   private final LedgerProof lastProof;
   private final LedgerProof lastEpochProof;
   private final Forks forks;
   private final ForksEpochStore forksEpochStore;
+  private final ForkVoteStatusService forkVoteStatusService;
 
   private final Object cachedForksValuesCalculationLock = new Object();
   private long cachedForksValuesLastEpoch = -1;
   private short cachedCandidateForkVotingResult = 0;
   private Optional<Long> cachedUpcomingForkRemainingEpochs = Optional.empty();
+
+  private ForkVoteStatusService.ForkVoteStatus cachedForkVoteStatus;
+  private Long latestForkVoteStatusRefreshTime;
 
   @Inject
   public EngineStatusService(
@@ -99,13 +108,15 @@ public final class EngineStatusService {
       @LastProof LedgerProof lastProof,
       @LastEpochProof LedgerProof lastEpochProof,
       Forks forks,
-      ForksEpochStore forksEpochStore) {
+      ForksEpochStore forksEpochStore,
+      ForkVoteStatusService forkVoteStatusService) {
     this.radixEngine = radixEngine;
     this.committedReader = committedReader;
     this.lastProof = lastProof;
     this.lastEpochProof = lastEpochProof;
     this.forks = forks;
     this.forksEpochStore = forksEpochStore;
+    this.forkVoteStatusService = forkVoteStatusService;
 
     refreshForksCachedValues();
   }
@@ -202,5 +213,17 @@ public final class EngineStatusService {
         .map(ForkVotingResult::stakePercentageVoted)
         .findFirst()
         .orElse((short) 0);
+  }
+
+  public ForkVoteStatusService.ForkVoteStatus getForkVoteStatus() {
+    // cache so that we don't access the DB on each call
+    final var now = Time.currentTimestamp();
+    if (cachedForkVoteStatus == null
+        || now - latestForkVoteStatusRefreshTime > FORK_VOTE_STATUS_REFRESH_INTERVAL.toMillis()) {
+      this.cachedForkVoteStatus = forkVoteStatusService.forkVoteStatus();
+      this.latestForkVoteStatusRefreshTime = now;
+    }
+
+    return this.cachedForkVoteStatus;
   }
 }
