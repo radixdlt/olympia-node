@@ -66,7 +66,6 @@ package com.radixdlt.statecomputer.forks;
 
 import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.system.FeeTable;
@@ -125,11 +124,7 @@ public final class StokenetForksModule extends AbstractModule {
   ForkBuilder stokenetV2() {
     return new ForkBuilder(
         "stokenet-v2",
-        ImmutableSet.of(
-            new CandidateForkConfig.Threshold((short) 9800, 2),
-            new CandidateForkConfig.Threshold((short) 9000, 30)),
-        7851L,
-        8271L,
+        7914L,
         RERulesVersion.OLYMPIA_V1,
         new RERulesConfig(
             RESERVED_SYMBOLS,
