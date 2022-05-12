@@ -78,7 +78,7 @@ import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.modules.MainnetForksModule;
 import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
 import java.util.Collection;
