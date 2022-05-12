@@ -79,7 +79,6 @@ import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.statecomputer.forks.ForkBuilder;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RERulesVersion;
-
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
