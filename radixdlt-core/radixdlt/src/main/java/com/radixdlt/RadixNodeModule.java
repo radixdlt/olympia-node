@@ -66,6 +66,7 @@ package com.radixdlt;
 
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
 
+import com.radixdlt.statecomputer.forks.modules.ReleasenetForksModule;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -99,10 +100,10 @@ import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.modules.testing.TestingForksLoader;
 import com.radixdlt.statecomputer.forks.modules.GenericTestnetForksModule;
 import com.radixdlt.statecomputer.forks.modules.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.modules.StokenetForksModule;
-import com.radixdlt.statecomputer.forks.testing.TestingForksLoader;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
@@ -125,7 +126,7 @@ public final class RadixNodeModule extends AbstractModule {
       Map.of(
           Network.MAINNET.getId(), new MainnetForksModule(),
           Network.STOKENET.getId(), new StokenetForksModule(),
-          Network.RELEASENET.getId(), new GenericTestnetForksModule(),
+          Network.RELEASENET.getId(), new ReleasenetForksModule(),
           Network.RCNET.getId(), new GenericTestnetForksModule(),
           Network.MILESTONENET.getId(), new GenericTestnetForksModule(),
           Network.DEVOPSNET.getId(), new GenericTestnetForksModule(),
