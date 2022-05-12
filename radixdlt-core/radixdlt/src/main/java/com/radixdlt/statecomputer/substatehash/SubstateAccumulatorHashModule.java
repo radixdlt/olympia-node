@@ -64,8 +64,7 @@
 
 package com.radixdlt.statecomputer.substatehash;
 
-import static com.radixdlt.statecomputer.substatehash.BerkeleySubstateAccumulatorHashStore.UPDATE_EPOCH_HASH_FILE_ENABLE_PROPERTY_NAME;
-import static com.radixdlt.statecomputer.substatehash.BerkeleySubstateAccumulatorHashStore.VERIFY_EPOCH_HASH_ENABLE_PROPERTY_NAME;
+import static com.radixdlt.statecomputer.substatehash.BerkeleySubstateAccumulatorHashStore.*;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
