@@ -76,7 +76,7 @@ public class StartValidatorBFTUpdate implements ReducerState {
   private final long closedRound;
   private final TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate =
       new TreeMap<>(KeyComparator.instance());
-  private long maxRounds;
+  private final long maxRounds;
 
   public StartValidatorBFTUpdate(long maxRounds, long closedRound) {
     this.maxRounds = maxRounds;
