@@ -84,11 +84,7 @@ import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.statecomputer.forks.CandidateForkConfig;
-import com.radixdlt.statecomputer.forks.CandidateForkVote;
-import com.radixdlt.statecomputer.forks.ForkVotingResult;
-import com.radixdlt.statecomputer.forks.RERules;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.statecomputer.forks.*;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.utils.Shorts;
 import com.radixdlt.utils.UInt256;
@@ -122,7 +118,7 @@ public final class CandidateForkVotesPostProcessorTest {
           SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class);
 
   private CandidateForkVotesPostProcessor sut =
-      new CandidateForkVotesPostProcessor(reRules.parser().getSubstateDeserialization());
+      new CandidateForkVotesPostProcessor(reRules.parser().substateDeserialization());
 
   private LedgerAndBFTProof ledgerAndBftProof;
   private EngineStore<LedgerAndBFTProof> engineStore;

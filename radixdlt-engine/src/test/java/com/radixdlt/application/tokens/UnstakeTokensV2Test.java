@@ -70,14 +70,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.NextEpochConstructorV3;
 import com.radixdlt.application.system.construction.NextViewConstructorV3;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
-import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
-import com.radixdlt.application.tokens.construction.MintTokenConstructor;
-import com.radixdlt.application.tokens.construction.StakeTokensConstructorV3;
-import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
-import com.radixdlt.application.tokens.construction.UnstakeOwnershipConstructor;
+import com.radixdlt.application.tokens.construction.*;
 import com.radixdlt.application.tokens.scrypt.StakingConstraintScryptV4;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.validators.construction.RegisterValidatorConstructor;
@@ -85,11 +82,7 @@ import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atom.*;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -114,6 +107,8 @@ import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
 public class UnstakeTokensV2Test {
+  private static final EpochUpdateConfig EPOCH_UPDATE_CONFIG =
+      new EpochUpdateConfig(10, 10, 1, 9800, Amount.ofTokens(10).toSubunits());
 
   @Parameterized.Parameters
   public static Collection<Object[]> parameters() {
@@ -124,7 +119,7 @@ public class UnstakeTokensV2Test {
             10,
             List.of(
                 new RoundUpdateConstraintScrypt(10),
-                new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1, 10),
+                new EpochUpdateConstraintScrypt(EPOCH_UPDATE_CONFIG),
                 new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
                 new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
                 new ValidatorConstraintScryptV2(),
@@ -139,7 +134,7 @@ public class UnstakeTokensV2Test {
             10,
             List.of(
                 new RoundUpdateConstraintScrypt(10),
-                new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1, 10),
+                new EpochUpdateConstraintScrypt(EPOCH_UPDATE_CONFIG),
                 new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
                 new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
                 new ValidatorConstraintScryptV2(),
@@ -154,7 +149,7 @@ public class UnstakeTokensV2Test {
             6,
             List.of(
                 new RoundUpdateConstraintScrypt(10),
-                new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1, 10),
+                new EpochUpdateConstraintScrypt(EPOCH_UPDATE_CONFIG),
                 new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
                 new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
                 new ValidatorConstraintScryptV2(),
@@ -169,7 +164,7 @@ public class UnstakeTokensV2Test {
             6,
             List.of(
                 new RoundUpdateConstraintScrypt(10),
-                new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1, 10),
+                new EpochUpdateConstraintScrypt(EPOCH_UPDATE_CONFIG),
                 new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
                 new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
                 new ValidatorConstraintScryptV2(),

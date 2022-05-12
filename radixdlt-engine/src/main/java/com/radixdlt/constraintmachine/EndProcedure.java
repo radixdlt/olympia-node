@@ -83,14 +83,16 @@ public class EndProcedure<S extends ReducerState> implements Procedure {
 
   @Override
   public ProcedureKey key() {
-    return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.END, null));
+    return ProcedureKey.of(reducerStateClass, REOp.END, null);
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public Authorization authorization(Object o) {
     return authorization.apply((S) o);
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public ReducerResult call(
       Object o,

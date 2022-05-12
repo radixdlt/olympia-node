@@ -86,14 +86,16 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 
   @Override
   public ProcedureKey key() {
-    return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.DOWN, downClass));
+    return ProcedureKey.of(reducerStateClass, REOp.DOWN, downClass);
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public Authorization authorization(Object o) {
     return authorization.apply((D) o);
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public ReducerResult call(
       Object o, ReducerState reducerState, Resources immutableAddrs, ExecutionContext context)

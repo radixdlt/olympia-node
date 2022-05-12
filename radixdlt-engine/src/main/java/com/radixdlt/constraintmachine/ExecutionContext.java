@@ -67,16 +67,7 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
 import com.radixdlt.application.tokens.scrypt.Tokens;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
-import com.radixdlt.constraintmachine.exceptions.DefaultedSystemLoanException;
-import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
-import com.radixdlt.constraintmachine.exceptions.ExecutionContextDestroyException;
-import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
-import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
-import com.radixdlt.constraintmachine.exceptions.MultipleFeeReserveDepositException;
-import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
-import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructionException;
-import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
+import com.radixdlt.constraintmachine.exceptions.*;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -97,7 +88,7 @@ public final class ExecutionContext {
   private UInt256 systemLoan = UInt256.ZERO;
   private int sigsLeft;
   private boolean chargedOneTimeFee = false;
-  private List<REEvent> events = new ArrayList<>();
+  private final List<REEvent> events = new ArrayList<>();
 
   public ExecutionContext(Txn txn, PermissionLevel level, boolean skipAuthorization, int sigsLeft) {
     this.txn = txn;

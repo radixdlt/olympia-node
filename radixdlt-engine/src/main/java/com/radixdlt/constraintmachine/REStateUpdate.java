@@ -70,29 +70,15 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 /** Instruction which has been parsed and state checked by Radix Engine */
-public final class REStateUpdate {
-  private final REOp op;
-  private final SubstateId id;
-  private final byte typeByte;
-  private final Object parsed;
-  private final Supplier<ByteBuffer> stateBuf;
-  private final int instructionIndex;
-
-  private REStateUpdate(
-      REOp op,
-      int instructionIndex,
-      SubstateId id,
-      byte typeByte,
-      Object parsed,
-      Supplier<ByteBuffer> stateBuf) {
+public record REStateUpdate(
+    REOp op,
+    int instructionIndex,
+    SubstateId substateId,
+    byte typeByte,
+    Object parsed,
+    Supplier<ByteBuffer> stateBuf) {
+  public REStateUpdate {
     Objects.requireNonNull(op);
-
-    this.op = op;
-    this.instructionIndex = instructionIndex;
-    this.id = id;
-    this.typeByte = typeByte;
-    this.parsed = parsed;
-    this.stateBuf = stateBuf;
   }
 
   public static REStateUpdate of(
@@ -108,18 +94,6 @@ public final class REStateUpdate {
     return new REStateUpdate(op, instructionIndex, substateId, typeByte, parsed, stateBuf);
   }
 
-  public byte typeByte() {
-    return typeByte;
-  }
-
-  public int getInstructionIndex() {
-    return instructionIndex;
-  }
-
-  public SubstateId getId() {
-    return id;
-  }
-
   public ByteBuffer getStateBuf() {
     return stateBuf.get();
   }
@@ -132,16 +106,12 @@ public final class REStateUpdate {
     return this.op == REOp.DOWN;
   }
 
-  public Object getParsed() {
-    return parsed;
-  }
-
   public RawSubstateBytes getRawSubstateBytes() {
     var buffer = stateBuf.get();
     int remaining = buffer.remaining();
     var buf = new byte[remaining];
     buffer.get(buf);
-    return new RawSubstateBytes(id.asBytes(), buf);
+    return new RawSubstateBytes(substateId.idBytes(), buf);
   }
 
   @Override

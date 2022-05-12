@@ -67,14 +67,4 @@ package com.radixdlt.application.system.scrypt;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.constraintmachine.ReducerState;
 
-public final class EndPrevRound implements ReducerState {
-  private final RoundData closed;
-
-  EndPrevRound(RoundData closed) {
-    this.closed = closed;
-  }
-
-  public RoundData getClosedRound() {
-    return closed;
-  }
-}
+public record EndPrevRound(RoundData closedRound) implements ReducerState {}

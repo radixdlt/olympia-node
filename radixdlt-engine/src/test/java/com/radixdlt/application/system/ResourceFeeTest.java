@@ -86,6 +86,7 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
 import com.radixdlt.constraintmachine.meter.UpSubstateFeeMeter;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
@@ -153,7 +154,7 @@ public final class ResourceFeeTest {
   @Test
   public void paying_for_fees_should_work() throws Exception {
     // Arrange
-    var tokDef = new MutableTokenDefinition(key.getPublicKey(), "test");
+    var tokDef = createMutableTokenDefinition(key.getPublicKey(), "test");
     var create =
         this.engine
             .construct(
@@ -169,9 +170,9 @@ public final class ResourceFeeTest {
   @Test
   public void paying_for_fees_should_work_2() throws Exception {
     // Arrange
-    var tokDef1 = new MutableTokenDefinition(key.getPublicKey(), "test");
-    var tokDef2 = new MutableTokenDefinition(key.getPublicKey(), "testa");
-    var tokDef3 = new MutableTokenDefinition(key.getPublicKey(), "testb");
+    var tokDef1 = createMutableTokenDefinition(key.getPublicKey(), "test");
+    var tokDef2 = createMutableTokenDefinition(key.getPublicKey(), "testa");
+    var tokDef3 = createMutableTokenDefinition(key.getPublicKey(), "testb");
     var create =
         this.engine
             .construct(
@@ -189,7 +190,7 @@ public final class ResourceFeeTest {
   @Test
   public void paying_too_little_fees_should_fail() throws Exception {
     // Arrange
-    var tokDef = new MutableTokenDefinition(key.getPublicKey(), "test");
+    var tokDef = createMutableTokenDefinition(key.getPublicKey(), "test");
     var create =
         this.engine
             .construct(
@@ -204,14 +205,19 @@ public final class ResourceFeeTest {
         .hasRootCauseInstanceOf(DepletedFeeReserveException.class);
   }
 
+  private static MutableTokenDefinition createMutableTokenDefinition(
+      ECPublicKey key, String symbol) {
+    return MutableTokenDefinition.create(key, symbol.toLowerCase(), symbol, null, null, null);
+  }
+
   private static CreateMutableToken fromMutableTokenDefinition(MutableTokenDefinition def) {
     return new CreateMutableToken(
         def.getResourceAddress(),
-        def.getSymbol(),
-        def.getName(),
-        def.getDescription(),
-        def.getIconUrl(),
-        def.getTokenUrl(),
+        def.symbol(),
+        def.name(),
+        def.description(),
+        def.iconUrl(),
+        def.tokenUrl(),
         def.getOwner());
   }
 }

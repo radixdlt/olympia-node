@@ -86,12 +86,7 @@ import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.Longs;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseConfig;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.Get;
-import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.Transaction;
+import com.sleepycat.je.*;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Iterator;
@@ -242,9 +237,9 @@ public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAddit
       throw new IllegalStateException("Accumulator out of sync.");
     }
 
-    txn.stateUpdates()
-        .filter(u -> u.getParsed() instanceof RoundData)
-        .map(u -> (RoundData) u.getParsed())
+    txn.stream()
+        .filter(u -> u.parsed() instanceof RoundData)
+        .map(u -> (RoundData) u.parsed())
         .filter(r -> r.timestamp() > 0)
         .map(RoundData::asInstant)
         .forEach(timestamp::set);

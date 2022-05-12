@@ -68,6 +68,7 @@ import static com.radixdlt.atom.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
@@ -80,7 +81,10 @@ import com.radixdlt.application.validators.construction.UpdateAllowDelegationFla
 import com.radixdlt.application.validators.construction.UpdateValidatorOwnerConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
-import com.radixdlt.atom.*;
+import com.radixdlt.atom.ActionConstructor;
+import com.radixdlt.atom.REConstructor;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -115,7 +119,8 @@ public class DelegationFlagTest {
             Pair.of(
                 List.of(
                     new RoundUpdateConstraintScrypt(10),
-                    new EpochUpdateConstraintScrypt(10, UInt256.NINE, 1, 1, 10),
+                    new EpochUpdateConstraintScrypt(
+                        new EpochUpdateConfig(10, 100, 1, 1, UInt256.NINE)),
                     new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
                     new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
                     new ValidatorConstraintScryptV2(),

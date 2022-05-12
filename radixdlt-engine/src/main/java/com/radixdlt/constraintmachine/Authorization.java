@@ -65,24 +65,8 @@
 package com.radixdlt.constraintmachine;
 
 /** Validates whether a specific transition procedure is permissible */
-public final class Authorization {
+public record Authorization(PermissionLevel permissionLevel, Authorizer authorizer) {
   public interface Authorizer {
     void verify(Resources immutableAddrs, ExecutionContext context) throws Exception;
-  }
-
-  private final PermissionLevel permissionLevel;
-  private final Authorizer authorizer;
-
-  public Authorization(PermissionLevel permissionLevel, Authorizer authorizer) {
-    this.permissionLevel = permissionLevel;
-    this.authorizer = authorizer;
-  }
-
-  public PermissionLevel permissionLevel() {
-    return permissionLevel;
-  }
-
-  public Authorizer authorizer() {
-    return authorizer;
   }
 }

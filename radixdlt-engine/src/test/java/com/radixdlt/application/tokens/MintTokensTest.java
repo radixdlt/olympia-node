@@ -193,8 +193,7 @@ public final class MintTokensTest {
             .signAndBuild(key::sign);
     var processed = this.engine.execute(List.of(mintTxn));
     var accounting =
-        REResourceAccounting.compute(
-            processed.getProcessedTxn().getGroupedStateUpdates().get(0).stream());
+        REResourceAccounting.compute(processed.getProcessedTxn().stateUpdates().get(0).stream());
     assertThat(accounting.resourceAccounting())
         .hasSize(1)
         .containsEntry(tokenAddr, BigInteger.valueOf(10));

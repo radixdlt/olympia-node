@@ -67,11 +67,7 @@ package com.radixdlt.api.core.reconstruction;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.REInstruction;
-import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.constraintmachine.UpSubstate;
+import com.radixdlt.constraintmachine.*;
 import com.radixdlt.engine.parser.ParsedTxn;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
@@ -105,20 +101,17 @@ public class RecoverableProcessedTxn {
 
   public static RecoverableProcessedTxn from(
       REProcessedTxn txn, SubstateSerialization serialization) {
-    var parsedTxn = txn.getParsedTxn();
+    var parsedTxn = txn.parsedTxn();
 
     var stateUpdateGroups =
-        txn.getGroupedStateUpdates().stream()
+        txn.stateUpdates().stream()
             .flatMap(
                 stateUpdates ->
                     stateUpdates.stream()
                         .filter(
                             u -> {
                               var microOp =
-                                  parsedTxn
-                                      .instructions()
-                                      .get(u.getInstructionIndex())
-                                      .getMicroOp();
+                                  parsedTxn.instructions().get(u.instructionIndex()).microOp();
                               return switch (microOp) {
                                 case DOWN, DOWNINDEX, VDOWN, LVDOWN -> true;
                                 default -> false;
@@ -127,20 +120,17 @@ public class RecoverableProcessedTxn {
                         .map(
                             u -> {
                               var microOp =
-                                  parsedTxn
-                                      .instructions()
-                                      .get(u.getInstructionIndex())
-                                      .getMicroOp();
+                                  parsedTxn.instructions().get(u.instructionIndex()).microOp();
                               var data =
                                   switch (microOp) {
-                                    case DOWN -> serialization.serialize((Particle) u.getParsed());
+                                    case DOWN -> serialization.serialize((Particle) u.parsed());
                                     case DOWNINDEX -> Arrays.concatenate(
-                                        u.getId().asBytes(),
-                                        serialization.serialize((Particle) u.getParsed()));
+                                        u.substateId().idBytes(),
+                                        serialization.serialize((Particle) u.parsed()));
                                     case VDOWN, LVDOWN -> new byte[] {u.typeByte()};
                                     default -> throw new IllegalStateException();
                                   };
-                              return Pair.of(u.getInstructionIndex(), data);
+                              return Pair.of(u.instructionIndex(), data);
                             }))
             .collect(
                 Collectors.groupingBy(
@@ -149,8 +139,9 @@ public class RecoverableProcessedTxn {
   }
 
   private RecoverableSubstate recoverUp(UpSubstate upSubstate) {
-    ByteBuffer substate = upSubstate.getSubstateBuffer();
-    SubstateId substateId = upSubstate.getSubstateId();
+    var substate = upSubstate.getSubstateBuffer();
+    var substateId = upSubstate.substateId();
+
     return new RecoverableSubstateShutdown(substate, substateId, true);
   }
 
@@ -160,25 +151,30 @@ public class RecoverableProcessedTxn {
       throw new IllegalStateException("Multiple substates found for down instruction");
     }
     var substate = ByteBuffer.wrap(dataList.get(0));
-    SubstateId substateId = instruction.getData();
+    var substateId = instruction.<SubstateId>data();
+
     return new RecoverableSubstateShutdown(substate, substateId, false);
   }
 
   private RecoverableSubstate recoverLocalDown(
       REInstruction instruction, IntFunction<UpSubstate> localUpSubstates) {
-    SubstateId substateId = instruction.getData();
+    var substateId = instruction.<SubstateId>data();
     var index =
         substateId.getIndex().orElseThrow(() -> new IllegalStateException("Could not find index"));
     var substate = localUpSubstates.apply(index).getSubstateBuffer();
+
     return new RecoverableSubstateShutdown(substate, substateId, false);
   }
 
   private RecoverableSubstate recoverVirtualDown(REInstruction instruction, int index) {
     var dataList = shutdownSubstates.get(index);
+
     if (dataList.size() != 1) {
       throw new IllegalStateException("Multiple substates found for virtual down instruction");
     }
-    SubstateId substateId = instruction.getData();
+
+    var substateId = instruction.<SubstateId>data();
+
     return new RecoverableSubstateVirtualShutdown(dataList.get(0)[0], substateId);
   }
 
@@ -205,17 +201,18 @@ public class RecoverableProcessedTxn {
 
     for (int i = 0; i < parsedTxn.instructions().size(); i++) {
       var instruction = parsedTxn.instructions().get(i);
+
       if (!instruction.isStateUpdate()) {
-        if (instruction.getMicroOp() == REInstruction.REMicroOp.END) {
+        if (instruction.microOp() == REInstruction.REMicroOp.END) {
           substateGroups.add(substateUpdates);
           substateUpdates = new ArrayList<>();
         }
         continue;
       }
 
-      switch (instruction.getMicroOp()) {
+      switch (instruction.microOp()) {
         case UP -> {
-          UpSubstate upSubstate = instruction.getData();
+          var upSubstate = instruction.<UpSubstate>data();
           substateUpdates.add(recoverUp(upSubstate));
           upSubstates.add(upSubstate);
         }

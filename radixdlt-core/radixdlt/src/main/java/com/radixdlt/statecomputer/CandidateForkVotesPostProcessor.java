@@ -77,7 +77,6 @@ import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.PostProcessorException;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.forks.CandidateForkVote;
 import com.radixdlt.statecomputer.forks.ForkVotingResult;
 import com.radixdlt.store.EngineStore;
@@ -188,22 +187,17 @@ public final class CandidateForkVotesPostProcessor implements PostProcessor<Ledg
 
   private Optional<Pair<BFTNode, CandidateForkVote>> extractBftNodeAndVoteIfPresent(
       RawSubstateBytes rawSubstateBytes) {
-    try {
-      final var validatorSystemMetadataSubstate =
-          (ValidatorSystemMetadata) substateDeserialization.deserialize(rawSubstateBytes.getData());
+    final var validatorSystemMetadataSubstate =
+        substateDeserialization.<ValidatorSystemMetadata>deserialize(rawSubstateBytes.data());
 
-      if (Bytes.isAllZeros(validatorSystemMetadataSubstate.data())) {
-        return Optional.empty();
-      }
-
-      final var candidateForkVote =
-          new CandidateForkVote(HashCode.fromBytes(validatorSystemMetadataSubstate.data()));
-
-      return Optional.of(
-          Pair.of(
-              BFTNode.create(validatorSystemMetadataSubstate.validatorKey()), candidateForkVote));
-    } catch (DeserializeException e) {
-      throw new PostProcessorException("Error deserializing ValidatorSystemMetadata");
+    if (Bytes.isAllZeros(validatorSystemMetadataSubstate.data())) {
+      return Optional.empty();
     }
+
+    final var candidateForkVote =
+        new CandidateForkVote(HashCode.fromBytes(validatorSystemMetadataSubstate.data()));
+
+    return Optional.of(
+        Pair.of(BFTNode.create(validatorSystemMetadataSubstate.validatorKey()), candidateForkVote));
   }
 }

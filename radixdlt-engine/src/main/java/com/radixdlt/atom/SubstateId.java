@@ -78,7 +78,7 @@ public final class SubstateId {
 
   private final byte[] idBytes;
 
-  private SubstateId(byte[] idBytes) {
+  public SubstateId(byte[] idBytes) {
     this.idBytes = Objects.requireNonNull(idBytes);
   }
 
@@ -86,6 +86,7 @@ public final class SubstateId {
     byte[] id = new byte[BYTES];
     txId.copyTo(id, 0);
     Ints.copyTo(index, id, AID.BYTES);
+
     return new SubstateId(id);
   }
 
@@ -93,11 +94,10 @@ public final class SubstateId {
     if (substateId.isVirtual()) {
       throw new IllegalArgumentException();
     }
-    byte[] id = new byte[BYTES + key.length];
-    var buf = ByteBuffer.wrap(id);
-    buf.put(substateId.asBytes());
-    buf.put(key);
-    return new SubstateId(id);
+
+    var buf = ByteBuffer.wrap(new byte[BYTES + key.length]).put(substateId.idBytes()).put(key);
+
+    return new SubstateId(buf.array());
   }
 
   public static SubstateId fromBytes(byte[] bytes) {
@@ -114,18 +114,15 @@ public final class SubstateId {
     return idBytes.length > BYTES;
   }
 
-  public byte[] asBytes() {
+  public byte[] idBytes() {
     return idBytes;
-  }
-
-  public AID getTxnId() {
-    return AID.from(idBytes);
   }
 
   public Optional<SubstateId> getVirtualParent() {
     if (idBytes.length <= BYTES) {
       return Optional.empty();
     }
+
     var buf = ByteBuffer.wrap(idBytes, 0, BYTES);
     return Optional.of(SubstateId.fromBuffer(buf));
   }
@@ -134,6 +131,7 @@ public final class SubstateId {
     if (idBytes.length <= BYTES) {
       return Optional.empty();
     }
+
     var buf = ByteBuffer.wrap(idBytes, BYTES, idBytes.length - BYTES);
     return Optional.of(buf);
   }
@@ -156,12 +154,6 @@ public final class SubstateId {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof SubstateId)) {
-      return false;
-    }
-
-    var other = (SubstateId) o;
-
-    return Arrays.equals(this.idBytes, other.idBytes);
+    return o instanceof SubstateId other && Arrays.equals(this.idBytes, other.idBytes);
   }
 }

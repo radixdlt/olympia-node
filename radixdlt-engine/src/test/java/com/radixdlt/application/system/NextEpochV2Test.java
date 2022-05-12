@@ -70,6 +70,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.NextEpochConstructorV3;
 import com.radixdlt.application.system.construction.NextViewConstructorV3;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
@@ -117,7 +118,8 @@ public class NextEpochV2Test {
           {
             List.of(
                 new RoundUpdateConstraintScrypt(10),
-                new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1, 10),
+                new EpochUpdateConstraintScrypt(
+                    new EpochUpdateConfig(10, 10, 1, 9800, Amount.ofTokens(10).toSubunits())),
                 new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
                 new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
                 new ValidatorConstraintScryptV2(),
@@ -223,7 +225,7 @@ public class NextEpochV2Test {
     var txn = sut.construct(request).buildWithoutSignature();
     var result = this.sut.execute(List.of(txn), null, PermissionLevel.SUPER_USER);
     var nextValidatorSet =
-        result.getProcessedTxn().getEvents().stream()
+        result.getProcessedTxn().events().stream()
             .filter(REEvent.NextValidatorSetEvent.class::isInstance)
             .map(REEvent.NextValidatorSetEvent.class::cast)
             .findFirst()

@@ -86,8 +86,7 @@ public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> im
 
   @Override
   public ProcedureKey key() {
-    return ProcedureKey.of(
-        reducerStateClass, OpSignature.ofSubstateUpdate(REOp.DOWNINDEX, downClass));
+    return ProcedureKey.of(reducerStateClass, REOp.DOWNINDEX, downClass);
   }
 
   @Override
@@ -95,11 +94,15 @@ public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> im
     return authorization.get();
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public ReducerResult call(
-      Object o, ReducerState reducerState, Resources immutableAddrs, ExecutionContext context)
+      Object parameter,
+      ReducerState reducerState,
+      Resources immutableAddrs,
+      ExecutionContext context)
       throws ProcedureException {
     return downReducer.reduce(
-        (S) reducerState, (IndexedSubstateIterator<D>) o, context, immutableAddrs);
+        (S) reducerState, (IndexedSubstateIterator<D>) parameter, context, immutableAddrs);
   }
 }

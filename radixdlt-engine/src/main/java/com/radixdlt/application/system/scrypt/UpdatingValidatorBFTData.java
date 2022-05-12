@@ -64,6 +64,7 @@
 
 package com.radixdlt.application.system.scrypt;
 
+import com.radixdlt.application.system.scrypt.round.states.StartNextRound;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.REEvent;
@@ -77,7 +78,7 @@ public class UpdatingValidatorBFTData implements ReducerState {
   private final TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate;
   private long expectedNextView;
 
-  UpdatingValidatorBFTData(
+  public UpdatingValidatorBFTData(
       long maxRounds, long view, TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate) {
     this.maxRounds = maxRounds;
     this.expectedNextView = view;

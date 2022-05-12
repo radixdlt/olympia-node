@@ -90,12 +90,7 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.constraintmachine.REOp;
-import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.constraintmachine.REStateUpdate;
-import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.constraintmachine.*;
 import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
 import com.radixdlt.counters.SystemCounters;
@@ -123,28 +118,12 @@ import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.Shorts;
 import com.radixdlt.utils.UInt256;
-import com.sleepycat.je.Cursor;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseConfig;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.Get;
-import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.SecondaryConfig;
-import com.sleepycat.je.SecondaryCursor;
-import com.sleepycat.je.SecondaryDatabase;
-import com.sleepycat.je.Transaction;
+import com.sleepycat.je.*;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.OptionalLong;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -943,25 +922,25 @@ public final class BerkeleyLedgerEntryStore
 
   private CloseableCursor<RawSubstateBytes> openIndexedCursor(
       Transaction dbTxn, SubstateIndex<?> index) {
-    var cursor = new BerkeleySubstateCursor(dbTxn, indexedSubstatesDatabase, index.getPrefix());
+    var cursor = new BerkeleySubstateCursor(dbTxn, indexedSubstatesDatabase, index.index());
     cursor.open();
     return cursor;
   }
 
   private void upParticle(
       com.sleepycat.je.Transaction txn, ByteBuffer bytes, SubstateId substateId) {
-    byte[] particleKey = substateId.asBytes();
+    byte[] particleKey = substateId.idBytes();
     var value = new DatabaseEntry(bytes.array(), bytes.position(), bytes.remaining());
     substatesDatabase.putNoOverwrite(txn, entry(particleKey), value);
   }
 
   private void downVirtualSubstate(com.sleepycat.je.Transaction txn, SubstateId substateId) {
-    var particleKey = substateId.asBytes();
+    var particleKey = substateId.idBytes();
     substatesDatabase.putNoOverwrite(txn, entry(particleKey), downEntry());
   }
 
   private void downSubstate(com.sleepycat.je.Transaction txn, SubstateId substateId) {
-    var status = substatesDatabase.delete(txn, entry(substateId.asBytes()));
+    var status = substatesDatabase.delete(txn, entry(substateId.idBytes()));
     if (status != SUCCESS) {
       throw new IllegalStateException("Downing particle does not exist " + substateId);
     }
@@ -985,7 +964,7 @@ public final class BerkeleyLedgerEntryStore
   private void insertIntoMapDatabaseOrFail(
       com.sleepycat.je.Transaction txn, SystemMapKey mapKey, SubstateId substateId) {
     var key = new DatabaseEntry(mapKey.array());
-    var value = new DatabaseEntry(substateId.asBytes());
+    var value = new DatabaseEntry(substateId.idBytes());
     var result = mapDatabase.putNoOverwrite(txn, key, value);
     if (result != SUCCESS) {
       throw new IllegalStateException("Unable to insert into map database");
@@ -1003,11 +982,11 @@ public final class BerkeleyLedgerEntryStore
   private void executeStateUpdate(com.sleepycat.je.Transaction txn, REStateUpdate stateUpdate) {
     if (stateUpdate.isBootUp()) {
       var buf = stateUpdate.getStateBuf();
-      upParticle(txn, buf, stateUpdate.getId());
+      upParticle(txn, buf, stateUpdate.substateId());
 
       // FIXME: Superhack
-      if (stateUpdate.getParsed() instanceof TokenResource) {
-        var p = (TokenResource) stateUpdate.getParsed();
+      if (stateUpdate.parsed() instanceof TokenResource) {
+        var p = (TokenResource) stateUpdate.parsed();
         var addr = p.addr();
         var buf2 = stateUpdate.getStateBuf();
         var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
@@ -1016,40 +995,42 @@ public final class BerkeleyLedgerEntryStore
 
       // TODO: The following is not required for verification. Only useful for construction
       // TODO: and stateful reads, move this into a separate store at some point.
-      if (stateUpdate.getParsed() instanceof VirtualParent) {
-        var p = (VirtualParent) stateUpdate.getParsed();
-        var typeByte = p.data()[0];
+      if (stateUpdate.parsed() instanceof VirtualParent virtualParent) {
+        var typeByte = virtualParent.data()[0];
         var mapKey = SystemMapKey.ofSystem(typeByte);
-        insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
-      } else if (stateUpdate.getParsed() instanceof ResourceData) {
-        var p = (ResourceData) stateUpdate.getParsed();
-        var mapKey = SystemMapKey.ofResourceData(p.addr(), stateUpdate.typeByte());
-        insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
-      } else if (stateUpdate.getParsed() instanceof ValidatorData) {
-        var p = (ValidatorData) stateUpdate.getParsed();
+
+        insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.substateId());
+      } else if (stateUpdate.parsed() instanceof ResourceData resourceData) {
+        var mapKey = SystemMapKey.ofResourceData(resourceData.addr(), stateUpdate.typeByte());
+
+        insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.substateId());
+      } else if (stateUpdate.parsed() instanceof ValidatorData validatorData) {
         var mapKey =
-            SystemMapKey.ofSystem(stateUpdate.typeByte(), p.validatorKey().getCompressedBytes());
-        insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
-      } else if (stateUpdate.getParsed() instanceof SystemData) {
+            SystemMapKey.ofSystem(
+                stateUpdate.typeByte(), validatorData.validatorKey().getCompressedBytes());
+
+        insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.substateId());
+      } else if (stateUpdate.parsed() instanceof SystemData) {
         var mapKey = SystemMapKey.ofSystem(stateUpdate.typeByte());
-        insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
+        insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.substateId());
       }
     } else if (stateUpdate.isShutDown()) {
-      if (stateUpdate.getId().isVirtual()) {
-        downVirtualSubstate(txn, stateUpdate.getId());
+      if (stateUpdate.substateId().isVirtual()) {
+        downVirtualSubstate(txn, stateUpdate.substateId());
       } else {
-        downSubstate(txn, stateUpdate.getId());
+        downSubstate(txn, stateUpdate.substateId());
 
-        if (stateUpdate.getParsed() instanceof ResourceData) {
-          var p = (ResourceData) stateUpdate.getParsed();
-          var mapKey = SystemMapKey.ofResourceData(p.addr(), stateUpdate.typeByte());
+        if (stateUpdate.parsed() instanceof ResourceData resourceData) {
+          var mapKey = SystemMapKey.ofResourceData(resourceData.addr(), stateUpdate.typeByte());
+
           deleteFromMapDatabaseOrFail(txn, mapKey);
-        } else if (stateUpdate.getParsed() instanceof ValidatorData) {
-          var p = (ValidatorData) stateUpdate.getParsed();
+        } else if (stateUpdate.parsed() instanceof ValidatorData validatorData) {
           var mapKey =
-              SystemMapKey.ofSystem(stateUpdate.typeByte(), p.validatorKey().getCompressedBytes());
+              SystemMapKey.ofSystem(
+                  stateUpdate.typeByte(), validatorData.validatorKey().getCompressedBytes());
+
           deleteFromMapDatabaseOrFail(txn, mapKey);
-        } else if (stateUpdate.getParsed() instanceof SystemData) {
+        } else if (stateUpdate.parsed() instanceof SystemData) {
           var mapKey = SystemMapKey.ofSystem(stateUpdate.typeByte());
           deleteFromMapDatabaseOrFail(txn, mapKey);
         }
@@ -1092,9 +1073,9 @@ public final class BerkeleyLedgerEntryStore
       // State database
       var elapsed = Stopwatch.createStarted();
       int totalCount =
-          txn.getGroupedStateUpdates().stream().mapToInt(List::size).reduce(Integer::sum).orElse(0);
+          txn.stateUpdates().stream().mapToInt(List::size).reduce(Integer::sum).orElse(0);
       int count = 0;
-      for (var group : txn.getGroupedStateUpdates()) {
+      for (var group : txn.stateUpdates()) {
         for (var stateUpdate : group) {
           if (count > 0 && count % 100000 == 0) {
             log.warn(
@@ -1246,14 +1227,14 @@ public final class BerkeleyLedgerEntryStore
   }
 
   private boolean isVirtualDown(Transaction dbTxn, SubstateId substateId) {
-    var key = entry(substateId.asBytes());
+    var key = entry(substateId.idBytes());
     var value = entry();
     var status = substatesDatabase.get(dbTxn, key, value, DEFAULT);
     return status == SUCCESS;
   }
 
   private Optional<ByteBuffer> loadSubstate(Transaction dbTxn, SubstateId substateId) {
-    var key = entry(substateId.asBytes());
+    var key = entry(substateId.idBytes());
     var value = entry();
     var status = substatesDatabase.get(dbTxn, key, value, DEFAULT);
     if (status != SUCCESS) {

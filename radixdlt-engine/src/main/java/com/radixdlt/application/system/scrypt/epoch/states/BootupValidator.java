@@ -62,23 +62,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt;
+package com.radixdlt.application.system.scrypt.epoch.states;
 
-import com.radixdlt.application.system.state.RoundData;
+import com.radixdlt.application.system.state.ValidatorBFTData;
+import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.constraintmachine.exceptions.MismatchException;
+import java.util.Objects;
+import java.util.function.Supplier;
 
-public class StartNextRound implements ReducerState {
-  private final long expectedView;
+public record BootupValidator(ValidatorBFTData expected, Supplier<ReducerState> onDone)
+    implements ReducerState {
 
-  public StartNextRound(long expectedView) {
-    this.expectedView = expectedView;
+  public static BootupValidator create(
+      ValidatorStakeData validator, Supplier<ReducerState> onDone) {
+    return new BootupValidator(ValidatorBFTData.createFresh(validator.validatorKey()), onDone);
   }
 
-  public void update(RoundData next) throws ProcedureException {
-    if (this.expectedView != next.view()) {
-      throw new ProcedureException(
-          "Expected view " + this.expectedView + " but was " + next.view());
+  public ReducerState bootUp(ValidatorBFTData data) throws MismatchException {
+    if (!Objects.equals(this.expected, data)) {
+      throw new MismatchException(this.expected, data);
     }
+    return this.onDone.get();
   }
 }

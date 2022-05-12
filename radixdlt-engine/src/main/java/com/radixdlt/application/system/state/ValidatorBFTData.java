@@ -101,4 +101,8 @@ public record ValidatorBFTData(
   public ValidatorBFTData incrementProposalsMissed() {
     return new ValidatorBFTData(validatorKey, completedProposals, missedProposals + 1);
   }
+
+  public static ValidatorBFTData createFresh(ECPublicKey validatorKey) {
+    return new ValidatorBFTData(validatorKey, 0L, 0L);
+  }
 }

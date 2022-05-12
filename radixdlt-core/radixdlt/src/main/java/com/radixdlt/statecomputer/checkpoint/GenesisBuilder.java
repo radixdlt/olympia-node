@@ -64,7 +64,8 @@
 
 package com.radixdlt.statecomputer.checkpoint;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.atom.TxAction.CreateSystem;
+import static com.radixdlt.atom.TxAction.NextEpoch;
 
 import com.google.inject.Inject;
 import com.radixdlt.atom.TxAction;
@@ -100,10 +101,10 @@ public final class GenesisBuilder {
     var cmConfig = rules.constraintMachineConfig();
     var cm =
         new ConstraintMachine(
-            cmConfig.getProcedures(),
-            cmConfig.getDeserialization(),
-            cmConfig.getVirtualSubstateDeserialization(),
-            cmConfig.getMeter());
+            cmConfig.procedures(),
+            cmConfig.deserialization(),
+            cmConfig.virtualSubstateDeserialization(),
+            cmConfig.metering());
     this.radixEngine =
         new RadixEngine<>(
             rules.parser(),
@@ -137,7 +138,7 @@ public final class GenesisBuilder {
     var result = branch.execute(List.of(txn), PermissionLevel.SYSTEM);
     radixEngine.deleteBranches();
     var genesisValidatorSet =
-        result.getProcessedTxn().getEvents().stream()
+        result.getProcessedTxn().events().stream()
             .filter(REEvent.NextValidatorSetEvent.class::isInstance)
             .map(REEvent.NextValidatorSetEvent.class::cast)
             .findFirst()

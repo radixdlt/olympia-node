@@ -69,17 +69,8 @@ import com.radixdlt.utils.Bytes;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
 
-public final class SubstateIndex<T extends Particle> {
-  private final byte[] index;
-  private final Class<? extends T> substateClass;
-
-  private SubstateIndex(byte[] index, Class<? extends T> substateClass) {
-    this.index = index;
-    this.substateClass = substateClass;
-  }
-
+public record SubstateIndex<T extends Particle>(byte[] index, Class<? extends T> substateClass) {
   public static SubstateIndex<?> create(byte[] prefix) {
     return new SubstateIndex<>(prefix, SubstateTypeId.valueOf(prefix[0]).getSubstateClass());
   }
@@ -95,7 +86,7 @@ public final class SubstateIndex<T extends Particle> {
   }
 
   public boolean test(RawSubstateBytes bytes) {
-    return test(bytes.getData());
+    return test(bytes.data());
   }
 
   public boolean test(byte[] dataBytes) {
@@ -122,21 +113,6 @@ public final class SubstateIndex<T extends Particle> {
     return true;
   }
 
-  public byte[] getPrefix() {
-    return index;
-  }
-
-  public Class<? extends T> getSubstateClass() {
-    return substateClass;
-  }
-
-  public <U extends Particle> Optional<SubstateIndex<U>> toSubstateIndex(Class<U> substateClass) {
-    if (this.substateClass.equals(substateClass)) {
-      return Optional.of(new SubstateIndex<>(this.index, substateClass));
-    }
-    return Optional.empty();
-  }
-
   @Override
   public int hashCode() {
     return Objects.hash(Arrays.hashCode(index), substateClass);
@@ -144,12 +120,8 @@ public final class SubstateIndex<T extends Particle> {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof SubstateIndex)) {
-      return false;
-    }
-
-    var other = (SubstateIndex) o;
-    return Arrays.equals(this.index, other.index)
+    return o instanceof SubstateIndex other
+        && Arrays.equals(this.index, other.index)
         && Objects.equals(this.substateClass, other.substateClass);
   }
 

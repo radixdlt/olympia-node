@@ -67,32 +67,15 @@ package com.radixdlt.statecomputer.forks;
 import static com.radixdlt.atom.TxAction.*;
 
 import com.radixdlt.application.misc.SplitTokenConstructor;
-import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
-import com.radixdlt.application.system.construction.FeeReserveCompleteConstructor;
-import com.radixdlt.application.system.construction.FeeReservePutConstructor;
-import com.radixdlt.application.system.construction.NextEpochConstructorV3;
-import com.radixdlt.application.system.construction.NextViewConstructorV3;
+import com.radixdlt.application.system.construction.*;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
-import com.radixdlt.application.tokens.construction.BurnTokenConstructor;
-import com.radixdlt.application.tokens.construction.CreateFixedTokenConstructor;
-import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
-import com.radixdlt.application.tokens.construction.MintTokenConstructor;
-import com.radixdlt.application.tokens.construction.StakeTokensConstructorV3;
-import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
-import com.radixdlt.application.tokens.construction.UnstakeOwnershipConstructor;
-import com.radixdlt.application.tokens.construction.UnstakeTokensConstructorV2;
+import com.radixdlt.application.tokens.construction.*;
 import com.radixdlt.application.tokens.scrypt.StakingConstraintScryptV4;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.unique.scrypt.MutexConstraintScrypt;
-import com.radixdlt.application.validators.construction.RegisterValidatorConstructor;
-import com.radixdlt.application.validators.construction.UnregisterValidatorConstructor;
-import com.radixdlt.application.validators.construction.UpdateAllowDelegationFlagConstructor;
-import com.radixdlt.application.validators.construction.UpdateRakeConstructor;
-import com.radixdlt.application.validators.construction.UpdateValidatorMetadataConstructor;
-import com.radixdlt.application.validators.construction.UpdateValidatorOwnerConstructor;
-import com.radixdlt.application.validators.construction.UpdateValidatorSystemMetadataConstructor;
+import com.radixdlt.application.validators.construction.*;
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
@@ -100,11 +83,7 @@ import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintS
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
-import com.radixdlt.constraintmachine.meter.Meter;
-import com.radixdlt.constraintmachine.meter.Meters;
-import com.radixdlt.constraintmachine.meter.SigsPerRoundMeter;
-import com.radixdlt.constraintmachine.meter.TxnSizeFeeMeter;
-import com.radixdlt.constraintmachine.meter.UpSubstateFeeMeter;
+import com.radixdlt.constraintmachine.meter.*;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.CandidateForkVotesPostProcessor;
@@ -130,13 +109,7 @@ public enum RERulesVersion {
       v4.load(new StakingConstraintScryptV4(config.minimumStake().toSubunits()));
       v4.load(new MutexConstraintScrypt());
       v4.load(new RoundUpdateConstraintScrypt(maxRounds));
-      v4.load(
-          new EpochUpdateConstraintScrypt(
-              maxRounds,
-              config.rewardsPerProposal().toSubunits(),
-              config.minimumCompletedProposalsPercentage(),
-              config.unstakingEpochDelay(),
-              config.maxValidators()));
+      v4.load(new EpochUpdateConstraintScrypt(config.asEpochUpdateConfig()));
       var meter =
           Meters.combine(
               config.maxSigsPerRound().stream()
@@ -206,7 +179,7 @@ public enum RERulesVersion {
           actionConstructors,
           PostProcessor.append(
               new EpochProofVerifierV2(),
-              new CandidateForkVotesPostProcessor(parser.getSubstateDeserialization())),
+              new CandidateForkVotesPostProcessor(parser.substateDeserialization())),
           config);
     }
   };

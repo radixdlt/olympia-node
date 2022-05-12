@@ -81,7 +81,10 @@ import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.tokens.state.AccountBucket;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.atom.*;
+import com.radixdlt.atom.NotEnoughResourcesException;
+import com.radixdlt.atom.REConstructor;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -346,7 +349,7 @@ public class TxnSizeFeeTest {
 
     // Act
     var result = this.engine.execute(List.of(transfer));
-    REResourceAccounting.compute(result.getProcessedTxn().getGroupedStateUpdates().get(0).stream());
+    REResourceAccounting.compute(result.getProcessedTxn().stateUpdates().get(0).stream());
   }
 
   @Test
@@ -408,8 +411,7 @@ public class TxnSizeFeeTest {
     // Act
     var result = this.engine.execute(List.of(transfer));
     var refund =
-        REResourceAccounting.compute(
-                result.getProcessedTxn().getGroupedStateUpdates().get(2).stream())
+        REResourceAccounting.compute(result.getProcessedTxn().stateUpdates().get(2).stream())
             .bucketAccounting()
             .get(AccountBucket.from(REAddr.ofNativeToken(), accountAddr));
     assertThat(refund).isEqualTo(expectedRefund);

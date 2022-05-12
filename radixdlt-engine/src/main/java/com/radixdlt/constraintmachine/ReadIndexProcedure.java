@@ -86,8 +86,7 @@ public class ReadIndexProcedure<D extends Particle, S extends ReducerState> impl
 
   @Override
   public ProcedureKey key() {
-    return ProcedureKey.of(
-        reducerStateClass, OpSignature.ofSubstateUpdate(REOp.READINDEX, readClass));
+    return ProcedureKey.of(reducerStateClass, REOp.READINDEX, readClass);
   }
 
   @Override
@@ -95,6 +94,7 @@ public class ReadIndexProcedure<D extends Particle, S extends ReducerState> impl
     return authorization.get();
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public ReducerResult call(
       Object o, ReducerState reducerState, Resources immutableAddrs, ExecutionContext context)

@@ -70,6 +70,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.NextEpochConstructorV3;
 import com.radixdlt.application.system.construction.NextViewConstructorV3;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
@@ -115,7 +116,8 @@ public class NextViewV2Test {
         new Object[][] {
           {
             List.of(
-                new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1, 10),
+                new EpochUpdateConstraintScrypt(
+                    new EpochUpdateConfig(10, 10, 1, 9800, Amount.ofTokens(10).toSubunits())),
                 new RoundUpdateConstraintScrypt(10)),
             new NextViewConstructorV3()
           }

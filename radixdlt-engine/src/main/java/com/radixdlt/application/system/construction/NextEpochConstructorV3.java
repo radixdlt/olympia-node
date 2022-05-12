@@ -76,7 +76,7 @@ public record NextEpochConstructorV3(
     long minimumCompletedProposalsPercentage,
     long unstakingEpochDelay,
     int maxValidators)
-    implements ActionConstructor<NextEpoch> {
+    implements ActionConstructor<NextEpoch>, NextEpochConstructor {
 
   @Override
   public void construct(NextEpoch action, TxBuilder txBuilder) throws TxBuilderException {

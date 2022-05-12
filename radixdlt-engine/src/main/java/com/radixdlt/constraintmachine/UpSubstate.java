@@ -68,25 +68,9 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.utils.Bytes;
 import java.nio.ByteBuffer;
 
-public class UpSubstate {
-  private final SubstateId substateId;
-  private final byte[] array;
-  private final int offset;
-  private final int length;
-
-  public UpSubstate(SubstateId substateId, byte[] array, int offset, int length) {
-    this.substateId = substateId;
-    this.array = array;
-    this.offset = offset;
-    this.length = length;
-  }
-
+public record UpSubstate(SubstateId substateId, byte[] array, int offset, int length) {
   public ByteBuffer getSubstateBuffer() {
     return ByteBuffer.wrap(array, offset, length);
-  }
-
-  public SubstateId getSubstateId() {
-    return substateId;
   }
 
   @Override

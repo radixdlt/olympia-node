@@ -72,22 +72,13 @@ import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.constraintmachine.REStateUpdate;
-import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.constraintmachine.*;
 import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Supplier;
 
 public final class InMemoryEngineStore<M> implements EngineStore<M> {
@@ -118,40 +109,43 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
           @Override
           public void storeTxn(REProcessedTxn txn) {
             synchronized (lock) {
-              txn.stateUpdates()
+              txn.stream()
                   .forEach(
                       update -> {
-                        store.storedState.put(update.getId(), update);
+                        store.storedState.put(update.substateId(), update);
 
                         // FIXME: Superhack
                         if (update.isBootUp()) {
-                          if (update.getParsed() instanceof TokenResource) {
-                            var tokenDef = (TokenResource) update.getParsed();
-                            store.resources.put(tokenDef.addr(), update::getStateBuf);
-                          } else if (update.getParsed() instanceof VirtualParent) {
-                            var p = (VirtualParent) update.getParsed();
-                            var typeByte = p.data()[0];
+                          if (update.parsed() instanceof TokenResource tokenResource) {
+                            store.resources.put(tokenResource.addr(), update::getStateBuf);
+                          } else if (update.parsed() instanceof VirtualParent virtualParent) {
+                            var typeByte = virtualParent.data()[0];
                             var mapKey = SystemMapKey.ofSystem(typeByte);
+
                             store.maps.put(mapKey, update.getRawSubstateBytes());
-                          } else if (update.getParsed() instanceof ValidatorData) {
-                            var data = (ValidatorData) update.getParsed();
+                          } else if (update.parsed() instanceof ValidatorData validatorData) {
                             var mapKey =
                                 SystemMapKey.ofSystem(
-                                    update.typeByte(), data.validatorKey().getCompressedBytes());
+                                    update.typeByte(),
+                                    validatorData.validatorKey().getCompressedBytes());
+
                             store.maps.put(mapKey, update.getRawSubstateBytes());
-                          } else if (update.getParsed() instanceof SystemData) {
+                          } else if (update.parsed() instanceof SystemData) {
                             var mapKey = SystemMapKey.ofSystem(update.typeByte());
+
                             store.maps.put(mapKey, update.getRawSubstateBytes());
                           }
                         } else if (update.isShutDown()) {
-                          if (update.getParsed() instanceof ValidatorData) {
-                            var data = (ValidatorData) update.getParsed();
+                          if (update.parsed() instanceof ValidatorData validatorData) {
                             var mapKey =
                                 SystemMapKey.ofSystem(
-                                    update.typeByte(), data.validatorKey().getCompressedBytes());
+                                    update.typeByte(),
+                                    validatorData.validatorKey().getCompressedBytes());
+
                             store.maps.remove(mapKey);
-                          } else if (update.getParsed() instanceof SystemData) {
+                          } else if (update.parsed() instanceof SystemData) {
                             var mapKey = SystemMapKey.ofSystem(update.typeByte());
+
                             store.maps.remove(mapKey);
                           }
                         }
@@ -170,7 +164,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
             synchronized (lock) {
               var parent = substateId.getVirtualParent().orElseThrow();
               var update = store.storedState.get(parent);
-              if (update == null || !(update.getParsed() instanceof VirtualParent)) {
+              if (update == null || !(update.parsed() instanceof VirtualParent)) {
                 throw new VirtualParentStateDoesNotExist(parent);
               }
 
@@ -231,7 +225,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
     }
     substates.sort(
         Comparator.comparing(
-            RawSubstateBytes::getData, UnsignedBytes.lexicographicalComparator().reversed()));
+            RawSubstateBytes::data, UnsignedBytes.lexicographicalComparator().reversed()));
 
     return CloseableCursor.wrapIterator(substates.iterator());
   }

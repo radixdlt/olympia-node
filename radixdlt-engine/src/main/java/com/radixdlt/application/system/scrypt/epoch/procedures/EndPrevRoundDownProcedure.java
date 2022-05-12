@@ -62,57 +62,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.atom;
+package com.radixdlt.application.system.scrypt.epoch.procedures;
 
-import com.radixdlt.utils.UInt256;
-import java.util.Objects;
+import com.radixdlt.application.system.scrypt.EndPrevRound;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
+import com.radixdlt.application.system.scrypt.epoch.states.UpdatingEpoch;
+import com.radixdlt.application.system.state.EpochData;
+import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.DownProcedure;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
-/** Describes a fixed token definition */
-public final class FixedTokenDefinition {
+public final class EndPrevRoundDownProcedure extends DownProcedure<EpochData, EndPrevRound> {
+  public EndPrevRoundDownProcedure(EpochUpdateConfig config) {
+    super(
+        EndPrevRound.class,
+        EpochData.class,
+        d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
+        (d, s, r, c) -> {
+          // TODO: Should move this authorization instead of checking epoch > 0
+          if (d.epoch() > 0 && s.closedRound().view() != config.maxRounds()) {
+            throw new ProcedureException(
+                "Must execute epoch update on end of round "
+                    + config.maxRounds()
+                    + " but is "
+                    + s.closedRound().view());
+          }
 
-  private final String symbol;
-  private final String name;
-  private final String description;
-  private final String iconUrl;
-  private final String tokenUrl;
-  private final UInt256 supply;
-
-  public FixedTokenDefinition(
-      String symbol,
-      String name,
-      String description,
-      String iconUrl,
-      String tokenUrl,
-      UInt256 supply) {
-    this.symbol = Objects.requireNonNull(symbol);
-    this.name = Objects.requireNonNull(name);
-    this.description = Objects.requireNonNull(description);
-    this.iconUrl = iconUrl;
-    this.tokenUrl = tokenUrl;
-    this.supply = Objects.requireNonNull(supply);
-  }
-
-  public String getSymbol() {
-    return symbol;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public String getIconUrl() {
-    return iconUrl == null ? "" : iconUrl;
-  }
-
-  public String getTokenUrl() {
-    return tokenUrl == null ? "" : tokenUrl;
-  }
-
-  public UInt256 getSupply() {
-    return supply;
+          return ReducerResult.incomplete(new UpdatingEpoch(d));
+        });
   }
 }

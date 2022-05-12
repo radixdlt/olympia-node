@@ -64,25 +64,20 @@
 
 package com.radixdlt.statecomputer;
 
-import static com.radixdlt.atom.TxAction.*;
-import static com.radixdlt.counters.SystemCounters.*;
+import static com.radixdlt.atom.TxAction.NextEpoch;
+import static com.radixdlt.atom.TxAction.NextRound;
+import static com.radixdlt.counters.SystemCounters.CounterType;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.radixdlt.atom.*;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
@@ -339,7 +334,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
       var exceptionBuilder = ImmutableMap.<Txn, Exception>builder();
       var nextValidatorSet =
-          systemTxn.processed().getEvents().stream()
+          systemTxn.processed().events().stream()
               .filter(REEvent.NextValidatorSetEvent.class::isInstance)
               .map(REEvent.NextValidatorSetEvent.class::cast)
               .findFirst()

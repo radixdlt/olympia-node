@@ -68,6 +68,7 @@ import static com.radixdlt.atom.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
@@ -106,7 +107,8 @@ public class RegisterValidatorTest {
     var cmAtomOS = new CMAtomOS();
     cmAtomOS.load(new SystemConstraintScrypt());
     cmAtomOS.load(new RoundUpdateConstraintScrypt(2));
-    cmAtomOS.load(new EpochUpdateConstraintScrypt(2, UInt256.NINE, 1, 1, 100));
+    cmAtomOS.load(
+        new EpochUpdateConstraintScrypt(new EpochUpdateConfig(2, 100, 1, 1, UInt256.NINE)));
     cmAtomOS.load(new ValidatorConstraintScryptV2());
     cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
     cmAtomOS.load(new ValidatorUpdateRakeConstraintScrypt(2));

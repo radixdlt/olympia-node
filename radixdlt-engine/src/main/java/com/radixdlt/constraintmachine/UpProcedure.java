@@ -67,7 +67,7 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import java.util.function.Function;
 
-public final class UpProcedure<S extends ReducerState, U extends Particle> implements Procedure {
+public class UpProcedure<S extends ReducerState, U extends Particle> implements Procedure {
   private final Class<S> reducerStateClass;
   private final Class<U> upClass;
   private final UpReducer<S, U> upReducer;
@@ -86,20 +86,25 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> imple
 
   @Override
   public ProcedureKey key() {
-    return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.UP, upClass));
+    return ProcedureKey.of(reducerStateClass, REOp.UP, upClass);
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public Authorization authorization(Object o) {
     return authorization.apply((U) o);
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public ReducerResult call(
-      Object o, ReducerState reducerState, Resources immutableAddrs, ExecutionContext context)
+      Object parameter,
+      ReducerState reducerState,
+      Resources immutableAddrs,
+      ExecutionContext context)
       throws ProcedureException {
     try {
-      return upReducer.reduce((S) reducerState, (U) o, context, immutableAddrs);
+      return upReducer.reduce((S) reducerState, (U) parameter, context, immutableAddrs);
     } catch (Exception e) {
       throw new ProcedureException(e);
     }

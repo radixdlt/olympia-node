@@ -64,7 +64,7 @@
 
 package com.radixdlt.application.system.construction;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.atom.TxAction.FeeReserveComplete;
 
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.atom.ActionConstructor;
@@ -90,7 +90,7 @@ public class FeeReserveCompleteConstructor implements ActionConstructor<FeeReser
     var upSubstateFeeTable = feeTable.getPerUpSubstateFee();
     var substateCost =
         builder.toLowLevelBuilder().localUpSubstate().stream()
-            .map(s -> s.getParticle().getClass())
+            .map(s -> s.particle().getClass())
             .map(upSubstateFeeTable::get)
             .filter(Objects::nonNull)
             .reduce(UInt256::add)

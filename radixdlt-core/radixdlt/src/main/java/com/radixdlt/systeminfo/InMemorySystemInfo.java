@@ -129,7 +129,7 @@ public final class InMemorySystemInfo {
       }
 
       update.getStateComputerOutput().getInstance(REOutput.class).getProcessedTxns().stream()
-          .flatMap(processedTxn -> processedTxn.getEvents().stream())
+          .flatMap(processedTxn -> processedTxn.events().stream())
           .filter(ValidatorBFTDataEvent.class::isInstance)
           .map(ValidatorBFTDataEvent.class::cast)
           .filter(event -> event.validatorKey().equals(self.getKey()))

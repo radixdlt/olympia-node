@@ -315,19 +315,12 @@ public final class REInstruction {
     this.length = length;
   }
 
-  public int getDataLength() {
-    return length;
-  }
-
-  public REMicroOp getMicroOp() {
+  public REMicroOp microOp() {
     return microOp;
   }
 
-  public ByteBuffer getDataByteBuffer() {
-    return ByteBuffer.wrap(array, offset, length);
-  }
-
-  public <T> T getData() {
+  @SuppressWarnings("unchecked")
+  public <T> T data() {
     return (T) data;
   }
 
@@ -335,6 +328,8 @@ public final class REInstruction {
     return microOp.op.isSubstateUpdate();
   }
 
+  // TODO: fields array, offset and length are not used, but logic below contains side
+  //  effects and requires careful review before making changes.
   public static REInstruction readFrom(REParser.ParserState parserState, ByteBuffer buf)
       throws DeserializeException, REInstructionDataDeserializeException {
 

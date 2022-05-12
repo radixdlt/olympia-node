@@ -78,30 +78,11 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /** Transaction which has been successfully parsed and state checked by radix engine */
-public final class REProcessedTxn {
-  private final List<List<REStateUpdate>> stateUpdates;
-  private final ParsedTxn parsedTxn;
-  private final ECPublicKey signedByKey;
-  private final List<REEvent> events;
-
-  public REProcessedTxn(
-      ParsedTxn parsedTxn,
-      ECPublicKey signedByKey,
-      List<List<REStateUpdate>> stateUpdates,
-      List<REEvent> events) {
-    this.parsedTxn = parsedTxn;
-    this.signedByKey = signedByKey;
-    this.stateUpdates = stateUpdates;
-    this.events = events;
-  }
-
-  public List<REEvent> getEvents() {
-    return events;
-  }
-
-  public ParsedTxn getParsedTxn() {
-    return parsedTxn;
-  }
+public record REProcessedTxn(
+    ParsedTxn parsedTxn,
+    ECPublicKey signedByKey,
+    List<List<REStateUpdate>> stateUpdates,
+    List<REEvent> events) {
 
   public UInt256 getFeePaid() {
     return parsedTxn.getFeePaid();
@@ -125,33 +106,22 @@ public final class REProcessedTxn {
 
   // FIXME: Currently a hack, better would be to put this at transaction layer for fees
   public boolean isSystemOnly() {
-    return stateUpdates().anyMatch(i -> i.getParsed() instanceof RoundData)
-        || stateUpdates().anyMatch(i -> i.getParsed() instanceof EpochData);
+    return stream().anyMatch(i -> i.parsed() instanceof RoundData)
+        || stream().anyMatch(i -> i.parsed() instanceof EpochData);
   }
 
-  public List<List<REStateUpdate>> getGroupedStateUpdates() {
-    return stateUpdates;
-  }
-
-  public Stream<REStateUpdate> stateUpdates() {
+  public Stream<REStateUpdate> stream() {
     return stateUpdates.stream().flatMap(List::stream);
   }
 
   public Stream<SubstateId> substateDependencies() {
     return parsedTxn.instructions().stream()
         .flatMap(
-            i -> {
-              if (i.getMicroOp() == REInstruction.REMicroOp.DOWN
-                  || i.getMicroOp() == REInstruction.REMicroOp.READ) {
-                SubstateId substateId = i.getData();
-                return Stream.of(substateId);
-              } else if (i.getMicroOp() == REInstruction.REMicroOp.VDOWN
-                  || i.getMicroOp() == REInstruction.REMicroOp.VREAD) {
-                SubstateId substateId = i.getData();
-                return Stream.of(substateId);
-              }
-              return Stream.empty();
-            });
+            i ->
+                switch (i.microOp()) {
+                  case DOWN, READ, VDOWN, VREAD -> Stream.of(i.<SubstateId>data());
+                  default -> Stream.empty();
+                });
   }
 
   @Override
@@ -161,12 +131,8 @@ public final class REProcessedTxn {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof REProcessedTxn)) {
-      return false;
-    }
-
-    var other = (REProcessedTxn) o;
-    return Objects.equals(this.stateUpdates, other.stateUpdates)
+    return o instanceof REProcessedTxn other
+        && Objects.equals(this.stateUpdates, other.stateUpdates)
         && Objects.equals(this.parsedTxn, other.parsedTxn);
   }
 

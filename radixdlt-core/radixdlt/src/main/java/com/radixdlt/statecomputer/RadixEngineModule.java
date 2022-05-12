@@ -75,11 +75,7 @@ import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.statecomputer.forks.CurrentForkView;
-import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.ForksEpochStore;
-import com.radixdlt.statecomputer.forks.NewestForkConfig;
+import com.radixdlt.statecomputer.forks.*;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
 import java.util.Map;
@@ -150,10 +146,10 @@ public class RadixEngineModule extends AbstractModule {
     final var cmConfig = rules.constraintMachineConfig();
     var cm =
         new ConstraintMachine(
-            cmConfig.getProcedures(),
-            cmConfig.getDeserialization(),
-            cmConfig.getVirtualSubstateDeserialization(),
-            cmConfig.getMeter());
+            cmConfig.procedures(),
+            cmConfig.deserialization(),
+            cmConfig.virtualSubstateDeserialization(),
+            cmConfig.metering());
     return new RadixEngine<>(
         rules.parser(),
         rules.serialization(),

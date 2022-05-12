@@ -64,38 +64,20 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.meter.Meter;
 
-public final class ConstraintMachineConfig {
-  private final Procedures procedures;
-  private final SubstateDeserialization deserialization;
-  private final VirtualSubstateDeserialization virtualSubstateDeserialization;
-  private final Meter metering;
+public record ConstraintMachineConfig(
+    Procedures procedures,
+    SubstateDeserialization deserialization,
+    VirtualSubstateDeserialization virtualSubstateDeserialization,
+    Meter metering) {
 
-  public ConstraintMachineConfig(
-      Procedures procedures,
-      SubstateDeserialization deserialization,
-      VirtualSubstateDeserialization virtualSubstateDeserialization,
-      Meter metering) {
-    this.procedures = procedures;
-    this.deserialization = deserialization;
-    this.virtualSubstateDeserialization = virtualSubstateDeserialization;
-    this.metering = metering;
-  }
-
-  public SubstateDeserialization getDeserialization() {
-    return deserialization;
-  }
-
-  public VirtualSubstateDeserialization getVirtualSubstateDeserialization() {
-    return virtualSubstateDeserialization;
-  }
-
-  public Procedures getProcedures() {
-    return procedures;
-  }
-
-  public Meter getMeter() {
-    return metering;
+  public static ConstraintMachineConfig create(CMAtomOS os, Meter meter) {
+    return new ConstraintMachineConfig(
+        os.getProcedures(),
+        os.buildSubstateDeserialization(),
+        os.buildVirtualSubstateDeserialization(),
+        meter);
   }
 }

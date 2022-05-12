@@ -181,7 +181,7 @@ public final class EventLoggerModule extends AbstractModule {
     }
 
     output.getProcessedTxns().stream()
-        .flatMap(t -> t.getEvents().stream())
+        .flatMap(t -> t.events().stream())
         .forEach(e -> logValidatorEvents(self, nodeString, e));
   }
 

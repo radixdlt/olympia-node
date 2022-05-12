@@ -64,10 +64,12 @@
 
 package com.radixdlt.application.validators;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.atom.TxAction.CreateSystem;
+import static com.radixdlt.atom.TxAction.UpdateValidatorSystemMetadata;
 
 import com.google.common.base.Strings;
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
@@ -97,7 +99,8 @@ public class UpdateValidatorSystemMetadataTest {
     var cmAtomOS = new CMAtomOS();
     cmAtomOS.load(new SystemConstraintScrypt());
     cmAtomOS.load(new RoundUpdateConstraintScrypt(2));
-    cmAtomOS.load(new EpochUpdateConstraintScrypt(2, UInt256.NINE, 1, 1, 100));
+    cmAtomOS.load(
+        new EpochUpdateConstraintScrypt(new EpochUpdateConfig(2, 100, 1, 1, UInt256.NINE)));
     cmAtomOS.load(new ValidatorConstraintScryptV2());
     var cm =
         new ConstraintMachine(

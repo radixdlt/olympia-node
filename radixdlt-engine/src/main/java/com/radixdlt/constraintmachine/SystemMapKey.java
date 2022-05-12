@@ -68,30 +68,24 @@ import com.radixdlt.identifiers.REAddr;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-public final class SystemMapKey {
-  private final byte[] key;
-
-  private SystemMapKey(byte[] key) {
-    this.key = key;
-  }
+public record SystemMapKey(byte[] array) {
 
   private static SystemMapKey of(REAddr addr, byte key) {
-    var buf = ByteBuffer.allocate(addr.getBytes().length + 1);
-    buf.put(addr.getBytes());
-    buf.put(key);
+    var buf = ByteBuffer.allocate(addr.getBytes().length + 1).put(addr.getBytes()).put(key);
     return new SystemMapKey(buf.array());
   }
 
   private static SystemMapKey of(REAddr addr, byte key0, byte[] key1) {
-    var buf = ByteBuffer.allocate(addr.getBytes().length + 1 + key1.length);
-    buf.put(addr.getBytes());
-    buf.put(key0);
-    buf.put(key1);
+    var buf =
+        ByteBuffer.allocate(addr.getBytes().length + 1 + key1.length)
+            .put(addr.getBytes())
+            .put(key0)
+            .put(key1);
     return new SystemMapKey(buf.array());
   }
 
-  public static SystemMapKey create(byte[] key) {
-    return new SystemMapKey(key);
+  public static SystemMapKey create(byte[] array) {
+    return new SystemMapKey(array);
   }
 
   public static SystemMapKey ofSystem(byte key) {
@@ -106,22 +100,13 @@ public final class SystemMapKey {
     return of(addr, typeId);
   }
 
-  public byte[] array() {
-    return key;
-  }
-
   @Override
   public int hashCode() {
-    return Arrays.hashCode(key);
+    return Arrays.hashCode(array);
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof SystemMapKey)) {
-      return false;
-    }
-
-    var other = (SystemMapKey) o;
-    return Arrays.equals(this.key, other.key);
+    return o instanceof SystemMapKey other && Arrays.equals(this.array, other.array);
   }
 }

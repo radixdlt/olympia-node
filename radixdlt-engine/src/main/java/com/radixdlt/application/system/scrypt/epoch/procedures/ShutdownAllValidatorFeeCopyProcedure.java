@@ -62,12 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.constraintmachine.exceptions;
+package com.radixdlt.application.system.scrypt.epoch.procedures;
 
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.application.system.scrypt.epoch.states.PreparingRakeUpdate;
+import com.radixdlt.application.validators.state.ValidatorFeeCopy;
+import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 
-public class InvalidVirtualSubstateException extends Exception {
-  public InvalidVirtualSubstateException(Particle particle) {
-    super(particle + " is not a valid virtual substate.");
+public class ShutdownAllValidatorFeeCopyProcedure
+    extends ShutdownAllProcedure<ValidatorFeeCopy, PreparingRakeUpdate> {
+  public ShutdownAllValidatorFeeCopyProcedure() {
+    super(
+        ValidatorFeeCopy.class,
+        PreparingRakeUpdate.class,
+        () -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
+        (s, d, c, r) -> ReducerResult.incomplete(s.prepareRakeUpdates(d)));
   }
 }

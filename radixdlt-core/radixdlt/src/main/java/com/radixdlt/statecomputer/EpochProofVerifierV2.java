@@ -86,7 +86,7 @@ public class EpochProofVerifierV2 implements PostProcessor<LedgerAndBFTProof> {
     for (int i = 0; i < txns.size(); i++) {
       var processed = txns.get(i);
       var nextEpochEvents =
-          processed.getEvents().stream()
+          processed.events().stream()
               .filter(REEvent.NextValidatorSetEvent.class::isInstance)
               .map(REEvent.NextValidatorSetEvent.class::cast)
               .toList();
@@ -103,9 +103,9 @@ public class EpochProofVerifierV2 implements PostProcessor<LedgerAndBFTProof> {
         }
 
         // TODO: Move this check into Meter
-        var stateUpdates = processed.getGroupedStateUpdates();
+        var stateUpdates = processed.stateUpdates();
         if (stateUpdates.get(stateUpdates.size() - 1).stream()
-            .noneMatch(u -> u.getParsed() instanceof EpochData)) {
+            .noneMatch(u -> u.parsed() instanceof EpochData)) {
           throw new PostProcessorException("Epoch update is not the last execution.");
         }
 

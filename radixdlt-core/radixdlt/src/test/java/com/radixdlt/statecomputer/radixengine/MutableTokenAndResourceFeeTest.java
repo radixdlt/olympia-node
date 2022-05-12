@@ -64,7 +64,8 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.atom.TxAction.CreateMutableToken;
+import static com.radixdlt.atom.TxAction.MintToken;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.inject.AbstractModule;
@@ -146,7 +147,8 @@ public class MutableTokenAndResourceFeeTest {
     createInjector().injectMembers(this);
     var account = REAddr.ofPubKeyAccount(VALIDATOR_KEY.getPublicKey());
     var tokDef =
-        new MutableTokenDefinition(VALIDATOR_KEY.getPublicKey(), "xrd", "XRD", "XRD", null, null);
+        MutableTokenDefinition.create(
+            VALIDATOR_KEY.getPublicKey(), "xrd", "XRD", "XRD", null, null);
     var txn =
         sut.construct(
                 TxnConstructionRequest.create()
@@ -178,7 +180,7 @@ public class MutableTokenAndResourceFeeTest {
     // Arrange
     createInjector().injectMembers(this);
     var tokDef =
-        new MutableTokenDefinition(
+        MutableTokenDefinition.create(
             VALIDATOR_KEY.getPublicKey(), "test", "test", "desc", null, null);
 
     var account = REAddr.ofPubKeyAccount(VALIDATOR_KEY.getPublicKey());
@@ -202,7 +204,7 @@ public class MutableTokenAndResourceFeeTest {
     // Arrange
     createInjector().injectMembers(this);
     var tokDef =
-        new MutableTokenDefinition(
+        MutableTokenDefinition.create(
             VALIDATOR_KEY.getPublicKey(), "test", "test", "desc", null, null);
 
     var account = REAddr.ofPubKeyAccount(VALIDATOR_KEY.getPublicKey());
@@ -228,7 +230,8 @@ public class MutableTokenAndResourceFeeTest {
     // Arrange
     createInjector().injectMembers(this);
     var tokDef =
-        new MutableTokenDefinition(VALIDATOR_KEY.getPublicKey(), "test", "test", null, null, null);
+        MutableTokenDefinition.create(
+            VALIDATOR_KEY.getPublicKey(), "test", "test", null, null, null);
     var account = REAddr.ofPubKeyAccount(VALIDATOR_KEY.getPublicKey());
     var txn =
         sut.construct(
@@ -245,11 +248,11 @@ public class MutableTokenAndResourceFeeTest {
   private static CreateMutableToken fromMutableTokenDefinition(MutableTokenDefinition def) {
     return new CreateMutableToken(
         def.getResourceAddress(),
-        def.getSymbol(),
-        def.getName(),
-        def.getDescription(),
-        def.getIconUrl(),
-        def.getTokenUrl(),
+        def.symbol(),
+        def.name(),
+        def.description(),
+        def.iconUrl(),
+        def.tokenUrl(),
         def.getOwner());
   }
 }
