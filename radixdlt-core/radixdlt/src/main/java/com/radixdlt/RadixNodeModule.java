@@ -66,7 +66,6 @@ package com.radixdlt;
 
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
 
-import com.radixdlt.statecomputer.forks.modules.ReleasenetForksModule;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -102,6 +101,7 @@ import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.modules.GenericTestnetForksModule;
 import com.radixdlt.statecomputer.forks.modules.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.modules.ReleasenetForksModule;
 import com.radixdlt.statecomputer.forks.modules.StokenetForksModule;
 import com.radixdlt.statecomputer.forks.modules.testing.TestingForksLoader;
 import com.radixdlt.store.DatabasePropertiesModule;
