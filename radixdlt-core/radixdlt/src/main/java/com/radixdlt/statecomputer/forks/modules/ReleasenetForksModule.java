@@ -64,6 +64,8 @@
 
 package com.radixdlt.statecomputer.forks.modules;
 
+import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.system.FeeTable;
@@ -83,8 +85,6 @@ import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.regex.Pattern;
-
-import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 
 public final class ReleasenetForksModule extends AbstractModule {
   private static final Set<String> RESERVED_SYMBOLS =
