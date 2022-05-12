@@ -70,19 +70,15 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
-import com.radixdlt.networks.Network;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
 public class SubstateAccumulatorHashModule extends AbstractModule {
 
   private final boolean isUpdateEpochHashFileEnabled;
   private final boolean isVerifyEpochHashEnabled;
-  private final Network currentNetwork;
 
   public SubstateAccumulatorHashModule(
-      boolean isUpdateEpochHashFileEnabled,
-      boolean isVerifyEpochHashEnabled,
-      Network currentNetwork) {
+      boolean isUpdateEpochHashFileEnabled, boolean isVerifyEpochHashEnabled) {
     if (isVerifyEpochHashEnabled && isUpdateEpochHashFileEnabled) {
       throw new IllegalStateException(
           "It is not allowed to enable both verify_epoch_hash.enable and"
@@ -90,7 +86,6 @@ public class SubstateAccumulatorHashModule extends AbstractModule {
     }
     this.isUpdateEpochHashFileEnabled = isUpdateEpochHashFileEnabled;
     this.isVerifyEpochHashEnabled = isVerifyEpochHashEnabled;
-    this.currentNetwork = currentNetwork;
   }
 
   @Override
@@ -105,6 +100,5 @@ public class SubstateAccumulatorHashModule extends AbstractModule {
     bindConstant()
         .annotatedWith(Names.named(VERIFY_EPOCH_HASH_ENABLE_PROPERTY_NAME))
         .to(isVerifyEpochHashEnabled);
-    bindConstant().annotatedWith(Names.named(CURRENT_NETWORK)).to(currentNetwork);
   }
 }

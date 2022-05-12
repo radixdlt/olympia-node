@@ -79,6 +79,7 @@ import com.radixdlt.constraintmachine.*;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
@@ -103,8 +104,6 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
   public static final String UPDATE_EPOCH_HASH_FILE_ENABLE_PROPERTY_NAME =
       "update_epoch_hash_file.enable";
   public static final String VERIFY_EPOCH_HASH_ENABLE_PROPERTY_NAME = "verify_epoch_hash.enable";
-
-  public static final String CURRENT_NETWORK = "current_network";
 
   public static final String EPOCH_HASH_FILENAME = "epoch-hash";
 
@@ -143,7 +142,7 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
   private Writer epochsHashFileWriter;
   private BufferedReader epochsHashFileBufferedReader;
 
-  private final Network currentNetwork;
+  private final Network network;
 
   private final boolean isUpdateEpochHashFileEnabled;
   private final boolean isVerifyEpochHashEnabled;
@@ -151,11 +150,14 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
   @Inject
   public BerkeleySubstateAccumulatorHashStore(
       Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
-      @Named(CURRENT_NETWORK) Network currentNetwork,
+      @NetworkId int networkId,
       @Named(UPDATE_EPOCH_HASH_FILE_ENABLE_PROPERTY_NAME) boolean isUpdateEpochHashFileEnabled,
       @Named(VERIFY_EPOCH_HASH_ENABLE_PROPERTY_NAME) boolean isVerifyEpochHashEnabled) {
     this.radixEngineProvider = radixEngineProvider;
-    this.currentNetwork = currentNetwork;
+    this.network =
+        Network.ofId(networkId)
+            .orElseThrow(
+                () -> new IllegalStateException("It was not possible to get the network."));
     this.isUpdateEpochHashFileEnabled = isUpdateEpochHashFileEnabled;
     this.isVerifyEpochHashEnabled = isVerifyEpochHashEnabled;
     if (this.isUpdateEpochHashFileEnabled && this.isVerifyEpochHashEnabled) {
@@ -518,7 +520,7 @@ public class BerkeleySubstateAccumulatorHashStore implements BerkeleyAdditionalS
   }
 
   private String getEpochHashFilenameForCurrentNetwork() {
-    return EPOCH_HASH_FILENAME + "." + this.currentNetwork.name().toLowerCase() + ".txt";
+    return EPOCH_HASH_FILENAME + "." + this.network.name().toLowerCase() + ".txt";
   }
 
   private BufferedReader openEpochsHashFileAsRead() {
