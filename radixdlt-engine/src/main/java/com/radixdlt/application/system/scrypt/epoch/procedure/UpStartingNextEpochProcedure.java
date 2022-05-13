@@ -76,7 +76,8 @@ public class UpStartingNextEpochProcedure extends UpProcedure<StartingNextEpoch,
     super(
         StartingNextEpoch.class,
         EpochData.class,
-        u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
-        (s, u, c, r) -> ReducerResult.incomplete(s.nextEpoch(u)));
+        epochData -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (nextEpoch, epochData, context, resources) ->
+            ReducerResult.incomplete(nextEpoch.nextEpoch(epochData)));
   }
 }

@@ -77,7 +77,8 @@ public class ShutdownAllValidatorRegisteredCopyProcedure
     super(
         ValidatorRegisteredCopy.class,
         PreparingRegisteredUpdate.class,
-        () -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
-        (s, d, c, r) -> ReducerResult.incomplete(s.prepareRegisterUpdates(d)));
+        () -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (registeredUpdate, substateIterator, context, resources) ->
+            ReducerResult.incomplete(registeredUpdate.prepareRegisterUpdates(substateIterator)));
   }
 }

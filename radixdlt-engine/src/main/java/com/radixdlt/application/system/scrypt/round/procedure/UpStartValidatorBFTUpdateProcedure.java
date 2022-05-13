@@ -77,10 +77,11 @@ public class UpStartValidatorBFTUpdateProcedure
     super(
         StartValidatorBFTUpdate.class,
         ValidatorBFTData.class,
-        u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
-        (s, u, c, r) -> {
-          var next = s.exit();
-          return ReducerResult.incomplete(next.update(u, c));
+        validatorBFTData ->
+            new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (bftUpdate, bftData, context, resources) -> {
+          var next = bftUpdate.exit();
+          return ReducerResult.incomplete(next.update(bftData, context));
         });
   }
 }

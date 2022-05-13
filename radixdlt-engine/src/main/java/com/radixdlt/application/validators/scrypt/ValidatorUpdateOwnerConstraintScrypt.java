@@ -127,14 +127,14 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
         new ReadProcedure<>(
             UpdatingOwnerNeedToReadEpoch.class,
             EpochData.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, u, r) -> ReducerResult.incomplete(s.readEpoch(u))));
 
     os.procedure(
         new UpProcedure<>(
             UpdatingValidatorOwner.class,
             ValidatorOwnerCopy.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, u, c, r) -> {
               s.update(u);
               return ReducerResult.complete();

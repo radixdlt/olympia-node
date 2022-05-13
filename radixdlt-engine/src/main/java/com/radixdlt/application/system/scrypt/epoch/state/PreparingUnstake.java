@@ -75,21 +75,22 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
+import java.util.NavigableMap;
 import java.util.TreeMap;
 
 public final class PreparingUnstake implements ReducerState {
   private final UpdatingEpoch updatingEpoch;
-  private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingUnstake =
+  private final NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingUnstakes =
       new TreeMap<>(KeyComparator.instance());
-  private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake;
-  private final TreeMap<ECPublicKey, ValidatorScratchPad> updatingValidators;
+  private final NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingStake;
+  private final NavigableMap<ECPublicKey, ValidatorScratchPad> updatingValidators;
   private final EpochUpdateConfig config;
 
   private PreparingUnstake(
       EpochUpdateConfig config,
       UpdatingEpoch updatingEpoch,
-      TreeMap<ECPublicKey, ValidatorScratchPad> updatingValidators,
-      TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake) {
+      NavigableMap<ECPublicKey, ValidatorScratchPad> updatingValidators,
+      NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingStake) {
     this.config = config;
     this.updatingEpoch = updatingEpoch;
     this.updatingValidators = updatingValidators;
@@ -99,8 +100,8 @@ public final class PreparingUnstake implements ReducerState {
   static PreparingUnstake create(
       EpochUpdateConfig parent,
       UpdatingEpoch updatingEpoch,
-      TreeMap<ECPublicKey, ValidatorScratchPad> updatingValidators,
-      TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake) {
+      NavigableMap<ECPublicKey, ValidatorScratchPad> updatingValidators,
+      NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingStake) {
     return new PreparingUnstake(parent, updatingEpoch, updatingValidators, preparingStake);
   }
 
@@ -109,19 +110,19 @@ public final class PreparingUnstake implements ReducerState {
     substateIterator.verifyPostTypePrefixIsEmpty();
     substateIterator.forEachRemaining(
         preparedUnstakeOwned ->
-            preparingUnstake
+            preparingUnstakes
                 .computeIfAbsent(preparedUnstakeOwned.delegateKey(), __ -> createStakeMap())
                 .merge(preparedUnstakeOwned.owner(), preparedUnstakeOwned.amount(), UInt256::add));
     return next();
   }
 
   ReducerState next() {
-    if (preparingUnstake.isEmpty()) {
+    if (preparingUnstakes.isEmpty()) {
       return new PreparingStake(config, updatingEpoch, updatingValidators, preparingStake);
     }
 
-    var k = preparingUnstake.firstKey();
-    var unstakes = preparingUnstake.remove(k);
+    var k = preparingUnstakes.firstKey();
+    var unstakes = preparingUnstakes.remove(k);
 
     if (!updatingValidators.containsKey(k)) {
       return new LoadingStake(

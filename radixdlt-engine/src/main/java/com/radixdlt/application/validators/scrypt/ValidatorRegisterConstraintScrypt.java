@@ -128,14 +128,14 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
         new ReadProcedure<>(
             UpdatingRegisteredNeedToReadEpoch.class,
             EpochData.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, u, r) -> ReducerResult.incomplete(s.readEpoch(u))));
 
     os.procedure(
         new UpProcedure<>(
             UpdatingRegistered.class,
             ValidatorRegisteredCopy.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, u, c, r) -> {
               s.update(u);
               return ReducerResult.complete();

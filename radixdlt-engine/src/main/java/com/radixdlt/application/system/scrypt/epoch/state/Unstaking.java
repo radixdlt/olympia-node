@@ -71,14 +71,14 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.MismatchException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
-import java.util.TreeMap;
+import java.util.NavigableMap;
 import java.util.function.Supplier;
 
 public record Unstaking(
     EpochUpdateConfig config,
     UpdatingEpoch updatingEpoch,
     ValidatorScratchPad current,
-    TreeMap<REAddr, UInt256> unstaking,
+    NavigableMap<REAddr, UInt256> unstaking,
     Supplier<ReducerState> onDone)
     implements ReducerState {
 

@@ -77,7 +77,9 @@ public class UpUpdatingValidatorStakesProcedure
     super(
         UpdatingValidatorStakes.class,
         ValidatorStakeData.class,
-        u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
-        (s, u, c, r) -> ReducerResult.incomplete(s.updateStake(u)));
+        validatorStakeData ->
+            new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (validatorStakes, stakeData, context, resources) ->
+            ReducerResult.incomplete(validatorStakes.updateStake(stakeData)));
   }
 }

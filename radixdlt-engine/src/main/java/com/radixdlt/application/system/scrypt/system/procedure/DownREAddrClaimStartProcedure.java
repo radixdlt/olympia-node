@@ -83,7 +83,7 @@ public class DownREAddrClaimStartProcedure
                   ? PermissionLevel.SYSTEM
                   : PermissionLevel.USER;
 
-          return new Authorization(permissionLevel, (r, ctx) -> {});
+          return new Authorization(permissionLevel, (resources, context) -> {});
         },
         (reAddr, claimStart, resources, context) ->
             ReducerResult.incomplete(claimStart.claim(reAddr, context)));

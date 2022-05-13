@@ -67,9 +67,9 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.identifiers.REAddr;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
 public record SystemMapKey(byte[] array) {
-
   private static SystemMapKey of(REAddr addr, byte key) {
     var buf = ByteBuffer.allocate(addr.getBytes().length + 1).put(addr.getBytes()).put(key);
     return new SystemMapKey(buf.array());
@@ -108,5 +108,10 @@ public record SystemMapKey(byte[] array) {
   @Override
   public boolean equals(Object o) {
     return o instanceof SystemMapKey other && Arrays.equals(this.array, other.array);
+  }
+
+  @Override
+  public String toString() {
+    return "SystemMapKey(" + Hex.toHexString(array) + ')';
   }
 }

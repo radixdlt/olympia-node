@@ -77,7 +77,8 @@ public class ShutdownAllValidatorOwnerCopyProcedure
     super(
         ValidatorOwnerCopy.class,
         PreparingOwnerUpdate.class,
-        () -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
-        (s, d, c, r) -> ReducerResult.incomplete(s.prepareValidatorUpdate(d)));
+        () -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (ownerUpdate, substateIterator, context, resources) ->
+            ReducerResult.incomplete(ownerUpdate.prepareValidatorUpdate(substateIterator)));
   }
 }

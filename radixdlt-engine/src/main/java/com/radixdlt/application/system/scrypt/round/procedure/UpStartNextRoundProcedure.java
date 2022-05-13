@@ -76,9 +76,9 @@ public class UpStartNextRoundProcedure extends UpProcedure<StartNextRound, Round
     super(
         StartNextRound.class,
         RoundData.class,
-        u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
-        (s, u, c, r) -> {
-          s.update(u);
+        roundData -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (startNextRound, roundData, context, resources) -> {
+          startNextRound.update(roundData);
           return ReducerResult.complete();
         });
   }

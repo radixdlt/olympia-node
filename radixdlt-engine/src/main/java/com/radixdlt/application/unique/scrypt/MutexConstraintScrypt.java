@@ -77,7 +77,7 @@ public class MutexConstraintScrypt implements ConstraintScrypt {
     os.procedure(
         new EndProcedure<>(
             REAddrClaim.class,
-            s -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            s -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, c, r) -> {}));
   }
 }

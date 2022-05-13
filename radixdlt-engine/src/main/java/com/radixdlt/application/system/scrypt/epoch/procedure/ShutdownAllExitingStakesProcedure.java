@@ -79,10 +79,10 @@ public final class ShutdownAllExitingStakesProcedure
     super(
         ExitingStake.class,
         UpdatingEpoch.class,
-        () -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
-        (s, d, c, r) -> {
-          var exittingStake = new ProcessExittingStake(config, s);
-          return ReducerResult.incomplete(exittingStake.process(d));
+        () -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (updatingEpoch, substateIterator, context, resources) -> {
+          var exittingStake = new ProcessExittingStake(config, updatingEpoch);
+          return ReducerResult.incomplete(exittingStake.process(substateIterator));
         });
   }
 }

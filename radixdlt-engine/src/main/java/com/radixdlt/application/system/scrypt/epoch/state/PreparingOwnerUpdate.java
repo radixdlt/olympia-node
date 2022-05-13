@@ -72,17 +72,18 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.KeyComparator;
+import java.util.NavigableMap;
 import java.util.TreeMap;
 
 public final class PreparingOwnerUpdate extends ExpectedEpochChecker {
-  private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
-  private final TreeMap<ECPublicKey, ValidatorOwnerCopy> preparingOwnerUpdates =
+  private final NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
+  private final NavigableMap<ECPublicKey, ValidatorOwnerCopy> preparingOwnerUpdates =
       new TreeMap<>(KeyComparator.instance());
 
   PreparingOwnerUpdate(
       EpochUpdateConfig config,
       UpdatingEpoch updatingEpoch,
-      TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {
+      NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {
     super(config, updatingEpoch);
     this.validatorsScratchPad = validatorsScratchPad;
   }

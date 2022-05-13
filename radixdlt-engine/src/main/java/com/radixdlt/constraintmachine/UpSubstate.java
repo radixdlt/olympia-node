@@ -67,10 +67,28 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.utils.Bytes;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Objects;
 
 public record UpSubstate(SubstateId substateId, byte[] array, int offset, int length) {
   public ByteBuffer getSubstateBuffer() {
     return ByteBuffer.wrap(array, offset, length);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof UpSubstate that
+        && offset == that.offset
+        && length == that.length
+        && substateId.equals(that.substateId)
+        && Arrays.equals(array, that.array);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = Objects.hash(substateId, offset, length);
+    result = 31 * result + Arrays.hashCode(array);
+    return result;
   }
 
   @Override

@@ -77,7 +77,8 @@ public class ShutdownAllPreparedUnstakeOwnershipProcedure
     super(
         PreparedUnstakeOwnership.class,
         PreparingUnstake.class,
-        () -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
-        (s, d, c, r) -> ReducerResult.incomplete(s.unstakes(d)));
+        () -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (unstake, substateIterator, context, resources) ->
+            ReducerResult.incomplete(unstake.unstakes(substateIterator)));
   }
 }

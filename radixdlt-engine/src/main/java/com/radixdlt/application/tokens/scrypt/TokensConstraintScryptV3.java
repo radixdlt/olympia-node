@@ -118,7 +118,7 @@ public record TokensConstraintScryptV3(Set<String> reservedSymbols, Pattern toke
         new UpProcedure<>(
             REAddrClaim.class,
             TokenResource.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, u, c, r) -> {
               if (!u.addr().equals(s.getAddr())) {
                 throw new ProcedureException("Addresses don't match");
@@ -147,7 +147,7 @@ public record TokensConstraintScryptV3(Set<String> reservedSymbols, Pattern toke
         new UpProcedure<>(
             NeedFixedTokenSupply.class,
             TokensInAccount.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, u, c, r) -> {
               if (!u.resourceAddr().equals(s.tokenResource.addr())) {
                 throw new ProcedureException("Addresses don't match.");
@@ -159,7 +159,7 @@ public record TokensConstraintScryptV3(Set<String> reservedSymbols, Pattern toke
         new UpProcedure<>(
             NeedMetadata.class,
             TokenResourceMetadata.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, u, c, r) -> {
               s.metadata(u, c);
               return ReducerResult.complete();
@@ -174,7 +174,7 @@ public record TokensConstraintScryptV3(Set<String> reservedSymbols, Pattern toke
             TokensInAccount.class,
             u -> {
               if (u.resourceAddr().isNativeToken()) {
-                return new Authorization(PermissionLevel.SYSTEM, (r, c) -> {});
+                return new Authorization(PermissionLevel.SYSTEM, (resources, context) -> {});
               }
 
               return new Authorization(
@@ -232,7 +232,7 @@ public record TokensConstraintScryptV3(Set<String> reservedSymbols, Pattern toke
         new UpProcedure<>(
             TokenHoldingBucket.class,
             TokensInAccount.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, u, c, r) -> {
               s.withdraw(u.resourceAddr(), u.amount());
               return ReducerResult.incomplete(s);

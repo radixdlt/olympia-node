@@ -162,7 +162,7 @@ public record StakingConstraintScryptV4(UInt256 minimumStake) implements Constra
         new ReadProcedure<>(
             TokenHoldingBucket.class,
             AllowDelegationFlag.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, d, r) -> {
               var nextState =
                   (!d.allowsDelegation())
@@ -174,7 +174,7 @@ public record StakingConstraintScryptV4(UInt256 minimumStake) implements Constra
         new ReadProcedure<>(
             OwnerStakePrepare.class,
             ValidatorOwnerCopy.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, d, r) -> {
               var nextState = s.readOwner(d);
               return ReducerResult.incomplete(nextState);
@@ -183,7 +183,7 @@ public record StakingConstraintScryptV4(UInt256 minimumStake) implements Constra
         new UpProcedure<>(
             StakePrepare.class,
             PreparedStake.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, u, c, r) -> {
               var nextState = s.withdrawTo(u);
               return ReducerResult.incomplete(nextState);
@@ -211,7 +211,7 @@ public record StakingConstraintScryptV4(UInt256 minimumStake) implements Constra
         new UpProcedure<>(
             StakeOwnershipHoldingBucket.class,
             StakeOwnership.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, u, c, r) -> {
               var ownership = s.withdrawOwnership(u.amount());
               if (!ownership.equals(u)) {
@@ -223,7 +223,7 @@ public record StakingConstraintScryptV4(UInt256 minimumStake) implements Constra
         new UpProcedure<>(
             StakeOwnershipHoldingBucket.class,
             PreparedUnstakeOwnership.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, u, c, r) -> {
               var unstake = s.unstake(u.amount());
               if (!unstake.equals(u)) {
@@ -236,7 +236,7 @@ public record StakingConstraintScryptV4(UInt256 minimumStake) implements Constra
     os.procedure(
         new EndProcedure<>(
             StakeOwnershipHoldingBucket.class,
-            s -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            s -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, c, r) -> s.destroy()));
   }
 }

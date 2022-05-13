@@ -77,7 +77,8 @@ public class ShutdownAllValidatorBFTDataProcedure
     super(
         ValidatorBFTData.class,
         RewardingValidators.class,
-        () -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
-        (s, d, c, r) -> ReducerResult.incomplete(s.process(d, c)));
+        () -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (validators, substateIterator, context, resources) ->
+            ReducerResult.incomplete(validators.process(substateIterator, context)));
   }
 }

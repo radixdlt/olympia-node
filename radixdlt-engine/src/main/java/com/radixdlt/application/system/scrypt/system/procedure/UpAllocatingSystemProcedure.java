@@ -78,7 +78,7 @@ public class UpAllocatingSystemProcedure extends UpProcedure<AllocatingSystem, R
     super(
         AllocatingSystem.class,
         RoundData.class,
-        u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> {}),
+        roundData -> new Authorization(PermissionLevel.SYSTEM, (resources, context) -> {}),
         (allocatingSystem, roundData, context, resources) -> {
           if (roundData.view() != 0) {
             throw new ProcedureException("First view must be 0.");

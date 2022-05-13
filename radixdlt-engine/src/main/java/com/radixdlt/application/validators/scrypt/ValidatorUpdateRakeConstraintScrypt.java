@@ -176,20 +176,20 @@ public record ValidatorUpdateRakeConstraintScrypt(long rakeIncreaseDebounceEpoch
         new ReadProcedure<>(
             UpdatingRakeNeedToReadEpoch.class,
             EpochData.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, u, r) -> ReducerResult.incomplete(s.readEpoch(u))));
     os.procedure(
         new ReadProcedure<>(
             UpdatingRakeNeedToReadCurrentRake.class,
             ValidatorStakeData.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, u, r) -> ReducerResult.incomplete(s.readValidatorStakeState(u))));
 
     os.procedure(
         new UpProcedure<>(
             UpdatingRakeReady.class,
             ValidatorFeeCopy.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, u, c, r) -> {
               s.update(u);
               return ReducerResult.complete();

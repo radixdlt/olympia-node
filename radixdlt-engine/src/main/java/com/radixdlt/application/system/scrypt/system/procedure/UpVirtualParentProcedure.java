@@ -75,7 +75,7 @@ public class UpVirtualParentProcedure extends UpProcedure<VoidReducerState, Virt
     super(
         VoidReducerState.class,
         VirtualParent.class,
-        u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> {}),
+        virtualParent -> new Authorization(PermissionLevel.SYSTEM, (resources, context) -> {}),
         (reducerState, virtualParent, context, resources) -> {
           if (virtualParent.data().length != 1) {
             throw new ProcedureException(

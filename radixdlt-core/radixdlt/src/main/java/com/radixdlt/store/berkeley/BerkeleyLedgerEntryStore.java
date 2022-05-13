@@ -985,11 +985,11 @@ public final class BerkeleyLedgerEntryStore
       upParticle(txn, buf, stateUpdate.substateId());
 
       // FIXME: Superhack
-      if (stateUpdate.parsed() instanceof TokenResource) {
-        var p = (TokenResource) stateUpdate.parsed();
-        var addr = p.addr();
+      if (stateUpdate.parsed() instanceof TokenResource tokenResource) {
+        var addr = tokenResource.addr();
         var buf2 = stateUpdate.getStateBuf();
         var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
+
         resourceDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
       }
 

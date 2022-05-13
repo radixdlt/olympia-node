@@ -76,7 +76,8 @@ public class UpResetRakeUpdateProcedure extends UpProcedure<ResetRakeUpdate, Val
     super(
         ResetRakeUpdate.class,
         ValidatorFeeCopy.class,
-        u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
-        (s, u, c, r) -> ReducerResult.incomplete(s.reset(u)));
+        feeCopy -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (rakeUpdate, feeCopy, context, resources) ->
+            ReducerResult.incomplete(rakeUpdate.reset(feeCopy)));
   }
 }

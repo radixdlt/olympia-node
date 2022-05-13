@@ -122,7 +122,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
         new UpProcedure<>(
             UpdatingValidatorHashMetadata.class,
             ValidatorSystemMetadata.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, u, c, r) -> {
               s.update(u);
               return ReducerResult.complete();
@@ -148,7 +148,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
         new UpProcedure<>(
             UpdatingValidatorInfo.class,
             ValidatorMetaData.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, u, c, r) -> {
               if (!Objects.equals(s.prevState.validatorKey(), u.validatorKey())) {
                 throw new ProcedureException(
@@ -183,7 +183,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
         new UpProcedure<>(
             UpdatingDelegationFlag.class,
             AllowDelegationFlag.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
             (s, u, c, r) -> {
               s.update(u);
               return ReducerResult.complete();

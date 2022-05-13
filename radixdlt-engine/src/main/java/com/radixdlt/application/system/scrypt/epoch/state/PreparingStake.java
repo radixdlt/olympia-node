@@ -74,13 +74,14 @@ import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
+import java.util.NavigableMap;
 import java.util.TreeMap;
 
 public record PreparingStake(
     EpochUpdateConfig config,
     UpdatingEpoch updatingEpoch,
-    TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad,
-    TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake)
+    NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad,
+    NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingStake)
     implements ReducerState {
 
   public ReducerState prepareStakes(IndexedSubstateIterator<PreparedStake> substateIterator)

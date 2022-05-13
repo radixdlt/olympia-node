@@ -79,14 +79,15 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
+import java.util.NavigableMap;
 import java.util.TreeMap;
 
 public final class RewardingValidators implements ReducerState {
-  private final TreeMap<ECPublicKey, ValidatorScratchPad> updatingValidators =
+  private final NavigableMap<ECPublicKey, ValidatorScratchPad> updatingValidators =
       new TreeMap<>(KeyComparator.instance());
-  private final TreeMap<ECPublicKey, ValidatorBFTData> validatorBFTData =
+  private final NavigableMap<ECPublicKey, ValidatorBFTData> validatorBFTData =
       new TreeMap<>(KeyComparator.instance());
-  private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake =
+  private final NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingStake =
       new TreeMap<>(KeyComparator.instance());
   private final EpochUpdateConfig config;
   private final UpdatingEpoch updatingEpoch;
@@ -187,7 +188,7 @@ public final class RewardingValidators implements ReducerState {
     return nodeRewards.subtract(rake);
   }
 
-  public static TreeMap<REAddr, UInt256> createStakeMap(REAddr validatorOwner, UInt256 rake) {
+  public static NavigableMap<REAddr, UInt256> createStakeMap(REAddr validatorOwner, UInt256 rake) {
     var map = new TreeMap<REAddr, UInt256>(EpochUpdateConstraintScrypt.STAKE_COMPARATOR);
 
     map.put(validatorOwner, rake);

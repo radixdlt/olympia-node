@@ -79,18 +79,18 @@ public final class EndPrevRoundDownProcedure extends DownProcedure<EpochData, En
     super(
         EndPrevRound.class,
         EpochData.class,
-        d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
-        (d, s, r, c) -> {
+        epochData -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (epochData, prevRound, resources, context) -> {
           // TODO: Should move this authorization instead of checking epoch > 0
-          if (d.epoch() > 0 && s.closedRound().view() != config.maxRounds()) {
+          if (epochData.epoch() > 0 && prevRound.closedRound().view() != config.maxRounds()) {
             throw new ProcedureException(
                 "Must execute epoch update on end of round "
                     + config.maxRounds()
                     + " but is "
-                    + s.closedRound().view());
+                    + prevRound.closedRound().view());
           }
 
-          return ReducerResult.incomplete(new UpdatingEpoch(d));
+          return ReducerResult.incomplete(new UpdatingEpoch(epochData));
         });
   }
 }

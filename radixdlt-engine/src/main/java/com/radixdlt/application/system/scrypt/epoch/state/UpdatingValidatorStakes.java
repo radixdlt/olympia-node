@@ -70,17 +70,17 @@ import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.MismatchException;
 import com.radixdlt.crypto.ECPublicKey;
-import java.util.TreeMap;
+import java.util.NavigableMap;
 
 public final class UpdatingValidatorStakes implements ReducerState {
   private final EpochUpdateConfig config;
   private final UpdatingEpoch updatingEpoch;
-  private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
+  private final NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
 
   public UpdatingValidatorStakes(
       EpochUpdateConfig config,
       UpdatingEpoch updatingEpoch,
-      TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {
+      NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {
     this.config = config;
     this.updatingEpoch = updatingEpoch;
     this.validatorsScratchPad = validatorsScratchPad;

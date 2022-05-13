@@ -78,7 +78,7 @@ public class PerformSystemCallProcedure extends SystemCallProcedure<VoidReducerS
     super(
         VoidReducerState.class,
         REAddr.ofSystem(),
-        () -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+        () -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
         (voidReducerState, callData, context) -> {
           var id = callData.get(0);
           var syscall =

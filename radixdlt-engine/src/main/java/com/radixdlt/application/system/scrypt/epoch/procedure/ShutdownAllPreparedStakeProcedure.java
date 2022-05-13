@@ -77,7 +77,8 @@ public class ShutdownAllPreparedStakeProcedure
     super(
         PreparedStake.class,
         PreparingStake.class,
-        () -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
-        (s, d, c, r) -> ReducerResult.incomplete(s.prepareStakes(d)));
+        () -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (preparingStake, substateIterator, context, resources) ->
+            ReducerResult.incomplete(preparingStake.prepareStakes(substateIterator)));
   }
 }

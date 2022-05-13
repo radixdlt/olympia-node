@@ -74,6 +74,7 @@ public class SubstateIdTest {
   @Test
   public void equalsContract() {
     EqualsVerifier.forClass(SubstateId.class)
+        .withNonnullFields("idBytes")
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
         .verify();
   }

@@ -78,7 +78,7 @@ public class UpREAddrClaimProcedure extends UpProcedure<REAddrClaim, EpochData> 
     super(
         REAddrClaim.class,
         EpochData.class,
-        u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> {}),
+        epochData -> new Authorization(PermissionLevel.SYSTEM, (resources, context) -> {}),
         (addrClaim, epochData, context, resources) -> {
           if (epochData.epoch() != 0) {
             throw new ProcedureException("First epoch must be 0.");

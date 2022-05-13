@@ -77,7 +77,7 @@ public class UpProcedureAllocatingVirtualState
     super(
         AllocatingVirtualState.class,
         VirtualParent.class,
-        u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> {}),
+        virtualParent -> new Authorization(PermissionLevel.SYSTEM, (resources, context) -> {}),
         (virtualState, virtualParent, context, resources) -> {
           var next = virtualState.createVirtualSubstate(virtualParent);
           return next == null ? ReducerResult.complete() : ReducerResult.incomplete(next);

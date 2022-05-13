@@ -73,13 +73,11 @@ import java.util.Optional;
 import org.bouncycastle.util.encoders.Hex;
 
 /** The id of a unique substate */
-public final class SubstateId {
+public record SubstateId(byte[] idBytes) {
   public static final int BYTES = AID.BYTES + Integer.BYTES;
 
-  private final byte[] idBytes;
-
-  public SubstateId(byte[] idBytes) {
-    this.idBytes = Objects.requireNonNull(idBytes);
+  public SubstateId {
+    Objects.requireNonNull(idBytes);
   }
 
   public static SubstateId ofSubstate(AID txId, int index) {
@@ -112,10 +110,6 @@ public final class SubstateId {
 
   public boolean isVirtual() {
     return idBytes.length > BYTES;
-  }
-
-  public byte[] idBytes() {
-    return idBytes;
   }
 
   public Optional<SubstateId> getVirtualParent() {

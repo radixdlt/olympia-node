@@ -77,7 +77,8 @@ public class ShutdownAllValidatorFeeCopyProcedure
     super(
         ValidatorFeeCopy.class,
         PreparingRakeUpdate.class,
-        () -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
-        (s, d, c, r) -> ReducerResult.incomplete(s.prepareRakeUpdates(d)));
+        () -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (rakeUpdate, substateIterator, context, resources) ->
+            ReducerResult.incomplete(rakeUpdate.prepareRakeUpdates(substateIterator)));
   }
 }

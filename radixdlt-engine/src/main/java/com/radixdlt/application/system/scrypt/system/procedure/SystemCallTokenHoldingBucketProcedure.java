@@ -78,7 +78,7 @@ public class SystemCallTokenHoldingBucketProcedure extends SystemCallProcedure<T
     super(
         TokenHoldingBucket.class,
         REAddr.ofSystem(),
-        () -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+        () -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
         (tokenHoldingBucket, callData, context) -> {
           var id = callData.get(0);
           var syscall =

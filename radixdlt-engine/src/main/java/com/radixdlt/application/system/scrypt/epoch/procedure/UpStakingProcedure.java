@@ -76,7 +76,8 @@ public class UpStakingProcedure extends UpProcedure<Staking, StakeOwnership> {
     super(
         Staking.class,
         StakeOwnership.class,
-        u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
-        (s, u, c, r) -> ReducerResult.incomplete(s.stake(u)));
+        stakeOwnership -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (staking, stakeOwnership, context, resources) ->
+            ReducerResult.incomplete(staking.stake(stakeOwnership)));
   }
 }
