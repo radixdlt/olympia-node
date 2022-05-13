@@ -62,52 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt;
+package com.radixdlt.application.system.scrypt.epoch.procedure;
 
-import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.application.system.scrypt.epoch.procedure.*;
-import com.radixdlt.application.system.state.StakeOwnership;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.state.ExitingStake;
-import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.Loader;
-import com.radixdlt.identifiers.REAddr;
-import java.util.Comparator;
+import com.radixdlt.application.system.scrypt.epoch.state.RewardingValidators;
+import com.radixdlt.application.system.state.ValidatorBFTData;
+import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 
-public record EpochUpdateConstraintScrypt(EpochUpdateConfig config) implements ConstraintScrypt {
-  public static final Comparator<REAddr> STAKE_COMPARATOR =
-      Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator());
-
-  private void epochUpdate(Loader os) {
-    // Epoch Update
-    os.procedure(new EndPrevRoundDownProcedure(config));
-    os.procedure(new ShutdownAllExitingStakesProcedure(config));
-    os.procedure(new ProcessExittingStakeUpProcedure());
-    os.procedure(new ShutdownAllValidatorBFTDataProcedure());
-    os.procedure(new ShutdownAllPreparedUnstakeOwnershipProcedure());
-    os.procedure(new DownValidatorStakeDataProcedure());
-    os.procedure(new UpUnstakingProcedure());
-    os.procedure(new ShutdownAllPreparedStakeProcedure());
-    os.procedure(new ShutdownAllValidatorFeeCopyProcedure());
-    os.procedure(new UpResetRakeUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorOwnerCopyProcedure());
-    os.procedure(new UpResetOwnerUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorRegisteredCopyProcedure());
-    os.procedure(new UpResetRegisteredUpdateProcedure());
-    os.procedure(new UpStakingProcedure());
-    os.procedure(new UpUpdatingValidatorStakesProcedure());
-    os.procedure(new ReadIndexValidatorStakeDataProcedure());
-    os.procedure(new UpBootupValidatorProcedure());
-    os.procedure(new UpStartingNextEpochProcedure());
-    os.procedure(new UpStartingEpochRoundProcedure());
-  }
-
-  @Override
-  public void main(Loader os) {
-    os.substate(ValidatorStakeData.SUBSTATE_DEFINITION);
-    os.substate(StakeOwnership.SUBSTATE_DEFINITION);
-    os.substate(ExitingStake.SUBSTATE_DEFINITION);
-
-    epochUpdate(os);
+public class ShutdownAllValidatorBFTDataProcedure
+    extends ShutdownAllProcedure<ValidatorBFTData, RewardingValidators> {
+  public ShutdownAllValidatorBFTDataProcedure() {
+    super(
+        ValidatorBFTData.class,
+        RewardingValidators.class,
+        () -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
+        (s, d, c, r) -> ReducerResult.incomplete(s.process(d, c)));
   }
 }

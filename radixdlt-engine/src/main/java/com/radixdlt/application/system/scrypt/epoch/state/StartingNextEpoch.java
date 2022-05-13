@@ -62,52 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt;
+package com.radixdlt.application.system.scrypt.epoch.state;
 
-import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.application.system.scrypt.epoch.procedure.*;
-import com.radixdlt.application.system.state.StakeOwnership;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.state.ExitingStake;
-import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.Loader;
-import com.radixdlt.identifiers.REAddr;
-import java.util.Comparator;
+import com.radixdlt.application.system.state.EpochData;
+import com.radixdlt.application.system.state.HasEpochData;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
-public record EpochUpdateConstraintScrypt(EpochUpdateConfig config) implements ConstraintScrypt {
-  public static final Comparator<REAddr> STAKE_COMPARATOR =
-      Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator());
-
-  private void epochUpdate(Loader os) {
-    // Epoch Update
-    os.procedure(new EndPrevRoundDownProcedure(config));
-    os.procedure(new ShutdownAllExitingStakesProcedure(config));
-    os.procedure(new ProcessExittingStakeUpProcedure());
-    os.procedure(new ShutdownAllValidatorBFTDataProcedure());
-    os.procedure(new ShutdownAllPreparedUnstakeOwnershipProcedure());
-    os.procedure(new DownValidatorStakeDataProcedure());
-    os.procedure(new UpUnstakingProcedure());
-    os.procedure(new ShutdownAllPreparedStakeProcedure());
-    os.procedure(new ShutdownAllValidatorFeeCopyProcedure());
-    os.procedure(new UpResetRakeUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorOwnerCopyProcedure());
-    os.procedure(new UpResetOwnerUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorRegisteredCopyProcedure());
-    os.procedure(new UpResetRegisteredUpdateProcedure());
-    os.procedure(new UpStakingProcedure());
-    os.procedure(new UpUpdatingValidatorStakesProcedure());
-    os.procedure(new ReadIndexValidatorStakeDataProcedure());
-    os.procedure(new UpBootupValidatorProcedure());
-    os.procedure(new UpStartingNextEpochProcedure());
-    os.procedure(new UpStartingEpochRoundProcedure());
-  }
-
-  @Override
-  public void main(Loader os) {
-    os.substate(ValidatorStakeData.SUBSTATE_DEFINITION);
-    os.substate(StakeOwnership.SUBSTATE_DEFINITION);
-    os.substate(ExitingStake.SUBSTATE_DEFINITION);
-
-    epochUpdate(os);
+public record StartingNextEpoch(HasEpochData prevEpoch) implements ReducerState {
+  public ReducerState nextEpoch(EpochData u) throws ProcedureException {
+    if (u.epoch() != prevEpoch.epoch() + 1) {
+      throw new ProcedureException(
+          "Invalid next epoch: " + u.epoch() + " Expected: " + (prevEpoch.epoch() + 1));
+    }
+    return new StartingEpochRound();
   }
 }

@@ -62,52 +62,58 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt;
+package com.radixdlt.application.system.scrypt.epoch.state;
 
-import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.application.system.scrypt.epoch.procedure.*;
-import com.radixdlt.application.system.state.StakeOwnership;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.state.ExitingStake;
-import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.Loader;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
+import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
+import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
+import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.constraintmachine.IndexedSubstateIterator;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import java.util.Comparator;
+import com.radixdlt.utils.UInt256;
+import java.util.TreeMap;
 
-public record EpochUpdateConstraintScrypt(EpochUpdateConfig config) implements ConstraintScrypt {
-  public static final Comparator<REAddr> STAKE_COMPARATOR =
-      Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator());
+public record PreparingStake(
+    EpochUpdateConfig config,
+    UpdatingEpoch updatingEpoch,
+    TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad,
+    TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake)
+    implements ReducerState {
 
-  private void epochUpdate(Loader os) {
-    // Epoch Update
-    os.procedure(new EndPrevRoundDownProcedure(config));
-    os.procedure(new ShutdownAllExitingStakesProcedure(config));
-    os.procedure(new ProcessExittingStakeUpProcedure());
-    os.procedure(new ShutdownAllValidatorBFTDataProcedure());
-    os.procedure(new ShutdownAllPreparedUnstakeOwnershipProcedure());
-    os.procedure(new DownValidatorStakeDataProcedure());
-    os.procedure(new UpUnstakingProcedure());
-    os.procedure(new ShutdownAllPreparedStakeProcedure());
-    os.procedure(new ShutdownAllValidatorFeeCopyProcedure());
-    os.procedure(new UpResetRakeUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorOwnerCopyProcedure());
-    os.procedure(new UpResetOwnerUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorRegisteredCopyProcedure());
-    os.procedure(new UpResetRegisteredUpdateProcedure());
-    os.procedure(new UpStakingProcedure());
-    os.procedure(new UpUpdatingValidatorStakesProcedure());
-    os.procedure(new ReadIndexValidatorStakeDataProcedure());
-    os.procedure(new UpBootupValidatorProcedure());
-    os.procedure(new UpStartingNextEpochProcedure());
-    os.procedure(new UpStartingEpochRoundProcedure());
+  public ReducerState prepareStakes(IndexedSubstateIterator<PreparedStake> substateIterator)
+      throws ProcedureException {
+    substateIterator.verifyPostTypePrefixIsEmpty();
+    substateIterator.forEachRemaining(
+        preparedStake ->
+            preparingStake
+                .computeIfAbsent(preparedStake.delegateKey(), __ -> createStakeMap())
+                .merge(preparedStake.owner(), preparedStake.amount(), UInt256::add));
+    return next();
   }
 
-  @Override
-  public void main(Loader os) {
-    os.substate(ValidatorStakeData.SUBSTATE_DEFINITION);
-    os.substate(StakeOwnership.SUBSTATE_DEFINITION);
-    os.substate(ExitingStake.SUBSTATE_DEFINITION);
+  ReducerState next() {
+    if (preparingStake.isEmpty()) {
+      return new PreparingRakeUpdate(config, updatingEpoch, validatorsScratchPad);
+    }
 
-    epochUpdate(os);
+    var publicKey = preparingStake.firstKey();
+    var stakes = preparingStake.remove(publicKey);
+    if (!validatorsScratchPad.containsKey(publicKey)) {
+      return new LoadingStake(
+          publicKey,
+          validatorStake -> {
+            validatorsScratchPad.put(publicKey, validatorStake);
+            return new Staking(validatorStake, stakes, this::next);
+          });
+    } else {
+      return new Staking(validatorsScratchPad.get(publicKey), stakes, this::next);
+    }
+  }
+
+  private static TreeMap<REAddr, UInt256> createStakeMap() {
+    return new TreeMap<>(EpochUpdateConstraintScrypt.STAKE_COMPARATOR);
   }
 }

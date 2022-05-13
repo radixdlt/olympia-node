@@ -62,52 +62,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt;
+package com.radixdlt.application.system.scrypt.system.state;
 
-import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.application.system.scrypt.epoch.procedure.*;
-import com.radixdlt.application.system.state.StakeOwnership;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.state.ExitingStake;
-import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.Loader;
-import com.radixdlt.identifiers.REAddr;
-import java.util.Comparator;
+import com.radixdlt.application.system.state.VirtualParent;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.utils.Bytes;
+import java.util.Arrays;
+import java.util.LinkedList;
 
-public record EpochUpdateConstraintScrypt(EpochUpdateConfig config) implements ConstraintScrypt {
-  public static final Comparator<REAddr> STAKE_COMPARATOR =
-      Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator());
+public class AllocatingVirtualState implements ReducerState {
+  private final LinkedList<SubstateTypeId> substatesToVirtualize = new LinkedList<>();
 
-  private void epochUpdate(Loader os) {
-    // Epoch Update
-    os.procedure(new EndPrevRoundDownProcedure(config));
-    os.procedure(new ShutdownAllExitingStakesProcedure(config));
-    os.procedure(new ProcessExittingStakeUpProcedure());
-    os.procedure(new ShutdownAllValidatorBFTDataProcedure());
-    os.procedure(new ShutdownAllPreparedUnstakeOwnershipProcedure());
-    os.procedure(new DownValidatorStakeDataProcedure());
-    os.procedure(new UpUnstakingProcedure());
-    os.procedure(new ShutdownAllPreparedStakeProcedure());
-    os.procedure(new ShutdownAllValidatorFeeCopyProcedure());
-    os.procedure(new UpResetRakeUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorOwnerCopyProcedure());
-    os.procedure(new UpResetOwnerUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorRegisteredCopyProcedure());
-    os.procedure(new UpResetRegisteredUpdateProcedure());
-    os.procedure(new UpStakingProcedure());
-    os.procedure(new UpUpdatingValidatorStakesProcedure());
-    os.procedure(new ReadIndexValidatorStakeDataProcedure());
-    os.procedure(new UpBootupValidatorProcedure());
-    os.procedure(new UpStartingNextEpochProcedure());
-    os.procedure(new UpStartingEpochRoundProcedure());
+  public AllocatingVirtualState() {
+    substatesToVirtualize.add(SubstateTypeId.VALIDATOR_META_DATA);
+    substatesToVirtualize.add(SubstateTypeId.VALIDATOR_STAKE_DATA);
+    substatesToVirtualize.add(SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG);
+    substatesToVirtualize.add(SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY);
+    substatesToVirtualize.add(SubstateTypeId.VALIDATOR_RAKE_COPY);
+    substatesToVirtualize.add(SubstateTypeId.VALIDATOR_OWNER_COPY);
+    substatesToVirtualize.add(SubstateTypeId.VALIDATOR_SYSTEM_META_DATA);
   }
 
-  @Override
-  public void main(Loader os) {
-    os.substate(ValidatorStakeData.SUBSTATE_DEFINITION);
-    os.substate(StakeOwnership.SUBSTATE_DEFINITION);
-    os.substate(ExitingStake.SUBSTATE_DEFINITION);
-
-    epochUpdate(os);
+  public ReducerState createVirtualSubstate(VirtualParent virtualParent) throws ProcedureException {
+    var typeId = substatesToVirtualize.remove(0);
+    if (!Arrays.equals(virtualParent.data(), new byte[] {typeId.id()})) {
+      throw new ProcedureException(
+          "Expected " + typeId + " but was " + Bytes.toHexString(virtualParent.data()));
+    }
+    return substatesToVirtualize.isEmpty() ? null : this;
   }
 }

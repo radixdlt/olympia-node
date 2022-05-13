@@ -62,52 +62,36 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt;
+package com.radixdlt.application.system.scrypt.epoch.state;
 
-import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.application.system.scrypt.epoch.procedure.*;
-import com.radixdlt.application.system.state.StakeOwnership;
-import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
+import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
 import com.radixdlt.application.tokens.state.ExitingStake;
-import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.Loader;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.MismatchException;
 import com.radixdlt.identifiers.REAddr;
-import java.util.Comparator;
+import com.radixdlt.utils.UInt256;
+import java.util.TreeMap;
+import java.util.function.Supplier;
 
-public record EpochUpdateConstraintScrypt(EpochUpdateConfig config) implements ConstraintScrypt {
-  public static final Comparator<REAddr> STAKE_COMPARATOR =
-      Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator());
+public record Unstaking(
+    EpochUpdateConfig config,
+    UpdatingEpoch updatingEpoch,
+    ValidatorScratchPad current,
+    TreeMap<REAddr, UInt256> unstaking,
+    Supplier<ReducerState> onDone)
+    implements ReducerState {
 
-  private void epochUpdate(Loader os) {
-    // Epoch Update
-    os.procedure(new EndPrevRoundDownProcedure(config));
-    os.procedure(new ShutdownAllExitingStakesProcedure(config));
-    os.procedure(new ProcessExittingStakeUpProcedure());
-    os.procedure(new ShutdownAllValidatorBFTDataProcedure());
-    os.procedure(new ShutdownAllPreparedUnstakeOwnershipProcedure());
-    os.procedure(new DownValidatorStakeDataProcedure());
-    os.procedure(new UpUnstakingProcedure());
-    os.procedure(new ShutdownAllPreparedStakeProcedure());
-    os.procedure(new ShutdownAllValidatorFeeCopyProcedure());
-    os.procedure(new UpResetRakeUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorOwnerCopyProcedure());
-    os.procedure(new UpResetOwnerUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorRegisteredCopyProcedure());
-    os.procedure(new UpResetRegisteredUpdateProcedure());
-    os.procedure(new UpStakingProcedure());
-    os.procedure(new UpUpdatingValidatorStakesProcedure());
-    os.procedure(new ReadIndexValidatorStakeDataProcedure());
-    os.procedure(new UpBootupValidatorProcedure());
-    os.procedure(new UpStartingNextEpochProcedure());
-    os.procedure(new UpStartingEpochRoundProcedure());
-  }
+  public ReducerState exit(ExitingStake u) throws MismatchException {
+    var firstAddr = unstaking.firstKey();
+    var ownershipUnstake = unstaking.remove(firstAddr);
+    var epochUnlocked = updatingEpoch.prevEpoch().epoch() + config.unstakingEpochDelay() + 1;
+    var expectedExit = current.unstakeOwnership(firstAddr, ownershipUnstake, epochUnlocked);
 
-  @Override
-  public void main(Loader os) {
-    os.substate(ValidatorStakeData.SUBSTATE_DEFINITION);
-    os.substate(StakeOwnership.SUBSTATE_DEFINITION);
-    os.substate(ExitingStake.SUBSTATE_DEFINITION);
+    if (!u.equals(expectedExit)) {
+      throw new MismatchException(expectedExit, u);
+    }
 
-    epochUpdate(os);
+    return unstaking.isEmpty() ? onDone.get() : this;
   }
 }

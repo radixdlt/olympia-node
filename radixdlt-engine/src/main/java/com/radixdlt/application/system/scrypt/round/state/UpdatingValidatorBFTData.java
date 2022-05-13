@@ -62,52 +62,78 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt;
+package com.radixdlt.application.system.scrypt.round.state;
 
-import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.application.system.scrypt.epoch.procedure.*;
-import com.radixdlt.application.system.state.StakeOwnership;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.state.ExitingStake;
-import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.Loader;
-import com.radixdlt.identifiers.REAddr;
-import java.util.Comparator;
+import com.radixdlt.application.system.state.ValidatorBFTData;
+import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.REEvent;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.crypto.ECPublicKey;
+import java.util.TreeMap;
 
-public record EpochUpdateConstraintScrypt(EpochUpdateConfig config) implements ConstraintScrypt {
-  public static final Comparator<REAddr> STAKE_COMPARATOR =
-      Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator());
+public class UpdatingValidatorBFTData implements ReducerState {
+  private final long maxRounds;
+  private final TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate;
+  private long expectedNextView;
 
-  private void epochUpdate(Loader os) {
-    // Epoch Update
-    os.procedure(new EndPrevRoundDownProcedure(config));
-    os.procedure(new ShutdownAllExitingStakesProcedure(config));
-    os.procedure(new ProcessExittingStakeUpProcedure());
-    os.procedure(new ShutdownAllValidatorBFTDataProcedure());
-    os.procedure(new ShutdownAllPreparedUnstakeOwnershipProcedure());
-    os.procedure(new DownValidatorStakeDataProcedure());
-    os.procedure(new UpUnstakingProcedure());
-    os.procedure(new ShutdownAllPreparedStakeProcedure());
-    os.procedure(new ShutdownAllValidatorFeeCopyProcedure());
-    os.procedure(new UpResetRakeUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorOwnerCopyProcedure());
-    os.procedure(new UpResetOwnerUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorRegisteredCopyProcedure());
-    os.procedure(new UpResetRegisteredUpdateProcedure());
-    os.procedure(new UpStakingProcedure());
-    os.procedure(new UpUpdatingValidatorStakesProcedure());
-    os.procedure(new ReadIndexValidatorStakeDataProcedure());
-    os.procedure(new UpBootupValidatorProcedure());
-    os.procedure(new UpStartingNextEpochProcedure());
-    os.procedure(new UpStartingEpochRoundProcedure());
+  public UpdatingValidatorBFTData(
+      long maxRounds, long view, TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate) {
+    this.maxRounds = maxRounds;
+    this.expectedNextView = view;
+    this.validatorsToUpdate = validatorsToUpdate;
   }
 
-  @Override
-  public void main(Loader os) {
-    os.substate(ValidatorStakeData.SUBSTATE_DEFINITION);
-    os.substate(StakeOwnership.SUBSTATE_DEFINITION);
-    os.substate(ExitingStake.SUBSTATE_DEFINITION);
+  private void incrementViews(long count) throws ProcedureException {
+    if (this.expectedNextView + count < this.expectedNextView) {
+      throw new ProcedureException("View overflow");
+    }
 
-    epochUpdate(os);
+    if (this.expectedNextView + count > maxRounds) {
+      throw new ProcedureException(
+          "Max rounds is "
+              + maxRounds
+              + " but attempting to execute "
+              + (this.expectedNextView + count));
+    }
+
+    this.expectedNextView += count;
+  }
+
+  public ReducerState update(ValidatorBFTData next, ExecutionContext context)
+      throws ProcedureException {
+    var first = validatorsToUpdate.firstKey();
+    if (!next.validatorKey().equals(first)) {
+      throw new ProcedureException("Invalid key for validator bft data update");
+    }
+    var old = validatorsToUpdate.remove(first);
+    if (old.completedProposals() > next.completedProposals()
+        || old.missedProposals() > next.missedProposals()) {
+      throw new ProcedureException("Invalid data for validator bft data update");
+    }
+
+    if (old.completedProposals() == next.completedProposals()
+        && old.missedProposals() == next.missedProposals()) {
+      throw new ProcedureException("No update to Validator BFT data");
+    }
+
+    var additionalProposalsCompleted = next.completedProposals() - old.completedProposals();
+    var additionalProposalsMissed = next.missedProposals() - old.missedProposals();
+    if (additionalProposalsMissed > 0) {
+      context.emitEvent(
+          new REEvent.ValidatorMissedProposalsEvent(
+              next.validatorKey(), additionalProposalsMissed));
+    }
+
+    context.emitEvent(REEvent.ValidatorBFTDataEvent.fromData(next));
+
+    incrementViews(additionalProposalsCompleted);
+    incrementViews(additionalProposalsMissed);
+
+    if (!validatorsToUpdate.isEmpty()) {
+      return this;
+    }
+
+    return new StartNextRound(this.expectedNextView);
   }
 }

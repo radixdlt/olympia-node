@@ -62,52 +62,54 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt;
+package com.radixdlt.application.system.scrypt.epoch.state;
 
-import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.application.system.scrypt.epoch.procedure.*;
-import com.radixdlt.application.system.state.StakeOwnership;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
 import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.state.ExitingStake;
-import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.Loader;
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.IndexedSubstateIterator;
+import com.radixdlt.constraintmachine.REEvent;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.utils.KeyComparator;
 import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.stream.Collectors;
 
-public record EpochUpdateConstraintScrypt(EpochUpdateConfig config) implements ConstraintScrypt {
-  public static final Comparator<REAddr> STAKE_COMPARATOR =
-      Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator());
+public class CreatingNextValidatorSet implements ReducerState {
+  private LinkedList<ValidatorStakeData> nextValidatorSet;
+  private final UpdatingEpoch updatingEpoch;
+  private final EpochUpdateConfig parent;
 
-  private void epochUpdate(Loader os) {
-    // Epoch Update
-    os.procedure(new EndPrevRoundDownProcedure(config));
-    os.procedure(new ShutdownAllExitingStakesProcedure(config));
-    os.procedure(new ProcessExittingStakeUpProcedure());
-    os.procedure(new ShutdownAllValidatorBFTDataProcedure());
-    os.procedure(new ShutdownAllPreparedUnstakeOwnershipProcedure());
-    os.procedure(new DownValidatorStakeDataProcedure());
-    os.procedure(new UpUnstakingProcedure());
-    os.procedure(new ShutdownAllPreparedStakeProcedure());
-    os.procedure(new ShutdownAllValidatorFeeCopyProcedure());
-    os.procedure(new UpResetRakeUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorOwnerCopyProcedure());
-    os.procedure(new UpResetOwnerUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorRegisteredCopyProcedure());
-    os.procedure(new UpResetRegisteredUpdateProcedure());
-    os.procedure(new UpStakingProcedure());
-    os.procedure(new UpUpdatingValidatorStakesProcedure());
-    os.procedure(new ReadIndexValidatorStakeDataProcedure());
-    os.procedure(new UpBootupValidatorProcedure());
-    os.procedure(new UpStartingNextEpochProcedure());
-    os.procedure(new UpStartingEpochRoundProcedure());
+  public CreatingNextValidatorSet(EpochUpdateConfig parent, UpdatingEpoch updatingEpoch) {
+    this.updatingEpoch = updatingEpoch;
+    this.parent = parent;
   }
 
-  @Override
-  public void main(Loader os) {
-    os.substate(ValidatorStakeData.SUBSTATE_DEFINITION);
-    os.substate(StakeOwnership.SUBSTATE_DEFINITION);
-    os.substate(ExitingStake.SUBSTATE_DEFINITION);
+  public ReducerState readIndex(
+      IndexedSubstateIterator<ValidatorStakeData> substateIterator, ExecutionContext context)
+      throws ProcedureException {
+    substateIterator.verifyPostTypePrefixEquals(new byte[] {0, 1}); // registered validator
+    this.nextValidatorSet =
+        substateIterator.stream()
+            .sorted(
+                Comparator.comparing(ValidatorStakeData::amount)
+                    .thenComparing(ValidatorStakeData::validatorKey, KeyComparator.instance())
+                    .reversed())
+            .limit(parent.maxValidators())
+            .filter(v -> !v.totalStake().isZero())
+            .collect(Collectors.toCollection(LinkedList::new));
 
-    epochUpdate(os);
+    context.emitEvent(new REEvent.NextValidatorSetEvent(this.nextValidatorSet));
+    return next();
+  }
+
+  ReducerState next() {
+    if (this.nextValidatorSet.isEmpty()) {
+      return new StartingNextEpoch(updatingEpoch.prevEpoch());
+    }
+
+    var nextValidator = this.nextValidatorSet.pop();
+    return BootupValidator.create(nextValidator, this::next);
   }
 }

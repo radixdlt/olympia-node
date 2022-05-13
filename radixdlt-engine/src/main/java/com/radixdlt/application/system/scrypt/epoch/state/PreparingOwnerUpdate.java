@@ -62,52 +62,68 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt;
+package com.radixdlt.application.system.scrypt.epoch.state;
 
-import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.application.system.scrypt.epoch.procedure.*;
-import com.radixdlt.application.system.state.StakeOwnership;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.state.ExitingStake;
-import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.Loader;
-import com.radixdlt.identifiers.REAddr;
-import java.util.Comparator;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
+import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.constraintmachine.IndexedSubstateIterator;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.utils.KeyComparator;
+import java.util.TreeMap;
 
-public record EpochUpdateConstraintScrypt(EpochUpdateConfig config) implements ConstraintScrypt {
-  public static final Comparator<REAddr> STAKE_COMPARATOR =
-      Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator());
+public final class PreparingOwnerUpdate extends ExpectedEpochChecker {
+  private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
+  private final TreeMap<ECPublicKey, ValidatorOwnerCopy> preparingOwnerUpdates =
+      new TreeMap<>(KeyComparator.instance());
 
-  private void epochUpdate(Loader os) {
-    // Epoch Update
-    os.procedure(new EndPrevRoundDownProcedure(config));
-    os.procedure(new ShutdownAllExitingStakesProcedure(config));
-    os.procedure(new ProcessExittingStakeUpProcedure());
-    os.procedure(new ShutdownAllValidatorBFTDataProcedure());
-    os.procedure(new ShutdownAllPreparedUnstakeOwnershipProcedure());
-    os.procedure(new DownValidatorStakeDataProcedure());
-    os.procedure(new UpUnstakingProcedure());
-    os.procedure(new ShutdownAllPreparedStakeProcedure());
-    os.procedure(new ShutdownAllValidatorFeeCopyProcedure());
-    os.procedure(new UpResetRakeUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorOwnerCopyProcedure());
-    os.procedure(new UpResetOwnerUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorRegisteredCopyProcedure());
-    os.procedure(new UpResetRegisteredUpdateProcedure());
-    os.procedure(new UpStakingProcedure());
-    os.procedure(new UpUpdatingValidatorStakesProcedure());
-    os.procedure(new ReadIndexValidatorStakeDataProcedure());
-    os.procedure(new UpBootupValidatorProcedure());
-    os.procedure(new UpStartingNextEpochProcedure());
-    os.procedure(new UpStartingEpochRoundProcedure());
+  PreparingOwnerUpdate(
+      EpochUpdateConfig config,
+      UpdatingEpoch updatingEpoch,
+      TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {
+    super(config, updatingEpoch);
+    this.validatorsScratchPad = validatorsScratchPad;
+  }
+
+  public ReducerState prepareValidatorUpdate(
+      IndexedSubstateIterator<ValidatorOwnerCopy> indexedSubstateIterator)
+      throws ProcedureException {
+    verifyPrefix(indexedSubstateIterator);
+
+    indexedSubstateIterator.forEachRemaining(
+        preparedValidatorUpdate ->
+            preparingOwnerUpdates.put(
+                preparedValidatorUpdate.validatorKey(), preparedValidatorUpdate));
+    return next();
+  }
+
+  ReducerState next() {
+    if (preparingOwnerUpdates.isEmpty()) {
+      return new PreparingRegisteredUpdate(config(), updatingEpoch(), validatorsScratchPad);
+    }
+
+    var publicKey = preparingOwnerUpdates.firstKey();
+    var validatorUpdate = preparingOwnerUpdates.remove(publicKey);
+
+    if (!validatorsScratchPad.containsKey(publicKey)) {
+      return new LoadingStake(
+          publicKey,
+          validatorStake -> {
+            validatorsScratchPad.put(publicKey, validatorStake);
+            validatorStake.setOwnerAddr(validatorUpdate.owner());
+            return new ResetOwnerUpdate(publicKey, this::next);
+          });
+    } else {
+      validatorsScratchPad.get(publicKey).setOwnerAddr(validatorUpdate.owner());
+      return new ResetOwnerUpdate(publicKey, this::next);
+    }
   }
 
   @Override
-  public void main(Loader os) {
-    os.substate(ValidatorStakeData.SUBSTATE_DEFINITION);
-    os.substate(StakeOwnership.SUBSTATE_DEFINITION);
-    os.substate(ExitingStake.SUBSTATE_DEFINITION);
-
-    epochUpdate(os);
+  public String toString() {
+    return String.format(
+        "%s{preparingOwnerUpdates=%s}", this.getClass().getSimpleName(), preparingOwnerUpdates);
   }
 }

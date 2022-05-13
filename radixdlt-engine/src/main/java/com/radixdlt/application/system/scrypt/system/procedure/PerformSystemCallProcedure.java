@@ -62,52 +62,44 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt;
+package com.radixdlt.application.system.scrypt.system.procedure;
 
-import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.application.system.scrypt.epoch.procedure.*;
-import com.radixdlt.application.system.state.StakeOwnership;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.state.ExitingStake;
-import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.Loader;
+import static com.radixdlt.application.system.scrypt.SystemConstraintScrypt.MAX_SYMBOL_LENGTH;
+
+import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.system.scrypt.system.state.REAddrClaimStart;
+import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
+import com.radixdlt.constraintmachine.*;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.identifiers.REAddr;
-import java.util.Comparator;
 
-public record EpochUpdateConstraintScrypt(EpochUpdateConfig config) implements ConstraintScrypt {
-  public static final Comparator<REAddr> STAKE_COMPARATOR =
-      Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator());
+public class PerformSystemCallProcedure extends SystemCallProcedure<VoidReducerState> {
+  public PerformSystemCallProcedure() {
+    super(
+        VoidReducerState.class,
+        REAddr.ofSystem(),
+        () -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
+        (voidReducerState, callData, context) -> {
+          var id = callData.get(0);
+          var syscall =
+              Syscall.of(id).orElseThrow(() -> new ProcedureException("Invalid call type " + id));
+          switch (syscall) {
+            case FEE_RESERVE_TAKE -> {
+              var tokens = context.withdrawFeeReserve(callData.getUInt256(1));
 
-  private void epochUpdate(Loader os) {
-    // Epoch Update
-    os.procedure(new EndPrevRoundDownProcedure(config));
-    os.procedure(new ShutdownAllExitingStakesProcedure(config));
-    os.procedure(new ProcessExittingStakeUpProcedure());
-    os.procedure(new ShutdownAllValidatorBFTDataProcedure());
-    os.procedure(new ShutdownAllPreparedUnstakeOwnershipProcedure());
-    os.procedure(new DownValidatorStakeDataProcedure());
-    os.procedure(new UpUnstakingProcedure());
-    os.procedure(new ShutdownAllPreparedStakeProcedure());
-    os.procedure(new ShutdownAllValidatorFeeCopyProcedure());
-    os.procedure(new UpResetRakeUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorOwnerCopyProcedure());
-    os.procedure(new UpResetOwnerUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorRegisteredCopyProcedure());
-    os.procedure(new UpResetRegisteredUpdateProcedure());
-    os.procedure(new UpStakingProcedure());
-    os.procedure(new UpUpdatingValidatorStakesProcedure());
-    os.procedure(new ReadIndexValidatorStakeDataProcedure());
-    os.procedure(new UpBootupValidatorProcedure());
-    os.procedure(new UpStartingNextEpochProcedure());
-    os.procedure(new UpStartingEpochRoundProcedure());
-  }
+              return ReducerResult.incomplete(new TokenHoldingBucket(tokens));
+            }
+            case READDR_CLAIM -> {
+              var bytes = callData.getRemainingBytes(1);
 
-  @Override
-  public void main(Loader os) {
-    os.substate(ValidatorStakeData.SUBSTATE_DEFINITION);
-    os.substate(StakeOwnership.SUBSTATE_DEFINITION);
-    os.substate(ExitingStake.SUBSTATE_DEFINITION);
+              if (bytes.length > MAX_SYMBOL_LENGTH) {
+                throw new ProcedureException("Address claim too large.");
+              }
 
-    epochUpdate(os);
+              return ReducerResult.incomplete(new REAddrClaimStart(bytes));
+            }
+            default -> throw new ProcedureException("Invalid call type: " + syscall);
+          }
+        });
   }
 }

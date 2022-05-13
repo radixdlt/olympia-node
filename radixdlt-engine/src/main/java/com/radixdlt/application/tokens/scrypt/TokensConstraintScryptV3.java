@@ -64,7 +64,7 @@
 
 package com.radixdlt.application.tokens.scrypt;
 
-import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
+import com.radixdlt.application.system.scrypt.system.state.REAddrClaim;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.application.tokens.state.TokensInAccount;
@@ -116,7 +116,7 @@ public record TokensConstraintScryptV3(Set<String> reservedSymbols, Pattern toke
   private void defineTokenCreation(Loader os) {
     os.procedure(
         new UpProcedure<>(
-            SystemConstraintScrypt.REAddrClaim.class,
+            REAddrClaim.class,
             TokenResource.class,
             u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
             (s, u, c, r) -> {

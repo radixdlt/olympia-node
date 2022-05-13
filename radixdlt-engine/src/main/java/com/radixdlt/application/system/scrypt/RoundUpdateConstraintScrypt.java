@@ -64,16 +64,14 @@
 
 package com.radixdlt.application.system.scrypt;
 
-import com.radixdlt.application.system.scrypt.round.procedures.*;
+import com.radixdlt.application.system.scrypt.round.procedure.*;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 
 public record RoundUpdateConstraintScrypt(long maxRounds) implements ConstraintScrypt {
-
   @Override
   public void main(Loader os) {
-
     os.substate(ValidatorBFTData.SUBSTATE_DEFINITION);
 
     os.procedure(new DownRoundDataProcedure());
