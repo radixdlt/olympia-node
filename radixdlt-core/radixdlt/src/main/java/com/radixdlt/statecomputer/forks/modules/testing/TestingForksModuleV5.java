@@ -62,55 +62,56 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.forks.testing;
+package com.radixdlt.statecomputer.forks.modules.testing;
 
-import com.google.inject.Module;
-import java.lang.reflect.InvocationTargetException;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-import org.reflections.Reflections;
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.AbstractModule;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.statecomputer.forks.CandidateForkConfig;
+import com.radixdlt.statecomputer.forks.ForkBuilder;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.statecomputer.forks.RERulesVersion;
+import java.util.Collections;
 
-/**
- * Test fork configuration modules can be specified via env properties. This class contains the
- * boilerplate code for that.
- */
-public class TestingForksLoader {
-
-  static class TestingForksLoadingException extends RuntimeException {
-    TestingForksLoadingException(Exception e) {
-      super(e);
-    }
-
-    TestingForksLoadingException(String message) {
-      super(message);
-    }
+public final class TestingForksModuleV5 extends AbstractModule {
+  @ProvidesIntoSet
+  ForkBuilder genesis() {
+    return new ForkBuilder(
+        "genesis", 0L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
   }
 
-  /**
-   * Will search in this package for a {@link Module }class with the given class name, and
-   * instantiate it.
-   */
-  public Module createTestingForksModuleConfigFromClassName(String simpleClassName) {
-    try {
-      Set<Class<? extends Module>> modules =
-          new Reflections(getClass().getPackageName()).getSubTypesOf(Module.class);
-      List<Class<? extends Module>> matches =
-          modules.stream()
-              .filter(module -> module.getSimpleName().equals(simpleClassName))
-              .collect(Collectors.toList());
-      if (matches.size() != 1) {
-        throw new TestingForksLoadingException(
-            String.format(
-                "Found %d testing forks modules for name %s: %s",
-                matches.size(), simpleClassName, matches));
-      }
-      return matches.get(0).getConstructor().newInstance();
-    } catch (NoSuchMethodException
-        | InstantiationException
-        | IllegalAccessException
-        | InvocationTargetException e) {
-      throw new TestingForksLoadingException(e);
-    }
+  @ProvidesIntoSet
+  ForkBuilder fork1() {
+    return new ForkBuilder(
+        "fork-1", 2L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
+  }
+
+  @ProvidesIntoSet
+  ForkBuilder fork2() {
+    return new ForkBuilder(
+        "fork-2", 7L, RERulesVersion.OLYMPIA_V1, RERulesConfig.testingDefault(500));
+  }
+
+  @ProvidesIntoSet
+  ForkBuilder fork4() {
+    return new ForkBuilder(
+        "fork-4",
+        16L,
+        RERulesVersion.OLYMPIA_V1,
+        RERulesConfig.testingDefault(
+            500, FeeTable.create(Amount.ofMicroTokens(100), Collections.emptyMap())));
+  }
+
+  @ProvidesIntoSet
+  ForkBuilder fork5() {
+    return new ForkBuilder(
+        "fork-5",
+        ImmutableSet.of(new CandidateForkConfig.Threshold((short) 75 /* 75% */, 1)),
+        24,
+        Long.MAX_VALUE,
+        RERulesVersion.OLYMPIA_V1,
+        RERulesConfig.testingDefault(500));
   }
 }
