@@ -95,12 +95,6 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
@@ -122,7 +116,6 @@ public final class EpochManager {
   private final HashSigner signer;
   private final PacemakerTimeoutCalculator timeoutCalculator;
   private final SystemCounters counters;
-  private final Map<Long, List<ConsensusEvent>> queuedEvents;
   private final BFTFactory bftFactory;
   private final PacemakerStateFactory pacemakerStateFactory;
 
@@ -197,7 +190,6 @@ public final class EpochManager {
     this.counters = requireNonNull(counters);
     this.pacemakerStateFactory = requireNonNull(pacemakerStateFactory);
     this.persistentSafetyStateStore = requireNonNull(persistentSafetyStateStore);
-    this.queuedEvents = new HashMap<>();
   }
 
   private void updateEpochState() {
@@ -315,21 +307,6 @@ public final class EpochManager {
     this.currentEpoch = epochChange;
     this.updateEpochState();
     this.bftEventProcessor.start();
-
-    // Execute any queued up consensus events
-    final List<ConsensusEvent> queuedEventsForEpoch =
-        queuedEvents.getOrDefault(epochChange.getEpoch(), Collections.emptyList());
-    var highView =
-        queuedEventsForEpoch.stream()
-            .map(ConsensusEvent::getView)
-            .max(Comparator.naturalOrder())
-            .orElse(View.genesis());
-
-    queuedEventsForEpoch.stream()
-        .filter(e -> e.getView().equals(highView))
-        .forEach(this::processConsensusEventInternal);
-
-    queuedEvents.remove(epochChange.getEpoch());
   }
 
   private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
@@ -342,26 +319,9 @@ public final class EpochManager {
   }
 
   public void processConsensusEvent(ConsensusEvent consensusEvent) {
-    if (consensusEvent.getEpoch() > this.currentEpoch()) {
+    if (consensusEvent.getEpoch() != this.currentEpoch()) {
       log.debug(
-          "{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
-          this.self::getSimpleName,
-          () -> consensusEvent,
-          this::currentEpoch);
-
-      // queue higher epoch events for later processing
-      // TODO: need to clear this by some rule (e.g. timeout or max size) or else memory leak attack
-      // possible
-      queuedEvents
-          .computeIfAbsent(consensusEvent.getEpoch(), e -> new ArrayList<>())
-          .add(consensusEvent);
-      counters.increment(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS);
-      return;
-    }
-
-    if (consensusEvent.getEpoch() < this.currentEpoch()) {
-      log.debug(
-          "{}: CONSENSUS_EVENT: Ignoring lower epoch event: {} current epoch: {}",
+          "{}: CONSENSUS_EVENT: Ignoring event which belongs to epoch {}, current epoch is {}",
           this.self::getSimpleName,
           () -> consensusEvent,
           this::currentEpoch);
