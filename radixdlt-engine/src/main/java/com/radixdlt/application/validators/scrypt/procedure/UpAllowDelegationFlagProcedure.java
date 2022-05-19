@@ -78,7 +78,7 @@ public class UpAllowDelegationFlagProcedure
         AllowDelegationFlag.class,
         UpdatingDelegationFlag.class,
         delegationFlag -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-        (updatingDelegationFlag, delegationFlag, context, resources) -> {
+        (updatingDelegationFlag, delegationFlag, context) -> {
           updatingDelegationFlag.update(delegationFlag);
           return ReducerResult.complete();
         });

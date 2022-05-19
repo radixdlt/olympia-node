@@ -80,7 +80,7 @@ public class UpNeedFixedTokenSupplyProcedure
         TokensInAccount.class,
         NeedFixedTokenSupply.class,
         tokensInAccount -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-        (fixedTokenSupply, tokensInAccount, context, resources) -> {
+        (fixedTokenSupply, tokensInAccount, context) -> {
           if (!tokensInAccount.resourceAddr().equals(fixedTokenSupply.tokenResource().addr())) {
             throw new ProcedureException("Addresses don't match.");
           }

@@ -76,7 +76,7 @@ public class DownTokensInAccountProcedure extends DownProcedure<TokensInAccount,
         TokensInAccount.class,
         VoidReducerState.class,
         tokensInAccount -> tokensInAccount.bucket().withdrawAuthorization(),
-        (reducerState, tokensInAccount, context, resources) -> {
+        (reducerState, tokensInAccount, context) -> {
           var state = new TokenHoldingBucket(tokensInAccount.toTokens());
           return ReducerResult.incomplete(state);
         });

@@ -78,7 +78,7 @@ public class UpValidatorRegisteredCopyProcedure
         ValidatorRegisteredCopy.class,
         UpdatingRegistered.class,
         registeredCopy -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-        (updatingRegistered, registeredCopy, context, resources) -> {
+        (updatingRegistered, registeredCopy, context) -> {
           updatingRegistered.update(registeredCopy);
           return ReducerResult.complete();
         });

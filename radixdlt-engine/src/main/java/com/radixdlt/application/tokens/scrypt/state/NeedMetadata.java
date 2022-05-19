@@ -71,6 +71,8 @@ import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Objects;
 
 public record NeedMetadata(byte[] arg, TokenResource tokenResource) implements ReducerState {
   public void metadata(TokenResourceMetadata metadata, ExecutionContext context)
@@ -84,5 +86,27 @@ public record NeedMetadata(byte[] arg, TokenResource tokenResource) implements R
       throw new ProcedureException("Symbols don't match.");
     }
     context.emitEvent(new REEvent.ResourceCreatedEvent(symbol, tokenResource, metadata));
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof NeedMetadata that
+        && Arrays.equals(arg, that.arg)
+        && tokenResource.equals(that.tokenResource);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = Objects.hash(tokenResource);
+    result = 31 * result + Arrays.hashCode(arg);
+    return result;
+  }
+
+  @Override
+  public String toString() {
+    return "NeedMetadata{" +
+        "arg=" + Arrays.toString(arg) +
+        ", tokenResource=" + tokenResource +
+        '}';
   }
 }

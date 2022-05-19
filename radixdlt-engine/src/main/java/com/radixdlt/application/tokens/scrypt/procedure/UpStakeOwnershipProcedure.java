@@ -79,7 +79,7 @@ public class UpStakeOwnershipProcedure
         StakeOwnership.class,
         StakeOwnershipHoldingBucket.class,
         ownership -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-        (holdingBucket, stakeOwnership, context, resources) -> {
+        (holdingBucket, stakeOwnership, context) -> {
           var ownership = holdingBucket.withdrawOwnership(stakeOwnership.amount());
           if (!ownership.equals(stakeOwnership)) {
             throw new MismatchException(ownership, stakeOwnership);

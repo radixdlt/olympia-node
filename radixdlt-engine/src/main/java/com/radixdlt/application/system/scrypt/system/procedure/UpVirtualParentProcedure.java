@@ -76,7 +76,7 @@ public class UpVirtualParentProcedure extends UpProcedure<VirtualParent, VoidRed
         VirtualParent.class,
         VoidReducerState.class,
         virtualParent -> new Authorization(PermissionLevel.SYSTEM, (resources, context) -> {}),
-        (reducerState, virtualParent, context, resources) -> {
+        (reducerState, virtualParent, context) -> {
           if (virtualParent.data().length != 1) {
             throw new ProcedureException(
                 "Invalid data: " + Bytes.toHexString(virtualParent.data()));

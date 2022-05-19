@@ -83,7 +83,7 @@ public class UpTokenResourceProcedure extends UpProcedure<TokenResource, REAddrC
         TokenResource.class,
         REAddrClaim.class,
         tokenResource -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-        (addrClaim, tokenResource, context, resources) -> {
+        (addrClaim, tokenResource, context) -> {
           if (!tokenResource.addr().equals(addrClaim.getAddr())) {
             throw new ProcedureException("Addresses don't match");
           }

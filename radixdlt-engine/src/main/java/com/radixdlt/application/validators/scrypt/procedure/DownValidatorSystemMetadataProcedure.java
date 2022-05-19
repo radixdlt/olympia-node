@@ -83,7 +83,7 @@ public class DownValidatorSystemMetadataProcedure
                     throw new AuthorizationException("Key does not match.");
                   }
                 }),
-        (reducerState, systemMetadata, context, resources) ->
+        (reducerState, systemMetadata, context) ->
             ReducerResult.incomplete(new UpdatingValidatorHashMetadata(systemMetadata)));
   }
 }

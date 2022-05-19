@@ -77,7 +77,6 @@ public class UpBootupValidatorProcedure extends UpProcedure<ValidatorBFTData, Bo
         ValidatorBFTData.class,
         BootupValidator.class,
         bftData -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (validator, bftData, context, resources) ->
-            ReducerResult.incomplete(validator.bootUp(bftData)));
+        (validator, bftData, context) -> ReducerResult.incomplete(validator.bootUp(bftData)));
   }
 }

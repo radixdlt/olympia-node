@@ -276,7 +276,8 @@ public class UnstakeTokensV2Test {
         this.sut
             .construct(new UnstakeOwnership(accountAddr, key.getPublicKey(), unstakeAmt))
             .signAndBuild(key::sign);
-    var parsed = this.sut.execute(List.of(unstake));
+
+    this.sut.execute(List.of(unstake));
   }
 
   @Test

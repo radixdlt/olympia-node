@@ -120,7 +120,7 @@ public record SubstateIndex<T extends Particle>(byte[] index, Class<? extends T>
 
   @Override
   public boolean equals(Object o) {
-    return o instanceof SubstateIndex other
+    return o instanceof SubstateIndex<?> other
         && Arrays.equals(this.index, other.index)
         && Objects.equals(this.substateClass, other.substateClass);
   }

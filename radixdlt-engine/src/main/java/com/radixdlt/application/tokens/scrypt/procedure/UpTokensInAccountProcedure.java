@@ -81,7 +81,7 @@ public class UpTokensInAccountProcedure extends UpProcedure<TokensInAccount, Voi
                         resources
                             .loadResource(tokensInAccount.resourceAddr())
                             .verifyMintAuthorization(context.key())),
-        (reducerState, tokensInAccount, context, resources) -> {
+        (reducerState, tokensInAccount, context) -> {
           context.verifyCanAllocAndDestroyResources();
           return ReducerResult.complete();
         });

@@ -84,7 +84,7 @@ public class DownUnclaimedREAddrProcedure extends DownProcedure<UnclaimedREAddr,
 
           return new Authorization(permissionLevel, (resources, context) -> {});
         },
-        (claimStart, reAddr, context, resources) ->
+        (claimStart, reAddr, context) ->
             ReducerResult.incomplete(claimStart.claim(reAddr, context)));
   }
 }

@@ -67,5 +67,30 @@ package com.radixdlt.application.tokens.scrypt.state;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.ReducerState;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 public record NeedFixedTokenSupply(byte[] arg, TokenResource tokenResource)
-    implements ReducerState {}
+    implements ReducerState {
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof NeedFixedTokenSupply that
+        && Arrays.equals(arg, that.arg)
+        && tokenResource.equals(that.tokenResource);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = Objects.hash(tokenResource);
+    result = 31 * result + Arrays.hashCode(arg);
+    return result;
+  }
+
+  @Override
+  public String toString() {
+    return "NeedFixedTokenSupply{" +
+        "arg=" + Arrays.toString(arg) +
+        ", tokenResource=" + tokenResource +
+        '}';
+  }
+}

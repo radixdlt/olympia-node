@@ -104,7 +104,7 @@ public class UpProcedure<U extends Particle, S extends ReducerState> implements 
       ExecutionContext context)
       throws ProcedureException {
     try {
-      return upReducer.reduce((S) reducerState, (U) parameter, context, immutableAddrs);
+      return upReducer.reduce((S) reducerState, (U) parameter, context);
     } catch (Exception e) {
       throw new ProcedureException(e);
     }

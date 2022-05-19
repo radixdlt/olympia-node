@@ -74,7 +74,7 @@ public class DownRoundDataProcedure extends DownProcedure<RoundData, VoidReducer
         RoundData.class,
         VoidReducerState.class,
         roundData -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (reducerState, roundData, context, resources) ->
+        (reducerState, roundData, context) ->
             ReducerResult.incomplete(new EndPrevRound(roundData)));
   }
 }

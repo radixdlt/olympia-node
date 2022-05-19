@@ -101,7 +101,7 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
       Object o, ReducerState reducerState, Resources immutableAddrs, ExecutionContext context)
       throws ProcedureException {
     try {
-      return downReducer.reduce((S) reducerState, (D) o, context, immutableAddrs);
+      return downReducer.reduce((S) reducerState, (D) o, context);
     } catch (Exception e) {
       throw new ProcedureException(e);
     }

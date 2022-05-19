@@ -83,7 +83,7 @@ public class DownValidatorOwnerCopyProcedure
                     throw new AuthorizationException("Key does not match.");
                   }
                 }),
-        (reducerState, ownerCopy, context, resources) ->
+        (reducerState, ownerCopy, context) ->
             ReducerResult.incomplete(new UpdatingOwnerNeedToReadEpoch(ownerCopy.validatorKey())));
   }
 }

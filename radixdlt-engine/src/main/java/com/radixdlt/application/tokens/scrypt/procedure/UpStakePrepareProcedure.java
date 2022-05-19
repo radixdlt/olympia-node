@@ -77,7 +77,7 @@ public class UpStakePrepareProcedure extends UpProcedure<PreparedStake, StakePre
         PreparedStake.class,
         StakePrepare.class,
         preparedStake -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-        (stakePrepare, preparedStake, context, resources) ->
+        (stakePrepare, preparedStake, context) ->
             ReducerResult.incomplete(stakePrepare.withdrawTo(preparedStake)));
   }
 }

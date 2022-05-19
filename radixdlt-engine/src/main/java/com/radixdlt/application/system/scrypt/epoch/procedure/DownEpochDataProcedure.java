@@ -80,7 +80,7 @@ public final class DownEpochDataProcedure extends DownProcedure<EpochData, EndPr
         EpochData.class,
         EndPrevRound.class,
         epochData -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (prevRound, epochData, context, resources) -> {
+        (prevRound, epochData, context) -> {
           // TODO: Should move this authorization instead of checking epoch > 0
           if (epochData.epoch() > 0 && prevRound.closedRound().view() != config.maxRounds()) {
             throw new ProcedureException(

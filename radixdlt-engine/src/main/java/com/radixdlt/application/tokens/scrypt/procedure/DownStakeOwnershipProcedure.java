@@ -76,7 +76,7 @@ public class DownStakeOwnershipProcedure extends DownProcedure<StakeOwnership, V
         StakeOwnership.class,
         VoidReducerState.class,
         stakeOwnership -> stakeOwnership.bucket().withdrawAuthorization(),
-        (reducerState, stakeOwnership, context, resources) ->
+        (reducerState, stakeOwnership, context) ->
             ReducerResult.incomplete(new StakeOwnershipHoldingBucket(stakeOwnership)));
   }
 }

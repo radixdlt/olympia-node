@@ -76,7 +76,7 @@ public class DownTokenHoldingBucketProcedure
         TokensInAccount.class,
         TokenHoldingBucket.class,
         tokensInAccount -> tokensInAccount.bucket().withdrawAuthorization(),
-        (holdingBucket, tokensInAccount, context, resources) -> {
+        (holdingBucket, tokensInAccount, context) -> {
           holdingBucket.deposit(tokensInAccount.toTokens());
           return ReducerResult.incomplete(holdingBucket);
         });

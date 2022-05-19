@@ -65,7 +65,5 @@
 package com.radixdlt.constraintmachine;
 
 public interface DownReducer<I extends Particle, S extends ReducerState> {
-  ReducerResult reduce(
-      S reducerState, I inputParticle, ExecutionContext context, Resources immutableAddrs)
-      throws Exception;
+  ReducerResult reduce(S reducerState, I inputParticle, ExecutionContext context) throws Exception;
 }

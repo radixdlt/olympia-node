@@ -79,7 +79,7 @@ public class UpPreparedUnstakeOwnershipProcedure
         PreparedUnstakeOwnership.class,
         StakeOwnershipHoldingBucket.class,
         ownership -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-        (holdingBucket, unstakeOwnership, context, resources) -> {
+        (holdingBucket, unstakeOwnership, context) -> {
           var unstake = holdingBucket.unstake(unstakeOwnership.amount());
           if (!unstake.equals(unstakeOwnership)) {
             throw new MismatchException(unstake, unstakeOwnership);

@@ -83,7 +83,7 @@ public class DownAllowDelegationFlagProcedure
                     throw new AuthorizationException("Key does not match.");
                   }
                 }),
-        (reducerState, delegationFlag, context, resources) ->
+        (reducerState, delegationFlag, context) ->
             ReducerResult.incomplete(new UpdatingDelegationFlag(delegationFlag)));
   }
 }

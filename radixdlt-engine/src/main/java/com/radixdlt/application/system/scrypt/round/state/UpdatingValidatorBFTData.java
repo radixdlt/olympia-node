@@ -70,15 +70,16 @@ import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
-import java.util.TreeMap;
+
+import java.util.NavigableMap;
 
 public class UpdatingValidatorBFTData implements ReducerState {
   private final long maxRounds;
-  private final TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate;
+  private final NavigableMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate;
   private long expectedNextView;
 
   public UpdatingValidatorBFTData(
-      long maxRounds, long view, TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate) {
+      long maxRounds, long view, NavigableMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate) {
     this.maxRounds = maxRounds;
     this.expectedNextView = view;
     this.validatorsToUpdate = validatorsToUpdate;

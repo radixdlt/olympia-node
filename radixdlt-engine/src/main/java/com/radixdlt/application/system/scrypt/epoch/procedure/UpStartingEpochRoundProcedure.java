@@ -78,7 +78,7 @@ public class UpStartingEpochRoundProcedure extends UpProcedure<RoundData, Starti
         RoundData.class,
         StartingEpochRound.class,
         roundData -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (epochRound, roundData, context, resources) -> {
+        (epochRound, roundData, context) -> {
           if (roundData.view() != 0) {
             throw new ProcedureException("Epoch must start with view 0");
           }

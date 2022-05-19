@@ -79,7 +79,7 @@ public class DownStartValidatorBFTUpdateProcedure
         StartValidatorBFTUpdate.class,
         validatorBFTData ->
             new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (bftUpdate, validatorBFTData, context, resources) ->
+        (bftUpdate, validatorBFTData, context) ->
             ReducerResult.incomplete(bftUpdate.beginUpdate(validatorBFTData)));
   }
 }

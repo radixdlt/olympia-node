@@ -77,7 +77,7 @@ public class UpResetOwnerUpdateProcedure extends UpProcedure<ValidatorOwnerCopy,
         ValidatorOwnerCopy.class,
         ResetOwnerUpdate.class,
         ownerCopy -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (ownerUpdate, ownerCopy, context, resources) ->
+        (ownerUpdate, ownerCopy, context) ->
             ReducerResult.incomplete(ownerUpdate.reset(ownerCopy)));
   }
 }

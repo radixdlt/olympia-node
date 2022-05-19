@@ -77,7 +77,7 @@ public class UpUnstakingProcedure extends UpProcedure<ExitingStake, Unstaking> {
         ExitingStake.class,
         Unstaking.class,
         exitingStake -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (unstaking, exitingStake, context, resources) ->
+        (unstaking, exitingStake, context) ->
             ReducerResult.incomplete(unstaking.exit(exitingStake)));
   }
 }

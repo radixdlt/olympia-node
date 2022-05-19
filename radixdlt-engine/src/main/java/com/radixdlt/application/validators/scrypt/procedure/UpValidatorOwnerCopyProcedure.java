@@ -78,7 +78,7 @@ public class UpValidatorOwnerCopyProcedure
         ValidatorOwnerCopy.class,
         UpdatingValidatorOwner.class,
         validatorOwnerCopy -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-        (validatorOwner, ownerCopy, context, resources) -> {
+        (validatorOwner, ownerCopy, context) -> {
           validatorOwner.update(ownerCopy);
           return ReducerResult.complete();
         });

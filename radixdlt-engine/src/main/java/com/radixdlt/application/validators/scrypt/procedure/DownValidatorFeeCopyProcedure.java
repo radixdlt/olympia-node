@@ -83,7 +83,7 @@ public class DownValidatorFeeCopyProcedure
                     throw new AuthorizationException("Key does not match.");
                   }
                 }),
-        (reducerState, feeCopy, context, resources) ->
+        (reducerState, feeCopy, context) ->
             ReducerResult.incomplete(
                 new UpdatingRakeNeedToReadCurrentRake(
                     rakeIncreaseDebounceEpochLength, feeCopy.validatorKey())));

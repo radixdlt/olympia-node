@@ -226,7 +226,6 @@ public class StakeTokensTest {
     // Arrange
     var key = ECKeyPair.generateNew();
     var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
-    var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
     var txn =
         this.engine
             .construct(
@@ -240,7 +239,6 @@ public class StakeTokensTest {
 
     // Act
     var nextKey = ECKeyPair.generateNew();
-    var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());
     var transfer =
         this.engine
             .construct(new StakeTokens(accountAddr, key.getPublicKey(), stakeAmt))

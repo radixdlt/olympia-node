@@ -76,7 +76,7 @@ public class DownStakeOwnershipHoldingBucketProcedure
         StakeOwnership.class,
         StakeOwnershipHoldingBucket.class,
         stakeOwnership -> stakeOwnership.bucket().withdrawAuthorization(),
-        (bucket, stakeOwnership, context, resources) -> {
+        (bucket, stakeOwnership, context) -> {
           bucket.depositOwnership(stakeOwnership);
           return ReducerResult.incomplete(bucket);
         });

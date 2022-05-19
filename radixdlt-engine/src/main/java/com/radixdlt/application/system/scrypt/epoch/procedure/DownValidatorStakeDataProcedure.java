@@ -76,7 +76,6 @@ public class DownValidatorStakeDataProcedure
         ValidatorStakeData.class,
         LoadingStake.class,
         stakeData -> stakeData.bucket().withdrawAuthorization(),
-        (stake, stakeData, context, resources) ->
-            ReducerResult.incomplete(stake.startUpdate(stakeData)));
+        (stake, stakeData, context) -> ReducerResult.incomplete(stake.startUpdate(stakeData)));
   }
 }

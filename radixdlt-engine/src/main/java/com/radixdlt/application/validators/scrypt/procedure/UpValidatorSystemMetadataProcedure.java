@@ -78,7 +78,7 @@ public class UpValidatorSystemMetadataProcedure
         ValidatorSystemMetadata.class,
         UpdatingValidatorHashMetadata.class,
         systemMetadata -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-        (validatorHashMetadata, systemMetadata, context, resources) -> {
+        (validatorHashMetadata, systemMetadata, context) -> {
           validatorHashMetadata.update(systemMetadata);
           return ReducerResult.complete();
         });

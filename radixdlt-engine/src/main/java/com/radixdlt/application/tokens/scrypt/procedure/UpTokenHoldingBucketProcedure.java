@@ -78,7 +78,7 @@ public class UpTokenHoldingBucketProcedure
         TokensInAccount.class,
         TokenHoldingBucket.class,
         tokensInAccount -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-        (tokenHoldingBucket, tokensInAccount, context, resources) -> {
+        (tokenHoldingBucket, tokensInAccount, context) -> {
           tokenHoldingBucket.withdraw(tokensInAccount.resourceAddr(), tokensInAccount.amount());
           return ReducerResult.incomplete(tokenHoldingBucket);
         });

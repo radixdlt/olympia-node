@@ -232,7 +232,7 @@ public class TxnSizeFeeTest {
     assertThat(transfer.getPayload().length).isEqualTo(expectedTxnSize);
 
     // Act
-    var result = this.engine.execute(List.of(transfer));
+    this.engine.execute(List.of(transfer));
   }
 
   @Test

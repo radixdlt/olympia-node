@@ -117,8 +117,7 @@ public final class Tokens {
       throw new InvalidResourceException(this.resourceAddr, tokens.resourceAddr);
     }
 
-    var amount = tokens.amount.add(this.amount);
-    return new Tokens(resourceAddr, amount);
+    return new Tokens(resourceAddr, tokens.amount.add(this.amount));
   }
 
   public boolean isZero() {

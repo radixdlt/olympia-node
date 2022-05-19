@@ -78,7 +78,6 @@ public class ProcessExittingStakeUpProcedure
         TokensInAccount.class,
         ProcessExittingStake.class,
         tokens -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (exittingStake, tokens, context, resources) ->
-            ReducerResult.incomplete(exittingStake.unlock(tokens)));
+        (exittingStake, tokens, context) -> ReducerResult.incomplete(exittingStake.unlock(tokens)));
   }
 }

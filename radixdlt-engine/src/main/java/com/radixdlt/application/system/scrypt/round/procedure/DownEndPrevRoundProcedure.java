@@ -79,7 +79,7 @@ public class DownEndPrevRoundProcedure extends DownProcedure<ValidatorBFTData, E
         EndPrevRound.class,
         validatorBFTData ->
             new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (prevRound, validatorBFTData, context, resources) -> {
+        (prevRound, validatorBFTData, context) -> {
           var closedRound = prevRound.closedRound().view();
           var next = new StartValidatorBFTUpdate(maxRounds, closedRound);
           next.beginUpdate(validatorBFTData);

@@ -78,7 +78,7 @@ public class UpUpdatingValidatorBFTDataProcedure
         ValidatorBFTData.class,
         UpdatingValidatorBFTData.class,
         bftData -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (validatorBFTData, bftData, context, resources) ->
+        (validatorBFTData, bftData, context) ->
             ReducerResult.incomplete(validatorBFTData.update(bftData, context)));
   }
 }

@@ -77,7 +77,7 @@ public class UpValidatorFeeCopyProcedure extends UpProcedure<ValidatorFeeCopy, U
         ValidatorFeeCopy.class,
         UpdatingRakeReady.class,
         feeCopy -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-        (rakeReady, feeCopy, context, resources) -> {
+        (rakeReady, feeCopy, context) -> {
           rakeReady.update(feeCopy);
           return ReducerResult.complete();
         });

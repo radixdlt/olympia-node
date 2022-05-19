@@ -78,7 +78,7 @@ public class UpTokenResourceMetadataProcedure
         TokenResourceMetadata.class,
         NeedMetadata.class,
         resourceMetadata -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-        (needMetadata, resourceMetadata, context, resources) -> {
+        (needMetadata, resourceMetadata, context) -> {
           needMetadata.metadata(resourceMetadata, context);
           return ReducerResult.complete();
         });

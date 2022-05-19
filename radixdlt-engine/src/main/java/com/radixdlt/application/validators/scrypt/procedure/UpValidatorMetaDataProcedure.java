@@ -80,7 +80,7 @@ public class UpValidatorMetaDataProcedure
         ValidatorMetaData.class,
         UpdatingValidatorInfo.class,
         metaData -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-        (validatorInfo, metaData, context, resources) -> {
+        (validatorInfo, metaData, context) -> {
           if (!Objects.equals(validatorInfo.prevState().validatorKey(), metaData.validatorKey())) {
             throw new ProcedureException(
                 String.format(

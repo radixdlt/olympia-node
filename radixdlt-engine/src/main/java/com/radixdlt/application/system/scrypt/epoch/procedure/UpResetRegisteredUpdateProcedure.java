@@ -78,7 +78,7 @@ public class UpResetRegisteredUpdateProcedure
         ValidatorRegisteredCopy.class,
         ResetRegisteredUpdate.class,
         registeredCopy -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (registeredUpdate, registeredCopy, context, resources) ->
+        (registeredUpdate, registeredCopy, context) ->
             ReducerResult.incomplete(registeredUpdate.reset(registeredCopy)));
   }
 }
