@@ -73,11 +73,11 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
-public class UpAllocatingSystemProcedure extends UpProcedure<AllocatingSystem, RoundData> {
+public class UpAllocatingSystemProcedure extends UpProcedure<RoundData, AllocatingSystem> {
   public UpAllocatingSystemProcedure() {
     super(
-        AllocatingSystem.class,
         RoundData.class,
+        AllocatingSystem.class,
         roundData -> new Authorization(PermissionLevel.SYSTEM, (resources, context) -> {}),
         (allocatingSystem, roundData, context, resources) -> {
           if (roundData.view() != 0) {

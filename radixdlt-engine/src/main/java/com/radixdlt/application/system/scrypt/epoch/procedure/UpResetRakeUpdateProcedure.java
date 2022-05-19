@@ -71,11 +71,11 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
 
-public class UpResetRakeUpdateProcedure extends UpProcedure<ResetRakeUpdate, ValidatorFeeCopy> {
+public class UpResetRakeUpdateProcedure extends UpProcedure<ValidatorFeeCopy, ResetRakeUpdate> {
   public UpResetRakeUpdateProcedure() {
     super(
-        ResetRakeUpdate.class,
         ValidatorFeeCopy.class,
+        ResetRakeUpdate.class,
         feeCopy -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
         (rakeUpdate, feeCopy, context, resources) ->
             ReducerResult.incomplete(rakeUpdate.reset(feeCopy)));

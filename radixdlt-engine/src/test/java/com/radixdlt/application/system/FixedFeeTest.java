@@ -73,6 +73,7 @@ import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
 import com.radixdlt.application.system.construction.FeeReserveTakeConstructor;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
+import com.radixdlt.application.tokens.TokensConfig;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.application.tokens.construction.MintTokenConstructor;
 import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
@@ -109,7 +110,8 @@ public class FixedFeeTest {
   @Before
   public void setup() throws Exception {
     var cmAtomOS = new CMAtomOS();
-    cmAtomOS.load(new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")));
+    cmAtomOS.load(
+        new TokensConstraintScryptV3(new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))));
     cmAtomOS.load(new SystemConstraintScrypt());
     var cm =
         new ConstraintMachine(

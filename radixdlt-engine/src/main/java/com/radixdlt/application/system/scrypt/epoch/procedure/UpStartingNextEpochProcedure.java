@@ -71,11 +71,11 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
 
-public class UpStartingNextEpochProcedure extends UpProcedure<StartingNextEpoch, EpochData> {
+public class UpStartingNextEpochProcedure extends UpProcedure<EpochData, StartingNextEpoch> {
   public UpStartingNextEpochProcedure() {
     super(
-        StartingNextEpoch.class,
         EpochData.class,
+        StartingNextEpoch.class,
         epochData -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
         (nextEpoch, epochData, context, resources) ->
             ReducerResult.incomplete(nextEpoch.nextEpoch(epochData)));

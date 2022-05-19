@@ -75,6 +75,7 @@ import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.tokens.TokensConfig;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.application.tokens.construction.MintTokenConstructor;
 import com.radixdlt.application.tokens.construction.StakeTokensConstructorV3;
@@ -121,7 +122,8 @@ public class NextEpochV2Test {
                 new EpochUpdateConstraintScrypt(
                     new EpochUpdateConfig(10, 10, 1, 9800, Amount.ofTokens(10).toSubunits())),
                 new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
-                new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
+                new TokensConstraintScryptV3(
+                    new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))),
                 new ValidatorConstraintScryptV2(),
                 new ValidatorUpdateRakeConstraintScrypt(2),
                 new ValidatorRegisterConstraintScrypt(),

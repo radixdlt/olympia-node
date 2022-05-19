@@ -72,11 +72,11 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
 
 public class UpUpdatingValidatorBFTDataProcedure
-    extends UpProcedure<UpdatingValidatorBFTData, ValidatorBFTData> {
+    extends UpProcedure<ValidatorBFTData, UpdatingValidatorBFTData> {
   public UpUpdatingValidatorBFTDataProcedure() {
     super(
-        UpdatingValidatorBFTData.class,
         ValidatorBFTData.class,
+        UpdatingValidatorBFTData.class,
         bftData -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
         (validatorBFTData, bftData, context, resources) ->
             ReducerResult.incomplete(validatorBFTData.update(bftData, context)));

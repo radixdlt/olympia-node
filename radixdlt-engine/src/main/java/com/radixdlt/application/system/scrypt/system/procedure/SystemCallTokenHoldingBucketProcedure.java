@@ -65,7 +65,7 @@
 package com.radixdlt.application.system.scrypt.system.procedure;
 
 import com.radixdlt.application.system.scrypt.Syscall;
-import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
+import com.radixdlt.application.tokens.scrypt.state.TokenHoldingBucket;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;

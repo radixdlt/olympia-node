@@ -75,8 +75,8 @@ public class ReadIndexValidatorStakeDataProcedure
     extends ReadIndexProcedure<ValidatorStakeData, CreatingNextValidatorSet> {
   public ReadIndexValidatorStakeDataProcedure() {
     super(
-        CreatingNextValidatorSet.class,
         ValidatorStakeData.class,
+        CreatingNextValidatorSet.class,
         () -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
         (nextValidatorSet, substateIterator, context, resources) ->
             ReducerResult.incomplete(nextValidatorSet.readIndex(substateIterator, context)));

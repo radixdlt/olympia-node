@@ -73,11 +73,11 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
-public class UpREAddrClaimProcedure extends UpProcedure<REAddrClaim, EpochData> {
+public class UpREAddrClaimProcedure extends UpProcedure<EpochData, REAddrClaim> {
   public UpREAddrClaimProcedure() {
     super(
-        REAddrClaim.class,
         EpochData.class,
+        REAddrClaim.class,
         epochData -> new Authorization(PermissionLevel.SYSTEM, (resources, context) -> {}),
         (addrClaim, epochData, context, resources) -> {
           if (epochData.epoch() != 0) {

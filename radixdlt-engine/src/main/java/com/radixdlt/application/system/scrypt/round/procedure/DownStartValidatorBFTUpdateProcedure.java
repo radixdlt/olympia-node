@@ -75,11 +75,11 @@ public class DownStartValidatorBFTUpdateProcedure
     extends DownProcedure<ValidatorBFTData, StartValidatorBFTUpdate> {
   public DownStartValidatorBFTUpdateProcedure() {
     super(
-        StartValidatorBFTUpdate.class,
         ValidatorBFTData.class,
+        StartValidatorBFTUpdate.class,
         validatorBFTData ->
             new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (validatorBFTData, bftUpdate, resources, context) ->
+        (bftUpdate, validatorBFTData, context, resources) ->
             ReducerResult.incomplete(bftUpdate.beginUpdate(validatorBFTData)));
   }
 }

@@ -71,11 +71,11 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
 
-public class UpStartNextRoundProcedure extends UpProcedure<StartNextRound, RoundData> {
+public class UpStartNextRoundProcedure extends UpProcedure<RoundData, StartNextRound> {
   public UpStartNextRoundProcedure() {
     super(
-        StartNextRound.class,
         RoundData.class,
+        StartNextRound.class,
         roundData -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
         (startNextRound, roundData, context, resources) -> {
           startNextRound.update(roundData);

@@ -68,7 +68,7 @@ import static com.radixdlt.application.system.scrypt.SystemConstraintScrypt.MAX_
 
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.system.scrypt.system.state.REAddrClaimStart;
-import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
+import com.radixdlt.application.tokens.scrypt.state.TokenHoldingBucket;
 import com.radixdlt.constraintmachine.*;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.identifiers.REAddr;

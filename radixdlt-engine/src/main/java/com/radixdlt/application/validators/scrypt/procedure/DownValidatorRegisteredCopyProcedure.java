@@ -62,25 +62,29 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt.system.procedure;
+package com.radixdlt.application.validators.scrypt.procedure;
 
-import com.radixdlt.application.system.scrypt.system.state.AllocatingVirtualState;
-import com.radixdlt.application.system.state.VirtualParent;
-import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.UpProcedure;
+import com.radixdlt.application.validators.scrypt.state.UpdatingRegisteredNeedToReadEpoch;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.constraintmachine.*;
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 
-public class UpProcedureAllocatingVirtualState
-    extends UpProcedure<AllocatingVirtualState, VirtualParent> {
-  public UpProcedureAllocatingVirtualState() {
+public class DownValidatorRegisteredCopyProcedure
+    extends DownProcedure<ValidatorRegisteredCopy, VoidReducerState> {
+  public DownValidatorRegisteredCopyProcedure() {
     super(
-        AllocatingVirtualState.class,
-        VirtualParent.class,
-        virtualParent -> new Authorization(PermissionLevel.SYSTEM, (resources, context) -> {}),
-        (virtualState, virtualParent, context, resources) -> {
-          var next = virtualState.createVirtualSubstate(virtualParent);
-          return next == null ? ReducerResult.complete() : ReducerResult.incomplete(next);
-        });
+        ValidatorRegisteredCopy.class,
+        VoidReducerState.class,
+        registeredCopy ->
+            new Authorization(
+                PermissionLevel.USER,
+                (resources, context) -> {
+                  if (!context.key().map(registeredCopy.validatorKey()::equals).orElse(false)) {
+                    throw new AuthorizationException("Key does not match.");
+                  }
+                }),
+        (reducerState, registeredCopy, context, resources) ->
+            ReducerResult.incomplete(
+                new UpdatingRegisteredNeedToReadEpoch(registeredCopy.validatorKey())));
   }
 }

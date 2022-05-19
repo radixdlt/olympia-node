@@ -72,11 +72,11 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
 
 public class UpUpdatingValidatorStakesProcedure
-    extends UpProcedure<UpdatingValidatorStakes, ValidatorStakeData> {
+    extends UpProcedure<ValidatorStakeData, UpdatingValidatorStakes> {
   public UpUpdatingValidatorStakesProcedure() {
     super(
-        UpdatingValidatorStakes.class,
         ValidatorStakeData.class,
+        UpdatingValidatorStakes.class,
         validatorStakeData ->
             new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
         (validatorStakes, stakeData, context, resources) ->

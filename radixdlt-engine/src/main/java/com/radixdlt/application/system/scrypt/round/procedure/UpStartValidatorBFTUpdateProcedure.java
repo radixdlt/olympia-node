@@ -72,11 +72,11 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
 
 public class UpStartValidatorBFTUpdateProcedure
-    extends UpProcedure<StartValidatorBFTUpdate, ValidatorBFTData> {
+    extends UpProcedure<ValidatorBFTData, StartValidatorBFTUpdate> {
   public UpStartValidatorBFTUpdateProcedure() {
     super(
-        StartValidatorBFTUpdate.class,
         ValidatorBFTData.class,
+        StartValidatorBFTUpdate.class,
         validatorBFTData ->
             new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
         (bftUpdate, bftData, context, resources) -> {

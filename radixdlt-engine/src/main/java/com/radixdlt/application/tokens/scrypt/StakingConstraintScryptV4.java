@@ -64,32 +64,12 @@
 
 package com.radixdlt.application.tokens.scrypt;
 
-import com.radixdlt.application.system.state.StakeOwnership;
+import com.radixdlt.application.tokens.scrypt.procedure.*;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
-import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.DownProcedure;
-import com.radixdlt.constraintmachine.EndProcedure;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ReadProcedure;
-import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.UpProcedure;
-import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.constraintmachine.exceptions.InvalidDelegationException;
-import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
-import com.radixdlt.constraintmachine.exceptions.MinimumStakeException;
-import com.radixdlt.constraintmachine.exceptions.MismatchException;
-import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
-import java.util.function.Predicate;
 
 public record StakingConstraintScryptV4(UInt256 minimumStake) implements ConstraintScrypt {
 
@@ -98,145 +78,22 @@ public record StakingConstraintScryptV4(UInt256 minimumStake) implements Constra
     os.substate(PreparedStake.SUBSTATE_DEFINITION);
     os.substate(PreparedUnstakeOwnership.SUBSTATE_DEFINITION);
 
-    defineStaking(os);
-  }
-
-  private final class OwnerStakePrepare implements ReducerState {
-    private final TokenHoldingBucket tokenHoldingBucket;
-    private final AllowDelegationFlag allowDelegationFlag;
-
-    OwnerStakePrepare(
-        TokenHoldingBucket tokenHoldingBucket, AllowDelegationFlag allowDelegationFlag) {
-      this.tokenHoldingBucket = tokenHoldingBucket;
-      this.allowDelegationFlag = allowDelegationFlag;
-    }
-
-    ReducerState readOwner(ValidatorOwnerCopy ownerCopy) throws ProcedureException {
-      if (!allowDelegationFlag.validatorKey().equals(ownerCopy.validatorKey())) {
-        throw new ProcedureException("Not matching validator keys");
-      }
-      var owner = ownerCopy.owner();
-      return new StakePrepare(
-          tokenHoldingBucket, allowDelegationFlag.validatorKey(), owner::equals);
-    }
-  }
-
-  private final class StakePrepare implements ReducerState {
-    private final TokenHoldingBucket tokenHoldingBucket;
-    private final ECPublicKey validatorKey;
-    private final Predicate<REAddr> delegateAllowed;
-
-    StakePrepare(
-        TokenHoldingBucket tokenHoldingBucket,
-        ECPublicKey validatorKey,
-        Predicate<REAddr> delegateAllowed) {
-      this.tokenHoldingBucket = tokenHoldingBucket;
-      this.validatorKey = validatorKey;
-      this.delegateAllowed = delegateAllowed;
-    }
-
-    ReducerState withdrawTo(PreparedStake preparedStake)
-        throws MinimumStakeException, NotEnoughResourcesException, InvalidResourceException,
-            InvalidDelegationException, MismatchException {
-
-      tokenHoldingBucket.withdraw(preparedStake.resourceAddr(), preparedStake.amount());
-
-      if (preparedStake.amount().compareTo(minimumStake) < 0) {
-        throw new MinimumStakeException(minimumStake, preparedStake.amount());
-      }
-      if (!preparedStake.delegateKey().equals(validatorKey)) {
-        throw new MismatchException("Not matching validator keys");
-      }
-
-      if (!delegateAllowed.test(preparedStake.owner())) {
-        throw new InvalidDelegationException();
-      }
-
-      return tokenHoldingBucket;
-    }
-  }
-
-  private void defineStaking(Loader os) {
     // Stake
-    os.procedure(
-        new ReadProcedure<>(
-            TokenHoldingBucket.class,
-            AllowDelegationFlag.class,
-            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-            (s, d, r) -> {
-              var nextState =
-                  (!d.allowsDelegation())
-                      ? new OwnerStakePrepare(s, d)
-                      : new StakePrepare(s, d.validatorKey(), p -> true);
-              return ReducerResult.incomplete(nextState);
-            }));
-    os.procedure(
-        new ReadProcedure<>(
-            OwnerStakePrepare.class,
-            ValidatorOwnerCopy.class,
-            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-            (s, d, r) -> {
-              var nextState = s.readOwner(d);
-              return ReducerResult.incomplete(nextState);
-            }));
-    os.procedure(
-        new UpProcedure<>(
-            StakePrepare.class,
-            PreparedStake.class,
-            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-            (s, u, c, r) -> {
-              var nextState = s.withdrawTo(u);
-              return ReducerResult.incomplete(nextState);
-            }));
+    os.procedure(new ReadAllowDelegationFlagProcedure(minimumStake));
+    os.procedure(new ReadValidatorOwnerCopyProcedure());
+    os.procedure(new UpStakePrepareProcedure());
 
     // Unstake
-    os.procedure(
-        new DownProcedure<>(
-            VoidReducerState.class,
-            StakeOwnership.class,
-            d -> d.bucket().withdrawAuthorization(),
-            (d, s, r, c) -> ReducerResult.incomplete(new StakeOwnershipHoldingBucket(d))));
+    os.procedure(new DownStakeOwnershipProcedure());
+
     // Additional Unstake
-    os.procedure(
-        new DownProcedure<>(
-            StakeOwnershipHoldingBucket.class,
-            StakeOwnership.class,
-            d -> d.bucket().withdrawAuthorization(),
-            (d, s, r, c) -> {
-              s.depositOwnership(d);
-              return ReducerResult.incomplete(s);
-            }));
+    os.procedure(new DownStakeOwnershipHoldingBucketProcedure());
+
     // Change
-    os.procedure(
-        new UpProcedure<>(
-            StakeOwnershipHoldingBucket.class,
-            StakeOwnership.class,
-            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-            (s, u, c, r) -> {
-              var ownership = s.withdrawOwnership(u.amount());
-              if (!ownership.equals(u)) {
-                throw new MismatchException(ownership, u);
-              }
-              return ReducerResult.incomplete(s);
-            }));
-    os.procedure(
-        new UpProcedure<>(
-            StakeOwnershipHoldingBucket.class,
-            PreparedUnstakeOwnership.class,
-            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-            (s, u, c, r) -> {
-              var unstake = s.unstake(u.amount());
-              if (!unstake.equals(u)) {
-                throw new MismatchException(unstake, u);
-              }
-              return ReducerResult.incomplete(s);
-            }));
+    os.procedure(new UpStakeOwnershipProcedure());
+    os.procedure(new UpPreparedUnstakeOwnershipProcedure());
 
     // Deallocate Stake Holding Bucket
-    os.procedure(
-        new EndProcedure<>(
-            StakeOwnershipHoldingBucket.class,
-            s -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-            (s, c, r) -> s.destroy()));
+    os.procedure(new EndStakeOwnershipHoldingBucketProcedure());
   }
 }

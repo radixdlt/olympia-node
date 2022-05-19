@@ -72,11 +72,11 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
 
 public class UpResetRegisteredUpdateProcedure
-    extends UpProcedure<ResetRegisteredUpdate, ValidatorRegisteredCopy> {
+    extends UpProcedure<ValidatorRegisteredCopy, ResetRegisteredUpdate> {
   public UpResetRegisteredUpdateProcedure() {
     super(
-        ResetRegisteredUpdate.class,
         ValidatorRegisteredCopy.class,
+        ResetRegisteredUpdate.class,
         registeredCopy -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
         (registeredUpdate, registeredCopy, context, resources) ->
             ReducerResult.incomplete(registeredUpdate.reset(registeredCopy)));

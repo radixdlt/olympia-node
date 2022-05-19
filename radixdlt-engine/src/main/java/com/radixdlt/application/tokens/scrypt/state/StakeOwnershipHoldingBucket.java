@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.tokens.scrypt;
+package com.radixdlt.application.tokens.scrypt.state;
 
 import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;

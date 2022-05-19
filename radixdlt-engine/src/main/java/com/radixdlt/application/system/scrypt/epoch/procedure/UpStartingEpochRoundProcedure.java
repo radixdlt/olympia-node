@@ -72,11 +72,11 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
-public class UpStartingEpochRoundProcedure extends UpProcedure<StartingEpochRound, RoundData> {
+public class UpStartingEpochRoundProcedure extends UpProcedure<RoundData, StartingEpochRound> {
   public UpStartingEpochRoundProcedure() {
     super(
-        StartingEpochRound.class,
         RoundData.class,
+        StartingEpochRound.class,
         roundData -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
         (epochRound, roundData, context, resources) -> {
           if (roundData.view() != 0) {

@@ -71,10 +71,10 @@ import com.radixdlt.constraintmachine.*;
 public class DownRoundDataProcedure extends DownProcedure<RoundData, VoidReducerState> {
   public DownRoundDataProcedure() {
     super(
-        VoidReducerState.class,
         RoundData.class,
+        VoidReducerState.class,
         roundData -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (roundData, reducerState, resources, context) ->
+        (reducerState, roundData, context, resources) ->
             ReducerResult.incomplete(new EndPrevRound(roundData)));
   }
 }

@@ -80,7 +80,7 @@ public record EpochUpdateConstraintScrypt(EpochUpdateConfig config) implements C
 
   private void epochUpdate(Loader os) {
     // Epoch Update
-    os.procedure(new EndPrevRoundDownProcedure(config));
+    os.procedure(new DownEpochDataProcedure(config));
     os.procedure(new ShutdownAllExitingStakesProcedure(config));
     os.procedure(new ProcessExittingStakeUpProcedure());
     os.procedure(new ShutdownAllValidatorBFTDataProcedure());

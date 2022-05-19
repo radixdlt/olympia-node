@@ -73,10 +73,10 @@ public class DownValidatorStakeDataProcedure
     extends DownProcedure<ValidatorStakeData, LoadingStake> {
   public DownValidatorStakeDataProcedure() {
     super(
-        LoadingStake.class,
         ValidatorStakeData.class,
+        LoadingStake.class,
         stakeData -> stakeData.bucket().withdrawAuthorization(),
-        (stakeData, stake, resources, context) ->
+        (stake, stakeData, context, resources) ->
             ReducerResult.incomplete(stake.startUpdate(stakeData)));
   }
 }

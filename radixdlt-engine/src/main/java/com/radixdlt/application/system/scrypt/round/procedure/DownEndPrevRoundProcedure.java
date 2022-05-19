@@ -75,11 +75,11 @@ import com.radixdlt.constraintmachine.ReducerResult;
 public class DownEndPrevRoundProcedure extends DownProcedure<ValidatorBFTData, EndPrevRound> {
   public DownEndPrevRoundProcedure(long maxRounds) {
     super(
-        EndPrevRound.class,
         ValidatorBFTData.class,
+        EndPrevRound.class,
         validatorBFTData ->
             new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (validatorBFTData, prevRound, resources, context) -> {
+        (prevRound, validatorBFTData, context, resources) -> {
           var closedRound = prevRound.closedRound().view();
           var next = new StartValidatorBFTUpdate(maxRounds, closedRound);
           next.beginUpdate(validatorBFTData);

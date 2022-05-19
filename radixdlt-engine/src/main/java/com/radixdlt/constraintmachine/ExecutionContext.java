@@ -64,8 +64,8 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
-import com.radixdlt.application.tokens.scrypt.Tokens;
+import com.radixdlt.application.tokens.scrypt.state.TokenHoldingBucket;
+import com.radixdlt.application.tokens.scrypt.state.Tokens;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.exceptions.*;
 import com.radixdlt.crypto.ECPublicKey;

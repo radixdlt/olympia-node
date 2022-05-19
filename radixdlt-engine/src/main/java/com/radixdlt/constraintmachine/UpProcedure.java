@@ -67,17 +67,17 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import java.util.function.Function;
 
-public class UpProcedure<S extends ReducerState, U extends Particle> implements Procedure {
+public class UpProcedure<U extends Particle, S extends ReducerState> implements Procedure {
   private final Class<S> reducerStateClass;
   private final Class<U> upClass;
-  private final UpReducer<S, U> upReducer;
+  private final UpReducer<U, S> upReducer;
   private final Function<U, Authorization> authorization;
 
   public UpProcedure(
-      Class<S> reducerStateClass,
       Class<U> upClass,
+      Class<S> reducerStateClass,
       Function<U, Authorization> authorization,
-      UpReducer<S, U> upReducer) {
+      UpReducer<U, S> upReducer) {
     this.reducerStateClass = reducerStateClass;
     this.upClass = upClass;
     this.upReducer = upReducer;

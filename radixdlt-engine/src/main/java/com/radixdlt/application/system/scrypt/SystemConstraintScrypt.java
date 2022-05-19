@@ -90,11 +90,11 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
     // PUB_KEY type is already claimed by accounts
     os.substate(UnclaimedREAddr.SUBSTATE_DEFINITION);
 
-    os.procedure(new DownREAddrClaimStartProcedure());
+    os.procedure(new DownUnclaimedREAddrProcedure());
 
     // For Mainnet Genesis
     os.procedure(new UpREAddrClaimProcedure());
     os.procedure(new UpAllocatingSystemProcedure());
-    os.procedure(new UpProcedureAllocatingVirtualState());
+    os.procedure(new UpAllocatingVirtualStateProcedure());
   }
 }

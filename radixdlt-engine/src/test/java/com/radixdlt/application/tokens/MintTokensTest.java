@@ -109,7 +109,7 @@ public final class MintTokensTest {
     return List.of(
         new Object[][] {
           {
-            new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
+            new TokensConstraintScryptV3(new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))),
             new TransferTokensConstructorV2()
           }
         });

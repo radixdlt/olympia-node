@@ -74,8 +74,8 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
   private final Function<D, Authorization> authorization;
 
   public DownProcedure(
-      Class<S> reducerStateClass,
       Class<D> downClass,
+      Class<S> reducerStateClass,
       Function<D, Authorization> authorization,
       DownReducer<D, S> downReducer) {
     this.downClass = downClass;
@@ -101,7 +101,7 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
       Object o, ReducerState reducerState, Resources immutableAddrs, ExecutionContext context)
       throws ProcedureException {
     try {
-      return downReducer.reduce((D) o, (S) reducerState, immutableAddrs, context);
+      return downReducer.reduce((S) reducerState, (D) o, context, immutableAddrs);
     } catch (Exception e) {
       throw new ProcedureException(e);
     }

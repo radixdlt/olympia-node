@@ -62,35 +62,9 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt.epoch.procedure;
+package com.radixdlt.application.validators.scrypt.state;
 
-import com.radixdlt.application.system.scrypt.EndPrevRound;
-import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
-import com.radixdlt.application.system.scrypt.epoch.state.UpdatingEpoch;
-import com.radixdlt.application.system.state.EpochData;
-import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.DownProcedure;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
+import com.radixdlt.constraintmachine.ReducerState;
 
-public final class EndPrevRoundDownProcedure extends DownProcedure<EpochData, EndPrevRound> {
-  public EndPrevRoundDownProcedure(EpochUpdateConfig config) {
-    super(
-        EndPrevRound.class,
-        EpochData.class,
-        epochData -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (epochData, prevRound, resources, context) -> {
-          // TODO: Should move this authorization instead of checking epoch > 0
-          if (epochData.epoch() > 0 && prevRound.closedRound().view() != config.maxRounds()) {
-            throw new ProcedureException(
-                "Must execute epoch update on end of round "
-                    + config.maxRounds()
-                    + " but is "
-                    + prevRound.closedRound().view());
-          }
-
-          return ReducerResult.incomplete(new UpdatingEpoch(epochData));
-        });
-  }
-}
+public record UpdatingValidatorInfo(ValidatorMetaData prevState) implements ReducerState {}

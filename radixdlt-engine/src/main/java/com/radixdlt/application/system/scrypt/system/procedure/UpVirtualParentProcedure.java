@@ -70,11 +70,11 @@ import com.radixdlt.constraintmachine.*;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.utils.Bytes;
 
-public class UpVirtualParentProcedure extends UpProcedure<VoidReducerState, VirtualParent> {
+public class UpVirtualParentProcedure extends UpProcedure<VirtualParent, VoidReducerState> {
   public UpVirtualParentProcedure() {
     super(
-        VoidReducerState.class,
         VirtualParent.class,
+        VoidReducerState.class,
         virtualParent -> new Authorization(PermissionLevel.SYSTEM, (resources, context) -> {}),
         (reducerState, virtualParent, context, resources) -> {
           if (virtualParent.data().length != 1) {

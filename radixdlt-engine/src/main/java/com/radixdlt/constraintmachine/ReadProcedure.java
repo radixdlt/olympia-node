@@ -74,8 +74,8 @@ public class ReadProcedure<D extends Particle, S extends ReducerState> implement
   private final Function<D, Authorization> authorization;
 
   public ReadProcedure(
-      Class<S> reducerStateClass,
       Class<D> readClass,
+      Class<S> reducerStateClass,
       Function<D, Authorization> authorization,
       ReadReducer<D, S> readReducer) {
     this.readClass = readClass;

@@ -120,7 +120,8 @@ public class UnstakeTokensV2Test {
             List.of(
                 new RoundUpdateConstraintScrypt(10),
                 new EpochUpdateConstraintScrypt(EPOCH_UPDATE_CONFIG),
-                new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
+                new TokensConstraintScryptV3(
+                    new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))),
                 new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
                 new ValidatorConstraintScryptV2(),
                 new ValidatorRegisterConstraintScrypt(),
@@ -135,7 +136,8 @@ public class UnstakeTokensV2Test {
             List.of(
                 new RoundUpdateConstraintScrypt(10),
                 new EpochUpdateConstraintScrypt(EPOCH_UPDATE_CONFIG),
-                new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
+                new TokensConstraintScryptV3(
+                    new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))),
                 new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
                 new ValidatorConstraintScryptV2(),
                 new ValidatorRegisterConstraintScrypt(),
@@ -150,7 +152,8 @@ public class UnstakeTokensV2Test {
             List.of(
                 new RoundUpdateConstraintScrypt(10),
                 new EpochUpdateConstraintScrypt(EPOCH_UPDATE_CONFIG),
-                new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
+                new TokensConstraintScryptV3(
+                    new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))),
                 new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
                 new ValidatorConstraintScryptV2(),
                 new ValidatorRegisterConstraintScrypt(),
@@ -165,7 +168,8 @@ public class UnstakeTokensV2Test {
             List.of(
                 new RoundUpdateConstraintScrypt(10),
                 new EpochUpdateConstraintScrypt(EPOCH_UPDATE_CONFIG),
-                new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
+                new TokensConstraintScryptV3(
+                    new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))),
                 new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
                 new ValidatorConstraintScryptV2(),
                 new ValidatorRegisterConstraintScrypt(),

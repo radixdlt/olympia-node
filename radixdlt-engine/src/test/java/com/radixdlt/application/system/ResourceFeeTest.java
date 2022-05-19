@@ -72,6 +72,7 @@ import com.radixdlt.application.system.construction.FeeReserveCompleteConstructo
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.tokens.TokensConfig;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.application.tokens.construction.MintTokenConstructor;
 import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
@@ -108,7 +109,9 @@ public final class ResourceFeeTest {
   @Before
   public void setup() throws Exception {
     var cmAtomOS = new CMAtomOS();
-    cmAtomOS.load(new TokensConstraintScryptV3(Set.of("xrd"), Pattern.compile("[a-z0-9]+")));
+    cmAtomOS.load(
+        new TokensConstraintScryptV3(
+            new TokensConfig(Set.of("xrd"), Pattern.compile("[a-z0-9]+"))));
     cmAtomOS.load(new SystemConstraintScrypt());
     var feeTable = FeeTable.create(Amount.zero(), Map.of(TokenResource.class, Amount.ofTokens(1)));
     var cm =

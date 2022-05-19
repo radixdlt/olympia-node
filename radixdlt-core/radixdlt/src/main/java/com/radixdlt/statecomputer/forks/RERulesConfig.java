@@ -69,6 +69,7 @@ import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.tokens.TokensConfig;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -123,6 +124,10 @@ public record RERulesConfig(
         unstakingEpochDelay,
         minimumCompletedProposalsPercentage,
         rewardsPerProposal.toSubunits());
+  }
+
+  public TokensConfig asTokensConfig() {
+    return new TokensConfig(reservedSymbols, tokenSymbolPattern);
   }
 
   public RERulesConfig overrideMaxSigsPerRound(int maxSigsPerRound) {

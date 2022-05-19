@@ -74,8 +74,8 @@ public class ReadIndexProcedure<D extends Particle, S extends ReducerState> impl
   private final Supplier<Authorization> authorization;
 
   public ReadIndexProcedure(
-      Class<S> reducerStateClass,
       Class<D> readClass,
+      Class<S> reducerStateClass,
       Supplier<Authorization> authorization,
       IndexedReducer<D, S> readReducer) {
     this.readClass = readClass;

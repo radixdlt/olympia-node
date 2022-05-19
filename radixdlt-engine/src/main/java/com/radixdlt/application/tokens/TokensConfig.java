@@ -62,89 +62,9 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.tokens.scrypt;
+package com.radixdlt.application.tokens;
 
-import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
-import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.UInt384;
-import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Pattern;
 
-/**
- * Execution layer representation of tokens. We use UInt384 as substates are limited to use of
- * UInt256 amounts and we make the assumption of 2^128 max total transactions in the network so
- * UInt384 should be enough to handle this.
- */
-public final class Tokens {
-  private final REAddr resourceAddr;
-  private final UInt384 amount;
-
-  private Tokens(REAddr resourceAddr, UInt384 amount) {
-    this.resourceAddr = resourceAddr;
-    this.amount = amount;
-  }
-
-  public static Tokens create(REAddr resourceAddr, UInt256 amount) {
-    return new Tokens(resourceAddr, UInt384.from(amount));
-  }
-
-  public static Tokens zero(REAddr resourceAddr) {
-    return new Tokens(resourceAddr, UInt384.ZERO);
-  }
-
-  public UInt384 getAmount() {
-    return amount;
-  }
-
-  public REAddr getResourceAddr() {
-    return resourceAddr;
-  }
-
-  Pair<Tokens, Tokens> split(UInt256 first) throws NotEnoughResourcesException {
-    var first384 = UInt384.from(first);
-    if (amount.compareTo(first384) < 0) {
-      throw new NotEnoughResourcesException(first, amount.getLow());
-    }
-
-    var second384 = this.amount.subtract(first384);
-    return Pair.of(new Tokens(resourceAddr, first384), new Tokens(resourceAddr, second384));
-  }
-
-  Tokens merge(Tokens tokens) throws InvalidResourceException {
-    if (!this.resourceAddr.equals(tokens.resourceAddr)) {
-      throw new InvalidResourceException(this.resourceAddr, tokens.resourceAddr);
-    }
-
-    var amount = tokens.amount.add(this.amount);
-    return new Tokens(resourceAddr, amount);
-  }
-
-  public boolean isZero() {
-    return amount.isZero();
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(resourceAddr, amount);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Tokens)) {
-      return false;
-    }
-
-    var other = (Tokens) o;
-    return Objects.equals(this.amount, other.amount)
-        && Objects.equals(this.resourceAddr, other.resourceAddr);
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{resource=%s amount=%s}",
-        this.getClass().getSimpleName(), this.resourceAddr, this.amount);
-  }
-}
+public record TokensConfig(Set<String> reservedSymbols, Pattern tokenSymbolPattern) {}

@@ -105,7 +105,7 @@ public enum RERulesVersion {
       v4.load(new ValidatorRegisterConstraintScrypt());
       v4.load(new ValidatorUpdateOwnerConstraintScrypt());
       v4.load(new SystemConstraintScrypt());
-      v4.load(new TokensConstraintScryptV3(config.reservedSymbols(), tokenSymbolPattern));
+      v4.load(new TokensConstraintScryptV3(config.asTokensConfig()));
       v4.load(new StakingConstraintScryptV4(config.minimumStake().toSubunits()));
       v4.load(new MutexConstraintScrypt());
       v4.load(new RoundUpdateConstraintScrypt(maxRounds));

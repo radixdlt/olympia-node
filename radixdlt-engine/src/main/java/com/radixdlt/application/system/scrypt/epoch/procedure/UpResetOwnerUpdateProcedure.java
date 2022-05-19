@@ -71,11 +71,11 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
 
-public class UpResetOwnerUpdateProcedure extends UpProcedure<ResetOwnerUpdate, ValidatorOwnerCopy> {
+public class UpResetOwnerUpdateProcedure extends UpProcedure<ValidatorOwnerCopy, ResetOwnerUpdate> {
   public UpResetOwnerUpdateProcedure() {
     super(
-        ResetOwnerUpdate.class,
         ValidatorOwnerCopy.class,
+        ResetOwnerUpdate.class,
         ownerCopy -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
         (ownerUpdate, ownerCopy, context, resources) ->
             ReducerResult.incomplete(ownerUpdate.reset(ownerCopy)));

@@ -104,7 +104,8 @@ public class BurnTokensV3Test {
   public void setup() throws Exception {
     var cmAtomOS = new CMAtomOS();
     cmAtomOS.load(new SystemConstraintScrypt());
-    cmAtomOS.load(new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")));
+    cmAtomOS.load(
+        new TokensConstraintScryptV3(new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))));
     var cm =
         new ConstraintMachine(
             cmAtomOS.getProcedures(),

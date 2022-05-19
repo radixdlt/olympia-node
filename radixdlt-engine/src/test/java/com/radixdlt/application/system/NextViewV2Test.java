@@ -75,6 +75,7 @@ import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.tokens.TokensConfig;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.application.tokens.construction.MintTokenConstructor;
 import com.radixdlt.application.tokens.construction.StakeTokensConstructorV3;
@@ -142,7 +143,8 @@ public class NextViewV2Test {
     cmAtomOS.load(new SystemConstraintScrypt());
     scrypts.forEach(cmAtomOS::load);
     cmAtomOS.load(new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()));
-    cmAtomOS.load(new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")));
+    cmAtomOS.load(
+        new TokensConstraintScryptV3(new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))));
     cmAtomOS.load(new ValidatorConstraintScryptV2());
     cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
     cmAtomOS.load(new ValidatorUpdateRakeConstraintScrypt(2));

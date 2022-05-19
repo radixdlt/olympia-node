@@ -62,30 +62,67 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt.system.procedure;
+package com.radixdlt.application.tokens.scrypt.state;
 
-import com.radixdlt.application.system.scrypt.system.state.REAddrClaimStart;
-import com.radixdlt.application.system.state.UnclaimedREAddr;
-import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.DownProcedure;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.Resources;
+import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
+import com.radixdlt.constraintmachine.exceptions.NotAResourceException;
+import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructionException;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.UInt256;
 
-public class DownREAddrClaimStartProcedure
-    extends DownProcedure<UnclaimedREAddr, REAddrClaimStart> {
-  public DownREAddrClaimStartProcedure() {
-    super(
-        REAddrClaimStart.class,
-        UnclaimedREAddr.class,
-        reAddr -> {
-          var permissionLevel =
-              reAddr.addr().isNativeToken() || reAddr.addr().isSystem()
-                  ? PermissionLevel.SYSTEM
-                  : PermissionLevel.USER;
+public final class TokenHoldingBucket implements ReducerState {
+  private Tokens tokens;
 
-          return new Authorization(permissionLevel, (resources, context) -> {});
-        },
-        (reAddr, claimStart, resources, context) ->
-            ReducerResult.incomplete(claimStart.claim(reAddr, context)));
+  public TokenHoldingBucket(Tokens tokens) {
+    this.tokens = tokens;
+  }
+
+  public boolean isEmpty() {
+    return tokens.isZero();
+  }
+
+  public REAddr getResourceAddr() {
+    return tokens.getResourceAddr();
+  }
+
+  public void deposit(Tokens tokens) throws InvalidResourceException {
+    this.tokens = this.tokens.merge(tokens);
+  }
+
+  public Tokens withdraw(REAddr resourceAddr, UInt256 amountToWithdraw)
+      throws InvalidResourceException, NotEnoughResourcesException {
+    if (!this.tokens.getResourceAddr().equals(resourceAddr)) {
+      throw new InvalidResourceException(resourceAddr, this.tokens.getResourceAddr());
+    }
+
+    if (amountToWithdraw.isZero()) {
+      return Tokens.zero(resourceAddr);
+    }
+
+    var p = this.tokens.split(amountToWithdraw);
+    this.tokens = p.getSecond();
+    return p.getFirst();
+  }
+
+  public void destroy(ExecutionContext c, Resources r)
+      throws ResourceAllocationAndDestructionException, NotAResourceException, ProcedureException {
+    if (!tokens.isZero()) {
+      c.verifyCanAllocAndDestroyResources();
+
+      var tokenResource = r.loadResource(tokens.getResourceAddr());
+      if (!tokenResource.isMutable()) {
+        throw new ProcedureException("Can only burn mutable tokens.");
+      }
+    }
+  }
+
+  @Override
+  public String toString() {
+    return String.format("%s{tokens=%s}", this.getClass().getSimpleName(), tokens);
   }
 }

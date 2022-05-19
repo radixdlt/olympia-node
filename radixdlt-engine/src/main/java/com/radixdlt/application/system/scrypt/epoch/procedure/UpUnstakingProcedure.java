@@ -71,11 +71,11 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
 
-public class UpUnstakingProcedure extends UpProcedure<Unstaking, ExitingStake> {
+public class UpUnstakingProcedure extends UpProcedure<ExitingStake, Unstaking> {
   public UpUnstakingProcedure() {
     super(
-        Unstaking.class,
         ExitingStake.class,
+        Unstaking.class,
         exitingStake -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
         (unstaking, exitingStake, context, resources) ->
             ReducerResult.incomplete(unstaking.exit(exitingStake)));

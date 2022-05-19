@@ -72,11 +72,11 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
 
 public class ProcessExittingStakeUpProcedure
-    extends UpProcedure<ProcessExittingStake, TokensInAccount> {
+    extends UpProcedure<TokensInAccount, ProcessExittingStake> {
   public ProcessExittingStakeUpProcedure() {
     super(
-        ProcessExittingStake.class,
         TokensInAccount.class,
+        ProcessExittingStake.class,
         tokens -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
         (exittingStake, tokens, context, resources) ->
             ReducerResult.incomplete(exittingStake.unlock(tokens)));

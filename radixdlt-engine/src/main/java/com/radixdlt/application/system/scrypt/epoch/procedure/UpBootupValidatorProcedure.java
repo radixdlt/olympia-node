@@ -71,11 +71,11 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
 
-public class UpBootupValidatorProcedure extends UpProcedure<BootupValidator, ValidatorBFTData> {
+public class UpBootupValidatorProcedure extends UpProcedure<ValidatorBFTData, BootupValidator> {
   public UpBootupValidatorProcedure() {
     super(
-        BootupValidator.class,
         ValidatorBFTData.class,
+        BootupValidator.class,
         bftData -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
         (validator, bftData, context, resources) ->
             ReducerResult.incomplete(validator.bootUp(bftData)));

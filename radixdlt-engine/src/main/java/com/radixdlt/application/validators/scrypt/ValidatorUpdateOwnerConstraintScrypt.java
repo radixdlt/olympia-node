@@ -64,80 +64,21 @@
 
 package com.radixdlt.application.validators.scrypt;
 
-import com.radixdlt.application.system.state.EpochData;
+import com.radixdlt.application.validators.scrypt.procedure.DownValidatorOwnerCopyProcedure;
+import com.radixdlt.application.validators.scrypt.procedure.ReadUpdatingOwnerNeedToReadEpochProcedure;
+import com.radixdlt.application.validators.scrypt.procedure.UpValidatorOwnerCopyProcedure;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
-import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.DownProcedure;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ReadProcedure;
-import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.UpProcedure;
-import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.crypto.ECPublicKey;
 
 public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
-
-  private record UpdatingValidatorOwner(ECPublicKey validatorKey, EpochData epochData)
-      implements ReducerState {
-
-    void update(ValidatorOwnerCopy update) throws ProcedureException {
-      if (!update.validatorKey().equals(validatorKey)) {
-        throw new ProcedureException("Invalid key update");
-      }
-
-      var expectedEpoch = epochData.epoch() + 1;
-      if (update.epochUpdate().orElseThrow() != expectedEpoch) {
-        throw new ProcedureException(
-            "Expected epoch to be " + expectedEpoch + " but is " + update.epochUpdate());
-      }
-    }
-  }
-
-  private record UpdatingOwnerNeedToReadEpoch(ECPublicKey validatorKey) implements ReducerState {
-    ReducerState readEpoch(EpochData epochData) {
-      return new UpdatingValidatorOwner(validatorKey, epochData);
-    }
-  }
 
   @Override
   public void main(Loader os) {
     os.substate(ValidatorOwnerCopy.SUBSTATE_DEFINITION);
 
-    os.procedure(
-        new DownProcedure<>(
-            VoidReducerState.class,
-            ValidatorOwnerCopy.class,
-            d ->
-                new Authorization(
-                    PermissionLevel.USER,
-                    (r, c) -> {
-                      if (!c.key().map(d.validatorKey()::equals).orElse(false)) {
-                        throw new AuthorizationException("Key does not match.");
-                      }
-                    }),
-            (d, s, r, c) ->
-                ReducerResult.incomplete(new UpdatingOwnerNeedToReadEpoch(d.validatorKey()))));
-
-    os.procedure(
-        new ReadProcedure<>(
-            UpdatingOwnerNeedToReadEpoch.class,
-            EpochData.class,
-            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-            (s, u, r) -> ReducerResult.incomplete(s.readEpoch(u))));
-
-    os.procedure(
-        new UpProcedure<>(
-            UpdatingValidatorOwner.class,
-            ValidatorOwnerCopy.class,
-            u -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
-            (s, u, c, r) -> {
-              s.update(u);
-              return ReducerResult.complete();
-            }));
+    os.procedure(new DownValidatorOwnerCopyProcedure());
+    os.procedure(new ReadUpdatingOwnerNeedToReadEpochProcedure());
+    os.procedure(new UpValidatorOwnerCopyProcedure());
   }
 }
