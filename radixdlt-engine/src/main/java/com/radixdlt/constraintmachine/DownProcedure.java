@@ -73,7 +73,7 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
   private final DownReducer<D, S> downReducer;
   private final Function<D, Authorization> authorization;
 
-  public DownProcedure(
+  protected DownProcedure(
       Class<D> downClass,
       Class<S> reducerStateClass,
       Function<D, Authorization> authorization,

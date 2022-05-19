@@ -112,8 +112,7 @@ public final class StakeOwnershipHoldingBucket implements ReducerState {
     ownershipAmount = UInt384.from(stakeOwnership.amount()).add(ownershipAmount);
   }
 
-  public PreparedUnstakeOwnership unstake(UInt256 amount)
-      throws NotEnoughResourcesException {
+  public PreparedUnstakeOwnership unstake(UInt256 amount) throws NotEnoughResourcesException {
     var unstakeAmount = UInt384.from(amount);
     if (ownershipAmount.compareTo(unstakeAmount) < 0) {
       throw new NotEnoughResourcesException(amount, ownershipAmount.getLow());

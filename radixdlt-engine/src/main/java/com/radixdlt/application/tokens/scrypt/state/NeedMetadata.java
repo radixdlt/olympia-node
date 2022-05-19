@@ -104,9 +104,11 @@ public record NeedMetadata(byte[] arg, TokenResource tokenResource) implements R
 
   @Override
   public String toString() {
-    return "NeedMetadata{" +
-        "arg=" + Arrays.toString(arg) +
-        ", tokenResource=" + tokenResource +
-        '}';
+    return "NeedMetadata{"
+        + "arg="
+        + Arrays.toString(arg)
+        + ", tokenResource="
+        + tokenResource
+        + '}';
   }
 }

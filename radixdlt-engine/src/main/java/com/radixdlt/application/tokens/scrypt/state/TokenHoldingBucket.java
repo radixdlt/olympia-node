@@ -68,10 +68,8 @@ import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.Resources;
 import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
-import com.radixdlt.constraintmachine.exceptions.NotAResourceException;
 import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructionException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
@@ -109,15 +107,18 @@ public final class TokenHoldingBucket implements ReducerState {
     return p.getFirst();
   }
 
-  public void destroy(ExecutionContext c, Resources r)
-      throws ResourceAllocationAndDestructionException, NotAResourceException, ProcedureException {
-    if (!tokens.isZero()) {
-      c.verifyCanAllocAndDestroyResources();
+  public void destroy(ExecutionContext c, Resources r) throws ProcedureException {
+    try {
+      if (!tokens.isZero()) {
+        c.verifyCanAllocAndDestroyResources();
 
-      var tokenResource = r.loadResource(tokens.getResourceAddr());
-      if (!tokenResource.isMutable()) {
-        throw new ProcedureException("Can only burn mutable tokens.");
+        var tokenResource = r.loadResource(tokens.getResourceAddr());
+        if (!tokenResource.isMutable()) {
+          throw new ProcedureException("Can only burn mutable tokens.");
+        }
       }
+    } catch (Exception e) {
+      throw new ProcedureException(e);
     }
   }
 

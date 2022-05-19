@@ -70,7 +70,6 @@ import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
-
 import java.util.NavigableMap;
 
 public class UpdatingValidatorBFTData implements ReducerState {

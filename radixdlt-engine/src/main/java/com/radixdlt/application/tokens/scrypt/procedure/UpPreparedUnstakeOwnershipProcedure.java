@@ -71,6 +71,7 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.exceptions.MismatchException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
 public class UpPreparedUnstakeOwnershipProcedure
     extends UpProcedure<PreparedUnstakeOwnership, StakeOwnershipHoldingBucket> {
@@ -80,11 +81,15 @@ public class UpPreparedUnstakeOwnershipProcedure
         StakeOwnershipHoldingBucket.class,
         ownership -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
         (holdingBucket, unstakeOwnership, context) -> {
-          var unstake = holdingBucket.unstake(unstakeOwnership.amount());
-          if (!unstake.equals(unstakeOwnership)) {
-            throw new MismatchException(unstake, unstakeOwnership);
+          try {
+            var unstake = holdingBucket.unstake(unstakeOwnership.amount());
+            if (!unstake.equals(unstakeOwnership)) {
+              throw new MismatchException(unstake, unstakeOwnership);
+            }
+            return ReducerResult.incomplete(holdingBucket);
+          } catch (Exception e) {
+            throw new ProcedureException(e);
           }
-          return ReducerResult.incomplete(holdingBucket);
         });
   }
 }

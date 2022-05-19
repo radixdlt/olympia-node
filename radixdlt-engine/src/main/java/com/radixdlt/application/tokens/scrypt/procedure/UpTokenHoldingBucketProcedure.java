@@ -70,6 +70,7 @@ import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.UpProcedure;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
 public class UpTokenHoldingBucketProcedure
     extends UpProcedure<TokensInAccount, TokenHoldingBucket> {
@@ -79,8 +80,12 @@ public class UpTokenHoldingBucketProcedure
         TokenHoldingBucket.class,
         tokensInAccount -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
         (tokenHoldingBucket, tokensInAccount, context) -> {
-          tokenHoldingBucket.withdraw(tokensInAccount.resourceAddr(), tokensInAccount.amount());
-          return ReducerResult.incomplete(tokenHoldingBucket);
+          try {
+            tokenHoldingBucket.withdraw(tokensInAccount.resourceAddr(), tokensInAccount.amount());
+            return ReducerResult.incomplete(tokenHoldingBucket);
+          } catch (Exception e) {
+            throw new ProcedureException(e);
+          }
         });
   }
 }

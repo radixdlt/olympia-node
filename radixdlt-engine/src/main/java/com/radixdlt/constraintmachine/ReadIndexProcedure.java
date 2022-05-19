@@ -73,7 +73,7 @@ public class ReadIndexProcedure<D extends Particle, S extends ReducerState> impl
   private final IndexedReducer<D, S> readReducer;
   private final Supplier<Authorization> authorization;
 
-  public ReadIndexProcedure(
+  protected ReadIndexProcedure(
       Class<D> readClass,
       Class<S> reducerStateClass,
       Supplier<Authorization> authorization,

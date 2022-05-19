@@ -72,7 +72,7 @@ public class EndProcedure<S extends ReducerState> implements Procedure {
   private final Function<S, Authorization> authorization;
   private final EndReducer<S> endReducer;
 
-  public EndProcedure(
+  protected EndProcedure(
       Class<S> reducerStateClass,
       Function<S, Authorization> authorization,
       EndReducer<S> endReducer) {
@@ -88,8 +88,8 @@ public class EndProcedure<S extends ReducerState> implements Procedure {
 
   @SuppressWarnings("unchecked")
   @Override
-  public Authorization authorization(Object o) {
-    return authorization.apply((S) o);
+  public Authorization authorization(Object procedureParameters) {
+    return authorization.apply((S) procedureParameters);
   }
 
   @SuppressWarnings("unchecked")
@@ -100,11 +100,7 @@ public class EndProcedure<S extends ReducerState> implements Procedure {
       Resources immutableAddrs,
       ExecutionContext executionContext)
       throws ProcedureException {
-    try {
-      endReducer.reduce((S) reducerState, executionContext, immutableAddrs);
-      return ReducerResult.complete();
-    } catch (Exception e) {
-      throw new ProcedureException(e);
-    }
+    endReducer.reduce((S) reducerState, executionContext, immutableAddrs);
+    return ReducerResult.complete();
   }
 }

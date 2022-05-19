@@ -73,7 +73,7 @@ public class UpProcedure<U extends Particle, S extends ReducerState> implements 
   private final UpReducer<U, S> upReducer;
   private final Function<U, Authorization> authorization;
 
-  public UpProcedure(
+  protected UpProcedure(
       Class<U> upClass,
       Class<S> reducerStateClass,
       Function<U, Authorization> authorization,
@@ -103,10 +103,6 @@ public class UpProcedure<U extends Particle, S extends ReducerState> implements 
       Resources immutableAddrs,
       ExecutionContext context)
       throws ProcedureException {
-    try {
-      return upReducer.reduce((S) reducerState, (U) parameter, context);
-    } catch (Exception e) {
-      throw new ProcedureException(e);
-    }
+    return upReducer.reduce((S) reducerState, (U) parameter, context);
   }
 }

@@ -73,7 +73,7 @@ public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> im
   private final IndexedReducer<D, S> downReducer;
   private final Supplier<Authorization> authorization;
 
-  public ShutdownAllProcedure(
+  protected ShutdownAllProcedure(
       Class<D> downClass,
       Class<S> reducerStateClass,
       Supplier<Authorization> authorization,

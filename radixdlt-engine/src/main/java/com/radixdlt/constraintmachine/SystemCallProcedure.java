@@ -74,7 +74,7 @@ public class SystemCallProcedure<S extends ReducerState> implements Procedure {
   private final SystemCallReducer<S> reducer;
   private final Supplier<Authorization> authorization;
 
-  public SystemCallProcedure(
+  protected SystemCallProcedure(
       Class<S> reducerStateClass,
       REAddr addr,
       Supplier<Authorization> authorization,

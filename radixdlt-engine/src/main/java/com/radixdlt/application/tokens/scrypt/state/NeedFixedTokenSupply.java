@@ -66,7 +66,6 @@ package com.radixdlt.application.tokens.scrypt.state;
 
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.ReducerState;
-
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -88,9 +87,11 @@ public record NeedFixedTokenSupply(byte[] arg, TokenResource tokenResource)
 
   @Override
   public String toString() {
-    return "NeedFixedTokenSupply{" +
-        "arg=" + Arrays.toString(arg) +
-        ", tokenResource=" + tokenResource +
-        '}';
+    return "NeedFixedTokenSupply{"
+        + "arg="
+        + Arrays.toString(arg)
+        + ", tokenResource="
+        + tokenResource
+        + '}';
   }
 }
