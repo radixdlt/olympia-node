@@ -65,7 +65,7 @@
 package com.radixdlt.ledger;
 
 import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.hotstuff.LedgerProof;
 import java.util.List;
 import java.util.Objects;
 

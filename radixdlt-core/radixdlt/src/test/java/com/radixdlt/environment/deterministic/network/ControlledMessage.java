@@ -65,7 +65,7 @@
 package com.radixdlt.environment.deterministic.network;
 
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.hotstuff.bft.BFTNode;
 import java.util.Objects;
 
 /** A message sent over a channel. */

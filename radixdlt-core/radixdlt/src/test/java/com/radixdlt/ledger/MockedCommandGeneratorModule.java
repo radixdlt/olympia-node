@@ -65,7 +65,7 @@
 package com.radixdlt.ledger;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.consensus.liveness.NextTxnsGenerator;
+import com.radixdlt.hotstuff.liveness.NextTxnsGenerator;
 import com.radixdlt.statecomputer.RandomHashTxnsGenerator;
 
 /** Module which provides a random hash command generator */

@@ -64,7 +64,7 @@
 
 package com.radixdlt.sync.messages.local;
 
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.hotstuff.bft.BFTNode;
 import java.util.Objects;
 
 /** A message indicating a timeout on receiving a SyncResponse message. */

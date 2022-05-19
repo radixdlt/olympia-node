@@ -64,9 +64,9 @@
 
 package com.radixdlt.utils;
 
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.hotstuff.LedgerHeader;
+import com.radixdlt.hotstuff.bft.View;
 import com.radixdlt.ledger.AccumulatorState;
 
 public class LedgerHeaderMock {

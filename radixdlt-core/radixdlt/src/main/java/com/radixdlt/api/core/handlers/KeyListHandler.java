@@ -72,8 +72,8 @@ import com.radixdlt.api.core.openapitools.model.KeyListRequest;
 import com.radixdlt.api.core.openapitools.model.KeyListResponse;
 import com.radixdlt.api.core.openapitools.model.PublicKeyEntry;
 import com.radixdlt.api.core.openapitools.model.PublicKeyIdentifiers;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.hotstuff.bft.Self;
 import com.radixdlt.identifiers.REAddr;
 
 public final class KeyListHandler extends CoreJsonRpcHandler<KeyListRequest, KeyListResponse> {

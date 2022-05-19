@@ -75,6 +75,7 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
+import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
 import com.radixdlt.statecomputer.forks.ForksModule;

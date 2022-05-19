@@ -65,7 +65,7 @@
 package com.radixdlt.network.p2p;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.hotstuff.bft.BFTNode;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;

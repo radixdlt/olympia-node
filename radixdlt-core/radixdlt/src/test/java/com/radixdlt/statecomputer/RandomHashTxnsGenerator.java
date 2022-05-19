@@ -65,10 +65,10 @@
 package com.radixdlt.statecomputer;
 
 import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.hotstuff.bft.PreparedVertex;
+import com.radixdlt.hotstuff.bft.View;
+import com.radixdlt.hotstuff.liveness.NextTxnsGenerator;
 import java.util.List;
 
 /** Generates new random hash commands */

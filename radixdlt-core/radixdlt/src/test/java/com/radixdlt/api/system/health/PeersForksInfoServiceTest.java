@@ -72,12 +72,12 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.hotstuff.BFTConfiguration;
+import com.radixdlt.hotstuff.LedgerProof;
+import com.radixdlt.hotstuff.bft.BFTNode;
+import com.radixdlt.hotstuff.bft.BFTValidator;
+import com.radixdlt.hotstuff.bft.BFTValidatorSet;
+import com.radixdlt.hotstuff.epoch.EpochChange;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.network.p2p.NodeId;
