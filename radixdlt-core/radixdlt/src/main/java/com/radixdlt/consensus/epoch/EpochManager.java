@@ -314,11 +314,11 @@ public final class EpochManager {
     this.bftEventProcessor.start();
 
     // Execute any queued up consensus events
-    queuedEvents.forEach(this::processConsensusEventInternal);
+    queuedEvents.forEach(this::processConsensusEventForCurrentEpoch);
     queuedEvents.clear();
   }
 
-  private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
+  private void processConsensusEventForCurrentEpoch(ConsensusEvent consensusEvent) {
     this.counters.increment(CounterType.BFT_EVENTS_RECEIVED);
 
     switch (consensusEvent) {
@@ -344,7 +344,7 @@ public final class EpochManager {
       return;
     }
 
-    this.processConsensusEventInternal(consensusEvent);
+    this.processConsensusEventForCurrentEpoch(consensusEvent);
   }
 
   public void processLocalTimeout(Epoched<ScheduledLocalTimeout> localTimeout) {
