@@ -232,7 +232,7 @@ public final class Forks {
   public void init(CommittedReader committedReader, ForksEpochStore forksEpochStore) {
     this.forksEpochStore = forksEpochStore;
     final var initialStoredForks = forksEpochStore.getStoredForks();
-    final var currentEpoch = committedReader.getLastProof().map(LedgerProof::getEpoch).orElse(0L);
+    final var currentEpoch = getCurrentEpoch(committedReader);
 
     log.info(
         "Forks init [stored_forks: {}; configured_forks: {}]",
@@ -245,6 +245,24 @@ public final class Forks {
     executeAndCheckMissedCandidateFork(initialStoredForks, forksEpochStore);
 
     sanityCheckStoredForksAgainstConfiguration(forksEpochStore, currentEpoch);
+  }
+
+  private long getCurrentEpoch(CommittedReader committedReader) {
+    final var lastRecordedProofOptional = committedReader.getLastProof();
+
+    if (lastRecordedProofOptional.isEmpty()) {
+      return 0;
+    }
+
+    final var lastRecordedProof = lastRecordedProofOptional.get();
+
+    // If the last recorded proof was a change of epoch, then our current epoch is actually the next
+    // epoch.
+    if (lastRecordedProof.isEndOfEpoch()) {
+      return lastRecordedProof.getEpoch() + 1;
+    }
+
+    return lastRecordedProof.getEpoch();
   }
 
   private void executeMissedFixedEpochForks(
