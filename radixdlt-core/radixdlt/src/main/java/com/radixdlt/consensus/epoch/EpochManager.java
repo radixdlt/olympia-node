@@ -95,6 +95,8 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
@@ -107,6 +109,7 @@ import org.apache.logging.log4j.Logger;
 @NotThreadSafe
 public final class EpochManager {
   private static final Logger log = LogManager.getLogger();
+
   private final BFTNode self;
   private final PacemakerFactory pacemakerFactory;
   private final VertexStoreFactory vertexStoreFactory;
@@ -116,6 +119,7 @@ public final class EpochManager {
   private final HashSigner signer;
   private final PacemakerTimeoutCalculator timeoutCalculator;
   private final SystemCounters counters;
+  private final List<ConsensusEvent> queuedEvents;
   private final BFTFactory bftFactory;
   private final PacemakerStateFactory pacemakerStateFactory;
 
@@ -190,6 +194,7 @@ public final class EpochManager {
     this.counters = requireNonNull(counters);
     this.pacemakerStateFactory = requireNonNull(pacemakerStateFactory);
     this.persistentSafetyStateStore = requireNonNull(persistentSafetyStateStore);
+    this.queuedEvents = new ArrayList<>(256);
   }
 
   private void updateEpochState() {
@@ -307,6 +312,10 @@ public final class EpochManager {
     this.currentEpoch = epochChange;
     this.updateEpochState();
     this.bftEventProcessor.start();
+
+    // Execute any queued up consensus events
+    queuedEvents.forEach(this::processConsensusEventInternal);
+    queuedEvents.clear();
   }
 
   private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
@@ -320,6 +329,19 @@ public final class EpochManager {
 
   public void processConsensusEvent(ConsensusEvent consensusEvent) {
     if (consensusEvent.getEpoch() != this.currentEpoch()) {
+
+      if (consensusEvent.getEpoch() == this.currentEpoch() + 1) {
+
+        // Keep only events for the last view
+        if (isNotTheSameViewAs(consensusEvent)) {
+          queuedEvents.clear();
+        }
+
+        queuedEvents.add(consensusEvent);
+        counters.increment(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS);
+        return;
+      }
+
       log.debug(
           "{}: CONSENSUS_EVENT: Ignoring event which belongs to epoch {}, current epoch is {}",
           this.self::getSimpleName,
@@ -329,6 +351,11 @@ public final class EpochManager {
     }
 
     this.processConsensusEventInternal(consensusEvent);
+  }
+
+  private boolean isNotTheSameViewAs(ConsensusEvent consensusEvent) {
+    return !queuedEvents.isEmpty()
+        && !queuedEvents.get(0).getView().equals(consensusEvent.getView());
   }
 
   public void processLocalTimeout(Epoched<ScheduledLocalTimeout> localTimeout) {
