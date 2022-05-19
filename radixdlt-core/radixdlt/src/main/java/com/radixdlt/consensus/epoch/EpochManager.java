@@ -194,7 +194,7 @@ public final class EpochManager {
     this.counters = requireNonNull(counters);
     this.pacemakerStateFactory = requireNonNull(pacemakerStateFactory);
     this.persistentSafetyStateStore = requireNonNull(persistentSafetyStateStore);
-    this.queuedEvents = new ArrayList<>(256);
+    this.queuedEvents = new ArrayList<>();
   }
 
   private void updateEpochState() {
@@ -331,12 +331,6 @@ public final class EpochManager {
     if (consensusEvent.getEpoch() != this.currentEpoch()) {
 
       if (consensusEvent.getEpoch() == this.currentEpoch() + 1) {
-
-        // Keep only events for the last view
-        if (isNotTheSameViewAs(consensusEvent)) {
-          queuedEvents.clear();
-        }
-
         queuedEvents.add(consensusEvent);
         counters.increment(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS);
         return;
@@ -351,11 +345,6 @@ public final class EpochManager {
     }
 
     this.processConsensusEventInternal(consensusEvent);
-  }
-
-  private boolean isNotTheSameViewAs(ConsensusEvent consensusEvent) {
-    return !queuedEvents.isEmpty()
-        && !queuedEvents.get(0).getView().equals(consensusEvent.getView());
   }
 
   public void processLocalTimeout(Epoched<ScheduledLocalTimeout> localTimeout) {
