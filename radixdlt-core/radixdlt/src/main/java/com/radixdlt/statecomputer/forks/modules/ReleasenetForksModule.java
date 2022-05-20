@@ -127,7 +127,7 @@ public final class ReleasenetForksModule extends AbstractModule {
   ForkBuilder releasenetV2() {
     return new ForkBuilder(
         "releasenet-v2",
-        7914L,
+        8809L,
         RERulesVersion.OLYMPIA_V1,
         new RERulesConfig(
             RESERVED_SYMBOLS,
