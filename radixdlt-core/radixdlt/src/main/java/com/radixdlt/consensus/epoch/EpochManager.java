@@ -317,7 +317,7 @@ public final class EpochManager {
     this.updateEpochState();
     this.bftEventProcessor.start();
 
-    this.processCachedConsensusEventsAtStartOfEpoch(epochChange, queuedEventsForNewEpoch);
+    this.processCachedConsensusEventsAtStartOfEpoch(queuedEventsForNewEpoch);
   }
 
   public void processConsensusEvent(ConsensusEvent consensusEvent) {
@@ -344,8 +344,7 @@ public final class EpochManager {
   }
 
   private void processCachedConsensusEventsAtStartOfEpoch(
-      EpochChange newEpochChange, List<ConsensusEvent> queuedEventsForNewEpoch) {
-    var newEpoch = newEpochChange.getEpoch();
+      List<ConsensusEvent> queuedEventsForNewEpoch) {
 
     // TODO NT-254 - There are a number of improvements to be made to this caching mechanism,
     //   and BFT events in general. For now, we keep the filtering to only pass on events
@@ -357,12 +356,7 @@ public final class EpochManager {
             .orElse(View.genesis());
 
     queuedEventsForNewEpoch.stream()
-        .filter(
-            e ->
-                // There's a slight race condition around change of epoch - so just filter out any
-                // messages that may have been stored against the wrong epoch
-                e.getEpoch() == newEpoch
-                    && e.getView().equals(highestViewSeenInNextEpochConsensusMessages))
+        .filter(e -> e.getView().equals(highestViewSeenInNextEpochConsensusMessages))
         .forEach(this::processConsensusEventForCurrentEpoch);
   }
 
