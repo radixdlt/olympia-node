@@ -93,7 +93,7 @@ public final class ReleasenetForksModule extends AbstractModule {
   @ProvidesIntoSet
   ForkBuilder releasenetGenesis() {
     return new ForkBuilder(
-        "releasenet-genesis",
+        "rlsnet-genesis",
         0L,
         RERulesVersion.OLYMPIA_V1,
         new RERulesConfig(
@@ -126,8 +126,8 @@ public final class ReleasenetForksModule extends AbstractModule {
   @ProvidesIntoSet
   ForkBuilder releasenetV2() {
     return new ForkBuilder(
-        "releasenet-v2",
-        7914L,
+        "rlsnet-v2",
+        8809L,
         RERulesVersion.OLYMPIA_V1,
         new RERulesConfig(
             RESERVED_SYMBOLS,
