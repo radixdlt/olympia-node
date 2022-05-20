@@ -737,6 +737,7 @@ public final class BerkeleyLedgerEntryStore
 
       forkConfigDatabase = env.openDatabase(null, FORK_CONFIG_DB, primaryConfig);
 
+      log.info("Wiping fork config database...");
       final var tx = beginTransaction();
       try {
         try (var c = forkConfigDatabase.openCursor(tx, null)) {
@@ -747,6 +748,7 @@ public final class BerkeleyLedgerEntryStore
         tx.abort();
         throw new RuntimeException(e);
       }
+      log.info("Fork config database wiped");
 
       forksVotingResultsDatabase =
           env.openDatabase(
