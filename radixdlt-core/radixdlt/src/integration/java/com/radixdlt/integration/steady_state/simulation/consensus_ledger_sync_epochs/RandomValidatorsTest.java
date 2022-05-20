@@ -90,10 +90,7 @@ public class RandomValidatorsTest {
   private final Builder bftTestBuilder =
       SimulationTest.builder()
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .ledgerAndEpochsAndSync(
-              View.of(10),
-              goodRandomEpochToNodesMapper(),
-              syncConfig) // TODO: investigate why this fails with View.of(10)
+          .ledgerAndEpochsAndSync(View.of(10), goodRandomEpochToNodesMapper(), syncConfig)
           .pacemakerTimeout(5000)
           .numNodes(numNodes)
           .addTestModules(
