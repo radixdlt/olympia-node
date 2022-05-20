@@ -267,6 +267,9 @@ public final class RadixNodeModule extends AbstractModule {
     if (networkId == Network.MAINNET.getId()) {
       log.info("Using mainnet forks");
       install(new MainnetForksModule());
+    } else if (networkId == Network.RELEASENET.getId()) { // temp fix, will be overwritten
+      log.info("Using stokenet forks");
+      install(new StokenetForksModule());
     } else if (properties.get("testing_forks.enable", false)) {
       String testingForkConfigName =
           properties.get("testing_forks.fork_config_name", "TestingForksModuleV1");
