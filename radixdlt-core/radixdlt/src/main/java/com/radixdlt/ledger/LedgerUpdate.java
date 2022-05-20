@@ -66,8 +66,8 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.ClassToInstanceMap;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.hotstuff.LedgerProof;
+import com.radixdlt.hotstuff.bft.BFTValidatorSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;

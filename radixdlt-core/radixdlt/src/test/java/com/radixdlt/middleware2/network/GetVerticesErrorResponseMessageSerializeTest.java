@@ -64,12 +64,12 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.hotstuff.HighQC;
+import com.radixdlt.hotstuff.LedgerHeader;
+import com.radixdlt.hotstuff.QuorumCertificate;
+import com.radixdlt.hotstuff.UnverifiedVertex;
+import com.radixdlt.hotstuff.bft.VerifiedVertex;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.utils.LedgerHeaderMock;
 import java.util.Optional;

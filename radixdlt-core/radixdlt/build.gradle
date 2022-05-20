@@ -99,10 +99,15 @@ sourceSets {
         java {
             compileClasspath += main.output + test.output
             runtimeClasspath += main.output + test.output
-            srcDir file('src/integration/java')
+            srcDir file('src/integrationTest/java')
         }
-        resources.srcDir file('src/integration/resources')
+        resources.srcDir file('src/integrationTest/resources')
     }
+}
+
+processIntegrationTestResources {
+    // Avoids an issue with the build picking up a duplicate MockMaker
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 configurations {

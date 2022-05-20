@@ -66,9 +66,9 @@ package com.radixdlt.network.p2p.test;
 
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.hotstuff.bft.Self;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.properties.RuntimeProperties;

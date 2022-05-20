@@ -70,9 +70,9 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.hotstuff.Proposal;
+import com.radixdlt.hotstuff.Vote;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
