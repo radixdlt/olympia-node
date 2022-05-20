@@ -97,11 +97,8 @@ import com.radixdlt.hotstuff.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
@@ -114,6 +111,7 @@ import org.apache.logging.log4j.Logger;
 @NotThreadSafe
 public final class EpochManager {
   private static final Logger log = LogManager.getLogger();
+
   private final BFTNode self;
   private final PacemakerFactory pacemakerFactory;
   private final VertexStoreFactory vertexStoreFactory;
@@ -124,11 +122,11 @@ public final class EpochManager {
   private final HashVerifier hashVerifier;
   private final PacemakerTimeoutCalculator timeoutCalculator;
   private final SystemCounters counters;
-  private final Map<Long, List<ConsensusEvent>> queuedEvents;
   private final BFTFactory bftFactory;
   private final PacemakerStateFactory pacemakerStateFactory;
 
   private EpochChange currentEpoch;
+  private List<ConsensusEvent> queuedEventsForNextEpoch;
 
   private EventProcessor<VertexRequestTimeout> syncTimeoutProcessor;
   private EventProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
@@ -201,7 +199,7 @@ public final class EpochManager {
     this.counters = requireNonNull(counters);
     this.pacemakerStateFactory = requireNonNull(pacemakerStateFactory);
     this.persistentSafetyStateStore = requireNonNull(persistentSafetyStateStore);
-    this.queuedEvents = new HashMap<>();
+    this.queuedEventsForNextEpoch = new ArrayList<>();
   }
 
   private void updateEpochState() {
@@ -323,63 +321,63 @@ public final class EpochManager {
       }
     }
 
+    final var queuedEventsForNewEpoch = queuedEventsForNextEpoch;
+    queuedEventsForNextEpoch = new ArrayList<>(256);
+
     this.currentEpoch = epochChange;
     this.updateEpochState();
     this.bftEventProcessor.start();
 
-    // Execute any queued up consensus events
-    final List<ConsensusEvent> queuedEventsForEpoch =
-        queuedEvents.getOrDefault(epochChange.getEpoch(), Collections.emptyList());
-    var highView =
-        queuedEventsForEpoch.stream()
+    this.processCachedConsensusEventsAtStartOfEpoch(queuedEventsForNewEpoch);
+  }
+
+  public void processConsensusEvent(ConsensusEvent consensusEvent) {
+    final var currentEpoch = this.currentEpoch();
+
+    if (consensusEvent.getEpoch() == currentEpoch) {
+      this.processConsensusEventForCurrentEpoch(consensusEvent);
+      return;
+    }
+
+    if (consensusEvent.getEpoch() == currentEpoch + 1) {
+      queuedEventsForNextEpoch.add(consensusEvent);
+      counters.increment(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS);
+      return;
+    }
+
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "{}: CONSENSUS_EVENT: Ignoring event which belongs to epoch {}, current epoch is {}",
+          this.self::getSimpleName,
+          () -> consensusEvent,
+          () -> currentEpoch);
+    }
+  }
+
+  private void processCachedConsensusEventsAtStartOfEpoch(
+      List<ConsensusEvent> queuedEventsForNewEpoch) {
+
+    // TODO NT-254 - There are a number of improvements to be made to this caching mechanism,
+    //   and BFT events in general. For now, we keep the filtering to only pass on events
+    //   from the latest view in the next epoch.
+    var highestViewSeenInNextEpochConsensusMessages =
+        queuedEventsForNewEpoch.stream()
             .map(ConsensusEvent::getView)
             .max(Comparator.naturalOrder())
             .orElse(View.genesis());
 
-    queuedEventsForEpoch.stream()
-        .filter(e -> e.getView().equals(highView))
-        .forEach(this::processConsensusEventInternal);
-
-    queuedEvents.remove(epochChange.getEpoch());
+    queuedEventsForNewEpoch.stream()
+        .filter(e -> e.getView().equals(highestViewSeenInNextEpochConsensusMessages))
+        .forEach(this::processConsensusEventForCurrentEpoch);
   }
 
-  private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
+  private void processConsensusEventForCurrentEpoch(ConsensusEvent consensusEvent) {
     this.counters.increment(CounterType.BFT_EVENTS_RECEIVED);
 
     switch (consensusEvent) {
       case Proposal proposal -> bftEventProcessor.processProposal(proposal);
       case Vote vote -> bftEventProcessor.processVote(vote);
     }
-  }
-
-  public void processConsensusEvent(ConsensusEvent consensusEvent) {
-    if (consensusEvent.getEpoch() > this.currentEpoch()) {
-      log.debug(
-          "{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
-          this.self::getSimpleName,
-          () -> consensusEvent,
-          this::currentEpoch);
-
-      // queue higher epoch events for later processing
-      // TODO: need to clear this by some rule (e.g. timeout or max size) or else memory leak attack
-      // possible
-      queuedEvents
-          .computeIfAbsent(consensusEvent.getEpoch(), e -> new ArrayList<>())
-          .add(consensusEvent);
-      counters.increment(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS);
-      return;
-    }
-
-    if (consensusEvent.getEpoch() < this.currentEpoch()) {
-      log.debug(
-          "{}: CONSENSUS_EVENT: Ignoring lower epoch event: {} current epoch: {}",
-          this.self::getSimpleName,
-          () -> consensusEvent,
-          this::currentEpoch);
-      return;
-    }
-
-    this.processConsensusEventInternal(consensusEvent);
   }
 
   public void processLocalTimeout(Epoched<ScheduledLocalTimeout> localTimeout) {

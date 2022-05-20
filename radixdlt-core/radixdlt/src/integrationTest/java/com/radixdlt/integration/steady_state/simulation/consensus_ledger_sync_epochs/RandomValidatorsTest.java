@@ -85,15 +85,12 @@ import org.junit.Test;
 public class RandomValidatorsTest {
   private static final int numNodes = 10;
 
-  private final SyncConfig syncConfig = SyncConfig.of(200L, 10, 200L);
+  private final SyncConfig syncConfig = SyncConfig.of(200L, 10, 100L);
 
   private final Builder bftTestBuilder =
       SimulationTest.builder()
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .ledgerAndEpochsAndSync(
-              View.of(3),
-              goodRandomEpochToNodesMapper(),
-              syncConfig) // TODO: investigate why this fails with View.of(10)
+          .ledgerAndEpochsAndSync(View.of(10), goodRandomEpochToNodesMapper(), syncConfig)
           .pacemakerTimeout(5000)
           .numNodes(numNodes)
           .addTestModules(
