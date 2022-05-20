@@ -81,8 +81,8 @@ import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.statecomputer.forks.modules.MainnetForksModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.UInt256;
 import java.time.Duration;

@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.forks;
+package com.radixdlt.statecomputer.forks.modules;
 
 import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 
@@ -78,24 +78,60 @@ import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.statecomputer.forks.ForkBuilder;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.statecomputer.forks.RERulesVersion;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-public final class StokenetForksModule extends AbstractModule {
+public final class MainnetForksModule extends AbstractModule {
   private static final Set<String> RESERVED_SYMBOLS =
       Set.of("xrd", "xrds", "exrd", "exrds", "rad", "rads", "rdx", "rdxs", "radix");
 
   @ProvidesIntoSet
-  ForkBuilder stokenetGenesis() {
+  ForkBuilder olympiaGenesis() {
     return new ForkBuilder(
-        "stokenet-genesis",
+        "olympia-genesis",
         0L,
         RERulesVersion.OLYMPIA_V1,
         new RERulesConfig(
             RESERVED_SYMBOLS,
-            Pattern.compile("[a-z0-9]+"),
+            Pattern.compile("[a-z0-9]+"), // Token symbol pattern
+            FeeTable.create(
+                Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
+                Map.of(
+                    TokenResource.class, Amount.ofTokens(100), // 100XRD per resource
+                    ValidatorRegisteredCopy.class, Amount.ofTokens(5), // 5XRD per validator update
+                    ValidatorFeeCopy.class, Amount.ofTokens(5), // 5XRD per register update
+                    ValidatorOwnerCopy.class, Amount.ofTokens(5), // 5XRD per register update
+                    ValidatorMetaData.class, Amount.ofTokens(5), // 5XRD per register update
+                    AllowDelegationFlag.class, Amount.ofTokens(5), // 5XRD per register update
+                    PreparedStake.class, Amount.ofMilliTokens(500), // 0.5XRD per stake
+                    PreparedUnstakeOwnership.class, Amount.ofMilliTokens(500) // 0.5XRD per unstake
+                    )),
+            (long) 1024 * 1024, // 1MB max user transaction size
+            OptionalInt.of(50), // 50 Txns per round
+            8_000_000, // Rounds per epoch - approximately two weeks of epochs
+            500, // Two weeks worth of epochs for rake debounce
+            Amount.ofTokens(90), // Minimum stake
+            500, // Two weeks worth of epochs for unstaking delay
+            Amount.ofTokens(0), // No rewards in first epoch
+            9800, // 98.00% threshold for completed proposals to get any rewards,
+            100, // 100 max validators
+            MSG.maxLength()));
+  }
+
+  @ProvidesIntoSet
+  ForkBuilder olympia() {
+    return new ForkBuilder(
+        "olympia",
+        2L,
+        RERulesVersion.OLYMPIA_V1,
+        new RERulesConfig(
+            RESERVED_SYMBOLS,
+            Pattern.compile("[a-z0-9]+"), // Token symbol pattern
             FeeTable.create(
                 Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
                 Map.of(
@@ -114,41 +150,8 @@ public final class StokenetForksModule extends AbstractModule {
             500, // Two weeks worth of epochs
             Amount.ofTokens(90), // Minimum stake
             500, // Two weeks worth of epochs
-            Amount.ofMicroTokens(2307700), // Rewards per proposal
-            9800, // 98.00% threshold for completed proposals to get any rewards,
-            100, // 100 max validators
-            MSG.maxLength()));
-  }
-
-  @ProvidesIntoSet
-  ForkBuilder stokenetV2() {
-    return new ForkBuilder(
-        "stokenet-v2",
-        7914L,
-        RERulesVersion.OLYMPIA_V1,
-        new RERulesConfig(
-            RESERVED_SYMBOLS,
-            Pattern.compile("[a-z0-9]+"),
-            FeeTable.create(
-                Amount.ofMicroTokens(190), // 0.00019XRD per byte fee
-                Map.of(
-                    TokenResource.class, Amount.ofTokens(100), // 100XRD per resource
-                    ValidatorRegisteredCopy.class, Amount.ofTokens(5), // 5XRD per validator update
-                    ValidatorFeeCopy.class, Amount.ofTokens(5), // 5XRD per register update
-                    ValidatorOwnerCopy.class, Amount.ofTokens(5), // 5XRD per register update
-                    ValidatorMetaData.class, Amount.ofTokens(5), // 5XRD per register update
-                    AllowDelegationFlag.class, Amount.ofTokens(5), // 5XRD per register update
-                    PreparedStake.class, Amount.ofMilliTokens(500), // 0.5XRD per stake
-                    PreparedUnstakeOwnership.class, Amount.ofMilliTokens(500) // 0.5XRD per unstake
-                    )),
-            (long) 1024 * 1024, // 1MB max user transaction size
-            OptionalInt.of(50), // 50 Txns per round
-            10_000, // Rounds per epoch
-            500, // Two weeks worth of epochs
-            Amount.ofTokens(90), // Minimum stake
-            500, // Two weeks worth of epochs
-            Amount.ofMicroTokens(2307700), // Rewards per proposal
-            9800, // 98.00% threshold for completed proposals to get any rewards,
+            Amount.ofMicroTokens(2307700), // 2.3077XRD Rewards per proposal
+            9800, // 98.00% threshold for completed proposals to get any rewards
             100, // 100 max validators
             MSG.maxLength()));
   }
