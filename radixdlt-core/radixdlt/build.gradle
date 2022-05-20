@@ -105,6 +105,11 @@ sourceSets {
     }
 }
 
+processIntegrationTestResources {
+    // Avoids an issue with the build picking up a duplicate MockMaker
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 configurations {
     integrationTestImplementation.extendsFrom testImplementation
 }
