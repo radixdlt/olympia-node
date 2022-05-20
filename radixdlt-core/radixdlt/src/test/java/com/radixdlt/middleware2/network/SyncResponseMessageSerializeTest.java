@@ -65,8 +65,8 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.hotstuff.LedgerProof;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoTxnsAndProof;
 import org.radix.serialization.SerializeMessageObject;

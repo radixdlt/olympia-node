@@ -64,7 +64,7 @@
 
 package com.radixdlt.environment.rx;
 
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.hotstuff.bft.BFTNode;
 import java.util.Objects;
 
 /**

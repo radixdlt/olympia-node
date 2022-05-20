@@ -65,11 +65,11 @@
 package com.radixdlt.environment.deterministic;
 
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.StartProcessorOnRunner;
+import com.radixdlt.hotstuff.bft.BFTNode;
+import com.radixdlt.hotstuff.bft.Self;
 import java.util.Objects;
 import java.util.Set;
 import javax.inject.Inject;

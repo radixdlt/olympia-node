@@ -67,9 +67,9 @@ package com.radixdlt.middleware2.network;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.hotstuff.LedgerProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.network.messaging.MessageCentral;

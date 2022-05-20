@@ -66,11 +66,11 @@ package com.radixdlt.keys;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.hotstuff.HashSigner;
+import com.radixdlt.hotstuff.bft.BFTNode;
+import com.radixdlt.hotstuff.bft.Self;
 import com.radixdlt.qualifier.LocalSigner;
 import java.util.function.Function;
 

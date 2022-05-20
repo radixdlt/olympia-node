@@ -64,10 +64,10 @@
 
 package com.radixdlt.keys;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.CryptoException;
+import com.radixdlt.hotstuff.bft.BFTNode;
 import com.radixdlt.utils.Bytes;
 import java.io.IOException;
 import java.util.Optional;

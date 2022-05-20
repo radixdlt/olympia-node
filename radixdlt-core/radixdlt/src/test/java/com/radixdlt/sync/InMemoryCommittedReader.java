@@ -66,8 +66,8 @@ package com.radixdlt.sync;
 
 import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.hotstuff.LedgerProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;

@@ -65,7 +65,7 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.hotstuff.bft.BFTNode;
 import java.util.Objects;
 import java.util.Optional;
 

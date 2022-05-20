@@ -64,10 +64,10 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.hotstuff.BFTHeader;
+import com.radixdlt.hotstuff.LedgerHeader;
+import com.radixdlt.hotstuff.bft.View;
 import com.radixdlt.utils.LedgerHeaderMock;
 
 public class BFTHeaderSerializeTest extends SerializeObject<BFTHeader> {

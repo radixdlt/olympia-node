@@ -75,11 +75,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.hotstuff.bft.BFTNode;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerEvent;

@@ -65,11 +65,11 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.radixdlt.atom.REConstructor;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.hotstuff.bft.View;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import java.util.OptionalInt;
 

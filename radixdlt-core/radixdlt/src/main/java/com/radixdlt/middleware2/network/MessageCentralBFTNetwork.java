@@ -65,11 +65,11 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.hotstuff.Proposal;
+import com.radixdlt.hotstuff.Vote;
+import com.radixdlt.hotstuff.bft.BFTNode;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageFromPeer;
 import com.radixdlt.network.p2p.NodeId;

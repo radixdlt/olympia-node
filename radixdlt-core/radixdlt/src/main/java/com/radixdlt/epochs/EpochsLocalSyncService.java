@@ -65,10 +65,10 @@
 package com.radixdlt.epochs;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.hotstuff.bft.BFTNode;
+import com.radixdlt.hotstuff.epoch.EpochChange;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
