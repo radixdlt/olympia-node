@@ -64,8 +64,8 @@
 
 package com.radixdlt.environment.deterministic.network;
 
-import com.radixdlt.consensus.epoch.Epoched;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.hotstuff.epoch.Epoched;
+import com.radixdlt.hotstuff.liveness.ScheduledLocalTimeout;
 
 /**
  * A mutator called on new messages that can mutate the message rank, the message itself, or the

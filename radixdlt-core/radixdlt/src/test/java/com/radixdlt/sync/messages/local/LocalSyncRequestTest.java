@@ -70,9 +70,9 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.hotstuff.LedgerProof;
+import com.radixdlt.hotstuff.bft.BFTNode;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;

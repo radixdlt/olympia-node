@@ -64,7 +64,7 @@
 
 package com.radixdlt.sync.messages.remote;
 
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.hotstuff.LedgerProof;
 import java.util.Objects;
 
 /**

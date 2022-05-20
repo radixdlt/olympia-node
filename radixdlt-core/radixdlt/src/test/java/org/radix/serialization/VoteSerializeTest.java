@@ -65,18 +65,18 @@
 package org.radix.serialization;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.hotstuff.BFTHeader;
+import com.radixdlt.hotstuff.HighQC;
+import com.radixdlt.hotstuff.LedgerHeader;
+import com.radixdlt.hotstuff.QuorumCertificate;
+import com.radixdlt.hotstuff.TimestampedECDSASignatures;
+import com.radixdlt.hotstuff.Vote;
+import com.radixdlt.hotstuff.VoteData;
+import com.radixdlt.hotstuff.bft.BFTNode;
+import com.radixdlt.hotstuff.bft.View;
 import com.radixdlt.utils.LedgerHeaderMock;
 import java.util.Optional;
 

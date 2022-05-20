@@ -64,8 +64,8 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.hotstuff.LedgerProof;
 import com.radixdlt.ledger.AccumulatorState;
 import org.radix.serialization.SerializeMessageObject;
 

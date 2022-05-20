@@ -67,9 +67,9 @@ package com.radixdlt.ledger;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.hotstuff.LedgerHeader;
+import com.radixdlt.hotstuff.TimestampedECDSASignatures;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 

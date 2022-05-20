@@ -69,7 +69,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atom.CloseableCursor;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.hotstuff.LedgerProof;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.NextCandidateForkPostProcessor;
 import com.radixdlt.statecomputer.NextFixedEpochForkPostProcessor;

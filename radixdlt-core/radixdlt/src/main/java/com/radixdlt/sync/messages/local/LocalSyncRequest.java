@@ -65,8 +65,8 @@
 package com.radixdlt.sync.messages.local;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.hotstuff.LedgerProof;
+import com.radixdlt.hotstuff.bft.BFTNode;
 import java.util.Objects;
 
 /** A request to sync ledger to a given version. */

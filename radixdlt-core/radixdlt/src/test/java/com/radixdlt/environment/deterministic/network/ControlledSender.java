@@ -65,11 +65,11 @@
 package com.radixdlt.environment.deterministic.network;
 
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.hotstuff.bft.BFTNode;
 
 /** A sender within a deterministic network. */
 public final class ControlledSender implements Environment {

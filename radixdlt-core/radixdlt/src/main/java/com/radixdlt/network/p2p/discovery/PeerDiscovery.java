@@ -67,11 +67,11 @@ package com.radixdlt.network.p2p.discovery;
 import static java.util.function.Predicate.not;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.hotstuff.bft.BFTNode;
+import com.radixdlt.hotstuff.bft.Self;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;

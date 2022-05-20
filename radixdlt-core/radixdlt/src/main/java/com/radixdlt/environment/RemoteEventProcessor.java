@@ -64,8 +64,8 @@
 
 package com.radixdlt.environment;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.hotstuff.bft.BFTNode;
 
 /**
  * Processes events from a remote node

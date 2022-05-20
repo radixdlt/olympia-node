@@ -71,9 +71,9 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.hotstuff.Sha256Hasher;
 import org.junit.Before;
 import org.junit.Test;
 

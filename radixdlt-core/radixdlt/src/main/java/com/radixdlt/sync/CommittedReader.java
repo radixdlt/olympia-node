@@ -64,7 +64,7 @@
 
 package com.radixdlt.sync;
 
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.hotstuff.LedgerProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import java.util.Optional;
