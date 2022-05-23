@@ -103,6 +103,10 @@ public class UpProcedure<U extends Particle, S extends ReducerState> implements 
       Resources immutableAddrs,
       ExecutionContext context)
       throws ProcedureException {
-    return upReducer.reduce((S) reducerState, (U) parameter, context);
+    try {
+      return upReducer.reduce((S) reducerState, (U) parameter, context);
+    } catch (Exception e) {
+      throw new ProcedureException(e);
+    }
   }
 }

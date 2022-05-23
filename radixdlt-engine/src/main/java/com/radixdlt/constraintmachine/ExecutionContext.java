@@ -134,12 +134,9 @@ public final class ExecutionContext {
     return sigsLeft;
   }
 
-  public Tokens withdrawFeeReserve(UInt256 amount) throws ProcedureException {
-    try {
-      return reserve.withdraw(REAddr.ofNativeToken(), amount);
-    } catch (Exception e) {
-      throw new ProcedureException(e);
-    }
+  public Tokens withdrawFeeReserve(UInt256 amount)
+      throws InvalidResourceException, NotEnoughResourcesException {
+    return reserve.withdraw(REAddr.ofNativeToken(), amount);
   }
 
   public void depositFeeReserve(Tokens tokens)

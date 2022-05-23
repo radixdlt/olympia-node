@@ -84,33 +84,29 @@ public class UpTokenResourceProcedure extends UpProcedure<TokenResource, REAddrC
         REAddrClaim.class,
         tokenResource -> new Authorization(PermissionLevel.USER, (resources, context) -> {}),
         (addrClaim, tokenResource, context) -> {
-          try {
-            if (!tokenResource.addr().equals(addrClaim.getAddr())) {
-              throw new ProcedureException("Addresses don't match");
-            }
-
-            var str = new String(addrClaim.getArg());
-            if (config.reservedSymbols().contains(str)
-                && context.permissionLevel() != PermissionLevel.SYSTEM) {
-              throw new ReservedSymbolException(str);
-            }
-            if (!config.tokenSymbolPattern().matcher(str).matches()) {
-              throw new ProcedureException("invalid token symbol: " + str);
-            }
-
-            if (tokenResource.isMutable()) {
-              return ReducerResult.incomplete(new NeedMetadata(addrClaim.getArg(), tokenResource));
-            }
-
-            if (!tokenResource.granularity().equals(UInt256.ONE)) {
-              throw new ProcedureException("Granularity must be one.");
-            }
-
-            return ReducerResult.incomplete(
-                new NeedFixedTokenSupply(addrClaim.getArg(), tokenResource));
-          } catch (Exception e) {
-            throw new ProcedureException(e);
+          if (!tokenResource.addr().equals(addrClaim.getAddr())) {
+            throw new ProcedureException("Addresses don't match");
           }
+
+          var str = new String(addrClaim.getArg());
+          if (config.reservedSymbols().contains(str)
+              && context.permissionLevel() != PermissionLevel.SYSTEM) {
+            throw new ReservedSymbolException(str);
+          }
+          if (!config.tokenSymbolPattern().matcher(str).matches()) {
+            throw new ProcedureException("invalid token symbol: " + str);
+          }
+
+          if (tokenResource.isMutable()) {
+            return ReducerResult.incomplete(new NeedMetadata(addrClaim.getArg(), tokenResource));
+          }
+
+          if (!tokenResource.granularity().equals(UInt256.ONE)) {
+            throw new ProcedureException("Granularity must be one.");
+          }
+
+          return ReducerResult.incomplete(
+              new NeedFixedTokenSupply(addrClaim.getArg(), tokenResource));
         });
   }
 }

@@ -69,7 +69,6 @@ import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
 import com.radixdlt.application.tokens.state.ExitingStake;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.MismatchException;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import java.util.NavigableMap;
@@ -83,14 +82,14 @@ public record Unstaking(
     Supplier<ReducerState> onDone)
     implements ReducerState {
 
-  public ReducerState exit(ExitingStake u) throws ProcedureException {
+  public ReducerState exit(ExitingStake u) throws MismatchException {
     var firstAddr = unstaking.firstKey();
     var ownershipUnstake = unstaking.remove(firstAddr);
     var epochUnlocked = updatingEpoch.prevEpoch().epoch() + config.unstakingEpochDelay() + 1;
     var expectedExit = current.unstakeOwnership(firstAddr, ownershipUnstake, epochUnlocked);
 
     if (!u.equals(expectedExit)) {
-      throw new ProcedureException(new MismatchException(expectedExit, u));
+      throw new MismatchException(expectedExit, u);
     }
 
     return unstaking.isEmpty() ? onDone.get() : this;

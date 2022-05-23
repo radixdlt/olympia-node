@@ -68,7 +68,6 @@ import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
 import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.MismatchException;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import java.util.NavigableMap;
@@ -81,12 +80,12 @@ public record Staking(
     Supplier<ReducerState> onDone)
     implements ReducerState {
 
-  public ReducerState stake(StakeOwnership stakeOwnership) throws ProcedureException {
+  public ReducerState stake(StakeOwnership stakeOwnership) throws MismatchException {
     var accountAddr = stakes.firstKey();
     var stakeAmt = stakes.remove(accountAddr);
     var expectedOwnership = validatorScratchPad.stake(accountAddr, stakeAmt);
     if (!Objects.equals(stakeOwnership, expectedOwnership)) {
-      throw new ProcedureException(new MismatchException(expectedOwnership, stakeOwnership));
+      throw new MismatchException(expectedOwnership, stakeOwnership);
     }
     return stakes.isEmpty() ? onDone.get() : this;
   }

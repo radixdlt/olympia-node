@@ -100,7 +100,11 @@ public class EndProcedure<S extends ReducerState> implements Procedure {
       Resources immutableAddrs,
       ExecutionContext executionContext)
       throws ProcedureException {
-    endReducer.reduce((S) reducerState, executionContext, immutableAddrs);
-    return ReducerResult.complete();
+    try {
+      endReducer.reduce((S) reducerState, executionContext, immutableAddrs);
+      return ReducerResult.complete();
+    } catch (Exception e) {
+      throw new ProcedureException(e);
+    }
   }
 }

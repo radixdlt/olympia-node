@@ -68,7 +68,6 @@ import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.MismatchException;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -80,9 +79,9 @@ public record BootupValidator(ValidatorBFTData expected, Supplier<ReducerState> 
     return new BootupValidator(ValidatorBFTData.createFresh(validator.validatorKey()), onDone);
   }
 
-  public ReducerState bootUp(ValidatorBFTData data) throws ProcedureException {
+  public ReducerState bootUp(ValidatorBFTData data) throws MismatchException {
     if (!Objects.equals(this.expected, data)) {
-      throw new ProcedureException(new MismatchException(this.expected, data));
+      throw new MismatchException(this.expected, data);
     }
     return this.onDone.get();
   }

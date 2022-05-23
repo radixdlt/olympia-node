@@ -69,7 +69,6 @@ import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.MismatchException;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import java.util.NavigableMap;
 
@@ -87,12 +86,12 @@ public final class UpdatingValidatorStakes implements ReducerState {
     this.validatorsScratchPad = validatorsScratchPad;
   }
 
-  public ReducerState updateStake(ValidatorStakeData stake) throws ProcedureException {
+  public ReducerState updateStake(ValidatorStakeData stake) throws MismatchException {
     var publicKey = validatorsScratchPad.firstKey();
     var expectedValidatorData = validatorsScratchPad.remove(publicKey).toSubstate();
 
     if (!stake.equals(expectedValidatorData)) {
-      throw new ProcedureException(new MismatchException(expectedValidatorData, stake));
+      throw new MismatchException(expectedValidatorData, stake);
     }
 
     return validatorsScratchPad.isEmpty()

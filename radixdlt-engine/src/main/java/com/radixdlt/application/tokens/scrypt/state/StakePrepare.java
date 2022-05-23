@@ -89,25 +89,24 @@ public final class StakePrepare implements ReducerState {
     this.delegateAllowed = delegateAllowed;
   }
 
-  public ReducerState withdrawTo(PreparedStake preparedStake) throws ProcedureException {
-    try {
-      tokenHoldingBucket.withdraw(preparedStake.resourceAddr(), preparedStake.amount());
+  public ReducerState withdrawTo(PreparedStake preparedStake)
+      throws MinimumStakeException, NotEnoughResourcesException, InvalidResourceException,
+          InvalidDelegationException, MismatchException {
 
-      if (preparedStake.amount().compareTo(minimumStake) < 0) {
-        throw new MinimumStakeException(minimumStake, preparedStake.amount());
-      }
+    tokenHoldingBucket.withdraw(preparedStake.resourceAddr(), preparedStake.amount());
 
-      if (!preparedStake.delegateKey().equals(validatorKey)) {
-        throw new MismatchException("Not matching validator keys");
-      }
-
-      if (!delegateAllowed.test(preparedStake.owner())) {
-        throw new InvalidDelegationException();
-      }
-
-      return tokenHoldingBucket;
-    } catch (Exception e) {
-      throw new ProcedureException(e);
+    if (preparedStake.amount().compareTo(minimumStake) < 0) {
+      throw new MinimumStakeException(minimumStake, preparedStake.amount());
     }
+
+    if (!preparedStake.delegateKey().equals(validatorKey)) {
+      throw new MismatchException("Not matching validator keys");
+    }
+
+    if (!delegateAllowed.test(preparedStake.owner())) {
+      throw new InvalidDelegationException();
+    }
+
+    return tokenHoldingBucket;
   }
 }

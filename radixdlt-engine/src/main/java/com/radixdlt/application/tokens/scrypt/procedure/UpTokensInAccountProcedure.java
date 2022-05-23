@@ -66,7 +66,6 @@ package com.radixdlt.application.tokens.scrypt.procedure;
 
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.constraintmachine.*;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
 public class UpTokensInAccountProcedure extends UpProcedure<TokensInAccount, VoidReducerState> {
   public UpTokensInAccountProcedure() {
@@ -83,12 +82,7 @@ public class UpTokensInAccountProcedure extends UpProcedure<TokensInAccount, Voi
                             .loadResource(tokensInAccount.resourceAddr())
                             .verifyMintAuthorization(context.key())),
         (reducerState, tokensInAccount, context) -> {
-          try {
-            context.verifyCanAllocAndDestroyResources();
-          } catch (Exception e) {
-            throw new ProcedureException(e);
-          }
-
+          context.verifyCanAllocAndDestroyResources();
           return ReducerResult.complete();
         });
   }
