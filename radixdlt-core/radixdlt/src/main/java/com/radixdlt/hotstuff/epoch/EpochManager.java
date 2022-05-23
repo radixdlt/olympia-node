@@ -124,24 +124,19 @@ public final class EpochManager {
   private final SystemCounters counters;
   private final BFTFactory bftFactory;
   private final PacemakerStateFactory pacemakerStateFactory;
+  private final List<ConsensusEvent> queuedEventsForNextEpoch;
+  private final RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher;
+  private final PersistentSafetyStateStore persistentSafetyStateStore;
 
   private EpochChange currentEpoch;
-  private List<ConsensusEvent> queuedEventsForNextEpoch;
-
   private EventProcessor<VertexRequestTimeout> syncTimeoutProcessor;
   private EventProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
   private BFTEventProcessor bftEventProcessor;
-
   private Set<RemoteEventProcessor<GetVerticesRequest>> syncRequestProcessors;
   private Set<RemoteEventProcessor<GetVerticesResponse>> syncResponseProcessors;
   private Set<RemoteEventProcessor<GetVerticesErrorResponse>> syncErrorResponseProcessors;
-
   private Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors;
   private Set<EventProcessor<BFTRebuildUpdate>> bftRebuildProcessors;
-
-  private final RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher;
-
-  private final PersistentSafetyStateStore persistentSafetyStateStore;
 
   @Inject
   public EpochManager(
@@ -321,8 +316,8 @@ public final class EpochManager {
       }
     }
 
-    final var queuedEventsForNewEpoch = queuedEventsForNextEpoch;
-    queuedEventsForNextEpoch = new ArrayList<>(256);
+    final var queuedEventsForNewEpoch = List.copyOf(queuedEventsForNextEpoch);
+    queuedEventsForNextEpoch.clear();
 
     this.currentEpoch = epochChange;
     this.updateEpochState();
