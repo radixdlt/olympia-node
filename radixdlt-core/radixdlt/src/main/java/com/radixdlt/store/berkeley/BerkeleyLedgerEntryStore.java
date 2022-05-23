@@ -1073,9 +1073,9 @@ public final class BerkeleyLedgerEntryStore
       // State database
       var elapsed = Stopwatch.createStarted();
       int totalCount =
-          txn.stateUpdates().stream().mapToInt(List::size).reduce(Integer::sum).orElse(0);
+          txn.stateUpdateGroups().stream().mapToInt(List::size).reduce(Integer::sum).orElse(0);
       int count = 0;
-      for (var group : txn.stateUpdates()) {
+      for (var group : txn.stateUpdateGroups()) {
         for (var stateUpdate : group) {
           if (count > 0 && count % 100000 == 0) {
             log.warn(

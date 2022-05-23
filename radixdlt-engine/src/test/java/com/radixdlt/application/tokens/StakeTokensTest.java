@@ -210,7 +210,7 @@ public class StakeTokensTest {
             .signAndBuild(key::sign);
     var processed = this.engine.execute(List.of(transfer));
     var accounting =
-        REResourceAccounting.compute(processed.getProcessedTxn().stateUpdates().get(0).stream());
+        REResourceAccounting.compute(processed.getProcessedTxn().stateUpdateGroups().get(0).stream());
     assertThat(accounting.bucketAccounting())
         .hasSize(2)
         .containsEntry(

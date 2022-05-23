@@ -351,7 +351,7 @@ public class TxnSizeFeeTest {
 
     // Act
     var result = this.engine.execute(List.of(transfer));
-    REResourceAccounting.compute(result.getProcessedTxn().stateUpdates().get(0).stream());
+    REResourceAccounting.compute(result.getProcessedTxn().stateUpdateGroups().get(0).stream());
   }
 
   @Test
@@ -413,7 +413,7 @@ public class TxnSizeFeeTest {
     // Act
     var result = this.engine.execute(List.of(transfer));
     var refund =
-        REResourceAccounting.compute(result.getProcessedTxn().stateUpdates().get(2).stream())
+        REResourceAccounting.compute(result.getProcessedTxn().stateUpdateGroups().get(2).stream())
             .bucketAccounting()
             .get(AccountBucket.from(REAddr.ofNativeToken(), accountAddr));
     assertThat(refund).isEqualTo(expectedRefund);

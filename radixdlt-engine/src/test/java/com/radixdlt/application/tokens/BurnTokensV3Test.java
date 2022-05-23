@@ -159,7 +159,7 @@ public class BurnTokensV3Test {
 
     // Assert
     var accounting =
-        REResourceAccounting.compute(processed.getProcessedTxn().stateUpdates().get(0).stream());
+        REResourceAccounting.compute(processed.getProcessedTxn().stateUpdateGroups().get(0).stream());
     assertThat(accounting.resourceAccounting())
         .hasSize(1)
         .containsEntry(tokenAddr, BigInteger.valueOf(-10));
@@ -195,7 +195,7 @@ public class BurnTokensV3Test {
 
     // Assert
     var accounting =
-        REResourceAccounting.compute(processed.getProcessedTxn().stateUpdates().get(0).stream());
+        REResourceAccounting.compute(processed.getProcessedTxn().stateUpdateGroups().get(0).stream());
     assertThat(accounting.resourceAccounting())
         .hasSize(1)
         .containsEntry(tokenAddr, BigInteger.valueOf(-10));

@@ -103,7 +103,7 @@ public class EpochProofVerifierV2 implements PostProcessor<LedgerAndBFTProof> {
         }
 
         // TODO: Move this check into Meter
-        var stateUpdates = processed.stateUpdates();
+        var stateUpdates = processed.stateUpdateGroups();
         if (stateUpdates.get(stateUpdates.size() - 1).stream()
             .noneMatch(u -> u.parsed() instanceof EpochData)) {
           throw new PostProcessorException("Epoch update is not the last execution.");

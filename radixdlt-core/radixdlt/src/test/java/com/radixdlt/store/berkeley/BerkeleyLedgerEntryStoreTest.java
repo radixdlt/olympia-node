@@ -231,7 +231,7 @@ public final class BerkeleyLedgerEntryStoreTest {
     final var txn = mock(Txn.class);
     when(txn.getId()).thenReturn(AID.from(HashUtils.random256().asBytes()));
     when(fakeTx.getTxn()).thenReturn(txn);
-    when(fakeTx.stateUpdates()).thenReturn(List.of());
+    when(fakeTx.stateUpdateGroups()).thenReturn(List.of());
     when(txn.getPayload()).thenReturn(HashUtils.random256().asBytes());
 
     final var proof1 =

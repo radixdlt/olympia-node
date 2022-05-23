@@ -110,7 +110,7 @@ public class RecoverableProcessedTxn {
     var parsedTxn = txn.parsedTxn();
 
     var stateUpdateGroups =
-        txn.stateUpdates().stream()
+        txn.stateUpdateGroups().stream()
             .flatMap(
                 stateUpdates ->
                     expandToSerializedStateUpdates(parsedTxn, stateUpdates, serialization))

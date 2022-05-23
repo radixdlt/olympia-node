@@ -1128,7 +1128,7 @@ public final class CoreModelMapper {
     Function<REAddr, String> localizedAddressToSymbol =
         addr -> {
           var localSymbol =
-              txn.stateUpdates().stream()
+              txn.stateUpdateGroups().stream()
                   .flatMap(List::stream)
                   .map(REStateUpdate::parsed)
                   .filter(TokenResourceMetadata.class::isInstance)
@@ -1142,7 +1142,7 @@ public final class CoreModelMapper {
 
     var transaction = new CommittedTransaction();
 
-    for (var stateUpdates : txn.stateUpdates()) {
+    for (var stateUpdates : txn.stateUpdateGroups()) {
       var operationGroup = operationGroup(stateUpdates, localizedAddressToSymbol);
       transaction.addOperationGroupsItem(operationGroup);
     }
@@ -1166,7 +1166,7 @@ public final class CoreModelMapper {
     Function<REAddr, String> localizedAddressToSymbol =
         addr -> {
           var localSymbol =
-              txn.stateUpdates().stream()
+              txn.stateUpdateGroups().stream()
                   .flatMap(List::stream)
                   .map(REStateUpdate::parsed)
                   .filter(TokenResourceMetadata.class::isInstance)
@@ -1180,7 +1180,7 @@ public final class CoreModelMapper {
 
     var transaction = new Transaction();
 
-    for (var stateUpdates : txn.stateUpdates()) {
+    for (var stateUpdates : txn.stateUpdateGroups()) {
       var operationGroup = operationGroup(stateUpdates, localizedAddressToSymbol);
       transaction.addOperationGroupsItem(operationGroup);
     }

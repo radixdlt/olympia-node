@@ -81,7 +81,7 @@ import java.util.stream.Stream;
 public record REProcessedTxn(
     ParsedTxn parsedTxn,
     ECPublicKey signedByKey,
-    List<List<REStateUpdate>> stateUpdates,
+    List<List<REStateUpdate>> stateUpdateGroups,
     List<REEvent> events) {
 
   public UInt256 getFeePaid() {
@@ -111,7 +111,7 @@ public record REProcessedTxn(
   }
 
   public Stream<REStateUpdate> stream() {
-    return stateUpdates.stream().flatMap(List::stream);
+    return stateUpdateGroups.stream().flatMap(List::stream);
   }
 
   public Stream<SubstateId> substateDependencies() {
@@ -126,13 +126,13 @@ public record REProcessedTxn(
 
   @Override
   public int hashCode() {
-    return Objects.hash(stateUpdates, parsedTxn);
+    return Objects.hash(stateUpdateGroups, parsedTxn);
   }
 
   @Override
   public boolean equals(Object o) {
     return o instanceof REProcessedTxn other
-        && Objects.equals(this.stateUpdates, other.stateUpdates)
+        && Objects.equals(this.stateUpdateGroups, other.stateUpdateGroups)
         && Objects.equals(this.parsedTxn, other.parsedTxn);
   }
 
