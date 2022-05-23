@@ -86,8 +86,10 @@ import org.bouncycastle.util.Arrays;
 
 @SerializerId2("xtx")
 public class RecoverableProcessedTxn {
-  private static final Collector<Pair<Integer, byte[]>, ?, Map<Integer, List<byte[]>>> GROUPING_BY_INDEX_COLLECTOR = Collectors.groupingBy(
-      Pair::getFirst, Collectors.mapping(Pair::getSecond, Collectors.toList()));
+  private static final Collector<Pair<Integer, byte[]>, ?, Map<Integer, List<byte[]>>>
+      GROUPING_BY_INDEX_COLLECTOR =
+          Collectors.groupingBy(
+              Pair::getFirst, Collectors.mapping(Pair::getSecond, Collectors.toList()));
 
   @JsonProperty(SerializerConstants.SERIALIZER_NAME)
   @DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
@@ -116,15 +118,16 @@ public class RecoverableProcessedTxn {
     return new RecoverableProcessedTxn(stateUpdateGroups);
   }
 
-  private static Stream<Pair<Integer, byte[]>> expandToSerializedStateUpdates(ParsedTxn parsedTxn, List<REStateUpdate> stateUpdates, SubstateSerialization serialization) {
+  private static Stream<Pair<Integer, byte[]>> expandToSerializedStateUpdates(
+      ParsedTxn parsedTxn, List<REStateUpdate> stateUpdates, SubstateSerialization serialization) {
     return stateUpdates.stream()
         .filter(stateUpdate -> isDownInstruction(parsedTxn, stateUpdate))
         .map(stateUpdate -> serializeDownInstruction(parsedTxn, stateUpdate, serialization));
   }
 
-  private static Pair<Integer, byte[]> serializeDownInstruction(ParsedTxn parsedTxn, REStateUpdate stateUpdate, SubstateSerialization serialization) {
-    var microOp =
-        parsedTxn.instructions().get(stateUpdate.instructionIndex()).microOp();
+  private static Pair<Integer, byte[]> serializeDownInstruction(
+      ParsedTxn parsedTxn, REStateUpdate stateUpdate, SubstateSerialization serialization) {
+    var microOp = parsedTxn.instructions().get(stateUpdate.instructionIndex()).microOp();
     var data =
         switch (microOp) {
           case DOWN -> serialization.serialize((Particle) stateUpdate.parsed());
@@ -138,8 +141,7 @@ public class RecoverableProcessedTxn {
   }
 
   private static boolean isDownInstruction(ParsedTxn parsedTxn, REStateUpdate stateUpdate) {
-    var microOp =
-        parsedTxn.instructions().get(stateUpdate.instructionIndex()).microOp();
+    var microOp = parsedTxn.instructions().get(stateUpdate.instructionIndex()).microOp();
     return switch (microOp) {
       case DOWN, DOWNINDEX, VDOWN, LVDOWN -> true;
       default -> false;

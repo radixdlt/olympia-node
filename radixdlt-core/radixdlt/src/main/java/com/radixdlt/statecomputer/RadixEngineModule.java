@@ -142,14 +142,9 @@ public class RadixEngineModule extends AbstractModule {
   @Singleton
   private RadixEngine<LedgerAndBFTProof> getRadixEngine(
       EngineStore<LedgerAndBFTProof> engineStore, CurrentForkView currentForkView) {
-    final var rules = currentForkView.currentForkConfig().engineRules();
-    final var cmConfig = rules.constraintMachineConfig();
-    var cm =
-        new ConstraintMachine(
-            cmConfig.procedures(),
-            cmConfig.deserialization(),
-            cmConfig.virtualSubstateDeserialization(),
-            cmConfig.metering());
+    var rules = currentForkView.currentForkConfig().engineRules();
+    var cm = new ConstraintMachine(rules.constraintMachineConfig());
+
     return new RadixEngine<>(
         rules.parser(),
         rules.serialization(),

@@ -97,6 +97,14 @@ public final class ConstraintMachine {
     this(procedures, deserialization, virtualSubstateDeserialization, Meter.EMPTY);
   }
 
+  public ConstraintMachine(ConstraintMachineConfig config) {
+    this(
+        config.procedures(),
+        config.deserialization(),
+        config.virtualSubstateDeserialization(),
+        config.metering());
+  }
+
   public ConstraintMachine(
       Procedures procedures,
       SubstateDeserialization deserialization,
