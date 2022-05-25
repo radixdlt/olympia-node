@@ -73,6 +73,7 @@ import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
 import com.radixdlt.application.system.construction.FeeReserveTakeConstructor;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
+import com.radixdlt.application.tokens.TokensConfig;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.application.tokens.construction.MintTokenConstructor;
 import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
@@ -109,7 +110,8 @@ public class FixedFeeTest {
   @Before
   public void setup() throws Exception {
     var cmAtomOS = new CMAtomOS();
-    cmAtomOS.load(new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")));
+    cmAtomOS.load(
+        new TokensConstraintScryptV3(new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))));
     cmAtomOS.load(new SystemConstraintScrypt());
     var cm =
         new ConstraintMachine(
@@ -166,15 +168,13 @@ public class FixedFeeTest {
     // Act
     var result = this.engine.execute(List.of(transfer));
     var accounting0 =
-        REResourceAccounting.compute(
-            result.getProcessedTxn().getGroupedStateUpdates().get(0).stream());
+        REResourceAccounting.compute(result.getProcessedTxn().stateUpdateGroups().get(0).stream());
     assertThat(accounting0.bucketAccounting())
         .hasSize(1)
         .containsEntry(
             AccountBucket.from(REAddr.ofNativeToken(), accountAddr), BigInteger.valueOf(-5));
     var accounting1 =
-        REResourceAccounting.compute(
-            result.getProcessedTxn().getGroupedStateUpdates().get(1).stream());
+        REResourceAccounting.compute(result.getProcessedTxn().stateUpdateGroups().get(1).stream());
     assertThat(accounting1.bucketAccounting())
         .hasSize(2)
         .containsEntry(
@@ -237,23 +237,20 @@ public class FixedFeeTest {
     // Act
     var result = this.engine.execute(List.of(transfer));
     var accounting0 =
-        REResourceAccounting.compute(
-            result.getProcessedTxn().getGroupedStateUpdates().get(0).stream());
+        REResourceAccounting.compute(result.getProcessedTxn().stateUpdateGroups().get(0).stream());
     assertThat(accounting0.bucketAccounting())
         .hasSize(1)
         .containsEntry(
             AccountBucket.from(REAddr.ofNativeToken(), accountAddr), BigInteger.valueOf(-8));
     var accounting1 =
-        REResourceAccounting.compute(
-            result.getProcessedTxn().getGroupedStateUpdates().get(1).stream());
+        REResourceAccounting.compute(result.getProcessedTxn().stateUpdateGroups().get(1).stream());
     assertThat(accounting1.bucketAccounting())
         .hasSize(2)
         .containsEntry(
             AccountBucket.from(REAddr.ofNativeToken(), accountAddr), BigInteger.valueOf(-2))
         .containsEntry(AccountBucket.from(REAddr.ofNativeToken(), to), BigInteger.valueOf(2));
     var accounting2 =
-        REResourceAccounting.compute(
-            result.getProcessedTxn().getGroupedStateUpdates().get(2).stream());
+        REResourceAccounting.compute(result.getProcessedTxn().stateUpdateGroups().get(2).stream());
     assertThat(accounting2.bucketAccounting())
         .hasSize(1)
         .containsEntry(

@@ -73,9 +73,9 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
   private final DownReducer<D, S> downReducer;
   private final Function<D, Authorization> authorization;
 
-  public DownProcedure(
-      Class<S> reducerStateClass,
+  protected DownProcedure(
       Class<D> downClass,
+      Class<S> reducerStateClass,
       Function<D, Authorization> authorization,
       DownReducer<D, S> downReducer) {
     this.downClass = downClass;
@@ -86,20 +86,22 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 
   @Override
   public ProcedureKey key() {
-    return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.DOWN, downClass));
+    return ProcedureKey.of(reducerStateClass, REOp.DOWN, downClass);
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public Authorization authorization(Object o) {
     return authorization.apply((D) o);
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public ReducerResult call(
       Object o, ReducerState reducerState, Resources immutableAddrs, ExecutionContext context)
       throws ProcedureException {
     try {
-      return downReducer.reduce((D) o, (S) reducerState, immutableAddrs, context);
+      return downReducer.reduce((S) reducerState, (D) o, context);
     } catch (Exception e) {
       throw new ProcedureException(e);
     }

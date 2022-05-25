@@ -72,6 +72,9 @@ public interface Procedure {
   Authorization authorization(Object o);
 
   ReducerResult call(
-      Object o, ReducerState reducerState, Resources immutableAddrs, ExecutionContext context)
+      Object parameter,
+      ReducerState reducerState,
+      Resources immutableAddrs,
+      ExecutionContext context)
       throws ProcedureException;
 }

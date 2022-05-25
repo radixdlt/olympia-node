@@ -78,11 +78,7 @@ import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.ValidatorFeeCopy;
-import com.radixdlt.application.validators.state.ValidatorMetaData;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.application.validators.state.*;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.LedgerHeader;
@@ -111,11 +107,7 @@ import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.OptionalInt;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
@@ -292,7 +284,7 @@ public class LargeEpochChangeTest {
     var result = sut.transientBranch().execute(List.of(txn), PermissionLevel.SUPER_USER);
     sut.deleteBranches();
     var nextValidatorSet =
-        result.getProcessedTxn().getEvents().stream()
+        result.getProcessedTxn().events().stream()
             .filter(REEvent.NextValidatorSetEvent.class::isInstance)
             .map(REEvent.NextValidatorSetEvent.class::cast)
             .findFirst()
@@ -304,7 +296,7 @@ public class LargeEpochChangeTest {
                                 v ->
                                     BFTValidator.from(
                                         BFTNode.create(v.validatorKey()), v.amount()))));
-    var stateUpdates = result.getProcessedTxn().stateUpdates().count();
+    var stateUpdates = result.getProcessedTxn().allStateUpdatesStream().count();
     construction.stop();
     logger.info(
         "epoch_preparation: state_updates={} verification_time={}s store_time={}s total_time={}s",

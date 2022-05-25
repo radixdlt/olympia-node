@@ -75,19 +75,9 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.RadixEngineResult;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolMetadata;
-import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.mempool.*;
 import com.radixdlt.utils.Pair;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -161,12 +151,12 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
         transactions.stream().map(p -> p.getTxn().getId()).collect(Collectors.toSet());
 
     transactions.stream()
-        .flatMap(REProcessedTxn::stateUpdates)
+        .flatMap(REProcessedTxn::allStateUpdatesStream)
         .filter(REStateUpdate::isShutDown)
         .forEach(
             instruction -> {
-              var substateId = instruction.getId();
-              Set<AID> txnIds = substateIndex.remove(substateId);
+              var substateId = instruction.substateId();
+              var txnIds = substateIndex.remove(substateId);
               if (txnIds == null) {
                 return;
               }
@@ -193,9 +183,9 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
     // TODO: Order by highest fees paid
     var copy = new TreeSet<>(data.keySet());
     prepared.stream()
-        .flatMap(REProcessedTxn::stateUpdates)
+        .flatMap(REProcessedTxn::allStateUpdatesStream)
         .filter(REStateUpdate::isShutDown)
-        .flatMap(i -> substateIndex.getOrDefault(i.getId(), Set.of()).stream())
+        .flatMap(i -> substateIndex.getOrDefault(i.substateId(), Set.of()).stream())
         .distinct()
         .forEach(copy::remove);
 
@@ -207,9 +197,9 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
       var txnData = data.get(txId);
       txnData
           .getFirst()
-          .stateUpdates()
+          .allStateUpdatesStream()
           .filter(REStateUpdate::isShutDown)
-          .flatMap(inst -> substateIndex.getOrDefault(inst.getId(), Set.of()).stream())
+          .flatMap(inst -> substateIndex.getOrDefault(inst.substateId(), Set.of()).stream())
           .distinct()
           .forEach(copy::remove);
 

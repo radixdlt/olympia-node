@@ -110,7 +110,9 @@ public class TokenResourceTest {
   public void setup() throws Exception {
     var cmAtomOS = new CMAtomOS();
     cmAtomOS.load(new SystemConstraintScrypt());
-    cmAtomOS.load(new TokensConstraintScryptV3(Set.of("xrd"), Pattern.compile("[a-z0-9]+")));
+    cmAtomOS.load(
+        new TokensConstraintScryptV3(
+            new TokensConfig(Set.of("xrd"), Pattern.compile("[a-z0-9]+"))));
     var cm =
         new ConstraintMachine(
             cmAtomOS.getProcedures(),
@@ -162,7 +164,7 @@ public class TokenResourceTest {
   }
 
   @Test
-  public void create_token_with_reserved_symbol_should_fail() throws Exception {
+  public void create_token_with_reserved_symbol_should_fail() {
     // Arrange
     var keyPair = PrivateKeys.ofNumeric(1);
     var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "xrd");
@@ -213,7 +215,7 @@ public class TokenResourceTest {
   }
 
   @Test
-  public void create_fixed_token_with_no_tokens_should_error() throws Exception {
+  public void create_fixed_token_with_no_tokens_should_error() {
     // Arrange
     var keyPair = ECKeyPair.generateNew();
     var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
@@ -234,14 +236,14 @@ public class TokenResourceTest {
   }
 
   @Test
-  public void using_someone_elses_address_should_fail() throws Exception {
+  public void using_someone_elses_address_should_fail() {
     var keyPair = ECKeyPair.generateNew();
     // Arrange
     var addr = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
     var tokenDefinitionParticle =
         TokenResource.createMutableSupplyResource(addr, keyPair.getPublicKey());
     var builder =
-        TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization, 255)
+        TxBuilder.newBuilder(parser.substateDeserialization(), serialization, 255)
             .toLowLevelBuilder()
             .syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
             .virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())

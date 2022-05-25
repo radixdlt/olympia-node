@@ -74,7 +74,7 @@ public class SystemCallProcedure<S extends ReducerState> implements Procedure {
   private final SystemCallReducer<S> reducer;
   private final Supplier<Authorization> authorization;
 
-  public SystemCallProcedure(
+  protected SystemCallProcedure(
       Class<S> reducerStateClass,
       REAddr addr,
       Supplier<Authorization> authorization,
@@ -95,12 +95,16 @@ public class SystemCallProcedure<S extends ReducerState> implements Procedure {
     return authorization.get();
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public ReducerResult call(
-      Object o, ReducerState reducerState, Resources immutableAddrs, ExecutionContext context)
+      Object parameter,
+      ReducerState reducerState,
+      Resources immutableAddrs,
+      ExecutionContext context)
       throws ProcedureException {
     try {
-      return reducer.reduce((S) reducerState, (CallData) o, context);
+      return reducer.reduce((S) reducerState, (CallData) parameter, context);
     } catch (Exception e) {
       throw new ProcedureException(e);
     }

@@ -69,7 +69,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
-import com.radixdlt.application.tokens.scrypt.Tokens;
+import com.radixdlt.application.tokens.scrypt.state.Tokens;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.identifiers.REAddr;

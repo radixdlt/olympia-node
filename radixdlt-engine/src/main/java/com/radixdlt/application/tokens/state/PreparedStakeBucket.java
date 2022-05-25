@@ -82,7 +82,7 @@ public final class PreparedStakeBucket implements Bucket {
 
   @Override
   public Authorization withdrawAuthorization() {
-    return new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {});
+    return new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {});
   }
 
   @Override

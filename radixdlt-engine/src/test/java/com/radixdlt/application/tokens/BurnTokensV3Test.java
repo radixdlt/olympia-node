@@ -104,7 +104,8 @@ public class BurnTokensV3Test {
   public void setup() throws Exception {
     var cmAtomOS = new CMAtomOS();
     cmAtomOS.load(new SystemConstraintScrypt());
-    cmAtomOS.load(new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")));
+    cmAtomOS.load(
+        new TokensConstraintScryptV3(new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))));
     var cm =
         new ConstraintMachine(
             cmAtomOS.getProcedures(),
@@ -159,7 +160,7 @@ public class BurnTokensV3Test {
     // Assert
     var accounting =
         REResourceAccounting.compute(
-            processed.getProcessedTxn().getGroupedStateUpdates().get(0).stream());
+            processed.getProcessedTxn().stateUpdateGroups().get(0).stream());
     assertThat(accounting.resourceAccounting())
         .hasSize(1)
         .containsEntry(tokenAddr, BigInteger.valueOf(-10));
@@ -196,7 +197,7 @@ public class BurnTokensV3Test {
     // Assert
     var accounting =
         REResourceAccounting.compute(
-            processed.getProcessedTxn().getGroupedStateUpdates().get(0).stream());
+            processed.getProcessedTxn().stateUpdateGroups().get(0).stream());
     assertThat(accounting.resourceAccounting())
         .hasSize(1)
         .containsEntry(tokenAddr, BigInteger.valueOf(-10));

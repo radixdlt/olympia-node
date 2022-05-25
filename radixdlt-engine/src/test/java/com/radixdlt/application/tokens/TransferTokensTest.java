@@ -110,13 +110,13 @@ public class TransferTokensTest {
           {
             UInt256.TEN,
             UInt256.TEN,
-            new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
+            new TokensConstraintScryptV3(new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))),
             new TransferTokensConstructorV2()
           },
           {
             UInt256.TEN,
             UInt256.SIX,
-            new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
+            new TokensConstraintScryptV3(new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))),
             new TransferTokensConstructorV2()
           },
         });
@@ -226,8 +226,7 @@ public class TransferTokensTest {
 
     // Assert
     var accounting =
-        REResourceAccounting.compute(
-            result.getProcessedTxn().getGroupedStateUpdates().get(0).stream());
+        REResourceAccounting.compute(result.getProcessedTxn().stateUpdateGroups().get(0).stream());
     assertThat(accounting.bucketAccounting())
         .hasSize(2)
         .containsEntry(

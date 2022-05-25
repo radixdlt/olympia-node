@@ -64,40 +64,17 @@
 
 package com.radixdlt.constraintmachine;
 
-import java.util.Objects;
-
-public final class ProcedureKey {
-  private final Class<? extends ReducerState> currentState;
-  private final OpSignature opSignature;
-
-  private ProcedureKey(Class<? extends ReducerState> currentState, OpSignature opSignature) {
-    this.currentState = currentState;
-    this.opSignature = opSignature;
-  }
-
+public record ProcedureKey(Class<? extends ReducerState> currentState, OpSignature opSignature) {
   public static ProcedureKey of(
       Class<? extends ReducerState> currentState, OpSignature opSignature) {
     return new ProcedureKey(currentState, opSignature);
   }
 
-  public OpSignature opSignature() {
-    return opSignature;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(opSignature, currentState);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof ProcedureKey)) {
-      return false;
-    }
-
-    var other = (ProcedureKey) o;
-    return Objects.equals(this.opSignature, other.opSignature)
-        && Objects.equals(this.currentState, other.currentState);
+  public static ProcedureKey of(
+      Class<? extends ReducerState> currentState,
+      REOp op,
+      Class<? extends Particle> particleClass) {
+    return new ProcedureKey(currentState, OpSignature.ofSubstateUpdate(op, particleClass));
   }
 
   @Override

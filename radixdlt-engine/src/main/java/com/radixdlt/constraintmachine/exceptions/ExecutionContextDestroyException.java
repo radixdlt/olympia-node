@@ -64,7 +64,7 @@
 
 package com.radixdlt.constraintmachine.exceptions;
 
-import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
+import com.radixdlt.application.tokens.scrypt.state.TokenHoldingBucket;
 
 public class ExecutionContextDestroyException extends Exception {
   public ExecutionContextDestroyException(TokenHoldingBucket reserve) {

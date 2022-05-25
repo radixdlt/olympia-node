@@ -109,7 +109,7 @@ public final class MintTokensTest {
     return List.of(
         new Object[][] {
           {
-            new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
+            new TokensConstraintScryptV3(new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))),
             new TransferTokensConstructorV2()
           }
         });
@@ -194,7 +194,7 @@ public final class MintTokensTest {
     var processed = this.engine.execute(List.of(mintTxn));
     var accounting =
         REResourceAccounting.compute(
-            processed.getProcessedTxn().getGroupedStateUpdates().get(0).stream());
+            processed.getProcessedTxn().stateUpdateGroups().get(0).stream());
     assertThat(accounting.resourceAccounting())
         .hasSize(1)
         .containsEntry(tokenAddr, BigInteger.valueOf(10));

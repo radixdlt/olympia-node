@@ -69,29 +69,15 @@ import com.radixdlt.api.core.model.SubstateOperation;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import java.nio.ByteBuffer;
 
-public final class RecoverableSubstateShutdown implements RecoverableSubstate {
-  private final ByteBuffer substateBuffer;
-  private final SubstateId substateId;
-  private final boolean isBootUp;
-
-  public RecoverableSubstateShutdown(
-      ByteBuffer substateBuffer, SubstateId substateId, boolean isBootUp) {
-    this.substateBuffer = substateBuffer;
-    this.substateId = substateId;
-    this.isBootUp = isBootUp;
-  }
+public record RecoverableSubstateShutdown(
+    ByteBuffer substateBuffer, SubstateId substateId, boolean isBootUp)
+    implements RecoverableSubstate {
 
   private Particle deserialize(RadixEngine<LedgerAndBFTProof> radixEngine) {
-    var deserialization = radixEngine.getSubstateDeserialization();
-    try {
-      return deserialization.deserialize(substateBuffer);
-    } catch (DeserializeException e) {
-      throw new IllegalStateException("Failed to deserialize substate.", e);
-    }
+    return radixEngine.getSubstateDeserialization().deserialize(substateBuffer);
   }
 
   @Override

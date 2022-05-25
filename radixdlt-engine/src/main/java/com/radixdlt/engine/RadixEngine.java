@@ -64,32 +64,14 @@
 
 package com.radixdlt.engine;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.atom.TxAction.FeeReserveComplete;
+import static com.radixdlt.atom.TxAction.FeeReservePut;
 
 import com.google.common.base.Stopwatch;
 import com.radixdlt.application.system.construction.FeeReserveCompleteException;
 import com.radixdlt.application.tokens.ResourceInBucket;
-import com.radixdlt.atom.CloseableCursor;
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.SubstateStore;
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.ConstraintMachineConfig;
-import com.radixdlt.constraintmachine.ExecutionContext;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
-import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.constraintmachine.VirtualSubstateDeserialization;
+import com.radixdlt.atom.*;
+import com.radixdlt.constraintmachine.*;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -97,18 +79,11 @@ import com.radixdlt.engine.parser.ParsedTxn;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.TransientEngineStore;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -174,10 +149,10 @@ public final class RadixEngine<M> {
     synchronized (stateUpdateEngineLock) {
       this.constraintMachine =
           new ConstraintMachine(
-              constraintMachineConfig.getProcedures(),
-              constraintMachineConfig.getDeserialization(),
-              constraintMachineConfig.getVirtualSubstateDeserialization(),
-              constraintMachineConfig.getMeter());
+              constraintMachineConfig.procedures(),
+              constraintMachineConfig.deserialization(),
+              constraintMachineConfig.virtualSubstateDeserialization(),
+              constraintMachineConfig.metering());
       this.actionConstructors = actionToConstructorMap;
       this.postProcessor = postProcessor;
       this.parser = parser;
@@ -419,13 +394,13 @@ public final class RadixEngine<M> {
   private TxBuilder construct(TxBuilderExecutable executable, Set<SubstateId> avoid)
       throws TxBuilderException {
     synchronized (stateUpdateEngineLock) {
-      SubstateStore filteredStore =
+      var filteredStore =
           new SubstateStore() {
             @Override
             public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
               return engineStore
                   .openIndexedCursor(index)
-                  .filter(i -> !avoid.contains(SubstateId.fromBytes(i.getId())));
+                  .filter(i -> !avoid.contains(i.asSubstateId()));
             }
 
             @Override
@@ -436,7 +411,7 @@ public final class RadixEngine<M> {
 
       var txBuilder =
           TxBuilder.newBuilder(
-              filteredStore, constraintMachine.getDeserialization(), serialization, maxMessageLen);
+              filteredStore, constraintMachine.deserialization(), serialization, maxMessageLen);
 
       executable.execute(txBuilder);
 
@@ -556,13 +531,13 @@ public final class RadixEngine<M> {
 
   public SubstateDeserialization getSubstateDeserialization() {
     synchronized (stateUpdateEngineLock) {
-      return constraintMachine.getDeserialization();
+      return constraintMachine.deserialization();
     }
   }
 
   public VirtualSubstateDeserialization getVirtualSubstateDeserialization() {
     synchronized (stateUpdateEngineLock) {
-      return constraintMachine.getVirtualDeserialization();
+      return constraintMachine.virtualDeserialization();
     }
   }
 
@@ -577,23 +552,18 @@ public final class RadixEngine<M> {
 
             @Override
             public Optional<Particle> get(SystemMapKey mapKey) {
-              var deserialization = constraintMachine.getDeserialization();
+              var deserialization = constraintMachine.deserialization();
+
               return engineStore
                   .get(mapKey)
-                  .map(
-                      raw -> {
-                        try {
-                          return deserialization.deserialize(raw.getData());
-                        } catch (DeserializeException e) {
-                          throw new IllegalStateException(e);
-                        }
-                      });
+                  .map(RawSubstateBytes::data)
+                  .map(deserialization::deserialize);
             }
 
             @Override
             public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
                 Class<T> c, Function<T, K> keyMapper) {
-              var deserialization = constraintMachine.getDeserialization();
+              var deserialization = constraintMachine.deserialization();
               return reduce(
                   deserialization.index(c),
                   new HashMap<>(),
@@ -620,16 +590,11 @@ public final class RadixEngine<M> {
             @SuppressWarnings("unchecked")
             private <U, T extends Particle> U reduce(
                 SubstateIndex<T> i, U identity, BiFunction<U, T, U> accumulator) {
-              var deserialization = constraintMachine.getDeserialization();
+              var deserialization = constraintMachine.deserialization();
               var u = identity;
               try (var cursor = engineStore.openIndexedCursor(i)) {
                 while (cursor.hasNext()) {
-                  try {
-                    var t = (T) deserialization.deserialize(cursor.next().getData());
-                    u = accumulator.apply(u, t);
-                  } catch (DeserializeException e) {
-                    throw new IllegalStateException(e);
-                  }
+                  u = accumulator.apply(u, deserialization.<T>deserialize(cursor.next().data()));
                 }
               }
               return u;
@@ -638,8 +603,9 @@ public final class RadixEngine<M> {
             @Override
             public <U, T extends Particle> U reduce(
                 Class<T> c, U identity, BiFunction<U, T, U> accumulator) {
-              var deserialization = constraintMachine.getDeserialization();
+              var deserialization = constraintMachine.deserialization();
               var index = deserialization.index(c);
+
               return reduce(index, identity, accumulator);
             }
           });

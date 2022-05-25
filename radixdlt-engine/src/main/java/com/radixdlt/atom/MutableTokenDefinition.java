@@ -69,36 +69,27 @@ import com.radixdlt.identifiers.REAddr;
 import java.util.Objects;
 
 /** Specifies high level parameters to a token definition */
-public final class MutableTokenDefinition {
-  private final ECPublicKey key;
-  private final String symbol;
-  private final String name;
-  private final String description;
-  private final String iconUrl;
-  private final String tokenUrl;
+public record MutableTokenDefinition(
+    ECPublicKey key,
+    String symbol,
+    String name,
+    String description,
+    String iconUrl,
+    String tokenUrl) {
+  public MutableTokenDefinition {
+    Objects.requireNonNull(name);
+  }
 
-  public MutableTokenDefinition(
+  public static MutableTokenDefinition create(
       ECPublicKey key,
       String symbol,
       String name,
       String description,
       String iconUrl,
       String tokenUrl) {
-    this.key = key;
-    this.symbol = symbol.toLowerCase();
-    this.name = Objects.requireNonNull(name);
-    this.description = description;
-    this.iconUrl = iconUrl;
-    this.tokenUrl = tokenUrl;
-  }
 
-  public MutableTokenDefinition(ECPublicKey key, String symbol) {
-    this.key = key;
-    this.symbol = symbol.toLowerCase();
-    this.name = null;
-    this.description = null;
-    this.iconUrl = null;
-    this.tokenUrl = null;
+    return new MutableTokenDefinition(
+        key, symbol.toLowerCase(), Objects.requireNonNull(name), description, iconUrl, tokenUrl);
   }
 
   public REAddr getResourceAddress() {
@@ -109,23 +100,18 @@ public final class MutableTokenDefinition {
     return key;
   }
 
-  public String getSymbol() {
-    return symbol;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public String getDescription() {
+  @Override
+  public String description() {
     return description == null ? "" : description;
   }
 
-  public String getIconUrl() {
+  @Override
+  public String iconUrl() {
     return iconUrl == null ? "" : iconUrl;
   }
 
-  public String getTokenUrl() {
+  @Override
+  public String tokenUrl() {
     return tokenUrl == null ? "" : tokenUrl;
   }
 }

@@ -67,7 +67,9 @@ package com.radixdlt.statecomputer.forks;
 import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 
 import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.tokens.TokensConfig;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -115,21 +117,17 @@ public record RERulesConfig(
         MSG.maxLength());
   }
 
-  public RERulesConfig overrideMinimumStake(Amount minimumStake) {
-    return new RERulesConfig(
-        this.reservedSymbols,
-        this.tokenSymbolPattern,
-        this.feeTable,
-        this.maxTxnSize,
-        this.maxSigsPerRound,
-        this.maxRounds,
-        this.rakeIncreaseDebouncerEpochLength,
-        minimumStake,
-        this.unstakingEpochDelay,
-        this.rewardsPerProposal,
-        this.minimumCompletedProposalsPercentage,
-        this.maxValidators,
-        this.maxMessageLen);
+  public EpochUpdateConfig asEpochUpdateConfig() {
+    return new EpochUpdateConfig(
+        maxRounds,
+        maxValidators,
+        unstakingEpochDelay,
+        minimumCompletedProposalsPercentage,
+        rewardsPerProposal.toSubunits());
+  }
+
+  public TokensConfig asTokensConfig() {
+    return new TokensConfig(reservedSymbols, tokenSymbolPattern);
   }
 
   public RERulesConfig overrideMaxSigsPerRound(int maxSigsPerRound) {

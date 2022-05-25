@@ -72,31 +72,31 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public final class IndexedSubstateIterator<D extends Particle> {
-  private SubstateIndex index;
+  private SubstateIndex<D> index;
   private final Iterator<D> iterator;
 
-  public IndexedSubstateIterator(SubstateIndex index, Iterator<D> iterator) {
+  public IndexedSubstateIterator(SubstateIndex<D> index, Iterator<D> iterator) {
     this.index = index;
     this.iterator = iterator;
   }
 
   public void verifyPostTypePrefixEquals(byte[] prefix) throws ProcedureException {
-    if (index.getPrefix().length != 1 + prefix.length) {
+    if (index.prefix().length != 1 + prefix.length) {
       throw new ProcedureException("Invalid shutdownAll prefix");
     }
     for (int i = 0; i < prefix.length; i++) {
-      if (index.getPrefix()[i + 1] != prefix[i]) {
+      if (index.prefix()[i + 1] != prefix[i]) {
         throw new ProcedureException(
             "Invalid shutdownAll prefix, expected "
                 + Bytes.toHexString(prefix)
                 + " but was "
-                + Bytes.toHexString(index.getPrefix()));
+                + Bytes.toHexString(index.prefix()));
       }
     }
   }
 
   public void verifyPostTypePrefixIsEmpty() throws ProcedureException {
-    if (index.getPrefix().length != 1) {
+    if (index.prefix().length != 1) {
       throw new ProcedureException("Invalid shutdownAll prefix");
     }
   }

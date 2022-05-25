@@ -71,11 +71,7 @@ import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.validators.state.ValidatorData;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.REInstruction;
-import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.constraintmachine.*;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.utils.Shorts;
@@ -83,15 +79,7 @@ import com.radixdlt.utils.UInt256;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.Set;
+import java.util.*;
 
 /** Low level builder class for transactions */
 public final class TxLowLevelBuilder {
@@ -192,7 +180,7 @@ public final class TxLowLevelBuilder {
   public TxLowLevelBuilder up(Particle substate) {
     Objects.requireNonNull(substate, "substate is required");
 
-    var localSubstate = LocalSubstate.create(upParticleCount, substate);
+    var localSubstate = new LocalSubstate(upParticleCount, substate);
 
     if (substate instanceof ValidatorData validatorData) {
       var b = serialization.classToByte(validatorData.getClass());
@@ -248,9 +236,9 @@ public final class TxLowLevelBuilder {
     validateVirtualKey(virtualKey);
 
     var id = SubstateId.ofVirtualSubstate(parent, virtualKey);
-    var buf = ByteBuffer.allocate(Short.BYTES + id.asBytes().length);
-    buf.putShort((short) id.asBytes().length);
-    buf.put(id.asBytes());
+    var buf = ByteBuffer.allocate(Short.BYTES + id.idBytes().length);
+    buf.putShort((short) id.idBytes().length);
+    buf.put(id.idBytes());
     instruction(REInstruction.REMicroOp.VDOWN, buf.array());
     return this;
   }
@@ -259,9 +247,9 @@ public final class TxLowLevelBuilder {
     validateVirtualKey(virtualKey);
 
     var id = SubstateId.ofVirtualSubstate(parent, virtualKey);
-    var buf = ByteBuffer.allocate(Short.BYTES + id.asBytes().length);
-    buf.putShort((short) id.asBytes().length);
-    buf.put(id.asBytes());
+    var buf = ByteBuffer.allocate(Short.BYTES + id.idBytes().length);
+    buf.putShort((short) id.idBytes().length);
+    buf.put(id.idBytes());
     instruction(REInstruction.REMicroOp.VREAD, buf.array());
     return this;
   }
@@ -279,7 +267,7 @@ public final class TxLowLevelBuilder {
   }
 
   public TxLowLevelBuilder read(SubstateId substateId) {
-    instruction(REInstruction.REMicroOp.READ, substateId.asBytes());
+    instruction(REInstruction.REMicroOp.READ, substateId.idBytes());
     return this;
   }
 
@@ -296,23 +284,23 @@ public final class TxLowLevelBuilder {
   }
 
   public TxLowLevelBuilder down(SubstateId substateId) {
-    instruction(REInstruction.REMicroOp.DOWN, substateId.asBytes());
+    instruction(REInstruction.REMicroOp.DOWN, substateId.idBytes());
     this.remoteDownSubstate.add(substateId);
     return this;
   }
 
   public TxLowLevelBuilder readIndex(SubstateIndex<?> index) {
-    var buf = ByteBuffer.allocate(Short.BYTES + index.getPrefix().length);
-    buf.putShort((short) index.getPrefix().length);
-    buf.put(index.getPrefix());
+    var buf = ByteBuffer.allocate(Short.BYTES + index.prefix().length);
+    buf.putShort((short) index.prefix().length);
+    buf.put(index.prefix());
     instruction(REInstruction.REMicroOp.READINDEX, buf.array());
     return this;
   }
 
   public TxLowLevelBuilder downIndex(SubstateIndex<?> index) {
-    var buf = ByteBuffer.allocate(Short.BYTES + index.getPrefix().length);
-    buf.putShort((short) index.getPrefix().length);
-    buf.put(index.getPrefix());
+    var buf = ByteBuffer.allocate(Short.BYTES + index.prefix().length);
+    buf.putShort((short) index.prefix().length);
+    buf.put(index.prefix());
     instruction(REInstruction.REMicroOp.DOWNINDEX, buf.array());
     return this;
   }

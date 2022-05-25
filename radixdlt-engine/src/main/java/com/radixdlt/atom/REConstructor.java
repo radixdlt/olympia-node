@@ -111,6 +111,7 @@ public final class REConstructor {
     return Optional.ofNullable(perByteFee);
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends TxAction> void construct(T action, TxBuilder txBuilder)
       throws TxBuilderException {
     var actionConstructor = (ActionConstructor<T>) constructors.get(action.getClass());

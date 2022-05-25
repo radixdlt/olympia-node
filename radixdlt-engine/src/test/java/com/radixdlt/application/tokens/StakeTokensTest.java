@@ -119,7 +119,8 @@ public class StakeTokensTest {
             Pair.of(
                 List.of(
                     new SystemConstraintScrypt(),
-                    new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
+                    new TokensConstraintScryptV3(
+                        new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))),
                     new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
                     new ValidatorConstraintScryptV2(),
                     new ValidatorUpdateOwnerConstraintScrypt()),
@@ -210,7 +211,7 @@ public class StakeTokensTest {
     var processed = this.engine.execute(List.of(transfer));
     var accounting =
         REResourceAccounting.compute(
-            processed.getProcessedTxn().getGroupedStateUpdates().get(0).stream());
+            processed.getProcessedTxn().stateUpdateGroups().get(0).stream());
     assertThat(accounting.bucketAccounting())
         .hasSize(2)
         .containsEntry(
@@ -226,7 +227,6 @@ public class StakeTokensTest {
     // Arrange
     var key = ECKeyPair.generateNew();
     var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
-    var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
     var txn =
         this.engine
             .construct(
@@ -240,7 +240,6 @@ public class StakeTokensTest {
 
     // Act
     var nextKey = ECKeyPair.generateNew();
-    var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());
     var transfer =
         this.engine
             .construct(new StakeTokens(accountAddr, key.getPublicKey(), stakeAmt))

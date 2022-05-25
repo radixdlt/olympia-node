@@ -98,9 +98,9 @@ public record EpochConstructionState(
     RoundData closedRound,
     EpochData closingEpoch,
     TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake,
-    NextEpochConstructorV3 constructor) {
+    NextEpochConstructor constructor) {
   public static EpochConstructionState createState(
-      NextEpochConstructorV3 constructor, TxBuilder txBuilder) {
+      NextEpochConstructor constructor, TxBuilder txBuilder) {
     return new EpochConstructionState(
         txBuilder,
         new TreeMap<>(KeyComparator.instance()),

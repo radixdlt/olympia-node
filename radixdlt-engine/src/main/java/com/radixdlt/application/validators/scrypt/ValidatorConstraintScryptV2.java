@@ -64,129 +64,30 @@
 
 package com.radixdlt.application.validators.scrypt;
 
+import com.radixdlt.application.validators.scrypt.procedure.*;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
-import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.DownProcedure;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.UpProcedure;
-import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import java.util.Objects;
 
 public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
-
-  private record UpdatingValidatorHashMetadata(ValidatorSystemMetadata prevState)
-      implements ReducerState {
-    void update(ValidatorSystemMetadata next) throws ProcedureException {
-      if (!prevState.validatorKey().equals(next.validatorKey())) {
-        throw new ProcedureException("Invalid key");
-      }
-    }
-  }
-
-  private record UpdatingValidatorInfo(ValidatorMetaData prevState) implements ReducerState {}
-
-  private record UpdatingDelegationFlag(AllowDelegationFlag current) implements ReducerState {
-    void update(AllowDelegationFlag next) throws ProcedureException {
-      if (!current.validatorKey().equals(next.validatorKey())) {
-        throw new ProcedureException("Invalid key update");
-      }
-    }
-  }
 
   @Override
   public void main(Loader os) {
     os.substate(ValidatorSystemMetadata.SUBSTATE_DEFINITION);
 
-    os.procedure(
-        new DownProcedure<>(
-            VoidReducerState.class,
-            ValidatorSystemMetadata.class,
-            d ->
-                new Authorization(
-                    PermissionLevel.USER,
-                    (r, c) -> {
-                      if (!c.key().map(d.validatorKey()::equals).orElse(false)) {
-                        throw new AuthorizationException("Key does not match.");
-                      }
-                    }),
-            (d, s, r, c) -> ReducerResult.incomplete(new UpdatingValidatorHashMetadata(d))));
-    os.procedure(
-        new UpProcedure<>(
-            UpdatingValidatorHashMetadata.class,
-            ValidatorSystemMetadata.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
-            (s, u, c, r) -> {
-              s.update(u);
-              return ReducerResult.complete();
-            }));
+    os.procedure(new DownValidatorSystemMetadataProcedure());
+    os.procedure(new UpValidatorSystemMetadataProcedure());
 
     os.substate(ValidatorMetaData.SUBSTATE_DEFINITION);
 
-    os.procedure(
-        new DownProcedure<>(
-            VoidReducerState.class,
-            ValidatorMetaData.class,
-            d ->
-                new Authorization(
-                    PermissionLevel.USER,
-                    (r, c) -> {
-                      if (!c.key().map(d.validatorKey()::equals).orElse(false)) {
-                        throw new AuthorizationException("Key does not match.");
-                      }
-                    }),
-            (d, s, r, c) -> ReducerResult.incomplete(new UpdatingValidatorInfo(d))));
+    os.procedure(new DownValidatorMetaDataProcedure());
+    os.procedure(new UpValidatorMetaDataProcedure());
 
-    os.procedure(
-        new UpProcedure<>(
-            UpdatingValidatorInfo.class,
-            ValidatorMetaData.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
-            (s, u, c, r) -> {
-              if (!Objects.equals(s.prevState.validatorKey(), u.validatorKey())) {
-                throw new ProcedureException(
-                    String.format(
-                        "validator addresses do not match: %s != %s",
-                        s.prevState.validatorKey(), u.validatorKey()));
-              }
-              return ReducerResult.complete();
-            }));
-
-    registerRakeUpdates(os);
-  }
-
-  public void registerRakeUpdates(Loader os) {
     os.substate(AllowDelegationFlag.SUBSTATE_DEFINITION);
 
-    os.procedure(
-        new DownProcedure<>(
-            VoidReducerState.class,
-            AllowDelegationFlag.class,
-            d ->
-                new Authorization(
-                    PermissionLevel.USER,
-                    (r, c) -> {
-                      if (!c.key().map(d.validatorKey()::equals).orElse(false)) {
-                        throw new AuthorizationException("Key does not match.");
-                      }
-                    }),
-            (d, s, r, c) -> ReducerResult.incomplete(new UpdatingDelegationFlag(d))));
-
-    os.procedure(
-        new UpProcedure<>(
-            UpdatingDelegationFlag.class,
-            AllowDelegationFlag.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
-            (s, u, c, r) -> {
-              s.update(u);
-              return ReducerResult.complete();
-            }));
+    os.procedure(new DownAllowDelegationFlagProcedure());
+    os.procedure(new UpAllowDelegationFlagProcedure());
   }
 }

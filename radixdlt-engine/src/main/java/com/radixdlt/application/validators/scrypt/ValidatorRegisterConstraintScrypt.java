@@ -64,81 +64,21 @@
 
 package com.radixdlt.application.validators.scrypt;
 
-import com.radixdlt.application.system.state.EpochData;
+import com.radixdlt.application.validators.scrypt.procedure.DownValidatorRegisteredCopyProcedure;
+import com.radixdlt.application.validators.scrypt.procedure.ReadUpdatingRegisteredNeedToReadEpochProcedure;
+import com.radixdlt.application.validators.scrypt.procedure.UpValidatorRegisteredCopyProcedure;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
-import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.DownProcedure;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ReadProcedure;
-import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.UpProcedure;
-import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.crypto.ECPublicKey;
 
 public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
-  private record UpdatingRegistered(ECPublicKey validatorKey, EpochData epochData)
-      implements ReducerState {
-
-    void update(ValidatorRegisteredCopy update) throws ProcedureException {
-      if (!update.validatorKey().equals(validatorKey)) {
-        throw new ProcedureException("Cannot update validator");
-      }
-
-      var expectedEpoch = epochData.epoch() + 1;
-      if (update.epochUpdate().orElseThrow() != expectedEpoch) {
-        throw new ProcedureException(
-            "Expected epoch to be " + expectedEpoch + " but is " + update.epochUpdate());
-      }
-    }
-  }
-
-  private record UpdatingRegisteredNeedToReadEpoch(ECPublicKey validatorKey)
-      implements ReducerState {
-
-    ReducerState readEpoch(EpochData epochData) {
-      return new UpdatingRegistered(validatorKey, epochData);
-    }
-  }
 
   @Override
   public void main(Loader os) {
     os.substate(ValidatorRegisteredCopy.SUBSTATE_DEFINITION);
 
-    os.procedure(
-        new DownProcedure<>(
-            VoidReducerState.class,
-            ValidatorRegisteredCopy.class,
-            d ->
-                new Authorization(
-                    PermissionLevel.USER,
-                    (r, c) -> {
-                      if (!c.key().map(d.validatorKey()::equals).orElse(false)) {
-                        throw new AuthorizationException("Key does not match.");
-                      }
-                    }),
-            (d, s, r, c) ->
-                ReducerResult.incomplete(new UpdatingRegisteredNeedToReadEpoch(d.validatorKey()))));
-
-    os.procedure(
-        new ReadProcedure<>(
-            UpdatingRegisteredNeedToReadEpoch.class,
-            EpochData.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
-            (s, u, r) -> ReducerResult.incomplete(s.readEpoch(u))));
-
-    os.procedure(
-        new UpProcedure<>(
-            UpdatingRegistered.class,
-            ValidatorRegisteredCopy.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
-            (s, u, c, r) -> {
-              s.update(u);
-              return ReducerResult.complete();
-            }));
+    os.procedure(new DownValidatorRegisteredCopyProcedure());
+    os.procedure(new ReadUpdatingRegisteredNeedToReadEpochProcedure());
+    os.procedure(new UpValidatorRegisteredCopyProcedure());
   }
 }

@@ -71,6 +71,7 @@ import com.radixdlt.engine.parser.exceptions.REInstructionDataDeserializeExcepti
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bytes;
 import java.nio.ByteBuffer;
+import java.util.stream.Stream;
 
 /** Unparsed Low level instruction into Radix Engine */
 public final class REInstruction {
@@ -259,6 +260,7 @@ public final class REInstruction {
     };
 
     private final REOp op;
+
     private final byte opCode;
     private final LengthType lengthType;
     private final int minLength;
@@ -315,19 +317,12 @@ public final class REInstruction {
     this.length = length;
   }
 
-  public int getDataLength() {
-    return length;
-  }
-
-  public REMicroOp getMicroOp() {
+  public REMicroOp microOp() {
     return microOp;
   }
 
-  public ByteBuffer getDataByteBuffer() {
-    return ByteBuffer.wrap(array, offset, length);
-  }
-
-  public <T> T getData() {
+  @SuppressWarnings("unchecked")
+  public <T> T data() {
     return (T) data;
   }
 
@@ -335,6 +330,15 @@ public final class REInstruction {
     return microOp.op.isSubstateUpdate();
   }
 
+  public Stream<SubstateId> dependenciesStream() {
+    return switch (microOp) {
+      case DOWN, READ, VDOWN, VREAD -> Stream.of(this.<SubstateId>data());
+      default -> Stream.empty();
+    };
+  }
+
+  // TODO: fields array, offset and length are not used, but logic below contains side
+  //  effects and requires careful review before making changes.
   public static REInstruction readFrom(REParser.ParserState parserState, ByteBuffer buf)
       throws DeserializeException, REInstructionDataDeserializeException {
 

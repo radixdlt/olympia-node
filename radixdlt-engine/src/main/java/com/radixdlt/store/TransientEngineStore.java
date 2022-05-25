@@ -94,57 +94,8 @@ public class TransientEngineStore<M> implements EngineStore<M> {
             transientStore.transaction(
                 tStore ->
                     consumer.start(
-                        new EngineStoreInTransaction<M>() {
-                          @Override
-                          public void storeTxn(REProcessedTxn txn) {
-                            tStore.storeTxn(txn);
-                          }
-
-                          @Override
-                          public void storeMetadata(M metadata) {
-                            // no-op
-                          }
-
-                          @Override
-                          public ByteBuffer verifyVirtualSubstate(SubstateId substateId)
-                              throws VirtualSubstateAlreadyDownException,
-                                  VirtualParentStateDoesNotExist {
-                            try {
-                              return tStore.verifyVirtualSubstate(substateId);
-                            } catch (VirtualParentStateDoesNotExist e) {
-                              return baseStore.verifyVirtualSubstate(substateId);
-                            }
-                          }
-
-                          @Override
-                          public Optional<ByteBuffer> loadSubstate(SubstateId substateId) {
-                            if (!transientStore.contains(substateId)) {
-                              return baseStore.loadSubstate(substateId);
-                            }
-
-                            return tStore.loadSubstate(substateId);
-                          }
-
-                          @Override
-                          public CloseableCursor<RawSubstateBytes> openIndexedCursor(
-                              SubstateIndex<?> index) {
-                            return tStore
-                                .openIndexedCursor(index)
-                                .concat(
-                                    () ->
-                                        baseStore
-                                            .openIndexedCursor(index)
-                                            .filter(
-                                                s ->
-                                                    !transientStore.contains(
-                                                        SubstateId.fromBytes(s.getId()))));
-                          }
-
-                          @Override
-                          public Optional<ByteBuffer> loadResource(REAddr addr) {
-                            return tStore.loadResource(addr).or(() -> baseStore.loadResource(addr));
-                          }
-                        })));
+                        new TransientEngineStoreInTransaction<>(
+                            tStore, baseStore, transientStore))));
   }
 
   @Override
@@ -152,6 +103,7 @@ public class TransientEngineStore<M> implements EngineStore<M> {
     return null;
   }
 
+  @SuppressWarnings("resource")
   @Override
   public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
     return transientStore
@@ -159,11 +111,63 @@ public class TransientEngineStore<M> implements EngineStore<M> {
         .concat(
             () ->
                 base.openIndexedCursor(index)
-                    .filter(s -> !transientStore.contains(SubstateId.fromBytes(s.getId()))));
+                    .filter(s -> !transientStore.contains(s.asSubstateId())));
   }
 
   @Override
   public Optional<RawSubstateBytes> get(SystemMapKey key) {
     return transientStore.get(key).or(() -> base.get(key));
+  }
+
+  private record TransientEngineStoreInTransaction<M>(
+      EngineStoreInTransaction<M> tStore,
+      EngineStoreInTransaction<M> base,
+      InMemoryEngineStore<M> transientStore)
+      implements EngineStoreInTransaction<M> {
+
+    @Override
+    public void storeTxn(REProcessedTxn txn) {
+      tStore.storeTxn(txn);
+    }
+
+    @Override
+    public void storeMetadata(M metadata) {
+      // no-op
+    }
+
+    @Override
+    public ByteBuffer verifyVirtualSubstate(SubstateId substateId)
+        throws VirtualSubstateAlreadyDownException, VirtualParentStateDoesNotExist {
+      try {
+        return tStore.verifyVirtualSubstate(substateId);
+      } catch (VirtualParentStateDoesNotExist e) {
+        return base.verifyVirtualSubstate(substateId);
+      }
+    }
+
+    @Override
+    public Optional<ByteBuffer> loadSubstate(SubstateId substateId) {
+      if (!transientStore.contains(substateId)) {
+        return base.loadSubstate(substateId);
+      }
+
+      return tStore.loadSubstate(substateId);
+    }
+
+    @SuppressWarnings("resource")
+    @Override
+    public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
+      return tStore
+          .openIndexedCursor(index)
+          .concat(
+              () ->
+                  base.openIndexedCursor(index)
+                      .filter(s -> !transientStore.contains(s.asSubstateId())));
+    }
+
+    @Override
+    public Optional<ByteBuffer> loadResource(REAddr addr) {
+      return tStore.loadResource(addr).or(() -> base.loadResource(addr));
+    }
   }
 }

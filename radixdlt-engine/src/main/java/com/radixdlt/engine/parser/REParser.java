@@ -83,16 +83,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class REParser {
-  private final SubstateDeserialization substateDeserialization;
-
-  public REParser(SubstateDeserialization substateDeserialization) {
-    this.substateDeserialization = substateDeserialization;
-  }
-
-  public SubstateDeserialization getSubstateDeserialization() {
-    return substateDeserialization;
-  }
+public record REParser(SubstateDeserialization substateDeserialization) {
 
   public static class ParserState {
     private final Txn txn;
@@ -196,15 +187,14 @@ public final class REParser {
       parserState.nextInstruction(inst);
 
       if (inst.isStateUpdate()) {
-        parserState.substateUpdate(inst.getMicroOp().getOp());
-      } else if (inst.getMicroOp().getOp() == REOp.READ
-          || inst.getMicroOp().getOp() == REOp.READINDEX) {
+        parserState.substateUpdate(inst.microOp().getOp());
+      } else if (inst.microOp().getOp() == REOp.READ || inst.microOp().getOp() == REOp.READINDEX) {
         parserState.read();
-      } else if (inst.getMicroOp() == REInstruction.REMicroOp.HEADER) {
-        parserState.header(inst.getData());
-      } else if (inst.getMicroOp() == REInstruction.REMicroOp.SYSCALL) {
+      } else if (inst.microOp() == REInstruction.REMicroOp.HEADER) {
+        parserState.header(inst.data());
+      } else if (inst.microOp() == REInstruction.REMicroOp.SYSCALL) {
         try {
-          var callData = inst.<CallData>getData();
+          var callData = inst.<CallData>data();
           byte id = callData.get(0);
           var syscall =
               Syscall.of(id)
@@ -238,15 +228,15 @@ public final class REParser {
         } catch (CallDataAccessException | TrailingBytesException e) {
           throw new TxnParseException(parserState, e);
         }
-      } else if (inst.getMicroOp() == REInstruction.REMicroOp.MSG) {
-        parserState.msg(inst.getData());
-      } else if (inst.getMicroOp() == REInstruction.REMicroOp.END) {
+      } else if (inst.microOp() == REInstruction.REMicroOp.MSG) {
+        parserState.msg(inst.data());
+      } else if (inst.microOp() == REInstruction.REMicroOp.END) {
         parserState.end();
-      } else if (inst.getMicroOp() == REInstruction.REMicroOp.SIG) {
+      } else if (inst.microOp() == REInstruction.REMicroOp.SIG) {
         sigPosition = curPos;
-        sig = inst.getData();
+        sig = inst.data();
       } else {
-        throw new TxnParseException(parserState, "Unknown CM Op " + inst.getMicroOp());
+        throw new TxnParseException(parserState, "Unknown CM Op " + inst.microOp());
       }
     }
 

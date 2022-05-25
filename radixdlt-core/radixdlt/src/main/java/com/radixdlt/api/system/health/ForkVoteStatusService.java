@@ -71,8 +71,8 @@ import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.CandidateForkVote;
 import com.radixdlt.statecomputer.forks.CurrentForkView;
@@ -103,6 +103,7 @@ public final class ForkVoteStatusService {
     this.currentForkView = Objects.requireNonNull(currentForkView);
   }
 
+  @SuppressWarnings("UnstableApiUsage")
   public ForkVoteStatus forkVoteStatus() {
     final var currentFork = currentForkView.currentForkConfig();
 
@@ -115,7 +116,7 @@ public final class ForkVoteStatusService {
         CandidateForkVote.create(self.getKey(), forks.getCandidateFork().get());
 
     final var substateDeserialization =
-        currentFork.engineRules().parser().getSubstateDeserialization();
+        currentFork.engineRules().parser().substateDeserialization();
 
     try (var validatorMetadataCursor =
         engineStore.openIndexedCursor(
@@ -124,16 +125,8 @@ public final class ForkVoteStatusService {
 
       final var maybeSelfForkVote =
           Streams.stream(validatorMetadataCursor)
-              .map(
-                  s -> {
-                    try {
-                      return (ValidatorSystemMetadata)
-                          substateDeserialization.deserialize(s.getData());
-                    } catch (DeserializeException e) {
-                      throw new IllegalStateException(
-                          "Failed to deserialize ValidatorMetaData substate");
-                    }
-                  })
+              .map(RawSubstateBytes::data)
+              .map(substateDeserialization::<ValidatorSystemMetadata>deserialize)
               .filter(vm -> vm.validatorKey().equals(self.getKey()))
               .findAny()
               .map(substate -> HashCode.fromBytes(substate.data()))

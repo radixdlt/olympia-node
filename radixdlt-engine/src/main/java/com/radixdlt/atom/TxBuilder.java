@@ -72,27 +72,15 @@ import com.radixdlt.application.system.state.UnclaimedREAddr;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
-import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.constraintmachine.*;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -169,11 +157,11 @@ public final class TxBuilder {
     lowLevelBuilder.read(substateId);
   }
 
+  @SuppressWarnings("resource")
   private CloseableCursor<RawSubstateBytes> createRemoteSubstateCursor(SubstateIndex<?> index) {
     return remoteSubstate
         .openIndexedCursor(index)
-        .filter(
-            s -> !lowLevelBuilder.remoteDownSubstate().contains(SubstateId.fromBytes(s.getId())));
+        .filter(s -> !lowLevelBuilder.remoteDownSubstate().contains(s.asSubstateId()));
   }
 
   private CloseableCursor<RawSubstateBytes> createRemoteSubstateCursor(
@@ -188,12 +176,8 @@ public final class TxBuilder {
   }
 
   private Substate deserialize(RawSubstateBytes rawSubstateBytes) {
-    try {
-      var raw = deserialization.deserialize(rawSubstateBytes.getData());
-      return Substate.create(raw, SubstateId.fromBytes(rawSubstateBytes.getId()));
-    } catch (DeserializeException e) {
-      throw new IllegalStateException(e);
-    }
+    return new Substate(
+        deserialization.deserialize(rawSubstateBytes.data()), rawSubstateBytes.asSubstateId());
   }
 
   // For mempool filler
@@ -202,29 +186,29 @@ public final class TxBuilder {
       throws TxBuilderException {
     var localSubstate =
         lowLevelBuilder.localUpSubstate().stream()
-            .filter(s -> particleClass.isInstance(s.getParticle()))
-            .filter(s -> particlePredicate.test((T) s.getParticle()))
+            .filter(s -> particleClass.isInstance(s.particle()))
+            .filter(s -> particlePredicate.test((T) s.particle()))
             .findFirst();
 
     if (localSubstate.isPresent()) {
-      localDown(localSubstate.get().getIndex());
-      return (T) localSubstate.get().getParticle();
+      localDown(localSubstate.get().index());
+      return (T) localSubstate.get().particle();
     }
 
     try (var cursor = createRemoteSubstateCursor(particleClass)) {
       var substateRead =
           iteratorToStream(cursor)
               .map(this::deserialize)
-              .filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
+              .filter(s -> particlePredicate.test(particleClass.cast(s.particle())))
               .findFirst();
 
       if (substateRead.isEmpty()) {
         throw new NoSubstateFoundException();
       }
 
-      down(substateRead.get().getId());
+      down(substateRead.get().substateId());
 
-      return (T) substateRead.get().getParticle();
+      return (T) substateRead.get().particle();
     }
   }
 
@@ -234,18 +218,12 @@ public final class TxBuilder {
     var mapKey = SystemMapKey.ofSystem(typeByte);
     var localMaybe = lowLevelBuilder.get(mapKey);
     if (localMaybe.isPresent()) {
-      return (T) localMaybe.get().getParticle();
+      return (T) localMaybe.get().particle();
     }
     return remoteSubstate
         .get(mapKey)
-        .map(
-            rawSubstate -> {
-              try {
-                return (T) deserialization.deserialize(rawSubstate.getData());
-              } catch (DeserializeException e) {
-                throw new IllegalStateException();
-              }
-            })
+        .map(RawSubstateBytes::data)
+        .map(deserialization::<T>deserialize)
         .orElseThrow();
   }
 
@@ -255,39 +233,35 @@ public final class TxBuilder {
     var typeByte = deserialization.classToByte(substateClass);
     var mapKey = SystemMapKey.ofSystem(typeByte, keyBytes);
     var localMaybe = lowLevelBuilder.get(mapKey);
-    if (localMaybe.isPresent()) {
-      return (T) localMaybe.get().getParticle();
-    }
-    var raw = remoteSubstate.get(mapKey);
 
-    if (raw.isPresent()) {
-      var rawSubstate = raw.get();
-      try {
-        return (T) deserialization.deserialize(rawSubstate.getData());
-      } catch (DeserializeException e) {
-        throw new IllegalStateException();
-      }
-    } else {
-      return serialization.mapVirtual(substateClass, key);
+    if (localMaybe.isPresent()) {
+      return (T) localMaybe.get().particle();
     }
+
+    return remoteSubstate
+        .get(mapKey)
+        .map(RawSubstateBytes::data)
+        .map(deserialization::<T>deserialize)
+        .orElseGet(() -> serialization.mapVirtual(substateClass, key));
   }
 
   private void virtualReadDownInternal(byte typeByte, byte[] keyBytes, boolean down) {
     var parentMapKey = SystemMapKey.ofSystem(typeByte);
     var localParent = lowLevelBuilder.get(parentMapKey);
+
     if (localParent.isPresent()) {
       if (down) {
-        lowLevelBuilder.localVirtualDown(localParent.get().getIndex(), keyBytes);
+        lowLevelBuilder.localVirtualDown(localParent.get().index(), keyBytes);
       } else {
-        lowLevelBuilder.localVirtualRead(localParent.get().getIndex(), keyBytes);
+        lowLevelBuilder.localVirtualRead(localParent.get().index(), keyBytes);
       }
     } else {
       var parent = remoteSubstate.get(parentMapKey).orElseThrow();
-      var substateId = SubstateId.fromBytes(parent.getId());
+
       if (down) {
-        lowLevelBuilder.virtualDown(substateId, keyBytes);
+        lowLevelBuilder.virtualDown(parent.asSubstateId(), keyBytes);
       } else {
-        lowLevelBuilder.virtualRead(substateId, keyBytes);
+        lowLevelBuilder.virtualRead(parent.asSubstateId(), keyBytes);
       }
     }
   }
@@ -302,27 +276,24 @@ public final class TxBuilder {
     if (localMaybe.isPresent()) {
       var local = localMaybe.get();
       if (down) {
-        lowLevelBuilder.localDown(local.getIndex());
+        lowLevelBuilder.localDown(local.index());
       } else {
-        lowLevelBuilder.localRead(local.getIndex());
+        lowLevelBuilder.localRead(local.index());
       }
-      return (T) local.getParticle();
+      return (T) local.particle();
     }
 
     var raw = remoteSubstate.get(mapKey);
 
     if (raw.isPresent()) {
       var rawSubstate = raw.get();
+
       if (down) {
-        down(SubstateId.fromBytes(rawSubstate.getId()));
+        down(rawSubstate.asSubstateId());
       } else {
-        read(SubstateId.fromBytes(rawSubstate.getId()));
+        read(rawSubstate.asSubstateId());
       }
-      try {
-        return (T) deserialization.deserialize(rawSubstate.getData());
-      } catch (DeserializeException e) {
-        throw new IllegalStateException();
-      }
+      return deserialization.deserialize(rawSubstate.data());
     } else {
       this.virtualReadDownInternal(typeByte, keyBytes, down);
       return serialization.mapVirtual(substateClass, key);
@@ -344,17 +315,14 @@ public final class TxBuilder {
     var localMaybe = lowLevelBuilder.get(mapKey);
     if (localMaybe.isPresent()) {
       var local = localMaybe.get();
-      lowLevelBuilder.localDown(local.getIndex());
-      return (T) local.getParticle();
+      lowLevelBuilder.localDown(local.index());
+      return (T) local.particle();
     }
 
     var rawSubstate = remoteSubstate.get(mapKey).orElseThrow();
-    down(SubstateId.fromBytes(rawSubstate.getId()));
-    try {
-      return (T) deserialization.deserialize(rawSubstate.getData());
-    } catch (DeserializeException e) {
-      throw new IllegalStateException();
-    }
+    down(rawSubstate.asSubstateId());
+
+    return deserialization.deserialize(rawSubstate.data());
   }
 
   @SuppressWarnings("unchecked")
@@ -364,17 +332,13 @@ public final class TxBuilder {
     var localMaybe = lowLevelBuilder.get(mapKey);
     if (localMaybe.isPresent()) {
       var local = localMaybe.get();
-      lowLevelBuilder.localRead(local.getIndex());
-      return (T) local.getParticle();
+      lowLevelBuilder.localRead(local.index());
+      return (T) local.particle();
     }
 
     var rawSubstate = remoteSubstate.get(mapKey).orElseThrow();
-    read(SubstateId.fromBytes(rawSubstate.getId()));
-    try {
-      return (T) deserialization.deserialize(rawSubstate.getData());
-    } catch (DeserializeException e) {
-      throw new IllegalStateException();
-    }
+    read(rawSubstate.asSubstateId());
+    return deserialization.deserialize(rawSubstate.data());
   }
 
   public UnclaimedREAddr downREAddr(REAddr addr) {
@@ -382,11 +346,11 @@ public final class TxBuilder {
     var typeByte = deserialization.classToByte(UnclaimedREAddr.class);
     var mapKey = SystemMapKey.ofSystem(typeByte);
     var localParent = lowLevelBuilder.get(mapKey);
+
     if (localParent.isPresent()) {
-      lowLevelBuilder.localVirtualDown(localParent.get().getIndex(), keyBytes);
+      lowLevelBuilder.localVirtualDown(localParent.get().index(), keyBytes);
     } else {
-      var parent = remoteSubstate.get(mapKey).orElseThrow();
-      var substateId = SubstateId.fromBytes(parent.getId());
+      var substateId = remoteSubstate.get(mapKey).orElseThrow().asSubstateId();
       lowLevelBuilder.virtualDown(substateId, keyBytes);
     }
     return serialization.mapVirtual(UnclaimedREAddr.class, addr);
@@ -406,8 +370,8 @@ public final class TxBuilder {
     var cursor = createRemoteSubstateCursor(index);
     var localIterator =
         lowLevelBuilder.localUpSubstate().stream()
-            .map(LocalSubstate::getParticle)
-            .filter(index.getSubstateClass()::isInstance)
+            .map(LocalSubstate::particle)
+            .filter(index.substateClass()::isInstance)
             .map(p -> (T) p)
             .map(p -> Pair.of(p, serialization.serialize(p)))
             .filter(p -> index.test(p.getSecond()))
@@ -425,11 +389,7 @@ public final class TxBuilder {
       private T nextRemote() {
         var next = nextRemote;
         nextRemote = cursor.hasNext() ? cursor.next() : null;
-        try {
-          return (T) deserialization.deserialize(next.getData());
-        } catch (DeserializeException e) {
-          throw new IllegalStateException();
-        }
+        return deserialization.deserialize(next.data());
       }
 
       private T nextLocal() {
@@ -451,7 +411,7 @@ public final class TxBuilder {
       @Override
       public T next() {
         if (nextRemote != null && nextLocal != null) {
-          var compare = comparator.compare(nextRemote.getData(), nextLocal.getSecond());
+          var compare = comparator.compare(nextRemote.data(), nextLocal.getSecond());
           return compare <= 0 ? nextRemote() : nextLocal();
         } else if (nextRemote != null) {
           return nextRemote();
@@ -470,12 +430,12 @@ public final class TxBuilder {
     try (var cursor = createRemoteSubstateCursor(index)) {
       var localIterator =
           lowLevelBuilder.localUpSubstate().stream()
-              .map(LocalSubstate::getParticle)
-              .filter(index.getSubstateClass()::isInstance)
+              .map(LocalSubstate::particle)
+              .filter(index.substateClass()::isInstance)
               .map(p -> (T) p)
               .filter(p -> index.test(serialization.serialize(p)))
               .iterator();
-      var remoteIterator = Iterators.transform(cursor, s -> (T) this.deserialize(s).getParticle());
+      var remoteIterator = Iterators.transform(cursor, s -> (T) this.deserialize(s).particle());
       var result = mapper.apply(Iterators.concat(localIterator, remoteIterator));
       lowLevelBuilder.downIndex(index);
       return result;
@@ -491,14 +451,14 @@ public final class TxBuilder {
       throws X {
     var spent = UInt256.ZERO;
     for (var l : lowLevelBuilder.localUpSubstate()) {
-      var p = l.getParticle();
-      if (!index.getSubstateClass().isInstance(p) || !particlePredicate.test((T) p)) {
+      var p = l.particle();
+      if (!index.substateClass().isInstance(p) || !particlePredicate.test((T) p)) {
         continue;
       }
       var resource = (T) p;
 
       spent = spent.add(resource.amount());
-      localDown(l.getIndex());
+      localDown(l.index());
 
       if (spent.compareTo(amount) >= 0) {
         return spent.subtract(amount);
@@ -508,19 +468,17 @@ public final class TxBuilder {
     try (var cursor = createRemoteSubstateCursor(index)) {
       while (cursor.hasNext()) {
         var raw = cursor.next();
-        try {
-          var resource = (T) deserialization.deserialize(raw.getData());
-          if (!particlePredicate.test(resource)) {
-            continue;
-          }
-          spent = spent.add(resource.amount());
-          down(SubstateId.fromBytes(raw.getId()));
-          if (spent.compareTo(amount) >= 0) {
-            return spent.subtract(amount);
-          }
+        var resource = deserialization.<T>deserialize(raw.data());
 
-        } catch (DeserializeException e) {
-          throw new IllegalStateException();
+        if (!particlePredicate.test(resource)) {
+          continue;
+        }
+
+        spent = spent.add(resource.amount());
+        down(raw.asSubstateId());
+
+        if (spent.compareTo(amount) >= 0) {
+          return spent.subtract(amount);
         }
       }
     }

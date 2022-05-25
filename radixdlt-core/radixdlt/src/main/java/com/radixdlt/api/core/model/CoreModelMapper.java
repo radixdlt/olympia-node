@@ -69,26 +69,13 @@ import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
-import com.radixdlt.api.core.model.entities.AccountVaultEntity;
-import com.radixdlt.api.core.model.entities.EntityDoesNotSupportDataObjectException;
-import com.radixdlt.api.core.model.entities.EntityDoesNotSupportResourceDepositException;
-import com.radixdlt.api.core.model.entities.EntityDoesNotSupportResourceWithdrawException;
-import com.radixdlt.api.core.model.entities.ExitingStakeVaultEntity;
-import com.radixdlt.api.core.model.entities.InvalidDataObjectException;
-import com.radixdlt.api.core.model.entities.PreparedStakeVaultEntity;
-import com.radixdlt.api.core.model.entities.PreparedUnstakeVaultEntity;
-import com.radixdlt.api.core.model.entities.SystemEntity;
-import com.radixdlt.api.core.model.entities.TokenEntity;
-import com.radixdlt.api.core.model.entities.ValidatorEntity;
-import com.radixdlt.api.core.model.entities.ValidatorSystemEntity;
+import com.radixdlt.api.core.model.entities.*;
 import com.radixdlt.api.core.openapitools.model.*;
+import com.radixdlt.api.core.openapitools.model.Substate;
+import com.radixdlt.application.system.state.*;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
-import com.radixdlt.application.system.state.SystemData;
-import com.radixdlt.application.system.state.UnclaimedREAddr;
 import com.radixdlt.application.system.state.ValidatorBFTData;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
@@ -98,18 +85,9 @@ import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.application.validators.construction.InvalidRakeIncreaseException;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.ValidatorFeeCopy;
-import com.radixdlt.application.validators.state.ValidatorMetaData;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.application.validators.state.*;
 import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
-import com.radixdlt.application.validators.state.ValidatorUpdatingData;
-import com.radixdlt.atom.MessageTooLongException;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.Txn;
+import com.radixdlt.atom.*;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -133,11 +111,7 @@ import com.radixdlt.statecomputer.forks.CandidateForkConfig;
 import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.UInt384;
+import com.radixdlt.utils.*;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -1010,7 +984,7 @@ public final class CoreModelMapper {
   }
 
   public SubstateIdentifier substateIdentifier(SubstateId substateId) {
-    return new SubstateIdentifier().identifier(Bytes.toHexString(substateId.asBytes()));
+    return new SubstateIdentifier().identifier(Bytes.toHexString(substateId.idBytes()));
   }
 
   public Substate substate(SubstateId substateId, boolean bootUp) {
@@ -1128,9 +1102,9 @@ public final class CoreModelMapper {
 
   public Operation operation(REStateUpdate update, Function<REAddr, String> addressToSymbol) {
     var operation = new Operation();
-    var substate = (Particle) update.getParsed();
+    var substate = (Particle) update.parsed();
     operation.type(SubstateTypeMapping.getType(SubstateTypeId.valueOf(update.typeByte())));
-    operation.substate(substate(update.getId(), update.isBootUp()));
+    operation.substate(substate(update.substateId(), update.isBootUp()));
     operation.entityIdentifier(entityIdentifier(substate, addressToSymbol));
     if (substate instanceof ResourceInBucket resourceInBucket
         && !resourceInBucket.amount().isZero()) {
@@ -1154,9 +1128,9 @@ public final class CoreModelMapper {
     Function<REAddr, String> localizedAddressToSymbol =
         addr -> {
           var localSymbol =
-              txn.getGroupedStateUpdates().stream()
+              txn.stateUpdateGroups().stream()
                   .flatMap(List::stream)
-                  .map(REStateUpdate::getParsed)
+                  .map(REStateUpdate::parsed)
                   .filter(TokenResourceMetadata.class::isInstance)
                   .map(TokenResourceMetadata.class::cast)
                   .filter(r -> r.addr().equals(addr))
@@ -1168,7 +1142,7 @@ public final class CoreModelMapper {
 
     var transaction = new CommittedTransaction();
 
-    for (var stateUpdates : txn.getGroupedStateUpdates()) {
+    for (var stateUpdates : txn.stateUpdateGroups()) {
       var operationGroup = operationGroup(stateUpdates, localizedAddressToSymbol);
       transaction.addOperationGroupsItem(operationGroup);
     }
@@ -1192,9 +1166,9 @@ public final class CoreModelMapper {
     Function<REAddr, String> localizedAddressToSymbol =
         addr -> {
           var localSymbol =
-              txn.getGroupedStateUpdates().stream()
+              txn.stateUpdateGroups().stream()
                   .flatMap(List::stream)
-                  .map(REStateUpdate::getParsed)
+                  .map(REStateUpdate::parsed)
                   .filter(TokenResourceMetadata.class::isInstance)
                   .map(TokenResourceMetadata.class::cast)
                   .filter(r -> r.addr().equals(addr))
@@ -1206,7 +1180,7 @@ public final class CoreModelMapper {
 
     var transaction = new Transaction();
 
-    for (var stateUpdates : txn.getGroupedStateUpdates()) {
+    for (var stateUpdates : txn.stateUpdateGroups()) {
       var operationGroup = operationGroup(stateUpdates, localizedAddressToSymbol);
       transaction.addOperationGroupsItem(operationGroup);
     }

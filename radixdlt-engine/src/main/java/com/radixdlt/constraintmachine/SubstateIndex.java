@@ -69,17 +69,8 @@ import com.radixdlt.utils.Bytes;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
 
-public final class SubstateIndex<T extends Particle> {
-  private final byte[] index;
-  private final Class<? extends T> substateClass;
-
-  private SubstateIndex(byte[] index, Class<? extends T> substateClass) {
-    this.index = index;
-    this.substateClass = substateClass;
-  }
-
+public record SubstateIndex<T extends Particle>(byte[] prefix, Class<? extends T> substateClass) {
   public static SubstateIndex<?> create(byte[] prefix) {
     return new SubstateIndex<>(prefix, SubstateTypeId.valueOf(prefix[0]).getSubstateClass());
   }
@@ -95,24 +86,24 @@ public final class SubstateIndex<T extends Particle> {
   }
 
   public boolean test(RawSubstateBytes bytes) {
-    return test(bytes.getData());
+    return test(bytes.data());
   }
 
   public boolean test(byte[] dataBytes) {
-    if (dataBytes.length < index.length) {
+    if (dataBytes.length < prefix.length) {
       return false;
     }
 
-    return Arrays.equals(dataBytes, 0, index.length, index, 0, index.length);
+    return Arrays.equals(dataBytes, 0, prefix.length, prefix, 0, prefix.length);
   }
 
   public boolean test(ByteBuffer buffer) {
     buffer.mark();
-    if (buffer.remaining() < index.length) {
+    if (buffer.remaining() < prefix.length) {
       return false;
     }
 
-    for (byte b : index) {
+    for (byte b : prefix) {
       if (buffer.get() != b) {
         return false;
       }
@@ -122,40 +113,21 @@ public final class SubstateIndex<T extends Particle> {
     return true;
   }
 
-  public byte[] getPrefix() {
-    return index;
-  }
-
-  public Class<? extends T> getSubstateClass() {
-    return substateClass;
-  }
-
-  public <U extends Particle> Optional<SubstateIndex<U>> toSubstateIndex(Class<U> substateClass) {
-    if (this.substateClass.equals(substateClass)) {
-      return Optional.of(new SubstateIndex<>(this.index, substateClass));
-    }
-    return Optional.empty();
-  }
-
   @Override
   public int hashCode() {
-    return Objects.hash(Arrays.hashCode(index), substateClass);
+    return Objects.hash(Arrays.hashCode(prefix), substateClass);
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof SubstateIndex)) {
-      return false;
-    }
-
-    var other = (SubstateIndex) o;
-    return Arrays.equals(this.index, other.index)
+    return o instanceof SubstateIndex<?> other
+        && Arrays.equals(this.prefix, other.prefix)
         && Objects.equals(this.substateClass, other.substateClass);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "%s{index=%s}", this.getClass().getSimpleName(), Bytes.toHexString(this.index));
+        "%s{index=%s}", this.getClass().getSimpleName(), Bytes.toHexString(this.prefix));
   }
 }

@@ -93,7 +93,7 @@ public class RadixEngineUniqueGenerator implements TxnGenerator {
     var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "smthng");
     var builder =
         TxBuilder.newBuilder(
-                parser.getSubstateDeserialization(),
+                parser.substateDeserialization(),
                 currentForkView.currentForkConfig().engineRules().serialization(),
                 255)
             .toLowLevelBuilder()

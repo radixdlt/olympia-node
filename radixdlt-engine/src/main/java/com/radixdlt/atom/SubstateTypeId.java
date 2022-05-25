@@ -64,30 +64,15 @@
 
 package com.radixdlt.atom;
 
-import com.radixdlt.application.system.state.EpochData;
-import com.radixdlt.application.system.state.RoundData;
-import com.radixdlt.application.system.state.StakeOwnership;
-import com.radixdlt.application.system.state.UnclaimedREAddr;
-import com.radixdlt.application.system.state.ValidatorBFTData;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.system.state.VirtualParent;
-import com.radixdlt.application.tokens.state.ExitingStake;
-import com.radixdlt.application.tokens.state.PreparedStake;
-import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
-import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.application.tokens.state.TokenResourceMetadata;
-import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.ValidatorFeeCopy;
-import com.radixdlt.application.validators.state.ValidatorMetaData;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
+import com.radixdlt.application.system.state.*;
+import com.radixdlt.application.tokens.state.*;
+import com.radixdlt.application.validators.state.*;
 import com.radixdlt.constraintmachine.Particle;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/* NOTE: after adding new substate type ID do not forget to add corresponding string into the SubstateTypeMapping.java */
 public enum SubstateTypeId {
   VIRTUAL_PARENT((byte) 0x0, VirtualParent.class),
   UNCLAIMED_READDR((byte) 0x1, UnclaimedREAddr.class),

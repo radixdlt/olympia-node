@@ -81,6 +81,7 @@ public final class ForksModule extends AbstractModule {
         binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() {});
   }
 
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
   @Provides
   @Singleton
   private Forks forks(

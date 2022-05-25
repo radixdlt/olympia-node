@@ -72,7 +72,7 @@ public class EndProcedure<S extends ReducerState> implements Procedure {
   private final Function<S, Authorization> authorization;
   private final EndReducer<S> endReducer;
 
-  public EndProcedure(
+  protected EndProcedure(
       Class<S> reducerStateClass,
       Function<S, Authorization> authorization,
       EndReducer<S> endReducer) {
@@ -83,14 +83,16 @@ public class EndProcedure<S extends ReducerState> implements Procedure {
 
   @Override
   public ProcedureKey key() {
-    return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.END, null));
+    return ProcedureKey.of(reducerStateClass, REOp.END, null);
   }
 
+  @SuppressWarnings("unchecked")
   @Override
-  public Authorization authorization(Object o) {
-    return authorization.apply((S) o);
+  public Authorization authorization(Object procedureParameters) {
+    return authorization.apply((S) procedureParameters);
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public ReducerResult call(
       Object o,

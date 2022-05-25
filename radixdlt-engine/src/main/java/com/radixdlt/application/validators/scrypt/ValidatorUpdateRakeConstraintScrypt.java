@@ -64,16 +64,13 @@
 
 package com.radixdlt.application.validators.scrypt;
 
-import com.radixdlt.application.system.state.EpochData;
-import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.validators.scrypt.procedure.DownValidatorFeeCopyProcedure;
+import com.radixdlt.application.validators.scrypt.procedure.ReadUpdatingRakeNeedToReadCurrentRakeProcedure;
+import com.radixdlt.application.validators.scrypt.procedure.ReadUpdatingRakeNeedToReadEpochProcedure;
+import com.radixdlt.application.validators.scrypt.procedure.UpValidatorFeeCopyProcedure;
 import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
-import com.radixdlt.constraintmachine.*;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.crypto.ECPublicKey;
-import java.util.Objects;
 
 public record ValidatorUpdateRakeConstraintScrypt(long rakeIncreaseDebounceEpochLength)
     implements ConstraintScrypt {
@@ -82,117 +79,13 @@ public record ValidatorUpdateRakeConstraintScrypt(long rakeIncreaseDebounceEpoch
   public static final int RAKE_MIN = 0;
   public static final int MAX_RAKE_INCREASE = 10 * RAKE_PERCENTAGE_GRANULARITY; // 10%
 
-  private class UpdatingRakeReady implements ReducerState {
-    private final EpochData epochData;
-    private final ValidatorStakeData stakeData;
-
-    UpdatingRakeReady(EpochData epochData, ValidatorStakeData stakeData) {
-      this.epochData = epochData;
-      this.stakeData = stakeData;
-    }
-
-    void update(ValidatorFeeCopy update) throws ProcedureException {
-      if (!Objects.equals(stakeData.validatorKey(), update.validatorKey())) {
-        throw new ProcedureException("Must update same key");
-      }
-
-      var rakeIncrease = update.curRakePercentage() - stakeData.rakePercentage();
-      if (rakeIncrease > MAX_RAKE_INCREASE) {
-        throw new ProcedureException(
-            "Max rake increase is "
-                + MAX_RAKE_INCREASE
-                + " but trying to increase "
-                + rakeIncrease);
-      }
-
-      var epoch =
-          update
-              .epochUpdate()
-              .orElseThrow(() -> new ProcedureException("Must contain epoch update"));
-      if (rakeIncrease > 0) {
-        var expectedEpoch = epochData.epoch() + 1 + rakeIncreaseDebounceEpochLength;
-        if (epoch != expectedEpoch) {
-          throw new ProcedureException(
-              "Increasing rake requires epoch delay to " + expectedEpoch + " but was " + epoch);
-        }
-      } else {
-        var expectedEpoch = epochData.epoch() + 1;
-        if (epoch != expectedEpoch) {
-          throw new ProcedureException(
-              "Decreasing rake requires epoch delay to " + expectedEpoch + " but was " + epoch);
-        }
-      }
-    }
-  }
-
-  private class UpdatingRakeNeedToReadCurrentRake implements ReducerState {
-    private final ECPublicKey validatorKey;
-
-    UpdatingRakeNeedToReadCurrentRake(ECPublicKey validatorKey) {
-      this.validatorKey = validatorKey;
-    }
-
-    public ReducerState readValidatorStakeState(ValidatorStakeData validatorStakeData)
-        throws ProcedureException {
-      if (!validatorStakeData.validatorKey().equals(validatorKey)) {
-        throw new ProcedureException("Invalid key update");
-      }
-
-      return new UpdatingRakeNeedToReadEpoch(validatorStakeData);
-    }
-  }
-
-  private class UpdatingRakeNeedToReadEpoch implements ReducerState {
-    private final ValidatorStakeData validatorStakeData;
-
-    private UpdatingRakeNeedToReadEpoch(ValidatorStakeData validatorStakeData) {
-      this.validatorStakeData = validatorStakeData;
-    }
-
-    ReducerState readEpoch(EpochData epochData) {
-      return new UpdatingRakeReady(epochData, validatorStakeData);
-    }
-  }
-
   @Override
   public void main(Loader os) {
     os.substate(ValidatorFeeCopy.SUBSTATE_DEFINITION);
 
-    os.procedure(
-        new DownProcedure<>(
-            VoidReducerState.class,
-            ValidatorFeeCopy.class,
-            d ->
-                new Authorization(
-                    PermissionLevel.USER,
-                    (r, c) -> {
-                      if (!c.key().map(d.validatorKey()::equals).orElse(false)) {
-                        throw new AuthorizationException("Key does not match.");
-                      }
-                    }),
-            (d, s, r, c) ->
-                ReducerResult.incomplete(new UpdatingRakeNeedToReadCurrentRake(d.validatorKey()))));
-    os.procedure(
-        new ReadProcedure<>(
-            UpdatingRakeNeedToReadEpoch.class,
-            EpochData.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
-            (s, u, r) -> ReducerResult.incomplete(s.readEpoch(u))));
-    os.procedure(
-        new ReadProcedure<>(
-            UpdatingRakeNeedToReadCurrentRake.class,
-            ValidatorStakeData.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
-            (s, u, r) -> ReducerResult.incomplete(s.readValidatorStakeState(u))));
-
-    os.procedure(
-        new UpProcedure<>(
-            UpdatingRakeReady.class,
-            ValidatorFeeCopy.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
-            (s, u, c, r) -> {
-              s.update(u);
-              return ReducerResult.complete();
-            }));
+    os.procedure(new DownValidatorFeeCopyProcedure(rakeIncreaseDebounceEpochLength));
+    os.procedure(new ReadUpdatingRakeNeedToReadEpochProcedure());
+    os.procedure(new ReadUpdatingRakeNeedToReadCurrentRakeProcedure());
+    os.procedure(new UpValidatorFeeCopyProcedure());
   }
 }

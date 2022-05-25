@@ -64,20 +64,39 @@
 
 package com.radixdlt.constraintmachine;
 
-public final class RawSubstateBytes {
-  private final byte[] id;
-  private final byte[] data;
+import com.radixdlt.atom.SubstateId;
+import java.util.Arrays;
 
-  public RawSubstateBytes(byte[] id, byte[] data) {
-    this.id = id;
-    this.data = data;
+public record RawSubstateBytes(byte[] id, byte[] data) {
+  public SubstateId asSubstateId() {
+    return SubstateId.fromBytes(id);
   }
 
-  public byte[] getId() {
-    return id;
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    return o instanceof RawSubstateBytes that
+        && Arrays.equals(id, that.id)
+        && Arrays.equals(data, that.data);
   }
 
-  public byte[] getData() {
-    return data;
+  @Override
+  public int hashCode() {
+    int result = Arrays.hashCode(id);
+    result = 31 * result + Arrays.hashCode(data);
+    return result;
+  }
+
+  @Override
+  public String toString() {
+    return "RawSubstateBytes("
+        + "id="
+        + Arrays.toString(id)
+        + ", data="
+        + Arrays.toString(data)
+        + ')';
   }
 }

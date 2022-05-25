@@ -64,212 +64,37 @@
 
 package com.radixdlt.application.system.scrypt;
 
+import com.radixdlt.application.system.scrypt.system.procedure.*;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.UnclaimedREAddr;
 import com.radixdlt.application.system.state.VirtualParent;
-import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
-import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
-import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.DownProcedure;
-import com.radixdlt.constraintmachine.ExecutionContext;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.SystemCallProcedure;
-import com.radixdlt.constraintmachine.UpProcedure;
-import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.constraintmachine.exceptions.InvalidHashedKeyException;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.Bytes;
-import java.util.Arrays;
-import java.util.LinkedList;
 
 public final class SystemConstraintScrypt implements ConstraintScrypt {
   public static final int MAX_SYMBOL_LENGTH = 32;
-
-  private static class AllocatingSystem implements ReducerState {}
-
-  private static class AllocatingVirtualState implements ReducerState {
-    private final LinkedList<SubstateTypeId> substatesToVirtualize = new LinkedList<>();
-
-    AllocatingVirtualState() {
-      substatesToVirtualize.add(SubstateTypeId.VALIDATOR_META_DATA);
-      substatesToVirtualize.add(SubstateTypeId.VALIDATOR_STAKE_DATA);
-      substatesToVirtualize.add(SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG);
-      substatesToVirtualize.add(SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY);
-      substatesToVirtualize.add(SubstateTypeId.VALIDATOR_RAKE_COPY);
-      substatesToVirtualize.add(SubstateTypeId.VALIDATOR_OWNER_COPY);
-      substatesToVirtualize.add(SubstateTypeId.VALIDATOR_SYSTEM_META_DATA);
-    }
-
-    public ReducerState createVirtualSubstate(VirtualParent virtualParent)
-        throws ProcedureException {
-      var typeId = substatesToVirtualize.remove(0);
-      if (!Arrays.equals(virtualParent.data(), new byte[] {typeId.id()})) {
-        throw new ProcedureException(
-            "Expected " + typeId + " but was " + Bytes.toHexString(virtualParent.data()));
-      }
-      return substatesToVirtualize.isEmpty() ? null : this;
-    }
-  }
-
-  public static class REAddrClaim implements ReducerState {
-    private final byte[] arg;
-    private final UnclaimedREAddr unclaimedREAddr;
-
-    public REAddrClaim(UnclaimedREAddr unclaimedREAddr, byte[] arg) {
-      this.unclaimedREAddr = unclaimedREAddr;
-      this.arg = arg;
-    }
-
-    public byte[] getArg() {
-      return arg;
-    }
-
-    public REAddr getAddr() {
-      return unclaimedREAddr.addr();
-    }
-  }
-
-  public static class REAddrClaimStart implements ReducerState {
-    private final byte[] arg;
-
-    public REAddrClaimStart(byte[] arg) {
-      this.arg = arg;
-    }
-
-    public ReducerState claim(UnclaimedREAddr unclaimedREAddr, ExecutionContext ctx)
-        throws ProcedureException, InvalidHashedKeyException {
-      if (ctx.permissionLevel() != PermissionLevel.SYSTEM && !ctx.skipAuthorization()) {
-        var key = ctx.key().orElseThrow(() -> new ProcedureException("Missing key"));
-        unclaimedREAddr.verifyHashedKey(key, arg);
-      }
-      return new REAddrClaim(unclaimedREAddr, arg);
-    }
-  }
 
   @Override
   public void main(Loader os) {
     os.substate(VirtualParent.SUBSTATE_DEFINITION);
 
-    // TODO: Down singleton
-    os.procedure(
-        new UpProcedure<>(
-            VoidReducerState.class,
-            VirtualParent.class,
-            u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> {}),
-            (s, u, c, r) -> {
-              if (u.data().length != 1) {
-                throw new ProcedureException("Invalid data: " + Bytes.toHexString(u.data()));
-              }
-              if (u.data()[0] != SubstateTypeId.UNCLAIMED_READDR.id()) {
-                throw new ProcedureException("Invalid data: " + Bytes.toHexString(u.data()));
-              }
-              return ReducerResult.complete();
-            }));
+    os.procedure(new UpVirtualParentProcedure());
 
     os.substate(EpochData.SUBSTATE_DEFINITION);
     os.substate(RoundData.SUBSTATE_DEFINITION);
 
-    os.procedure(
-        new SystemCallProcedure<>(
-            TokenHoldingBucket.class,
-            REAddr.ofSystem(),
-            () -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
-            (s, d, c) -> {
-              var id = d.get(0);
-              var syscall =
-                  Syscall.of(id)
-                      .orElseThrow(() -> new ProcedureException("Invalid call type " + id));
-              if (syscall != Syscall.FEE_RESERVE_PUT) {
-                throw new ProcedureException("Invalid call type: " + syscall);
-              }
-
-              var amt = d.getUInt256(1);
-              var tokens = s.withdraw(REAddr.ofNativeToken(), amt);
-              c.depositFeeReserve(tokens);
-              return ReducerResult.incomplete(s);
-            }));
-
-    os.procedure(
-        new SystemCallProcedure<>(
-            VoidReducerState.class,
-            REAddr.ofSystem(),
-            () -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
-            (s, d, c) -> {
-              var id = d.get(0);
-              var syscall =
-                  Syscall.of(id)
-                      .orElseThrow(() -> new ProcedureException("Invalid call type " + id));
-              if (syscall == Syscall.FEE_RESERVE_TAKE) {
-                var amt = d.getUInt256(1);
-                var tokens = c.withdrawFeeReserve(amt);
-                return ReducerResult.incomplete(new TokenHoldingBucket(tokens));
-              } else if (syscall == Syscall.READDR_CLAIM) {
-                var bytes = d.getRemainingBytes(1);
-                if (bytes.length > MAX_SYMBOL_LENGTH) {
-                  throw new ProcedureException("Address claim too large.");
-                }
-                return ReducerResult.incomplete(new REAddrClaimStart(bytes));
-              } else {
-                throw new ProcedureException("Invalid call type: " + syscall);
-              }
-            }));
+    os.procedure(new SystemCallTokenHoldingBucketProcedure());
+    os.procedure(new PerformSystemCallProcedure());
 
     // PUB_KEY type is already claimed by accounts
     os.substate(UnclaimedREAddr.SUBSTATE_DEFINITION);
 
-    os.procedure(
-        new DownProcedure<>(
-            REAddrClaimStart.class,
-            UnclaimedREAddr.class,
-            d -> {
-              final PermissionLevel permissionLevel;
-              if (d.addr().isNativeToken() || d.addr().isSystem()) {
-                permissionLevel = PermissionLevel.SYSTEM;
-              } else {
-                permissionLevel = PermissionLevel.USER;
-              }
-              return new Authorization(permissionLevel, (r, ctx) -> {});
-            },
-            (d, s, r, c) -> ReducerResult.incomplete(s.claim(d, c))));
+    os.procedure(new DownUnclaimedREAddrProcedure());
 
     // For Mainnet Genesis
-    os.procedure(
-        new UpProcedure<>(
-            SystemConstraintScrypt.REAddrClaim.class,
-            EpochData.class,
-            u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> {}),
-            (s, u, c, r) -> {
-              if (u.epoch() != 0) {
-                throw new ProcedureException("First epoch must be 0.");
-              }
-
-              return ReducerResult.incomplete(new AllocatingSystem());
-            }));
-    os.procedure(
-        new UpProcedure<>(
-            AllocatingSystem.class,
-            RoundData.class,
-            u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> {}),
-            (s, u, c, r) -> {
-              if (u.view() != 0) {
-                throw new ProcedureException("First view must be 0.");
-              }
-              return ReducerResult.incomplete(new AllocatingVirtualState());
-            }));
-    os.procedure(
-        new UpProcedure<>(
-            AllocatingVirtualState.class,
-            VirtualParent.class,
-            u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> {}),
-            (s, u, c, r) -> {
-              var next = s.createVirtualSubstate(u);
-              return next == null ? ReducerResult.complete() : ReducerResult.incomplete(next);
-            }));
+    os.procedure(new UpREAddrClaimProcedure());
+    os.procedure(new UpAllocatingSystemProcedure());
+    os.procedure(new UpAllocatingVirtualStateProcedure());
   }
 }

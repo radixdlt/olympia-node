@@ -129,7 +129,7 @@ public final class ForksVotingResultsHandlerTest extends ApiTest {
     when(txn.getId()).thenReturn(AID.from(HashUtils.random256().asBytes()));
     when(fakeTx.getTxn()).thenReturn(txn);
     when(fakeTx.getTxnId()).thenReturn(AID.ZERO);
-    when(fakeTx.getGroupedStateUpdates()).thenReturn(List.of());
+    when(fakeTx.stateUpdateGroups()).thenReturn(List.of());
     when(txn.getPayload()).thenReturn(HashUtils.random256().asBytes());
 
     final var proof1 =

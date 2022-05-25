@@ -73,19 +73,18 @@ import java.util.Optional;
 import org.bouncycastle.util.encoders.Hex;
 
 /** The id of a unique substate */
-public final class SubstateId {
+public record SubstateId(byte[] idBytes) {
   public static final int BYTES = AID.BYTES + Integer.BYTES;
 
-  private final byte[] idBytes;
-
-  private SubstateId(byte[] idBytes) {
-    this.idBytes = Objects.requireNonNull(idBytes);
+  public SubstateId {
+    Objects.requireNonNull(idBytes);
   }
 
   public static SubstateId ofSubstate(AID txId, int index) {
     byte[] id = new byte[BYTES];
     txId.copyTo(id, 0);
     Ints.copyTo(index, id, AID.BYTES);
+
     return new SubstateId(id);
   }
 
@@ -93,11 +92,10 @@ public final class SubstateId {
     if (substateId.isVirtual()) {
       throw new IllegalArgumentException();
     }
-    byte[] id = new byte[BYTES + key.length];
-    var buf = ByteBuffer.wrap(id);
-    buf.put(substateId.asBytes());
-    buf.put(key);
-    return new SubstateId(id);
+
+    var buf = ByteBuffer.wrap(new byte[BYTES + key.length]).put(substateId.idBytes()).put(key);
+
+    return new SubstateId(buf.array());
   }
 
   public static SubstateId fromBytes(byte[] bytes) {
@@ -114,18 +112,11 @@ public final class SubstateId {
     return idBytes.length > BYTES;
   }
 
-  public byte[] asBytes() {
-    return idBytes;
-  }
-
-  public AID getTxnId() {
-    return AID.from(idBytes);
-  }
-
   public Optional<SubstateId> getVirtualParent() {
     if (idBytes.length <= BYTES) {
       return Optional.empty();
     }
+
     var buf = ByteBuffer.wrap(idBytes, 0, BYTES);
     return Optional.of(SubstateId.fromBuffer(buf));
   }
@@ -134,6 +125,7 @@ public final class SubstateId {
     if (idBytes.length <= BYTES) {
       return Optional.empty();
     }
+
     var buf = ByteBuffer.wrap(idBytes, BYTES, idBytes.length - BYTES);
     return Optional.of(buf);
   }
@@ -156,12 +148,6 @@ public final class SubstateId {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof SubstateId)) {
-      return false;
-    }
-
-    var other = (SubstateId) o;
-
-    return Arrays.equals(this.idBytes, other.idBytes);
+    return o instanceof SubstateId other && Arrays.equals(this.idBytes, other.idBytes);
   }
 }

@@ -65,46 +65,13 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.identifiers.REAddr;
-import java.util.Objects;
 
-public final class OpSignature {
-  private final REOp op;
-  private final Object type;
-
-  private OpSignature(REOp op, Object type) {
-    this.op = op;
-    this.type = type;
-  }
-
-  public REOp op() {
-    return op;
-  }
-
+public record OpSignature(REOp op, Object type) {
   public static OpSignature ofSubstateUpdate(REOp op, Class<? extends Particle> particleClass) {
     return new OpSignature(op, particleClass);
   }
 
   public static OpSignature ofMethod(REOp op, REAddr addr) {
     return new OpSignature(op, addr);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(op, type);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof OpSignature)) {
-      return false;
-    }
-
-    var other = (OpSignature) o;
-    return Objects.equals(this.op, other.op) && Objects.equals(this.type, other.type);
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{op=%s type=%s}", this.getClass().getSimpleName(), this.op, this.type);
   }
 }

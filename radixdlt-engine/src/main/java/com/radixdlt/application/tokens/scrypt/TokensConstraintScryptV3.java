@@ -64,178 +64,46 @@
 
 package com.radixdlt.application.tokens.scrypt;
 
-import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
+import com.radixdlt.application.tokens.TokensConfig;
+import com.radixdlt.application.tokens.scrypt.procedure.*;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
-import com.radixdlt.constraintmachine.*;
-import com.radixdlt.constraintmachine.REEvent.ResourceCreatedEvent;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.constraintmachine.exceptions.ReservedSymbolException;
-import com.radixdlt.utils.UInt256;
-import java.nio.charset.StandardCharsets;
-import java.util.Set;
-import java.util.regex.Pattern;
 
-public record TokensConstraintScryptV3(Set<String> reservedSymbols, Pattern tokenSymbolPattern)
-    implements ConstraintScrypt {
+public record TokensConstraintScryptV3(TokensConfig config) implements ConstraintScrypt {
 
   @Override
   public void main(Loader os) {
-    registerParticles(os);
+    os.substate(TokenResource.SUBSTATE_DEFINITION);
+    os.substate(TokenResourceMetadata.SUBSTATE_DEFINITION);
+    os.substate(TokensInAccount.SUBSTATE_DEFINITION);
+
     defineTokenCreation(os);
     defineMintTransferBurn(os);
   }
 
-  private void registerParticles(Loader os) {
-    os.substate(TokenResource.SUBSTATE_DEFINITION);
-    os.substate(TokenResourceMetadata.SUBSTATE_DEFINITION);
-    os.substate(TokensInAccount.SUBSTATE_DEFINITION);
-  }
-
-  private record NeedFixedTokenSupply(byte[] arg, TokenResource tokenResource)
-      implements ReducerState {}
-
-  private record NeedMetadata(byte[] arg, TokenResource tokenResource) implements ReducerState {
-    void metadata(TokenResourceMetadata metadata, ExecutionContext context)
-        throws ProcedureException {
-      if (!metadata.addr().equals(tokenResource.addr())) {
-        throw new ProcedureException("Addresses don't match.");
-      }
-
-      var symbol = new String(arg, StandardCharsets.UTF_8);
-      if (!symbol.equals(metadata.symbol())) {
-        throw new ProcedureException("Symbols don't match.");
-      }
-      context.emitEvent(new ResourceCreatedEvent(symbol, tokenResource, metadata));
-    }
-  }
-
   private void defineTokenCreation(Loader os) {
-    os.procedure(
-        new UpProcedure<>(
-            SystemConstraintScrypt.REAddrClaim.class,
-            TokenResource.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
-            (s, u, c, r) -> {
-              if (!u.addr().equals(s.getAddr())) {
-                throw new ProcedureException("Addresses don't match");
-              }
-
-              var str = new String(s.getArg());
-              if (reservedSymbols.contains(str) && c.permissionLevel() != PermissionLevel.SYSTEM) {
-                throw new ReservedSymbolException(str);
-              }
-              if (!tokenSymbolPattern.matcher(str).matches()) {
-                throw new ProcedureException("invalid token symbol: " + str);
-              }
-
-              if (u.isMutable()) {
-                return ReducerResult.incomplete(new NeedMetadata(s.getArg(), u));
-              }
-
-              if (!u.granularity().equals(UInt256.ONE)) {
-                throw new ProcedureException("Granularity must be one.");
-              }
-
-              return ReducerResult.incomplete(new NeedFixedTokenSupply(s.getArg(), u));
-            }));
-
-    os.procedure(
-        new UpProcedure<>(
-            NeedFixedTokenSupply.class,
-            TokensInAccount.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
-            (s, u, c, r) -> {
-              if (!u.resourceAddr().equals(s.tokenResource.addr())) {
-                throw new ProcedureException("Addresses don't match.");
-              }
-              return ReducerResult.incomplete(new NeedMetadata(s.arg, s.tokenResource));
-            }));
-
-    os.procedure(
-        new UpProcedure<>(
-            NeedMetadata.class,
-            TokenResourceMetadata.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
-            (s, u, c, r) -> {
-              s.metadata(u, c);
-              return ReducerResult.complete();
-            }));
+    os.procedure(new UpTokenResourceProcedure(config));
+    os.procedure(new UpNeedFixedTokenSupplyProcedure());
+    os.procedure(new UpTokenResourceMetadataProcedure());
   }
 
   private void defineMintTransferBurn(Loader os) {
     // Mint
-    os.procedure(
-        new UpProcedure<>(
-            VoidReducerState.class,
-            TokensInAccount.class,
-            u -> {
-              if (u.resourceAddr().isNativeToken()) {
-                return new Authorization(PermissionLevel.SYSTEM, (r, c) -> {});
-              }
-
-              return new Authorization(
-                  PermissionLevel.USER,
-                  (r, c) -> {
-                    var tokenResource = r.loadResource(u.resourceAddr());
-                    tokenResource.verifyMintAuthorization(c.key());
-                  });
-            },
-            (s, u, c, r) -> {
-              c.verifyCanAllocAndDestroyResources();
-              return ReducerResult.complete();
-            }));
+    os.procedure(new UpTokensInAccountProcedure());
 
     // Burn
-    os.procedure(
-        new EndProcedure<>(
-            TokenHoldingBucket.class,
-            s ->
-                new Authorization(
-                    PermissionLevel.USER,
-                    (r, c) -> {
-                      if (s.isEmpty()) {
-                        return;
-                      }
-                      var tokenResource = r.loadResource(s.getResourceAddr());
-                      tokenResource.verifyBurnAuthorization(c.key());
-                    }),
-            TokenHoldingBucket::destroy));
+    os.procedure(new EndTokenHoldingBucketProcedure());
 
     // Initial Withdraw
-    os.procedure(
-        new DownProcedure<>(
-            VoidReducerState.class,
-            TokensInAccount.class,
-            d -> d.bucket().withdrawAuthorization(),
-            (d, s, r, c) -> {
-              var state = new TokenHoldingBucket(d.toTokens());
-              return ReducerResult.incomplete(state);
-            }));
+    os.procedure(new DownTokensInAccountProcedure());
 
     // More Withdraws
-    os.procedure(
-        new DownProcedure<>(
-            TokenHoldingBucket.class,
-            TokensInAccount.class,
-            d -> d.bucket().withdrawAuthorization(),
-            (d, s, r, c) -> {
-              s.deposit(d.toTokens());
-              return ReducerResult.incomplete(s);
-            }));
+    os.procedure(new DownTokenHoldingBucketProcedure());
 
     // Deposit
-    os.procedure(
-        new UpProcedure<>(
-            TokenHoldingBucket.class,
-            TokensInAccount.class,
-            u -> new Authorization(PermissionLevel.USER, (r, c) -> {}),
-            (s, u, c, r) -> {
-              s.withdraw(u.resourceAddr(), u.amount());
-              return ReducerResult.incomplete(s);
-            }));
+    os.procedure(new UpTokenHoldingBucketProcedure());
   }
 }

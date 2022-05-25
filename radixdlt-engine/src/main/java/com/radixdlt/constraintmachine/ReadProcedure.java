@@ -67,15 +67,15 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import java.util.function.Function;
 
-public final class ReadProcedure<D extends Particle, S extends ReducerState> implements Procedure {
+public class ReadProcedure<D extends Particle, S extends ReducerState> implements Procedure {
   private final Class<D> readClass;
   private final Class<S> reducerStateClass;
   private final ReadReducer<D, S> readReducer;
   private final Function<D, Authorization> authorization;
 
-  public ReadProcedure(
-      Class<S> reducerStateClass,
+  protected ReadProcedure(
       Class<D> readClass,
+      Class<S> reducerStateClass,
       Function<D, Authorization> authorization,
       ReadReducer<D, S> readReducer) {
     this.readClass = readClass;
@@ -86,14 +86,16 @@ public final class ReadProcedure<D extends Particle, S extends ReducerState> imp
 
   @Override
   public ProcedureKey key() {
-    return ProcedureKey.of(reducerStateClass, OpSignature.ofSubstateUpdate(REOp.READ, readClass));
+    return ProcedureKey.of(reducerStateClass, REOp.READ, readClass);
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public Authorization authorization(Object o) {
     return authorization.apply((D) o);
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public ReducerResult call(
       Object o, ReducerState reducerState, Resources immutableAddrs, ExecutionContext context)
