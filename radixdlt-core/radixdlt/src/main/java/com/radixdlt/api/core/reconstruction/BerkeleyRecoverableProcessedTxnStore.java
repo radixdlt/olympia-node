@@ -237,7 +237,7 @@ public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAddit
       throw new IllegalStateException("Accumulator out of sync.");
     }
 
-    txn.stream()
+    txn.allStateUpdatesStream()
         .filter(u -> u.parsed() instanceof RoundData)
         .map(u -> (RoundData) u.parsed())
         .filter(r -> r.timestamp() > 0)

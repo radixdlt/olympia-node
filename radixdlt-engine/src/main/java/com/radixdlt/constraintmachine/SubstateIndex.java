@@ -70,7 +70,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 
-public record SubstateIndex<T extends Particle>(byte[] index, Class<? extends T> substateClass) {
+public record SubstateIndex<T extends Particle>(byte[] prefix, Class<? extends T> substateClass) {
   public static SubstateIndex<?> create(byte[] prefix) {
     return new SubstateIndex<>(prefix, SubstateTypeId.valueOf(prefix[0]).getSubstateClass());
   }
@@ -90,20 +90,20 @@ public record SubstateIndex<T extends Particle>(byte[] index, Class<? extends T>
   }
 
   public boolean test(byte[] dataBytes) {
-    if (dataBytes.length < index.length) {
+    if (dataBytes.length < prefix.length) {
       return false;
     }
 
-    return Arrays.equals(dataBytes, 0, index.length, index, 0, index.length);
+    return Arrays.equals(dataBytes, 0, prefix.length, prefix, 0, prefix.length);
   }
 
   public boolean test(ByteBuffer buffer) {
     buffer.mark();
-    if (buffer.remaining() < index.length) {
+    if (buffer.remaining() < prefix.length) {
       return false;
     }
 
-    for (byte b : index) {
+    for (byte b : prefix) {
       if (buffer.get() != b) {
         return false;
       }
@@ -115,19 +115,19 @@ public record SubstateIndex<T extends Particle>(byte[] index, Class<? extends T>
 
   @Override
   public int hashCode() {
-    return Objects.hash(Arrays.hashCode(index), substateClass);
+    return Objects.hash(Arrays.hashCode(prefix), substateClass);
   }
 
   @Override
   public boolean equals(Object o) {
     return o instanceof SubstateIndex<?> other
-        && Arrays.equals(this.index, other.index)
+        && Arrays.equals(this.prefix, other.prefix)
         && Objects.equals(this.substateClass, other.substateClass);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "%s{index=%s}", this.getClass().getSimpleName(), Bytes.toHexString(this.index));
+        "%s{index=%s}", this.getClass().getSimpleName(), Bytes.toHexString(this.prefix));
   }
 }

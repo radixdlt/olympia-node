@@ -290,17 +290,17 @@ public final class TxLowLevelBuilder {
   }
 
   public TxLowLevelBuilder readIndex(SubstateIndex<?> index) {
-    var buf = ByteBuffer.allocate(Short.BYTES + index.index().length);
-    buf.putShort((short) index.index().length);
-    buf.put(index.index());
+    var buf = ByteBuffer.allocate(Short.BYTES + index.prefix().length);
+    buf.putShort((short) index.prefix().length);
+    buf.put(index.prefix());
     instruction(REInstruction.REMicroOp.READINDEX, buf.array());
     return this;
   }
 
   public TxLowLevelBuilder downIndex(SubstateIndex<?> index) {
-    var buf = ByteBuffer.allocate(Short.BYTES + index.index().length);
-    buf.putShort((short) index.index().length);
-    buf.put(index.index());
+    var buf = ByteBuffer.allocate(Short.BYTES + index.prefix().length);
+    buf.putShort((short) index.prefix().length);
+    buf.put(index.prefix());
     instruction(REInstruction.REMicroOp.DOWNINDEX, buf.array());
     return this;
   }

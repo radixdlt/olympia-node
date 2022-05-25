@@ -71,8 +71,10 @@ public record ProcedureKey(Class<? extends ReducerState> currentState, OpSignatu
   }
 
   public static ProcedureKey of(
-      Class<? extends ReducerState> currentState, REOp op, Class<? extends Particle> particleClas) {
-    return new ProcedureKey(currentState, OpSignature.ofSubstateUpdate(op, particleClas));
+      Class<? extends ReducerState> currentState,
+      REOp op,
+      Class<? extends Particle> particleClass) {
+    return new ProcedureKey(currentState, OpSignature.ofSubstateUpdate(op, particleClass));
   }
 
   @Override

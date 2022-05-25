@@ -109,7 +109,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
           @Override
           public void storeTxn(REProcessedTxn txn) {
             synchronized (lock) {
-              txn.stream()
+              txn.allStateUpdatesStream()
                   .forEach(
                       update -> {
                         store.storedState.put(update.substateId(), update);

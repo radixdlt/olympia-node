@@ -296,7 +296,7 @@ public class LargeEpochChangeTest {
                                 v ->
                                     BFTValidator.from(
                                         BFTNode.create(v.validatorKey()), v.amount()))));
-    var stateUpdates = result.getProcessedTxn().stream().count();
+    var stateUpdates = result.getProcessedTxn().allStateUpdatesStream().count();
     construction.stop();
     logger.info(
         "epoch_preparation: state_updates={} verification_time={}s store_time={}s total_time={}s",

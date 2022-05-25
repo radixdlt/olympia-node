@@ -71,6 +71,7 @@ import com.radixdlt.engine.parser.exceptions.REInstructionDataDeserializeExcepti
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bytes;
 import java.nio.ByteBuffer;
+import java.util.stream.Stream;
 
 /** Unparsed Low level instruction into Radix Engine */
 public final class REInstruction {
@@ -259,6 +260,7 @@ public final class REInstruction {
     };
 
     private final REOp op;
+
     private final byte opCode;
     private final LengthType lengthType;
     private final int minLength;
@@ -326,6 +328,13 @@ public final class REInstruction {
 
   public boolean isStateUpdate() {
     return microOp.op.isSubstateUpdate();
+  }
+
+  public Stream<SubstateId> dependenciesStream() {
+    return switch (microOp) {
+      case DOWN, READ, VDOWN, VREAD -> Stream.of(this.<SubstateId>data());
+      default -> Stream.empty();
+    };
   }
 
   // TODO: fields array, offset and length are not used, but logic below contains side

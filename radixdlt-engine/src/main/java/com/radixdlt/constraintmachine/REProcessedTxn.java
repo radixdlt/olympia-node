@@ -106,22 +106,16 @@ public record REProcessedTxn(
 
   // FIXME: Currently a hack, better would be to put this at transaction layer for fees
   public boolean isSystemOnly() {
-    return stream().anyMatch(i -> i.parsed() instanceof RoundData)
-        || stream().anyMatch(i -> i.parsed() instanceof EpochData);
+    return allStateUpdatesStream().anyMatch(i -> i.parsed() instanceof RoundData)
+        || allStateUpdatesStream().anyMatch(i -> i.parsed() instanceof EpochData);
   }
 
-  public Stream<REStateUpdate> stream() {
+  public Stream<REStateUpdate> allStateUpdatesStream() {
     return stateUpdateGroups.stream().flatMap(List::stream);
   }
 
   public Stream<SubstateId> substateDependencies() {
-    return parsedTxn.instructions().stream()
-        .flatMap(
-            i ->
-                switch (i.microOp()) {
-                  case DOWN, READ, VDOWN, VREAD -> Stream.of(i.<SubstateId>data());
-                  default -> Stream.empty();
-                });
+    return parsedTxn.instructions().stream().flatMap(REInstruction::dependenciesStream);
   }
 
   @Override

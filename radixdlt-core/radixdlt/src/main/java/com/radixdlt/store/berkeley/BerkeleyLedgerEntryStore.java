@@ -922,7 +922,7 @@ public final class BerkeleyLedgerEntryStore
 
   private CloseableCursor<RawSubstateBytes> openIndexedCursor(
       Transaction dbTxn, SubstateIndex<?> index) {
-    var cursor = new BerkeleySubstateCursor(dbTxn, indexedSubstatesDatabase, index.index());
+    var cursor = new BerkeleySubstateCursor(dbTxn, indexedSubstatesDatabase, index.prefix());
     cursor.open();
     return cursor;
   }

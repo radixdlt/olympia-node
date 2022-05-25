@@ -81,22 +81,22 @@ public final class IndexedSubstateIterator<D extends Particle> {
   }
 
   public void verifyPostTypePrefixEquals(byte[] prefix) throws ProcedureException {
-    if (index.index().length != 1 + prefix.length) {
+    if (index.prefix().length != 1 + prefix.length) {
       throw new ProcedureException("Invalid shutdownAll prefix");
     }
     for (int i = 0; i < prefix.length; i++) {
-      if (index.index()[i + 1] != prefix[i]) {
+      if (index.prefix()[i + 1] != prefix[i]) {
         throw new ProcedureException(
             "Invalid shutdownAll prefix, expected "
                 + Bytes.toHexString(prefix)
                 + " but was "
-                + Bytes.toHexString(index.index()));
+                + Bytes.toHexString(index.prefix()));
       }
     }
   }
 
   public void verifyPostTypePrefixIsEmpty() throws ProcedureException {
-    if (index.index().length != 1) {
+    if (index.prefix().length != 1) {
       throw new ProcedureException("Invalid shutdownAll prefix");
     }
   }

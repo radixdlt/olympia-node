@@ -151,7 +151,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
         transactions.stream().map(p -> p.getTxn().getId()).collect(Collectors.toSet());
 
     transactions.stream()
-        .flatMap(REProcessedTxn::stream)
+        .flatMap(REProcessedTxn::allStateUpdatesStream)
         .filter(REStateUpdate::isShutDown)
         .forEach(
             instruction -> {
@@ -183,7 +183,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
     // TODO: Order by highest fees paid
     var copy = new TreeSet<>(data.keySet());
     prepared.stream()
-        .flatMap(REProcessedTxn::stream)
+        .flatMap(REProcessedTxn::allStateUpdatesStream)
         .filter(REStateUpdate::isShutDown)
         .flatMap(i -> substateIndex.getOrDefault(i.substateId(), Set.of()).stream())
         .distinct()
@@ -195,7 +195,9 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
       var txId = copy.first();
       copy.remove(txId);
       var txnData = data.get(txId);
-      txnData.getFirst().stream()
+      txnData
+          .getFirst()
+          .allStateUpdatesStream()
           .filter(REStateUpdate::isShutDown)
           .flatMap(inst -> substateIndex.getOrDefault(inst.substateId(), Set.of()).stream())
           .distinct()
