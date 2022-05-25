@@ -112,8 +112,6 @@ public final class SubstateTypeMapping {
     SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_OWNER_COPY, Pair.of(DATA, "PreparedValidatorOwner"));
     SUBSTATE_TYPE_ID_STRING_MAP.put(
         VALIDATOR_SYSTEM_META_DATA, Pair.of(DATA, "ValidatorSystemMetadata"));
-    SUBSTATE_TYPE_ID_STRING_MAP.put(
-        VALIDATOR_LIVENESS_SENTENCING_DATA, Pair.of(DATA, "ValidatorLivenessSentencingData"));
 
     for (var id : SubstateTypeId.values()) {
       if (!SUBSTATE_TYPE_ID_STRING_MAP.containsKey(id)) {

@@ -64,7 +64,7 @@
 
 package com.radixdlt.application.system.scrypt.round.procedure;
 
-import com.radixdlt.application.system.scrypt.EndPrevRound;
+import com.radixdlt.application.system.scrypt.round.state.EndPrevRound;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.constraintmachine.*;
 

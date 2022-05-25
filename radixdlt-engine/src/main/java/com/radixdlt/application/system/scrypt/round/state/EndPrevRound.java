@@ -62,38 +62,9 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.construction;
+package com.radixdlt.application.system.scrypt.round.state;
 
-import static com.radixdlt.atom.TxAction.NextEpoch;
+import com.radixdlt.application.system.state.RoundData;
+import com.radixdlt.constraintmachine.ReducerState;
 
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.utils.UInt256;
-
-public record NextEpochConstructorV4(
-    UInt256 rewardsPerProposal,
-    long minimumCompletedProposalsPercentage,
-    long unstakingEpochDelay,
-    int maxValidators)
-    implements ActionConstructor<NextEpoch>, NextEpochConstructor {
-
-  @Override
-  public void construct(NextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-    var state = EpochConstructionState.createState(this, txBuilder);
-
-    state.processExittingStake();
-    state.processEmission();
-    state.processPreparedUnstake();
-    state.processPreparedStake();
-    state.processUpdateRake();
-    state.processUpdateOwners();
-    // state.processLiveness()
-    state.processUpdateRegisteredFlag();
-
-    state.upValidatorStakeData();
-
-    state.prepareNextValidatorSetV3();
-    state.finalizeConstruction();
-  }
-}
+public record EndPrevRound(RoundData closedRound) implements ReducerState {}

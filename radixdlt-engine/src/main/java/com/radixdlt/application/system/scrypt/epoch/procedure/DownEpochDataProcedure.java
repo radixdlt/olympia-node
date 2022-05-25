@@ -64,9 +64,9 @@
 
 package com.radixdlt.application.system.scrypt.epoch.procedure;
 
-import com.radixdlt.application.system.scrypt.EndPrevRound;
 import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
 import com.radixdlt.application.system.scrypt.epoch.state.UpdatingEpoch;
+import com.radixdlt.application.system.scrypt.round.state.EndPrevRound;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;

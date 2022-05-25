@@ -79,11 +79,11 @@ import java.util.stream.Collectors;
 public class CreatingNextValidatorSet implements ReducerState {
   private LinkedList<ValidatorStakeData> nextValidatorSet;
   private final UpdatingEpoch updatingEpoch;
-  private final EpochUpdateConfig parent;
+  private final EpochUpdateConfig config;
 
-  public CreatingNextValidatorSet(EpochUpdateConfig parent, UpdatingEpoch updatingEpoch) {
+  public CreatingNextValidatorSet(EpochUpdateConfig config, UpdatingEpoch updatingEpoch) {
     this.updatingEpoch = updatingEpoch;
-    this.parent = parent;
+    this.config = config;
   }
 
   public ReducerState readIndex(
@@ -96,7 +96,7 @@ public class CreatingNextValidatorSet implements ReducerState {
                 Comparator.comparing(ValidatorStakeData::amount)
                     .thenComparing(ValidatorStakeData::validatorKey, KeyComparator.instance())
                     .reversed())
-            .limit(parent.maxValidators())
+            .limit(config.maxValidators())
             .filter(v -> !v.totalStake().isZero())
             .collect(Collectors.toCollection(LinkedList::new));
 

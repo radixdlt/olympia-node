@@ -73,7 +73,7 @@ import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import java.util.OptionalInt;
 
-public final record RERules(
+public record RERules(
     RERulesVersion version,
     REParser parser,
     SubstateSerialization serialization,

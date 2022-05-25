@@ -107,7 +107,12 @@ public final class SubstateDeserialization {
     return SubstateIndex.create(classToByte(substateClass), substateClass);
   }
 
-  public Particle deserializeRawParticle(ByteBuffer buf) throws DeserializeException {
+  public <T extends Particle> T deserializeRawParticle(byte[] buf) throws DeserializeException {
+    return deserializeRawParticle(ByteBuffer.wrap(buf));
+  }
+
+  @SuppressWarnings("unchecked")
+  public <T extends Particle> T deserializeRawParticle(ByteBuffer buf) throws DeserializeException {
     var typeByte = buf.get();
     var deserializer = byteToDeserializer.get(typeByte);
 
@@ -116,7 +121,7 @@ public final class SubstateDeserialization {
     }
 
     try {
-      return deserializer.deserializer().deserialize(buf);
+      return (T) deserializer.deserializer().deserialize(buf);
     } catch (Exception e) {
       throw new SubstateDeserializationException(deserializer.substateClass(), e);
     }
@@ -126,10 +131,9 @@ public final class SubstateDeserialization {
     return deserialize(ByteBuffer.wrap(bytes));
   }
 
-  @SuppressWarnings("unchecked")
   public <T extends Particle> T deserialize(ByteBuffer buffer) {
     try {
-      return (T) deserializeRawParticle(buffer);
+      return deserializeRawParticle(buffer);
     } catch (DeserializeException e) {
       throw new IllegalStateException("Deserialization error", e);
     }

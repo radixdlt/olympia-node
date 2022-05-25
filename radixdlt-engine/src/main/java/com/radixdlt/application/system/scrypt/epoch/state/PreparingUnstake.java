@@ -78,31 +78,25 @@ import com.radixdlt.utils.UInt256;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
-public final class PreparingUnstake implements ReducerState {
-  private final UpdatingEpoch updatingEpoch;
-  private final NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingUnstakes =
-      new TreeMap<>(KeyComparator.instance());
-  private final NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingStake;
-  private final NavigableMap<ECPublicKey, ValidatorScratchPad> updatingValidators;
-  private final EpochUpdateConfig config;
+public record PreparingUnstake(
+    EpochUpdateConfig config,
+    UpdatingEpoch updatingEpoch,
+    NavigableMap<ECPublicKey, ValidatorScratchPad> updatingValidators,
+    NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingStake,
+    NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingUnstakes)
+    implements ReducerState {
 
-  private PreparingUnstake(
+  public static PreparingUnstake create(
       EpochUpdateConfig config,
       UpdatingEpoch updatingEpoch,
       NavigableMap<ECPublicKey, ValidatorScratchPad> updatingValidators,
       NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingStake) {
-    this.config = config;
-    this.updatingEpoch = updatingEpoch;
-    this.updatingValidators = updatingValidators;
-    this.preparingStake = preparingStake;
-  }
-
-  static PreparingUnstake create(
-      EpochUpdateConfig parent,
-      UpdatingEpoch updatingEpoch,
-      NavigableMap<ECPublicKey, ValidatorScratchPad> updatingValidators,
-      NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingStake) {
-    return new PreparingUnstake(parent, updatingEpoch, updatingValidators, preparingStake);
+    return new PreparingUnstake(
+        config,
+        updatingEpoch,
+        updatingValidators,
+        preparingStake,
+        new TreeMap<>(KeyComparator.instance()));
   }
 
   public ReducerState unstakes(IndexedSubstateIterator<PreparedUnstakeOwnership> substateIterator)

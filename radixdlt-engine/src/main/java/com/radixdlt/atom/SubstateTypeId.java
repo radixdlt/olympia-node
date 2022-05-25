@@ -92,8 +92,7 @@ public enum SubstateTypeId {
   VALIDATOR_REGISTERED_FLAG_COPY((byte) 0xf, ValidatorRegisteredCopy.class),
   VALIDATOR_RAKE_COPY((byte) 0x10, ValidatorFeeCopy.class),
   VALIDATOR_OWNER_COPY((byte) 0x11, ValidatorOwnerCopy.class),
-  VALIDATOR_SYSTEM_META_DATA((byte) 0x12, ValidatorSystemMetadata.class),
-  VALIDATOR_LIVENESS_SENTENCING_DATA((byte) 0x13, ValidatorLivenessSentencingData.class);
+  VALIDATOR_SYSTEM_META_DATA((byte) 0x12, ValidatorSystemMetadata.class);
 
   private final byte id;
   private final Class<? extends Particle> substateClass;
