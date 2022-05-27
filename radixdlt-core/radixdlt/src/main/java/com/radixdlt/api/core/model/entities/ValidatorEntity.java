@@ -145,7 +145,7 @@ public record ValidatorEntity(ECPublicKey validatorKey) implements Entity {
     builder.down(ValidatorRegisteredCopy.class, validatorKey);
     var curEpoch = builder.readSystem(EpochData.class);
     builder.up(
-        new ValidatorRegisteredCopy(
+        ValidatorRegisteredCopy.createV1(
             OptionalLong.of(curEpoch.epoch() + 1),
             validatorKey,
             preparedValidatorRegistered.getRegistered()));

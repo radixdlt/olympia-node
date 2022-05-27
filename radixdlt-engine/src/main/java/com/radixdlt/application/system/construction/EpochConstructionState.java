@@ -159,22 +159,19 @@ public record EpochConstructionState(
   }
 
   private void calculateEmission(ECPublicKey publicKey, ValidatorBFTData bftData) {
-    if (bftData.completedProposals() + bftData.missedProposals() == 0) {
+    if (bftData.hasNoProcessedProposals()) {
       return;
     }
 
-    var percentageCompleted =
-        bftData.completedProposals()
-            * 10000
-            / (bftData.completedProposals() + bftData.missedProposals());
+    var percentageCompleted = bftData.percentageCompleted();
 
     // Didn't pass threshold, no rewards!
     if (percentageCompleted < constructor.minimumCompletedProposalsPercentage()) {
       return;
     }
 
-    var nodeRewards =
-        constructor.rewardsPerProposal().multiply(UInt256.from(bftData.completedProposals()));
+    var nodeRewards = bftData.calculateRewards(constructor.rewardsPerProposal());
+
     if (nodeRewards.isZero()) {
       return;
     }
@@ -310,9 +307,14 @@ public record EpochConstructionState(
             (key, update) -> {
               var curValidator = stakeData(key);
               curValidator.setRegistered(update.isRegistered());
+
+              // -------------------------------------------
+              // TODO: create different versions of the object, depending on the jailing data
+              // -------------------------------------------
+
               this.txBuilder()
                   .up(
-                      new ValidatorRegisteredCopy(
+                      ValidatorRegisteredCopy.createV1(
                           OptionalLong.empty(), update.validatorKey(), update.isRegistered()));
             });
   }

@@ -80,10 +80,12 @@ public final class SubstateSerialization {
   public SubstateSerialization(Collection<SubstateDefinition<? extends Particle>> definitions) {
     this.classToTypeByte =
         definitions.stream()
+            .flatMap(SubstateDefinition::expandToSubclasses)
             .collect(
                 Collectors.toMap(SubstateDefinition::substateClass, SubstateDefinition::typeByte));
     this.classToSerializer =
         definitions.stream()
+            .flatMap(SubstateDefinition::expandToSubclasses)
             .collect(
                 Collectors.toMap(
                     SubstateDefinition::substateClass,
@@ -92,11 +94,13 @@ public final class SubstateSerialization {
                             ((SubstateSerializer<Particle>) d.serializer()).serialize(s, buf)));
     this.classToKeySerializer =
         definitions.stream()
+            .flatMap(SubstateDefinition::expandToSubclasses)
             .collect(
                 Collectors.toMap(
                     SubstateDefinition::substateClass, SubstateDefinition::keySerializer));
     this.classToVirtualSerializer =
         definitions.stream()
+            .flatMap(SubstateDefinition::expandToSubclasses)
             .collect(
                 Collectors.toMap(
                     SubstateDefinition::substateClass, SubstateDefinition::virtualMapper));

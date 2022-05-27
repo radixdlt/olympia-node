@@ -119,7 +119,8 @@ public enum SubstateTypeId {
 
   public static SubstateTypeId valueOf(Class<? extends Particle> substateClass) {
     for (var substateType : SubstateTypeId.values()) {
-      if (substateType.substateClass.equals(substateClass)) {
+      if (substateType.substateClass.equals(substateClass)
+          || substateType.substateClass.equals(substateClass.getSuperclass())) {
         return substateType;
       }
     }

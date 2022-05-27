@@ -72,6 +72,7 @@ import com.radixdlt.constraintmachine.SubstateDeserializer;
 import com.radixdlt.constraintmachine.SubstateSerializer;
 import com.radixdlt.constraintmachine.VirtualMapper;
 import com.radixdlt.serialization.DeserializeException;
+import java.util.stream.Stream;
 
 /**
  * Defines how to retrieve important properties from a given particle type.
@@ -86,7 +87,7 @@ public final class SubstateDefinition<T extends Particle> {
 
   private final KeyDeserializer keyDeserializer;
   private final KeySerializer keySerializer;
-  private final VirtualMapper<T> virtualSerializer;
+  private final VirtualMapper<T> virtualMapper;
 
   private static final KeyDeserializer KEY_DESERIALIZER =
       buf -> {
@@ -115,7 +116,7 @@ public final class SubstateDefinition<T extends Particle> {
     this.serializer = serializer;
     this.keyDeserializer = keyDeserializer;
     this.keySerializer = keySerializer;
-    this.virtualSerializer = virtualMapper;
+    this.virtualMapper = virtualMapper;
   }
 
   @SuppressWarnings("unchecked")
@@ -124,7 +125,8 @@ public final class SubstateDefinition<T extends Particle> {
       SubstateTypeId typeId,
       SubstateDeserializer<T> deserializer,
       SubstateSerializer<T> serializer) {
-    return new SubstateDefinition<>(
+
+    return create(
         substateClass,
         typeId,
         deserializer,
@@ -141,7 +143,8 @@ public final class SubstateDefinition<T extends Particle> {
       SubstateDeserializer<T> deserializer,
       SubstateSerializer<T> serializer,
       KeySerializer keySerializer) {
-    return new SubstateDefinition<>(
+
+    return create(
         substateClass,
         typeId,
         deserializer,
@@ -159,8 +162,21 @@ public final class SubstateDefinition<T extends Particle> {
       KeyDeserializer keyDeserializer,
       KeySerializer keySerializer,
       VirtualMapper<T> virtualMapper) {
+
     return new SubstateDefinition<>(
         substateClass,
+        typeId,
+        deserializer,
+        serializer,
+        keyDeserializer,
+        keySerializer,
+        virtualMapper);
+  }
+
+  @SuppressWarnings("unchecked")
+  private SubstateDefinition<? extends Particle> withClass(Class<? extends Particle> clazz) {
+    return create(
+        (Class<T>) clazz,
         typeId,
         deserializer,
         serializer,
@@ -194,6 +210,21 @@ public final class SubstateDefinition<T extends Particle> {
   }
 
   public VirtualMapper<T> virtualMapper() {
-    return virtualSerializer;
+    return virtualMapper;
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Stream<SubstateDefinition<? extends Particle>> expandToSubclasses(
+      SubstateDefinition<? extends Particle> definition) {
+    var clazz = definition.substateClass;
+    var classes = clazz.getPermittedSubclasses();
+
+    if (classes == null) {
+      return Stream.of(definition);
+    }
+
+    return Stream.concat(Stream.of(clazz), Stream.of(classes))
+        .map(cls -> (Class<? extends Particle>) cls)
+        .map(definition::withClass);
   }
 }

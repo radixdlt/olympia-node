@@ -70,6 +70,7 @@ import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.utils.UInt256;
 
 public record ValidatorBFTData(
     ECPublicKey validatorKey, long completedProposals, long missedProposals)
@@ -86,11 +87,11 @@ public record ValidatorBFTData(
             var proposalsMissed = deserializeNonNegativeLong(buf);
             return new ValidatorBFTData(key, proposalsCompleted, proposalsMissed);
           },
-          (s, buf) -> {
+          (validatorBFTData, buf) -> {
             serializeReservedByte(buf);
-            serializeKey(buf, s.validatorKey());
-            buf.putLong(s.completedProposals());
-            buf.putLong(s.missedProposals());
+            serializeKey(buf, validatorBFTData.validatorKey());
+            buf.putLong(validatorBFTData.completedProposals());
+            buf.putLong(validatorBFTData.missedProposals());
           },
           (k, buf) -> serializeKey(buf, (ECPublicKey) k));
 
@@ -102,7 +103,19 @@ public record ValidatorBFTData(
     return new ValidatorBFTData(validatorKey, completedProposals, missedProposals + 1);
   }
 
+  public boolean hasNoProcessedProposals() {
+    return completedProposals() + missedProposals() == 0;
+  }
+
   public static ValidatorBFTData createFresh(ECPublicKey validatorKey) {
     return new ValidatorBFTData(validatorKey, 0L, 0L);
+  }
+
+  public long percentageCompleted() {
+    return completedProposals() * 10000 / (completedProposals() + missedProposals());
+  }
+
+  public UInt256 calculateRewards(UInt256 rewardsPerProposal) {
+    return rewardsPerProposal.multiply(UInt256.from(completedProposals()));
   }
 }

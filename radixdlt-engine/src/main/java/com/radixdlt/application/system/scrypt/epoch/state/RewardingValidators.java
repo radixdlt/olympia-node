@@ -72,7 +72,7 @@ import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.IndexedSubstateIterator;
-import com.radixdlt.constraintmachine.REEvent;
+import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -129,26 +129,20 @@ public final class RewardingValidators implements ReducerState {
 
     var bftData = validatorBFTData.remove(publicKey);
 
-    context.emitEvent(
-        new REEvent.ValidatorBFTDataEvent(
-            publicKey, bftData.completedProposals(), bftData.missedProposals()));
+    context.emitEvent(ValidatorBFTDataEvent.fromData(bftData));
 
-    if (bftData.completedProposals() + bftData.missedProposals() == 0) {
+    if (bftData.hasNoProcessedProposals()) {
       return next(context);
     }
 
-    var percentageCompleted =
-        bftData.completedProposals()
-            * 10000
-            / (bftData.completedProposals() + bftData.missedProposals());
+    var percentageCompleted = bftData.percentageCompleted();
 
     // Didn't pass threshold, no rewards!
     if (percentageCompleted < config.minimumCompletedProposalsPercentage()) {
       return next(context);
     }
 
-    var nodeRewards =
-        config.rewardsPerProposal().multiply(UInt256.from(bftData.completedProposals()));
+    var nodeRewards = bftData.calculateRewards(config.rewardsPerProposal());
 
     if (nodeRewards.isZero()) {
       return next(context);

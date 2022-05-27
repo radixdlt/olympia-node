@@ -68,6 +68,14 @@ import com.radixdlt.identifiers.REAddr;
 
 public record OpSignature(REOp op, Object type) {
   public static OpSignature ofSubstateUpdate(REOp op, Class<? extends Particle> particleClass) {
+    if (particleClass != null) {
+      var superclass = particleClass.getSuperclass();
+
+      if (superclass != null && superclass.isSealed()) {
+        return new OpSignature(op, superclass);
+      }
+    }
+
     return new OpSignature(op, particleClass);
   }
 

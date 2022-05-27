@@ -70,33 +70,136 @@ import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.serialization.DeserializeException;
+import java.nio.ByteBuffer;
 import java.util.OptionalLong;
 
-public record ValidatorRegisteredCopy(
-    OptionalLong epochUpdate, ECPublicKey validatorKey, boolean isRegistered)
-    implements ValidatorUpdatingData {
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+public abstract sealed class ValidatorRegisteredCopy implements ValidatorUpdatingData {
+  private final OptionalLong epochUpdate;
+  private final ECPublicKey validatorKey;
+  private final boolean isRegistered;
+
+  protected ValidatorRegisteredCopy(
+      OptionalLong epochUpdate, ECPublicKey validatorKey, boolean isRegistered) {
+    this.epochUpdate = epochUpdate;
+    this.validatorKey = validatorKey;
+    this.isRegistered = isRegistered;
+  }
+
+  public OptionalLong epochUpdate() {
+    return epochUpdate;
+  }
+
+  public ECPublicKey validatorKey() {
+    return validatorKey;
+  }
+
+  public boolean isRegistered() {
+    return isRegistered;
+  }
+
+  public abstract void serialize(ByteBuffer buf);
+
+  public static final byte V1 = 0;
+  public static final byte V2 = 1;
+
   public static final SubstateDefinition<ValidatorRegisteredCopy> SUBSTATE_DEFINITION =
       SubstateDefinition.create(
           ValidatorRegisteredCopy.class,
           SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY,
           buf -> {
-            deserializeReservedByte(buf);
+            var version = deserializeReservedByteAsVersion(buf, 1);
             var epochUpdate = deserializeOptionalNonNegativeLong(buf);
             var key = deserializeKey(buf);
             var flag = deserializeBoolean(buf);
-            return new ValidatorRegisteredCopy(epochUpdate, key, flag);
+
+            return switch (version) {
+              case V1 -> ValidatorRegisteredCopy.createV1(epochUpdate, key, flag);
+
+              case V2 -> {
+                var jailedEpoch = deserializeNonNegativeLong(buf);
+                var jailLevel = deserializeNonNegativeInt(buf);
+                var probationEpochsLeft = deserializeNonNegativeInt(buf);
+
+                yield ValidatorRegisteredCopy.createV2(
+                    epochUpdate, key, flag, jailedEpoch, jailLevel, probationEpochsLeft);
+              }
+
+              default -> throw new DeserializeException(
+                  "Unsupported version of ValidatorRegisteredCopy: " + version);
+            };
           },
-          (s, buf) -> {
-            serializeReservedByte(buf);
-            serializeOptionalLong(buf, s.epochUpdate());
-            serializeKey(buf, s.validatorKey());
-            buf.put((byte) (s.isRegistered() ? 1 : 0));
-          },
+          ValidatorRegisteredCopy::serialize,
           REFieldSerialization::deserializeKey,
-          (k, buf) -> serializeKey(buf, (ECPublicKey) k),
-          k -> new ValidatorRegisteredCopy(OptionalLong.empty(), (ECPublicKey) k, false));
+          (key, buf) -> serializeKey(buf, (ECPublicKey) key),
+          key -> ValidatorRegisteredCopy.createVirtual((ECPublicKey) key));
+
+  /** Initial version of the particle, liveness slashing data omitted */
+  public static final class ValidatorRegisteredCopyV1 extends ValidatorRegisteredCopy {
+    public ValidatorRegisteredCopyV1(
+        OptionalLong epochUpdate, ECPublicKey validatorKey, boolean isRegistered) {
+      super(epochUpdate, validatorKey, isRegistered);
+    }
+
+    @Override
+    public void serialize(ByteBuffer buf) {
+      serializeReservedByteAsVersion(buf, V1);
+      serializeOptionalLong(buf, epochUpdate());
+      serializeKey(buf, validatorKey());
+      buf.put((byte) (isRegistered() ? 1 : 0));
+    }
+  }
+
+  /** V2 of the particle, with liveness slashing data included */
+  public static final class ValidatorRegisteredCopyV2 extends ValidatorRegisteredCopy {
+    private final long jailedEpoch;
+    private final int jailLevel;
+    private final int probationEpochsLeft;
+
+    public ValidatorRegisteredCopyV2(
+        OptionalLong epochUpdate,
+        ECPublicKey validatorKey,
+        boolean isRegistered,
+        long jailedEpoch,
+        int jailLevel,
+        int probationEpochsLeft) {
+      super(epochUpdate, validatorKey, isRegistered);
+
+      this.jailedEpoch = jailedEpoch;
+      this.jailLevel = jailLevel;
+      this.probationEpochsLeft = probationEpochsLeft;
+    }
+
+    @Override
+    public void serialize(ByteBuffer buf) {
+      serializeReservedByteAsVersion(buf, V2);
+      serializeOptionalLong(buf, epochUpdate());
+      serializeKey(buf, validatorKey());
+      buf.put((byte) (isRegistered() ? 1 : 0));
+      buf.putLong(jailedEpoch);
+      buf.putInt(jailLevel);
+      buf.putInt(probationEpochsLeft);
+    }
+  }
+
+  public static ValidatorRegisteredCopy createV1(
+      OptionalLong epochUpdate, ECPublicKey validatorKey, boolean isRegistered) {
+    return new ValidatorRegisteredCopyV1(epochUpdate, validatorKey, isRegistered);
+  }
+
+  public static ValidatorRegisteredCopy createV2(
+      OptionalLong epochUpdate,
+      ECPublicKey validatorKey,
+      boolean isRegistered,
+      long jailedEpoch,
+      int jailLevel,
+      int probationEpochsLeft) {
+    return new ValidatorRegisteredCopyV2(
+        epochUpdate, validatorKey, isRegistered, jailedEpoch, jailLevel, probationEpochsLeft);
+  }
 
   public static ValidatorRegisteredCopy createVirtual(ECPublicKey validatorKey) {
-    return new ValidatorRegisteredCopy(OptionalLong.empty(), validatorKey, false);
+    return createV1(OptionalLong.empty(), validatorKey, false);
   }
 }

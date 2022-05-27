@@ -83,6 +83,7 @@ public final class SubstateDeserialization {
             .collect(Collectors.toMap(SubstateDefinition::typeByte, Functions::identity));
     this.classToTypeByte =
         definitions.stream()
+            .flatMap(SubstateDefinition::expandToSubclasses)
             .collect(
                 Collectors.toMap(SubstateDefinition::substateClass, SubstateDefinition::typeByte));
   }

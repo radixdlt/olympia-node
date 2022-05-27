@@ -192,10 +192,20 @@ public final class REFieldSerialization {
     }
   }
 
+  public static byte deserializeReservedByteAsVersion(ByteBuffer buf, int maxValue)
+      throws DeserializeException {
+    var versionByte = buf.get();
+
+    if (versionByte < 0 || versionByte > maxValue) {
+      throw new DeserializeException("Version byte must be between 0 and " + maxValue);
+    }
+
+    return versionByte;
+  }
+
   public static int deserializeUnsignedShort(ByteBuffer buf, int min, int max)
       throws DeserializeException {
-    var s = buf.getShort();
-    var i = Short.toUnsignedInt(s);
+    var i = Short.toUnsignedInt(buf.getShort());
 
     if (i < min) {
       throw new DeserializeException("Min of short value is " + min + " but value is: " + i);
@@ -210,6 +220,15 @@ public final class REFieldSerialization {
 
   public static void serializeReservedByte(ByteBuffer buf) {
     buf.put((byte) 0);
+  }
+
+  public static void serializeReservedByteAsVersion(ByteBuffer buf, int version) {
+    if (version < 0 || version > Byte.MAX_VALUE) {
+      throw new IllegalArgumentException(
+          "Attempt to serialize version which does not fit into byte: " + version);
+    }
+
+    buf.put((byte) version);
   }
 
   public static void serializeOptionalLong(ByteBuffer buf, OptionalLong optionalLong) {
@@ -240,11 +259,23 @@ public final class REFieldSerialization {
     }
   }
 
-  public static Long deserializeNonNegativeLong(ByteBuffer buf) throws DeserializeException {
+  public static int deserializeNonNegativeInt(ByteBuffer buf) throws DeserializeException {
+    var integer = buf.getInt();
+
+    if (integer < 0) {
+      throw new DeserializeException("Int must be positive");
+    }
+
+    return integer;
+  }
+
+  public static long deserializeNonNegativeLong(ByteBuffer buf) throws DeserializeException {
     var l = buf.getLong();
+
     if (l < 0) {
       throw new DeserializeException("Long must be positive");
     }
+
     return l;
   }
 

@@ -80,7 +80,7 @@ public final class UnregisterValidatorConstructor
     txBuilder.down(ValidatorRegisteredCopy.class, action.validatorKey());
     var curEpoch = txBuilder.readSystem(EpochData.class);
     txBuilder.up(
-        new ValidatorRegisteredCopy(
+        ValidatorRegisteredCopy.createV1(
             OptionalLong.of(curEpoch.epoch() + 1), action.validatorKey(), false));
     txBuilder.end();
   }
