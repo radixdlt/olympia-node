@@ -66,7 +66,7 @@ package com.radixdlt.environment.deterministic.network;
 
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.Streams;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.hotstuff.bft.BFTNode;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;

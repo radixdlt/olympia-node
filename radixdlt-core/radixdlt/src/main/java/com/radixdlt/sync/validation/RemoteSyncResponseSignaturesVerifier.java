@@ -65,11 +65,11 @@
 package com.radixdlt.sync.validation;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.ConsensusHasher;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.TimestampedECDSASignature;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.hotstuff.ConsensusHasher;
+import com.radixdlt.hotstuff.HashVerifier;
+import com.radixdlt.hotstuff.TimestampedECDSASignature;
+import com.radixdlt.hotstuff.bft.BFTNode;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import java.util.Map.Entry;
 import java.util.Objects;

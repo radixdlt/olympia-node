@@ -65,8 +65,8 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.hotstuff.LedgerProof;
+import com.radixdlt.hotstuff.bft.VerifiedVertexStoreState;
 import com.radixdlt.statecomputer.forks.ForkVotingResult;
 import java.util.Objects;
 import java.util.Optional;
