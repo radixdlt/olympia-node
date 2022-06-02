@@ -266,6 +266,12 @@ public final class SafetyRules {
   }
 
   public boolean verifyQcAgainstTheValidatorSet(QuorumCertificate qc) {
+    final var qcHash = hasher.hash(qc);
+
+    if (verifiedCertificatesCache.contains(qcHash)) {
+      return true;
+    }
+
     if (isGenesisQc(qc)) {
       // A genesis QC doesn't require any signatures
       return true;
@@ -286,6 +292,10 @@ public final class SafetyRules {
                         e.getKey(), e.getValue().timestamp(), e.getValue().signature()));
 
     final var isQcValid = allSignaturesAddedSuccessfully && validationState.complete();
+
+    if (isQcValid) {
+      addVerifiedCertificateToCache(qcHash);
+    }
 
     return isQcValid;
   }
@@ -323,9 +333,19 @@ public final class SafetyRules {
   }
 
   public boolean verifyTcAgainstTheValidatorSet(TimeoutCertificate tc) {
+    final var tcHash = hasher.hash(tc);
+
+    if (verifiedCertificatesCache.contains(tcHash)) {
+      return true;
+    }
+
     final var isTcValid =
         tc.getSigners().allMatch(validatorSet::containsNode)
             && areAllTcTimestampedSignaturesValid(tc);
+
+    if (isTcValid) {
+      addVerifiedCertificateToCache(tcHash);
+    }
 
     return isTcValid;
   }
