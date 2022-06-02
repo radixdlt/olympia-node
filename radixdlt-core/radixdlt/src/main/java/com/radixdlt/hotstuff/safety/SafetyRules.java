@@ -266,12 +266,6 @@ public final class SafetyRules {
   }
 
   public boolean verifyQcAgainstTheValidatorSet(QuorumCertificate qc) {
-    final var qcHash = hasher.hash(qc);
-
-    if (verifiedCertificatesCache.contains(qcHash)) {
-      return true;
-    }
-
     if (isGenesisQc(qc)) {
       // A genesis QC doesn't require any signatures
       return true;
@@ -292,10 +286,6 @@ public final class SafetyRules {
                         e.getKey(), e.getValue().timestamp(), e.getValue().signature()));
 
     final var isQcValid = allSignaturesAddedSuccessfully && validationState.complete();
-
-    if (isQcValid) {
-      addVerifiedCertificateToCache(qcHash);
-    }
 
     return isQcValid;
   }
@@ -323,7 +313,7 @@ public final class SafetyRules {
 
   private boolean areAllQcTimestampedSignaturesValid(QuorumCertificate qc) {
     final var voteData = qc.getVoteData();
-    return qc.getTimestampedSignatures().getSignatures().entrySet().stream()
+    return qc.getTimestampedSignatures().getSignatures().entrySet().parallelStream()
         .allMatch(
             e -> {
               final var nodePublicKey = e.getKey().getKey();
@@ -333,19 +323,9 @@ public final class SafetyRules {
   }
 
   public boolean verifyTcAgainstTheValidatorSet(TimeoutCertificate tc) {
-    final var tcHash = hasher.hash(tc);
-
-    if (verifiedCertificatesCache.contains(tcHash)) {
-      return true;
-    }
-
     final var isTcValid =
         tc.getSigners().allMatch(validatorSet::containsNode)
             && areAllTcTimestampedSignaturesValid(tc);
-
-    if (isTcValid) {
-      addVerifiedCertificateToCache(tcHash);
-    }
 
     return isTcValid;
   }
@@ -353,7 +333,7 @@ public final class SafetyRules {
   private boolean areAllTcTimestampedSignaturesValid(TimeoutCertificate tc) {
     final var voteTimeout = new VoteTimeout(tc.getView(), tc.getEpoch());
     final var voteTimeoutHash = hasher.hash(voteTimeout);
-    return tc.getTimestampedSignatures().getSignatures().entrySet().stream()
+    return tc.getTimestampedSignatures().getSignatures().entrySet().parallelStream()
         .allMatch(
             e -> {
               final var nodePublicKey = e.getKey().getKey();
