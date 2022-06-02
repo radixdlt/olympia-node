@@ -62,37 +62,37 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.construction;
+package com.radixdlt.application.system.construction.epoch.v4;
 
-import static com.radixdlt.atom.TxAction.NextEpoch;
-
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.application.tokens.state.ExitingStake;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt384;
 
-public record NextEpochConstructorV3(
-    UInt256 rewardsPerProposal,
-    long minimumCompletedProposalsPercentage,
-    long unstakingEpochDelay,
-    int maxValidators)
-    implements ActionConstructor<NextEpoch>, NextEpochConstructor {
+public class StakeAccumulator {
+  private UInt384 totalStake = UInt384.ZERO;
 
-  @Override
-  public void construct(NextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-    var state = EpochConstructionState.createState(this, txBuilder);
+  private StakeAccumulator() {}
 
-    state.processExittingStake();
-    state.processEmission();
-    state.processPreparedUnstake();
-    state.processPreparedStake();
-    state.processUpdateRake();
-    state.processUpdateOwners();
-    state.processUpdateRegisteredFlag();
+  public static StakeAccumulator create() {
+    return new StakeAccumulator();
+  }
 
-    state.upValidatorStakeData();
+  public StakeAccumulator add(UInt256 amount) {
+    totalStake = totalStake.add(amount);
+    return this;
+  }
 
-    state.prepareNextValidatorSetV3();
-    state.finalizeConstruction();
+  public StakeAccumulator subtract(UInt256 amount) {
+    totalStake = totalStake.subtract(amount);
+    return this;
+  }
+
+  public UInt256 value() {
+    return totalStake.getLow();
+  }
+
+  public ExitingStake addFrom(ExitingStake stake) {
+    add(stake.amount());
+    return stake;
   }
 }

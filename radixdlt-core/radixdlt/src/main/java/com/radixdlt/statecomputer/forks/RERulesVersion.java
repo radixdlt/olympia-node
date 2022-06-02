@@ -68,6 +68,7 @@ import static com.radixdlt.atom.TxAction.*;
 
 import com.radixdlt.application.misc.SplitTokenConstructor;
 import com.radixdlt.application.system.construction.*;
+import com.radixdlt.application.system.construction.epoch.v3.NextEpochConstructorV3;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
@@ -139,13 +140,7 @@ public enum RERulesVersion {
                   CreateMutableToken.class,
                   new CreateMutableTokenConstructor(SystemConstraintScrypt.MAX_SYMBOL_LENGTH))
               .put(MintToken.class, new MintTokenConstructor())
-              .put(
-                  NextEpoch.class,
-                  new NextEpochConstructorV3(
-                      config.rewardsPerProposal().toSubunits(),
-                      config.minimumCompletedProposalsPercentage(),
-                      config.unstakingEpochDelay(),
-                      config.maxValidators()))
+              .put(NextEpoch.class, new NextEpochConstructorV3(config.asNextEpochConfig()))
               .put(NextRound.class, new NextViewConstructorV3())
               .put(RegisterValidator.class, new RegisterValidatorConstructor())
               .put(SplitToken.class, new SplitTokenConstructor())

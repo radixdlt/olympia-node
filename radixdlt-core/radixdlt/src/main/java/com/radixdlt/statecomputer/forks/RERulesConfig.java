@@ -67,6 +67,7 @@ package com.radixdlt.statecomputer.forks;
 import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 
 import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.application.system.construction.epoch.NextEpochConfig;
 import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.TokensConfig;
@@ -128,6 +129,14 @@ public record RERulesConfig(
 
   public TokensConfig asTokensConfig() {
     return new TokensConfig(reservedSymbols, tokenSymbolPattern);
+  }
+
+  public NextEpochConfig asNextEpochConfig() {
+    return new NextEpochConfig(
+        rewardsPerProposal.toSubunits(),
+        minimumCompletedProposalsPercentage,
+        unstakingEpochDelay,
+        maxValidators);
   }
 
   public RERulesConfig overrideMaxSigsPerRound(int maxSigsPerRound) {

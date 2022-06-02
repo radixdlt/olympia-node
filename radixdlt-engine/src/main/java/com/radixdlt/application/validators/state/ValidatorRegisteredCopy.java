@@ -66,6 +66,7 @@ package com.radixdlt.application.validators.state;
 
 import static com.radixdlt.atom.REFieldSerialization.*;
 
+import com.radixdlt.application.system.scrypt.SentencingData;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.SubstateDefinition;
@@ -112,18 +113,25 @@ public abstract sealed class ValidatorRegisteredCopy implements ValidatorUpdatin
             var version = deserializeReservedByteAsVersion(buf, 1);
             var epochUpdate = deserializeOptionalNonNegativeLong(buf);
             var key = deserializeKey(buf);
-            var flag = deserializeBoolean(buf);
+            var registeredState = deserializeBoolean(buf);
 
             return switch (version) {
-              case V1 -> ValidatorRegisteredCopy.createV1(epochUpdate, key, flag);
+              case V1 -> ValidatorRegisteredCopy.createV1(epochUpdate, key, registeredState);
 
               case V2 -> {
+                var pendingRegistration = deserializeBoolean(buf);
                 var jailedEpoch = deserializeNonNegativeLong(buf);
                 var jailLevel = deserializeNonNegativeInt(buf);
                 var probationEpochsLeft = deserializeNonNegativeInt(buf);
 
                 yield ValidatorRegisteredCopy.createV2(
-                    epochUpdate, key, flag, jailedEpoch, jailLevel, probationEpochsLeft);
+                    epochUpdate,
+                    key,
+                    registeredState,
+                    jailedEpoch,
+                    jailLevel,
+                    probationEpochsLeft,
+                    pendingRegistration);
               }
 
               default -> throw new DeserializeException(
@@ -157,18 +165,22 @@ public abstract sealed class ValidatorRegisteredCopy implements ValidatorUpdatin
     private final int jailLevel;
     private final int probationEpochsLeft;
 
+    private final boolean pendingRegistration;
+
     public ValidatorRegisteredCopyV2(
         OptionalLong epochUpdate,
         ECPublicKey validatorKey,
         boolean isRegistered,
         long jailedEpoch,
         int jailLevel,
-        int probationEpochsLeft) {
+        int probationEpochsLeft,
+        boolean pendingRegistration) {
       super(epochUpdate, validatorKey, isRegistered);
 
       this.jailedEpoch = jailedEpoch;
       this.jailLevel = jailLevel;
       this.probationEpochsLeft = probationEpochsLeft;
+      this.pendingRegistration = pendingRegistration;
     }
 
     @Override
@@ -177,9 +189,26 @@ public abstract sealed class ValidatorRegisteredCopy implements ValidatorUpdatin
       serializeOptionalLong(buf, epochUpdate());
       serializeKey(buf, validatorKey());
       buf.put((byte) (isRegistered() ? 1 : 0));
+      buf.put((byte) (isRegistrationPending() ? 1 : 0));
       buf.putLong(jailedEpoch);
       buf.putInt(jailLevel);
       buf.putInt(probationEpochsLeft);
+    }
+
+    public long jailedEpoch() {
+      return jailedEpoch;
+    }
+
+    public int jailLevel() {
+      return jailLevel;
+    }
+
+    public int probationEpochsLeft() {
+      return probationEpochsLeft;
+    }
+
+    public boolean isRegistrationPending() {
+      return pendingRegistration;
     }
   }
 
@@ -194,9 +223,31 @@ public abstract sealed class ValidatorRegisteredCopy implements ValidatorUpdatin
       boolean isRegistered,
       long jailedEpoch,
       int jailLevel,
-      int probationEpochsLeft) {
+      int probationEpochsLeft,
+      boolean pendingRegistration) {
     return new ValidatorRegisteredCopyV2(
-        epochUpdate, validatorKey, isRegistered, jailedEpoch, jailLevel, probationEpochsLeft);
+        epochUpdate,
+        validatorKey,
+        isRegistered,
+        jailedEpoch,
+        jailLevel,
+        probationEpochsLeft,
+        pendingRegistration);
+  }
+
+  public static ValidatorRegisteredCopy createV2(
+      OptionalLong epochUpdate,
+      ECPublicKey validatorKey,
+      boolean isRegistered,
+      SentencingData sentencingData) {
+    return new ValidatorRegisteredCopyV2(
+        epochUpdate,
+        validatorKey,
+        isRegistered,
+        sentencingData.jailedEpoch(),
+        sentencingData.jailLevel(),
+        sentencingData.probationEpochsLeft(),
+        sentencingData.registrationPending());
   }
 
   public static ValidatorRegisteredCopy createVirtual(ECPublicKey validatorKey) {

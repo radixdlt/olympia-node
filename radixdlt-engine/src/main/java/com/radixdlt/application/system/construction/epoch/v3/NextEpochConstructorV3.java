@@ -62,40 +62,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt.epoch.state;
+package com.radixdlt.application.system.construction.epoch.v3;
 
-import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
-import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.exceptions.MismatchException;
-import com.radixdlt.crypto.ECPublicKey;
-import java.util.NavigableMap;
+import static com.radixdlt.atom.TxAction.NextEpoch;
 
-public final class UpdatingValidatorStakes implements ReducerState {
-  private final EpochUpdateConfig config;
-  private final UpdatingEpoch updatingEpoch;
-  private final NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
+import com.radixdlt.application.system.construction.epoch.NextEpochConfig;
+import com.radixdlt.atom.ActionConstructor;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 
-  public UpdatingValidatorStakes(
-      EpochUpdateConfig config,
-      UpdatingEpoch updatingEpoch,
-      NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {
-    this.config = config;
-    this.updatingEpoch = updatingEpoch;
-    this.validatorsScratchPad = validatorsScratchPad;
-  }
+public record NextEpochConstructorV3(NextEpochConfig config)
+    implements ActionConstructor<NextEpoch> {
 
-  public ReducerState updateStake(ValidatorStakeData stake) throws MismatchException {
-    var publicKey = validatorsScratchPad.firstKey();
-    var expectedValidatorData = validatorsScratchPad.remove(publicKey).toValidatorStakeData();
+  @Override
+  public void construct(NextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
+    var state = EpochConstructionStateV3.createState(config, txBuilder);
 
-    if (!stake.equals(expectedValidatorData)) {
-      throw new MismatchException(expectedValidatorData, stake);
-    }
+    state.processExittingStake();
+    state.processEmission();
+    state.processPreparedUnstake();
+    state.processPreparedStake();
+    state.processUpdateRake();
+    state.processUpdateOwners();
+    state.processUpdateRegisteredFlag();
 
-    return validatorsScratchPad.isEmpty()
-        ? new CreatingNextValidatorSet(config, updatingEpoch)
-        : this;
+    state.upValidatorStakeData();
+
+    state.prepareNextValidatorSetV3();
+    state.finalizeConstruction();
   }
 }

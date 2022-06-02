@@ -74,11 +74,15 @@ import com.radixdlt.utils.UInt384;
 
 public final class ValidatorScratchPad {
   private final ECPublicKey validatorKey;
+  private final SentencingData sentencing = SentencingData.create();
   private UInt384 totalStake;
   private UInt384 totalOwnership;
   private int rakePercentage;
   private REAddr ownerAddr;
   private boolean isRegistered;
+
+  private long missedProposals;
+  private boolean registeredUpdateRequired = false;
 
   public ValidatorScratchPad(ValidatorStakeData validatorStakeData) {
     this.totalStake = UInt384.from(validatorStakeData.totalStake());
@@ -87,10 +91,6 @@ public final class ValidatorScratchPad {
     this.ownerAddr = validatorStakeData.ownerAddr();
     this.isRegistered = validatorStakeData.isRegistered();
     this.validatorKey = validatorStakeData.validatorKey();
-  }
-
-  public ECPublicKey getValidatorKey() {
-    return validatorKey;
   }
 
   public REAddr getOwnerAddr() {
@@ -103,6 +103,7 @@ public final class ValidatorScratchPad {
 
   public void setRegistered(boolean isRegistered) {
     this.isRegistered = isRegistered;
+    this.registeredUpdateRequired = true;
   }
 
   public void setRakePercentage(int rakePercentage) {
@@ -111,6 +112,10 @@ public final class ValidatorScratchPad {
 
   public void setOwnerAddr(REAddr ownerAddr) {
     this.ownerAddr = ownerAddr;
+  }
+
+  public SentencingData getSentencing() {
+    return sentencing;
   }
 
   public void addEmission(UInt256 amount) {
@@ -155,7 +160,7 @@ public final class ValidatorScratchPad {
     return new ExitingStake(epochUnlocked, validatorKey, owner, unstaked);
   }
 
-  public ValidatorStakeData toSubstate() {
+  public ValidatorStakeData toValidatorStakeData() {
     return ValidatorStakeData.create(
         validatorKey,
         totalStake.getLow(),
@@ -163,5 +168,25 @@ public final class ValidatorScratchPad {
         rakePercentage,
         ownerAddr,
         isRegistered);
+  }
+
+  public long missedProposals() {
+    return missedProposals;
+  }
+
+  public void missedProposals(long missedProposals) {
+    this.missedProposals = missedProposals;
+  }
+
+  public UInt256 totalStake() {
+    return totalStake.getLow();
+  }
+
+  public boolean isRegistered() {
+    return isRegistered;
+  }
+
+  public boolean isRegisteredFlagUpdateRequired() {
+    return registeredUpdateRequired;
   }
 }

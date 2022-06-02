@@ -62,17 +62,90 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.construction;
+package com.radixdlt.application.system.scrypt;
 
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy.ValidatorRegisteredCopyV2;
 
-/** Common API for next epoch construction. */
-public interface NextEpochConstructor {
-  UInt256 rewardsPerProposal();
+public final class SentencingData {
+  private long jailedEpoch;
+  private int jailLevel;
+  private int probationEpochsLeft;
+  private boolean registrationPending;
 
-  long minimumCompletedProposalsPercentage();
+  private SentencingData() {}
 
-  long unstakingEpochDelay();
+  public static SentencingData create() {
+    return new SentencingData();
+  }
 
-  int maxValidators();
+  public long jailedEpoch() {
+    return jailedEpoch;
+  }
+
+  public int jailLevel() {
+    return jailLevel;
+  }
+
+  public SentencingData jail(long epoch) {
+    jailedEpoch = epoch;
+    jailLevel++;
+
+    probationEpochsLeft = epochsForJailLevel(50);
+
+    return this;
+  }
+
+  private int epochsForJailLevel(int extraEpochs) {
+    return (jailLevel > 31) ? Integer.MAX_VALUE : (1 << jailLevel + extraEpochs);
+  }
+
+  public SentencingData decrementProbationEpochs() {
+    if (probationEpochsLeft > 0) {
+      probationEpochsLeft--;
+    }
+
+    if (probationEpochsLeft == 0) { // Probation ended, reset jailLevel
+      jailLevel = 0;
+    }
+
+    return this;
+  }
+
+  public int probationEpochsLeft() {
+    return probationEpochsLeft;
+  }
+
+  public void loadFrom(ValidatorRegisteredCopyV2 update) {
+    jailedEpoch = update.jailedEpoch();
+    jailLevel = update.jailLevel();
+    probationEpochsLeft = update.probationEpochsLeft();
+    registrationPending = update.isRegistrationPending();
+  }
+
+  public boolean checkEndOfJail(long epoch) {
+    if (jailedEpoch == 0L) {
+      return true;
+    }
+
+    var limit = epochsForJailLevel(0);
+
+    if ((jailedEpoch + limit) >= epoch) {
+      // Required number of epochs passed since jailing
+      return true;
+    }
+
+    return false;
+  }
+
+  public void leaveJail() {
+    jailedEpoch = 0L;
+  }
+
+  public boolean registrationPending() {
+    return registrationPending;
+  }
+
+  public void postponeRegistration() {
+    registrationPending = true;
+  }
 }

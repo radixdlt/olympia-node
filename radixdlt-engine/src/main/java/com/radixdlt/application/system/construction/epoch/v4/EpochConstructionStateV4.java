@@ -62,18 +62,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.construction;
+package com.radixdlt.application.system.construction.epoch.v4;
 
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
+import static com.radixdlt.application.validators.state.ValidatorRegisteredCopy.*;
 import static com.radixdlt.atom.SubstateTypeId.*;
 
 import com.google.common.collect.Streams;
 import com.google.common.primitives.UnsignedBytes;
+import com.radixdlt.application.system.construction.epoch.NextEpochConfig;
 import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.DelegatedResourceInBucket;
 import com.radixdlt.application.tokens.state.ExitingStake;
 import com.radixdlt.application.tokens.state.PreparedStake;
@@ -92,26 +95,42 @@ import com.radixdlt.utils.UInt256;
 import java.nio.ByteBuffer;
 import java.util.*;
 
-public record EpochConstructionState(
+public record EpochConstructionStateV4(
     TxBuilder txBuilder,
     TreeMap<ECPublicKey, ValidatorScratchPad> validatorsToUpdate,
     RoundData closedRound,
     EpochData closingEpoch,
     TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake,
-    NextEpochConstructor constructor) {
-  public static EpochConstructionState createState(
-      NextEpochConstructor constructor, TxBuilder txBuilder) {
-    return new EpochConstructionState(
+    NextEpochConfig config,
+    StakeAccumulator totalValidatingStake,
+    StakeAccumulator eligibleJailedStake,
+    List<ECPublicKey> jailingCandidates) {
+
+  private static final long MIN_COMPLETED_PROPOSALS = 3;
+  public static final Comparator<ValidatorScratchPad> MISSED_PROPOSALS_COMPARATOR =
+      Comparator.<ValidatorScratchPad, Long>comparing(ValidatorScratchPad::missedProposals)
+          .reversed();
+  private static final UInt256 RATE_LIMIT =
+      Amount.ofMilliTokens(120).toSubunits(); // 12% => 0.120 => 120 milli
+
+  public static EpochConstructionStateV4 createState(
+      NextEpochConfig constructor, TxBuilder txBuilder) {
+    return new EpochConstructionStateV4(
         txBuilder,
         new TreeMap<>(KeyComparator.instance()),
         txBuilder.downSystem(RoundData.class),
         txBuilder.downSystem(EpochData.class),
         new TreeMap<>(KeyComparator.instance()),
-        constructor);
+        constructor,
+        StakeAccumulator.create(),
+        StakeAccumulator.create(),
+        new ArrayList<>());
   }
 
   public void upValidatorStakeData() {
-    validatorsToUpdate.values().forEach(scratchPad -> txBuilder.up(scratchPad.toSubstate()));
+    validatorsToUpdate
+        .values()
+        .forEach(scratchPad -> txBuilder.up(scratchPad.toValidatorStakeData()));
   }
 
   public void finalizeConstruction() {
@@ -124,8 +143,8 @@ public record EpochConstructionState(
     var index = exittingStakeIndex(closingEpoch());
 
     txBuilder
-        .shutdownAll(index, EpochConstructionState::collectExittingStake)
-        .forEach(stake -> txBuilder().up(stake.unlock()));
+        .shutdownAll(index, EpochConstructionStateV4::collectExittingStake)
+        .forEach(stake -> txBuilder().up(totalValidatingStake.addFrom(stake).unlock()));
   }
 
   private ValidatorScratchPad stakeData(ECPublicKey publicKey) {
@@ -152,31 +171,84 @@ public record EpochConstructionState(
     return exit;
   }
 
+  public void processEligibleJailedStake() {
+    // TODO: we already have total validating stake, now we need calculate stakes for validators
+    // which
+    // are not in validator set and were unregistered within 1500 last epochs
+  }
+
+  public void loadRegistrationData() {
+    var index = prepareIndex(ValidatorRegisteredCopy.class, VALIDATOR_REGISTERED_FLAG_COPY);
+
+    txBuilder
+        .shutdownAll(index, EpochConstructionStateV4::collectToMap)
+        .forEach(this::loadSentencingData);
+  }
+
+  private void loadSentencingData(ECPublicKey publicKey, ValidatorRegisteredCopy update) {
+    var scratchPad = stakeData(publicKey);
+    var wasRegistered = scratchPad.isRegistered();
+
+    scratchPad.setRegistered(update.isRegistered());
+
+    if (update instanceof ValidatorRegisteredCopyV2 updateV2) {
+      scratchPad.getSentencing().loadFrom(updateV2);
+
+      if (wasRegistered) {
+        // Countdown probation and release if probation ended
+        scratchPad.getSentencing().decrementProbationEpochs();
+      } else {
+        // Check if jailing period ended
+        var jailPeriodEnded = scratchPad.getSentencing().checkEndOfJail(closingEpoch.epoch());
+
+        if (jailPeriodEnded) {
+          scratchPad.getSentencing().leaveJail();
+
+          if (updateV2.isRegistrationPending()) {
+            // Registration pending, mark for registration
+            scratchPad.setRegistered(true);
+          }
+        } else if (update.isRegistered()) {
+          // Can't register now, but should register later
+          scratchPad.getSentencing().postponeRegistration();
+        }
+      }
+    }
+  }
+
   public void processEmission() {
     txBuilder
-        .shutdownAll(ValidatorBFTData.class, EpochConstructionState::collectToMap)
+        .shutdownAll(ValidatorBFTData.class, EpochConstructionStateV4::collectToMap)
         .forEach(this::calculateEmission);
   }
 
   private void calculateEmission(ECPublicKey publicKey, ValidatorBFTData bftData) {
+    var validatorStakeData = stakeData(publicKey);
+    validatorStakeData.missedProposals(bftData.missedProposals());
+
     if (bftData.hasNoProcessedProposals()) {
       return;
     }
 
     var percentageCompleted = bftData.percentageCompleted();
 
-    // Didn't pass threshold, no rewards!
-    if (percentageCompleted < constructor.minimumCompletedProposalsPercentage()) {
+    if (percentageCompleted < config.minimumCompletedProposalsPercentage()) {
+      if (bftData.missedProposals() < MIN_COMPLETED_PROPOSALS) {
+        // Less than minimal number of proposals missed, skipping jailing
+        return;
+      }
+
+      jailingCandidates.add(publicKey);
+
       return;
     }
 
-    var nodeRewards = bftData.calculateRewards(constructor.rewardsPerProposal());
+    var nodeRewards = bftData.calculateRewards(config.rewardsPerProposal());
 
     if (nodeRewards.isZero()) {
       return;
     }
 
-    var validatorStakeData = stakeData(publicKey);
     int rakePercentage = validatorStakeData.getRakePercentage();
     final UInt256 rakedEmissions;
 
@@ -195,22 +267,49 @@ public record EpochConstructionState(
     validatorStakeData.addEmission(rakedEmissions);
   }
 
+  public void processJailing() {
+    jailingCandidates.stream()
+        .map(this::stakeData)
+        .sorted(MISSED_PROPOSALS_COMPARATOR)
+        .forEach(this::jailSingleValidator);
+  }
+
+  private void jailSingleValidator(ValidatorScratchPad data) {
+    var rate =
+        eligibleJailedStake
+            .value()
+            .add(data.totalStake())
+            .divide(totalValidatingStake.value().subtract(data.totalStake()));
+
+    if (rate.compareTo(RATE_LIMIT) > 0) {
+      // Jailed stake exceeds limit, ignore jailing
+      return;
+    }
+
+    data.setRegistered(false);
+    data.getSentencing().jail(closingEpoch.epoch());
+
+    eligibleJailedStake.add(data.totalStake());
+    totalValidatingStake.subtract(data.totalStake());
+  }
+
   public void processPreparedUnstake() {
     txBuilder
-        .shutdownAll(PreparedUnstakeOwnership.class, EpochConstructionState::collectUnstake)
-        .forEach(
-            (publicKey, unstakes) -> {
-              var curValidator = stakeData(publicKey);
+        .shutdownAll(PreparedUnstakeOwnership.class, EpochConstructionStateV4::collectUnstake)
+        .forEach(this::processUnstakesForSingleValidator);
+  }
 
-              unstakes.forEach(
-                  (owner, amount) -> {
-                    var epochUnlocked =
-                        closingEpoch().epoch() + 1 + constructor.unstakingEpochDelay();
-                    txBuilder().up(curValidator.unstakeOwnership(owner, amount, epochUnlocked));
-                  });
+  private void processUnstakesForSingleValidator(
+      ECPublicKey publicKey, TreeMap<REAddr, UInt256> unstakes) {
+    var curValidator = stakeData(publicKey);
 
-              validatorsToUpdate().put(publicKey, curValidator);
-            });
+    unstakes.forEach(
+        (owner, amount) -> {
+          var epochUnlocked = closingEpoch().epoch() + 1 + config.unstakingEpochDelay();
+          txBuilder().up(curValidator.unstakeOwnership(owner, amount, epochUnlocked));
+        });
+
+    validatorsToUpdate().put(publicKey, curValidator);
   }
 
   private static TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> collectUnstake(
@@ -270,7 +369,7 @@ public record EpochConstructionState(
     var index = prepareIndex(ValidatorFeeCopy.class, VALIDATOR_RAKE_COPY);
 
     txBuilder
-        .shutdownAll(index, EpochConstructionState::collectToMap)
+        .shutdownAll(index, EpochConstructionStateV4::collectToMap)
         .forEach(
             (key, update) -> {
               var curValidator = stakeData(key);
@@ -286,7 +385,7 @@ public record EpochConstructionState(
     var index = prepareIndex(ValidatorOwnerCopy.class, VALIDATOR_OWNER_COPY);
 
     txBuilder
-        .shutdownAll(index, EpochConstructionState::collectToMap)
+        .shutdownAll(index, EpochConstructionStateV4::collectToMap)
         .forEach(
             (key, update) -> {
               var curValidator = stakeData(key);
@@ -299,24 +398,18 @@ public record EpochConstructionState(
   }
 
   public void processUpdateRegisteredFlag() {
-    var index = prepareIndex(ValidatorRegisteredCopy.class, VALIDATOR_REGISTERED_FLAG_COPY);
+    validatorsToUpdate.forEach(this::updateSingleRegisteredFlag);
+  }
 
-    txBuilder
-        .shutdownAll(index, EpochConstructionState::collectToMap)
-        .forEach(
-            (key, update) -> {
-              var curValidator = stakeData(key);
-              curValidator.setRegistered(update.isRegistered());
-
-              // -------------------------------------------
-              // TODO: create different versions of the object, depending on the jailing data
-              // -------------------------------------------
-
-              this.txBuilder()
-                  .up(
-                      ValidatorRegisteredCopy.createV1(
-                          OptionalLong.empty(), update.validatorKey(), update.isRegistered()));
-            });
+  private void updateSingleRegisteredFlag(ECPublicKey publicKey, ValidatorScratchPad scratchPad) {
+    if (scratchPad.isRegisteredFlagUpdateRequired()) {
+      txBuilder.up(
+          createV2(
+              OptionalLong.empty(),
+              publicKey,
+              scratchPad.isRegistered(),
+              scratchPad.getSentencing()));
+    }
   }
 
   public void prepareNextValidatorSetV3() {
@@ -328,7 +421,7 @@ public record EpochConstructionState(
       // TODO: Explicitly specify next validatorset
       Streams.stream(cursor)
           .map(ValidatorStakeData.class::cast)
-          .limit(constructor.maxValidators())
+          .limit(config.maxValidators())
           .filter(s -> !s.totalStake().isZero())
           .forEach(v -> txBuilder().up(new ValidatorBFTData(v.validatorKey(), 0, 0)));
     }

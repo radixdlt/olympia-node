@@ -62,40 +62,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt.epoch.state;
+package com.radixdlt.application.system.construction.epoch;
 
-import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
-import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.exceptions.MismatchException;
-import com.radixdlt.crypto.ECPublicKey;
-import java.util.NavigableMap;
+import com.radixdlt.utils.UInt256;
 
-public final class UpdatingValidatorStakes implements ReducerState {
-  private final EpochUpdateConfig config;
-  private final UpdatingEpoch updatingEpoch;
-  private final NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
-
-  public UpdatingValidatorStakes(
-      EpochUpdateConfig config,
-      UpdatingEpoch updatingEpoch,
-      NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {
-    this.config = config;
-    this.updatingEpoch = updatingEpoch;
-    this.validatorsScratchPad = validatorsScratchPad;
-  }
-
-  public ReducerState updateStake(ValidatorStakeData stake) throws MismatchException {
-    var publicKey = validatorsScratchPad.firstKey();
-    var expectedValidatorData = validatorsScratchPad.remove(publicKey).toValidatorStakeData();
-
-    if (!stake.equals(expectedValidatorData)) {
-      throw new MismatchException(expectedValidatorData, stake);
-    }
-
-    return validatorsScratchPad.isEmpty()
-        ? new CreatingNextValidatorSet(config, updatingEpoch)
-        : this;
-  }
-}
+/** Common API for next epoch construction. */
+public record NextEpochConfig(
+    UInt256 rewardsPerProposal,
+    long minimumCompletedProposalsPercentage,
+    long unstakingEpochDelay,
+    int maxValidators) {}

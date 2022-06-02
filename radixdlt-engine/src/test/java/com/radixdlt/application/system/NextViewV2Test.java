@@ -68,8 +68,9 @@ import static com.radixdlt.atom.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
-import com.radixdlt.application.system.construction.NextEpochConstructorV3;
 import com.radixdlt.application.system.construction.NextViewConstructorV3;
+import com.radixdlt.application.system.construction.epoch.NextEpochConfig;
+import com.radixdlt.application.system.construction.epoch.v3.NextEpochConstructorV3;
 import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
@@ -164,7 +165,8 @@ public class NextViewV2Test {
             REConstructor.newBuilder()
                 .put(
                     NextEpoch.class,
-                    new NextEpochConstructorV3(Amount.ofTokens(10).toSubunits(), 9800, 1, 10))
+                    new NextEpochConstructorV3(
+                        new NextEpochConfig(Amount.ofTokens(10).toSubunits(), 9800, 1, 10)))
                 .put(CreateSystem.class, new CreateSystemConstructorV2())
                 .put(
                     CreateMutableToken.class,
