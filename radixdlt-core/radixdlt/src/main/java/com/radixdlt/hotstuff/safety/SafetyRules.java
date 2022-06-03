@@ -96,7 +96,7 @@ import org.apache.logging.log4j.Logger;
 public final class SafetyRules {
   private static final Logger logger = LogManager.getLogger();
 
-  private static final int VERIFIED_CERTIFICATES_CACHE_MAX_SIZE = 10;
+  private static final int VERIFIED_CERTIFICATES_CACHE_MAX_SIZE = 1000;
 
   private final BFTNode self;
   private final Hasher hasher;
