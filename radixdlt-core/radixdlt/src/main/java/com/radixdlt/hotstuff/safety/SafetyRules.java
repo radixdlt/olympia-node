@@ -85,14 +85,18 @@ import com.radixdlt.hotstuff.bft.VerifiedVertex;
 import com.radixdlt.hotstuff.bft.View;
 import com.radixdlt.hotstuff.liveness.VoteTimeout;
 import com.radixdlt.hotstuff.safety.SafetyState.Builder;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /** Manages safety of the protocol. */
 public final class SafetyRules {
   private static final Logger logger = LogManager.getLogger();
+
+  private static final int VERIFIED_CERTIFICATES_CACHE_MAX_SIZE = 1000;
 
   private final BFTNode self;
   private final Hasher hasher;
@@ -102,6 +106,7 @@ public final class SafetyRules {
   private final PersistentSafetyStateStore persistentSafetyStateStore;
 
   private SafetyState state;
+  private final Set<HashCode> verifiedCertificatesCache = new LinkedHashSet<>();
 
   @Inject
   public SafetyRules(
@@ -261,6 +266,12 @@ public final class SafetyRules {
   }
 
   public boolean verifyQcAgainstTheValidatorSet(QuorumCertificate qc) {
+    final var qcHash = hasher.hash(qc);
+
+    if (verifiedCertificatesCache.contains(qcHash)) {
+      return true;
+    }
+
     if (isGenesisQc(qc)) {
       // A genesis QC doesn't require any signatures
       return true;
@@ -280,7 +291,22 @@ public final class SafetyRules {
                     validationState.addSignature(
                         e.getKey(), e.getValue().timestamp(), e.getValue().signature()));
 
-    return allSignaturesAddedSuccessfully && validationState.complete();
+    final var isQcValid = allSignaturesAddedSuccessfully && validationState.complete();
+
+    if (isQcValid) {
+      addVerifiedCertificateToCache(qcHash);
+    }
+
+    return isQcValid;
+  }
+
+  private void addVerifiedCertificateToCache(HashCode certificateHash) {
+    if (verifiedCertificatesCache.size() >= VERIFIED_CERTIFICATES_CACHE_MAX_SIZE) {
+      final var iter = verifiedCertificatesCache.iterator();
+      iter.next();
+      iter.remove();
+    }
+    verifiedCertificatesCache.add(certificateHash);
   }
 
   private boolean isGenesisQc(QuorumCertificate qc) {
@@ -297,7 +323,7 @@ public final class SafetyRules {
 
   private boolean areAllQcTimestampedSignaturesValid(QuorumCertificate qc) {
     final var voteData = qc.getVoteData();
-    return qc.getTimestampedSignatures().getSignatures().entrySet().stream()
+    return qc.getTimestampedSignatures().getSignatures().entrySet().parallelStream()
         .allMatch(
             e -> {
               final var nodePublicKey = e.getKey().getKey();
@@ -307,14 +333,27 @@ public final class SafetyRules {
   }
 
   public boolean verifyTcAgainstTheValidatorSet(TimeoutCertificate tc) {
-    return tc.getSigners().allMatch(validatorSet::containsNode)
-        && areAllTcTimestampedSignaturesValid(tc);
+    final var tcHash = hasher.hash(tc);
+
+    if (verifiedCertificatesCache.contains(tcHash)) {
+      return true;
+    }
+
+    final var isTcValid =
+        tc.getSigners().allMatch(validatorSet::containsNode)
+            && areAllTcTimestampedSignaturesValid(tc);
+
+    if (isTcValid) {
+      addVerifiedCertificateToCache(tcHash);
+    }
+
+    return isTcValid;
   }
 
   private boolean areAllTcTimestampedSignaturesValid(TimeoutCertificate tc) {
     final var voteTimeout = new VoteTimeout(tc.getView(), tc.getEpoch());
     final var voteTimeoutHash = hasher.hash(voteTimeout);
-    return tc.getTimestampedSignatures().getSignatures().entrySet().stream()
+    return tc.getTimestampedSignatures().getSignatures().entrySet().parallelStream()
         .allMatch(
             e -> {
               final var nodePublicKey = e.getKey().getKey();
