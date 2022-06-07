@@ -62,79 +62,43 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.full_function;
+package com.radixdlt.statecomputer.substatehash;
 
-import com.google.inject.Module;
-import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.harness.deterministic.ActorConfiguration;
-import com.radixdlt.harness.deterministic.DeterministicActorsTest;
-import com.radixdlt.harness.deterministic.actors.*;
-import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import java.util.List;
-import java.util.Map;
+import static com.radixdlt.statecomputer.substatehash.BerkeleySubstateAccumulatorHashStore.*;
 
-public abstract class ApiTest extends DeterministicActorsTest {
-  private static final RERulesConfig config =
-      RERulesConfig.testingDefault().overrideMaxSigsPerRound(2);
-  private static final Amount PER_BYTE_FEE = Amount.ofMicroTokens(2);
-  private static final List<ActorConfiguration> ACTOR_CONFIGURATIONS =
-      List.of(
-          new ActorConfiguration(ApiTxnSubmitter::new, 1, 2),
-          new ActorConfiguration(BalanceReconciler::new, 1, 10),
-          new ActorConfiguration(RandomNodeRestarter::new, 1, 10),
-          new ActorConfiguration(NativeTokenRewardsChecker::new, 1, 100),
-          new ActorConfiguration(ApiBalanceToRadixEngineChecker::new, 1, 200),
-          new ActorConfiguration(EpochHashChecker::new, 1, 100));
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.name.Names;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
-  public ApiTest(Module forkOverrideModule, Module byzantineModule) {
-    super(forkOverrideModule, byzantineModule);
-    this.setActorConfigurations(ACTOR_CONFIGURATIONS);
+public class SubstateAccumulatorHashModule extends AbstractModule {
+
+  private final boolean isUpdateEpochHashFileEnabled;
+  private final boolean isVerifyEpochHashEnabled;
+
+  public SubstateAccumulatorHashModule(
+      boolean isUpdateEpochHashFileEnabled, boolean isVerifyEpochHashEnabled) {
+    if (isVerifyEpochHashEnabled && isUpdateEpochHashFileEnabled) {
+      throw new IllegalStateException(
+          "It is not allowed to enable both verify_epoch_hash.enable and"
+              + " update_epoch_hash_file.enable options at the same time.");
+    }
+    this.isUpdateEpochHashFileEnabled = isUpdateEpochHashFileEnabled;
+    this.isVerifyEpochHashEnabled = isVerifyEpochHashEnabled;
   }
 
-  // The following class is created as a workaround as gradle cannot run the tests inside a test
-  // class in parallel. We can achieve some level of parallelism splitting the tests across
-  // different test classes.
-
-  public static class ApiTest2 extends ApiTest {
-    public ApiTest2() {
-      super(new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(98)), null);
-    }
-  }
-
-  public static class ApiTest1 extends ApiTest {
-    public ApiTest1() {
-      super(new RadixEngineForksLatestOnlyModule(config), null);
-    }
-  }
-
-  public static class ApiTest0 extends ApiTest {
-    public ApiTest0() {
-      super(
-          new ForkOverwritesWithShorterEpochsModule(config),
-          new ForkOverwritesWithShorterEpochsModule(config.removeSigsPerRoundLimit()));
-    }
-  }
-
-  public static class ApiTest3 extends ApiTest {
-    public ApiTest3() {
-      super(
-          new RadixEngineForksLatestOnlyModule(
-              config
-                  .overrideMaxRounds(98)
-                  .overrideFeeTable(FeeTable.create(PER_BYTE_FEE, Map.of()))),
-          null);
-    }
-  }
-
-  public static class ApiTest4 extends ApiTest {
-    public ApiTest4() {
-      super(
-          new ForkOverwritesWithShorterEpochsModule(
-              config.overrideFeeTable(FeeTable.create(PER_BYTE_FEE, Map.of()))),
-          null);
-    }
+  @Override
+  protected void configure() {
+    bind(BerkeleySubstateAccumulatorHashStore.class).in(Scopes.SINGLETON);
+    Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
+        .addBinding()
+        .to(BerkeleySubstateAccumulatorHashStore.class);
+    bindConstant()
+        .annotatedWith(Names.named(UPDATE_EPOCH_HASH_FILE_ENABLE_PROPERTY_NAME))
+        .to(isUpdateEpochHashFileEnabled);
+    bindConstant()
+        .annotatedWith(Names.named(VERIFY_EPOCH_HASH_ENABLE_PROPERTY_NAME))
+        .to(isVerifyEpochHashEnabled);
   }
 }

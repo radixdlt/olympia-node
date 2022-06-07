@@ -67,7 +67,6 @@ package com.radixdlt.api.core.reconstruction;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.SubstateSerialization;
@@ -133,10 +132,10 @@ public class RecoverableProcessedTxn {
                                       .getMicroOp();
                               var data =
                                   switch (microOp) {
-                                    case DOWN -> serialization.serialize((Particle) u.getParsed());
+                                    case DOWN -> serialization.serialize(u.getParsed());
                                     case DOWNINDEX -> Arrays.concatenate(
                                         u.getId().asBytes(),
-                                        serialization.serialize((Particle) u.getParsed()));
+                                        serialization.serialize(u.getParsed()));
                                     case VDOWN, LVDOWN -> new byte[] {u.typeByte()};
                                     default -> throw new IllegalStateException();
                                   };

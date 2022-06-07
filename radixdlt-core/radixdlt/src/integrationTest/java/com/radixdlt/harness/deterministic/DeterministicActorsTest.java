@@ -101,6 +101,7 @@ import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.modules.MainnetForksModule;
+import com.radixdlt.statecomputer.substatehash.SubstateAccumulatorHashModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
@@ -192,6 +193,7 @@ public abstract class DeterministicActorsTest {
         new PersistedNodeForTestingModule(),
         new LastEventsModule(LedgerUpdate.class),
         FailOnEvent.asModule(InvalidProposedTxn.class),
+        new SubstateAccumulatorHashModule(false, true),
         new AbstractModule() {
           @Override
           protected void configure() {
