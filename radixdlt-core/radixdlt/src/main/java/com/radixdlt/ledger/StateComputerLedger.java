@@ -92,6 +92,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Synchronizes execution */
 public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
@@ -197,6 +199,8 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
     }
   }
 
+  private static final Logger log = LogManager.getLogger();
+
   @Override
   public Optional<PreparedVertex> prepare(
       LinkedList<PreparedVertex> previous, VerifiedVertex vertex) {
@@ -218,6 +222,10 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 
     synchronized (lock) {
       if (this.currentLedgerHeader.getStateVersion() > parentAccumulatorState.getStateVersion()) {
+        log.info(
+            "return optional empty curr state {}, parent state {}",
+            this.currentLedgerHeader.getStateVersion(),
+            parentAccumulatorState.getStateVersion());
         return Optional.empty();
       }
 
@@ -243,6 +251,7 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
       // TODO: Write a test to get here
       // Can possibly get here without maliciousness if parent vertex isn't locked by everyone else
       if (maybeCommands.isEmpty()) {
+        log.info("commands is empty returning empty optional...");
         return Optional.empty();
       }
 

@@ -81,6 +81,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Manages the BFT Vertex chain. TODO: Move this logic into ledger package. */
 @NotThreadSafe
@@ -335,9 +337,12 @@ public final class VertexStore {
     insertVertexInternal(vertex);
   }
 
+  private static final Logger log = LogManager.getLogger();
+
   private void insertVertexInternal(VerifiedVertex vertex) {
     LinkedList<PreparedVertex> previous = getPathFromRoot(vertex.getParentId());
     Optional<PreparedVertex> preparedVertexMaybe = ledger.prepare(previous, vertex);
+    log.info("prepared vertex maybe {}", preparedVertexMaybe);
     preparedVertexMaybe.ifPresent(
         preparedVertex -> {
           vertices.put(preparedVertex.getId(), preparedVertex);
