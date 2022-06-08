@@ -179,9 +179,16 @@ public final class Pacemaker {
     /* we only process the insertion of an empty vertex used for timeout vote (see: processLocalTimeout) */
     if (!this.isViewTimedOut
         || this.timeoutVoteVertexId.filter(update.getInserted().getId()::equals).isEmpty()) {
+      log.info(
+          "Received bft insert update, but ignoring. isViewTimedOut {}, this.timeot vertex {},"
+              + " inserted {}",
+          this.isViewTimedOut,
+          this.timeoutVoteVertexId,
+          update.getInserted().getId());
       return;
     }
 
+    log.info("Received bft insert update, trying to send a timeout vote...");
     this.createAndSendTimeoutVote(update.getInserted());
   }
 
@@ -259,16 +266,28 @@ public final class Pacemaker {
         .map(this.safetyRules::timeoutVote)
         .ifPresentOrElse(
             /* if there is a previously sent vote, we time it out and broadcast to all nodes */
-            vote -> this.voteDispatcher.dispatch(this.validatorSet.nodes(), vote),
+            vote -> {
+              log.info(
+                  "Safety rules already has a vote for round {}, sending to {} validators",
+                  view,
+                  this.validatorSet.nodes().size());
+              this.voteDispatcher.dispatch(this.validatorSet.nodes(), vote);
+            },
             /* otherwise, we asynchronously insert an empty vertex and, when done,
             we send a timeout vote on it (see processBFTUpdate) */
-            () -> createTimeoutVertexAndSendVote(scheduledTimeout.viewUpdate()));
+            () -> {
+              log.info(
+                  "Safety rules doesn't have a vote for round {}, creating an emtpy vertex", view);
+              createTimeoutVertexAndSendVote(scheduledTimeout.viewUpdate());
+            });
 
     rescheduleTimeout(scheduledTimeout);
   }
 
   private void createTimeoutVertexAndSendVote(ViewUpdate viewUpdate) {
+    log.info("Creating a timeout vertex for round {}", viewUpdate.getCurrentView());
     if (this.timeoutVoteVertexId.isPresent()) {
+      log.info("this.timeoutVoteVertexId is present, waiting for async vertex insert event");
       return; // vertex for a timeout vote for this view is already inserted
     }
 
@@ -279,13 +298,21 @@ public final class Pacemaker {
     final var blankVertex = new VerifiedVertex(proposedVertex, hasher.hash(proposedVertex));
     this.timeoutVoteVertexId = Optional.of(blankVertex.getId());
 
+    log.info(
+        "this.timeoutVoteVertexId was not present, created a vertex {}", this.timeoutVoteVertexId);
+
     // TODO: reimplement in async way
     this.vertexStore
         .getPreparedVertex(blankVertex.getId())
         .ifPresentOrElse(
-            this::createAndSendTimeoutVote, // if vertex is already there, send the vote immediately
-            () ->
-                maybeInsertVertex(blankVertex) // otherwise insert and wait for async bft update msg
+            vertex -> {
+              log.info("timeout vertex already exists, about to send a timeout vote");
+              this.createAndSendTimeoutVote(vertex);
+            }, // if vertex is already there, send the vote immediately
+            () -> {
+              log.info("Timeout vertex doesn't yet exist, about to insert...");
+              maybeInsertVertex(blankVertex);
+            } // otherwise insert and wait for async bft update msg
             );
   }
 
@@ -294,12 +321,15 @@ public final class Pacemaker {
   private void maybeInsertVertex(VerifiedVertex verifiedVertex) {
     try {
       this.vertexStore.insertVertex(verifiedVertex);
+      log.info("Timeout vertex inserted...waiting for an async inserted event...");
     } catch (MissingParentException e) {
-      log.debug("Could not insert timeout vertex: {}", e.getMessage());
+      log.info("Could not insert timeout vertex: {}", e.getMessage());
     }
   }
 
   private void createAndSendTimeoutVote(PreparedVertex preparedVertex) {
+    log.info("Creating a timeout vote for vertex {}", preparedVertex);
+
     final BFTHeader bftHeader =
         new BFTHeader(
             preparedVertex.getView(), preparedVertex.getId(), preparedVertex.getLedgerHeader());
@@ -313,6 +343,7 @@ public final class Pacemaker {
 
     final Vote timeoutVote = this.safetyRules.timeoutVote(baseVote);
 
+    log.info("Dispatching timeout vote to {} validators", this.validatorSet.nodes().size());
     this.voteDispatcher.dispatch(this.validatorSet.nodes(), timeoutVote);
   }
 
