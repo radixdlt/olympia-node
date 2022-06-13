@@ -64,25 +64,21 @@
 
 package com.radixdlt.application.system.scrypt.epoch.procedure;
 
-import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
-import com.radixdlt.application.system.scrypt.epoch.state.ProcessExittingStake;
-import com.radixdlt.application.system.scrypt.epoch.state.UpdatingEpoch;
-import com.radixdlt.application.tokens.state.ExitingStake;
+import com.radixdlt.application.system.scrypt.epoch.state.PreparingOwnerUpdateV3;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 
-public final class ShutdownAllExitingStakesProcedure
-    extends ShutdownAllProcedure<ExitingStake, UpdatingEpoch> {
-  public ShutdownAllExitingStakesProcedure(EpochUpdateConfig config) {
+public class ShutdownAllValidatorOwnerCopyProcedureV3
+    extends ShutdownAllProcedure<ValidatorOwnerCopy, PreparingOwnerUpdateV3> {
+  public ShutdownAllValidatorOwnerCopyProcedureV3() {
     super(
-        ExitingStake.class,
-        UpdatingEpoch.class,
+        ValidatorOwnerCopy.class,
+        PreparingOwnerUpdateV3.class,
         () -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (updatingEpoch, substateIterator, context, resources) -> {
-          var exittingStake = new ProcessExittingStake(config, updatingEpoch);
-          return ReducerResult.incomplete(exittingStake.process(substateIterator));
-        });
+        (ownerUpdate, substateIterator, context, resources) ->
+            ReducerResult.incomplete(ownerUpdate.prepareValidatorUpdate(substateIterator)));
   }
 }

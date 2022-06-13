@@ -62,29 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt.epoch.state;
+package com.radixdlt.application.system.scrypt.epoch.procedure;
 
-import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import java.util.function.Supplier;
+import com.radixdlt.application.system.scrypt.epoch.state.ProcessExittingStakeV3;
+import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.UpProcedure;
 
-public record ResetRegisteredUpdate(ValidatorRegisteredCopy update, Supplier<ReducerState> next)
-    implements ReducerState {
-
-  public ReducerState reset(ValidatorRegisteredCopy registeredCopy) throws ProcedureException {
-    if (!registeredCopy.validatorKey().equals(update.validatorKey())) {
-      throw new ProcedureException("Validator keys must match.");
-    }
-
-    if (registeredCopy.isRegistered() != update.isRegistered()) {
-      throw new ProcedureException("Registered flags must match.");
-    }
-
-    if (registeredCopy.epochUpdate().isPresent()) {
-      throw new ProcedureException("Should not have an epoch.");
-    }
-
-    return next.get();
+public class ProcessExittingStakeUpProcedureV3
+    extends UpProcedure<TokensInAccount, ProcessExittingStakeV3> {
+  public ProcessExittingStakeUpProcedureV3() {
+    super(
+        TokensInAccount.class,
+        ProcessExittingStakeV3.class,
+        tokens -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (exittingStake, tokens, context) -> ReducerResult.incomplete(exittingStake.unlock(tokens)));
   }
 }

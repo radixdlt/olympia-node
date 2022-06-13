@@ -64,21 +64,21 @@
 
 package com.radixdlt.application.system.scrypt.epoch.procedure;
 
-import com.radixdlt.application.system.scrypt.epoch.state.PreparingStake;
-import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.system.scrypt.epoch.state.ResetRegisteredUpdateV4;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.ShutdownAllProcedure;
+import com.radixdlt.constraintmachine.UpProcedure;
 
-public class ShutdownAllPreparedStakeProcedure
-    extends ShutdownAllProcedure<PreparedStake, PreparingStake> {
-  public ShutdownAllPreparedStakeProcedure() {
+public class UpValidatorRegisteredCopyProcedureV4
+    extends UpProcedure<ValidatorRegisteredCopy, ResetRegisteredUpdateV4> {
+  public UpValidatorRegisteredCopyProcedureV4() {
     super(
-        PreparedStake.class,
-        PreparingStake.class,
-        () -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (preparingStake, substateIterator, context, resources) ->
-            ReducerResult.incomplete(preparingStake.prepareStakes(substateIterator)));
+        ValidatorRegisteredCopy.class,
+        ResetRegisteredUpdateV4.class,
+        registeredCopy -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (registeredUpdate, registeredCopy, context) ->
+            ReducerResult.incomplete(registeredUpdate.reset(registeredCopy)));
   }
 }

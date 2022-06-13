@@ -64,21 +64,21 @@
 
 package com.radixdlt.application.system.scrypt.epoch.procedure;
 
-import com.radixdlt.application.system.scrypt.epoch.state.ResetRegisteredUpdate;
-import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.application.system.scrypt.epoch.state.PreparingRakeUpdateV3;
+import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.UpProcedure;
+import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 
-public class UpResetRegisteredUpdateProcedure
-    extends UpProcedure<ValidatorRegisteredCopy, ResetRegisteredUpdate> {
-  public UpResetRegisteredUpdateProcedure() {
+public class ShutdownAllValidatorFeeCopyProcedureV4
+    extends ShutdownAllProcedure<ValidatorFeeCopy, PreparingRakeUpdateV3> {
+  public ShutdownAllValidatorFeeCopyProcedureV4() {
     super(
-        ValidatorRegisteredCopy.class,
-        ResetRegisteredUpdate.class,
-        registeredCopy -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (registeredUpdate, registeredCopy, context) ->
-            ReducerResult.incomplete(registeredUpdate.reset(registeredCopy)));
+        ValidatorFeeCopy.class,
+        PreparingRakeUpdateV3.class,
+        () -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (rakeUpdate, substateIterator, context, resources) ->
+            ReducerResult.incomplete(rakeUpdate.prepareRakeUpdates(substateIterator)));
   }
 }

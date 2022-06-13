@@ -62,38 +62,62 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.construction.epoch.v4;
+package com.radixdlt.application.system.scrypt.epoch.state;
 
-import static com.radixdlt.atom.TxAction.NextEpoch;
+import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy.ValidatorRegisteredCopyV1;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy.ValidatorRegisteredCopyV2;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import java.util.function.Supplier;
 
-import com.radixdlt.application.system.construction.epoch.NextEpochConfig;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
+public record ResetRegisteredUpdateV4(
+    ValidatorRegisteredCopy existingState,
+    ValidatorScratchPad scratchPad,
+    Supplier<ReducerState> next)
+    implements ReducerState {
 
-public record NextEpochConstructorV4(NextEpochConfig config)
-    implements ActionConstructor<NextEpoch> {
+  public ReducerState reset(ValidatorRegisteredCopy newState) throws ProcedureException {
+    if (!newState.validatorKey().equals(existingState.validatorKey())) {
+      throw new ProcedureException("Validator keys must match.");
+    }
 
-  @Override
-  public void construct(NextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-    var state = EpochConstructionStateV4.createState(config, txBuilder);
+    if (newState.epochUpdate().isPresent()) {
+      throw new ProcedureException("Should not have an epoch.");
+    }
 
-    state.processExittingStake();
+    if (newState.isRegistered() != existingState.isRegistered()) {
+      throw new ProcedureException("Registered flags must match.");
+    }
 
-    state.loadRegistrationData();
+    return switch (newState) {
+      case ValidatorRegisteredCopyV1 ignored -> next.get();
+      case ValidatorRegisteredCopyV2 registeredCopyV2 -> validateV2(registeredCopyV2);
+    };
+  }
 
-    state.processEmission();
-    state.processJailing();
-    state.processPreparedUnstake();
-    state.processPreparedStake();
-    state.processUpdateRake();
-    state.processUpdateOwners();
+  private ReducerState validateV2(ValidatorRegisteredCopyV2 newState) throws ProcedureException {
+    if (newState.isRegistered() != existingState.isRegistered()) {
+      throw new ProcedureException("Registered flags must match.");
+    }
 
-    state.processUpdateRegisteredFlag();
+    if (newState.isRegistrationPending() != scratchPad.getSentencing().registrationPending()) {
+      throw new ProcedureException("Pending registration must match.");
+    }
 
-    state.upValidatorStakeData();
+    if (newState.jailedEpoch() != scratchPad.getSentencing().jailedEpoch()) {
+      throw new ProcedureException("Jailed epoch must match.");
+    }
 
-    state.prepareNextValidatorSetV3();
-    state.finalizeConstruction();
+    if (newState.jailLevel() != scratchPad.getSentencing().jailLevel()) {
+      throw new ProcedureException("Jail level must match.");
+    }
+
+    if (newState.probationEpochsLeft() != scratchPad.getSentencing().probationEpochsLeft()) {
+      throw new ProcedureException("Probation epochs must match.");
+    }
+
+    return next.get();
   }
 }

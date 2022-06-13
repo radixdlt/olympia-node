@@ -69,7 +69,7 @@ import static com.radixdlt.atom.TxAction.UpdateValidatorFee;
 
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
-import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
+import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScryptV3;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.validators.construction.UpdateRakeConstructor;
@@ -101,7 +101,7 @@ public class UpdateValidatorFeeTest {
     cmAtomOS.load(new SystemConstraintScrypt());
     cmAtomOS.load(new RoundUpdateConstraintScrypt(1));
     cmAtomOS.load(
-        new EpochUpdateConstraintScrypt(new EpochUpdateConfig(1, 100, 1, 1, UInt256.TEN)));
+        new EpochUpdateConstraintScryptV3(new EpochUpdateConfig(1, 100, 1, 1, UInt256.TEN)));
     cmAtomOS.load(new ValidatorConstraintScryptV2());
     cmAtomOS.load(new ValidatorUpdateRakeConstraintScrypt(2));
     var cm =

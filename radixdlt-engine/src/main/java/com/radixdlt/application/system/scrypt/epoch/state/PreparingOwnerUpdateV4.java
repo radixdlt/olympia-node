@@ -64,129 +64,67 @@
 
 package com.radixdlt.application.system.scrypt.epoch.state;
 
-import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
-
 import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
-import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
-import com.radixdlt.application.system.state.ValidatorBFTData;
-import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.constraintmachine.IndexedSubstateIterator;
-import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.KeyComparator;
-import com.radixdlt.utils.UInt256;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
-public final class RewardingValidators implements ReducerState {
-  private final NavigableMap<ECPublicKey, ValidatorScratchPad> updatingValidators =
+public final class PreparingOwnerUpdateV4 extends ExpectedEpochChecker {
+  private final NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
+  private final NavigableMap<ECPublicKey, ValidatorOwnerCopy> preparingOwnerUpdates =
       new TreeMap<>(KeyComparator.instance());
-  private final NavigableMap<ECPublicKey, ValidatorBFTData> validatorBFTData =
-      new TreeMap<>(KeyComparator.instance());
-  private final NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingStake =
-      new TreeMap<>(KeyComparator.instance());
-  private final EpochUpdateConfig config;
-  private final UpdatingEpoch updatingEpoch;
 
-  RewardingValidators(EpochUpdateConfig config, UpdatingEpoch updatingEpoch) {
-    this.config = config;
-    this.updatingEpoch = updatingEpoch;
+  PreparingOwnerUpdateV4(
+      EpochUpdateConfig config,
+      UpdatingEpoch updatingEpoch,
+      NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {
+    super(config, updatingEpoch);
+    this.validatorsScratchPad = validatorsScratchPad;
   }
 
-  // TODO: Remove context
-  public ReducerState process(
-      IndexedSubstateIterator<ValidatorBFTData> iterator, ExecutionContext context)
+  public ReducerState prepareValidatorUpdate(
+      IndexedSubstateIterator<ValidatorOwnerCopy> indexedSubstateIterator)
       throws ProcedureException {
+    verifyPrefix(indexedSubstateIterator);
 
-    iterator.verifyPostTypePrefixIsEmpty();
-
-    iterator.forEachThrowing(
-        validatorEpochData -> {
-          if (validatorBFTData.containsKey(validatorEpochData.validatorKey())) {
-            throw new ProcedureException("Already inserted " + validatorEpochData.validatorKey());
-          }
-          validatorBFTData.put(validatorEpochData.validatorKey(), validatorEpochData);
-        });
-
-    return next(context);
+    indexedSubstateIterator.forEachRemaining(
+        preparedValidatorUpdate ->
+            preparingOwnerUpdates.put(
+                preparedValidatorUpdate.validatorKey(), preparedValidatorUpdate));
+    return next();
   }
 
-  ReducerState next(ExecutionContext context) {
-    if (validatorBFTData.isEmpty()) {
-      return PreparingUnstake.create(config, updatingEpoch, updatingValidators, preparingStake);
+  ReducerState next() {
+    if (preparingOwnerUpdates.isEmpty()) {
+      return new PreparingRegisteredUpdateV4(config(), updatingEpoch(), validatorsScratchPad);
     }
 
-    var publicKey = validatorBFTData.firstKey();
+    var publicKey = preparingOwnerUpdates.firstKey();
+    var validatorUpdate = preparingOwnerUpdates.remove(publicKey);
 
-    if (updatingValidators.containsKey(publicKey)) {
-      throw new IllegalStateException(
-          "Inconsistent data, there should only be a single substate per validator");
+    if (!validatorsScratchPad.containsKey(publicKey)) {
+      return new LoadingStake(
+          publicKey,
+          validatorStake -> {
+            validatorsScratchPad.put(publicKey, validatorStake);
+            validatorStake.setOwnerAddr(validatorUpdate.owner());
+            return new ResetOwnerUpdate(publicKey, this::next);
+          });
+    } else {
+      validatorsScratchPad.get(publicKey).setOwnerAddr(validatorUpdate.owner());
+      return new ResetOwnerUpdate(publicKey, this::next);
     }
-
-    var bftData = validatorBFTData.remove(publicKey);
-
-    context.emitEvent(ValidatorBFTDataEvent.fromData(bftData));
-
-    if (bftData.hasNoProcessedProposals()) {
-      return next(context);
-    }
-
-    var percentageCompleted = bftData.percentageCompleted();
-
-    // Didn't pass threshold, no rewards!
-    if (percentageCompleted < config.minimumCompletedProposalsPercentage()) {
-      return next(context);
-    }
-
-    var nodeRewards = bftData.calculateRewards(config.rewardsPerProposal());
-
-    if (nodeRewards.isZero()) {
-      return next(context);
-    }
-
-    return new LoadingStake(
-        publicKey,
-        validatorStakeData -> onDone(context, publicKey, nodeRewards, validatorStakeData));
   }
 
-  private ReducerState onDone(
-      ExecutionContext context,
-      ECPublicKey publicKey,
-      UInt256 nodeRewards,
-      ValidatorScratchPad validatorStakeData) {
-    var rakedEmissions = calculateRakedEmissions(publicKey, nodeRewards, validatorStakeData);
-
-    validatorStakeData.addEmission(rakedEmissions);
-    updatingValidators.put(publicKey, validatorStakeData);
-
-    return next(context);
-  }
-
-  private UInt256 calculateRakedEmissions(
-      ECPublicKey publicKey, UInt256 nodeRewards, ValidatorScratchPad validatorStakeData) {
-    var rakePercentage = validatorStakeData.getRakePercentage();
-
-    if (rakePercentage == 0) {
-      return nodeRewards;
-    }
-
-    var rake = nodeRewards.multiply(UInt256.from(rakePercentage)).divide(UInt256.from(RAKE_MAX));
-    var validatorOwner = validatorStakeData.getOwnerAddr();
-
-    preparingStake.put(publicKey, createStakeMap(validatorOwner, rake));
-
-    return nodeRewards.subtract(rake);
-  }
-
-  public static NavigableMap<REAddr, UInt256> createStakeMap(REAddr validatorOwner, UInt256 rake) {
-    var map = new TreeMap<REAddr, UInt256>(EpochUpdateConstraintScrypt.STAKE_COMPARATOR);
-
-    map.put(validatorOwner, rake);
-
-    return map;
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{preparingOwnerUpdates=%s}", this.getClass().getSimpleName(), preparingOwnerUpdates);
   }
 }

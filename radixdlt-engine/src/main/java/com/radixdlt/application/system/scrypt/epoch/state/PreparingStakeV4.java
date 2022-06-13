@@ -65,7 +65,7 @@
 package com.radixdlt.application.system.scrypt.epoch.state;
 
 import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
-import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
+import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScryptV4;
 import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.constraintmachine.IndexedSubstateIterator;
@@ -77,7 +77,7 @@ import com.radixdlt.utils.UInt256;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
-public record PreparingStake(
+public record PreparingStakeV4(
     EpochUpdateConfig config,
     UpdatingEpoch updatingEpoch,
     NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad,
@@ -97,7 +97,7 @@ public record PreparingStake(
 
   ReducerState next() {
     if (preparingStake.isEmpty()) {
-      return new PreparingRakeUpdate(config, updatingEpoch, validatorsScratchPad);
+      return new PreparingRakeUpdateV4(config, updatingEpoch, validatorsScratchPad);
     }
 
     var publicKey = preparingStake.firstKey();
@@ -115,6 +115,6 @@ public record PreparingStake(
   }
 
   private static TreeMap<REAddr, UInt256> createStakeMap() {
-    return new TreeMap<>(EpochUpdateConstraintScrypt.STAKE_COMPARATOR);
+    return new TreeMap<>(EpochUpdateConstraintScryptV4.STAKE_COMPARATOR);
   }
 }

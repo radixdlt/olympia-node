@@ -72,7 +72,7 @@ import com.radixdlt.application.system.construction.NextViewConstructorV3;
 import com.radixdlt.application.system.construction.epoch.NextEpochConfig;
 import com.radixdlt.application.system.construction.epoch.v3.NextEpochConstructorV3;
 import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
-import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
+import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScryptV3;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.Amount;
@@ -118,7 +118,7 @@ public class NextViewV2Test {
         new Object[][] {
           {
             List.of(
-                new EpochUpdateConstraintScrypt(
+                new EpochUpdateConstraintScryptV3(
                     new EpochUpdateConfig(10, 10, 1, 9800, Amount.ofTokens(10).toSubunits())),
                 new RoundUpdateConstraintScrypt(10)),
             new NextViewConstructorV3()

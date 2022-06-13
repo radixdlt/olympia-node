@@ -103,15 +103,14 @@ public record EpochConstructionStateV4(
     TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake,
     NextEpochConfig config,
     StakeAccumulator totalValidatingStake,
-    StakeAccumulator eligibleJailedStake,
-    List<ECPublicKey> jailingCandidates) {
+    StakeAccumulator eligibleJailedStake) {
 
   private static final long MIN_COMPLETED_PROPOSALS = 3;
   public static final Comparator<ValidatorScratchPad> MISSED_PROPOSALS_COMPARATOR =
-      Comparator.<ValidatorScratchPad, Long>comparing(ValidatorScratchPad::missedProposals)
-          .reversed();
-  private static final UInt256 RATE_LIMIT =
+      Comparator.comparing(ValidatorScratchPad::missedProposals).reversed();
+  public static final UInt256 RATE_LIMIT =
       Amount.ofMilliTokens(120).toSubunits(); // 12% => 0.120 => 120 milli
+  public static final long ELIGIBLE_JAILING_STAKE_INTERVAL = 1500L;
 
   public static EpochConstructionStateV4 createState(
       NextEpochConfig constructor, TxBuilder txBuilder) {
@@ -123,8 +122,7 @@ public record EpochConstructionStateV4(
         new TreeMap<>(KeyComparator.instance()),
         constructor,
         StakeAccumulator.create(),
-        StakeAccumulator.create(),
-        new ArrayList<>());
+        StakeAccumulator.create());
   }
 
   public void upValidatorStakeData() {
@@ -144,7 +142,7 @@ public record EpochConstructionStateV4(
 
     txBuilder
         .shutdownAll(index, EpochConstructionStateV4::collectExittingStake)
-        .forEach(stake -> txBuilder().up(totalValidatingStake.addFrom(stake).unlock()));
+        .forEach(stake -> txBuilder().up(stake.unlock()));
   }
 
   private ValidatorScratchPad stakeData(ECPublicKey publicKey) {
@@ -171,12 +169,6 @@ public record EpochConstructionStateV4(
     return exit;
   }
 
-  public void processEligibleJailedStake() {
-    // TODO: we already have total validating stake, now we need calculate stakes for validators
-    // which
-    // are not in validator set and were unregistered within 1500 last epochs
-  }
-
   public void loadRegistrationData() {
     var index = prepareIndex(ValidatorRegisteredCopy.class, VALIDATOR_REGISTERED_FLAG_COPY);
 
@@ -189,6 +181,10 @@ public record EpochConstructionStateV4(
     var scratchPad = stakeData(publicKey);
     var wasRegistered = scratchPad.isRegistered();
 
+    if (wasRegistered) {
+      totalValidatingStake.add(scratchPad.totalStake());
+    }
+
     scratchPad.setRegistered(update.isRegistered());
 
     if (update instanceof ValidatorRegisteredCopyV2 updateV2) {
@@ -200,6 +196,16 @@ public record EpochConstructionStateV4(
       } else {
         // Check if jailing period ended
         var jailPeriodEnded = scratchPad.getSentencing().checkEndOfJail(closingEpoch.epoch());
+
+        // Check if validators' stake should be taken into account as eligible jailing stake.
+        if (scratchPad.getSentencing().jailedEpoch() != 0L) {
+          var jailedWithin = closingEpoch.epoch() - scratchPad.getSentencing().jailedEpoch();
+
+          if (jailedWithin <= ELIGIBLE_JAILING_STAKE_INTERVAL) {
+            // Validator is jailed within last 1500 epochs and still not registered
+            eligibleJailedStake.add(scratchPad.totalStake());
+          }
+        }
 
         if (jailPeriodEnded) {
           scratchPad.getSentencing().leaveJail();
@@ -224,7 +230,6 @@ public record EpochConstructionStateV4(
 
   private void calculateEmission(ECPublicKey publicKey, ValidatorBFTData bftData) {
     var validatorStakeData = stakeData(publicKey);
-    validatorStakeData.missedProposals(bftData.missedProposals());
 
     if (bftData.hasNoProcessedProposals()) {
       return;
@@ -238,7 +243,7 @@ public record EpochConstructionStateV4(
         return;
       }
 
-      jailingCandidates.add(publicKey);
+      validatorStakeData.prepareCandidateForJailing(bftData.missedProposals());
 
       return;
     }
@@ -268,8 +273,8 @@ public record EpochConstructionStateV4(
   }
 
   public void processJailing() {
-    jailingCandidates.stream()
-        .map(this::stakeData)
+    validatorsToUpdate.values().stream()
+        .filter(ValidatorScratchPad::isJailingCandidate)
         .sorted(MISSED_PROPOSALS_COMPARATOR)
         .forEach(this::jailSingleValidator);
   }

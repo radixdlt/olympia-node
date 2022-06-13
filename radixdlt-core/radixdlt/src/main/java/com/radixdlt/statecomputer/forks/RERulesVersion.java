@@ -69,7 +69,7 @@ import static com.radixdlt.atom.TxAction.*;
 import com.radixdlt.application.misc.SplitTokenConstructor;
 import com.radixdlt.application.system.construction.*;
 import com.radixdlt.application.system.construction.epoch.v3.NextEpochConstructorV3;
-import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
+import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScryptV3;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.construction.*;
@@ -109,7 +109,7 @@ public enum RERulesVersion {
       v4.load(new StakingConstraintScryptV4(config.minimumStake().toSubunits()));
       v4.load(new MutexConstraintScrypt());
       v4.load(new RoundUpdateConstraintScrypt(maxRounds));
-      v4.load(new EpochUpdateConstraintScrypt(config.asEpochUpdateConfig()));
+      v4.load(new EpochUpdateConstraintScryptV3(config.asEpochUpdateConfig()));
 
       var meter =
           Meters.combine(

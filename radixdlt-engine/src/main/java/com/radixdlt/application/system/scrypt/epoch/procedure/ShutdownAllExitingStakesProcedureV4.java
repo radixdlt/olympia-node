@@ -64,21 +64,25 @@
 
 package com.radixdlt.application.system.scrypt.epoch.procedure;
 
-import com.radixdlt.application.system.scrypt.epoch.state.PreparingRakeUpdate;
-import com.radixdlt.application.validators.state.ValidatorFeeCopy;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
+import com.radixdlt.application.system.scrypt.epoch.state.ProcessExittingStakeV4;
+import com.radixdlt.application.system.scrypt.epoch.state.UpdatingEpoch;
+import com.radixdlt.application.tokens.state.ExitingStake;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 
-public class ShutdownAllValidatorFeeCopyProcedure
-    extends ShutdownAllProcedure<ValidatorFeeCopy, PreparingRakeUpdate> {
-  public ShutdownAllValidatorFeeCopyProcedure() {
+public final class ShutdownAllExitingStakesProcedureV4
+    extends ShutdownAllProcedure<ExitingStake, UpdatingEpoch> {
+  public ShutdownAllExitingStakesProcedureV4(EpochUpdateConfig config) {
     super(
-        ValidatorFeeCopy.class,
-        PreparingRakeUpdate.class,
+        ExitingStake.class,
+        UpdatingEpoch.class,
         () -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (rakeUpdate, substateIterator, context, resources) ->
-            ReducerResult.incomplete(rakeUpdate.prepareRakeUpdates(substateIterator)));
+        (updatingEpoch, substateIterator, context, resources) -> {
+          var exittingStake = new ProcessExittingStakeV4(config, updatingEpoch);
+          return ReducerResult.incomplete(exittingStake.process(substateIterator));
+        });
   }
 }

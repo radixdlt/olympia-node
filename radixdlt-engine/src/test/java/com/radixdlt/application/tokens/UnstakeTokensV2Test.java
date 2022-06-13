@@ -72,7 +72,7 @@ import com.radixdlt.application.system.construction.NextViewConstructorV3;
 import com.radixdlt.application.system.construction.epoch.NextEpochConfig;
 import com.radixdlt.application.system.construction.epoch.v3.NextEpochConstructorV3;
 import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
-import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
+import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScryptV3;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.construction.*;
@@ -120,7 +120,7 @@ public class UnstakeTokensV2Test {
             10,
             List.of(
                 new RoundUpdateConstraintScrypt(10),
-                new EpochUpdateConstraintScrypt(EPOCH_UPDATE_CONFIG),
+                new EpochUpdateConstraintScryptV3(EPOCH_UPDATE_CONFIG),
                 new TokensConstraintScryptV3(
                     new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))),
                 new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
@@ -136,7 +136,7 @@ public class UnstakeTokensV2Test {
             10,
             List.of(
                 new RoundUpdateConstraintScrypt(10),
-                new EpochUpdateConstraintScrypt(EPOCH_UPDATE_CONFIG),
+                new EpochUpdateConstraintScryptV3(EPOCH_UPDATE_CONFIG),
                 new TokensConstraintScryptV3(
                     new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))),
                 new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
@@ -152,7 +152,7 @@ public class UnstakeTokensV2Test {
             6,
             List.of(
                 new RoundUpdateConstraintScrypt(10),
-                new EpochUpdateConstraintScrypt(EPOCH_UPDATE_CONFIG),
+                new EpochUpdateConstraintScryptV3(EPOCH_UPDATE_CONFIG),
                 new TokensConstraintScryptV3(
                     new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))),
                 new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
@@ -168,7 +168,7 @@ public class UnstakeTokensV2Test {
             6,
             List.of(
                 new RoundUpdateConstraintScrypt(10),
-                new EpochUpdateConstraintScrypt(EPOCH_UPDATE_CONFIG),
+                new EpochUpdateConstraintScryptV3(EPOCH_UPDATE_CONFIG),
                 new TokensConstraintScryptV3(
                     new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))),
                 new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),

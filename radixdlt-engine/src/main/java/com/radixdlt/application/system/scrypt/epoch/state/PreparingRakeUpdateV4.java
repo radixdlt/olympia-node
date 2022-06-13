@@ -62,23 +62,73 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt.epoch.procedure;
+package com.radixdlt.application.system.scrypt.epoch.state;
 
-import com.radixdlt.application.system.scrypt.epoch.state.PreparingOwnerUpdate;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.ShutdownAllProcedure;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
+import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
+import com.radixdlt.application.validators.state.ValidatorFeeCopy;
+import com.radixdlt.constraintmachine.IndexedSubstateIterator;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.utils.KeyComparator;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
-public class ShutdownAllValidatorOwnerCopyProcedure
-    extends ShutdownAllProcedure<ValidatorOwnerCopy, PreparingOwnerUpdate> {
-  public ShutdownAllValidatorOwnerCopyProcedure() {
-    super(
-        ValidatorOwnerCopy.class,
-        PreparingOwnerUpdate.class,
-        () -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (ownerUpdate, substateIterator, context, resources) ->
-            ReducerResult.incomplete(ownerUpdate.prepareValidatorUpdate(substateIterator)));
+public final class PreparingRakeUpdateV4 extends ExpectedEpochChecker {
+  private final NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
+  private final NavigableMap<ECPublicKey, ValidatorFeeCopy> preparingRakeUpdates =
+      new TreeMap<>(KeyComparator.instance());
+
+  PreparingRakeUpdateV4(
+      EpochUpdateConfig config,
+      UpdatingEpoch updatingEpoch,
+      NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {
+    super(config, updatingEpoch);
+    this.validatorsScratchPad = validatorsScratchPad;
+  }
+
+  public ReducerState prepareRakeUpdates(
+      IndexedSubstateIterator<ValidatorFeeCopy> indexedSubstateIterator) throws ProcedureException {
+
+    verifyPrefix(indexedSubstateIterator);
+
+    indexedSubstateIterator.forEachRemaining(
+        preparedRakeUpdate -> {
+          validateRakeUpdate(preparedRakeUpdate);
+          preparingRakeUpdates.put(preparedRakeUpdate.validatorKey(), preparedRakeUpdate);
+        });
+
+    return next();
+  }
+
+  private void validateRakeUpdate(ValidatorFeeCopy preparedRakeUpdate) {
+    // Sanity check
+    var epochUpdate = preparedRakeUpdate.epochUpdate();
+    if (epochUpdate.orElseThrow() != expectedEpoch()) {
+      throw new IllegalStateException(
+          "Invalid rake update epoch expected " + expectedEpoch() + " but was " + epochUpdate);
+    }
+  }
+
+  ReducerState next() {
+    if (preparingRakeUpdates.isEmpty()) {
+      return new PreparingOwnerUpdateV4(config(), updatingEpoch(), validatorsScratchPad);
+    }
+
+    var publicKey = preparingRakeUpdates.firstKey();
+    var validatorUpdate = preparingRakeUpdates.remove(publicKey);
+    if (!validatorsScratchPad.containsKey(publicKey)) {
+      return new LoadingStake(
+          publicKey,
+          validatorStake -> {
+            validatorsScratchPad.put(publicKey, validatorStake);
+            validatorStake.setRakePercentage(validatorUpdate.curRakePercentage());
+            return new ResetRakeUpdate(validatorUpdate, this::next);
+          });
+    } else {
+      validatorsScratchPad.get(publicKey).setRakePercentage(validatorUpdate.curRakePercentage());
+      return new ResetRakeUpdate(validatorUpdate, this::next);
+    }
   }
 }

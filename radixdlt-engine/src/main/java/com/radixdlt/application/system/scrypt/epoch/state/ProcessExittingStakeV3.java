@@ -64,71 +64,73 @@
 
 package com.radixdlt.application.system.scrypt.epoch.state;
 
+import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
-import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
-import com.radixdlt.application.validators.state.ValidatorFeeCopy;
+import com.radixdlt.application.tokens.state.ExitingStake;
+import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.constraintmachine.IndexedSubstateIterator;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.utils.KeyComparator;
-import java.util.NavigableMap;
-import java.util.TreeMap;
+import com.radixdlt.utils.Longs;
+import java.util.Comparator;
+import java.util.TreeSet;
 
-public final class PreparingRakeUpdate extends ExpectedEpochChecker {
-  private final NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
-  private final NavigableMap<ECPublicKey, ValidatorFeeCopy> preparingRakeUpdates =
-      new TreeMap<>(KeyComparator.instance());
+public final class ProcessExittingStakeV3 extends ExpectedEpochChecker {
+  private final TreeSet<ExitingStake> exitting =
+      new TreeSet<>(
+          Comparator.comparing(ExitingStake::dataKey, UnsignedBytes.lexicographicalComparator()));
 
-  PreparingRakeUpdate(
-      EpochUpdateConfig config,
-      UpdatingEpoch updatingEpoch,
-      NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {
+  public ProcessExittingStakeV3(EpochUpdateConfig config, UpdatingEpoch updatingEpoch) {
     super(config, updatingEpoch);
-    this.validatorsScratchPad = validatorsScratchPad;
   }
 
-  public ReducerState prepareRakeUpdates(
-      IndexedSubstateIterator<ValidatorFeeCopy> indexedSubstateIterator) throws ProcedureException {
+  @Override
+  protected byte[] buildExpectedPrefix() {
+    var expectedPrefix = new byte[Long.BYTES + 1];
+    expectedPrefix[0] = 0;
+    Longs.copyTo(expectedEpoch(), expectedPrefix, 1);
+    return expectedPrefix;
+  }
 
+  public ReducerState process(IndexedSubstateIterator<ExitingStake> indexedSubstateIterator)
+      throws ProcedureException {
     verifyPrefix(indexedSubstateIterator);
 
     indexedSubstateIterator.forEachRemaining(
-        preparedRakeUpdate -> {
-          validateRakeUpdate(preparedRakeUpdate);
-          preparingRakeUpdates.put(preparedRakeUpdate.validatorKey(), preparedRakeUpdate);
-        });
+        exitingStake -> exitting.add(validateExittingStake(exitingStake)));
+    return next();
+  }
+
+  // Sanity check
+  private ExitingStake validateExittingStake(ExitingStake exitingStake) {
+    if (exitingStake.epochUnlocked() != expectedEpoch()) {
+      throw new IllegalStateException(
+          "Invalid shutdown of exitting stake update epoch expected "
+              + expectedEpoch()
+              + " but was "
+              + exitingStake.epochUnlocked());
+    }
+    return exitingStake;
+  }
+
+  public ReducerState unlock(TokensInAccount u) throws ProcedureException {
+    var exit = exitting.first();
+    exitting.remove(exit);
+
+    if (exit.epochUnlocked() != updatingEpoch().prevEpoch().epoch() + 1) {
+      throw new ProcedureException("Stake must still be locked.");
+    }
+
+    var expected = exit.unlock();
+
+    if (!expected.equals(u)) {
+      throw new ProcedureException("Expecting next state to be " + expected + " but was " + u);
+    }
 
     return next();
   }
 
-  private void validateRakeUpdate(ValidatorFeeCopy preparedRakeUpdate) {
-    // Sanity check
-    var epochUpdate = preparedRakeUpdate.epochUpdate();
-    if (epochUpdate.orElseThrow() != expectedEpoch()) {
-      throw new IllegalStateException(
-          "Invalid rake update epoch expected " + expectedEpoch() + " but was " + epochUpdate);
-    }
-  }
-
-  ReducerState next() {
-    if (preparingRakeUpdates.isEmpty()) {
-      return new PreparingOwnerUpdate(config(), updatingEpoch(), validatorsScratchPad);
-    }
-
-    var publicKey = preparingRakeUpdates.firstKey();
-    var validatorUpdate = preparingRakeUpdates.remove(publicKey);
-    if (!validatorsScratchPad.containsKey(publicKey)) {
-      return new LoadingStake(
-          publicKey,
-          validatorStake -> {
-            validatorsScratchPad.put(publicKey, validatorStake);
-            validatorStake.setRakePercentage(validatorUpdate.curRakePercentage());
-            return new ResetRakeUpdate(validatorUpdate, this::next);
-          });
-    } else {
-      validatorsScratchPad.get(publicKey).setRakePercentage(validatorUpdate.curRakePercentage());
-      return new ResetRakeUpdate(validatorUpdate, this::next);
-    }
+  public ReducerState next() {
+    return exitting.isEmpty() ? new RewardingValidatorsV3(config(), updatingEpoch()) : this;
   }
 }

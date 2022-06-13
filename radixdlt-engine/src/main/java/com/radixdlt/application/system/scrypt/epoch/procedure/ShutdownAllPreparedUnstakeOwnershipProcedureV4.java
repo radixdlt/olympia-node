@@ -62,38 +62,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.construction.epoch.v4;
+package com.radixdlt.application.system.scrypt.epoch.procedure;
 
-import static com.radixdlt.atom.TxAction.NextEpoch;
+import com.radixdlt.application.system.scrypt.epoch.state.PreparingUnstakeV4;
+import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 
-import com.radixdlt.application.system.construction.epoch.NextEpochConfig;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-
-public record NextEpochConstructorV4(NextEpochConfig config)
-    implements ActionConstructor<NextEpoch> {
-
-  @Override
-  public void construct(NextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-    var state = EpochConstructionStateV4.createState(config, txBuilder);
-
-    state.processExittingStake();
-
-    state.loadRegistrationData();
-
-    state.processEmission();
-    state.processJailing();
-    state.processPreparedUnstake();
-    state.processPreparedStake();
-    state.processUpdateRake();
-    state.processUpdateOwners();
-
-    state.processUpdateRegisteredFlag();
-
-    state.upValidatorStakeData();
-
-    state.prepareNextValidatorSetV3();
-    state.finalizeConstruction();
+public class ShutdownAllPreparedUnstakeOwnershipProcedureV4
+    extends ShutdownAllProcedure<PreparedUnstakeOwnership, PreparingUnstakeV4> {
+  public ShutdownAllPreparedUnstakeOwnershipProcedureV4() {
+    super(
+        PreparedUnstakeOwnership.class,
+        PreparingUnstakeV4.class,
+        () -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (unstake, substateIterator, context, resources) ->
+            ReducerResult.incomplete(unstake.unstakes(substateIterator)));
   }
 }

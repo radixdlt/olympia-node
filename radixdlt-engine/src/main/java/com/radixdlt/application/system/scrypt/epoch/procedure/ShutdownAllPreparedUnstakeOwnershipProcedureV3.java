@@ -62,76 +62,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt.epoch.state;
+package com.radixdlt.application.system.scrypt.epoch.procedure;
 
-import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
-import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
-import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
+import com.radixdlt.application.system.scrypt.epoch.state.PreparingUnstakeV3;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
-import com.radixdlt.constraintmachine.IndexedSubstateIterator;
-import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.KeyComparator;
-import com.radixdlt.utils.UInt256;
-import java.util.NavigableMap;
-import java.util.TreeMap;
+import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 
-public record PreparingUnstake(
-    EpochUpdateConfig config,
-    UpdatingEpoch updatingEpoch,
-    NavigableMap<ECPublicKey, ValidatorScratchPad> updatingValidators,
-    NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingStake,
-    NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingUnstakes)
-    implements ReducerState {
-
-  public static PreparingUnstake create(
-      EpochUpdateConfig config,
-      UpdatingEpoch updatingEpoch,
-      NavigableMap<ECPublicKey, ValidatorScratchPad> updatingValidators,
-      NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingStake) {
-    return new PreparingUnstake(
-        config,
-        updatingEpoch,
-        updatingValidators,
-        preparingStake,
-        new TreeMap<>(KeyComparator.instance()));
-  }
-
-  public ReducerState unstakes(IndexedSubstateIterator<PreparedUnstakeOwnership> substateIterator)
-      throws ProcedureException {
-    substateIterator.verifyPostTypePrefixIsEmpty();
-    substateIterator.forEachRemaining(
-        preparedUnstakeOwned ->
-            preparingUnstakes
-                .computeIfAbsent(preparedUnstakeOwned.delegateKey(), __ -> createStakeMap())
-                .merge(preparedUnstakeOwned.owner(), preparedUnstakeOwned.amount(), UInt256::add));
-    return next();
-  }
-
-  ReducerState next() {
-    if (preparingUnstakes.isEmpty()) {
-      return new PreparingStake(config, updatingEpoch, updatingValidators, preparingStake);
-    }
-
-    var k = preparingUnstakes.firstKey();
-    var unstakes = preparingUnstakes.remove(k);
-
-    if (!updatingValidators.containsKey(k)) {
-      return new LoadingStake(
-          k,
-          validatorStake -> {
-            updatingValidators.put(k, validatorStake);
-            return new Unstaking(config, updatingEpoch, validatorStake, unstakes, this::next);
-          });
-    } else {
-      var validatorStake = updatingValidators.get(k);
-      return new Unstaking(config, updatingEpoch, validatorStake, unstakes, this::next);
-    }
-  }
-
-  private static TreeMap<REAddr, UInt256> createStakeMap() {
-    return new TreeMap<>(EpochUpdateConstraintScrypt.STAKE_COMPARATOR);
+public class ShutdownAllPreparedUnstakeOwnershipProcedureV3
+    extends ShutdownAllProcedure<PreparedUnstakeOwnership, PreparingUnstakeV3> {
+  public ShutdownAllPreparedUnstakeOwnershipProcedureV3() {
+    super(
+        PreparedUnstakeOwnership.class,
+        PreparingUnstakeV3.class,
+        () -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (unstake, substateIterator, context, resources) ->
+            ReducerResult.incomplete(unstake.unstakes(substateIterator)));
   }
 }

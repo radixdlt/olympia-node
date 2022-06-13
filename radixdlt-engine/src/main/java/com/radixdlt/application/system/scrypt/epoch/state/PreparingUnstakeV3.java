@@ -62,38 +62,76 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.construction.epoch.v4;
+package com.radixdlt.application.system.scrypt.epoch.state;
 
-import static com.radixdlt.atom.TxAction.NextEpoch;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
+import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScryptV3;
+import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
+import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.constraintmachine.IndexedSubstateIterator;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.KeyComparator;
+import com.radixdlt.utils.UInt256;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
-import com.radixdlt.application.system.construction.epoch.NextEpochConfig;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
+public record PreparingUnstakeV3(
+    EpochUpdateConfig config,
+    UpdatingEpoch updatingEpoch,
+    NavigableMap<ECPublicKey, ValidatorScratchPad> updatingValidators,
+    NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingStake,
+    NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingUnstakes)
+    implements ReducerState {
 
-public record NextEpochConstructorV4(NextEpochConfig config)
-    implements ActionConstructor<NextEpoch> {
+  public static PreparingUnstakeV3 create(
+      EpochUpdateConfig config,
+      UpdatingEpoch updatingEpoch,
+      NavigableMap<ECPublicKey, ValidatorScratchPad> updatingValidators,
+      NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingStake) {
+    return new PreparingUnstakeV3(
+        config,
+        updatingEpoch,
+        updatingValidators,
+        preparingStake,
+        new TreeMap<>(KeyComparator.instance()));
+  }
 
-  @Override
-  public void construct(NextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-    var state = EpochConstructionStateV4.createState(config, txBuilder);
+  public ReducerState unstakes(IndexedSubstateIterator<PreparedUnstakeOwnership> substateIterator)
+      throws ProcedureException {
+    substateIterator.verifyPostTypePrefixIsEmpty();
+    substateIterator.forEachRemaining(
+        preparedUnstakeOwned ->
+            preparingUnstakes
+                .computeIfAbsent(preparedUnstakeOwned.delegateKey(), __ -> createStakeMap())
+                .merge(preparedUnstakeOwned.owner(), preparedUnstakeOwned.amount(), UInt256::add));
+    return next();
+  }
 
-    state.processExittingStake();
+  ReducerState next() {
+    if (preparingUnstakes.isEmpty()) {
+      return new PreparingStakeV3(config, updatingEpoch, updatingValidators, preparingStake);
+    }
 
-    state.loadRegistrationData();
+    var k = preparingUnstakes.firstKey();
+    var unstakes = preparingUnstakes.remove(k);
 
-    state.processEmission();
-    state.processJailing();
-    state.processPreparedUnstake();
-    state.processPreparedStake();
-    state.processUpdateRake();
-    state.processUpdateOwners();
+    if (!updatingValidators.containsKey(k)) {
+      return new LoadingStake(
+          k,
+          validatorStake -> {
+            updatingValidators.put(k, validatorStake);
+            return new Unstaking(config, updatingEpoch, validatorStake, unstakes, this::next);
+          });
+    } else {
+      var validatorStake = updatingValidators.get(k);
+      return new Unstaking(config, updatingEpoch, validatorStake, unstakes, this::next);
+    }
+  }
 
-    state.processUpdateRegisteredFlag();
-
-    state.upValidatorStakeData();
-
-    state.prepareNextValidatorSetV3();
-    state.finalizeConstruction();
+  private static TreeMap<REAddr, UInt256> createStakeMap() {
+    return new TreeMap<>(EpochUpdateConstraintScryptV3.STAKE_COMPARATOR);
   }
 }

@@ -69,7 +69,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
-import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
+import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScryptV3;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
@@ -119,7 +119,7 @@ public class DelegationFlagTest {
             Pair.of(
                 List.of(
                     new RoundUpdateConstraintScrypt(10),
-                    new EpochUpdateConstraintScrypt(
+                    new EpochUpdateConstraintScryptV3(
                         new EpochUpdateConfig(10, 100, 1, 1, UInt256.NINE)),
                     new TokensConstraintScryptV3(
                         new TokensConfig(Set.of(), Pattern.compile("[a-z0-9]+"))),

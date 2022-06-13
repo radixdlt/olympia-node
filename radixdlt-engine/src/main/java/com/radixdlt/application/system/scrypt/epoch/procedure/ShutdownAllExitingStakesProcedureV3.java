@@ -62,38 +62,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.construction.epoch.v4;
+package com.radixdlt.application.system.scrypt.epoch.procedure;
 
-import static com.radixdlt.atom.TxAction.NextEpoch;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
+import com.radixdlt.application.system.scrypt.epoch.state.ProcessExittingStakeV3;
+import com.radixdlt.application.system.scrypt.epoch.state.UpdatingEpoch;
+import com.radixdlt.application.tokens.state.ExitingStake;
+import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 
-import com.radixdlt.application.system.construction.epoch.NextEpochConfig;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-
-public record NextEpochConstructorV4(NextEpochConfig config)
-    implements ActionConstructor<NextEpoch> {
-
-  @Override
-  public void construct(NextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-    var state = EpochConstructionStateV4.createState(config, txBuilder);
-
-    state.processExittingStake();
-
-    state.loadRegistrationData();
-
-    state.processEmission();
-    state.processJailing();
-    state.processPreparedUnstake();
-    state.processPreparedStake();
-    state.processUpdateRake();
-    state.processUpdateOwners();
-
-    state.processUpdateRegisteredFlag();
-
-    state.upValidatorStakeData();
-
-    state.prepareNextValidatorSetV3();
-    state.finalizeConstruction();
+public final class ShutdownAllExitingStakesProcedureV3
+    extends ShutdownAllProcedure<ExitingStake, UpdatingEpoch> {
+  public ShutdownAllExitingStakesProcedureV3(EpochUpdateConfig config) {
+    super(
+        ExitingStake.class,
+        UpdatingEpoch.class,
+        () -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (updatingEpoch, substateIterator, context, resources) -> {
+          var exittingStake = new ProcessExittingStakeV3(config, updatingEpoch);
+          return ReducerResult.incomplete(exittingStake.process(substateIterator));
+        });
   }
 }

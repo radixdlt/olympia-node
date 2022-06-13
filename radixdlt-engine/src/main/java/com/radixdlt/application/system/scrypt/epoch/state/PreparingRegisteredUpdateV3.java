@@ -64,73 +64,64 @@
 
 package com.radixdlt.application.system.scrypt.epoch.state;
 
-import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
-import com.radixdlt.application.tokens.state.ExitingStake;
-import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.constraintmachine.IndexedSubstateIterator;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.utils.Longs;
-import java.util.Comparator;
-import java.util.TreeSet;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.utils.KeyComparator;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
-public final class ProcessExittingStake extends ExpectedEpochChecker {
-  private final TreeSet<ExitingStake> exitting =
-      new TreeSet<>(
-          Comparator.comparing(ExitingStake::dataKey, UnsignedBytes.lexicographicalComparator()));
+public final class PreparingRegisteredUpdateV3 extends ExpectedEpochChecker {
+  private final NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
+  private final NavigableMap<ECPublicKey, ValidatorRegisteredCopy> preparingRegisteredUpdates =
+      new TreeMap<>(KeyComparator.instance());
 
-  public ProcessExittingStake(EpochUpdateConfig config, UpdatingEpoch updatingEpoch) {
+  PreparingRegisteredUpdateV3(
+      EpochUpdateConfig config,
+      UpdatingEpoch updatingEpoch,
+      NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {
     super(config, updatingEpoch);
+    this.validatorsScratchPad = validatorsScratchPad;
   }
 
-  @Override
-  protected byte[] buildExpectedPrefix() {
-    var expectedPrefix = new byte[Long.BYTES + 1];
-    expectedPrefix[0] = 0;
-    Longs.copyTo(expectedEpoch(), expectedPrefix, 1);
-    return expectedPrefix;
-  }
-
-  public ReducerState process(IndexedSubstateIterator<ExitingStake> indexedSubstateIterator)
+  public ReducerState prepareRegisterUpdates(
+      IndexedSubstateIterator<ValidatorRegisteredCopy> indexedSubstateIterator)
       throws ProcedureException {
+
     verifyPrefix(indexedSubstateIterator);
 
     indexedSubstateIterator.forEachRemaining(
-        exitingStake -> exitting.add(validateExittingStake(exitingStake)));
+        preparedRegisteredUpdate ->
+            preparingRegisteredUpdates.put(
+                preparedRegisteredUpdate.validatorKey(), preparedRegisteredUpdate));
     return next();
   }
 
-  // Sanity check
-  private ExitingStake validateExittingStake(ExitingStake exitingStake) {
-    if (exitingStake.epochUnlocked() != expectedEpoch()) {
-      throw new IllegalStateException(
-          "Invalid shutdown of exitting stake update epoch expected "
-              + expectedEpoch()
-              + " but was "
-              + exitingStake.epochUnlocked());
-    }
-    return exitingStake;
-  }
-
-  public ReducerState unlock(TokensInAccount u) throws ProcedureException {
-    var exit = exitting.first();
-    exitting.remove(exit);
-
-    if (exit.epochUnlocked() != updatingEpoch().prevEpoch().epoch() + 1) {
-      throw new ProcedureException("Stake must still be locked.");
+  ReducerState next() {
+    if (preparingRegisteredUpdates.isEmpty()) {
+      return validatorsScratchPad.isEmpty()
+          ? new CreatingNextValidatorSet(config(), updatingEpoch())
+          : new UpdatingValidatorStakes(config(), updatingEpoch(), validatorsScratchPad);
     }
 
-    var expected = exit.unlock();
+    var publicKey = preparingRegisteredUpdates.firstKey();
+    var validatorUpdate = preparingRegisteredUpdates.remove(publicKey);
 
-    if (!expected.equals(u)) {
-      throw new ProcedureException("Expecting next state to be " + expected + " but was " + u);
+    if (!validatorsScratchPad.containsKey(publicKey)) {
+      return new LoadingStake(
+          publicKey,
+          validatorStake -> {
+            validatorsScratchPad.put(publicKey, validatorStake);
+            validatorStake.setRegistered(validatorUpdate.isRegistered());
+            return new ResetRegisteredUpdateV3(validatorUpdate, this::next);
+          });
+    } else {
+      validatorsScratchPad.get(publicKey).setRegistered(validatorUpdate.isRegistered());
+      return new ResetRegisteredUpdateV3(validatorUpdate, this::next);
     }
-
-    return next();
-  }
-
-  public ReducerState next() {
-    return exitting.isEmpty() ? new RewardingValidators(config(), updatingEpoch()) : this;
   }
 }

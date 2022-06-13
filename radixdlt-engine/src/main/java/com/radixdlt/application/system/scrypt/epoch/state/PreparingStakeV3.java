@@ -62,38 +62,59 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.construction.epoch.v4;
+package com.radixdlt.application.system.scrypt.epoch.state;
 
-import static com.radixdlt.atom.TxAction.NextEpoch;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
+import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScryptV3;
+import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
+import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.constraintmachine.IndexedSubstateIterator;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.UInt256;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
-import com.radixdlt.application.system.construction.epoch.NextEpochConfig;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
+public record PreparingStakeV3(
+    EpochUpdateConfig config,
+    UpdatingEpoch updatingEpoch,
+    NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad,
+    NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingStake)
+    implements ReducerState {
 
-public record NextEpochConstructorV4(NextEpochConfig config)
-    implements ActionConstructor<NextEpoch> {
+  public ReducerState prepareStakes(IndexedSubstateIterator<PreparedStake> substateIterator)
+      throws ProcedureException {
+    substateIterator.verifyPostTypePrefixIsEmpty();
+    substateIterator.forEachRemaining(
+        preparedStake ->
+            preparingStake
+                .computeIfAbsent(preparedStake.delegateKey(), __ -> createStakeMap())
+                .merge(preparedStake.owner(), preparedStake.amount(), UInt256::add));
+    return next();
+  }
 
-  @Override
-  public void construct(NextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-    var state = EpochConstructionStateV4.createState(config, txBuilder);
+  ReducerState next() {
+    if (preparingStake.isEmpty()) {
+      return new PreparingRakeUpdateV3(config, updatingEpoch, validatorsScratchPad);
+    }
 
-    state.processExittingStake();
+    var publicKey = preparingStake.firstKey();
+    var stakes = preparingStake.remove(publicKey);
+    if (!validatorsScratchPad.containsKey(publicKey)) {
+      return new LoadingStake(
+          publicKey,
+          validatorStake -> {
+            validatorsScratchPad.put(publicKey, validatorStake);
+            return new Staking(validatorStake, stakes, this::next);
+          });
+    } else {
+      return new Staking(validatorsScratchPad.get(publicKey), stakes, this::next);
+    }
+  }
 
-    state.loadRegistrationData();
-
-    state.processEmission();
-    state.processJailing();
-    state.processPreparedUnstake();
-    state.processPreparedStake();
-    state.processUpdateRake();
-    state.processUpdateOwners();
-
-    state.processUpdateRegisteredFlag();
-
-    state.upValidatorStakeData();
-
-    state.prepareNextValidatorSetV3();
-    state.finalizeConstruction();
+  private static TreeMap<REAddr, UInt256> createStakeMap() {
+    return new TreeMap<>(EpochUpdateConstraintScryptV3.STAKE_COMPARATOR);
   }
 }

@@ -62,38 +62,75 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.construction.epoch.v4;
+package com.radixdlt.application.system.scrypt.epoch.state;
 
-import static com.radixdlt.atom.TxAction.NextEpoch;
+import com.google.common.primitives.UnsignedBytes;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
+import com.radixdlt.application.tokens.state.ExitingStake;
+import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.constraintmachine.IndexedSubstateIterator;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.utils.Longs;
+import java.util.Comparator;
+import java.util.TreeSet;
 
-import com.radixdlt.application.system.construction.epoch.NextEpochConfig;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
+public final class ProcessExittingStakeV4 extends ExpectedEpochChecker {
+  private final TreeSet<ExitingStake> exitting =
+      new TreeSet<>(
+          Comparator.comparing(ExitingStake::dataKey, UnsignedBytes.lexicographicalComparator()));
 
-public record NextEpochConstructorV4(NextEpochConfig config)
-    implements ActionConstructor<NextEpoch> {
+  public ProcessExittingStakeV4(EpochUpdateConfig config, UpdatingEpoch updatingEpoch) {
+    super(config, updatingEpoch);
+  }
 
   @Override
-  public void construct(NextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-    var state = EpochConstructionStateV4.createState(config, txBuilder);
+  protected byte[] buildExpectedPrefix() {
+    var expectedPrefix = new byte[Long.BYTES + 1];
+    expectedPrefix[0] = 0;
+    Longs.copyTo(expectedEpoch(), expectedPrefix, 1);
+    return expectedPrefix;
+  }
 
-    state.processExittingStake();
+  public ReducerState process(IndexedSubstateIterator<ExitingStake> indexedSubstateIterator)
+      throws ProcedureException {
+    verifyPrefix(indexedSubstateIterator);
 
-    state.loadRegistrationData();
+    indexedSubstateIterator.forEachRemaining(
+        exitingStake -> exitting.add(validateExittingStake(exitingStake)));
+    return next();
+  }
 
-    state.processEmission();
-    state.processJailing();
-    state.processPreparedUnstake();
-    state.processPreparedStake();
-    state.processUpdateRake();
-    state.processUpdateOwners();
+  // Sanity check
+  private ExitingStake validateExittingStake(ExitingStake exitingStake) {
+    if (exitingStake.epochUnlocked() != expectedEpoch()) {
+      throw new IllegalStateException(
+          "Invalid shutdown of exitting stake update epoch expected "
+              + expectedEpoch()
+              + " but was "
+              + exitingStake.epochUnlocked());
+    }
+    return exitingStake;
+  }
 
-    state.processUpdateRegisteredFlag();
+  public ReducerState unlock(TokensInAccount u) throws ProcedureException {
+    var exit = exitting.first();
+    exitting.remove(exit);
 
-    state.upValidatorStakeData();
+    if (exit.epochUnlocked() != updatingEpoch().prevEpoch().epoch() + 1) {
+      throw new ProcedureException("Stake must still be locked.");
+    }
 
-    state.prepareNextValidatorSetV3();
-    state.finalizeConstruction();
+    var expected = exit.unlock();
+
+    if (!expected.equals(u)) {
+      throw new ProcedureException("Expecting next state to be " + expected + " but was " + u);
+    }
+
+    return next();
+  }
+
+  public ReducerState next() {
+    return exitting.isEmpty() ? new RewardingValidatorsV4(config(), updatingEpoch()) : this;
   }
 }

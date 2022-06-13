@@ -62,23 +62,69 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt.epoch.procedure;
+package com.radixdlt.application.system.scrypt.epoch.state;
 
-import com.radixdlt.application.system.scrypt.epoch.state.PreparingUnstake;
-import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
-import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.ShutdownAllProcedure;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
+import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.constraintmachine.IndexedSubstateIterator;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.utils.KeyComparator;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
-public class ShutdownAllPreparedUnstakeOwnershipProcedure
-    extends ShutdownAllProcedure<PreparedUnstakeOwnership, PreparingUnstake> {
-  public ShutdownAllPreparedUnstakeOwnershipProcedure() {
-    super(
-        PreparedUnstakeOwnership.class,
-        PreparingUnstake.class,
-        () -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
-        (unstake, substateIterator, context, resources) ->
-            ReducerResult.incomplete(unstake.unstakes(substateIterator)));
+public final class PreparingOwnerUpdateV3 extends ExpectedEpochChecker {
+  private final NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
+  private final NavigableMap<ECPublicKey, ValidatorOwnerCopy> preparingOwnerUpdates =
+      new TreeMap<>(KeyComparator.instance());
+
+  PreparingOwnerUpdateV3(
+      EpochUpdateConfig config,
+      UpdatingEpoch updatingEpoch,
+      NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {
+    super(config, updatingEpoch);
+    this.validatorsScratchPad = validatorsScratchPad;
+  }
+
+  public ReducerState prepareValidatorUpdate(
+      IndexedSubstateIterator<ValidatorOwnerCopy> indexedSubstateIterator)
+      throws ProcedureException {
+    verifyPrefix(indexedSubstateIterator);
+
+    indexedSubstateIterator.forEachRemaining(
+        preparedValidatorUpdate ->
+            preparingOwnerUpdates.put(
+                preparedValidatorUpdate.validatorKey(), preparedValidatorUpdate));
+    return next();
+  }
+
+  ReducerState next() {
+    if (preparingOwnerUpdates.isEmpty()) {
+      return new PreparingRegisteredUpdateV3(config(), updatingEpoch(), validatorsScratchPad);
+    }
+
+    var publicKey = preparingOwnerUpdates.firstKey();
+    var validatorUpdate = preparingOwnerUpdates.remove(publicKey);
+
+    if (!validatorsScratchPad.containsKey(publicKey)) {
+      return new LoadingStake(
+          publicKey,
+          validatorStake -> {
+            validatorsScratchPad.put(publicKey, validatorStake);
+            validatorStake.setOwnerAddr(validatorUpdate.owner());
+            return new ResetOwnerUpdate(publicKey, this::next);
+          });
+    } else {
+      validatorsScratchPad.get(publicKey).setOwnerAddr(validatorUpdate.owner());
+      return new ResetOwnerUpdate(publicKey, this::next);
+    }
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{preparingOwnerUpdates=%s}", this.getClass().getSimpleName(), preparingOwnerUpdates);
   }
 }

@@ -62,69 +62,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt.epoch.state;
+package com.radixdlt.application.system.scrypt.epoch.procedure;
 
-import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
-import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.constraintmachine.IndexedSubstateIterator;
-import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.utils.KeyComparator;
-import java.util.NavigableMap;
-import java.util.TreeMap;
+import com.radixdlt.application.system.scrypt.epoch.state.RewardingValidatorsV3;
+import com.radixdlt.application.system.state.ValidatorBFTData;
+import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReducerResult;
+import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 
-public final class PreparingOwnerUpdate extends ExpectedEpochChecker {
-  private final NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
-  private final NavigableMap<ECPublicKey, ValidatorOwnerCopy> preparingOwnerUpdates =
-      new TreeMap<>(KeyComparator.instance());
-
-  PreparingOwnerUpdate(
-      EpochUpdateConfig config,
-      UpdatingEpoch updatingEpoch,
-      NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {
-    super(config, updatingEpoch);
-    this.validatorsScratchPad = validatorsScratchPad;
-  }
-
-  public ReducerState prepareValidatorUpdate(
-      IndexedSubstateIterator<ValidatorOwnerCopy> indexedSubstateIterator)
-      throws ProcedureException {
-    verifyPrefix(indexedSubstateIterator);
-
-    indexedSubstateIterator.forEachRemaining(
-        preparedValidatorUpdate ->
-            preparingOwnerUpdates.put(
-                preparedValidatorUpdate.validatorKey(), preparedValidatorUpdate));
-    return next();
-  }
-
-  ReducerState next() {
-    if (preparingOwnerUpdates.isEmpty()) {
-      return new PreparingRegisteredUpdate(config(), updatingEpoch(), validatorsScratchPad);
-    }
-
-    var publicKey = preparingOwnerUpdates.firstKey();
-    var validatorUpdate = preparingOwnerUpdates.remove(publicKey);
-
-    if (!validatorsScratchPad.containsKey(publicKey)) {
-      return new LoadingStake(
-          publicKey,
-          validatorStake -> {
-            validatorsScratchPad.put(publicKey, validatorStake);
-            validatorStake.setOwnerAddr(validatorUpdate.owner());
-            return new ResetOwnerUpdate(publicKey, this::next);
-          });
-    } else {
-      validatorsScratchPad.get(publicKey).setOwnerAddr(validatorUpdate.owner());
-      return new ResetOwnerUpdate(publicKey, this::next);
-    }
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{preparingOwnerUpdates=%s}", this.getClass().getSimpleName(), preparingOwnerUpdates);
+public class ShutdownAllValidatorBFTDataProcedureV3
+    extends ShutdownAllProcedure<ValidatorBFTData, RewardingValidatorsV3> {
+  public ShutdownAllValidatorBFTDataProcedureV3() {
+    super(
+        ValidatorBFTData.class,
+        RewardingValidatorsV3.class,
+        () -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
+        (validators, substateIterator, context, resources) ->
+            ReducerResult.incomplete(validators.process(substateIterator, context)));
   }
 }

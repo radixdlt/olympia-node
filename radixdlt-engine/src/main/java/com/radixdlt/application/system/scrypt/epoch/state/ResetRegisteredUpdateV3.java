@@ -62,38 +62,29 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.construction.epoch.v4;
+package com.radixdlt.application.system.scrypt.epoch.state;
 
-import static com.radixdlt.atom.TxAction.NextEpoch;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import java.util.function.Supplier;
 
-import com.radixdlt.application.system.construction.epoch.NextEpochConfig;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
+public record ResetRegisteredUpdateV3(ValidatorRegisteredCopy update, Supplier<ReducerState> next)
+    implements ReducerState {
 
-public record NextEpochConstructorV4(NextEpochConfig config)
-    implements ActionConstructor<NextEpoch> {
+  public ReducerState reset(ValidatorRegisteredCopy registeredCopy) throws ProcedureException {
+    if (!registeredCopy.validatorKey().equals(update.validatorKey())) {
+      throw new ProcedureException("Validator keys must match.");
+    }
 
-  @Override
-  public void construct(NextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-    var state = EpochConstructionStateV4.createState(config, txBuilder);
+    if (registeredCopy.isRegistered() != update.isRegistered()) {
+      throw new ProcedureException("Registered flags must match.");
+    }
 
-    state.processExittingStake();
+    if (registeredCopy.epochUpdate().isPresent()) {
+      throw new ProcedureException("Should not have an epoch.");
+    }
 
-    state.loadRegistrationData();
-
-    state.processEmission();
-    state.processJailing();
-    state.processPreparedUnstake();
-    state.processPreparedStake();
-    state.processUpdateRake();
-    state.processUpdateOwners();
-
-    state.processUpdateRegisteredFlag();
-
-    state.upValidatorStakeData();
-
-    state.prepareNextValidatorSetV3();
-    state.finalizeConstruction();
+    return next.get();
   }
 }

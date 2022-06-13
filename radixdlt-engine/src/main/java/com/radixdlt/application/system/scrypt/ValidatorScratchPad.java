@@ -83,6 +83,9 @@ public final class ValidatorScratchPad {
 
   private long missedProposals;
   private boolean registeredUpdateRequired = false;
+  private boolean isJailingCandidate = false;
+  private boolean nextRegistered = false;
+  private boolean nextRegisteredUpdated = false;
 
   public ValidatorScratchPad(ValidatorStakeData validatorStakeData) {
     this.totalStake = UInt384.from(validatorStakeData.totalStake());
@@ -93,12 +96,25 @@ public final class ValidatorScratchPad {
     this.validatorKey = validatorStakeData.validatorKey();
   }
 
+  public ECPublicKey getValidatorKey() {
+    return validatorKey;
+  }
+
   public REAddr getOwnerAddr() {
     return ownerAddr;
   }
 
   public int getRakePercentage() {
     return rakePercentage;
+  }
+
+  public void setNextRegistered(boolean isRegistered) {
+    this.nextRegistered = isRegistered;
+    this.nextRegisteredUpdated = true;
+  }
+
+  public boolean isV2() {
+    return nextRegisteredUpdated;
   }
 
   public void setRegistered(boolean isRegistered) {
@@ -174,8 +190,14 @@ public final class ValidatorScratchPad {
     return missedProposals;
   }
 
-  public void missedProposals(long missedProposals) {
+  public ValidatorScratchPad prepareCandidateForJailing(long missedProposals) {
     this.missedProposals = missedProposals;
+    this.isJailingCandidate = true;
+    return this;
+  }
+
+  public boolean isJailingCandidate() {
+    return isJailingCandidate;
   }
 
   public UInt256 totalStake() {
@@ -188,5 +210,9 @@ public final class ValidatorScratchPad {
 
   public boolean isRegisteredFlagUpdateRequired() {
     return registeredUpdateRequired;
+  }
+
+  public boolean isNextRegistered() {
+    return nextRegistered;
   }
 }

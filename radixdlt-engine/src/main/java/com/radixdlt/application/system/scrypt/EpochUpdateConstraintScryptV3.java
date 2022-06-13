@@ -62,38 +62,52 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.construction.epoch.v4;
+package com.radixdlt.application.system.scrypt;
 
-import static com.radixdlt.atom.TxAction.NextEpoch;
+import com.google.common.primitives.UnsignedBytes;
+import com.radixdlt.application.system.scrypt.epoch.procedure.*;
+import com.radixdlt.application.system.state.StakeOwnership;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.tokens.state.ExitingStake;
+import com.radixdlt.atomos.ConstraintScrypt;
+import com.radixdlt.atomos.Loader;
+import com.radixdlt.identifiers.REAddr;
+import java.util.Comparator;
 
-import com.radixdlt.application.system.construction.epoch.NextEpochConfig;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
+public record EpochUpdateConstraintScryptV3(EpochUpdateConfig config) implements ConstraintScrypt {
+  public static final Comparator<REAddr> STAKE_COMPARATOR =
+      Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator());
 
-public record NextEpochConstructorV4(NextEpochConfig config)
-    implements ActionConstructor<NextEpoch> {
+  private void epochUpdate(Loader os) {
+    // Epoch Update
+    os.procedure(new DownEpochDataProcedure(config));
+    os.procedure(new ShutdownAllExitingStakesProcedureV3(config));
+    os.procedure(new ProcessExittingStakeUpProcedureV3());
+    os.procedure(new ShutdownAllValidatorBFTDataProcedureV3());
+    os.procedure(new ShutdownAllPreparedUnstakeOwnershipProcedureV3());
+    os.procedure(new DownValidatorStakeDataProcedure());
+    os.procedure(new UpUnstakingProcedure());
+    os.procedure(new ShutdownAllPreparedStakeProcedureV3());
+    os.procedure(new ShutdownAllValidatorFeeCopyProcedureV3());
+    os.procedure(new UpResetRakeUpdateProcedure());
+    os.procedure(new ShutdownAllValidatorOwnerCopyProcedureV3());
+    os.procedure(new UpResetOwnerUpdateProcedure());
+    os.procedure(new ShutdownAllValidatorRegisteredCopyProcedureV3());
+    os.procedure(new UpValidatorRegisteredCopyProcedureV3());
+    os.procedure(new UpStakingProcedure());
+    os.procedure(new UpUpdatingValidatorStakesProcedure());
+    os.procedure(new ReadIndexValidatorStakeDataProcedure());
+    os.procedure(new UpBootupValidatorProcedure());
+    os.procedure(new UpStartingNextEpochProcedure());
+    os.procedure(new UpStartingEpochRoundProcedure());
+  }
 
   @Override
-  public void construct(NextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-    var state = EpochConstructionStateV4.createState(config, txBuilder);
+  public void main(Loader os) {
+    os.substate(ValidatorStakeData.SUBSTATE_DEFINITION);
+    os.substate(StakeOwnership.SUBSTATE_DEFINITION);
+    os.substate(ExitingStake.SUBSTATE_DEFINITION);
 
-    state.processExittingStake();
-
-    state.loadRegistrationData();
-
-    state.processEmission();
-    state.processJailing();
-    state.processPreparedUnstake();
-    state.processPreparedStake();
-    state.processUpdateRake();
-    state.processUpdateOwners();
-
-    state.processUpdateRegisteredFlag();
-
-    state.upValidatorStakeData();
-
-    state.prepareNextValidatorSetV3();
-    state.finalizeConstruction();
+    epochUpdate(os);
   }
 }
