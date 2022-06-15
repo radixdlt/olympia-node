@@ -179,7 +179,7 @@ public class AWSSecrets {
                   .mapToObj(counter -> String.format("%s%s", namePrefix, counter))
                   .toList()
               : listOfNodes;
-      System.out.println("nodes: " + nodes );
+      System.out.println("nodes: " + nodes);
       System.out.println("name prefix:" + namePrefix);
       generateAndStoreKey(
           networkName, namePrefix, defaultKeyPassword, awsSecretsOutputOptions, nodes);
@@ -223,7 +223,6 @@ public class AWSSecrets {
       AWSSecretsOutputOptions awsSecretsOutputOptions,
       List<String> nodes,
       Boolean isStaker) {
-
 
     for (var nodeName : nodes) {
       Security.insertProviderAt(new BouncyCastleProvider(), 1);
