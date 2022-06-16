@@ -78,20 +78,14 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.KeyComparator;
 import java.util.NavigableMap;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 public final class PreparingRegisteredUpdateV4 extends ExpectedEpochChecker {
   private final NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
   private final NavigableMap<ECPublicKey, ValidatorRegisteredCopy> preparingRegisteredUpdates =
       new TreeMap<>(KeyComparator.instance());
 
-  private ProcessingPhase phase = ProcessingPhase.START;
-
-  private enum ProcessingPhase {
-    START,
-    VALIDATE_REGISTERED,
-    EXIT
-  }
+  private final NavigableMap<ECPublicKey, ValidatorRegisteredCopy> registeredUpdates =
+      new TreeMap<>(KeyComparator.instance());
 
   PreparingRegisteredUpdateV4(
       EpochUpdateConfig config,
@@ -111,48 +105,74 @@ public final class PreparingRegisteredUpdateV4 extends ExpectedEpochChecker {
         preparedRegisteredUpdate ->
             preparingRegisteredUpdates.put(
                 preparedRegisteredUpdate.validatorKey(), preparedRegisteredUpdate));
+    // Save a copy for future use
+    registeredUpdates.putAll(preparingRegisteredUpdates);
     return next();
   }
 
   ReducerState next() {
-    return switch (phase) {
-      case START -> loadStakes();
-      case VALIDATE_REGISTERED -> validateRegistered();
-      case EXIT -> exitToNextState();
-    };
-  }
-
-  private ReducerState loadStakes() {
-    var allKnownKeys = new TreeSet<>(validatorsScratchPad.keySet());
-
-    allKnownKeys.removeAll(preparingRegisteredUpdates.keySet());
-
-    if (allKnownKeys.isEmpty()) {
+    if (preparingRegisteredUpdates.isEmpty()) {
       processSentencing();
-      phase = ProcessingPhase.VALIDATE_REGISTERED;
-      return next();
+      return validatorsScratchPad.isEmpty()
+          ? new CreatingNextValidatorSet(config(), updatingEpoch())
+          : new UpdatingValidatorStakes(config(), updatingEpoch(), validatorsScratchPad);
     }
 
-    var publicKey = allKnownKeys.first();
+    var publicKey = preparingRegisteredUpdates.firstKey();
+    var validatorUpdate = preparingRegisteredUpdates.remove(publicKey);
 
-    return new LoadingStake(
-        publicKey,
-        validatorStake -> {
-          validatorsScratchPad.put(publicKey, validatorStake);
-          return next();
-        });
+    if (!validatorsScratchPad.containsKey(publicKey)) {
+      return new LoadingStake(
+          publicKey,
+          validatorStake -> {
+            validatorsScratchPad.put(publicKey, validatorStake);
+            validatorStake.setRegistered(validatorUpdate.isRegistered());
+            return new ResetRegisteredUpdateV4(validatorUpdate, validatorStake, this::next);
+          });
+    } else {
+      var scratchPad = validatorsScratchPad.get(publicKey);
+      scratchPad.setRegistered(validatorUpdate.isRegistered());
+      return new ResetRegisteredUpdateV4(validatorUpdate, scratchPad, this::next);
+    }
   }
 
   private void processSentencing() {
-    // Load jailing data
-    loadSentencingData();
-
     var epoch = getEpoch();
     var totalValidatingStake = StakeAccumulator.create();
     var eligibleJailedStake = StakeAccumulator.create();
 
     updateSentencingDataAndCalculateStakes(epoch, totalValidatingStake, eligibleJailedStake);
     markAsJailed(totalValidatingStake, eligibleJailedStake);
+    validateJailing();
+  }
+
+  private void validateJailing() {
+    for (var update : registeredUpdates.values()) {
+      if (update instanceof ValidatorRegisteredCopyV2 newState) {
+        var scratchPad = validatorsScratchPad.get(update.validatorKey());
+
+        try {
+          if (newState.isRegistrationPending()
+              != scratchPad.getSentencing().registrationPending()) {
+            throw new ProcedureException("Pending registration must match.");
+          }
+
+          if (newState.jailedEpoch() != scratchPad.getSentencing().jailedEpoch()) {
+            throw new ProcedureException("Jailed epoch must match.");
+          }
+
+          if (newState.jailLevel() != scratchPad.getSentencing().jailLevel()) {
+            throw new ProcedureException("Jail level must match.");
+          }
+
+          if (newState.probationEpochsLeft() != scratchPad.getSentencing().probationEpochsLeft()) {
+            throw new ProcedureException("Probation epochs must match.");
+          }
+        } catch (ProcedureException e) {
+          throw new IllegalStateException(e);
+        }
+      }
+    }
   }
 
   private void markAsJailed(
@@ -230,39 +250,5 @@ public final class PreparingRegisteredUpdateV4 extends ExpectedEpochChecker {
         }
       }
     }
-  }
-
-  private void loadSentencingData() {
-    for (var singleValidator : validatorsScratchPad.values()) {
-      var update = preparingRegisteredUpdates.get(singleValidator.getValidatorKey());
-
-      if (update instanceof ValidatorRegisteredCopyV2 v2) {
-        // Prepare for jailing validation
-        singleValidator.getSentencing().loadFrom(v2);
-      } else {
-        // Set directly, as there is no jailing
-        singleValidator.setRegistered(update.isRegistered());
-      }
-    }
-  }
-
-  private ReducerState validateRegistered() {
-    var publicKey = preparingRegisteredUpdates.firstKey();
-    var validatorUpdate = preparingRegisteredUpdates.remove(publicKey);
-    var validatorStake = validatorsScratchPad.get(publicKey);
-
-    validatorStake.setNextRegistered(validatorUpdate.isRegistered());
-
-    if (preparingRegisteredUpdates.isEmpty()) {
-      phase = ProcessingPhase.EXIT;
-    }
-
-    return new ResetRegisteredUpdateV4(validatorUpdate, validatorStake, this::next);
-  }
-
-  private ReducerState exitToNextState() {
-    return validatorsScratchPad.isEmpty()
-        ? new CreatingNextValidatorSet(config(), updatingEpoch())
-        : new UpdatingValidatorStakes(config(), updatingEpoch(), validatorsScratchPad);
   }
 }

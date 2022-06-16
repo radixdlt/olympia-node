@@ -73,6 +73,8 @@ import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
 public final class ValidatorScratchPad {
+  private static final long MIN_COMPLETED_PROPOSALS = 3;
+
   private final ECPublicKey validatorKey;
   private final SentencingData sentencing = SentencingData.create();
   private UInt384 totalStake;
@@ -190,7 +192,12 @@ public final class ValidatorScratchPad {
     return missedProposals;
   }
 
-  public ValidatorScratchPad prepareCandidateForJailing(long missedProposals) {
+  public ValidatorScratchPad checkAndPrepareCandidateForJailing(long missedProposals) {
+    if (missedProposals < MIN_COMPLETED_PROPOSALS) {
+      // Less than minimal number of proposals missed, skipping jailing
+      return this;
+    }
+
     this.missedProposals = missedProposals;
     this.isJailingCandidate = true;
     return this;

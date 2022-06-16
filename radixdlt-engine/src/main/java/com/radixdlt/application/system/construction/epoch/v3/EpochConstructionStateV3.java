@@ -65,6 +65,7 @@
 package com.radixdlt.application.system.construction.epoch.v3;
 
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
+import static com.radixdlt.application.validators.state.ValidatorRegisteredCopy.createV1;
 import static com.radixdlt.atom.SubstateTypeId.*;
 
 import com.google.common.collect.Streams;
@@ -201,18 +202,20 @@ public record EpochConstructionStateV3(
   public void processPreparedUnstake() {
     txBuilder
         .shutdownAll(PreparedUnstakeOwnership.class, EpochConstructionStateV3::collectUnstake)
-        .forEach(
-            (publicKey, unstakes) -> {
-              var curValidator = stakeData(publicKey);
+        .forEach(this::processUnstakesForSingleValidator);
+  }
 
-              unstakes.forEach(
-                  (owner, amount) -> {
-                    var epochUnlocked = closingEpoch().epoch() + 1 + config.unstakingEpochDelay();
-                    txBuilder().up(curValidator.unstakeOwnership(owner, amount, epochUnlocked));
-                  });
+  private void processUnstakesForSingleValidator(
+      ECPublicKey publicKey, TreeMap<REAddr, UInt256> unstakes) {
+    var curValidator = stakeData(publicKey);
 
-              validatorsToUpdate().put(publicKey, curValidator);
-            });
+    unstakes.forEach(
+        (owner, amount) -> {
+          var epochUnlocked = closingEpoch().epoch() + 1 + config.unstakingEpochDelay();
+          txBuilder().up(curValidator.unstakeOwnership(owner, amount, epochUnlocked));
+        });
+
+    validatorsToUpdate().put(publicKey, curValidator);
   }
 
   private static TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> collectUnstake(
@@ -305,15 +308,14 @@ public record EpochConstructionStateV3(
 
     txBuilder
         .shutdownAll(index, EpochConstructionStateV3::collectToMap)
-        .forEach(
-            (key, update) -> {
-              var curValidator = stakeData(key);
-              curValidator.setRegistered(update.isRegistered());
-              this.txBuilder()
-                  .up(
-                      ValidatorRegisteredCopy.createV1(
-                          OptionalLong.empty(), update.validatorKey(), update.isRegistered()));
-            });
+        .forEach(this::updateSingleRegisteredFlag);
+  }
+
+  private void updateSingleRegisteredFlag(ECPublicKey key, ValidatorRegisteredCopy update) {
+    var curValidator = stakeData(key);
+    curValidator.setRegistered(update.isRegistered());
+    this.txBuilder()
+        .up(createV1(OptionalLong.empty(), update.validatorKey(), update.isRegistered()));
   }
 
   public void prepareNextValidatorSetV3() {

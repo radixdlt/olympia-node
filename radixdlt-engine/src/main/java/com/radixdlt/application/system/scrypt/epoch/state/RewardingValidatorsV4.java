@@ -81,10 +81,8 @@ import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
 import java.util.NavigableMap;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class RewardingValidatorsV4 implements ReducerState {
-  private static final long MIN_COMPLETED_PROPOSALS = 3;
   private final NavigableMap<ECPublicKey, ValidatorScratchPad> updatingValidators =
       new TreeMap<>(KeyComparator.instance());
   private final NavigableMap<ECPublicKey, ValidatorBFTData> validatorBFTData =
@@ -138,14 +136,9 @@ public final class RewardingValidatorsV4 implements ReducerState {
     }
 
     var percentageCompleted = bftData.percentageCompleted();
-    var isJailingCandidate = new AtomicBoolean(false);
 
     // Didn't pass threshold, no rewards!
     if (percentageCompleted < config.minimumCompletedProposalsPercentage()) {
-      if (bftData.missedProposals() >= MIN_COMPLETED_PROPOSALS) {
-        isJailingCandidate.set(true);
-      }
-
       return next(context);
     }
 
@@ -157,14 +150,7 @@ public final class RewardingValidatorsV4 implements ReducerState {
 
     return new LoadingStake(
         publicKey,
-        validatorStakeData ->
-            onDone(
-                context,
-                publicKey,
-                nodeRewards,
-                validatorStakeData,
-                bftData,
-                isJailingCandidate.get()));
+        validatorStakeData -> onDone(context, publicKey, nodeRewards, validatorStakeData, bftData));
   }
 
   private ReducerState onDone(
@@ -172,16 +158,13 @@ public final class RewardingValidatorsV4 implements ReducerState {
       ECPublicKey publicKey,
       UInt256 nodeRewards,
       ValidatorScratchPad validatorStakeData,
-      ValidatorBFTData bftData,
-      boolean isJailingCandidate) {
+      ValidatorBFTData bftData) {
     var rakedEmissions = calculateRakedEmissions(publicKey, nodeRewards, validatorStakeData);
 
     validatorStakeData.addEmission(rakedEmissions);
-    updatingValidators.put(publicKey, validatorStakeData);
+    validatorStakeData.checkAndPrepareCandidateForJailing(bftData.missedProposals());
 
-    if (isJailingCandidate) {
-      validatorStakeData.prepareCandidateForJailing(bftData.missedProposals());
-    }
+    updatingValidators.put(publicKey, validatorStakeData);
 
     return next(context);
   }

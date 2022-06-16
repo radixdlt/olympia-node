@@ -79,20 +79,14 @@ public record NextEpochConstructorV4(NextEpochConfig config)
     var state = EpochConstructionStateV4.createState(config, txBuilder);
 
     state.processExittingStake();
-
-    state.loadRegistrationData();
-
     state.processEmission();
     state.processJailing();
     state.processPreparedUnstake();
     state.processPreparedStake();
     state.processUpdateRake();
     state.processUpdateOwners();
-
     state.processUpdateRegisteredFlag();
-
     state.upValidatorStakeData();
-
     state.prepareNextValidatorSetV3();
     state.finalizeConstruction();
   }

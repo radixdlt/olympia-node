@@ -64,7 +64,7 @@
 
 package com.radixdlt.application.system.scrypt.epoch.procedure;
 
-import com.radixdlt.application.system.scrypt.epoch.state.PreparingRakeUpdateV3;
+import com.radixdlt.application.system.scrypt.epoch.state.PreparingRakeUpdateV4;
 import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -72,11 +72,11 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 
 public class ShutdownAllValidatorFeeCopyProcedureV4
-    extends ShutdownAllProcedure<ValidatorFeeCopy, PreparingRakeUpdateV3> {
+    extends ShutdownAllProcedure<ValidatorFeeCopy, PreparingRakeUpdateV4> {
   public ShutdownAllValidatorFeeCopyProcedureV4() {
     super(
         ValidatorFeeCopy.class,
-        PreparingRakeUpdateV3.class,
+        PreparingRakeUpdateV4.class,
         () -> new Authorization(PermissionLevel.SUPER_USER, (resources, context) -> {}),
         (rakeUpdate, substateIterator, context, resources) ->
             ReducerResult.incomplete(rakeUpdate.prepareRakeUpdates(substateIterator)));

@@ -95,4 +95,9 @@ public class StakeAccumulator {
     add(stake.amount());
     return stake;
   }
+
+  @Override
+  public String toString() {
+    return "StakeAccumulator(" + totalStake + ')';
+  }
 }

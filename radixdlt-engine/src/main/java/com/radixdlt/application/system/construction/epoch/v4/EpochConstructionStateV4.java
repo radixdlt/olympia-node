@@ -105,7 +105,6 @@ public record EpochConstructionStateV4(
     StakeAccumulator totalValidatingStake,
     StakeAccumulator eligibleJailedStake) {
 
-  private static final long MIN_COMPLETED_PROPOSALS = 3;
   public static final Comparator<ValidatorScratchPad> MISSED_PROPOSALS_COMPARATOR =
       Comparator.comparing(ValidatorScratchPad::missedProposals).reversed();
   public static final UInt256 RATE_LIMIT =
@@ -169,16 +168,8 @@ public record EpochConstructionStateV4(
     return exit;
   }
 
-  public void loadRegistrationData() {
-    var index = prepareIndex(ValidatorRegisteredCopy.class, VALIDATOR_REGISTERED_FLAG_COPY);
-
-    txBuilder
-        .shutdownAll(index, EpochConstructionStateV4::collectToMap)
-        .forEach(this::loadSentencingData);
-  }
-
-  private void loadSentencingData(ECPublicKey publicKey, ValidatorRegisteredCopy update) {
-    var scratchPad = stakeData(publicKey);
+  private void loadSentencingData(ValidatorRegisteredCopy update) {
+    var scratchPad = stakeData(update.validatorKey());
     var wasRegistered = scratchPad.isRegistered();
 
     if (wasRegistered) {
@@ -238,12 +229,7 @@ public record EpochConstructionStateV4(
     var percentageCompleted = bftData.percentageCompleted();
 
     if (percentageCompleted < config.minimumCompletedProposalsPercentage()) {
-      if (bftData.missedProposals() < MIN_COMPLETED_PROPOSALS) {
-        // Less than minimal number of proposals missed, skipping jailing
-        return;
-      }
-
-      validatorStakeData.prepareCandidateForJailing(bftData.missedProposals());
+      validatorStakeData.checkAndPrepareCandidateForJailing(bftData.missedProposals());
 
       return;
     }
@@ -403,10 +389,19 @@ public record EpochConstructionStateV4(
   }
 
   public void processUpdateRegisteredFlag() {
-    validatorsToUpdate.forEach(this::updateSingleRegisteredFlag);
+    var index = prepareIndex(ValidatorRegisteredCopy.class, VALIDATOR_REGISTERED_FLAG_COPY);
+
+    txBuilder
+        .shutdownAll(index, EpochConstructionStateV4::collectToMap)
+        .forEach(this::updateSingleRegisteredFlag);
   }
 
-  private void updateSingleRegisteredFlag(ECPublicKey publicKey, ValidatorScratchPad scratchPad) {
+  private void updateSingleRegisteredFlag(ECPublicKey publicKey, ValidatorRegisteredCopy update) {
+    var scratchPad = stakeData(publicKey);
+
+    scratchPad.setRegistered(update.isRegistered());
+    loadSentencingData(update);
+
     if (scratchPad.isRegisteredFlagUpdateRequired()) {
       txBuilder.up(
           createV2(
