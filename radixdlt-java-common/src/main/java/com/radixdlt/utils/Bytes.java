@@ -297,4 +297,9 @@ public class Bytes {
   public static HashCode take(HashCode bytes, int n) {
     return HashCode.fromBytes(Arrays.copyOfRange(bytes.asBytes(), 0, n));
   }
+
+  /** Returns an array of `num` zeros */
+  public static byte[] zeros(int num) {
+    return new byte[num];
+  }
 }

@@ -173,6 +173,7 @@ public final class REAddr {
 
   public static final int PUB_KEY_BYTES = ECPublicKey.COMPRESSED_BYTES + 1;
   public static final int HASHED_KEY_BYTES = 26;
+  public static final int MAX_SIZE_BYTES = 34;
   private final byte[] addr;
 
   REAddr(byte[] addr) {
@@ -204,15 +205,6 @@ public final class REAddr {
     System.arraycopy(nameBytes, 0, dataToHash, 33, nameBytes.length);
     var hash = HashUtils.sha256(dataToHash);
     return Arrays.copyOfRange(hash.asBytes(), 32 - HASHED_KEY_BYTES, 32);
-  }
-
-  public boolean allowToClaimAddress(ECPublicKey publicKey, byte[] arg) {
-    if (addr[0] == REAddrType.HASHED_KEY.type) {
-      var hash = REAddr.pkToHash(new String(arg), publicKey);
-      return Arrays.equals(addr, 1, HASHED_KEY_BYTES + 1, hash, 0, HASHED_KEY_BYTES);
-    }
-
-    return false;
   }
 
   public boolean isAccount() {
