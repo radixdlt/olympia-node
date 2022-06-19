@@ -62,53 +62,62 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt;
+package com.radixdlt.application.system.scrypt.epoch.state.v4;
 
-import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.application.system.scrypt.epoch.procedure.*;
-import com.radixdlt.application.system.scrypt.epoch.procedure.v4.*;
-import com.radixdlt.application.system.state.StakeOwnership;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.state.ExitingStake;
-import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.Loader;
-import com.radixdlt.identifiers.REAddr;
-import java.util.Comparator;
+import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy.ValidatorRegisteredCopyV1;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy.ValidatorRegisteredCopyV2;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import java.util.function.Supplier;
 
-public record EpochUpdateConstraintScryptV4(EpochUpdateConfig config) implements ConstraintScrypt {
-  public static final Comparator<REAddr> STAKE_COMPARATOR =
-      Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator());
+public record ResetRegisteredUpdateV4(
+    ValidatorRegisteredCopy existingState,
+    ValidatorScratchPad scratchPad,
+    Supplier<ReducerState> next)
+    implements ReducerState {
 
-  private void epochUpdate(Loader os) {
-    // Epoch Update
-    os.procedure(new DownEpochDataProcedure(config));
-    os.procedure(new ShutdownAllExitingStakesProcedureV4(config));
-    os.procedure(new ProcessExittingStakeUpProcedureV4());
-    os.procedure(new ShutdownAllValidatorBFTDataProcedureV4());
-    os.procedure(new ShutdownAllPreparedUnstakeOwnershipProcedureV4());
-    os.procedure(new DownValidatorStakeDataProcedure());
-    os.procedure(new UpUnstakingProcedure());
-    os.procedure(new ShutdownAllPreparedStakeProcedureV4());
-    os.procedure(new ShutdownAllValidatorFeeCopyProcedureV4());
-    os.procedure(new UpResetRakeUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorOwnerCopyProcedureV4());
-    os.procedure(new UpResetOwnerUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorRegisteredCopyProcedureV4());
-    os.procedure(new UpValidatorRegisteredCopyProcedureV4());
-    os.procedure(new UpStakingProcedure());
-    os.procedure(new UpUpdatingValidatorStakesProcedure());
-    os.procedure(new ReadIndexValidatorStakeDataProcedure());
-    os.procedure(new UpBootupValidatorProcedure());
-    os.procedure(new UpStartingNextEpochProcedure());
-    os.procedure(new UpStartingEpochRoundProcedure());
+  public ReducerState reset(ValidatorRegisteredCopy newState) throws ProcedureException {
+    if (!newState.validatorKey().equals(existingState.validatorKey())) {
+      throw new ProcedureException("Validator keys must match.");
+    }
+
+    if (newState.epochUpdate().isPresent()) {
+      throw new ProcedureException("Should not have an epoch.");
+    }
+
+    if (newState.isRegistered() != existingState.isRegistered()) {
+      throw new ProcedureException("Registered flags must match.");
+    }
+
+    return switch (newState) {
+      case ValidatorRegisteredCopyV1 ignored -> next.get();
+      case ValidatorRegisteredCopyV2 registeredCopyV2 -> validateV2(registeredCopyV2);
+    };
   }
 
-  @Override
-  public void main(Loader os) {
-    os.substate(ValidatorStakeData.SUBSTATE_DEFINITION);
-    os.substate(StakeOwnership.SUBSTATE_DEFINITION);
-    os.substate(ExitingStake.SUBSTATE_DEFINITION);
+  private ReducerState validateV2(ValidatorRegisteredCopyV2 newState) throws ProcedureException {
+    if (newState.isRegistered() != existingState.isRegistered()) {
+      throw new ProcedureException("Registered flags must match.");
+    }
 
-    epochUpdate(os);
+    if (newState.isRegistrationPending() != scratchPad.getSentencing().registrationPending()) {
+      throw new ProcedureException("Pending registration must match.");
+    }
+
+    if (newState.jailedEpoch() != scratchPad.getSentencing().jailedEpoch()) {
+      throw new ProcedureException("Jailed epoch must match.");
+    }
+
+    if (newState.jailLevel() != scratchPad.getSentencing().jailLevel()) {
+      throw new ProcedureException("Jail level must match.");
+    }
+
+    if (newState.probationEpochsLeft() != scratchPad.getSentencing().probationEpochsLeft()) {
+      throw new ProcedureException("Probation epochs must match.");
+    }
+
+    return next.get();
   }
 }

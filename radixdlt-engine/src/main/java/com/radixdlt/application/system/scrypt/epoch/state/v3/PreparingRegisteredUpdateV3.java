@@ -62,53 +62,67 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt;
+package com.radixdlt.application.system.scrypt.epoch.state.v3;
 
-import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.application.system.scrypt.epoch.procedure.*;
-import com.radixdlt.application.system.scrypt.epoch.procedure.v4.*;
-import com.radixdlt.application.system.state.StakeOwnership;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.state.ExitingStake;
-import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.Loader;
-import com.radixdlt.identifiers.REAddr;
-import java.util.Comparator;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
+import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
+import com.radixdlt.application.system.scrypt.epoch.state.*;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.constraintmachine.IndexedSubstateIterator;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.utils.KeyComparator;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
-public record EpochUpdateConstraintScryptV4(EpochUpdateConfig config) implements ConstraintScrypt {
-  public static final Comparator<REAddr> STAKE_COMPARATOR =
-      Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator());
+public final class PreparingRegisteredUpdateV3 extends ExpectedEpochChecker {
+  private final NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
+  private final NavigableMap<ECPublicKey, ValidatorRegisteredCopy> preparingRegisteredUpdates =
+      new TreeMap<>(KeyComparator.instance());
 
-  private void epochUpdate(Loader os) {
-    // Epoch Update
-    os.procedure(new DownEpochDataProcedure(config));
-    os.procedure(new ShutdownAllExitingStakesProcedureV4(config));
-    os.procedure(new ProcessExittingStakeUpProcedureV4());
-    os.procedure(new ShutdownAllValidatorBFTDataProcedureV4());
-    os.procedure(new ShutdownAllPreparedUnstakeOwnershipProcedureV4());
-    os.procedure(new DownValidatorStakeDataProcedure());
-    os.procedure(new UpUnstakingProcedure());
-    os.procedure(new ShutdownAllPreparedStakeProcedureV4());
-    os.procedure(new ShutdownAllValidatorFeeCopyProcedureV4());
-    os.procedure(new UpResetRakeUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorOwnerCopyProcedureV4());
-    os.procedure(new UpResetOwnerUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorRegisteredCopyProcedureV4());
-    os.procedure(new UpValidatorRegisteredCopyProcedureV4());
-    os.procedure(new UpStakingProcedure());
-    os.procedure(new UpUpdatingValidatorStakesProcedure());
-    os.procedure(new ReadIndexValidatorStakeDataProcedure());
-    os.procedure(new UpBootupValidatorProcedure());
-    os.procedure(new UpStartingNextEpochProcedure());
-    os.procedure(new UpStartingEpochRoundProcedure());
+  PreparingRegisteredUpdateV3(
+      EpochUpdateConfig config,
+      UpdatingEpoch updatingEpoch,
+      NavigableMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {
+    super(config, updatingEpoch);
+    this.validatorsScratchPad = validatorsScratchPad;
   }
 
-  @Override
-  public void main(Loader os) {
-    os.substate(ValidatorStakeData.SUBSTATE_DEFINITION);
-    os.substate(StakeOwnership.SUBSTATE_DEFINITION);
-    os.substate(ExitingStake.SUBSTATE_DEFINITION);
+  public ReducerState prepareRegisterUpdates(
+      IndexedSubstateIterator<ValidatorRegisteredCopy> indexedSubstateIterator)
+      throws ProcedureException {
 
-    epochUpdate(os);
+    verifyPrefix(indexedSubstateIterator);
+
+    indexedSubstateIterator.forEachRemaining(
+        preparedRegisteredUpdate ->
+            preparingRegisteredUpdates.put(
+                preparedRegisteredUpdate.validatorKey(), preparedRegisteredUpdate));
+    return next();
+  }
+
+  ReducerState next() {
+    if (preparingRegisteredUpdates.isEmpty()) {
+      return validatorsScratchPad.isEmpty()
+          ? new CreatingNextValidatorSet(config(), updatingEpoch())
+          : new UpdatingValidatorStakes(config(), updatingEpoch(), validatorsScratchPad);
+    }
+
+    var publicKey = preparingRegisteredUpdates.firstKey();
+    var validatorUpdate = preparingRegisteredUpdates.remove(publicKey);
+
+    if (!validatorsScratchPad.containsKey(publicKey)) {
+      return new LoadingStake(
+          publicKey,
+          validatorStake -> {
+            validatorsScratchPad.put(publicKey, validatorStake);
+            validatorStake.setRegistered(validatorUpdate.isRegistered());
+            return new ResetRegisteredUpdateV3(validatorUpdate, this::next);
+          });
+    } else {
+      validatorsScratchPad.get(publicKey).setRegistered(validatorUpdate.isRegistered());
+      return new ResetRegisteredUpdateV3(validatorUpdate, this::next);
+    }
   }
 }

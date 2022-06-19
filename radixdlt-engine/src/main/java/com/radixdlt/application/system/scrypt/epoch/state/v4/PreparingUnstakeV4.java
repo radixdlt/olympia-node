@@ -62,53 +62,79 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt;
+package com.radixdlt.application.system.scrypt.epoch.state.v4;
 
-import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.application.system.scrypt.epoch.procedure.*;
-import com.radixdlt.application.system.scrypt.epoch.procedure.v4.*;
-import com.radixdlt.application.system.state.StakeOwnership;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.state.ExitingStake;
-import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.Loader;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
+import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScryptV4;
+import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
+import com.radixdlt.application.system.scrypt.epoch.state.LoadingStake;
+import com.radixdlt.application.system.scrypt.epoch.state.Unstaking;
+import com.radixdlt.application.system.scrypt.epoch.state.UpdatingEpoch;
+import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.constraintmachine.IndexedSubstateIterator;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import java.util.Comparator;
+import com.radixdlt.utils.KeyComparator;
+import com.radixdlt.utils.UInt256;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
-public record EpochUpdateConstraintScryptV4(EpochUpdateConfig config) implements ConstraintScrypt {
-  public static final Comparator<REAddr> STAKE_COMPARATOR =
-      Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator());
+public record PreparingUnstakeV4(
+    EpochUpdateConfig config,
+    UpdatingEpoch updatingEpoch,
+    NavigableMap<ECPublicKey, ValidatorScratchPad> updatingValidators,
+    NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingStake,
+    NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingUnstakes)
+    implements ReducerState {
 
-  private void epochUpdate(Loader os) {
-    // Epoch Update
-    os.procedure(new DownEpochDataProcedure(config));
-    os.procedure(new ShutdownAllExitingStakesProcedureV4(config));
-    os.procedure(new ProcessExittingStakeUpProcedureV4());
-    os.procedure(new ShutdownAllValidatorBFTDataProcedureV4());
-    os.procedure(new ShutdownAllPreparedUnstakeOwnershipProcedureV4());
-    os.procedure(new DownValidatorStakeDataProcedure());
-    os.procedure(new UpUnstakingProcedure());
-    os.procedure(new ShutdownAllPreparedStakeProcedureV4());
-    os.procedure(new ShutdownAllValidatorFeeCopyProcedureV4());
-    os.procedure(new UpResetRakeUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorOwnerCopyProcedureV4());
-    os.procedure(new UpResetOwnerUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorRegisteredCopyProcedureV4());
-    os.procedure(new UpValidatorRegisteredCopyProcedureV4());
-    os.procedure(new UpStakingProcedure());
-    os.procedure(new UpUpdatingValidatorStakesProcedure());
-    os.procedure(new ReadIndexValidatorStakeDataProcedure());
-    os.procedure(new UpBootupValidatorProcedure());
-    os.procedure(new UpStartingNextEpochProcedure());
-    os.procedure(new UpStartingEpochRoundProcedure());
+  public static PreparingUnstakeV4 create(
+      EpochUpdateConfig config,
+      UpdatingEpoch updatingEpoch,
+      NavigableMap<ECPublicKey, ValidatorScratchPad> updatingValidators,
+      NavigableMap<ECPublicKey, NavigableMap<REAddr, UInt256>> preparingStake) {
+    return new PreparingUnstakeV4(
+        config,
+        updatingEpoch,
+        updatingValidators,
+        preparingStake,
+        new TreeMap<>(KeyComparator.instance()));
   }
 
-  @Override
-  public void main(Loader os) {
-    os.substate(ValidatorStakeData.SUBSTATE_DEFINITION);
-    os.substate(StakeOwnership.SUBSTATE_DEFINITION);
-    os.substate(ExitingStake.SUBSTATE_DEFINITION);
+  public ReducerState unstakes(IndexedSubstateIterator<PreparedUnstakeOwnership> substateIterator)
+      throws ProcedureException {
+    substateIterator.verifyPostTypePrefixIsEmpty();
+    substateIterator.forEachRemaining(
+        preparedUnstakeOwned ->
+            preparingUnstakes
+                .computeIfAbsent(preparedUnstakeOwned.delegateKey(), __ -> createStakeMap())
+                .merge(preparedUnstakeOwned.owner(), preparedUnstakeOwned.amount(), UInt256::add));
+    return next();
+  }
 
-    epochUpdate(os);
+  ReducerState next() {
+    if (preparingUnstakes.isEmpty()) {
+      return new PreparingStakeV4(config, updatingEpoch, updatingValidators, preparingStake);
+    }
+
+    var k = preparingUnstakes.firstKey();
+    var unstakes = preparingUnstakes.remove(k);
+
+    if (!updatingValidators.containsKey(k)) {
+      return new LoadingStake(
+          k,
+          validatorStake -> {
+            updatingValidators.put(k, validatorStake);
+            return new Unstaking(config, updatingEpoch, validatorStake, unstakes, this::next);
+          });
+    } else {
+      var validatorStake = updatingValidators.get(k);
+      return new Unstaking(config, updatingEpoch, validatorStake, unstakes, this::next);
+    }
+  }
+
+  private static TreeMap<REAddr, UInt256> createStakeMap() {
+    return new TreeMap<>(EpochUpdateConstraintScryptV4.STAKE_COMPARATOR);
   }
 }

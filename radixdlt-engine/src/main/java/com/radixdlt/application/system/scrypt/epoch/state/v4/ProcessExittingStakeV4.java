@@ -62,53 +62,77 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.scrypt;
+package com.radixdlt.application.system.scrypt.epoch.state.v4;
 
 import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.application.system.scrypt.epoch.procedure.*;
-import com.radixdlt.application.system.scrypt.epoch.procedure.v4.*;
-import com.radixdlt.application.system.state.StakeOwnership;
-import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.system.scrypt.EpochUpdateConfig;
+import com.radixdlt.application.system.scrypt.epoch.state.ExpectedEpochChecker;
+import com.radixdlt.application.system.scrypt.epoch.state.UpdatingEpoch;
 import com.radixdlt.application.tokens.state.ExitingStake;
-import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.Loader;
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.constraintmachine.IndexedSubstateIterator;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.utils.Longs;
 import java.util.Comparator;
+import java.util.TreeSet;
 
-public record EpochUpdateConstraintScryptV4(EpochUpdateConfig config) implements ConstraintScrypt {
-  public static final Comparator<REAddr> STAKE_COMPARATOR =
-      Comparator.comparing(REAddr::getBytes, UnsignedBytes.lexicographicalComparator());
+public final class ProcessExittingStakeV4 extends ExpectedEpochChecker {
+  private final TreeSet<ExitingStake> exitting =
+      new TreeSet<>(
+          Comparator.comparing(ExitingStake::dataKey, UnsignedBytes.lexicographicalComparator()));
 
-  private void epochUpdate(Loader os) {
-    // Epoch Update
-    os.procedure(new DownEpochDataProcedure(config));
-    os.procedure(new ShutdownAllExitingStakesProcedureV4(config));
-    os.procedure(new ProcessExittingStakeUpProcedureV4());
-    os.procedure(new ShutdownAllValidatorBFTDataProcedureV4());
-    os.procedure(new ShutdownAllPreparedUnstakeOwnershipProcedureV4());
-    os.procedure(new DownValidatorStakeDataProcedure());
-    os.procedure(new UpUnstakingProcedure());
-    os.procedure(new ShutdownAllPreparedStakeProcedureV4());
-    os.procedure(new ShutdownAllValidatorFeeCopyProcedureV4());
-    os.procedure(new UpResetRakeUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorOwnerCopyProcedureV4());
-    os.procedure(new UpResetOwnerUpdateProcedure());
-    os.procedure(new ShutdownAllValidatorRegisteredCopyProcedureV4());
-    os.procedure(new UpValidatorRegisteredCopyProcedureV4());
-    os.procedure(new UpStakingProcedure());
-    os.procedure(new UpUpdatingValidatorStakesProcedure());
-    os.procedure(new ReadIndexValidatorStakeDataProcedure());
-    os.procedure(new UpBootupValidatorProcedure());
-    os.procedure(new UpStartingNextEpochProcedure());
-    os.procedure(new UpStartingEpochRoundProcedure());
+  public ProcessExittingStakeV4(EpochUpdateConfig config, UpdatingEpoch updatingEpoch) {
+    super(config, updatingEpoch);
   }
 
   @Override
-  public void main(Loader os) {
-    os.substate(ValidatorStakeData.SUBSTATE_DEFINITION);
-    os.substate(StakeOwnership.SUBSTATE_DEFINITION);
-    os.substate(ExitingStake.SUBSTATE_DEFINITION);
+  protected byte[] buildExpectedPrefix() {
+    var expectedPrefix = new byte[Long.BYTES + 1];
+    expectedPrefix[0] = 0;
+    Longs.copyTo(expectedEpoch(), expectedPrefix, 1);
+    return expectedPrefix;
+  }
 
-    epochUpdate(os);
+  public ReducerState process(IndexedSubstateIterator<ExitingStake> indexedSubstateIterator)
+      throws ProcedureException {
+    verifyPrefix(indexedSubstateIterator);
+
+    indexedSubstateIterator.forEachRemaining(
+        exitingStake -> exitting.add(validateExittingStake(exitingStake)));
+    return next();
+  }
+
+  // Sanity check
+  private ExitingStake validateExittingStake(ExitingStake exitingStake) {
+    if (exitingStake.epochUnlocked() != expectedEpoch()) {
+      throw new IllegalStateException(
+          "Invalid shutdown of exitting stake update epoch expected "
+              + expectedEpoch()
+              + " but was "
+              + exitingStake.epochUnlocked());
+    }
+    return exitingStake;
+  }
+
+  public ReducerState unlock(TokensInAccount u) throws ProcedureException {
+    var exit = exitting.first();
+    exitting.remove(exit);
+
+    if (exit.epochUnlocked() != updatingEpoch().prevEpoch().epoch() + 1) {
+      throw new ProcedureException("Stake must still be locked.");
+    }
+
+    var expected = exit.unlock();
+
+    if (!expected.equals(u)) {
+      throw new ProcedureException("Expecting next state to be " + expected + " but was " + u);
+    }
+
+    return next();
+  }
+
+  public ReducerState next() {
+    return exitting.isEmpty() ? new RewardingValidatorsV4(config(), updatingEpoch()) : this;
   }
 }

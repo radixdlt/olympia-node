@@ -66,6 +66,7 @@ package com.radixdlt.application.system.scrypt;
 
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.scrypt.epoch.procedure.*;
+import com.radixdlt.application.system.scrypt.epoch.procedure.v3.*;
 import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.ExitingStake;
