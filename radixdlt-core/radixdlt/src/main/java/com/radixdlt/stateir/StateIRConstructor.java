@@ -107,6 +107,12 @@ import org.apache.logging.log4j.util.TriConsumer;
  * from the substates stored on ledger.
  */
 public final class StateIRConstructor {
+  public static final class OlympiaStateIRConstructorException extends RuntimeException {
+    public OlympiaStateIRConstructorException(String message, Throwable cause) {
+      super(message, cause);
+    }
+  }
+
   private static <T> Comparator<T> compareBytes(Function<T, byte[]> extractor) {
     return (a, b) -> Arrays.compare(extractor.apply(a), extractor.apply(b));
   }
@@ -216,8 +222,8 @@ public final class StateIRConstructor {
             .collect(ImmutableList.toImmutableList());
 
     if (!tokenResourceMetadata.isEmpty()) {
-      throw new RuntimeException(
-          "Not all TokenResourceMetadata have a corresponding TokenResource substate!");
+      throw new OlympiaStateIRConstructorException(
+          "Not all TokenResourceMetadata have a corresponding TokenResource substate!", null);
     }
 
     return resources;
@@ -393,7 +399,7 @@ public final class StateIRConstructor {
     try {
       return (T) substateDeserialization.deserialize(rawSubstateBytes.getData());
     } catch (DeserializeException e) {
-      throw new RuntimeException(e);
+      throw new OlympiaStateIRConstructorException("Failed to deserialize substate", e);
     }
   }
 }

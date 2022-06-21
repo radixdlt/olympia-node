@@ -93,7 +93,7 @@ public final class OlympiaStateIRDeserializer {
     this.bais = Objects.requireNonNull(bais);
   }
 
-  public OlympiaStateIR deserialize() throws IOException, PublicKeyException {
+  public OlympiaStateIR deserialize() {
     final var validators = readValidators();
     final var resources = readResources();
     final var accounts = readAccounts();

@@ -77,6 +77,8 @@ import java.util.function.Function;
 /** A serializer for the Olympia state IR (intermediate representation). */
 public final class OlympiaStateIRSerializer {
 
+  private OlympiaStateIRSerializer() {}
+
   public static byte[] serialize(OlympiaStateIR state) throws IOException {
     final var baos = new ByteArrayOutputStream();
     writeValidators(baos, state);
