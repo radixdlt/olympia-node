@@ -96,6 +96,7 @@ import io.undertow.server.HttpHandler;
 public class CoreApiModule extends AbstractModule {
   private final boolean transactionsEnable;
   private final boolean signEnable;
+  private final boolean olympiaStateExportEnabled = false;
 
   public CoreApiModule(boolean transactionsEnable, boolean signEnable) {
     this.transactionsEnable = transactionsEnable;
@@ -154,6 +155,8 @@ public class CoreApiModule extends AbstractModule {
       routeBinder.addBinding(HandlerRoute.post("/key/withdraw-vote")).to(WithdrawVoteHandler.class);
     }
 
-    routeBinder.addBinding(HandlerRoute.get("/olympia-state")).to(OlympiaStateHandler.class);
+    if (olympiaStateExportEnabled) {
+      routeBinder.addBinding(HandlerRoute.get("/olympia-state")).to(OlympiaStateHandler.class);
+    }
   }
 }
