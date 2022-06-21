@@ -85,7 +85,7 @@ public final class OlympiaStateIRInspectorCli {
     printSummary(state);
   }
 
-  private static FileSummary loadFromFile(Path path) throws IOException, PublicKeyException {
+  private static FileSummary loadFromFile(Path path) throws IOException {
     final var content = Files.readString(path);
     final var data = Hex.decode(content);
     final var uncompressed = Snappy.uncompress(data);
