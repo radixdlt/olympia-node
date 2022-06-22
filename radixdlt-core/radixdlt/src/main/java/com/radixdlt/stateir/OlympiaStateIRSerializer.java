@@ -72,6 +72,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 /** A serializer for the Olympia state IR (intermediate representation). */
@@ -96,15 +97,15 @@ public final class OlympiaStateIRSerializer {
 
   private static byte[] serializeValidator(OlympiaStateIR.Validator validator) {
     return Bytes.concat(
-        validator.validatorKey().getCompressedBytes(),
+        serializePublicKey(validator.validatorKey()),
         serializeString(validator.name()),
         serializeString(validator.url()),
         boolToByteArr(validator.allowsDelegation()),
         boolToByteArr(validator.isRegistered()),
-        validator.totalStake().toByteArray(),
-        validator.totalOwnership().toByteArray(),
-        Ints.toByteArray(validator.rakePercentage()),
-        serializerReAddr(validator.ownerAddr()));
+        validator.totalStakedXrd().toByteArray(),
+        validator.totalStakeUnits().toByteArray(),
+        Ints.toByteArray(validator.feeProportionInTenThousandths()),
+        Ints.toByteArray(validator.ownerAccountIndex()));
   }
 
   private static void writeResources(ByteArrayOutputStream baos, OlympiaStateIR state)
@@ -117,10 +118,7 @@ public final class OlympiaStateIRSerializer {
         serializerReAddr(resource.addr()),
         resource.granularity().toByteArray(),
         boolToByteArr(resource.isMutable()),
-        resource
-            .owner()
-            .map(ECPublicKey::getCompressedBytes)
-            .orElseGet(() -> com.radixdlt.utils.Bytes.zeros(ECPublicKey.COMPRESSED_BYTES)),
+        serializeOptionalInt(resource.ownerAccountIndex()),
         serializeString(resource.symbol()),
         serializeString(resource.name()),
         serializeString(resource.description()),
@@ -130,7 +128,7 @@ public final class OlympiaStateIRSerializer {
 
   private static void writeAccounts(ByteArrayOutputStream baos, OlympiaStateIR state)
       throws IOException {
-    serializeList(baos, state.accounts(), account -> serializerReAddr(account.addr()));
+    serializeList(baos, state.accounts(), account -> serializePublicKey(account.publicKey()));
   }
 
   private static void writeBalances(ByteArrayOutputStream baos, OlympiaStateIR state)
@@ -154,7 +152,16 @@ public final class OlympiaStateIRSerializer {
             Bytes.concat(
                 Ints.toByteArray(stake.accountIndex()),
                 Ints.toByteArray(stake.validatorIndex()),
-                stake.amount().toByteArray()));
+                stake.stakeUnitAmount().toByteArray()));
+  }
+
+  private static byte[] serializePublicKey(ECPublicKey publicKey) {
+    return publicKey.getCompressedBytes();
+  }
+
+  private static byte[] serializeOptionalInt(Optional<Integer> optInt) {
+    return Bytes.concat(
+        boolToByteArr(optInt.isPresent()), optInt.map(Ints::toByteArray).orElse(new byte[] {}));
   }
 
   private static <T> void serializeList(
@@ -168,10 +175,14 @@ public final class OlympiaStateIRSerializer {
   }
 
   private static byte[] serializerReAddr(REAddr addr) {
-    final var out = new byte[REAddr.MAX_SIZE_BYTES];
     final var addrBytes = addr.getBytes();
-    System.arraycopy(addrBytes, 0, out, out.length - addrBytes.length, addrBytes.length);
-    return out;
+    final var len = addrBytes.length;
+    if (len > Byte.MAX_VALUE) {
+      throw new OlympiaStateIRSerializationException("REAddr is too long", null);
+    }
+    return Bytes.concat(
+        new byte[] {(byte) len}, // A single byte is sufficient for the length prefix
+        addrBytes);
   }
 
   private static byte[] serializeString(String s) {

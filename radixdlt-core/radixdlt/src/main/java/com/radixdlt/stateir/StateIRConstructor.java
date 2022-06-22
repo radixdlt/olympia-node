@@ -65,6 +65,7 @@
 package com.radixdlt.stateir;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.system.state.ValidatorStakeData;
@@ -87,18 +88,17 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.EngineStore.EngineStoreInTransaction;
+import com.radixdlt.utils.Lists;
 import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.util.TriConsumer;
 
@@ -128,15 +128,127 @@ public final class StateIRConstructor {
   }
 
   public OlympiaStateIR prepareOlympiaStateIR() {
-    final var validators = prepareValidators();
-    final var resources = prepareResources();
     final var accounts = prepareAccounts();
-    final var balances = prepareBalances(resources, accounts);
-    final var stakes = prepareStakes(validators, accounts);
+    final var accountIdxMap = Lists.toIndexedMap(accounts, OlympiaStateIR.Account::publicKey);
+
+    final var resources = prepareResources(accountIdxMap);
+    final var resourceIdxMap = Lists.toIndexedMap(resources, OlympiaStateIR.Resource::addr);
+
+    final var validators = prepareValidators(accountIdxMap);
+    final var validatorIdxMap =
+        Lists.toIndexedMap(validators, OlympiaStateIR.Validator::validatorKey);
+
+    final var balances = prepareBalances(resourceIdxMap, accountIdxMap);
+
+    final var stakes = prepareStakes(validatorIdxMap, accountIdxMap);
+
     return new OlympiaStateIR(validators, resources, accounts, balances, stakes);
   }
 
-  private ImmutableList<OlympiaStateIR.Validator> prepareValidators() {
+  private ImmutableList<OlympiaStateIR.Account> prepareAccounts() {
+    final var accountsWithTokens =
+        collectSubstatesOfType(
+            SubstateTypeId.TOKENS,
+            TokensInAccount.class,
+            Collectors.mapping(
+                substate ->
+                    new OlympiaStateIR.Account(substate.holdingAddress().publicKey().orElseThrow()),
+                Collectors.toSet()));
+
+    final var accountsWithPreparedStake =
+        extractAccountsFromStakes(SubstateTypeId.PREPARED_STAKE, PreparedStake.class);
+    final var accountsWithStakeOwnership =
+        extractAccountsFromStakes(SubstateTypeId.STAKE_OWNERSHIP, StakeOwnership.class);
+    final var accountsWithPreparedUnstakeOwnership =
+        extractAccountsFromStakes(SubstateTypeId.PREPARED_UNSTAKE, PreparedUnstakeOwnership.class);
+    final var accountsWithExitingStake =
+        extractAccountsFromStakes(SubstateTypeId.EXITING_STAKE, ExitingStake.class);
+
+    final var validatorOwners =
+        collectSubstatesOfType(
+            SubstateTypeId.VALIDATOR_STAKE_DATA,
+            ValidatorStakeData.class,
+            Collectors.mapping(
+                substate ->
+                    new OlympiaStateIR.Account(substate.ownerAddr().publicKey().orElseThrow()),
+                Collectors.toSet()));
+
+    final var resourceOwners =
+        collectSubstatesOfType(
+            SubstateTypeId.TOKEN_RESOURCE,
+            TokenResource.class,
+            Collectors.flatMapping(
+                substate -> substate.optionalOwner().stream(),
+                Collectors.mapping(OlympiaStateIR.Account::new, Collectors.toSet())));
+
+    return Stream.of(
+            accountsWithTokens.stream(),
+            accountsWithPreparedStake.stream(),
+            accountsWithStakeOwnership.stream(),
+            accountsWithPreparedUnstakeOwnership.stream(),
+            accountsWithExitingStake.stream(),
+            validatorOwners.stream(),
+            resourceOwners.stream())
+        .flatMap(s -> s)
+        .distinct()
+        .sorted(compareBytes(v -> v.publicKey().getCompressedBytes()))
+        .collect(ImmutableList.toImmutableList());
+  }
+
+  private <T extends DelegatedResourceInBucket>
+      ImmutableSet<OlympiaStateIR.Account> extractAccountsFromStakes(
+          SubstateTypeId substateTypeId, Class<T> substateClazz) {
+    return collectSubstatesOfType(
+        substateTypeId,
+        substateClazz,
+        Collectors.mapping(
+            substate -> new OlympiaStateIR.Account(substate.owner().publicKey().orElseThrow()),
+            ImmutableSet.toImmutableSet()));
+  }
+
+  private ImmutableList<OlympiaStateIR.Resource> prepareResources(
+      ImmutableMap<ECPublicKey, Integer> accountIdxMap) {
+    final var tokenResources =
+        collectSubstatesOfType(
+            SubstateTypeId.TOKEN_RESOURCE,
+            TokenResource.class,
+            Collectors.toMap(TokenResource::addr, s -> s));
+
+    final var tokenResourceMetadata =
+        collectSubstatesOfType(
+            SubstateTypeId.TOKEN_RESOURCE_METADATA,
+            TokenResourceMetadata.class,
+            Collectors.toMap(TokenResourceMetadata::addr, s -> s));
+
+    final var resources =
+        tokenResources.values().stream()
+            .map(
+                e -> {
+                  final var metadata = tokenResourceMetadata.remove(e.addr());
+                  return new OlympiaStateIR.Resource(
+                      e.addr(),
+                      e.granularity(),
+                      e.isMutable(),
+                      e.optionalOwner().map(accountIdxMap::get),
+                      metadata.symbol(),
+                      metadata.name(),
+                      metadata.description(),
+                      metadata.iconUrl(),
+                      metadata.url());
+                })
+            .sorted(compareBytes(v -> v.addr().getBytes()))
+            .collect(ImmutableList.toImmutableList());
+
+    if (!tokenResourceMetadata.isEmpty()) {
+      throw new OlympiaStateIRConstructorException(
+          "Not all TokenResourceMetadata have a corresponding TokenResource substate!", null);
+    }
+
+    return resources;
+  }
+
+  private ImmutableList<OlympiaStateIR.Validator> prepareValidators(
+      ImmutableMap<ECPublicKey, Integer> accountIdxMap) {
     final var validatorMetaData =
         collectSubstatesOfType(
             SubstateTypeId.VALIDATOR_META_DATA,
@@ -183,106 +295,15 @@ public final class StateIRConstructor {
                   stakeData.totalStake(),
                   stakeData.totalOwnership(),
                   stakeData.rakePercentage(),
-                  stakeData.ownerAddr());
+                  accountIdxMap.get(stakeData.ownerAddr().publicKey().orElseThrow()));
             })
         .sorted(compareBytes(v -> v.validatorKey().getCompressedBytes()))
         .collect(ImmutableList.toImmutableList());
   }
 
-  private ImmutableList<OlympiaStateIR.Resource> prepareResources() {
-    final var tokenResources =
-        collectSubstatesOfType(
-            SubstateTypeId.TOKEN_RESOURCE,
-            TokenResource.class,
-            Collectors.toMap(TokenResource::addr, s -> s));
-
-    final var tokenResourceMetadata =
-        collectSubstatesOfType(
-            SubstateTypeId.TOKEN_RESOURCE_METADATA,
-            TokenResourceMetadata.class,
-            Collectors.toMap(TokenResourceMetadata::addr, s -> s));
-
-    final var resources =
-        tokenResources.values().stream()
-            .map(
-                e -> {
-                  final var metadata = tokenResourceMetadata.remove(e.addr());
-                  return new OlympiaStateIR.Resource(
-                      e.addr(),
-                      e.granularity(),
-                      e.isMutable(),
-                      Optional.ofNullable(e.owner()),
-                      metadata.symbol(),
-                      metadata.name(),
-                      metadata.description(),
-                      metadata.iconUrl(),
-                      metadata.url());
-                })
-            .sorted(compareBytes(v -> v.addr().getBytes()))
-            .collect(ImmutableList.toImmutableList());
-
-    if (!tokenResourceMetadata.isEmpty()) {
-      throw new OlympiaStateIRConstructorException(
-          "Not all TokenResourceMetadata have a corresponding TokenResource substate!", null);
-    }
-
-    return resources;
-  }
-
-  private ImmutableList<OlympiaStateIR.Account> prepareAccounts() {
-    final var accountsWithTokens =
-        collectSubstatesOfType(
-            SubstateTypeId.TOKENS,
-            TokensInAccount.class,
-            Collectors.mapping(
-                substate -> new OlympiaStateIR.Account(substate.holdingAddress()),
-                Collectors.toSet()));
-
-    final var accountsWithPreparedStake =
-        extractAccountsFromStakes(SubstateTypeId.PREPARED_STAKE, PreparedStake.class);
-    final var accountsWithStakeOwnership =
-        extractAccountsFromStakes(SubstateTypeId.STAKE_OWNERSHIP, StakeOwnership.class);
-    final var accountsWithPreparedUnstakeOwnership =
-        extractAccountsFromStakes(SubstateTypeId.PREPARED_UNSTAKE, PreparedUnstakeOwnership.class);
-    final var accountsWithExitingStake =
-        extractAccountsFromStakes(SubstateTypeId.EXITING_STAKE, ExitingStake.class);
-
-    return Stream.of(
-            accountsWithTokens.stream(),
-            accountsWithPreparedStake.stream(),
-            accountsWithStakeOwnership.stream(),
-            accountsWithPreparedUnstakeOwnership.stream(),
-            accountsWithExitingStake.stream())
-        .flatMap(s -> s)
-        .distinct()
-        .sorted(compareBytes(v -> v.addr().getBytes()))
-        .collect(ImmutableList.toImmutableList());
-  }
-
-  private <T extends DelegatedResourceInBucket>
-      ImmutableSet<OlympiaStateIR.Account> extractAccountsFromStakes(
-          SubstateTypeId substateTypeId, Class<T> substateClazz) {
-    return collectSubstatesOfType(
-        substateTypeId,
-        substateClazz,
-        Collectors.mapping(
-            substate -> new OlympiaStateIR.Account(substate.owner()),
-            ImmutableSet.toImmutableSet()));
-  }
-
   private ImmutableList<OlympiaStateIR.AccountBalance> prepareBalances(
-      ImmutableList<OlympiaStateIR.Resource> resources,
-      ImmutableList<OlympiaStateIR.Account> accounts) {
-    final var resourceIdxMap =
-        IntStream.range(0, resources.size())
-            .boxed()
-            .collect(Collectors.toMap(i -> resources.get(i).addr(), i -> i));
-
-    final var accountIdxMap =
-        IntStream.range(0, accounts.size())
-            .boxed()
-            .collect(Collectors.toMap(i -> accounts.get(i).addr(), i -> i));
-
+      ImmutableMap<REAddr, Integer> resourceIdxMap,
+      ImmutableMap<ECPublicKey, Integer> accountIdxMap) {
     final Map<REAddr, Map<REAddr, UInt256>> tokensByAccountAndResource = new HashMap<>();
 
     final TriConsumer<REAddr, REAddr, UInt256> accumulateTokensToMap =
@@ -299,10 +320,9 @@ public final class StateIRConstructor {
         TokensInAccount.class,
         s -> accumulateTokensToMap.accept(s.holdingAddress(), s.resourceAddr(), s.amount()));
 
-    // Ignoring unstake delay for now
     processSubstatesOfType(
-        SubstateTypeId.PREPARED_UNSTAKE,
-        PreparedUnstakeOwnership.class,
+        SubstateTypeId.PREPARED_STAKE,
+        PreparedStake.class,
         s -> accumulateTokensToMap.accept(s.owner(), REAddr.ofNativeToken(), s.amount()));
 
     processSubstatesOfType(
@@ -313,7 +333,8 @@ public final class StateIRConstructor {
     return tokensByAccountAndResource.entrySet().stream()
         .flatMap(
             accountEntry -> {
-              final var accountIdx = accountIdxMap.get(accountEntry.getKey());
+              final var accountIdx =
+                  accountIdxMap.get(accountEntry.getKey().publicKey().orElseThrow());
               return accountEntry.getValue().entrySet().stream()
                   .map(
                       resourceEntry -> {
@@ -330,18 +351,8 @@ public final class StateIRConstructor {
   }
 
   private ImmutableList<OlympiaStateIR.Stake> prepareStakes(
-      ImmutableList<OlympiaStateIR.Validator> validators,
-      ImmutableList<OlympiaStateIR.Account> accounts) {
-    final var validatorIdxMap =
-        IntStream.range(0, validators.size())
-            .boxed()
-            .collect(Collectors.toMap(i -> validators.get(i).validatorKey(), i -> i));
-
-    final var accountIdxMap =
-        IntStream.range(0, accounts.size())
-            .boxed()
-            .collect(Collectors.toMap(i -> accounts.get(i).addr(), i -> i));
-
+      ImmutableMap<ECPublicKey, Integer> validatorIdxMap,
+      ImmutableMap<ECPublicKey, Integer> accountIdxMap) {
     final Map<REAddr, Map<ECPublicKey, UInt256>> stakeByAccountAndValidator = new HashMap<>();
 
     final Consumer<DelegatedResourceInBucket> accumulateStakeToMap =
@@ -355,14 +366,18 @@ public final class StateIRConstructor {
         };
 
     processSubstatesOfType(
-        SubstateTypeId.PREPARED_STAKE, PreparedStake.class, accumulateStakeToMap::accept);
-    processSubstatesOfType(
         SubstateTypeId.STAKE_OWNERSHIP, StakeOwnership.class, accumulateStakeToMap::accept);
+
+    processSubstatesOfType(
+        SubstateTypeId.PREPARED_UNSTAKE,
+        PreparedUnstakeOwnership.class,
+        accumulateStakeToMap::accept);
 
     return stakeByAccountAndValidator.entrySet().stream()
         .flatMap(
             accountEntry -> {
-              final var accountIdx = accountIdxMap.get(accountEntry.getKey());
+              final var accountIdx =
+                  accountIdxMap.get(accountEntry.getKey().publicKey().orElseThrow());
               return accountEntry.getValue().entrySet().stream()
                   .map(
                       stakeEntry -> {
@@ -374,7 +389,7 @@ public final class StateIRConstructor {
         .sorted(
             Comparator.comparingInt(OlympiaStateIR.Stake::accountIndex)
                 .thenComparing(OlympiaStateIR.Stake::validatorIndex)
-                .thenComparing(OlympiaStateIR.Stake::amount))
+                .thenComparing(OlympiaStateIR.Stake::stakeUnitAmount))
         .collect(ImmutableList.toImmutableList());
   }
 

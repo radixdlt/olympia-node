@@ -68,7 +68,6 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
 import java.io.ByteArrayInputStream;
@@ -81,11 +80,6 @@ import java.util.stream.IntStream;
 
 /** A deserializer for the Olympia state IR (intermediate representation). */
 public final class OlympiaStateIRDeserializer {
-  public static final class OlympiaStateIRDeserializerException extends RuntimeException {
-    public OlympiaStateIRDeserializerException(Throwable cause) {
-      super(cause);
-    }
-  }
 
   private final ByteArrayInputStream bais;
 
@@ -108,7 +102,7 @@ public final class OlympiaStateIRDeserializer {
 
   private OlympiaStateIR.Validator readValidator() {
     return new OlympiaStateIR.Validator(
-        readPublicKeyOpt().orElseThrow(),
+        readPublicKey(),
         readString(),
         readString(),
         readBool(),
@@ -116,7 +110,7 @@ public final class OlympiaStateIRDeserializer {
         readUint256(),
         readUint256(),
         readInt(),
-        readAddr());
+        readInt());
   }
 
   private ImmutableList<OlympiaStateIR.Resource> readResources() {
@@ -128,7 +122,7 @@ public final class OlympiaStateIRDeserializer {
         readAddr(),
         readUint256(),
         readBool(),
-        readPublicKeyOpt(),
+        readOptionalInt(),
         readString(),
         readString(),
         readString(),
@@ -137,7 +131,7 @@ public final class OlympiaStateIRDeserializer {
   }
 
   private ImmutableList<OlympiaStateIR.Account> readAccounts() {
-    return readList(() -> new OlympiaStateIR.Account(readAddr()));
+    return readList(() -> new OlympiaStateIR.Account(readPublicKey()));
   }
 
   private ImmutableList<OlympiaStateIR.AccountBalance> readBalances() {
@@ -156,21 +150,21 @@ public final class OlympiaStateIRDeserializer {
   }
 
   private REAddr readAddr() {
-    final var addrBytesWithPadding = readNBytes(REAddr.MAX_SIZE_BYTES);
-    return REAddr.of(Bytes.trimLeadingZeros(addrBytesWithPadding));
+    final var len = readNBytes(1)[0];
+    final var addrBytes = readNBytes(len);
+    return REAddr.of(addrBytes);
   }
 
-  private Optional<ECPublicKey> readPublicKeyOpt() {
-    final var publicKeyBytes = readNBytes(ECPublicKey.COMPRESSED_BYTES);
-    if (Bytes.isAllZeros(publicKeyBytes)) {
-      return Optional.empty();
-    } else {
-      try {
-        return Optional.of(ECPublicKey.fromBytes(publicKeyBytes));
-      } catch (PublicKeyException e) {
-        throw new OlympiaStateIRDeserializerException(e);
-      }
+  private ECPublicKey readPublicKey() {
+    try {
+      return ECPublicKey.fromBytes(readNBytes(ECPublicKey.COMPRESSED_BYTES));
+    } catch (PublicKeyException e) {
+      throw new OlympiaStateIRSerializationException("Failed to read public key", e);
     }
+  }
+
+  private Optional<Integer> readOptionalInt() {
+    return readBool() ? Optional.of(readInt()) : Optional.empty();
   }
 
   private int readInt() {
@@ -194,7 +188,7 @@ public final class OlympiaStateIRDeserializer {
     try {
       return bais.readNBytes(len);
     } catch (IOException e) {
-      throw new OlympiaStateIRDeserializerException(e);
+      throw new OlympiaStateIRSerializationException("Failed to read bytes", e);
     }
   }
 }

@@ -173,7 +173,6 @@ public final class REAddr {
 
   public static final int PUB_KEY_BYTES = ECPublicKey.COMPRESSED_BYTES + 1;
   public static final int HASHED_KEY_BYTES = 26;
-  public static final int MAX_SIZE_BYTES = 34;
   private final byte[] addr;
 
   REAddr(byte[] addr) {

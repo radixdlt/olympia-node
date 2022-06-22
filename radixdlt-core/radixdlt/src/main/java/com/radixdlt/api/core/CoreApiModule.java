@@ -96,6 +96,9 @@ import io.undertow.server.HttpHandler;
 public class CoreApiModule extends AbstractModule {
   private final boolean transactionsEnable;
   private final boolean signEnable;
+
+  // Disabled by default because this is rather unsafe in the current form
+  // and only really meant for testing
   private final boolean olympiaStateExportEnabled = false;
 
   public CoreApiModule(boolean transactionsEnable, boolean signEnable) {
