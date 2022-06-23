@@ -79,6 +79,7 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.hotstuff.LedgerProof;
@@ -95,10 +96,13 @@ import com.radixdlt.statecomputer.forks.modules.MainnetForksModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.utils.Lists;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -161,7 +165,7 @@ public final class StateIRSerializationTest {
 
     final var accounts = prepareTestAccounts(numAccounts);
 
-    makeRandomTokenTransfers(numTokens, transfersPerToken, accounts);
+    final var transfersSummary = makeRandomTokenTransfers(numTokens, transfersPerToken, accounts);
 
     final var substateDeserialization =
         forks.newestFork().engineRules().parser().getSubstateDeserialization();
@@ -172,22 +176,77 @@ public final class StateIRSerializationTest {
 
     final var serialized = new OlympiaStateIRSerializer().serialize(state);
 
+    // Check the serialization/deserialization pipeline
     try (final var bais = new ByteArrayInputStream(serialized)) {
       final var deserialized = new OlympiaStateIRDeserializer(bais).deserialize();
       assertEquals(deserialized, state);
     }
+
+    // Roughly check the state IR correctness
+    assertEquals(numAccounts + 1 /* the test validator */, state.accounts().size());
+    assertEquals(numTokens + 1 /* the native token */, state.resources().size());
+    assertEquals(1, state.stakes().size());
+
+    // Check the accounts balances
+    final var accountIdxMap =
+        Lists.toIndexedMap(state.accounts(), OlympiaStateIR.Account::publicKey);
+    final var resourceIdxMap = Lists.toIndexedMap(state.resources(), OlympiaStateIR.Resource::addr);
+    transfersSummary.transfersByAccountAndResource.forEach(
+        (accountPubKey, transfersByResource) ->
+            transfersByResource.forEach(
+                (resourceAddr, totalTransferAmount) -> {
+                  final var accountIdx = accountIdxMap.get(accountPubKey);
+                  final var resourceIdx = resourceIdxMap.get(resourceAddr);
+
+                  // Find a matching balance entry
+                  final var accountBalance =
+                      state.balances().stream()
+                          .filter(
+                              b ->
+                                  b.accountIndex() == accountIdx
+                                      && b.resourceIndex() == resourceIdx)
+                          .findAny()
+                          .orElseThrow();
+                  assertEquals(totalTransferAmount, accountBalance.amount());
+                }));
+
+    // Make sure there are no extra balances in the state IR
+    final var numBalanceEntriesForTokens =
+        transfersSummary.transfersByAccountAndResource.values().stream().mapToInt(Map::size).sum();
+    final var expectedNumBalanceEntries =
+        numBalanceEntriesForTokens
+            + numAccounts /* A single native token transfer per account */
+            + 1 /* Validator's native tokens */
+            + numTokens /* For each created resource, some tokens are minted (owned by the validator) */;
+    assertEquals(expectedNumBalanceEntries, state.balances().size());
   }
 
-  private void makeRandomTokenTransfers(int numTokens, int transfersPerToken, List<REAddr> accounts)
+  private TransfersSummary makeRandomTokenTransfers(
+      int numTokens, int transfersPerToken, List<REAddr> accounts)
       throws RadixEngineException, TxBuilderException {
+    final Map<ECPublicKey, Map<REAddr, UInt256>> transfersByAccountAndResource = new HashMap<>();
     for (int i = 0; i < numTokens; i++) {
       final var tokenAddr = createMutableToken(VALIDATOR_KEY, UInt256.from(10_000_000_000L));
-      final var accountsForTransfer = new ArrayList<REAddr>();
+      final var transfersToMake = new ArrayList<Pair<REAddr, UInt256>>();
       for (int j = 0; j < transfersPerToken; j++) {
-        accountsForTransfer.add(accounts.get(rnd.nextInt(accounts.size())));
+        final var accountForTransfer = accounts.get(rnd.nextInt(accounts.size()));
+        final var transferAmount = UInt256.from(rnd.nextInt(1000) + 1); // Transfer 1 to 1000 tokens
+        transfersToMake.add(Pair.of(accountForTransfer, transferAmount));
+
+        // Collect the data for result summary
+        final var accountTransfersByResource =
+            transfersByAccountAndResource.computeIfAbsent(
+                accountForTransfer.publicKey().orElseThrow(), unused -> new HashMap<>());
+        final var accountTransfersForCurrentResource =
+            accountTransfersByResource.getOrDefault(tokenAddr, UInt256.ZERO);
+        final var accountTransfersForCurrentResourceNewValue =
+            accountTransfersForCurrentResource.add(transferAmount);
+        accountTransfersByResource.put(tokenAddr, accountTransfersForCurrentResourceNewValue);
       }
-      transferRandomAmtOfTokensToAccounts(VALIDATOR_KEY, tokenAddr, accountsForTransfer, 1000);
+      transferTokensToAccounts(VALIDATOR_KEY, tokenAddr, transfersToMake);
     }
+
+    return new TransfersSummary(transfersByAccountAndResource);
   }
 
   private List<REAddr> prepareTestAccounts(int num)
@@ -248,17 +307,19 @@ public final class StateIRSerializationTest {
     radixEngine.execute(List.of(txn));
   }
 
-  private void transferRandomAmtOfTokensToAccounts(
-      ECKeyPair sender, REAddr tokenAddr, List<REAddr> accounts, int maxAmount)
+  private void transferTokensToAccounts(
+      ECKeyPair sender, REAddr tokenAddr, List<Pair<REAddr, UInt256>> transfersToMake)
       throws TxBuilderException, RadixEngineException {
     final var senderAddr = REAddr.ofPubKeyAccount(sender.getPublicKey());
     final var actions =
-        accounts.stream()
+        transfersToMake.stream()
             .<TxAction>map(
-                account -> {
-                  final var amount = UInt256.from(rnd.nextInt(maxAmount) + 1);
-                  return new TxAction.TransferToken(tokenAddr, senderAddr, account, amount);
-                })
+                accountAndAmount ->
+                    new TxAction.TransferToken(
+                        tokenAddr,
+                        senderAddr,
+                        accountAndAmount.getFirst(),
+                        accountAndAmount.getSecond()))
             .toList();
 
     final var txn =
@@ -291,4 +352,7 @@ public final class StateIRSerializationTest {
         .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
         .toString();
   }
+
+  private record TransfersSummary(
+      Map<ECPublicKey, Map<REAddr, UInt256>> transfersByAccountAndResource) {}
 }
