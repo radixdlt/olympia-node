@@ -85,7 +85,6 @@ import com.radixdlt.api.core.handlers.MempoolHandler;
 import com.radixdlt.api.core.handlers.MempoolTransactionHandler;
 import com.radixdlt.api.core.handlers.NetworkConfigurationHandler;
 import com.radixdlt.api.core.handlers.NetworkStatusHandler;
-import com.radixdlt.api.core.handlers.OlympiaStateHandler;
 import com.radixdlt.api.core.handlers.TransactionsHandler;
 import com.radixdlt.api.core.handlers.VoteHandler;
 import com.radixdlt.api.core.handlers.WithdrawVoteHandler;
@@ -96,10 +95,6 @@ import io.undertow.server.HttpHandler;
 public class CoreApiModule extends AbstractModule {
   private final boolean transactionsEnable;
   private final boolean signEnable;
-
-  // Disabled by default because this is rather unsafe in the current form
-  // and only really meant for testing
-  private final boolean olympiaStateExportEnabled = false;
 
   public CoreApiModule(boolean transactionsEnable, boolean signEnable) {
     this.transactionsEnable = transactionsEnable;
@@ -156,10 +151,6 @@ public class CoreApiModule extends AbstractModule {
       routeBinder.addBinding(HandlerRoute.post("/key/sign")).to(KeySignHandler.class);
       routeBinder.addBinding(HandlerRoute.post("/key/vote")).to(VoteHandler.class);
       routeBinder.addBinding(HandlerRoute.post("/key/withdraw-vote")).to(WithdrawVoteHandler.class);
-    }
-
-    if (olympiaStateExportEnabled) {
-      routeBinder.addBinding(HandlerRoute.get("/olympia-state")).to(OlympiaStateHandler.class);
     }
   }
 }
