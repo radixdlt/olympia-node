@@ -89,7 +89,7 @@ public final class OlympiaStateIRInspectorCli {
     final var data = Hex.decode(content);
     final var uncompressed = Snappy.uncompress(data);
     try (final var bais = new ByteArrayInputStream(uncompressed)) {
-      final var state = new OlympiaStateIRDeserializer(bais).deserialize();
+      final var state = new OlympiaStateIRDeserializer().deserialize(bais);
       return new FileSummary(data.length, uncompressed.length, state);
     }
   }

@@ -178,7 +178,7 @@ public final class StateIRSerializationTest {
 
     // Check the serialization/deserialization pipeline
     try (final var bais = new ByteArrayInputStream(serialized)) {
-      final var deserialized = new OlympiaStateIRDeserializer(bais).deserialize();
+      final var deserialized = new OlympiaStateIRDeserializer().deserialize(bais);
       assertEquals(deserialized, state);
     }
 

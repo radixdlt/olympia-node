@@ -81,114 +81,125 @@ import java.util.stream.IntStream;
 /** A deserializer for the Olympia state IR (intermediate representation). */
 public final class OlympiaStateIRDeserializer {
 
-  private final ByteArrayInputStream bais;
-
-  public OlympiaStateIRDeserializer(ByteArrayInputStream bais) {
-    this.bais = Objects.requireNonNull(bais);
+  public OlympiaStateIR deserialize(ByteArrayInputStream bais) {
+    return new InternalStatefulOlympiaStateIRDeserializer(bais).deserialize();
   }
 
-  public OlympiaStateIR deserialize() {
-    final var validators = readValidators();
-    final var resources = readResources();
-    final var accounts = readAccounts();
-    final var balances = readBalances();
-    final var stakes = readStakes();
-    return new OlympiaStateIR(validators, resources, accounts, balances, stakes);
-  }
+  /**
+   * An internal state wrapper class so that `bais` doesn't need to be passed as a parameter to
+   * every single method. At the same time, because it's private, incorrect uses (multiple
+   * `deserialize` calls) are impossible.
+   */
+  private static final class InternalStatefulOlympiaStateIRDeserializer {
+    private final ByteArrayInputStream bais;
 
-  private ImmutableList<OlympiaStateIR.Validator> readValidators() {
-    return readList(this::readValidator);
-  }
-
-  private OlympiaStateIR.Validator readValidator() {
-    return new OlympiaStateIR.Validator(
-        readPublicKey(),
-        readString(),
-        readString(),
-        readBool(),
-        readBool(),
-        readUint256(),
-        readUint256(),
-        readInt(),
-        readInt());
-  }
-
-  private ImmutableList<OlympiaStateIR.Resource> readResources() {
-    return readList(this::readResource);
-  }
-
-  private OlympiaStateIR.Resource readResource() {
-    return new OlympiaStateIR.Resource(
-        readAddr(),
-        readUint256(),
-        readBool(),
-        readOptionalInt(),
-        readString(),
-        readString(),
-        readString(),
-        readString(),
-        readString());
-  }
-
-  private ImmutableList<OlympiaStateIR.Account> readAccounts() {
-    return readList(() -> new OlympiaStateIR.Account(readPublicKey()));
-  }
-
-  private ImmutableList<OlympiaStateIR.AccountBalance> readBalances() {
-    return readList(() -> new OlympiaStateIR.AccountBalance(readInt(), readInt(), readUint256()));
-  }
-
-  private ImmutableList<OlympiaStateIR.Stake> readStakes() {
-    return readList(() -> new OlympiaStateIR.Stake(readInt(), readInt(), readUint256()));
-  }
-
-  private <T> ImmutableList<T> readList(Supplier<T> supplier) {
-    final var size = readInt();
-    return IntStream.range(0, size)
-        .mapToObj(unused -> supplier.get())
-        .collect(ImmutableList.toImmutableList());
-  }
-
-  private REAddr readAddr() {
-    final var len = readNBytes(1)[0];
-    final var addrBytes = readNBytes(len);
-    return REAddr.of(addrBytes);
-  }
-
-  private ECPublicKey readPublicKey() {
-    try {
-      return ECPublicKey.fromBytes(readNBytes(ECPublicKey.COMPRESSED_BYTES));
-    } catch (PublicKeyException e) {
-      throw new OlympiaStateIRSerializationException("Failed to read public key", e);
+    private InternalStatefulOlympiaStateIRDeserializer(ByteArrayInputStream bais) {
+      this.bais = Objects.requireNonNull(bais);
     }
-  }
 
-  private Optional<Integer> readOptionalInt() {
-    return readBool() ? Optional.of(readInt()) : Optional.empty();
-  }
+    private OlympiaStateIR deserialize() {
+      final var validators = readValidators();
+      final var resources = readResources();
+      final var accounts = readAccounts();
+      final var balances = readBalances();
+      final var stakes = readStakes();
+      return new OlympiaStateIR(validators, resources, accounts, balances, stakes);
+    }
 
-  private int readInt() {
-    return Ints.fromByteArray(readNBytes(Integer.BYTES));
-  }
+    private ImmutableList<OlympiaStateIR.Validator> readValidators() {
+      return readList(this::readValidator);
+    }
 
-  private UInt256 readUint256() {
-    return UInt256.from(readNBytes(UInt256.BYTES));
-  }
+    private OlympiaStateIR.Validator readValidator() {
+      return new OlympiaStateIR.Validator(
+          readPublicKey(),
+          readString(),
+          readString(),
+          readBool(),
+          readBool(),
+          readUint256(),
+          readUint256(),
+          readInt(),
+          readInt());
+    }
 
-  private boolean readBool() {
-    return readNBytes(1)[0] == 0x01;
-  }
+    private ImmutableList<OlympiaStateIR.Resource> readResources() {
+      return readList(this::readResource);
+    }
 
-  private String readString() {
-    final var size = readInt();
-    return new String(readNBytes(size), StandardCharsets.UTF_8);
-  }
+    private OlympiaStateIR.Resource readResource() {
+      return new OlympiaStateIR.Resource(
+          readAddr(),
+          readUint256(),
+          readBool(),
+          readOptionalInt(),
+          readString(),
+          readString(),
+          readString(),
+          readString(),
+          readString());
+    }
 
-  private byte[] readNBytes(int len) {
-    try {
-      return bais.readNBytes(len);
-    } catch (IOException e) {
-      throw new OlympiaStateIRSerializationException("Failed to read bytes", e);
+    private ImmutableList<OlympiaStateIR.Account> readAccounts() {
+      return readList(() -> new OlympiaStateIR.Account(readPublicKey()));
+    }
+
+    private ImmutableList<OlympiaStateIR.AccountBalance> readBalances() {
+      return readList(() -> new OlympiaStateIR.AccountBalance(readInt(), readInt(), readUint256()));
+    }
+
+    private ImmutableList<OlympiaStateIR.Stake> readStakes() {
+      return readList(() -> new OlympiaStateIR.Stake(readInt(), readInt(), readUint256()));
+    }
+
+    private <T> ImmutableList<T> readList(Supplier<T> supplier) {
+      final var size = readInt();
+      return IntStream.range(0, size)
+          .mapToObj(unused -> supplier.get())
+          .collect(ImmutableList.toImmutableList());
+    }
+
+    private REAddr readAddr() {
+      final var len = readNBytes(1)[0];
+      final var addrBytes = readNBytes(len);
+      return REAddr.of(addrBytes);
+    }
+
+    private ECPublicKey readPublicKey() {
+      try {
+        return ECPublicKey.fromBytes(readNBytes(ECPublicKey.COMPRESSED_BYTES));
+      } catch (PublicKeyException e) {
+        throw new OlympiaStateIRSerializationException("Failed to read public key", e);
+      }
+    }
+
+    private Optional<Integer> readOptionalInt() {
+      return readBool() ? Optional.of(readInt()) : Optional.empty();
+    }
+
+    private int readInt() {
+      return Ints.fromByteArray(readNBytes(Integer.BYTES));
+    }
+
+    private UInt256 readUint256() {
+      return UInt256.from(readNBytes(UInt256.BYTES));
+    }
+
+    private boolean readBool() {
+      return readNBytes(1)[0] == 0x01;
+    }
+
+    private String readString() {
+      final var size = readInt();
+      return new String(readNBytes(size), StandardCharsets.UTF_8);
+    }
+
+    private byte[] readNBytes(int len) {
+      try {
+        return bais.readNBytes(len);
+      } catch (IOException e) {
+        throw new OlympiaStateIRSerializationException("Failed to read bytes", e);
+      }
     }
   }
 }
