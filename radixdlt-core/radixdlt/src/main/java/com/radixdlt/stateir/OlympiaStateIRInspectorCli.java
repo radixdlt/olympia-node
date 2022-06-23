@@ -64,7 +64,6 @@
 
 package com.radixdlt.stateir;
 
-import com.radixdlt.crypto.exception.PublicKeyException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -74,7 +73,7 @@ import org.xerial.snappy.Snappy;
 
 public final class OlympiaStateIRInspectorCli {
 
-  public static void main(String[] args) throws IOException, PublicKeyException {
+  public static void main(String[] args) throws IOException {
     if (args.length != 1) {
       System.out.println("Usage: ./olympia-state-inspector <path-to-hex-encoded-file>");
       System.exit(-1);

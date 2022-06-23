@@ -159,24 +159,9 @@ public final class StateIRSerializationTest {
     final var numTokens = 10;
     final var transfersPerToken = 100;
 
-    final var accounts =
-        IntStream.range(0, numAccounts)
-            .mapToObj(unused -> REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey()))
-            .toList();
+    final var accounts = prepareTestAccounts(numAccounts);
 
-    for (REAddr accountAddr : accounts) {
-      transfer1Rad(VALIDATOR_KEY, accountAddr);
-    }
-
-    for (int i = 0; i < numTokens; i++) {
-      final var tokenAddr = createMutableToken(VALIDATOR_KEY, UInt256.from(10_000_000_000L));
-      final var accountsForTransfer = new ArrayList<REAddr>();
-      for (int j = 0; j < transfersPerToken; j++) {
-        accountsForTransfer.add(accounts.get(rnd.nextInt(accounts.size())));
-      }
-
-      transferRandomAmtOfTokensToAccounts(VALIDATOR_KEY, tokenAddr, accountsForTransfer, 1000);
-    }
+    makeRandomTokenTransfers(numTokens, transfersPerToken, accounts);
 
     final var substateDeserialization =
         forks.newestFork().engineRules().parser().getSubstateDeserialization();
@@ -185,12 +170,39 @@ public final class StateIRSerializationTest {
         ledgerEntryStore.transaction(
             tx -> new StateIRConstructor(tx, substateDeserialization).prepareOlympiaStateIR());
 
-    final var serialized = OlympiaStateIRSerializer.serialize(state);
+    final var serialized = new OlympiaStateIRSerializer().serialize(state);
 
     try (final var bais = new ByteArrayInputStream(serialized)) {
       final var deserialized = new OlympiaStateIRDeserializer(bais).deserialize();
       assertEquals(deserialized, state);
     }
+  }
+
+  private void makeRandomTokenTransfers(int numTokens, int transfersPerToken, List<REAddr> accounts)
+      throws RadixEngineException, TxBuilderException {
+    for (int i = 0; i < numTokens; i++) {
+      final var tokenAddr = createMutableToken(VALIDATOR_KEY, UInt256.from(10_000_000_000L));
+      final var accountsForTransfer = new ArrayList<REAddr>();
+      for (int j = 0; j < transfersPerToken; j++) {
+        accountsForTransfer.add(accounts.get(rnd.nextInt(accounts.size())));
+      }
+      transferRandomAmtOfTokensToAccounts(VALIDATOR_KEY, tokenAddr, accountsForTransfer, 1000);
+    }
+  }
+
+  private List<REAddr> prepareTestAccounts(int num)
+      throws RadixEngineException, TxBuilderException {
+    final var addresses =
+        IntStream.range(0, num)
+            .mapToObj(unused -> REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey()))
+            .toList();
+
+    // Transfer 1 rad to each account so that they're actually "created" on ledger
+    for (REAddr accountAddr : addresses) {
+      transfer1Rad(VALIDATOR_KEY, accountAddr);
+    }
+
+    return addresses;
   }
 
   private REAddr createMutableToken(ECKeyPair sender, UInt256 amount)
