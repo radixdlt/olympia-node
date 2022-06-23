@@ -87,7 +87,7 @@ public record OlympiaStateIR(
       UInt256 totalStakedXrd,
       UInt256 totalStakeUnits,
       int feeProportionInTenThousandths,
-      Integer ownerAccountIndex) {}
+      int ownerAccountIndex) {}
 
   public record Resource(
       REAddr addr,
