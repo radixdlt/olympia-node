@@ -62,23 +62,10 @@
  * permissions under this License.
  */
 
-package com.radixdlt.utils;
+package com.radixdlt.stateir;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import java.util.List;
-import java.util.function.Function;
-import java.util.stream.IntStream;
-
-public final class Lists {
-  public static <T> ImmutableList<T> tail(ImmutableList<T> list) {
-    return list.stream().skip(1).collect(ImmutableList.toImmutableList());
-  }
-
-  public static <T, O> ImmutableMap<O, Integer> toIndexedMap(
-      List<T> coll, Function<T, O> keyMapper) {
-    return IntStream.range(0, coll.size())
-        .boxed()
-        .collect(ImmutableMap.toImmutableMap(i -> keyMapper.apply(coll.get(i)), i -> i));
+public final class OlympiaStateIRSerializationException extends RuntimeException {
+  public OlympiaStateIRSerializationException(String message, Throwable cause) {
+    super(message, cause);
   }
 }

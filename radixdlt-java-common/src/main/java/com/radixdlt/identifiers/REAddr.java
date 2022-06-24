@@ -206,15 +206,6 @@ public final class REAddr {
     return Arrays.copyOfRange(hash.asBytes(), 32 - HASHED_KEY_BYTES, 32);
   }
 
-  public boolean allowToClaimAddress(ECPublicKey publicKey, byte[] arg) {
-    if (addr[0] == REAddrType.HASHED_KEY.type) {
-      var hash = REAddr.pkToHash(new String(arg), publicKey);
-      return Arrays.equals(addr, 1, HASHED_KEY_BYTES + 1, hash, 0, HASHED_KEY_BYTES);
-    }
-
-    return false;
-  }
-
   public boolean isAccount() {
     return getType() == REAddrType.PUB_KEY;
   }

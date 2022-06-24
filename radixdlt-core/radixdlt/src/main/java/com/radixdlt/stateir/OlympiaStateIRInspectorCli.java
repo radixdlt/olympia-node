@@ -62,23 +62,49 @@
  * permissions under this License.
  */
 
-package com.radixdlt.utils;
+package com.radixdlt.stateir;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import java.util.List;
-import java.util.function.Function;
-import java.util.stream.IntStream;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.bouncycastle.util.encoders.Hex;
+import org.xerial.snappy.Snappy;
 
-public final class Lists {
-  public static <T> ImmutableList<T> tail(ImmutableList<T> list) {
-    return list.stream().skip(1).collect(ImmutableList.toImmutableList());
+public final class OlympiaStateIRInspectorCli {
+
+  public static void main(String[] args) throws IOException {
+    if (args.length != 1) {
+      System.out.println("Usage: ./olympia-state-inspector <path-to-hex-encoded-file>");
+      System.exit(-1);
+    }
+
+    final var path = Path.of(args[0]);
+    final var state = loadFromFile(path);
+    printSummary(state);
   }
 
-  public static <T, O> ImmutableMap<O, Integer> toIndexedMap(
-      List<T> coll, Function<T, O> keyMapper) {
-    return IntStream.range(0, coll.size())
-        .boxed()
-        .collect(ImmutableMap.toImmutableMap(i -> keyMapper.apply(coll.get(i)), i -> i));
+  private static FileSummary loadFromFile(Path path) throws IOException {
+    final var content = Files.readString(path);
+    final var data = Hex.decode(content);
+    final var uncompressed = Snappy.uncompress(data);
+    try (final var bais = new ByteArrayInputStream(uncompressed)) {
+      final var state = new OlympiaStateIRDeserializer().deserialize(bais);
+      return new FileSummary(data.length, uncompressed.length, state);
+    }
   }
+
+  private static void printSummary(FileSummary fileSummary) {
+    final var state = fileSummary.state;
+
+    System.out.println("compressed size:   " + fileSummary.compressedSize);
+    System.out.println("uncompressed size: " + fileSummary.uncompressedSize);
+    System.out.println("# validators:      " + state.validators().size());
+    System.out.println("# accounts:        " + state.accounts().size());
+    System.out.println("# resources:       " + state.resources().size());
+    System.out.println("# balances:        " + state.balances().size());
+    System.out.println("# stakes:          " + state.stakes().size());
+  }
+
+  private record FileSummary(int compressedSize, int uncompressedSize, OlympiaStateIR state) {}
 }

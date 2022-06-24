@@ -292,6 +292,16 @@ tasks.getByName("createGenerateNodeKeyScripts") {
 }
 tasks.getByName("startScripts").dependsOn createGenerateNodeKeyScripts
 
+task createOlympiaStateInspectorCli(type: CreateStartScripts) {
+    mainClassName = 'com.radixdlt.stateir.OlympiaStateIRInspectorCli'
+    applicationName = 'olympia-state-inspector'
+}
+
+tasks.getByName("createOlympiaStateInspectorCli").outputDir = tasks.getByName("startScripts").outputDir
+tasks.getByName("createOlympiaStateInspectorCli").classpath = tasks.getByName("startScripts").classpath
+tasks.getByName("createOlympiaStateInspectorCli").optsEnvironmentVar = tasks.getByName("startScripts").optsEnvironmentVar
+tasks.getByName("startScripts").dependsOn createOlympiaStateInspectorCli
+
 ospackage {
     os = LINUX
 
