@@ -190,9 +190,9 @@ public final class MainnetForksModule extends AbstractModule {
             (long) 1024 * 1024, // 1MB max user transaction size
             OptionalInt.of(50), // 50 Txns per round
             10_000, // Rounds per epoch
-            500, // Two weeks worth of epochs
+            500, // Validator fee increases take effect after 500 epochs (roughly two weeks)
             Amount.ofTokens(90), // 90XRD Minimum stake
-            500, // Two weeks worth of epochs
+            500, // Unstakes are unlocked after 500 epochs without changes (roughly two weeks)
             Amount.ofMilliTokens(1797), // 1.797XRD Rewards per proposal
             9800, // 98.00% threshold for completed proposals to get any rewards
             100, // 100 max validators
