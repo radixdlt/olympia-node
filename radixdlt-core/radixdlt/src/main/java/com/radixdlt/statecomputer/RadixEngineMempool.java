@@ -123,6 +123,10 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 
   @Override
   public REProcessedTxn add(Txn txn) throws MempoolRejectedException {
+    if (radixEngine.isShutdown()) {
+      throw new MempoolRejectedException("The engine is shut down");
+    }
+
     if (this.data.size() >= maxSize) {
       throw new MempoolFullException(this.data.size(), maxSize);
     }
@@ -190,6 +194,10 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 
   @Override
   public List<Txn> getTxns(int count, List<REProcessedTxn> prepared) {
+    if (this.radixEngine.isShutdown()) {
+      return List.of();
+    }
+
     // TODO: Order by highest fees paid
     var copy = new TreeSet<>(data.keySet());
     prepared.stream()

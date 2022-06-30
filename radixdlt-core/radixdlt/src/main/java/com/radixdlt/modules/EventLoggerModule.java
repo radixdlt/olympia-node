@@ -188,11 +188,12 @@ public final class EventLoggerModule extends AbstractModule {
   private static void logEpochChange(BFTNode self, EpochChange epochChange) {
     var validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
     logger.info(
-        "lgr_nepoch{epoch={} included={} num_validators={} total_stake={}}",
+        "lgr_nepoch{epoch={} included={} num_validators={} total_stake={}{}}",
         epochChange.getEpoch(),
         validatorSet.containsNode(self),
         validatorSet.getValidators().size(),
-        Amount.ofSubunits(validatorSet.getTotalPower()));
+        Amount.ofSubunits(validatorSet.getTotalPower()),
+        epochChange.isShutdown() ? " shutdown" : "");
   }
 
   private static long countUserTxns(REOutput output) {

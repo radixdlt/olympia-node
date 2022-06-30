@@ -131,7 +131,27 @@ public final class RadixEngine<M> {
   private REConstructor actionConstructors;
   private ConstraintMachine constraintMachine;
 
+  private boolean isShutdown;
+
   // Used only in tests
+  public RadixEngine(
+      REParser parser,
+      SubstateSerialization serialization,
+      REConstructor actionConstructors,
+      ConstraintMachine constraintMachine,
+      EngineStore<M> engineStore,
+      boolean isShutdown) {
+    this(
+        parser,
+        serialization,
+        actionConstructors,
+        constraintMachine,
+        engineStore,
+        PostProcessor.empty(),
+        255,
+        isShutdown);
+  }
+
   public RadixEngine(
       REParser parser,
       SubstateSerialization serialization,
@@ -145,7 +165,8 @@ public final class RadixEngine<M> {
         constraintMachine,
         engineStore,
         PostProcessor.empty(),
-        255);
+        255,
+        false);
   }
 
   public RadixEngine(
@@ -156,6 +177,26 @@ public final class RadixEngine<M> {
       EngineStore<M> engineStore,
       PostProcessor<M> postProcessor,
       int maxMessageLen) {
+    this(
+        parser,
+        serialization,
+        actionConstructors,
+        constraintMachine,
+        engineStore,
+        postProcessor,
+        maxMessageLen,
+        false);
+  }
+
+  public RadixEngine(
+      REParser parser,
+      SubstateSerialization serialization,
+      REConstructor actionConstructors,
+      ConstraintMachine constraintMachine,
+      EngineStore<M> engineStore,
+      PostProcessor<M> postProcessor,
+      int maxMessageLen,
+      boolean isShutdown) {
     this.parser = Objects.requireNonNull(parser);
     this.serialization = Objects.requireNonNull(serialization);
     this.actionConstructors = Objects.requireNonNull(actionConstructors);
@@ -163,6 +204,7 @@ public final class RadixEngine<M> {
     this.engineStore = Objects.requireNonNull(engineStore);
     this.postProcessor = postProcessor;
     this.maxMessageLen = maxMessageLen;
+    this.isShutdown = isShutdown;
   }
 
   public void replaceConstraintMachine(
@@ -196,7 +238,9 @@ public final class RadixEngine<M> {
         REConstructor actionToConstructorMap,
         ConstraintMachine constraintMachine,
         EngineStore<M> parentStore,
-        int maxMessageLen) {
+        int maxMessageLen,
+        boolean isShutdown) {
+
       var transientEngineStore = new TransientEngineStore<>(parentStore);
 
       this.engine =
@@ -207,7 +251,8 @@ public final class RadixEngine<M> {
               constraintMachine,
               transientEngineStore,
               PostProcessor.empty(),
-              maxMessageLen);
+              maxMessageLen,
+              isShutdown);
     }
 
     private void delete() {
@@ -259,7 +304,8 @@ public final class RadixEngine<M> {
               this.actionConstructors,
               this.constraintMachine,
               this.engineStore,
-              this.maxMessageLen);
+              this.maxMessageLen,
+              this.isShutdown);
 
       branches.add(branch);
 
@@ -329,14 +375,19 @@ public final class RadixEngine<M> {
   public RadixEngineResult<M> execute(
       List<Txn> txns, Optional<M> meta, PermissionLevel permissionLevel, boolean skipAuthorization)
       throws RadixEngineException {
+    if (isShutdown) {
+      return RadixEngineResult.create(List.of(), meta.orElse(null), 0, 0);
+    }
+
     synchronized (stateUpdateEngineLock) {
       if (!branches.isEmpty()) {
         throw new IllegalStateException(
             String.format(
                 "%s transient branches still exist. Must delete branches before storing additional"
-                    + " atoms.",
+                    + " transactions.",
                 branches.size()));
       }
+
       return engineStore.transaction(
           store -> executeInternal(store, txns, meta, permissionLevel, skipAuthorization));
     }
@@ -418,6 +469,10 @@ public final class RadixEngine<M> {
 
   private TxBuilder construct(TxBuilderExecutable executable, Set<SubstateId> avoid)
       throws TxBuilderException {
+    if (isShutdown) {
+      throw new EngineShutdownException();
+    }
+
     synchronized (stateUpdateEngineLock) {
       SubstateStore filteredStore =
           new SubstateStore() {
@@ -644,5 +699,14 @@ public final class RadixEngine<M> {
             }
           });
     }
+  }
+
+  public void shutdown() {
+    this.isShutdown = true;
+    deleteBranches();
+  }
+
+  public boolean isShutdown() {
+    return isShutdown;
   }
 }

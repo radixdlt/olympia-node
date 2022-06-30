@@ -121,6 +121,7 @@ import com.radixdlt.hotstuff.sync.VertexRequestTimeout;
 import com.radixdlt.hotstuff.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.TimeSupplier;
@@ -234,8 +235,11 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @Provides
   private EpochChange initialEpoch(
-      @LastEpochProof LedgerProof proof, BFTConfiguration initialBFTConfig) {
-    return new EpochChange(proof, initialBFTConfig);
+      @LastEpochProof LedgerProof proof,
+      BFTConfiguration initialBFTConfig,
+      CurrentForkView currentForkView) {
+    return new EpochChange(
+        proof, initialBFTConfig, currentForkView.currentForkConfig().isShutdown());
   }
 
   @ProvidesIntoSet

@@ -62,46 +62,53 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.forks;
+package com.radixdlt.integration.steady_state.simulation.full_function_forks;
 
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.constraintmachine.ConstraintMachineConfig;
-import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.engine.PostProcessor;
-import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.hotstuff.bft.View;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import java.util.OptionalInt;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-public record RERules(
-    RERulesVersion version,
-    REParser parser,
-    SubstateSerialization serialization,
-    ConstraintMachineConfig constraintMachineConfig,
-    REConstructor actionConstructors,
-    PostProcessor<LedgerAndBFTProof> postProcessor,
-    RERulesConfig config) {
+import com.radixdlt.harness.simulation.NetworkLatencies;
+import com.radixdlt.harness.simulation.NetworkOrdering;
+import com.radixdlt.harness.simulation.SimulationTest;
+import com.radixdlt.harness.simulation.SimulationTest.Builder;
+import com.radixdlt.harness.simulation.application.RadixEngineUniqueGenerator;
+import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
+import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.sync.SyncConfig;
+import java.time.Duration;
+import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.Test;
 
-  public View maxRounds() {
-    return View.of(config.maxRounds());
+public final class ShutdownForkSanityTest {
+  private final Builder bftTestBuilder;
+
+  public ShutdownForkSanityTest() {
+    bftTestBuilder =
+        SimulationTest.builder()
+            .numNodes(4)
+            .pacemakerTimeout(3000)
+            .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+            .fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
+            .addRadixEngineConfigModules(new ShutdownForkModule(), new ForksModule())
+            .addNodeModule(MempoolConfig.asModule(1000, 10))
+            .addTestModules(
+                ConsensusMonitors.safety(),
+                ConsensusMonitors.noTimeouts(),
+                ConsensusMonitors.directParents(),
+                LedgerMonitors.consensusToLedger(),
+                LedgerMonitors.ordered(),
+                RadixEngineMonitors.noInvalidProposedCommands())
+            .addMempoolSubmissionsSteadyState(RadixEngineUniqueGenerator.class);
   }
 
-  public OptionalInt maxSigsPerRound() {
-    return config.maxSigsPerRound();
-  }
+  @Test
+  public void sanity_tests_should_pass() {
+    final var simulationTest = bftTestBuilder.build();
 
-  public int maxValidators() {
-    return config.maxValidators();
-  }
-
-  public RERules addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
-    return new RERules(
-        version,
-        parser,
-        serialization,
-        constraintMachineConfig,
-        actionConstructors,
-        PostProcessor.append(postProcessor, newPostProcessor),
-        config);
+    final var results = simulationTest.run(Duration.ofSeconds(20)).awaitCompletion();
+    assertThat(results)
+        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
   }
 }

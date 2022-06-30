@@ -62,46 +62,12 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.forks;
+package com.radixdlt.engine;
 
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.constraintmachine.ConstraintMachineConfig;
-import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.engine.PostProcessor;
-import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.hotstuff.bft.View;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import java.util.OptionalInt;
+import com.radixdlt.atom.TxBuilderException;
 
-public record RERules(
-    RERulesVersion version,
-    REParser parser,
-    SubstateSerialization serialization,
-    ConstraintMachineConfig constraintMachineConfig,
-    REConstructor actionConstructors,
-    PostProcessor<LedgerAndBFTProof> postProcessor,
-    RERulesConfig config) {
-
-  public View maxRounds() {
-    return View.of(config.maxRounds());
-  }
-
-  public OptionalInt maxSigsPerRound() {
-    return config.maxSigsPerRound();
-  }
-
-  public int maxValidators() {
-    return config.maxValidators();
-  }
-
-  public RERules addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
-    return new RERules(
-        version,
-        parser,
-        serialization,
-        constraintMachineConfig,
-        actionConstructors,
-        PostProcessor.append(postProcessor, newPostProcessor),
-        config);
+public final class EngineShutdownException extends TxBuilderException {
+  public EngineShutdownException() {
+    super("Unable to construct transaction, the engine is shut down.");
   }
 }

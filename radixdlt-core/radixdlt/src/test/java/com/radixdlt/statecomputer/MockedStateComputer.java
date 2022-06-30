@@ -144,7 +144,7 @@ public final class MockedStateComputer implements StateComputer {
                   var proposerElection = new WeightedRotatingLeaders(validatorSet);
                   var bftConfiguration =
                       new BFTConfiguration(proposerElection, validatorSet, initialState);
-                  return new EpochChange(header, bftConfiguration);
+                  return new EpochChange(header, bftConfiguration, false);
                 })
             .map(e -> ImmutableClassToInstanceMap.<Object, EpochChange>of(EpochChange.class, e))
             .orElse(ImmutableClassToInstanceMap.of());

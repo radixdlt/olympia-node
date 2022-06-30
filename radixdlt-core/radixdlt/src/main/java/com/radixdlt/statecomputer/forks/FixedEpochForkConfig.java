@@ -67,8 +67,12 @@ package com.radixdlt.statecomputer.forks;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
-public record FixedEpochForkConfig(String name, RERules engineRules, long epoch)
+public record FixedEpochForkConfig(String name, RERules engineRules, long epoch, boolean isShutdown)
     implements ForkConfig {
+
+  public FixedEpochForkConfig(String name, RERules engineRules, long epoch) {
+    this(name, engineRules, epoch, false);
+  }
 
   public FixedEpochForkConfig {
     if (name.getBytes(ForkConfig.FORK_NAME_CHARSET).length > 16) {
@@ -78,6 +82,7 @@ public record FixedEpochForkConfig(String name, RERules engineRules, long epoch)
 
   @Override
   public FixedEpochForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
-    return new FixedEpochForkConfig(name, engineRules.addPostProcessor(newPostProcessor), epoch);
+    return new FixedEpochForkConfig(
+        name, engineRules.addPostProcessor(newPostProcessor), epoch, isShutdown);
   }
 }

@@ -77,5 +77,7 @@ public interface ForkConfig {
 
   RERules engineRules();
 
+  boolean isShutdown();
+
   ForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor);
 }
