@@ -146,7 +146,8 @@ public class RadixEngineModule extends AbstractModule {
   @Singleton
   private RadixEngine<LedgerAndBFTProof> getRadixEngine(
       EngineStore<LedgerAndBFTProof> engineStore, CurrentForkView currentForkView) {
-    final var rules = currentForkView.currentForkConfig().engineRules();
+    final var currentForkConfig = currentForkView.currentForkConfig();
+    final var rules = currentForkConfig.engineRules();
     final var cmConfig = rules.constraintMachineConfig();
     var cm =
         new ConstraintMachine(
@@ -154,14 +155,21 @@ public class RadixEngineModule extends AbstractModule {
             cmConfig.getDeserialization(),
             cmConfig.getVirtualSubstateDeserialization(),
             cmConfig.getMeter());
-    return new RadixEngine<>(
-        rules.parser(),
-        rules.serialization(),
-        rules.actionConstructors(),
-        cm,
-        engineStore,
-        rules.postProcessor(),
-        rules.config().maxMessageLen());
+    final var radixEngine =
+        new RadixEngine<>(
+            rules.parser(),
+            rules.serialization(),
+            rules.actionConstructors(),
+            cm,
+            engineStore,
+            rules.postProcessor(),
+            rules.config().maxMessageLen());
+
+    if (currentForkConfig.isShutdown()) {
+      radixEngine.shutdown();
+    }
+
+    return radixEngine;
   }
 
   @ProvidesIntoSet
