@@ -66,7 +66,6 @@ package com.radixdlt.statecomputer.forks.modules;
 
 import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.system.FeeTable;
@@ -79,7 +78,6 @@ import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.statecomputer.forks.CandidateForkConfig;
 import com.radixdlt.statecomputer.forks.ForkBuilder;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RERulesVersion;
@@ -162,9 +160,7 @@ public final class MainnetForksModule extends AbstractModule {
   ForkBuilder olympiaRadixProtocolFork1() {
     return new ForkBuilder(
         "olympia-rpf-001",
-        ImmutableSet.of(new CandidateForkConfig.Threshold((short) 8500, 320)),
         14493,
-        15224,
         RERulesVersion.OLYMPIA_V1,
         new RERulesConfig(
             RESERVED_SYMBOLS,
