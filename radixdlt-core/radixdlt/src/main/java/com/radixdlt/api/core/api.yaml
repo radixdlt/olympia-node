@@ -2300,6 +2300,7 @@ components:
       required:
         - engine_state_identifier
         - validator_set
+        - is_shut_down
       properties:
         engine_state_identifier:
           $ref: "#/components/schemas/EngineStateIdentifier"
@@ -2309,6 +2310,8 @@ components:
             $ref: "#/components/schemas/Validator"
         upcoming_fork:
           $ref: "#/components/schemas/UpcomingFork"
+        is_shut_down:
+          type: boolean
     ForksVotingResultsRequest:
       type: object
       required:

@@ -117,8 +117,7 @@ public final class PeersForksInfoServiceTest {
     final var initialValidators = List.of(BFTValidator.from(initialValidator, UInt256.ONE));
     final var bftConfiguration = mock(BFTConfiguration.class);
     when(bftConfiguration.getValidatorSet()).thenReturn(BFTValidatorSet.from(initialValidators));
-    final var initialEpochChange =
-        new EpochChange(mock(LedgerProof.class), bftConfiguration, false);
+    final var initialEpochChange = new EpochChange(mock(LedgerProof.class), bftConfiguration);
     final var peersForksInfoService = new PeersForksInfoService(forks, initialEpochChange);
 
     assertTrue(peersForksInfoService.getUnknownReportedForks().isEmpty());
@@ -153,7 +152,7 @@ public final class PeersForksInfoServiceTest {
     final var nextValidators = List.of(BFTValidator.from(nextValidator, UInt256.ONE));
     final var newBftConfig = mock(BFTConfiguration.class);
     when(newBftConfig.getValidatorSet()).thenReturn(BFTValidatorSet.from(nextValidators));
-    final var newEpochChange = new EpochChange(mock(LedgerProof.class), newBftConfig, false);
+    final var newEpochChange = new EpochChange(mock(LedgerProof.class), newBftConfig);
     final var ledgerUpdate =
         new LedgerUpdate(
             mock(VerifiedTxnsAndProof.class),

@@ -87,7 +87,7 @@ public class EpochChangeTest {
     when(proof.getEpoch()).thenReturn(323L);
     this.configuration = mock(BFTConfiguration.class);
 
-    this.epochChange = new EpochChange(proof, configuration, false);
+    this.epochChange = new EpochChange(proof, configuration);
   }
 
   @Test

@@ -166,7 +166,7 @@ public class RadixEngineModule extends AbstractModule {
             rules.config().maxMessageLen());
 
     if (currentForkConfig.isShutdown()) {
-      radixEngine.shutdown();
+      radixEngine.shutDown();
     }
 
     return radixEngine;

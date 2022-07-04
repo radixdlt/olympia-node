@@ -78,8 +78,9 @@ import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.engine.EngineShutdownException;
+import com.radixdlt.engine.EngineShutdownTxBuilderException;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.hotstuff.LedgerProof;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
@@ -147,7 +148,7 @@ public final class RadixEngineShutdownTest {
             .signAndBuild(VALIDATOR_KEY::sign);
 
     final var res = radixEngine.execute(List.of(txnConstructedAndExecutedBeforeShutdown));
-    assertEquals(1L, res.getProcessedTxns().size());
+    assertEquals(1, res.getProcessedTxns().size());
 
     // Construct before shutdown but execute after
     final var txnConstructedButNotExecutedBeforeShutdown =
@@ -155,14 +156,15 @@ public final class RadixEngineShutdownTest {
             .construct(createMutableTokenTxnReq(VALIDATOR_KEY, UInt256.TEN, "t2"))
             .signAndBuild(VALIDATOR_KEY::sign);
 
-    radixEngine.shutdown();
+    radixEngine.shutDown();
 
     // Can't execute an already constructed txn
-    final var res2 = radixEngine.execute(List.of(txnConstructedButNotExecutedBeforeShutdown));
-    assertEquals(0L, res2.getProcessedTxns().size());
+    assertThrows(
+        RadixEngineException.class,
+        () -> radixEngine.execute(List.of(txnConstructedButNotExecutedBeforeShutdown)));
 
     assertThrows(
-        EngineShutdownException.class,
+        EngineShutdownTxBuilderException.class,
         () ->
             radixEngine
                 .construct(createMutableTokenTxnReq(VALIDATOR_KEY, UInt256.TEN, "t3"))

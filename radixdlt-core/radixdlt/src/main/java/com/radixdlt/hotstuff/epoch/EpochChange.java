@@ -80,6 +80,10 @@ public final class EpochChange {
     this.isShutdown = isShutdown;
   }
 
+  public EpochChange(LedgerProof proof, BFTConfiguration bftConfiguration) {
+    this(proof, bftConfiguration, false);
+  }
+
   public BFTConfiguration getBFTConfiguration() {
     return bftConfiguration;
   }

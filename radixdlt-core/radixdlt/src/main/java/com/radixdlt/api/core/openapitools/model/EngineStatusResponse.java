@@ -28,7 +28,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   EngineStatusResponse.JSON_PROPERTY_ENGINE_STATE_IDENTIFIER,
   EngineStatusResponse.JSON_PROPERTY_VALIDATOR_SET,
-  EngineStatusResponse.JSON_PROPERTY_UPCOMING_FORK
+  EngineStatusResponse.JSON_PROPERTY_UPCOMING_FORK,
+  EngineStatusResponse.JSON_PROPERTY_IS_SHUT_DOWN
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-03-25T15:26:03.075102278+01:00[Europe/Warsaw]")
 public class EngineStatusResponse {
@@ -40,6 +41,9 @@ public class EngineStatusResponse {
 
   public static final String JSON_PROPERTY_UPCOMING_FORK = "upcoming_fork";
   private UpcomingFork upcomingFork;
+
+  public static final String JSON_PROPERTY_IS_SHUT_DOWN = "is_shut_down";
+  private boolean isShutDown;
 
   public EngineStatusResponse engineStateIdentifier(EngineStateIdentifier engineStateIdentifier) {
     this.engineStateIdentifier = engineStateIdentifier;
@@ -123,6 +127,29 @@ public class EngineStatusResponse {
     this.upcomingFork = upcomingFork;
   }
 
+  public EngineStatusResponse isShutDown(boolean isShutDown) {
+    this.isShutDown = isShutDown;
+    return this;
+  }
+
+  /**
+   * Get isShutDown
+   * @return isShutDown
+   **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_IS_SHUT_DOWN)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public boolean isShutDown() {
+    return isShutDown;
+  }
+
+  @JsonProperty(JSON_PROPERTY_IS_SHUT_DOWN)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setShutDown(boolean isShutDown) {
+    this.isShutDown = isShutDown;
+  }
+
 
   /**
    * Return true if this EngineStatusResponse object is equal to o.
@@ -138,12 +165,13 @@ public class EngineStatusResponse {
     EngineStatusResponse engineStatusResponse = (EngineStatusResponse) o;
     return Objects.equals(this.engineStateIdentifier, engineStatusResponse.engineStateIdentifier) &&
         Objects.equals(this.validatorSet, engineStatusResponse.validatorSet) &&
-        Objects.equals(this.upcomingFork, engineStatusResponse.upcomingFork);
+        Objects.equals(this.upcomingFork, engineStatusResponse.upcomingFork) &&
+        this.isShutDown == engineStatusResponse.isShutDown;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(engineStateIdentifier, validatorSet, upcomingFork);
+    return Objects.hash(engineStateIdentifier, validatorSet, upcomingFork, isShutDown);
   }
 
   @Override
@@ -153,6 +181,7 @@ public class EngineStatusResponse {
     sb.append("    engineStateIdentifier: ").append(toIndentedString(engineStateIdentifier)).append("\n");
     sb.append("    validatorSet: ").append(toIndentedString(validatorSet)).append("\n");
     sb.append("    upcomingFork: ").append(toIndentedString(upcomingFork)).append("\n");
+    sb.append("    isShutDown: ").append(toIndentedString(isShutDown)).append("\n");
     sb.append("}");
     return sb.toString();
   }

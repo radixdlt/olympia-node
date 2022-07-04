@@ -171,8 +171,7 @@ public final class StateIRSerializationTest {
         forks.newestFork().engineRules().parser().getSubstateDeserialization();
 
     final var state =
-        ledgerEntryStore.transaction(
-            tx -> new StateIRConstructor(tx, substateDeserialization).prepareOlympiaStateIR());
+        new StateIRConstructor(ledgerEntryStore, substateDeserialization).prepareOlympiaStateIR();
 
     final var serialized = new OlympiaStateIRSerializer().serialize(state);
 

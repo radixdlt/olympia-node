@@ -62,12 +62,70 @@
  * permissions under this License.
  */
 
-package com.radixdlt.engine;
+package com.radixdlt.api.endstate;
 
-import com.radixdlt.atom.TxBuilderException;
+import com.google.inject.Inject;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
+import com.radixdlt.stateir.OlympiaStateIRSerializer;
+import com.radixdlt.stateir.StateIRConstructor;
+import com.radixdlt.store.EngineStore;
+import com.radixdlt.utils.Bytes;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import java.io.IOException;
+import java.util.Objects;
+import java.util.Optional;
+import org.xerial.snappy.Snappy;
 
-public final class EngineShutdownException extends TxBuilderException {
-  public EngineShutdownException() {
-    super("Unable to construct transaction, the engine is shut down.");
+public final class OlympiaEndStateHandler implements HttpHandler {
+  private final RadixEngine<LedgerAndBFTProof> radixEngine;
+  private final EngineStore<LedgerAndBFTProof> engineStore;
+  private final CurrentForkView currentForkView;
+
+  private Optional<byte[]> cachedCompressedEndStateBytes = Optional.empty();
+
+  @Inject
+  OlympiaEndStateHandler(
+      RadixEngine<LedgerAndBFTProof> radixEngine,
+      EngineStore<LedgerAndBFTProof> engineStore,
+      CurrentForkView currentForkView) {
+    this.radixEngine = Objects.requireNonNull(radixEngine);
+    this.engineStore = Objects.requireNonNull(engineStore);
+    this.currentForkView = currentForkView;
+  }
+
+  @Override
+  public void handleRequest(HttpServerExchange exchange) throws Exception {
+    if (!radixEngine.isShutDown()) {
+      // The engine is still running, can't create the end state
+      exchange.setStatusCode(409);
+      exchange.getResponseSender().send("The engine is still running");
+    }
+
+    // THe engine is shut down. Good. We can safely create the end state and cache it
+    final var compressedEndStateBytes = getEndStateFromCacheOrPrepareIfNeeded();
+    final var result = Bytes.toHexString(compressedEndStateBytes);
+
+    exchange.setStatusCode(200);
+    exchange.getResponseSender().send(result);
+  }
+
+  private byte[] getEndStateFromCacheOrPrepareIfNeeded() throws IOException {
+    if (this.cachedCompressedEndStateBytes.isPresent()) {
+      return this.cachedCompressedEndStateBytes.orElseThrow();
+    }
+
+    final var substateDeserialization =
+        currentForkView.currentForkConfig().engineRules().parser().getSubstateDeserialization();
+    final var state =
+        new StateIRConstructor(engineStore, substateDeserialization).prepareOlympiaStateIR();
+    final var serialized = new OlympiaStateIRSerializer().serialize(state);
+    final var compressed = Snappy.compress(serialized);
+
+    this.cachedCompressedEndStateBytes = Optional.of(compressed);
+
+    return compressed;
   }
 }

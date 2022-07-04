@@ -70,6 +70,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.api.core.CoreApiModule;
+import com.radixdlt.api.endstate.OlympiaEndStateApiModule;
 import com.radixdlt.api.service.EngineStatusService;
 import com.radixdlt.api.system.SystemApiModule;
 import io.undertow.Handlers;
@@ -103,6 +104,7 @@ public final class ApiModule extends AbstractModule {
     bind(EngineStatusService.class).in(Scopes.SINGLETON);
     install(new SystemApiModule());
     install(new CoreApiModule(enableTransactions, enableSign));
+    install(new OlympiaEndStateApiModule());
   }
 
   private static void fallbackHandler(HttpServerExchange exchange) {

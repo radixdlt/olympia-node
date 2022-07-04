@@ -123,7 +123,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 
   @Override
   public REProcessedTxn add(Txn txn) throws MempoolRejectedException {
-    if (radixEngine.isShutdown()) {
+    if (radixEngine.isShutDown()) {
       throw new MempoolRejectedException("The engine is shut down");
     }
 
@@ -194,7 +194,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 
   @Override
   public List<Txn> getTxns(int count, List<REProcessedTxn> prepared) {
-    if (this.radixEngine.isShutdown()) {
+    if (this.radixEngine.isShutDown()) {
       return List.of();
     }
 

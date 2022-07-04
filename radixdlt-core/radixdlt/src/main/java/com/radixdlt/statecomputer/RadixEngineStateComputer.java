@@ -471,7 +471,7 @@ public final class RadixEngineStateComputer implements StateComputer {
     this.maxSigsPerRound = rules.maxSigsPerRound();
 
     if (nextForkConfig.isShutdown()) {
-      this.radixEngine.shutdown();
+      this.radixEngine.shutDown();
     } else {
       this.radixEngine.replaceConstraintMachine(
           rules.constraintMachineConfig(),

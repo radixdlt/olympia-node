@@ -360,7 +360,7 @@ public class EpochManagerTest {
                 HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty(), hasher));
     LedgerProof proof = mock(LedgerProof.class);
     when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);
-    var epochChange = new EpochChange(proof, bftConfiguration, false);
+    var epochChange = new EpochChange(proof, bftConfiguration);
     var ledgerUpdate =
         new LedgerUpdate(
             mock(VerifiedTxnsAndProof.class),
