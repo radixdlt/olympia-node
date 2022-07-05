@@ -67,101 +67,27 @@ package com.radixdlt.statecomputer;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.hotstuff.bft.View;
-import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.statecomputer.forks.CurrentForkView;
-import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.NewestForkConfig;
-import com.radixdlt.store.EngineStore;
-import java.util.OptionalInt;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
+import com.radixdlt.sync.CommittedReader;
+import java.util.Map;
 
-/** Module which manages execution of commands */
-public class RadixEngineModule extends AbstractModule {
-
-  @Override
-  public void configure() {
-    install(new CurrentForkViewModule());
-  }
-
+public final class CurrentForkViewModule extends AbstractModule {
   @Provides
   @Singleton
-  @NewestForkConfig
-  private ForkConfig newestForkConfig(Forks forks) {
-    return forks.newestFork();
-  }
+  private CurrentForkView currentForkView(
+      CommittedReader committedReader, ForksEpochStore forksEpochStore, Forks forks) {
+    forks.init(committedReader, forksEpochStore);
 
-  // TODO: Remove
-  @Provides
-  @Singleton
-  private REParser parser(CurrentForkView currentForkView) {
-    return currentForkView.currentForkConfig().engineRules().parser();
-  }
+    final var latestStoredForkNameOpt =
+        forksEpochStore.getStoredForks().entrySet().stream()
+            .max((a, b) -> (int) (a.getKey() - b.getKey()))
+            .map(Map.Entry::getValue);
 
-  // TODO: Remove
-  @Provides
-  @Singleton
-  @MaxSigsPerRound
-  private OptionalInt maxSigsPerRound(CurrentForkView currentForkView) {
-    return currentForkView.currentForkConfig().engineRules().maxSigsPerRound();
-  }
+    final var initialForkConfig =
+        latestStoredForkNameOpt.flatMap(forks::getByName).orElseGet(forks::genesisFork);
 
-  // TODO: Remove
-  @Provides
-  @Singleton
-  @EpochCeilingView
-  private View epochCeilingHighView(CurrentForkView currentForkView) {
-    return currentForkView.currentForkConfig().engineRules().maxRounds();
-  }
-
-  // TODO: Remove
-  @Provides
-  @Singleton
-  @MaxValidators
-  private int maxValidators(CurrentForkView currentForkView) {
-    return currentForkView.currentForkConfig().engineRules().maxValidators();
-  }
-
-  @Provides
-  @Singleton
-  private RadixEngine<LedgerAndBFTProof> getRadixEngine(
-      EngineStore<LedgerAndBFTProof> engineStore, CurrentForkView currentForkView) {
-    final var currentForkConfig = currentForkView.currentForkConfig();
-    final var rules = currentForkConfig.engineRules();
-    final var cmConfig = rules.constraintMachineConfig();
-    var cm =
-        new ConstraintMachine(
-            cmConfig.getProcedures(),
-            cmConfig.getDeserialization(),
-            cmConfig.getVirtualSubstateDeserialization(),
-            cmConfig.getMeter());
-    final var radixEngine =
-        new RadixEngine<>(
-            rules.parser(),
-            rules.serialization(),
-            rules.actionConstructors(),
-            cm,
-            engineStore,
-            rules.postProcessor(),
-            rules.config().maxMessageLen());
-
-    if (currentForkConfig.isShutdown()) {
-      radixEngine.shutDown();
-    }
-
-    return radixEngine;
-  }
-
-  @ProvidesIntoSet
-  public EventProcessorOnRunner<?> ledgerUpdateEventProcessorCurrentForkView(
-      CurrentForkView currentForkView) {
-    return new EventProcessorOnRunner<>(
-        Runners.SYSTEM_INFO, LedgerUpdate.class, currentForkView.ledgerUpdateEventProcessor());
+    return new CurrentForkView(forks, initialForkConfig);
   }
 }

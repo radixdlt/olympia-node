@@ -62,132 +62,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt;
+package com.radixdlt.ledger;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Module;
-import com.radixdlt.environment.NoEpochsConsensusModule;
-import com.radixdlt.environment.NoEpochsSyncModule;
-import com.radixdlt.ledger.MockedCommandGeneratorModule;
-import com.radixdlt.ledger.MockedCurrentForkViewModule;
-import com.radixdlt.ledger.MockedLedgerModule;
-import com.radixdlt.mempool.MempoolReceiverModule;
-import com.radixdlt.mempool.MempoolRelayerModule;
-import com.radixdlt.modules.*;
-import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
-import com.radixdlt.statecomputer.MockedStateComputerModule;
-import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
-import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
-import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
-import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.statecomputer.forks.RERulesVersion;
-import com.radixdlt.sync.MockedSyncServiceModule;
+import com.radixdlt.statecomputer.forks.Forks;
+import java.util.Objects;
+import java.util.Set;
 
-/** Manages the functional components of a node */
-public final class FunctionalNodeModule extends AbstractModule {
-  private static final ForkConfig MOCKED_GENESIS_FORK_CONFIG =
-      new FixedEpochForkConfig(
-          "genesis", RERulesVersion.OLYMPIA_V1.create(RERulesConfig.testingDefault()), 0L, false);
+public final class MockedCurrentForkViewModule extends AbstractModule {
+  private final ForkConfig genesisFork;
 
-  private final boolean hasConsensus;
-  private final boolean hasSync;
-
-  // State manager
-  private final boolean hasLedger;
-  private final boolean hasMempool;
-  private final boolean hasRadixEngine;
-
-  private final boolean hasMempoolRelayer;
-
-  private final boolean hasEpochs;
-
-  // FIXME: This is required for now for shared syncing, remove after refactor
-  private final Module mockedSyncServiceModule = new MockedSyncServiceModule();
-
-  public FunctionalNodeModule() {
-    this(true, true, true, true, true, true, true);
+  public MockedCurrentForkViewModule(ForkConfig genesisFork) {
+    this.genesisFork = Objects.requireNonNull(genesisFork);
   }
 
-  public FunctionalNodeModule(
-      boolean hasConsensus,
-      boolean hasLedger,
-      boolean hasMempool,
-      boolean hasMempoolRelayer,
-      boolean hasRadixEngine,
-      boolean hasEpochs,
-      boolean hasSync) {
-    this.hasConsensus = hasConsensus;
-    this.hasLedger = hasLedger;
-    this.hasMempool = hasMempool;
-    this.hasMempoolRelayer = hasMempoolRelayer;
-    this.hasRadixEngine = hasRadixEngine;
-    this.hasEpochs = hasEpochs;
-    this.hasSync = hasSync;
-  }
-
-  @Override
-  public void configure() {
-    install(new EventLoggerModule());
-    install(new DispatcherModule());
-
-    // Consensus
-    if (hasConsensus) {
-      install(new ConsensusModule());
-      if (hasEpochs) {
-        install(new EpochsConsensusModule());
-      } else {
-        install(new NoEpochsConsensusModule());
-      }
-    }
-
-    // Sync
-    if (hasLedger) {
-      if (!hasSync) {
-        install(mockedSyncServiceModule);
-      } else {
-        install(new SyncServiceModule());
-        if (hasEpochs) {
-          install(new EpochsSyncModule());
-        } else {
-          install(new NoEpochsSyncModule());
-        }
-      }
-    }
-
-    // State Manager
-    if (!hasLedger) {
-      install(new MockedLedgerModule());
-    } else {
-      install(new LedgerModule());
-
-      if (!hasMempool) {
-        install(new MockedCommandGeneratorModule());
-
-        if (!hasEpochs) {
-          install(new MockedStateComputerModule());
-        } else {
-          install(new MockedStateComputerWithEpochsModule());
-          install(new MockedCurrentForkViewModule(MOCKED_GENESIS_FORK_CONFIG));
-        }
-      } else {
-        install(new MempoolReceiverModule());
-
-        if (hasMempoolRelayer) {
-          install(new MempoolRelayerModule());
-        }
-
-        if (!hasRadixEngine) {
-          install(new MockedMempoolStateComputerModule());
-          install(new MockedCurrentForkViewModule(MOCKED_GENESIS_FORK_CONFIG));
-        } else {
-          install(new RadixEngineStateComputerModule());
-          install(new RadixEngineModule());
-          install(new RadixEngineCheckpointModule());
-        }
-      }
-    }
+  @Provides
+  @Singleton
+  private CurrentForkView currentForkView() {
+    return new CurrentForkView(Forks.create(Set.of(genesisFork)), genesisFork);
   }
 }
