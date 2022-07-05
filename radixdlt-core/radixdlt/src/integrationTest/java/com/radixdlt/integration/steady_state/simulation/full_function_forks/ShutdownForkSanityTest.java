@@ -65,7 +65,16 @@
 package com.radixdlt.integration.steady_state.simulation.full_function_forks;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.engine.EngineShutdownTxBuilderException;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
@@ -75,13 +84,18 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.SyncConfig;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
 public final class ShutdownForkSanityTest {
+  private static final long SHUTDOWN_FORK_EPOCH = 2L;
+
   private final Builder bftTestBuilder;
 
   public ShutdownForkSanityTest() {
@@ -107,8 +121,49 @@ public final class ShutdownForkSanityTest {
   public void sanity_tests_should_pass() {
     final var simulationTest = bftTestBuilder.build();
 
-    final var results = simulationTest.run(Duration.ofSeconds(20)).awaitCompletion();
+    final var runningTest = simulationTest.run(Duration.ofSeconds(10));
+    final var runningNetwork = runningTest.getNetwork();
+
+    final var shutdownEpochChangeSeen = new AtomicBoolean(false);
+
+    final var disposable =
+        runningNetwork
+            .latestEpochChanges()
+            .subscribe(
+                epochChange -> {
+                  if (epochChange.isShutdown()) {
+                    shutdownEpochChangeSeen.set(true);
+                  }
+                });
+
+    final var results = runningTest.awaitCompletion();
+
+    disposable.dispose();
+
+    assertTrue(shutdownEpochChangeSeen.get());
+
     assertThat(results)
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+
+    for (var node : runningNetwork.getNodes()) {
+      // Make sure there are no committed transactions after the shutdown epoch
+      final var committedReader = runningNetwork.getInstance(CommittedReader.class, node);
+      final var shutdownForkEpochProof = committedReader.getEpochProof(SHUTDOWN_FORK_EPOCH);
+      final var committedTxnsAfterShutdown =
+          committedReader.getNextCommittedTxns(shutdownForkEpochProof.orElseThrow().toDto());
+      assertNull(committedTxnsAfterShutdown);
+
+      // Check that construction throws
+      final var radixEngine =
+          runningNetwork.getInstance(
+              Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() {}), node);
+      assertTrue(radixEngine.isShutDown());
+      try {
+        radixEngine.construct(new TxAction.CreateSystem(1L));
+        fail("Expected radixEngine.construct to throw");
+      } catch (TxBuilderException ex) {
+        assertTrue(ex instanceof EngineShutdownTxBuilderException);
+      }
+    }
   }
 }
