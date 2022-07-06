@@ -80,6 +80,8 @@ import java.util.Optional;
 import org.xerial.snappy.Snappy;
 
 public final class OlympiaEndStateHandler implements HttpHandler {
+  private final Object endStateLock = new Object();
+
   private final RadixEngine<LedgerAndBFTProof> radixEngine;
   private final EngineStore<LedgerAndBFTProof> engineStore;
   private final CurrentForkView currentForkView;
@@ -106,26 +108,28 @@ public final class OlympiaEndStateHandler implements HttpHandler {
 
     // THe engine is shut down. Good. We can safely create the end state and cache it
     final var compressedEndStateBytes = getEndStateFromCacheOrPrepareIfNeeded();
-    final var result = Bytes.toHexString(compressedEndStateBytes);
+    final var result = Bytes.toBase64String(compressedEndStateBytes);
 
     exchange.setStatusCode(200);
     exchange.getResponseSender().send(result);
   }
 
   private byte[] getEndStateFromCacheOrPrepareIfNeeded() throws IOException {
-    if (this.cachedCompressedEndStateBytes.isPresent()) {
-      return this.cachedCompressedEndStateBytes.orElseThrow();
+    synchronized (endStateLock) {
+      if (this.cachedCompressedEndStateBytes.isPresent()) {
+        return this.cachedCompressedEndStateBytes.orElseThrow();
+      }
+
+      final var substateDeserialization =
+          currentForkView.currentForkConfig().engineRules().parser().getSubstateDeserialization();
+      final var state =
+          new StateIRConstructor(engineStore, substateDeserialization).prepareOlympiaStateIR();
+      final var serialized = new OlympiaStateIRSerializer().serialize(state);
+      final var compressed = Snappy.compress(serialized);
+
+      this.cachedCompressedEndStateBytes = Optional.of(compressed);
+
+      return compressed;
     }
-
-    final var substateDeserialization =
-        currentForkView.currentForkConfig().engineRules().parser().getSubstateDeserialization();
-    final var state =
-        new StateIRConstructor(engineStore, substateDeserialization).prepareOlympiaStateIR();
-    final var serialized = new OlympiaStateIRSerializer().serialize(state);
-    final var compressed = Snappy.compress(serialized);
-
-    this.cachedCompressedEndStateBytes = Optional.of(compressed);
-
-    return compressed;
   }
 }
