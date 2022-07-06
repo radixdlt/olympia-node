@@ -125,7 +125,9 @@ public final class OlympiaEndStateHandler
 
     synchronized (endStateLock) {
       try {
-        prepareEndStateResponseAndSaveToCache();
+        if (this.cachedEndStateResponse.isEmpty()) {
+          prepareEndStateResponseAndSaveToCache();
+        }
         return this.cachedEndStateResponse.orElseThrow();
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -134,17 +136,15 @@ public final class OlympiaEndStateHandler
   }
 
   private void prepareEndStateResponseAndSaveToCache() throws IOException {
-    if (this.cachedEndStateResponse.isEmpty()) {
-      final var endStateBytes = prepareEndState();
-      final var hash = hasher.hashBytes(endStateBytes);
-      final var signature = hashSigner.sign(hash);
-      final var response =
-          new OlympiaEndStateResponse()
-              .hash(Bytes.toHexString(hash.asBytes()))
-              .signature(signature.toHexString())
-              .contents(Bytes.toBase64String(endStateBytes));
-      this.cachedEndStateResponse = Optional.of(response);
-    }
+    final var endStateBytes = prepareEndState();
+    final var hash = hasher.hashBytes(endStateBytes);
+    final var signature = hashSigner.sign(hash);
+    final var response =
+        new OlympiaEndStateResponse()
+            .hash(Bytes.toHexString(hash.asBytes()))
+            .signature(signature.toHexString())
+            .contents(Bytes.toBase64String(endStateBytes));
+    this.cachedEndStateResponse = Optional.of(response);
   }
 
   private byte[] prepareEndState() throws IOException {
