@@ -22,107 +22,107 @@ import java.util.Objects;
 
 
 /**
- * UnexpectedError
+ * OlympiaEndStateResponse
  */
 @JsonPropertyOrder({
-  UnexpectedError.JSON_PROPERTY_CODE,
-  UnexpectedError.JSON_PROPERTY_MESSAGE,
-  UnexpectedError.JSON_PROPERTY_DETAILS
+  OlympiaEndStateResponse.JSON_PROPERTY_HASH,
+  OlympiaEndStateResponse.JSON_PROPERTY_SIGNATURE,
+  OlympiaEndStateResponse.JSON_PROPERTY_CONTENTS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-07-06T21:16:58.881714945+02:00[Europe/Warsaw]")
-public class UnexpectedError {
-  public static final String JSON_PROPERTY_CODE = "code";
-  private Integer code;
+public class OlympiaEndStateResponse {
+  public static final String JSON_PROPERTY_HASH = "hash";
+  private String hash;
 
-  public static final String JSON_PROPERTY_MESSAGE = "message";
-  private String message;
+  public static final String JSON_PROPERTY_SIGNATURE = "signature";
+  private String signature;
 
-  public static final String JSON_PROPERTY_DETAILS = "details";
-  private CoreError details;
+  public static final String JSON_PROPERTY_CONTENTS = "contents";
+  private String contents;
 
-  public UnexpectedError() { 
+  public OlympiaEndStateResponse() { 
   }
 
-  public UnexpectedError code(Integer code) {
-    this.code = code;
+  public OlympiaEndStateResponse hash(String hash) {
+    this.hash = hash;
     return this;
   }
 
    /**
-   * High level error code, similar to HTTP status codes, e.g. NOT_FOUND&#x3D;404
-   * @return code
+   * The hash of the end state bytes
+   * @return hash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "High level error code, similar to HTTP status codes, e.g. NOT_FOUND=404")
-  @JsonProperty(JSON_PROPERTY_CODE)
+  @ApiModelProperty(required = true, value = "The hash of the end state bytes")
+  @JsonProperty(JSON_PROPERTY_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getCode() {
-    return code;
+  public String getHash() {
+    return hash;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CODE)
+  @JsonProperty(JSON_PROPERTY_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCode(Integer code) {
-    this.code = code;
+  public void setHash(String hash) {
+    this.hash = hash;
   }
 
 
-  public UnexpectedError message(String message) {
-    this.message = message;
+  public OlympiaEndStateResponse signature(String signature) {
+    this.signature = signature;
     return this;
   }
 
    /**
-   * Message describing the error code
-   * @return message
+   * The node signature of the end state hash
+   * @return signature
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Message describing the error code")
-  @JsonProperty(JSON_PROPERTY_MESSAGE)
+  @ApiModelProperty(required = true, value = "The node signature of the end state hash")
+  @JsonProperty(JSON_PROPERTY_SIGNATURE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getMessage() {
-    return message;
+  public String getSignature() {
+    return signature;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MESSAGE)
+  @JsonProperty(JSON_PROPERTY_SIGNATURE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMessage(String message) {
-    this.message = message;
+  public void setSignature(String signature) {
+    this.signature = signature;
   }
 
 
-  public UnexpectedError details(CoreError details) {
-    this.details = details;
+  public OlympiaEndStateResponse contents(String contents) {
+    this.contents = contents;
     return this;
   }
 
    /**
-   * Get details
-   * @return details
+   * base64-encoded compressed end state
+   * @return contents
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_DETAILS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "base64-encoded compressed end state")
+  @JsonProperty(JSON_PROPERTY_CONTENTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public CoreError getDetails() {
-    return details;
+  public String getContents() {
+    return contents;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DETAILS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setDetails(CoreError details) {
-    this.details = details;
+  @JsonProperty(JSON_PROPERTY_CONTENTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setContents(String contents) {
+    this.contents = contents;
   }
 
 
   /**
-   * Return true if this UnexpectedError object is equal to o.
+   * Return true if this OlympiaEndStateResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -132,24 +132,24 @@ public class UnexpectedError {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    UnexpectedError unexpectedError = (UnexpectedError) o;
-    return Objects.equals(this.code, unexpectedError.code) &&
-        Objects.equals(this.message, unexpectedError.message) &&
-        Objects.equals(this.details, unexpectedError.details);
+    OlympiaEndStateResponse olympiaEndStateResponse = (OlympiaEndStateResponse) o;
+    return Objects.equals(this.hash, olympiaEndStateResponse.hash) &&
+        Objects.equals(this.signature, olympiaEndStateResponse.signature) &&
+        Objects.equals(this.contents, olympiaEndStateResponse.contents);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(code, message, details);
+    return Objects.hash(hash, signature, contents);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class UnexpectedError {\n");
-    sb.append("    code: ").append(toIndentedString(code)).append("\n");
-    sb.append("    message: ").append(toIndentedString(message)).append("\n");
-    sb.append("    details: ").append(toIndentedString(details)).append("\n");
+    sb.append("class OlympiaEndStateResponse {\n");
+    sb.append("    hash: ").append(toIndentedString(hash)).append("\n");
+    sb.append("    signature: ").append(toIndentedString(signature)).append("\n");
+    sb.append("    contents: ").append(toIndentedString(contents)).append("\n");
     sb.append("}");
     return sb.toString();
   }

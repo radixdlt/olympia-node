@@ -85,6 +85,7 @@ import com.radixdlt.api.core.handlers.MempoolHandler;
 import com.radixdlt.api.core.handlers.MempoolTransactionHandler;
 import com.radixdlt.api.core.handlers.NetworkConfigurationHandler;
 import com.radixdlt.api.core.handlers.NetworkStatusHandler;
+import com.radixdlt.api.core.handlers.OlympiaEndStateHandler;
 import com.radixdlt.api.core.handlers.TransactionsHandler;
 import com.radixdlt.api.core.handlers.VoteHandler;
 import com.radixdlt.api.core.handlers.WithdrawVoteHandler;
@@ -147,6 +148,9 @@ public class CoreApiModule extends AbstractModule {
         .addBinding(HandlerRoute.post("/construction/submit"))
         .to(ConstructionSubmitHandler.class);
     routeBinder.addBinding(HandlerRoute.post("/key/list")).to(KeyListHandler.class);
+    routeBinder
+        .addBinding(HandlerRoute.post("/olympia-end-state"))
+        .to(OlympiaEndStateHandler.class);
     if (signEnable) {
       routeBinder.addBinding(HandlerRoute.post("/key/sign")).to(KeySignHandler.class);
       routeBinder.addBinding(HandlerRoute.post("/key/vote")).to(VoteHandler.class);

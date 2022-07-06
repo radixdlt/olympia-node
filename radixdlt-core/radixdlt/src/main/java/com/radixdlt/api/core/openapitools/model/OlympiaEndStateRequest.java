@@ -22,107 +22,47 @@ import java.util.Objects;
 
 
 /**
- * UnexpectedError
+ * OlympiaEndStateRequest
  */
 @JsonPropertyOrder({
-  UnexpectedError.JSON_PROPERTY_CODE,
-  UnexpectedError.JSON_PROPERTY_MESSAGE,
-  UnexpectedError.JSON_PROPERTY_DETAILS
+  OlympiaEndStateRequest.JSON_PROPERTY_NETWORK_IDENTIFIER
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-07-06T21:16:58.881714945+02:00[Europe/Warsaw]")
-public class UnexpectedError {
-  public static final String JSON_PROPERTY_CODE = "code";
-  private Integer code;
+public class OlympiaEndStateRequest {
+  public static final String JSON_PROPERTY_NETWORK_IDENTIFIER = "network_identifier";
+  private NetworkIdentifier networkIdentifier;
 
-  public static final String JSON_PROPERTY_MESSAGE = "message";
-  private String message;
-
-  public static final String JSON_PROPERTY_DETAILS = "details";
-  private CoreError details;
-
-  public UnexpectedError() { 
+  public OlympiaEndStateRequest() { 
   }
 
-  public UnexpectedError code(Integer code) {
-    this.code = code;
+  public OlympiaEndStateRequest networkIdentifier(NetworkIdentifier networkIdentifier) {
+    this.networkIdentifier = networkIdentifier;
     return this;
   }
 
    /**
-   * High level error code, similar to HTTP status codes, e.g. NOT_FOUND&#x3D;404
-   * @return code
+   * Get networkIdentifier
+   * @return networkIdentifier
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "High level error code, similar to HTTP status codes, e.g. NOT_FOUND=404")
-  @JsonProperty(JSON_PROPERTY_CODE)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getCode() {
-    return code;
+  public NetworkIdentifier getNetworkIdentifier() {
+    return networkIdentifier;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CODE)
+  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCode(Integer code) {
-    this.code = code;
-  }
-
-
-  public UnexpectedError message(String message) {
-    this.message = message;
-    return this;
-  }
-
-   /**
-   * Message describing the error code
-   * @return message
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Message describing the error code")
-  @JsonProperty(JSON_PROPERTY_MESSAGE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getMessage() {
-    return message;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_MESSAGE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMessage(String message) {
-    this.message = message;
-  }
-
-
-  public UnexpectedError details(CoreError details) {
-    this.details = details;
-    return this;
-  }
-
-   /**
-   * Get details
-   * @return details
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_DETAILS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public CoreError getDetails() {
-    return details;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_DETAILS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setDetails(CoreError details) {
-    this.details = details;
+  public void setNetworkIdentifier(NetworkIdentifier networkIdentifier) {
+    this.networkIdentifier = networkIdentifier;
   }
 
 
   /**
-   * Return true if this UnexpectedError object is equal to o.
+   * Return true if this OlympiaEndStateRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -132,24 +72,20 @@ public class UnexpectedError {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    UnexpectedError unexpectedError = (UnexpectedError) o;
-    return Objects.equals(this.code, unexpectedError.code) &&
-        Objects.equals(this.message, unexpectedError.message) &&
-        Objects.equals(this.details, unexpectedError.details);
+    OlympiaEndStateRequest olympiaEndStateRequest = (OlympiaEndStateRequest) o;
+    return Objects.equals(this.networkIdentifier, olympiaEndStateRequest.networkIdentifier);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(code, message, details);
+    return Objects.hash(networkIdentifier);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class UnexpectedError {\n");
-    sb.append("    code: ").append(toIndentedString(code)).append("\n");
-    sb.append("    message: ").append(toIndentedString(message)).append("\n");
-    sb.append("    details: ").append(toIndentedString(details)).append("\n");
+    sb.append("class OlympiaEndStateRequest {\n");
+    sb.append("    networkIdentifier: ").append(toIndentedString(networkIdentifier)).append("\n");
     sb.append("}");
     return sb.toString();
   }

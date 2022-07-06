@@ -26,12 +26,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 /**
- * NotEnoughResourcesError
+ * EngineIsShutDownError
  */
 @JsonPropertyOrder({
-  NotEnoughResourcesError.JSON_PROPERTY_FEE,
-  NotEnoughResourcesError.JSON_PROPERTY_AVAILABLE,
-  NotEnoughResourcesError.JSON_PROPERTY_ATTEMPTED_TO_TAKE
+  EngineIsShutDownError.JSON_PROPERTY_MESSAGE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-07-06T21:16:58.881714945+02:00[Europe/Warsaw]")
 
@@ -70,99 +68,41 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = TransactionNotFoundError.class, name = "TransactionNotFoundError"),
 })
 
-public class NotEnoughResourcesError extends CoreError {
-  public static final String JSON_PROPERTY_FEE = "fee";
-  private ResourceAmount fee;
+public class EngineIsShutDownError extends CoreError {
+  public static final String JSON_PROPERTY_MESSAGE = "message";
+  private String message;
 
-  public static final String JSON_PROPERTY_AVAILABLE = "available";
-  private ResourceAmount available;
-
-  public static final String JSON_PROPERTY_ATTEMPTED_TO_TAKE = "attempted_to_take";
-  private ResourceAmount attemptedToTake;
-
-  public NotEnoughResourcesError() { 
+  public EngineIsShutDownError() { 
   }
 
-  public NotEnoughResourcesError fee(ResourceAmount fee) {
-    this.fee = fee;
+  public EngineIsShutDownError message(String message) {
+    this.message = message;
     return this;
   }
 
    /**
-   * Get fee
-   * @return fee
+   * Get message
+   * @return message
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FEE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_MESSAGE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public ResourceAmount getFee() {
-    return fee;
+  public String getMessage() {
+    return message;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FEE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFee(ResourceAmount fee) {
-    this.fee = fee;
-  }
-
-
-  public NotEnoughResourcesError available(ResourceAmount available) {
-    this.available = available;
-    return this;
-  }
-
-   /**
-   * Get available
-   * @return available
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_AVAILABLE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public ResourceAmount getAvailable() {
-    return available;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_AVAILABLE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAvailable(ResourceAmount available) {
-    this.available = available;
-  }
-
-
-  public NotEnoughResourcesError attemptedToTake(ResourceAmount attemptedToTake) {
-    this.attemptedToTake = attemptedToTake;
-    return this;
-  }
-
-   /**
-   * Get attemptedToTake
-   * @return attemptedToTake
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ATTEMPTED_TO_TAKE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public ResourceAmount getAttemptedToTake() {
-    return attemptedToTake;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ATTEMPTED_TO_TAKE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAttemptedToTake(ResourceAmount attemptedToTake) {
-    this.attemptedToTake = attemptedToTake;
+  @JsonProperty(JSON_PROPERTY_MESSAGE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setMessage(String message) {
+    this.message = message;
   }
 
 
   /**
-   * Return true if this NotEnoughResourcesError object is equal to o.
+   * Return true if this EngineIsShutDownError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -172,26 +112,22 @@ public class NotEnoughResourcesError extends CoreError {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    NotEnoughResourcesError notEnoughResourcesError = (NotEnoughResourcesError) o;
-    return Objects.equals(this.fee, notEnoughResourcesError.fee) &&
-        Objects.equals(this.available, notEnoughResourcesError.available) &&
-        Objects.equals(this.attemptedToTake, notEnoughResourcesError.attemptedToTake) &&
+    EngineIsShutDownError engineIsShutDownError = (EngineIsShutDownError) o;
+    return Objects.equals(this.message, engineIsShutDownError.message) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(fee, available, attemptedToTake, super.hashCode());
+    return Objects.hash(message, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class NotEnoughResourcesError {\n");
+    sb.append("class EngineIsShutDownError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    fee: ").append(toIndentedString(fee)).append("\n");
-    sb.append("    available: ").append(toIndentedString(available)).append("\n");
-    sb.append("    attemptedToTake: ").append(toIndentedString(attemptedToTake)).append("\n");
+    sb.append("    message: ").append(toIndentedString(message)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -241,8 +177,8 @@ static {
   mappings.put("StateIdentifierNotFoundError", StateIdentifierNotFoundError.class);
   mappings.put("SubstateDependencyNotFoundError", SubstateDependencyNotFoundError.class);
   mappings.put("TransactionNotFoundError", TransactionNotFoundError.class);
-  mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
-  JSON.registerDiscriminator(NotEnoughResourcesError.class, "type", mappings);
+  mappings.put("EngineIsShutDownError", EngineIsShutDownError.class);
+  JSON.registerDiscriminator(EngineIsShutDownError.class, "type", mappings);
 }
 }
 
