@@ -192,7 +192,7 @@ public final class RemoteSyncService {
   }
 
   private void sendStatusUpdateToSomePeers(LedgerProof header) {
-    if (!(this.localSyncService.getSyncState() instanceof SyncState.IdleState)) {
+    if (!(this.localSyncService.syncState() instanceof SyncState.IdleState)) {
       return; // not sending any updates if the node is syncing itself
     }
 

@@ -66,7 +66,6 @@ package com.radixdlt.sync;
 
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
-import com.radixdlt.hotstuff.bft.BFTNode;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
@@ -76,34 +75,64 @@ import com.radixdlt.sync.messages.local.SyncRequestTimeout;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncResponse;
+import java.util.Objects;
 
-public interface LocalSyncService {
+public final class NoOpLocalSyncService implements LocalSyncService {
 
-  interface VerifiedSyncResponseHandler {
-    void handleVerifiedSyncResponse(SyncResponse syncResponse);
+  private final SyncState syncState;
+
+  public NoOpLocalSyncService(SyncState syncState) {
+    this.syncState = Objects.requireNonNull(syncState);
   }
 
-  interface InvalidSyncResponseHandler {
-    void handleInvalidSyncResponse(BFTNode sender, SyncResponse syncResponse);
+  @Override
+  public SyncState syncState() {
+    return this.syncState;
   }
 
-  SyncState syncState();
+  @Override
+  public EventProcessor<SyncCheckTrigger> syncCheckTriggerEventProcessor() {
+    return ev -> {};
+  }
 
-  EventProcessor<SyncCheckTrigger> syncCheckTriggerEventProcessor();
+  @Override
+  public RemoteEventProcessor<StatusResponse> statusResponseEventProcessor() {
+    return (peer, ev) -> {};
+  }
 
-  RemoteEventProcessor<StatusResponse> statusResponseEventProcessor();
+  @Override
+  public EventProcessor<SyncCheckReceiveStatusTimeout>
+      syncCheckReceiveStatusTimeoutEventProcessor() {
+    return ev -> {};
+  }
 
-  EventProcessor<SyncCheckReceiveStatusTimeout> syncCheckReceiveStatusTimeoutEventProcessor();
+  @Override
+  public RemoteEventProcessor<SyncResponse> syncResponseEventProcessor() {
+    return (peer, ev) -> {};
+  }
 
-  RemoteEventProcessor<SyncResponse> syncResponseEventProcessor();
+  @Override
+  public RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateEventProcessor() {
+    return (peer, ev) -> {};
+  }
 
-  RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateEventProcessor();
+  @Override
+  public EventProcessor<SyncRequestTimeout> syncRequestTimeoutEventProcessor() {
+    return ev -> {};
+  }
 
-  EventProcessor<SyncRequestTimeout> syncRequestTimeoutEventProcessor();
+  @Override
+  public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
+    return ev -> {};
+  }
 
-  EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor();
+  @Override
+  public EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor() {
+    return ev -> {};
+  }
 
-  EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor();
-
-  EventProcessor<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutProcessor();
+  @Override
+  public EventProcessor<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutProcessor() {
+    return ev -> {};
+  }
 }
