@@ -2505,13 +2505,13 @@ components:
         - contents
       properties:
         hash:
-          description: The hash of the end state bytes
+          description: The hex-encoded SHA2 hash of the end state content bytes
           type: string
         signature:
-          description: The node signature of the end state hash
+          description: The hex-encoded DER signature of the end state content bytes, signed with the node's key
           type: string
         contents:
-          description: base64-encoded compressed end state
+          description: The base64-encoded compressed end state
           type: string
     PublicKeyEntry:
       type: object
