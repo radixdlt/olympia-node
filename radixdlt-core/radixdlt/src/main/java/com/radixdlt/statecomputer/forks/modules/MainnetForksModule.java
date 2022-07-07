@@ -155,4 +155,43 @@ public final class MainnetForksModule extends AbstractModule {
             100, // 100 max validators
             MSG.maxLength()));
   }
+
+  @ProvidesIntoSet
+  ForkBuilder olympiaRadixProtocolFork1() {
+    return new ForkBuilder(
+        "olympia-rpf-001",
+        14493,
+        RERulesVersion.OLYMPIA_V1,
+        new RERulesConfig(
+            RESERVED_SYMBOLS,
+            Pattern.compile("[a-z0-9]+"), // Token symbol pattern
+            FeeTable.create(
+                Amount.ofNanoTokens(116400), // 0.0001164XRD per byte fee
+                Map.of(
+                    TokenResource.class, Amount.ofMilliTokens(58220), // 58.22XRD per resource
+                    ValidatorRegisteredCopy.class,
+                        Amount.ofMilliTokens(2911), // 2.911XRD per validator update
+                    ValidatorFeeCopy.class,
+                        Amount.ofMilliTokens(2911), // 2.911XRD per register update
+                    ValidatorOwnerCopy.class,
+                        Amount.ofMilliTokens(2911), // 2.911XRD per register update
+                    ValidatorMetaData.class,
+                        Amount.ofMilliTokens(2911), // 2.911XRD per register update
+                    AllowDelegationFlag.class,
+                        Amount.ofMilliTokens(2911), // 2.911XRD per register update
+                    PreparedStake.class, Amount.ofMicroTokens(291100), // 0.2911XRD per stake
+                    PreparedUnstakeOwnership.class,
+                        Amount.ofMicroTokens(291100) // 0.2911XRD per unstake
+                    )),
+            (long) 1024 * 1024, // 1MB max user transaction size
+            OptionalInt.of(50), // 50 Txns per round
+            10_000, // Rounds per epoch
+            500, // Validator fee increases take effect after 500 epochs (roughly two weeks)
+            Amount.ofTokens(90), // 90XRD Minimum stake
+            500, // Unstakes are unlocked after 500 epochs without changes (roughly two weeks)
+            Amount.ofMilliTokens(1797), // 1.797XRD Rewards per proposal
+            9800, // 98.00% threshold for completed proposals to get any rewards
+            100, // 100 max validators
+            MSG.maxLength()));
+  }
 }

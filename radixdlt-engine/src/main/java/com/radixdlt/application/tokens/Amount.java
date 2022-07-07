@@ -90,6 +90,11 @@ public final class Amount {
         UInt256.from(units).multiply(UInt256.TEN.pow(TokenUtils.SUB_UNITS_POW_10 - 6)));
   }
 
+  public static Amount ofNanoTokens(long units) {
+    return new Amount(
+        UInt256.from(units).multiply(UInt256.TEN.pow(TokenUtils.SUB_UNITS_POW_10 - 9)));
+  }
+
   public static Amount ofTokens(long units) {
     return new Amount(UInt256.from(units).multiply(TokenUtils.SUB_UNITS));
   }
