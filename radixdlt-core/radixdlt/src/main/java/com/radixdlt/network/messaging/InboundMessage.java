@@ -75,7 +75,7 @@ public record InboundMessage(long receiveTime, NodeId source, byte[] message) {
     if (o == null || getClass() != o.getClass()) return false;
     InboundMessage that = (InboundMessage) o;
     return receiveTime == that.receiveTime
-        && source.equals(that.source)
+        && Objects.equals(source, that.source)
         && Arrays.equals(message, that.message);
   }
 
