@@ -1,10 +1,5 @@
-FROM ubuntu:21.04
+FROM ubuntu:22.04
 MAINTAINER radixdlt <devops@radixdlt.com>
-
-#https://issueexplorer.com/issue/tianon/docker-brew-ubuntu-core/207
-#bug https://bugs.launchpad.net/cloud-images/+bug/1928218
-COPY apt-config/sources.list /etc/apt/
-COPY apt-config/99own /etc/apt/apt.conf.d/
 
 RUN apt-get -y update > /dev/null && \
     apt-get -y --no-install-recommends install apt-utils net-tools iptables iproute2 gettext-base curl tcpdump strace attr software-properties-common daemontools > /dev/null && \

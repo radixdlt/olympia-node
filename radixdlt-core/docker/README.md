@@ -5,6 +5,11 @@
 1. Install [Docker for Mac](https://docs.docker.com/docker-for-mac/install/) or [Docker for Linux](https://docs.docker.com/engine/install/ubuntu/) 
 2. Be happy :)
 
+## Requirements
+
+- `docker` version 19.03.9 or newer
+- `libseccomp` version 2.4.2 or newer
+
 ## File structure
 
 A highly configurable Radix client image is implemented in [Dockerfile](Dockerfile).
