@@ -7,9 +7,11 @@ RUN apt-get -y update > /dev/null && \
     rm -rf /var/lib/apt/lists/* /var/tmp/* /tmp/*
 
 COPY scripts/fix-vulnerabilities.sh /tmp
-RUN /tmp/fix-vulnerabilities.sh
 
+RUN apt update -y
 RUN apt-get -y --no-install-recommends install openjdk-17-jdk
+RUN /tmp/fix-vulnerabilities.sh
+RUN apt autoremove -y
 
 # set entrypoint and default command
 ENTRYPOINT ["/opt/radixdlt/config_radixdlt.sh"]
