@@ -1,6 +1,6 @@
-FROM ubuntu:21.04 AS build-stage
+FROM ubuntu:22.04 AS build-stage
 MAINTAINER radixdlt <devops@radixdlt.com>
-LABEL Description="Java + Ubuntu 21.04 (OpenJDK)"
+LABEL Description="Java + Ubuntu 22.04 (OpenJDK)"
 
 ENV DEBIAN_FRONTEND noninteractive
 
