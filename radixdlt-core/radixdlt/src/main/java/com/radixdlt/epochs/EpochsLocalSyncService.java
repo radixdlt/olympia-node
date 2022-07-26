@@ -71,6 +71,7 @@ import com.radixdlt.hotstuff.bft.BFTNode;
 import com.radixdlt.hotstuff.epoch.EpochChange;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.LocalSyncService;
+import com.radixdlt.sync.NoOpLocalSyncService;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
@@ -100,7 +101,10 @@ public class EpochsLocalSyncService {
       EpochChange initialEpoch,
       LocalSyncServiceFactory localSyncServiceFactory) {
     this.currentEpoch = initialEpoch;
-    this.localSyncService = initialLocalSyncService;
+    this.localSyncService =
+        initialEpoch.isShutdown()
+            ? new NoOpLocalSyncService(initialLocalSyncService.syncState())
+            : initialLocalSyncService;
 
     this.localSyncServiceFactory = localSyncServiceFactory;
   }
@@ -115,10 +119,12 @@ public class EpochsLocalSyncService {
       this.currentEpoch = epochChange;
 
       this.localSyncService =
-          localSyncServiceFactory.create(
-              new RemoteSyncResponseValidatorSetVerifier(
-                  epochChange.getBFTConfiguration().getValidatorSet()),
-              this.localSyncService.getSyncState());
+          epochChange.isShutdown()
+              ? new NoOpLocalSyncService(this.localSyncService.syncState())
+              : localSyncServiceFactory.create(
+                  new RemoteSyncResponseValidatorSetVerifier(
+                      epochChange.getBFTConfiguration().getValidatorSet()),
+                  this.localSyncService.syncState());
     }
     this.localSyncService.ledgerUpdateEventProcessor().process(ledgerUpdate);
   }

@@ -95,12 +95,7 @@ import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
-import java.io.ByteArrayOutputStream;
 import java.util.List;
-import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.ASN1OutputStream;
-import org.bouncycastle.asn1.DLSequence;
 import org.junit.Test;
 
 public class ConstructionFinalizeTest extends ApiTest {
@@ -144,12 +139,7 @@ public class ConstructionFinalizeTest extends ApiTest {
     var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
     var unsignedTxn = buildUnsignedTransferTxn(accountAddress, otherAddress);
     var sig = hashSigner.sign(unsignedTxn.hashToSign());
-    var os = new ByteArrayOutputStream();
-    var asn1OutputStream = ASN1OutputStream.create(os);
-    asn1OutputStream.writeObject(
-        new DLSequence(
-            new ASN1Encodable[] {new ASN1Integer(sig.getR()), new ASN1Integer(sig.getS())}));
-    var derSignature = os.toByteArray();
+    var derSignature = sig.toUnrecoverableDERBytes();
     var request =
         new ConstructionFinalizeRequest()
             .networkIdentifier(new NetworkIdentifier().network("localnet"))
@@ -176,8 +166,7 @@ public class ConstructionFinalizeTest extends ApiTest {
     var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
     var unsignedTxn = buildUnsignedTransferTxn(accountAddress, otherAddress);
     var sig = hashSigner.sign(unsignedTxn.hashToSign());
-    var invalidSignature =
-        sig.toHexString(); // This is an invalid signature since it must be DER encoded
+    var invalidSignature = "1234"; // This is an invalid signature since it must be DER encoded
     var request =
         new ConstructionFinalizeRequest()
             .networkIdentifier(new NetworkIdentifier().network("localnet"))

@@ -13,146 +13,116 @@
 
 package com.radixdlt.api.core.openapitools.model;
 
-import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import io.swagger.annotations.ApiModelProperty;
+
+import java.util.Objects;
 
 
 /**
- * EngineStatusResponse
+ * OlympiaEndStateResponse
  */
 @JsonPropertyOrder({
-  EngineStatusResponse.JSON_PROPERTY_ENGINE_STATE_IDENTIFIER,
-  EngineStatusResponse.JSON_PROPERTY_VALIDATOR_SET,
-  EngineStatusResponse.JSON_PROPERTY_UPCOMING_FORK,
-  EngineStatusResponse.JSON_PROPERTY_IS_SHUT_DOWN
+  OlympiaEndStateResponse.JSON_PROPERTY_HASH,
+  OlympiaEndStateResponse.JSON_PROPERTY_SIGNATURE,
+  OlympiaEndStateResponse.JSON_PROPERTY_CONTENTS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-03-25T15:26:03.075102278+01:00[Europe/Warsaw]")
-public class EngineStatusResponse {
-  public static final String JSON_PROPERTY_ENGINE_STATE_IDENTIFIER = "engine_state_identifier";
-  private EngineStateIdentifier engineStateIdentifier;
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-07-06T21:16:58.881714945+02:00[Europe/Warsaw]")
+public class OlympiaEndStateResponse {
+  public static final String JSON_PROPERTY_HASH = "hash";
+  private String hash;
 
-  public static final String JSON_PROPERTY_VALIDATOR_SET = "validator_set";
-  private List<Validator> validatorSet = new ArrayList<>();
+  public static final String JSON_PROPERTY_SIGNATURE = "signature";
+  private String signature;
 
-  public static final String JSON_PROPERTY_UPCOMING_FORK = "upcoming_fork";
-  private UpcomingFork upcomingFork;
+  public static final String JSON_PROPERTY_CONTENTS = "contents";
+  private String contents;
 
-  public static final String JSON_PROPERTY_IS_SHUT_DOWN = "is_shut_down";
-  private boolean isShutDown;
+  public OlympiaEndStateResponse() { 
+  }
 
-  public EngineStatusResponse engineStateIdentifier(EngineStateIdentifier engineStateIdentifier) {
-    this.engineStateIdentifier = engineStateIdentifier;
+  public OlympiaEndStateResponse hash(String hash) {
+    this.hash = hash;
     return this;
   }
 
    /**
-   * Get engineStateIdentifier
-   * @return engineStateIdentifier
+   * The hash of the end state bytes
+   * @return hash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ENGINE_STATE_IDENTIFIER)
+  @ApiModelProperty(required = true, value = "The hash of the end state bytes")
+  @JsonProperty(JSON_PROPERTY_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EngineStateIdentifier getEngineStateIdentifier() {
-    return engineStateIdentifier;
+  public String getHash() {
+    return hash;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ENGINE_STATE_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEngineStateIdentifier(EngineStateIdentifier engineStateIdentifier) {
-    this.engineStateIdentifier = engineStateIdentifier;
+  public void setHash(String hash) {
+    this.hash = hash;
   }
 
 
-  public EngineStatusResponse validatorSet(List<Validator> validatorSet) {
-    this.validatorSet = validatorSet;
-    return this;
-  }
-
-  public EngineStatusResponse addValidatorSetItem(Validator validatorSetItem) {
-    this.validatorSet.add(validatorSetItem);
+  public OlympiaEndStateResponse signature(String signature) {
+    this.signature = signature;
     return this;
   }
 
    /**
-   * Get validatorSet
-   * @return validatorSet
+   * The node signature of the end state hash
+   * @return signature
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
+  @ApiModelProperty(required = true, value = "The node signature of the end state hash")
+  @JsonProperty(JSON_PROPERTY_SIGNATURE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<Validator> getValidatorSet() {
-    return validatorSet;
+  public String getSignature() {
+    return signature;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
+  @JsonProperty(JSON_PROPERTY_SIGNATURE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidatorSet(List<Validator> validatorSet) {
-    this.validatorSet = validatorSet;
+  public void setSignature(String signature) {
+    this.signature = signature;
   }
 
 
-  public EngineStatusResponse upcomingFork(UpcomingFork upcomingFork) {
-    this.upcomingFork = upcomingFork;
+  public OlympiaEndStateResponse contents(String contents) {
+    this.contents = contents;
     return this;
   }
 
    /**
-   * Get upcomingFork
-   * @return upcomingFork
+   * base64-encoded compressed end state
+   * @return contents
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_UPCOMING_FORK)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "base64-encoded compressed end state")
+  @JsonProperty(JSON_PROPERTY_CONTENTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public UpcomingFork getUpcomingFork() {
-    return upcomingFork;
+  public String getContents() {
+    return contents;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_UPCOMING_FORK)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setUpcomingFork(UpcomingFork upcomingFork) {
-    this.upcomingFork = upcomingFork;
-  }
-
-  public EngineStatusResponse isShutDown(boolean isShutDown) {
-    this.isShutDown = isShutDown;
-    return this;
-  }
-
-  /**
-   * Get isShutDown
-   * @return isShutDown
-   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_IS_SHUT_DOWN)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public boolean isShutDown() {
-    return isShutDown;
-  }
-
-  @JsonProperty(JSON_PROPERTY_IS_SHUT_DOWN)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setShutDown(boolean isShutDown) {
-    this.isShutDown = isShutDown;
+  @JsonProperty(JSON_PROPERTY_CONTENTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setContents(String contents) {
+    this.contents = contents;
   }
 
 
   /**
-   * Return true if this EngineStatusResponse object is equal to o.
+   * Return true if this OlympiaEndStateResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -162,26 +132,24 @@ public class EngineStatusResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EngineStatusResponse engineStatusResponse = (EngineStatusResponse) o;
-    return Objects.equals(this.engineStateIdentifier, engineStatusResponse.engineStateIdentifier) &&
-        Objects.equals(this.validatorSet, engineStatusResponse.validatorSet) &&
-        Objects.equals(this.upcomingFork, engineStatusResponse.upcomingFork) &&
-        this.isShutDown == engineStatusResponse.isShutDown;
+    OlympiaEndStateResponse olympiaEndStateResponse = (OlympiaEndStateResponse) o;
+    return Objects.equals(this.hash, olympiaEndStateResponse.hash) &&
+        Objects.equals(this.signature, olympiaEndStateResponse.signature) &&
+        Objects.equals(this.contents, olympiaEndStateResponse.contents);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(engineStateIdentifier, validatorSet, upcomingFork, isShutDown);
+    return Objects.hash(hash, signature, contents);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EngineStatusResponse {\n");
-    sb.append("    engineStateIdentifier: ").append(toIndentedString(engineStateIdentifier)).append("\n");
-    sb.append("    validatorSet: ").append(toIndentedString(validatorSet)).append("\n");
-    sb.append("    upcomingFork: ").append(toIndentedString(upcomingFork)).append("\n");
-    sb.append("    isShutDown: ").append(toIndentedString(isShutDown)).append("\n");
+    sb.append("class OlympiaEndStateResponse {\n");
+    sb.append("    hash: ").append(toIndentedString(hash)).append("\n");
+    sb.append("    signature: ").append(toIndentedString(signature)).append("\n");
+    sb.append("    contents: ").append(toIndentedString(contents)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -62,46 +62,77 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.forks;
+package com.radixdlt.sync;
 
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.constraintmachine.ConstraintMachineConfig;
-import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.engine.PostProcessor;
-import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.hotstuff.bft.View;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import java.util.OptionalInt;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
+import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
+import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
+import com.radixdlt.sync.messages.local.SyncRequestTimeout;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
+import com.radixdlt.sync.messages.remote.StatusResponse;
+import com.radixdlt.sync.messages.remote.SyncResponse;
+import java.util.Objects;
 
-public record RERules(
-    RERulesVersion version,
-    REParser parser,
-    SubstateSerialization serialization,
-    ConstraintMachineConfig constraintMachineConfig,
-    REConstructor actionConstructors,
-    PostProcessor<LedgerAndBFTProof> postProcessor,
-    RERulesConfig config) {
+public final class NoOpLocalSyncService implements LocalSyncService {
 
-  public View maxRounds() {
-    return View.of(config.maxRounds());
+  private final SyncState syncState;
+
+  public NoOpLocalSyncService(SyncState syncState) {
+    this.syncState = Objects.requireNonNull(syncState);
   }
 
-  public OptionalInt maxSigsPerRound() {
-    return config.maxSigsPerRound();
+  @Override
+  public SyncState syncState() {
+    return this.syncState;
   }
 
-  public int maxValidators() {
-    return config.maxValidators();
+  @Override
+  public EventProcessor<SyncCheckTrigger> syncCheckTriggerEventProcessor() {
+    return ev -> {};
   }
 
-  public RERules addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
-    return new RERules(
-        version,
-        parser,
-        serialization,
-        constraintMachineConfig,
-        actionConstructors,
-        PostProcessor.append(postProcessor, newPostProcessor),
-        config);
+  @Override
+  public RemoteEventProcessor<StatusResponse> statusResponseEventProcessor() {
+    return (peer, ev) -> {};
+  }
+
+  @Override
+  public EventProcessor<SyncCheckReceiveStatusTimeout>
+      syncCheckReceiveStatusTimeoutEventProcessor() {
+    return ev -> {};
+  }
+
+  @Override
+  public RemoteEventProcessor<SyncResponse> syncResponseEventProcessor() {
+    return (peer, ev) -> {};
+  }
+
+  @Override
+  public RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateEventProcessor() {
+    return (peer, ev) -> {};
+  }
+
+  @Override
+  public EventProcessor<SyncRequestTimeout> syncRequestTimeoutEventProcessor() {
+    return ev -> {};
+  }
+
+  @Override
+  public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
+    return ev -> {};
+  }
+
+  @Override
+  public EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor() {
+    return ev -> {};
+  }
+
+  @Override
+  public EventProcessor<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutProcessor() {
+    return ev -> {};
   }
 }

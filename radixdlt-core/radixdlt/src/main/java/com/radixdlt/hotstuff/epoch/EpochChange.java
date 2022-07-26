@@ -72,10 +72,16 @@ import java.util.Objects;
 public final class EpochChange {
   private final LedgerProof proof;
   private final BFTConfiguration bftConfiguration;
+  private final boolean isShutdown;
 
-  public EpochChange(LedgerProof proof, BFTConfiguration bftConfiguration) {
+  public EpochChange(LedgerProof proof, BFTConfiguration bftConfiguration, boolean isShutdown) {
     this.proof = Objects.requireNonNull(proof);
     this.bftConfiguration = Objects.requireNonNull(bftConfiguration);
+    this.isShutdown = isShutdown;
+  }
+
+  public EpochChange(LedgerProof proof, BFTConfiguration bftConfiguration) {
+    this(proof, bftConfiguration, false);
   }
 
   public BFTConfiguration getBFTConfiguration() {
@@ -94,9 +100,13 @@ public final class EpochChange {
     return proof;
   }
 
+  public boolean isShutdown() {
+    return isShutdown;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(this.proof, this.bftConfiguration);
+    return Objects.hash(this.proof, this.bftConfiguration, this.isShutdown);
   }
 
   @Override
@@ -104,7 +114,8 @@ public final class EpochChange {
     if (o instanceof EpochChange) {
       final var that = (EpochChange) o;
       return Objects.equals(this.proof, that.proof)
-          && Objects.equals(this.bftConfiguration, that.bftConfiguration);
+          && Objects.equals(this.bftConfiguration, that.bftConfiguration)
+          && this.isShutdown == that.isShutdown;
     }
     return false;
   }
@@ -112,6 +123,7 @@ public final class EpochChange {
   @Override
   public String toString() {
     return String.format(
-        "%s{proof=%s config=%s}", this.getClass().getSimpleName(), proof, bftConfiguration);
+        "%s{proof=%s config=%s, isShutdown=%s}",
+        this.getClass().getSimpleName(), proof, bftConfiguration, isShutdown);
   }
 }

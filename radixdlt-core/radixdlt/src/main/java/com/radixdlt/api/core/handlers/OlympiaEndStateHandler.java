@@ -62,46 +62,97 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.forks;
+package com.radixdlt.api.core.handlers;
 
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.constraintmachine.ConstraintMachineConfig;
-import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.engine.PostProcessor;
-import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.hotstuff.bft.View;
+import com.google.inject.Inject;
+import com.radixdlt.api.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.model.CoreApiException;
+import com.radixdlt.api.core.openapitools.model.EngineIsNotShutDownError;
+import com.radixdlt.api.core.openapitools.model.OlympiaEndStateRequest;
+import com.radixdlt.api.core.openapitools.model.OlympiaEndStateResponse;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.hotstuff.HashSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import java.util.OptionalInt;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
+import com.radixdlt.stateir.OlympiaStateIRSerializer;
+import com.radixdlt.stateir.StateIRConstructor;
+import com.radixdlt.store.EngineStore;
+import com.radixdlt.utils.Bytes;
+import java.io.IOException;
+import java.util.Objects;
+import java.util.Optional;
+import org.xerial.snappy.Snappy;
 
-public record RERules(
-    RERulesVersion version,
-    REParser parser,
-    SubstateSerialization serialization,
-    ConstraintMachineConfig constraintMachineConfig,
-    REConstructor actionConstructors,
-    PostProcessor<LedgerAndBFTProof> postProcessor,
-    RERulesConfig config) {
+public final class OlympiaEndStateHandler
+    extends CoreJsonRpcHandler<OlympiaEndStateRequest, OlympiaEndStateResponse> {
 
-  public View maxRounds() {
-    return View.of(config.maxRounds());
+  private final Object endStateLock = new Object();
+
+  private final RadixEngine<LedgerAndBFTProof> radixEngine;
+  private final EngineStore<LedgerAndBFTProof> engineStore;
+  private final CurrentForkView currentForkView;
+  private final Hasher hasher;
+  private final HashSigner hashSigner;
+
+  private Optional<OlympiaEndStateResponse> cachedEndStateResponse = Optional.empty();
+
+  @Inject
+  OlympiaEndStateHandler(
+      RadixEngine<LedgerAndBFTProof> radixEngine,
+      EngineStore<LedgerAndBFTProof> engineStore,
+      CurrentForkView currentForkView,
+      Hasher hasher,
+      HashSigner hashSigner) {
+    super(OlympiaEndStateRequest.class);
+    this.radixEngine = Objects.requireNonNull(radixEngine);
+    this.engineStore = Objects.requireNonNull(engineStore);
+    this.currentForkView = Objects.requireNonNull(currentForkView);
+    this.hasher = Objects.requireNonNull(hasher);
+    this.hashSigner = Objects.requireNonNull(hashSigner);
   }
 
-  public OptionalInt maxSigsPerRound() {
-    return config.maxSigsPerRound();
+  @Override
+  public OlympiaEndStateResponse handleRequest(OlympiaEndStateRequest request)
+      throws CoreApiException {
+    if (!radixEngine.isShutDown()) {
+      // Radix Engine is still running
+      throw CoreApiException.badRequest(
+          new EngineIsNotShutDownError()
+              .message("Can't create the end state. Engine isn't yet shut down.")
+              .type(EngineIsNotShutDownError.class.getSimpleName()));
+    }
+
+    synchronized (endStateLock) {
+      try {
+        if (this.cachedEndStateResponse.isEmpty()) {
+          prepareEndStateResponseAndSaveToCache();
+        }
+        return this.cachedEndStateResponse.orElseThrow();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
   }
 
-  public int maxValidators() {
-    return config.maxValidators();
+  private void prepareEndStateResponseAndSaveToCache() throws IOException {
+    final var endStateBytes = prepareEndState();
+    final var hash = hasher.hashBytes(endStateBytes);
+    final var signature = hashSigner.sign(hash);
+    final var response =
+        new OlympiaEndStateResponse()
+            .hash(Bytes.toHexString(hash.asBytes()))
+            .signature(signature.toHexString())
+            .contents(Bytes.toBase64String(endStateBytes));
+    this.cachedEndStateResponse = Optional.of(response);
   }
 
-  public RERules addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
-    return new RERules(
-        version,
-        parser,
-        serialization,
-        constraintMachineConfig,
-        actionConstructors,
-        PostProcessor.append(postProcessor, newPostProcessor),
-        config);
+  private byte[] prepareEndState() throws IOException {
+    final var substateDeserialization =
+        currentForkView.currentForkConfig().engineRules().parser().getSubstateDeserialization();
+    final var state =
+        new StateIRConstructor(engineStore, substateDeserialization).prepareOlympiaStateIR();
+    final var serialized = new OlympiaStateIRSerializer().serialize(state);
+    return Snappy.compress(serialized);
   }
 }

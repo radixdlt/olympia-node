@@ -110,6 +110,7 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
 import java.util.List;
 import java.util.Objects;
@@ -363,7 +364,7 @@ public final class RadixEngineStateComputer implements StateComputer {
     }
   }
 
-  private RadixEngineResult<LedgerAndBFTProof> commitInternal(
+  private RadixEngineResult<LedgerAndBFTProof> executeRadixEngine(
       VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
     var proof = verifiedTxnsAndProof.getProof();
 
@@ -380,8 +381,6 @@ public final class RadixEngineStateComputer implements StateComputer {
       throw new ByzantineQuorumException(e.getMessage(), e);
     }
 
-    result.getMetadata().getNextForkName().ifPresent(this::forkRadixEngine);
-
     result
         .getProcessedTxns()
         .forEach(
@@ -394,27 +393,16 @@ public final class RadixEngineStateComputer implements StateComputer {
     return result;
   }
 
-  private void forkRadixEngine(String nextForkName) {
-    final var nextForkConfig =
-        forks.getByName(nextForkName).orElseThrow(); // guaranteed to be present
-    if (log.isInfoEnabled()) {
-      log.info("Forking RadixEngine to {}", nextForkConfig.name());
-    }
-    final var rules = nextForkConfig.engineRules();
-    this.radixEngine.replaceConstraintMachine(
-        rules.constraintMachineConfig(),
-        rules.serialization(),
-        rules.actionConstructors(),
-        rules.postProcessor(),
-        rules.parser());
-    this.epochCeilingView = rules.maxRounds();
-    this.maxSigsPerRound = rules.maxSigsPerRound();
-  }
-
   @Override
   public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
     synchronized (lock) {
-      final var radixEngineResult = commitInternal(txnsAndProof, vertexStoreState);
+      final var radixEngineResult = executeRadixEngine(txnsAndProof, vertexStoreState);
+
+      final var maybeNextForkConfig =
+          radixEngineResult.getMetadata().getNextForkName().flatMap(forks::getByName);
+
+      maybeNextForkConfig.ifPresent(this::forkRadixEngine);
+
       final var txCommitted = radixEngineResult.getProcessedTxns();
 
       // TODO: refactor mempool to be less generic and make this more efficient
@@ -454,7 +442,11 @@ public final class RadixEngineStateComputer implements StateComputer {
                     var proposerElection = new WeightedRotatingLeaders(validatorSet);
                     var bftConfiguration =
                         new BFTConfiguration(proposerElection, validatorSet, initialState);
-                    return new EpochChange(header, bftConfiguration);
+
+                    final var isShutdown =
+                        maybeNextForkConfig.map(ForkConfig::isShutdown).orElse(false);
+
+                    return new EpochChange(header, bftConfiguration, isShutdown);
                   });
       var outputBuilder = ImmutableClassToInstanceMap.builder();
       epochChangeOptional.ifPresent(
@@ -466,6 +458,27 @@ public final class RadixEngineStateComputer implements StateComputer {
       outputBuilder.put(LedgerAndBFTProof.class, radixEngineResult.getMetadata());
       var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build());
       ledgerUpdateDispatcher.dispatch(ledgerUpdate);
+    }
+  }
+
+  private void forkRadixEngine(ForkConfig nextForkConfig) {
+    if (log.isInfoEnabled()) {
+      log.info("Forking RadixEngine to {}", nextForkConfig.name());
+    }
+
+    final var rules = nextForkConfig.engineRules();
+    this.epochCeilingView = rules.maxRounds();
+    this.maxSigsPerRound = rules.maxSigsPerRound();
+
+    if (nextForkConfig.isShutdown()) {
+      this.radixEngine.shutDown();
+    } else {
+      this.radixEngine.replaceConstraintMachine(
+          rules.constraintMachineConfig(),
+          rules.serialization(),
+          rules.actionConstructors(),
+          rules.postProcessor(),
+          rules.parser());
     }
   }
 }

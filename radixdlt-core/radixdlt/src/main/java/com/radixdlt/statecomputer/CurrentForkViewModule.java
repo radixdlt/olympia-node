@@ -62,46 +62,32 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.forks;
+package com.radixdlt.statecomputer;
 
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.constraintmachine.ConstraintMachineConfig;
-import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.engine.PostProcessor;
-import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.hotstuff.bft.View;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import java.util.OptionalInt;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
+import com.radixdlt.sync.CommittedReader;
+import java.util.Map;
 
-public record RERules(
-    RERulesVersion version,
-    REParser parser,
-    SubstateSerialization serialization,
-    ConstraintMachineConfig constraintMachineConfig,
-    REConstructor actionConstructors,
-    PostProcessor<LedgerAndBFTProof> postProcessor,
-    RERulesConfig config) {
+public final class CurrentForkViewModule extends AbstractModule {
+  @Provides
+  @Singleton
+  private CurrentForkView currentForkView(
+      CommittedReader committedReader, ForksEpochStore forksEpochStore, Forks forks) {
+    forks.init(committedReader, forksEpochStore);
 
-  public View maxRounds() {
-    return View.of(config.maxRounds());
-  }
+    final var latestStoredForkNameOpt =
+        forksEpochStore.getStoredForks().entrySet().stream()
+            .max((a, b) -> (int) (a.getKey() - b.getKey()))
+            .map(Map.Entry::getValue);
 
-  public OptionalInt maxSigsPerRound() {
-    return config.maxSigsPerRound();
-  }
+    final var initialForkConfig =
+        latestStoredForkNameOpt.flatMap(forks::getByName).orElseGet(forks::genesisFork);
 
-  public int maxValidators() {
-    return config.maxValidators();
-  }
-
-  public RERules addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
-    return new RERules(
-        version,
-        parser,
-        serialization,
-        constraintMachineConfig,
-        actionConstructors,
-        PostProcessor.append(postProcessor, newPostProcessor),
-        config);
+    return new CurrentForkView(forks, initialForkConfig);
   }
 }

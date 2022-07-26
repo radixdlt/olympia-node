@@ -62,46 +62,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.forks;
+package com.radixdlt.ledger;
 
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.constraintmachine.ConstraintMachineConfig;
-import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.engine.PostProcessor;
-import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.hotstuff.bft.View;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import java.util.OptionalInt;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
+import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.Forks;
+import java.util.Objects;
+import java.util.Set;
 
-public record RERules(
-    RERulesVersion version,
-    REParser parser,
-    SubstateSerialization serialization,
-    ConstraintMachineConfig constraintMachineConfig,
-    REConstructor actionConstructors,
-    PostProcessor<LedgerAndBFTProof> postProcessor,
-    RERulesConfig config) {
+public final class MockedCurrentForkViewModule extends AbstractModule {
+  private final ForkConfig genesisFork;
 
-  public View maxRounds() {
-    return View.of(config.maxRounds());
+  public MockedCurrentForkViewModule(ForkConfig genesisFork) {
+    this.genesisFork = Objects.requireNonNull(genesisFork);
   }
 
-  public OptionalInt maxSigsPerRound() {
-    return config.maxSigsPerRound();
-  }
-
-  public int maxValidators() {
-    return config.maxValidators();
-  }
-
-  public RERules addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
-    return new RERules(
-        version,
-        parser,
-        serialization,
-        constraintMachineConfig,
-        actionConstructors,
-        PostProcessor.append(postProcessor, newPostProcessor),
-        config);
+  @Provides
+  @Singleton
+  private CurrentForkView currentForkView() {
+    return new CurrentForkView(Forks.create(Set.of(genesisFork)), genesisFork);
   }
 }

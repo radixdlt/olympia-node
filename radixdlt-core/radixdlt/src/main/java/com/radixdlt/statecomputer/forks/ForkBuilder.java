@@ -72,9 +72,9 @@ import java.util.Optional;
  * parameters before the actual fork config object is created.
  */
 public final class ForkBuilder {
-  public static record FixedEpochForkBuildersOpts(long epoch) {}
+  public record FixedEpochForkBuildersOpts(long epoch) {}
 
-  public static record CandidateForkBuildersOpts(
+  public record CandidateForkBuildersOpts(
       ImmutableSet<CandidateForkConfig.Threshold> thresholds, long minEpoch, long maxEpoch) {}
 
   private final String name;
@@ -82,6 +82,7 @@ public final class ForkBuilder {
   private final Optional<CandidateForkBuildersOpts> candidateForkBuilderOpts;
   private final RERulesVersion reRulesVersion;
   private final RERulesConfig reRulesConfig;
+  private final boolean isShutdown;
 
   public ForkBuilder(
       String name, long fixedEpoch, RERulesVersion reRulesVersion, RERulesConfig reRulesConfig) {
@@ -90,7 +91,8 @@ public final class ForkBuilder {
         Optional.of(new FixedEpochForkBuildersOpts(fixedEpoch)),
         Optional.empty(),
         reRulesVersion,
-        reRulesConfig);
+        reRulesConfig,
+        false);
   }
 
   public ForkBuilder(
@@ -105,7 +107,8 @@ public final class ForkBuilder {
         Optional.empty(),
         Optional.of(new CandidateForkBuildersOpts(thresholds, minEpoch, maxEpoch)),
         reRulesVersion,
-        reRulesConfig);
+        reRulesConfig,
+        false);
   }
 
   private ForkBuilder(
@@ -113,7 +116,8 @@ public final class ForkBuilder {
       Optional<FixedEpochForkBuildersOpts> fixedEpochForkBuildersOpts,
       Optional<CandidateForkBuildersOpts> candidateForkBuildersOpts,
       RERulesVersion reRulesVersion,
-      RERulesConfig reRulesConfig) {
+      RERulesConfig reRulesConfig,
+      boolean isShutdown) {
     if (fixedEpochForkBuildersOpts.isEmpty() == candidateForkBuildersOpts.isEmpty()) {
       throw new IllegalArgumentException(
           "ForkBuilder must specify either a fixed epoch or candidate opts");
@@ -124,6 +128,7 @@ public final class ForkBuilder {
     this.candidateForkBuilderOpts = candidateForkBuildersOpts;
     this.reRulesVersion = reRulesVersion;
     this.reRulesConfig = reRulesConfig;
+    this.isShutdown = isShutdown;
   }
 
   public String getName() {
@@ -144,11 +149,28 @@ public final class ForkBuilder {
         fixedEpochForkBuilderOpts,
         candidateForkBuilderOpts,
         reRulesVersion,
-        newEngineRulesConfig);
+        newEngineRulesConfig,
+        isShutdown);
+  }
+
+  public ForkBuilder withShutdown() {
+    return new ForkBuilder(
+        name,
+        fixedEpochForkBuilderOpts,
+        candidateForkBuilderOpts,
+        reRulesVersion,
+        reRulesConfig,
+        true);
   }
 
   public ForkBuilder atFixedEpoch(long fixedEpoch) {
-    return new ForkBuilder(name, fixedEpoch, reRulesVersion, reRulesConfig);
+    return new ForkBuilder(
+        name,
+        Optional.of(new FixedEpochForkBuildersOpts(fixedEpoch)),
+        Optional.empty(),
+        reRulesVersion,
+        reRulesConfig,
+        isShutdown);
   }
 
   public long minEpoch() {
@@ -163,8 +185,10 @@ public final class ForkBuilder {
         .<ForkConfig>map(
             opts ->
                 new CandidateForkConfig(
-                    name, reRules, opts.thresholds, opts.minEpoch, opts.maxEpoch))
+                    name, reRules, opts.thresholds, opts.minEpoch, opts.maxEpoch, isShutdown))
         .orElseGet(
-            () -> new FixedEpochForkConfig(name, reRules, fixedEpochForkBuilderOpts.get().epoch));
+            () ->
+                new FixedEpochForkConfig(
+                    name, reRules, fixedEpochForkBuilderOpts.get().epoch, isShutdown));
   }
 }

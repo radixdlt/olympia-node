@@ -152,7 +152,7 @@ public class LocalSyncServiceTest {
 
   private void setupSyncServiceWithState(SyncState syncState) {
     this.localSyncService =
-        new LocalSyncService(
+        new LocalSyncServiceImpl(
             statusRequestDispatcher,
             syncCheckReceiveStatusTimeoutDispatcher,
             syncRequestDispatcher,
@@ -535,7 +535,7 @@ public class LocalSyncServiceTest {
 
     assertEquals(
         newTargetHeader,
-        ((SyncState.SyncingState) this.localSyncService.getSyncState()).getTargetHeader());
+        ((SyncState.SyncingState) this.localSyncService.syncState()).getTargetHeader());
   }
 
   @Test
@@ -557,7 +557,7 @@ public class LocalSyncServiceTest {
         .ledgerStatusUpdateEventProcessor()
         .process(peer2, LedgerStatusUpdate.create(newTargetHeader));
 
-    assertEquals(syncState, this.localSyncService.getSyncState());
+    assertEquals(syncState, this.localSyncService.syncState());
   }
 
   @Test
@@ -588,22 +588,22 @@ public class LocalSyncServiceTest {
 
     assertEquals(
         peer3,
-        ((SyncState.SyncingState) this.localSyncService.getSyncState()).peekNthCandidate(0).get());
+        ((SyncState.SyncingState) this.localSyncService.syncState()).peekNthCandidate(0).get());
     assertEquals(
         peer1,
-        ((SyncState.SyncingState) this.localSyncService.getSyncState()).peekNthCandidate(1).get());
+        ((SyncState.SyncingState) this.localSyncService.syncState()).peekNthCandidate(1).get());
     assertEquals(
         peer2,
-        ((SyncState.SyncingState) this.localSyncService.getSyncState()).peekNthCandidate(2).get());
+        ((SyncState.SyncingState) this.localSyncService.syncState()).peekNthCandidate(2).get());
     assertEquals(
         peer3,
-        ((SyncState.SyncingState) this.localSyncService.getSyncState()).peekNthCandidate(3).get());
+        ((SyncState.SyncingState) this.localSyncService.syncState()).peekNthCandidate(3).get());
     assertEquals(
         peer1,
-        ((SyncState.SyncingState) this.localSyncService.getSyncState()).peekNthCandidate(4).get());
+        ((SyncState.SyncingState) this.localSyncService.syncState()).peekNthCandidate(4).get());
     assertEquals(
         peer2,
-        ((SyncState.SyncingState) this.localSyncService.getSyncState()).peekNthCandidate(5).get());
+        ((SyncState.SyncingState) this.localSyncService.syncState()).peekNthCandidate(5).get());
   }
 
   @Test

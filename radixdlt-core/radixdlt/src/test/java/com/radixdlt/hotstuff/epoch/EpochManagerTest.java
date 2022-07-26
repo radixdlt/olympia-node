@@ -140,6 +140,11 @@ import com.radixdlt.modules.ConsensusModule;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.EpochsConsensusModule;
 import com.radixdlt.modules.LedgerModule;
+import com.radixdlt.statecomputer.forks.CurrentForkView;
+import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.statecomputer.forks.RERulesVersion;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
@@ -149,6 +154,7 @@ import com.radixdlt.utils.UInt256;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -260,6 +266,12 @@ public class EpochManagerTest {
         bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
         bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+
+        final var forkConfig =
+            new FixedEpochForkConfig(
+                "genesis", RERulesVersion.OLYMPIA_V1.create(RERulesConfig.testingDefault()), 0L);
+        bind(CurrentForkView.class)
+            .toInstance(new CurrentForkView(Forks.create(Set.of(forkConfig)), forkConfig));
 
         bind(new TypeLiteral<Consumer<EpochViewUpdate>>() {}).toInstance(rmock(Consumer.class));
       }

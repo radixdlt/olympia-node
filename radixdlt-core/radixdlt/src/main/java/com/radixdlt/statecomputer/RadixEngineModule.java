@@ -78,30 +78,16 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.statecomputer.forks.NewestForkConfig;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.sync.CommittedReader;
-import java.util.Map;
 import java.util.OptionalInt;
 
 /** Module which manages execution of commands */
 public class RadixEngineModule extends AbstractModule {
-  @Provides
-  @Singleton
-  private CurrentForkView currentForkView(
-      CommittedReader committedReader, ForksEpochStore forksEpochStore, Forks forks) {
-    forks.init(committedReader, forksEpochStore);
 
-    final var latestStoredForkNameOpt =
-        forksEpochStore.getStoredForks().entrySet().stream()
-            .max((a, b) -> (int) (a.getKey() - b.getKey()))
-            .map(Map.Entry::getValue);
-
-    final var initialForkConfig =
-        latestStoredForkNameOpt.flatMap(forks::getByName).orElseGet(forks::genesisFork);
-
-    return new CurrentForkView(forks, initialForkConfig);
+  @Override
+  public void configure() {
+    install(new CurrentForkViewModule());
   }
 
   @Provides
@@ -146,7 +132,8 @@ public class RadixEngineModule extends AbstractModule {
   @Singleton
   private RadixEngine<LedgerAndBFTProof> getRadixEngine(
       EngineStore<LedgerAndBFTProof> engineStore, CurrentForkView currentForkView) {
-    final var rules = currentForkView.currentForkConfig().engineRules();
+    final var currentForkConfig = currentForkView.currentForkConfig();
+    final var rules = currentForkConfig.engineRules();
     final var cmConfig = rules.constraintMachineConfig();
     var cm =
         new ConstraintMachine(
@@ -154,14 +141,21 @@ public class RadixEngineModule extends AbstractModule {
             cmConfig.getDeserialization(),
             cmConfig.getVirtualSubstateDeserialization(),
             cmConfig.getMeter());
-    return new RadixEngine<>(
-        rules.parser(),
-        rules.serialization(),
-        rules.actionConstructors(),
-        cm,
-        engineStore,
-        rules.postProcessor(),
-        rules.config().maxMessageLen());
+    final var radixEngine =
+        new RadixEngine<>(
+            rules.parser(),
+            rules.serialization(),
+            rules.actionConstructors(),
+            cm,
+            engineStore,
+            rules.postProcessor(),
+            rules.config().maxMessageLen());
+
+    if (currentForkConfig.isShutdown()) {
+      radixEngine.shutDown();
+    }
+
+    return radixEngine;
   }
 
   @ProvidesIntoSet

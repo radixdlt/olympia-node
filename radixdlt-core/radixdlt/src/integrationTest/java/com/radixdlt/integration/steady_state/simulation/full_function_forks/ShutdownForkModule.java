@@ -62,46 +62,88 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.forks;
+package com.radixdlt.integration.steady_state.simulation.full_function_forks;
 
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.constraintmachine.ConstraintMachineConfig;
-import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.engine.PostProcessor;
-import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.hotstuff.bft.View;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
+
+import com.google.inject.AbstractModule;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.application.tokens.state.TokenResource;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.ValidatorFeeCopy;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.statecomputer.forks.ForkBuilder;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.statecomputer.forks.RERulesVersion;
+import java.util.Map;
 import java.util.OptionalInt;
+import java.util.Set;
+import java.util.regex.Pattern;
 
-public record RERules(
-    RERulesVersion version,
-    REParser parser,
-    SubstateSerialization serialization,
-    ConstraintMachineConfig constraintMachineConfig,
-    REConstructor actionConstructors,
-    PostProcessor<LedgerAndBFTProof> postProcessor,
-    RERulesConfig config) {
+public final class ShutdownForkModule extends AbstractModule {
+  private static final Set<String> RESERVED_SYMBOLS =
+      Set.of("xrd", "xrds", "exrd", "exrds", "rad", "rads", "rdx", "rdxs", "radix");
 
-  public View maxRounds() {
-    return View.of(config.maxRounds());
+  @ProvidesIntoSet
+  ForkBuilder genesis() {
+    return new ForkBuilder(
+        "genesis",
+        0L,
+        RERulesVersion.OLYMPIA_V1,
+        new RERulesConfig(
+            RESERVED_SYMBOLS,
+            Pattern.compile("[a-z0-9]+"),
+            FeeTable.create(
+                Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
+                Map.of(
+                    TokenResource.class, Amount.ofTokens(100), // 100XRD per resource
+                    ValidatorRegisteredCopy.class, Amount.ofTokens(5), // 5XRD per validator update
+                    ValidatorFeeCopy.class, Amount.ofTokens(5), // 5XRD per register update
+                    ValidatorOwnerCopy.class, Amount.ofTokens(5), // 5XRD per register update
+                    ValidatorMetaData.class, Amount.ofTokens(5), // 5XRD per register update
+                    AllowDelegationFlag.class, Amount.ofTokens(5), // 5XRD per register update
+                    PreparedStake.class, Amount.ofMilliTokens(500), // 0.5XRD per stake
+                    PreparedUnstakeOwnership.class, Amount.ofMilliTokens(500) // 0.5XRD per unstake
+                    )),
+            (long) 1024 * 1024, // 1MB max user transaction size
+            OptionalInt.of(50), // 50 Txns per round
+            10, // Rounds per epoch
+            500, // Two weeks worth of epochs
+            Amount.ofTokens(90), // Minimum stake
+            500, // Two weeks worth of epochs
+            Amount.ofMicroTokens(2307700), // Rewards per proposal
+            9800, // 98.00% threshold for completed proposals to get any rewards,
+            100, // 100 max validators
+            MSG.maxLength()));
   }
 
-  public OptionalInt maxSigsPerRound() {
-    return config.maxSigsPerRound();
-  }
-
-  public int maxValidators() {
-    return config.maxValidators();
-  }
-
-  public RERules addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
-    return new RERules(
-        version,
-        parser,
-        serialization,
-        constraintMachineConfig,
-        actionConstructors,
-        PostProcessor.append(postProcessor, newPostProcessor),
-        config);
+  @ProvidesIntoSet
+  ForkBuilder shutdown() {
+    return new ForkBuilder(
+            "shutdown",
+            2L,
+            RERulesVersion.OLYMPIA_V1,
+            new RERulesConfig(
+                RESERVED_SYMBOLS,
+                Pattern.compile("[a-z0-9]+"),
+                FeeTable.create(
+                    Amount.ofMicroTokens(Long.MAX_VALUE), Map.of()), // Highest possible fee
+                0L, // No txns allowed
+                OptionalInt.of(0),
+                Long.MAX_VALUE, // No more epochs
+                1,
+                Amount.ofTokens(90), // Same as prev fork
+                Long.MAX_VALUE, // No more unstaking
+                Amount.ofMicroTokens(0), // No more rewards
+                0, // Unused
+                100,
+                MSG.maxLength()))
+        .withShutdown();
   }
 }

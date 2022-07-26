@@ -69,6 +69,7 @@ import com.google.inject.Module;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.ledger.MockedCommandGeneratorModule;
+import com.radixdlt.ledger.MockedCurrentForkViewModule;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
@@ -79,10 +80,18 @@ import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
+import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
+import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.statecomputer.forks.RERulesVersion;
 import com.radixdlt.sync.MockedSyncServiceModule;
 
 /** Manages the functional components of a node */
 public final class FunctionalNodeModule extends AbstractModule {
+  private static final ForkConfig MOCKED_GENESIS_FORK_CONFIG =
+      new FixedEpochForkConfig(
+          "genesis", RERulesVersion.OLYMPIA_V1.create(RERulesConfig.testingDefault()), 0L, false);
+
   private final boolean hasConsensus;
   private final boolean hasSync;
 
@@ -161,6 +170,7 @@ public final class FunctionalNodeModule extends AbstractModule {
           install(new MockedStateComputerModule());
         } else {
           install(new MockedStateComputerWithEpochsModule());
+          install(new MockedCurrentForkViewModule(MOCKED_GENESIS_FORK_CONFIG));
         }
       } else {
         install(new MempoolReceiverModule());
@@ -171,6 +181,7 @@ public final class FunctionalNodeModule extends AbstractModule {
 
         if (!hasRadixEngine) {
           install(new MockedMempoolStateComputerModule());
+          install(new MockedCurrentForkViewModule(MOCKED_GENESIS_FORK_CONFIG));
         } else {
           install(new RadixEngineStateComputerModule());
           install(new RadixEngineModule());

@@ -74,11 +74,14 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Objects;
+import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.ASN1OutputStream;
 import org.bouncycastle.asn1.DLSequence;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -166,7 +169,19 @@ public final class ECDSASignature {
   }
 
   public String toHexString() {
-    return Bytes.toHexString(getJsonR()) + Bytes.toHexString(getJsonS());
+    return Bytes.toHexString(toUnrecoverableDERBytes());
+  }
+
+  public byte[] toUnrecoverableDERBytes() {
+    final var os = new ByteArrayOutputStream();
+    final var asn1OutputStream = ASN1OutputStream.create(os);
+    try {
+      asn1OutputStream.writeObject(
+          new DLSequence(new ASN1Encodable[] {new ASN1Integer(getR()), new ASN1Integer(getS())}));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    return os.toByteArray();
   }
 
   @Override

@@ -1555,6 +1555,30 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/UnexpectedError"
+  "/olympia-end-state":
+    post:
+      summary: Get the Olympia end state (only available after the shutdown fork has been enacted)
+      tags:
+        - engine
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/OlympiaEndStateRequest"
+      responses:
+        '200':
+          description: The Olympia end state
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/OlympiaEndStateResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
 components:
   schemas:
     NetworkConfigurationRequest:
@@ -2300,6 +2324,7 @@ components:
       required:
         - engine_state_identifier
         - validator_set
+        - is_shut_down
       properties:
         engine_state_identifier:
           $ref: "#/components/schemas/EngineStateIdentifier"
@@ -2309,6 +2334,8 @@ components:
             $ref: "#/components/schemas/Validator"
         upcoming_fork:
           $ref: "#/components/schemas/UpcomingFork"
+        is_shut_down:
+          type: boolean
     ForksVotingResultsRequest:
       type: object
       required:
@@ -2459,6 +2486,33 @@ components:
         transaction_identifier:
           hash: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842
         duplicate: false
+    OlympiaEndStateRequest:
+      type: object
+      required:
+        - network_identifier
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+          description: The name of the network.
+      example:
+        network_identifier:
+          network: mainnet
+    OlympiaEndStateResponse:
+      type: object
+      required:
+        - hash
+        - signature
+        - contents
+      properties:
+        hash:
+          description: The hex-encoded SHA2 hash of the end state content bytes
+          type: string
+        signature:
+          description: The hex-encoded DER signature of the end state content bytes, signed with the node's key
+          type: string
+        contents:
+          description: The base64-encoded compressed end state
+          type: string
     PublicKeyEntry:
       type: object
       required:
@@ -3457,6 +3511,20 @@ components:
           properties:
             cause:
               type: string
+    EngineIsShutDownError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          properties:
+            message:
+              type: string
+    EngineIsNotShutDownError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          properties:
+            message:
+              type: string
     CoreError:
       type: object
       required:
@@ -3496,6 +3564,8 @@ components:
           StateIdentifierNotFoundError: "#/components/schemas/StateIdentifierNotFoundError"
           InternalServerError: "#/components/schemas/InternalServerError"
           InvalidJsonError: "#/components/schemas/InvalidJsonError"
+          EngineIsShutDownError: "#/components/schemas/EngineIsShutDownError"
+          EngineIsNotShutDownError: "#/components/schemas/EngineIsNotShutDownError"
     UnexpectedError:
       type: object
       required:

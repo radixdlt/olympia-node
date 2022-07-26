@@ -200,7 +200,7 @@ public class RemoteSyncServiceTest {
     final var validatorSet = mock(BFTValidatorSet.class);
     when(ledgerUpdate.getNextValidatorSet()).thenReturn(Optional.of(validatorSet));
 
-    when(this.localSyncService.getSyncState())
+    when(this.localSyncService.syncState())
         .thenReturn(
             SyncState.SyncingState.init(
                 mock(LedgerProof.class), ImmutableList.of(), mock(LedgerProof.class)));

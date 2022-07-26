@@ -226,4 +226,8 @@ public final class EngineStatusService {
 
     return this.cachedForkVoteStatus;
   }
+
+  public boolean isShutDown() {
+    return radixEngine.isShutDown();
+  }
 }

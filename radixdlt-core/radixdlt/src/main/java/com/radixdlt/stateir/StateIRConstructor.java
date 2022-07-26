@@ -87,7 +87,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.store.EngineStore.EngineStoreInTransaction;
+import com.radixdlt.store.EngineStore;
 import com.radixdlt.utils.Lists;
 import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
@@ -117,13 +117,12 @@ public final class StateIRConstructor {
     return (a, b) -> Arrays.compare(extractor.apply(a), extractor.apply(b));
   }
 
-  private final EngineStoreInTransaction<LedgerAndBFTProof> tx;
+  private final EngineStore<LedgerAndBFTProof> engineStore;
   private final SubstateDeserialization substateDeserialization;
 
   public StateIRConstructor(
-      EngineStoreInTransaction<LedgerAndBFTProof> tx,
-      SubstateDeserialization substateDeserialization) {
-    this.tx = Objects.requireNonNull(tx);
+      EngineStore<LedgerAndBFTProof> engineStore, SubstateDeserialization substateDeserialization) {
+    this.engineStore = Objects.requireNonNull(engineStore);
     this.substateDeserialization = Objects.requireNonNull(substateDeserialization);
   }
 
@@ -404,7 +403,7 @@ public final class StateIRConstructor {
   private <T extends Particle> void processSubstatesOfType(
       SubstateTypeId substateTypeId, Class<T> substateClazz, Consumer<T> consumer) {
     try (var cursor =
-        tx.openIndexedCursor(SubstateIndex.create(substateTypeId.id(), substateClazz))) {
+        engineStore.openIndexedCursor(SubstateIndex.create(substateTypeId.id(), substateClazz))) {
       cursor.forEachRemaining(rawSubstate -> consumer.accept(parseRawSubstateBytes(rawSubstate)));
     }
   }

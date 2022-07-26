@@ -73,14 +73,24 @@ public record CandidateForkConfig(
     RERules engineRules,
     ImmutableSet<Threshold> thresholds,
     long minEpoch,
-    long maxEpoch)
+    long maxEpoch,
+    boolean isShutdown)
     implements ForkConfig {
+
+  public CandidateForkConfig(
+      String name,
+      RERules engineRules,
+      ImmutableSet<Threshold> thresholds,
+      long minEpoch,
+      long maxEpoch) {
+    this(name, engineRules, thresholds, minEpoch, maxEpoch, false);
+  }
 
   /**
    * A threshold specifying candidate fork's required number of epochs and a required stake (in
    * percentage value * 100), i.e. a value of 100 is 1%, 5000 is 50%, 10000 is 100%, etc.
    */
-  public static record Threshold(short requiredStake, int numEpochsBeforeEnacted) {
+  public record Threshold(short requiredStake, int numEpochsBeforeEnacted) {
     public Threshold {
       if (requiredStake < 1 || requiredStake > 10000) {
         throw new IllegalArgumentException(
@@ -111,6 +121,11 @@ public record CandidateForkConfig(
   @Override
   public CandidateForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
     return new CandidateForkConfig(
-        name, engineRules.addPostProcessor(newPostProcessor), thresholds, minEpoch, maxEpoch);
+        name,
+        engineRules.addPostProcessor(newPostProcessor),
+        thresholds,
+        minEpoch,
+        maxEpoch,
+        isShutdown);
   }
 }

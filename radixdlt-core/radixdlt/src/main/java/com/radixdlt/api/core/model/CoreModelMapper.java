@@ -117,6 +117,7 @@ import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.engine.EngineShutdownTxBuilderException;
 import com.radixdlt.engine.FeeConstructionException;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
@@ -276,6 +277,12 @@ public final class CoreModelMapper {
           .available(nativeTokenAmount(notEnoughNativeTokensForFeesException.getAvailable()))
           .feeEstimate(nativeTokenAmount(notEnoughNativeTokensForFeesException.getFee()))
           .type(NotEnoughNativeTokensForFeesError.class.getSimpleName());
+    } else if (e instanceof EngineShutdownTxBuilderException) {
+      return new EngineIsShutDownError()
+          .message(
+              "The Radix Olympia network has been shut down. Use the Babylon node to submit"
+                  + " transactions.")
+          .type(EngineIsShutDownError.class.getSimpleName());
     }
 
     throw new IllegalStateException(e);

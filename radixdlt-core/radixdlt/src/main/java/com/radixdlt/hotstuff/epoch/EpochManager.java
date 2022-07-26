@@ -206,7 +206,7 @@ public final class EpochManager {
     var config = this.currentEpoch.getBFTConfiguration();
     var validatorSet = config.getValidatorSet();
 
-    if (!validatorSet.containsNode(self)) {
+    if (!validatorSet.containsNode(self) || this.currentEpoch.isShutdown()) {
       this.bftRebuildProcessors = Set.of();
       this.bftUpdateProcessors = Set.of();
       this.syncRequestProcessors = Set.of();

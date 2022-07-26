@@ -87,6 +87,7 @@ import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseHandler;
 import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseHandler;
+import com.radixdlt.sync.LocalSyncServiceImpl;
 import com.radixdlt.sync.RemoteSyncService;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.sync.SyncState;
@@ -102,7 +103,7 @@ public class SyncServiceModule extends AbstractModule {
 
   @Override
   public void configure() {
-    bind(LocalSyncService.class).in(Scopes.SINGLETON);
+    bind(LocalSyncService.class).to(LocalSyncServiceImpl.class).in(Scopes.SINGLETON);
     bind(RemoteSyncService.class).in(Scopes.SINGLETON);
   }
 

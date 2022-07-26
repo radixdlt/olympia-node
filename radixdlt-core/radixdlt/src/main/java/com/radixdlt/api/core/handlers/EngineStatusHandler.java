@@ -134,6 +134,8 @@ public class EngineStatusHandler
                         .name(forks.getCandidateFork().orElseThrow().name())
                         .epochsRemaining(candidateForkRemainingEpochs)));
 
+    response.isShutDown(engineStatusService.isShutDown());
+
     return response;
   }
 }
