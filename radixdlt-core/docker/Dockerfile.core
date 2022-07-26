@@ -6,6 +6,7 @@ MAINTAINER radixdlt <devops@radixdlt.com>
 COPY apt-config/sources.list /etc/apt/
 COPY apt-config/99own /etc/apt/apt.conf.d/
 
+#https://www.xmodulo.com/404-not-found-error-apt-get-update-ubuntu.html
 RUN sed -i -r 's/([a-z]{2}.)?archive.ubuntu.com/old-releases.ubuntu.com/g' /etc/apt/sources.list
 RUN sed -i -r 's/security.ubuntu.com/old-releases.ubuntu.com/g' /etc/apt/sources.list
 
