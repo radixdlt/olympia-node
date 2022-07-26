@@ -7,7 +7,7 @@ on:
     branches:
       - main
       - release\/*
-      - TO-137-fix-rcnet-build-issue
+
 jobs:
   cancel_running_workflows:
     name: Cancel running workflows
