@@ -122,7 +122,7 @@ jobs:
           tags: |
             ${{ steps.set_environment.outputs.radixdlt_image }}:${{ steps.get_version.outputs.docker_tag }}
           push: true
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           context: ./radixdlt-core/docker
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
