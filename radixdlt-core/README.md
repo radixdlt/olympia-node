@@ -31,8 +31,7 @@ numbers 12345 and 23456, and may fail if these ports are not available on
 your machine.  We plan to fix this.
 
 ## Launching
-You will need docker and docker-compose installed to launch a node.  We use
-[Docker Desktop for Mac](https://hub.docker.com/editions/community/docker-ce-desktop-mac).
+You will need `docker` and `docker-compose` installed to launch a node. Version `20.10.10` or newer is required. We use [Docker Desktop for Mac](https://hub.docker.com/editions/community/docker-ce-desktop-mac).
 
 We generate initial validator keys and genesis/universe at launch time, so the easiest way to launch a set of nodes is to use the startup script provided.
 
