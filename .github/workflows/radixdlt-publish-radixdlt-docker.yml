@@ -12,7 +12,7 @@ on:
 jobs:
   cancel_running_workflows:
     name: Cancel running workflows
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: cancel running workflows
         uses: styfle/cancel-workflow-action@0.8.0
@@ -20,7 +20,7 @@ jobs:
           access_token: ${{ github.token }}
   build-docker:
     name: Build deb package needed for Docker image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v1
       - id: set_environment
@@ -67,7 +67,7 @@ jobs:
     needs: build-docker
     name: Build and push radixdlt Docker image
     environment: publish-artifacts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v1
       - id: set_environment
