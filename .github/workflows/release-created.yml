@@ -6,7 +6,7 @@ name: Start release process
 jobs:
   start_radixdlt_iac_release:
     name: Start radixdlt-iac release ${{ github.event.release.tag_name }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     environment: publish-artifacts
     steps:
       - name: Trigger radixdlt/radixdlt-iac release ${{ github.event.release.tag_name }}
@@ -25,7 +25,7 @@ jobs:
             }
   start_radixdlt_node_runner:
     name: Start node-runner release ${{ github.event.release.tag_name }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     environment: publish-artifacts
     steps:
       - name: Trigger radixdlt/node-runner release ${{ github.event.release.tag_name }}

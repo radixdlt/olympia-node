@@ -2,7 +2,7 @@
 
 ## Setup
 
-1. Install [Docker for Mac](https://docs.docker.com/docker-for-mac/install/) or [Docker for Linux](https://docs.docker.com/engine/install/ubuntu/) 
+1. Install [Docker for Mac](https://docs.docker.com/docker-for-mac/install/) or [Docker for Linux](https://docs.docker.com/engine/install/ubuntu/) version `20.10.10` or newer
 2. Be happy :)
 
 ## File structure

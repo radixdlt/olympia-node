@@ -1,3 +1,0 @@
-APT::Get::AllowUnauthenticated "true";
-APT::Get::AllowInsecureRepositories "true";
-APT::Get::AllowDowngradeToInsecureRepositories "true";

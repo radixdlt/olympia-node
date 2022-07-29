@@ -8,7 +8,7 @@ on:
 jobs:
   cancel_running_workflows:
     name: Cancel running workflows
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: cancel running workflows
         uses: styfle/cancel-workflow-action@0.8.0
@@ -17,7 +17,7 @@ jobs:
   sync_core_collection:
     name: Sync Postman Core collection w/ latest main
     environment: Postman
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Get current date
         id: date
