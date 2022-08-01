@@ -73,15 +73,21 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.hotstuff.bft.BFTNode;
 import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Relays commands from the local mempool to node neighbors. */
 @Singleton
 public final class MempoolRelayer {
+  private static final Logger log = LogManager.getLogger();
+
   private final PeersView peersView;
   private final RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher;
   private final SystemCounters counters;
@@ -134,14 +140,18 @@ public final class MempoolRelayer {
 
   private void relayCommands(List<Txn> txns, ImmutableList<BFTNode> ignorePeers) {
     final var mempoolAddMsg = MempoolAdd.create(txns);
+    final var txnsIds = txns.stream().map(tx -> tx.getId().toString()).toList();
     final var peers =
         this.peersView.peers().map(PeersView.PeerInfo::bftNode).collect(Collectors.toList());
     peers.removeAll(ignorePeers);
     Collections.shuffle(peers);
+    final var addressing = Addressing.ofNetwork(Network.STOKENET).forNodes();
+    log.info("Relaying txns: {}", txnsIds);
     peers.stream()
         .limit(maxPeers)
         .forEach(
             peer -> {
+              log.info("Relaying {} txns to {}", txns.size(), addressing.of(peer.getKey()));
               counters.add(CounterType.MEMPOOL_RELAYS_SENT, txns.size());
               this.remoteEventDispatcher.dispatch(peer, mempoolAddMsg);
             });

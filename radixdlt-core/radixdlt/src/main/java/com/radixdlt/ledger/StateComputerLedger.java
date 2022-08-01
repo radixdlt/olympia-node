@@ -174,6 +174,7 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
     return (node, mempoolAdd) -> {
       synchronized (lock) {
         stateComputer.addToMempool(mempoolAdd, node);
+        counters.increment(CounterType.MEMPOOL_REMOTE_ADD_PROCESSED);
       }
     };
   }

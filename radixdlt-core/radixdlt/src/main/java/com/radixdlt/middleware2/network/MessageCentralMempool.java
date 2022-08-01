@@ -102,7 +102,7 @@ public final class MessageCentralMempool {
         .map(
             msg -> {
               final BFTNode node = BFTNode.create(msg.getSource().getPublicKey());
-              return RemoteEvent.create(node, MempoolAdd.create(msg.getMessage().getTxns()));
+              return RemoteEvent.create(node, MempoolAdd.create(msg.getMessage()));
             })
         .toFlowable(BackpressureStrategy.BUFFER);
   }
