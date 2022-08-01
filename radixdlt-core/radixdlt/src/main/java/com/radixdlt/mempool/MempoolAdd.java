@@ -65,18 +65,25 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.atom.Txn;
+import com.radixdlt.middleware2.network.MempoolAddMessage;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /** Message to attempt to add commands to the mempool */
-public record MempoolAdd(List<Txn> txns) {
+public record MempoolAdd(List<Txn> txns, Optional<MempoolAddMessage> networkMessage) {
   public static MempoolAdd create(Txn txn) {
     Objects.requireNonNull(txn);
-    return new MempoolAdd(List.of(txn));
+    return new MempoolAdd(List.of(txn), Optional.empty());
   }
 
   public static MempoolAdd create(List<Txn> txns) {
     Objects.requireNonNull(txns);
-    return new MempoolAdd(txns);
+    return new MempoolAdd(txns, Optional.empty());
+  }
+
+  public static MempoolAdd create(MempoolAddMessage message) {
+    Objects.requireNonNull(message.getTxns());
+    return new MempoolAdd(message.getTxns(), Optional.of(message));
   }
 }

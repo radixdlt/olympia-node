@@ -71,6 +71,7 @@ import static java.util.Optional.ofNullable;
 import com.google.inject.Provider;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.middleware2.network.MempoolAddMessage;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.networks.Addressing;
@@ -130,6 +131,10 @@ final class MessagePreprocessor {
     if (currentTime - message.getTimestamp() > messageTtlMs) {
       return MESSAGE_EXPIRED.result();
     } else {
+      // just for testing, remove me
+      if (message instanceof MempoolAddMessage) {
+        counters.increment(CounterType.MEMPOOL_REMOTE_ADD_RECEIVED);
+      }
       return Result.ok(new MessageFromPeer<>(source, message));
     }
   }

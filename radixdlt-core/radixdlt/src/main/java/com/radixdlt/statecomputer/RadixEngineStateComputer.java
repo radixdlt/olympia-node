@@ -110,6 +110,8 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.forks.Forks;
 import java.util.List;
 import java.util.Objects;
@@ -228,12 +230,24 @@ public final class RadixEngineStateComputer implements StateComputer {
               try {
                 addToMempool(txn, origin);
               } catch (MempoolDuplicateException ex) {
-                log.trace(
+                log.info(
                     "Transaction {} was not added as it was already in the mempool", txn.getId());
+                logRemoteError(mempoolAdd, origin);
               } catch (MempoolRejectedException ex) {
-                log.debug("Transaction {} was not added to the mempool", txn.getId(), ex);
+                log.info("Transaction {} was not added to the mempool", txn.getId(), ex);
+                logRemoteError(mempoolAdd, origin);
               }
             });
+  }
+
+  private void logRemoteError(MempoolAdd mempoolAdd, BFTNode origin) {
+    if (mempoolAdd.networkMessage().isPresent()) {
+      final var msg = mempoolAdd.networkMessage().get();
+      final var msgDelay = System.currentTimeMillis() - msg.getTimestamp();
+      final var addressing = Addressing.ofNetwork(Network.STOKENET).forNodes();
+      log.info(
+          "Mempool add was received from {}, {}ms ago", addressing.of(origin.getKey()), msgDelay);
+    }
   }
 
   @Override

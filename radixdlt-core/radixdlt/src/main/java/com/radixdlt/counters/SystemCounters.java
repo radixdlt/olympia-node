@@ -188,6 +188,9 @@ public interface SystemCounters {
     MEMPOOL_ADD_SUCCESS("mempool.add_success"),
     MEMPOOL_ADD_FAILURE("mempool.add_failure"),
 
+    MEMPOOL_REMOTE_ADD_RECEIVED("mempool.remote_add.received"),
+    MEMPOOL_REMOTE_ADD_PROCESSED("mempool.remote_add.processed"),
+
     RADIX_ENGINE_INVALID_PROPOSED_COMMANDS("radix_engine.invalid_proposed_commands"),
     RADIX_ENGINE_USER_TRANSACTIONS("radix_engine.user_transactions"),
     RADIX_ENGINE_SYSTEM_TRANSACTIONS("radix_engine.system_transactions"),
