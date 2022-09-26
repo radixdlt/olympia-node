@@ -78,13 +78,21 @@ import org.junit.Test;
 
 public class ResourceAddressingTest {
   private final ResourceAddressing resourceAddressing = ResourceAddressing.bech32("_rb");
+
+  private final Map<Pair<String, String>, String> reAddressToRriShortened =
+      Map.of(
+          Pair.of("toolongsymbol", "03925a206b9d3d7513e145a4b42741ac22c7d081ffc511420e4e43"),
+          "toolongsymb",
+          Pair.of("anotherlongsymbol", "03a3442075945d7513e169a4b42741ac22c7d081ffc511420e4e43"),
+          "anotherlong");
+
   private final BiMap<Pair<String, String>, String> reAddressToRri =
       HashBiMap.create(
           Map.of(
               Pair.of("xrd", "01"),
               "xrd_rb1qya85pwq",
-              Pair.of("toolongsymbol", "0352d50f521da177cc14e22486e9af189e76f6b60520f766f3e663"),
-              "toolongsymbol_rb1qdfd2r6jrksh0nq5ugjgd6d0rz08da4kq5s0wehnue3s84p3re",
+              Pair.of("toolongsymb", "0352d50f521da177cc14e22486e9af189e76f6b60520f766f3e663"),
+              "toolongsymb_rb1qdfd2r6jrksh0nq5ugjgd6d0rz08da4kq5s0wehnue3sxzch2j",
               Pair.of("usdc", "03" + "00".repeat(26)),
               "usdc_rb1qvqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq6gwwwd"));
 
@@ -117,6 +125,15 @@ public class ResourceAddressingTest {
           var reAddr = REAddr.of(Bytes.fromHexString(pair.getSecond()));
           var rri = resourceAddressing.of(pair.getFirst(), reAddr);
           assertThat(expected).isEqualTo(rri);
+        });
+
+    reAddressToRriShortened.forEach(
+        (pair, truncatedSymbol) -> {
+          var longSymbol = pair.getFirst();
+          var reAddr = REAddr.of(Bytes.fromHexString(pair.getSecond()));
+
+          assertThat(resourceAddressing.of(longSymbol, reAddr))
+              .isEqualTo(resourceAddressing.of(truncatedSymbol, reAddr));
         });
   }
 
