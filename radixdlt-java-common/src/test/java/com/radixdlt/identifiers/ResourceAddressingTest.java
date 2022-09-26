@@ -81,9 +81,12 @@ public class ResourceAddressingTest {
   private final BiMap<Pair<String, String>, String> reAddressToRri =
       HashBiMap.create(
           Map.of(
-              Pair.of("xrd", "01"), "xrd_rb1qya85pwq",
+              Pair.of("xrd", "01"),
+              "xrd_rb1qya85pwq",
+              Pair.of("toolongsymbol", "0352d50f521da177cc14e22486e9af189e76f6b60520f766f3e663"),
+              "toolongsymbol_rb1qdfd2r6jrksh0nq5ugjgd6d0rz08da4kq5s0wehnue3s84p3re",
               Pair.of("usdc", "03" + "00".repeat(26)),
-                  "usdc_rb1qvqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq6gwwwd"));
+              "usdc_rb1qvqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq6gwwwd"));
 
   private final Map<String, String> invalidRris =
       Map.of(
