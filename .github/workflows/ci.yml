@@ -37,7 +37,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
   integration:
     name: Steady state integration tests
-    runs-on: integration-tests
+    runs-on: linux
     steps:
       - uses: actions/checkout@v2
         with:
@@ -58,7 +58,7 @@ jobs:
         run: ./gradlew integrationTest --refresh-dependencies
   targeted-integration:
     name: Targeted integration tests
-    runs-on: integration-tests
+    runs-on: linux
     steps:
       - uses: actions/checkout@v2
         with:
