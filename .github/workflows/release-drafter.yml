@@ -8,6 +8,6 @@ jobs:
  update_release_draft:
    runs-on: ubuntu-22.04
    steps:
-     - uses: release-drafter/release-drafter@v5
+     - uses: release-drafter/release-drafter@6df64e4ba4842c203c604c1f45246c5863410adb
        env:
          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
