@@ -67,6 +67,7 @@ package com.radixdlt.api;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -264,7 +265,10 @@ public abstract class ApiTest {
 
   protected <T> T handleRequestWithExpectedResponse(
       HttpHandler handler, byte[] requestBytes, Class<T> responseClass) throws Exception {
-    var objectMapper = JSON.getDefault().getMapper();
+    var objectMapper = JSON.getDefault()
+      .getMapper()
+      // Ensure it throws if it tries to map the wrong type
+      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
     var sender = mock(Sender.class);
     var response = new AtomicReference<String>();
     doAnswer(

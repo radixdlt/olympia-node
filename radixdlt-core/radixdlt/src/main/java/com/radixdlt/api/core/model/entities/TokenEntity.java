@@ -84,7 +84,7 @@ import com.radixdlt.utils.UInt256;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-public record TokenEntity(String symbol, REAddr tokenAddr) implements Entity {
+public record TokenEntity(String symbolPrefixFromAddress, REAddr tokenAddr) implements Entity {
   @Override
   public void overwriteDataObject(
       ParsedDataObject parsedDataObject, TxBuilder builder, RERulesConfig config)
@@ -109,25 +109,25 @@ public record TokenEntity(String symbol, REAddr tokenAddr) implements Entity {
 
       builder
           .toLowLevelBuilder()
-          .syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8));
+          .syscall(Syscall.READDR_CLAIM, symbolPrefixFromAddress.getBytes(StandardCharsets.UTF_8));
       builder.downREAddr(tokenAddr);
       var tokenResource = new TokenResource(tokenAddr, UInt256.ONE, isMutable, ownerKey);
       builder.up(tokenResource);
     } else if (dataObject instanceof TokenMetadata tokenMetadata) {
-      if (!tokenMetadata.getSymbol().equals(this.symbol)) {
+      if (!tokenMetadata.getSymbol().equals(this.symbolPrefixFromAddress)) {
         throw new InvalidDataObjectException(
             parsedDataObject,
             "TokenMetadata symbol ("
                 + tokenMetadata.getSymbol()
                 + " does not match Entity symbol ("
-                + this.symbol
+                + this.symbolPrefixFromAddress
                 + ")");
       }
 
       builder.up(
           new TokenResourceMetadata(
               tokenAddr,
-              symbol,
+                  symbolPrefixFromAddress,
               tokenMetadata.getName(),
               tokenMetadata.getDescription(),
               tokenMetadata.getIconUrl(),

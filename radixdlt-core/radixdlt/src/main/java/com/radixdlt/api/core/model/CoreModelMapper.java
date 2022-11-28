@@ -618,7 +618,7 @@ public final class CoreModelMapper {
       return entityIdentifier(validatorSystem.validatorKey())
           .subEntity(new SubEntity().address(SYSTEM_ADDRESS));
     } else if (entity instanceof TokenEntity tokenEntity) {
-      return entityIdentifier(tokenEntity.tokenAddr(), tokenEntity.symbol());
+      return entityIdentifier(tokenEntity.tokenAddr(), tokenEntity.symbolPrefixFromAddress());
     } else if (entity instanceof ExitingStakeVaultEntity exiting) {
       return entityIdentifier(
           exiting.accountAddress(), exiting.validatorKey(), exiting.epochUnlock());
