@@ -130,7 +130,6 @@ public final class ResourceAddressing {
   public String of(String symbol, REAddr addr) {
     var addrBytes = addr.getBytes();
     var bech32Data = toBech32Data(addrBytes);
-    var shortSymbol = symbol.substring(0, Math.min(symbol.length(), 11));
-    return Bech32.encode(shortSymbol + hrpSuffix, bech32Data);
+    return Bech32.encode(symbol + hrpSuffix, bech32Data);
   }
 }
