@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: cancel running workflows
-        uses: styfle/cancel-workflow-action@3d86a7cc43670094ac248017207be0295edbc31d
+        uses: styfle/cancel-workflow-action@b173b6ec0100793626c2d9e6b90435061f4fc3e5
         with:
           access_token: ${{ github.token }}
   sync_core_collection:
@@ -29,7 +29,7 @@ jobs:
           contents: POSTMAN_API_KEY=${{ secrets.POSTMAN_API_TOKEN }}
           write-mode: overwrite
       - name: Checkout core repo
-        uses: actions/checkout@e2f20e631ae6d7dd3b768f56a5d2af784dd54791
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
         with:
           repository: radixdlt/radixdlt
           path: core
