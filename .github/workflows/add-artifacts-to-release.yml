@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: cancel running workflows
-        uses: styfle/cancel-workflow-action@3d86a7cc43670094ac248017207be0295edbc31d
+        uses: styfle/cancel-workflow-action@b173b6ec0100793626c2d9e6b90435061f4fc3e5
         with:
           access_token: ${{ github.token }}
   publish-distribution-zip:
@@ -16,11 +16,11 @@ jobs:
     runs-on: ubuntu-22.04
     environment: publish-artifacts
     steps:
-      - uses: actions/checkout@0b496e91ec7ae4428c3ed2eeb4c3a40df431f2cc
+      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
       - id: set_environment
         name: Set variables
         uses: ./.github/actions/set-variables
-      - uses: actions/checkout@e2f20e631ae6d7dd3b768f56a5d2af784dd54791
+      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
         with:
           ref: ${{ steps.set_environment.outputs.git_ref }}
           fetch-depth: 0
