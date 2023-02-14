@@ -14,6 +14,7 @@ jobs:
         uses: styfle/cancel-workflow-action@b173b6ec0100793626c2d9e6b90435061f4fc3e5
         with:
           access_token: ${{ github.token }}
+
   sync_core_collection:
     name: Sync Postman Core collection w/ latest main
     environment: Postman
@@ -22,59 +23,88 @@ jobs:
       - name: Get current date
         id: date
         run: echo "::set-output name=date::$(date +'%b %d, %H:%M')"
+
+      - name: Configure AWS credentials to fetch secrets
+        uses: aws-actions/configure-aws-credentials@97271860067ec931c45b8d104fbf0d15954ab85c
+        with:
+          role-to-assume: "arn:aws:iam::${{ secrets.SECRETS_ACCOUNT_ID }}:role/gh-radixdlt-secrets-read-access"
+          aws-region: "eu-west-2"
+          role-session-name: "radixdlt-sync-postman-${{ github.run_number }}-${{ github.run_attempt }}"
+
+      - name: Fetch AWS secrets
+        uses: aws-actions/aws-secretsmanager-get-secrets@287592d14d9c9c48199db83dc182ae12af3df18e
+        with:
+          secret-ids: |
+            GH, github-actions/radixdlt/radixdlt/postman-token
+          parse-json-secrets: true
+
       - name: Setup Postman credentials
         uses: DamianReeves/write-file-action@e19fd875ed54f16fc583a3486e62547ce4a5dde8
         with:
           path: .env
-          contents: POSTMAN_API_KEY=${{ secrets.POSTMAN_API_TOKEN }}
+          contents: POSTMAN_API_KEY=${{ env.GH_POSTMAN_API_TOKEN }}
           write-mode: overwrite
+
       - name: Checkout core repo
         uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
         with:
           repository: radixdlt/radixdlt
           path: core
+
       - name: Change OpenApi version in the Core API spec
         run: sed -i 's/3.1.0/3.0.0/' core/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/api.yaml
+
       - name: Create Portman configuration for Core API
         uses: DamianReeves/write-file-action@e19fd875ed54f16fc583a3486e62547ce4a5dde8
         with:
           path: cliopts.json
           contents: '{"postmanWorkspaceName":"Team Workspace"}'
           write-mode: overwrite
+
       - name: Replace hardcoded values with variables
         run: |
           sed -i 's/mainnet/"{{network}}"/g' core/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/api.yaml
+
       - name: Update Postman's Core API collection from the spec
         run: |
           npx @apideck/portman -l core/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/api.yaml \
             --postmanUid 14449947-f288f14a-5deb-4427-bde5-52c2f4c696de --syncPostman true --envFile .env
+
       - name: Download the Core API collection
         run: |
-          curl -X GET -H "X-API-KEY:${{secrets.POSTMAN_API_TOKEN}}" https://api.getpostman.com/collections/14449947-f288f14a-5deb-4427-bde5-52c2f4c696de > tmp.core.collection.json
+          curl -X GET -H "X-API-KEY:${{env.GH_POSTMAN_API_TOKEN}}" https://api.getpostman.com/collections/14449947-f288f14a-5deb-4427-bde5-52c2f4c696de > tmp.core.collection.json
+
       - name: Add a timestamp to the name
         run: |
           sed -i 's/"name":".*","description":"This API/"name":"Core API (main) ${{steps.date.outputs.date}} UTC","description":"This API/' tmp.core.collection.json
+
       - name: Change the baseUrl variable name
         run: |
           sed -i 's/{{baseUrl}}/{{coreBaseUrl}}/g' tmp.core.collection.json
+
       - name: Update the Core API collection
         run: |
-          curl -X PUT -H "X-API-KEY:${{secrets.POSTMAN_API_TOKEN}}" -H "Content-Type: application/json" \
+          curl -X PUT -H "X-API-KEY:${{env.GH_POSTMAN_API_TOKEN}}" -H "Content-Type: application/json" \
              https://api.getpostman.com/collections/14449947-f288f14a-5deb-4427-bde5-52c2f4c696de --data "@tmp.core.collection.json"
+
       - name: Update Postman's System API collection from the spec
         run: |
           npx @apideck/portman -l core/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/system/api.yaml \
             --postmanUid 14449947-573cde3b-1504-4ba0-a865-ada778e08c74 --syncPostman true --envFile .env
+
       - name: Download the System API collection
         run: |
-          curl -X GET -H "X-API-KEY:${{secrets.POSTMAN_API_TOKEN}}" https://api.getpostman.com/collections/14449947-573cde3b-1504-4ba0-a865-ada778e08c74 > tmp.system.collection.json
+          curl -X GET -H "X-API-KEY:${{env.GH_POSTMAN_API_TOKEN}}" https://api.getpostman.com/collections/14449947-573cde3b-1504-4ba0-a865-ada778e08c74 > tmp.system.collection.json
+
       - name: Add a timestamp to the name
         run: |
           sed -i 's/"name":".*","schema"/"name":"System API (main) ${{steps.date.outputs.date}} UTC","schema"/' tmp.system.collection.json
+
       - name: Change the baseUrl variable name
         run: |
           sed -i 's/{{baseUrl}}/{{systemBaseUrl}}/g' tmp.system.collection.json
+
       - name: Update the System API collection
         run: |
-          curl -X PUT -H "X-API-KEY:${{secrets.POSTMAN_API_TOKEN}}" -H "Content-Type: application/json" \
+          curl -X PUT -H "X-API-KEY:${{env.GH_POSTMAN_API_TOKEN}}" -H "Content-Type: application/json" \
              https://api.getpostman.com/collections/14449947-573cde3b-1504-4ba0-a865-ada778e08c74 --data "@tmp.system.collection.json"
