@@ -19,6 +19,10 @@ jobs:
     name: Sync Postman Core collection w/ latest main
     environment: Postman
     runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
     steps:
       - name: Get current date
         id: date

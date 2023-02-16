@@ -145,7 +145,7 @@ jobs:
         with:
           registry: eu.gcr.io
           username: _json_key
-          password: ${{ env.GH_GCR_JSON_KEY }}
+          password: ${{ env.GH_GCR_EU_DEV_JSON_KEY }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@e81a89b1732b9c48d79cd809d8d81d79c4647a18
