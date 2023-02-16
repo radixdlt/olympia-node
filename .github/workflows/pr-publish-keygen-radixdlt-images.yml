@@ -1,6 +1,8 @@
 name: pr-publish-keygen-radixdlt-images-workflow
+
 on:
   pull_request:
+
 jobs:
   cancel_running_workflows:
     name: Cancel running workflows
@@ -10,25 +12,34 @@ jobs:
         uses: styfle/cancel-workflow-action@b173b6ec0100793626c2d9e6b90435061f4fc3e5
         with:
           access_token: ${{ github.token }}
+
   publish-keygen-docker:
     runs-on: ubuntu-22.04
     name: Build and publish keygen
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
+
       - id: set_environment
         name: Set variables
         uses: ./.github/actions/set-variables
+
       - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
         with:
           ref: ${{ steps.set_environment.outputs.git_ref }}
           fetch-depth: 0
+
       - name: Set up JDK 17
-        uses: actions/setup-java@f0bb91606209742fe3ea40199be2f3ef195ecabf
+        uses: actions/setup-java@3f07048e3d294f56e9b90ac5ea2c6f74e9ad0f98
         with:
           distribution: 'zulu'
           java-version: '17'
+
       - name: Cache Gradle packages
-        uses: actions/cache@b8204782bbb5f872091ecc5eb9cb7d004e35b1fa
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
         with:
           path: |
             ~/.gradle/caches
@@ -36,29 +47,64 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+
       - id: get_version
         name: Get radixdlt version
         uses: ./.github/actions/get-version
         with:
           is_release: ${{ steps.set_environment.outputs.is_release }}
+
+      - name: Configure AWS credentials to fetch secrets
+        uses: aws-actions/configure-aws-credentials@97271860067ec931c45b8d104fbf0d15954ab85c
+        with:
+          role-to-assume: "arn:aws:iam::${{ secrets.SECRETS_ACCOUNT_ID }}:role/gh-radixdlt-secrets-read-access"
+          aws-region: "eu-west-2"
+          role-session-name: "radixdlt-pr-publish-publish-keygen-${{ github.run_number }}-${{ github.run_attempt }}"
+
+      - name: Fetch AWS secrets
+        uses: aws-actions/aws-secretsmanager-get-secrets@287592d14d9c9c48199db83dc182ae12af3df18e
+        with:
+          secret-ids: |
+            GH, github-actions/radixdlt/radixdlt/gpr-token
+          parse-json-secrets: true
+
       - name: Build radixdlt
         uses: ./.github/actions/gradle-task
         with:
           is_release: ${{ steps.set_environment.outputs.is_release }}
           gradle_command: clean build -x test
         env:
-          GPR_USER: ${{ secrets.GPR_USER }}
-          GPR_TOKEN: ${{ secrets.GPR_TOKEN }}
+          GPR_USER: ${{ env.GH_GPR_USER }}
+          GPR_TOKEN: ${{ env.GH_GPR_TOKEN }}
+
       - name: Prepare Dockerfile context
         run: |
           unzip radixdlt-core/radixdlt/build/distributions/radixdlt-${{ steps.get_version.outputs.radixdlt_version }}.zip
+
+      - name: Configure AWS credentials to fetch secrets
+        if: "${{ steps.set_environment.outputs.is_release == 'false' }}"
+        uses: aws-actions/configure-aws-credentials@97271860067ec931c45b8d104fbf0d15954ab85c
+        with:
+          role-to-assume: "arn:aws:iam::${{ secrets.SECRETS_ACCOUNT_ID }}:role/gh-common-secrets-read-access"
+          aws-region: "eu-west-2"
+          role-session-name: "radixdlt-pr-publish-publish-docker-gcr-${{ github.run_number }}-${{ github.run_attempt }}"
+
+      - name: Fetch AWS secrets
+        if: "${{ steps.set_environment.outputs.is_release == 'false' }}"
+        uses: aws-actions/aws-secretsmanager-get-secrets@287592d14d9c9c48199db83dc182ae12af3df18e # v1.0.1
+        with:
+          secret-ids: |
+            GH_GCR_EU_DEV_JSON_KEY, github-actions/common/gcr-credentials
+          parse-json-secrets: false
+
       - name: Login to GCR (main)
         uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
         if:  "${{ steps.set_environment.outputs.is_release == 'false' }}"
         with:
           registry: eu.gcr.io
           username: _json_key
-          password: ${{ secrets.GCR_EU_DEV_JSON_KEY }}
+          password: ${{ env.GH_GCR_EU_DEV_JSON_KEY }}
+
       - name: Docker build and push
         uses: docker/build-push-action@c56af957549030174b10d6867f20e78cfd7debc5
         with:
@@ -74,25 +120,30 @@ jobs:
         run: |
           rm -f ~/.gradle/caches/modules-2/modules-2.lock
           rm -f ~/.gradle/caches/modules-2/gc.properties
+
   build-docker:
     name: Build deb package needed for Docker image
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
+
       - id: set_environment
         name: Set variables
         uses: ./.github/actions/set-variables
+
       - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
         with:
           ref: ${{ steps.set_environment.outputs.git_ref }}
           fetch-depth: 0
+
       - name: Set up JDK 17
-        uses: actions/setup-java@f0bb91606209742fe3ea40199be2f3ef195ecabf
+        uses: actions/setup-java@3f07048e3d294f56e9b90ac5ea2c6f74e9ad0f98
         with:
           distribution: 'zulu'
           java-version: '17'
+
       - name: Cache Gradle packages
-        uses: actions/cache@b8204782bbb5f872091ecc5eb9cb7d004e35b1fa
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
         with:
           path: |
             ~/.gradle/caches
@@ -100,12 +151,14 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+
       - name: Build deb file
         run: |
           cd radixdlt-core/radixdlt
           ../../gradlew deb4docker
           cd ../..
           find . -name "*.deb"
+
       - name: Archive deb package
         uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
         with:
@@ -113,36 +166,61 @@ jobs:
           path: |
             radixdlt-core/docker
             retention-days: 1
+
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
         # Restoring these files from a GitHub Actions cache might cause problems for future builds.
         run: |
           rm -f ~/.gradle/caches/modules-2/modules-2.lock
           rm -f ~/.gradle/caches/modules-2/gc.properties
+
   publish-docker:
     needs: build-docker
     name: Build and push radixdlt Docker image
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
+
       - id: set_environment
         name: Set variables
         uses: ./.github/actions/set-variables
+
       - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
         with:
           ref: ${{ steps.set_environment.outputs.git_ref }}
           fetch-depth: 0
+
       - name: Download distribution artifact
         uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7
         with:
           name: build-deb
+
       - name: Set up JDK 17
-        uses: actions/setup-java@f0bb91606209742fe3ea40199be2f3ef195ecabf
+        uses: actions/setup-java@3f07048e3d294f56e9b90ac5ea2c6f74e9ad0f98
         with:
           distribution: 'zulu'
           java-version: '17'
+
+      - name: Configure AWS credentials to fetch secrets
+        uses: aws-actions/configure-aws-credentials@97271860067ec931c45b8d104fbf0d15954ab85c
+        with:
+          role-to-assume: "arn:aws:iam::${{ secrets.SECRETS_ACCOUNT_ID }}:role/gh-common-secrets-read-access"
+          aws-region: "eu-west-2"
+          role-session-name: "radixdlt-pr-publish-publish-docker-${{ github.run_number }}-${{ github.run_attempt }}"
+
+      - name: Fetch AWS secrets
+        uses: aws-actions/aws-secretsmanager-get-secrets@287592d14d9c9c48199db83dc182ae12af3df18e
+        with:
+          secret-ids: |
+            GH_GCR_EU_DEV_JSON_KEY, github-actions/common/gcr-credentials
+          parse-json-secrets: false
+
       - name: Cache Gradle packages
-        uses: actions/cache@b8204782bbb5f872091ecc5eb9cb7d004e35b1fa
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
         with:
           path: |
             ~/.gradle/caches
@@ -150,18 +228,21 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+
       - id: get_version
         name: Get radixdlt version
         uses: ./.github/actions/get-version
         with:
           is_release: ${{ steps.set_environment.outputs.is_release }}
+
       - name: Login to GCR
         if: "${{ steps.set_environment.outputs.is_release == 'false' }}"
         uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
         with:
           registry: eu.gcr.io
           username: _json_key
-          password: ${{ secrets.GCR_EU_DEV_JSON_KEY }}
+          password: ${{ env.GH_GCR_EU_DEV_JSON_KEY }}
+
       - name: Docker build and push
         uses: docker/build-push-action@c56af957549030174b10d6867f20e78cfd7debc5
         with:
@@ -170,6 +251,7 @@ jobs:
             ${{ steps.set_environment.outputs.radixdlt_image }}:${{ steps.get_version.outputs.docker_tag }}
           push: true
           context: ./radixdlt-core/docker
+
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
         # Restoring these files from a GitHub Actions cache might cause problems for future builds.

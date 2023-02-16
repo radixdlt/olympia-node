@@ -6,15 +6,35 @@ on:
 jobs:
   trigger-jenkins-main-branch:
     runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
     steps:
       - name: Set Event type
         run: |
           echo "EVENT_TYPE=radixdlt_main_branch" >> $GITHUB_ENV
+
+      - name: Configure AWS credentials to fetch secrets
+        uses: aws-actions/configure-aws-credentials@97271860067ec931c45b8d104fbf0d15954ab85c
+        with:
+          role-to-assume: "arn:aws:iam::${{ secrets.SECRETS_ACCOUNT_ID }}:role/gh-radixdlt-secrets-read-access"
+          aws-region: "eu-west-2"
+          role-session-name: "radixdlt-trigger-jenkins-job-${{ github.run_number }}-${{ github.run_attempt }}"
+
+      - name: Fetch AWS secrets
+        uses: aws-actions/aws-secretsmanager-get-secrets@287592d14d9c9c48199db83dc182ae12af3df18e
+        with:
+          secret-ids: |
+            GH, github-actions/radixdlt/radixdlt/dispatch-repo
+            GH, github-actions/radixdlt/radixdlt/cf-worker-basic-auth
+          parse-json-secrets: true
+
       - name: Trigger the jenkins_main_branch event ${{ github.ref }}
         run: |
-          curl --silent --show-error --fail --location --request POST 'https://github-worker.radixdlt.com/repos/radixdlt/${{secrets.DISPATCH_REPO}}/dispatches' \
+          curl --silent --show-error --fail --location --request POST 'https://github-worker.radixdlt.com/repos/radixdlt/${{env.GH_DISPATCH_REPO}}/dispatches' \
             --header 'Accept: application/vnd.github.v3+json' \
-            --header 'Authorization: Basic ${{secrets.CF_GITHUB_WORKER_ENCODED_BASIC_AUTH}}' \
+            --header 'Authorization: Basic ${{env.GH_CF_GITHUB_WORKER_ENCODED_BASIC_AUTH}}' \
             --header 'Content-Type: application/json' \
             --data-raw '{
                 "event_type": "${{env.EVENT_TYPE}}"

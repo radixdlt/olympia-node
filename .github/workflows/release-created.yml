@@ -1,18 +1,38 @@
+name: Start release process
 
 on:
   release:
     types: [published]
-name: Start release process
+
+permissions:
+  id-token: write
+  pull-requests: read
+  contents: read
+
 jobs:
   start_radixdlt_iac_release:
     name: Start radixdlt-iac release ${{ github.event.release.tag_name }}
     runs-on: ubuntu-22.04
     environment: publish-artifacts
     steps:
+      - name: Configure AWS credentials to fetch secrets
+        uses: aws-actions/configure-aws-credentials@97271860067ec931c45b8d104fbf0d15954ab85c
+        with:
+          role-to-assume: "arn:aws:iam::${{ secrets.SECRETS_ACCOUNT_ID }}:role/gh-radixdlt-secrets-read-access"
+          aws-region: "eu-west-2"
+          role-session-name: "radixdlt-release-radixdlt-iac-${{ github.run_number }}-${{ github.run_attempt }}"
+
+      - name: Fetch AWS secrets
+        uses: aws-actions/aws-secretsmanager-get-secrets@287592d14d9c9c48199db83dc182ae12af3df18e
+        with:
+          secret-ids: |
+            GH, github-actions/radixdlt/radixdlt/gpr-token
+          parse-json-secrets: true
+
       - name: Trigger radixdlt/radixdlt-iac release ${{ github.event.release.tag_name }}
         uses: peter-evans/repository-dispatch@ce5485de42c9b2622d2ed064be479e8ed65e76f4
         with:
-          token: ${{ secrets.RADIXBOT_GITHUB_REPO_PACKAGES_TOKEN }}
+          token: ${{ env.GH_GPR_TOKEN }}
           repository: radixdlt/radixdlt-iac
           event-type: start_release
           client-payload: |
@@ -23,15 +43,35 @@ jobs:
               "release_job_url": "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}",
               "is_prerelease": "${{ github.event.release.prerelease }}"
             }
+
   start_radixdlt_node_runner:
     name: Start node-runner release ${{ github.event.release.tag_name }}
     runs-on: ubuntu-22.04
     environment: publish-artifacts
     steps:
+      - name: Install AWS CLI
+        uses: unfor19/install-aws-cli-action@ee0eb151cf1bca186ccf8c35d314b08d62e0e878
+        with:
+          version: 2
+
+      - name: Configure AWS credentials to fetch secrets
+        uses: aws-actions/configure-aws-credentials@97271860067ec931c45b8d104fbf0d15954ab85c
+        with:
+          role-to-assume: "arn:aws:iam::${{ secrets.SECRETS_ACCOUNT_ID }}:role/gh-radixdlt-secrets-read-access"
+          aws-region: "eu-west-2"
+          role-session-name: "radixdlt-release-node-runner-${{ github.run_number }}-${{ github.run_attempt }}"
+
+      - name: Fetch AWS secrets
+        uses: aws-actions/aws-secretsmanager-get-secrets@287592d14d9c9c48199db83dc182ae12af3df18e
+        with:
+          secret-ids: |
+            GH, github-actions/radixdlt/radixdlt/gpr-token
+          parse-json-secrets: true
+
       - name: Trigger radixdlt/node-runner release ${{ github.event.release.tag_name }}
         uses: peter-evans/repository-dispatch@ce5485de42c9b2622d2ed064be479e8ed65e76f4
         with:
-          token: ${{ secrets.RADIXBOT_GITHUB_REPO_PACKAGES_TOKEN }}
+          token: ${{ env.GH_GPR_TOKEN }}
           repository: radixdlt/node-runner
           event-type: start_release
           client-payload: |
