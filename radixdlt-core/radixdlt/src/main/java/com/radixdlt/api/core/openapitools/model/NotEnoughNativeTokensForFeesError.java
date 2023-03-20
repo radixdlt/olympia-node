@@ -39,7 +39,6 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = AboveMaximumValidatorFeeIncreaseError.class, name = "AboveMaximumValidatorFeeIncreaseError"),
   @JsonSubTypes.Type(value = BelowMinimumStakeError.class, name = "BelowMinimumStakeError"),
   @JsonSubTypes.Type(value = DataObjectNotSupportedByEntityError.class, name = "DataObjectNotSupportedByEntityError"),
-  @JsonSubTypes.Type(value = EngineIsNotShutDownError.class, name = "EngineIsNotShutDownError"),
   @JsonSubTypes.Type(value = EngineIsShutDownError.class, name = "EngineIsShutDownError"),
   @JsonSubTypes.Type(value = FeeConstructionError.class, name = "FeeConstructionError"),
   @JsonSubTypes.Type(value = InternalServerError.class, name = "InternalServerError"),
@@ -181,7 +180,6 @@ static {
   mappings.put("AboveMaximumValidatorFeeIncreaseError", AboveMaximumValidatorFeeIncreaseError.class);
   mappings.put("BelowMinimumStakeError", BelowMinimumStakeError.class);
   mappings.put("DataObjectNotSupportedByEntityError", DataObjectNotSupportedByEntityError.class);
-  mappings.put("EngineIsNotShutDownError", EngineIsNotShutDownError.class);
   mappings.put("EngineIsShutDownError", EngineIsShutDownError.class);
   mappings.put("FeeConstructionError", FeeConstructionError.class);
   mappings.put("InternalServerError", InternalServerError.class);

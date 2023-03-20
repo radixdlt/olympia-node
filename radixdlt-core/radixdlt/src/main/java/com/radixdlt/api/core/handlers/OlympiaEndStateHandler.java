@@ -64,12 +64,15 @@
 
 package com.radixdlt.api.core.handlers;
 
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.api.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.model.CoreApiException;
-import com.radixdlt.api.core.openapitools.model.EngineIsNotShutDownError;
+import com.radixdlt.api.core.openapitools.model.OlympiaEndStateNotReadyResponse;
+import com.radixdlt.api.core.openapitools.model.OlympiaEndStateReadyResponse;
 import com.radixdlt.api.core.openapitools.model.OlympiaEndStateRequest;
 import com.radixdlt.api.core.openapitools.model.OlympiaEndStateResponse;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.hotstuff.HashSigner;
@@ -82,10 +85,15 @@ import com.radixdlt.utils.Bytes;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;
+import org.bouncycastle.util.encoders.Hex;
 import org.xerial.snappy.Snappy;
 
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class OlympiaEndStateHandler
     extends CoreJsonRpcHandler<OlympiaEndStateRequest, OlympiaEndStateResponse> {
+
+  private static final HashCode PLACEHOLDER_HASH_FOR_NOT_READY_RESPONSE =
+      HashUtils.sha256(new byte[] {1});
 
   private final Object endStateLock = new Object();
 
@@ -95,7 +103,8 @@ public final class OlympiaEndStateHandler
   private final Hasher hasher;
   private final HashSigner hashSigner;
 
-  private Optional<OlympiaEndStateResponse> cachedEndStateResponse = Optional.empty();
+  private final OlympiaEndStateResponse cachedNotReadyResponse;
+  private Optional<OlympiaEndStateResponse> cachedEndStateReadyResponse = Optional.empty();
 
   @Inject
   OlympiaEndStateHandler(
@@ -110,25 +119,27 @@ public final class OlympiaEndStateHandler
     this.currentForkView = Objects.requireNonNull(currentForkView);
     this.hasher = Objects.requireNonNull(hasher);
     this.hashSigner = Objects.requireNonNull(hashSigner);
+
+    this.cachedNotReadyResponse =
+        new OlympiaEndStateNotReadyResponse()
+            .placeholderHash(Hex.toHexString(PLACEHOLDER_HASH_FOR_NOT_READY_RESPONSE.asBytes()))
+            .signature(hashSigner.sign(PLACEHOLDER_HASH_FOR_NOT_READY_RESPONSE).toHexString())
+            .status(OlympiaEndStateResponse.StatusEnum.NOT_READY);
   }
 
   @Override
   public OlympiaEndStateResponse handleRequest(OlympiaEndStateRequest request)
       throws CoreApiException {
     if (!radixEngine.isShutDown()) {
-      // Radix Engine is still running
-      throw CoreApiException.badRequest(
-          new EngineIsNotShutDownError()
-              .message("Can't create the end state. Engine isn't yet shut down.")
-              .type(EngineIsNotShutDownError.class.getSimpleName()));
+      return this.cachedNotReadyResponse;
     }
 
     synchronized (endStateLock) {
       try {
-        if (this.cachedEndStateResponse.isEmpty()) {
+        if (this.cachedEndStateReadyResponse.isEmpty()) {
           prepareEndStateResponseAndSaveToCache();
         }
-        return this.cachedEndStateResponse.orElseThrow();
+        return this.cachedEndStateReadyResponse.orElseThrow();
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -140,11 +151,12 @@ public final class OlympiaEndStateHandler
     final var hash = hasher.hashBytes(endStateBytes);
     final var signature = hashSigner.sign(hash);
     final var response =
-        new OlympiaEndStateResponse()
+        new OlympiaEndStateReadyResponse()
             .hash(Bytes.toHexString(hash.asBytes()))
             .signature(signature.toHexString())
-            .contents(Bytes.toBase64String(endStateBytes));
-    this.cachedEndStateResponse = Optional.of(response);
+            .contents(Bytes.toBase64String(endStateBytes))
+            .status(OlympiaEndStateResponse.StatusEnum.READY);
+    this.cachedEndStateReadyResponse = Optional.of(response);
   }
 
   private byte[] prepareEndState() throws IOException {

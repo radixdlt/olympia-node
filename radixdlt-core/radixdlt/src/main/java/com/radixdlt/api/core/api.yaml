@@ -2500,19 +2500,49 @@ components:
     OlympiaEndStateResponse:
       type: object
       required:
-        - hash
-        - signature
-        - contents
+        - status
       properties:
-        hash:
-          description: The hex-encoded SHA2 hash of the end state content bytes
-          type: string
-        signature:
-          description: The hex-encoded DER signature of the end state content bytes, signed with the node's key
-          type: string
-        contents:
-          description: The base64-encoded compressed end state
-          type: string
+        status:
+          enum:
+            - ready
+            - not_ready
+      discriminator:
+        propertyName: status
+        mapping:
+          ready: '#/components/schemas/OlympiaEndStateReadyResponse'
+          not_ready: '#/components/schemas/OlympiaEndStateNotReadyResponse'
+    OlympiaEndStateReadyResponse:
+      allOf:
+        - $ref: "#/components/schemas/OlympiaEndStateResponse"
+        - type: object
+          required:
+            - hash
+            - signature
+            - contents
+          properties:
+            hash:
+              description: The hex-encoded SHA2 hash of the end state content bytes
+              type: string
+            signature:
+              description: The hex-encoded DER signature of the end state content bytes, signed with the node's key
+              type: string
+            contents:
+              description: The base64-encoded compressed end state
+              type: string
+    OlympiaEndStateNotReadyResponse:
+      allOf:
+        - $ref: "#/components/schemas/OlympiaEndStateResponse"
+        - type: object
+          required:
+            - placeholder_hash
+            - signature
+          properties:
+            placeholder_hash:
+              description: A hex-encoded placeholder hash (a constant shared with the Babylon node)
+              type: string
+            signature:
+              description: The hex-encoded DER signature of the placeholder hash, signed with the node's key
+              type: string
     PublicKeyEntry:
       type: object
       required:
@@ -3518,13 +3548,6 @@ components:
           properties:
             message:
               type: string
-    EngineIsNotShutDownError:
-      allOf:
-        - $ref: "#/components/schemas/CoreError"
-        - type: object
-          properties:
-            message:
-              type: string
     CoreError:
       type: object
       required:
@@ -3565,7 +3588,6 @@ components:
           InternalServerError: "#/components/schemas/InternalServerError"
           InvalidJsonError: "#/components/schemas/InvalidJsonError"
           EngineIsShutDownError: "#/components/schemas/EngineIsShutDownError"
-          EngineIsNotShutDownError: "#/components/schemas/EngineIsNotShutDownError"
     UnexpectedError:
       type: object
       required:
