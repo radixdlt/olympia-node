@@ -10,7 +10,6 @@
  * Do not edit the class manually.
  */
 
-
 package com.radixdlt.api.core.openapitools.model;
 
 import java.net.URLEncoder;
@@ -22,19 +21,18 @@ import java.util.HashMap;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-
-
 import com.radixdlt.api.core.openapitools.JSON;
+
 /**
- * OlympiaEndStateResponse
+ * OlympiaEndStateReadyResponse
  */
 @JsonPropertyOrder({
-  OlympiaEndStateResponse.JSON_PROPERTY_STATUS
+  OlympiaEndStateReadyResponse.JSON_PROPERTY_HASH,
+  OlympiaEndStateReadyResponse.JSON_PROPERTY_SIGNATURE,
+  OlympiaEndStateReadyResponse.JSON_PROPERTY_CONTENTS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2023-03-20T18:40:33.467316201+01:00[Europe/Warsaw]")
 @JsonIgnoreProperties(
@@ -43,81 +41,100 @@ import com.radixdlt.api.core.openapitools.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "status", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = OlympiaEndStateNotReadyResponse.class, name = "OlympiaEndStateNotReadyResponse"),
-  @JsonSubTypes.Type(value = OlympiaEndStateReadyResponse.class, name = "OlympiaEndStateReadyResponse"),
   @JsonSubTypes.Type(value = OlympiaEndStateNotReadyResponse.class, name = "not_ready"),
   @JsonSubTypes.Type(value = OlympiaEndStateReadyResponse.class, name = "ready"),
 })
 
-public class OlympiaEndStateResponse {
-  /**
-   * Gets or Sets status
-   */
-  public enum StatusEnum {
-    READY("ready"),
-    
-    NOT_READY("not_ready");
+public class OlympiaEndStateReadyResponse extends OlympiaEndStateResponse {
+  public static final String JSON_PROPERTY_HASH = "hash";
+  private String hash;
 
-    private String value;
+  public static final String JSON_PROPERTY_SIGNATURE = "signature";
+  private String signature;
 
-    StatusEnum(String value) {
-      this.value = value;
-    }
+  public static final String JSON_PROPERTY_CONTENTS = "contents";
+  private String contents;
 
-    @JsonValue
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    @JsonCreator
-    public static StatusEnum fromValue(String value) {
-      for (StatusEnum b : StatusEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
+  public OlympiaEndStateReadyResponse() { 
   }
 
-  public static final String JSON_PROPERTY_STATUS = "status";
-  private StatusEnum status;
-
-  public OlympiaEndStateResponse() { 
-  }
-
-  public OlympiaEndStateResponse status(StatusEnum status) {
-    this.status = status;
+  public OlympiaEndStateReadyResponse hash(String hash) {
+    this.hash = hash;
     return this;
   }
 
    /**
-   * Get status
-   * @return status
+   * The hex-encoded SHA2 hash of the end state content bytes
+   * @return hash
   **/
   @javax.annotation.Nonnull
-  @JsonProperty(JSON_PROPERTY_STATUS)
+  @JsonProperty(JSON_PROPERTY_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public StatusEnum getStatus() {
-    return status;
+  public String getHash() {
+    return hash;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_STATUS)
+  @JsonProperty(JSON_PROPERTY_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setStatus(StatusEnum status) {
-    this.status = status;
+  public void setHash(String hash) {
+    this.hash = hash;
+  }
+
+
+  public OlympiaEndStateReadyResponse signature(String signature) {
+    this.signature = signature;
+    return this;
+  }
+
+   /**
+   * The hex-encoded DER signature of the end state content bytes, signed with the node&#39;s key
+   * @return signature
+  **/
+  @javax.annotation.Nonnull
+  @JsonProperty(JSON_PROPERTY_SIGNATURE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getSignature() {
+    return signature;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SIGNATURE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setSignature(String signature) {
+    this.signature = signature;
+  }
+
+
+  public OlympiaEndStateReadyResponse contents(String contents) {
+    this.contents = contents;
+    return this;
+  }
+
+   /**
+   * The base64-encoded compressed end state
+   * @return contents
+  **/
+  @javax.annotation.Nonnull
+  @JsonProperty(JSON_PROPERTY_CONTENTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getContents() {
+    return contents;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_CONTENTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setContents(String contents) {
+    this.contents = contents;
   }
 
 
   /**
-   * Return true if this OlympiaEndStateResponse object is equal to o.
+   * Return true if this OlympiaEndStateReadyResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -127,20 +144,26 @@ public class OlympiaEndStateResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    OlympiaEndStateResponse olympiaEndStateResponse = (OlympiaEndStateResponse) o;
-    return Objects.equals(this.status, olympiaEndStateResponse.status);
+    OlympiaEndStateReadyResponse olympiaEndStateReadyResponse = (OlympiaEndStateReadyResponse) o;
+    return Objects.equals(this.hash, olympiaEndStateReadyResponse.hash) &&
+        Objects.equals(this.signature, olympiaEndStateReadyResponse.signature) &&
+        Objects.equals(this.contents, olympiaEndStateReadyResponse.contents) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(status);
+    return Objects.hash(hash, signature, contents, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class OlympiaEndStateResponse {\n");
-    sb.append("    status: ").append(toIndentedString(status)).append("\n");
+    sb.append("class OlympiaEndStateReadyResponse {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    hash: ").append(toIndentedString(hash)).append("\n");
+    sb.append("    signature: ").append(toIndentedString(signature)).append("\n");
+    sb.append("    contents: ").append(toIndentedString(contents)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -193,17 +216,30 @@ public class OlympiaEndStateResponse {
       joiner.add(String.format("%sstatus%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getStatus()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
     }
 
+    // add `hash` to the URL query string
+    if (getHash() != null) {
+      joiner.add(String.format("%shash%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getHash()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    // add `signature` to the URL query string
+    if (getSignature() != null) {
+      joiner.add(String.format("%ssignature%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getSignature()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    // add `contents` to the URL query string
+    if (getContents() != null) {
+      joiner.add(String.format("%scontents%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getContents()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
     return joiner.toString();
   }
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("OlympiaEndStateNotReadyResponse", OlympiaEndStateNotReadyResponse.class);
-  mappings.put("OlympiaEndStateReadyResponse", OlympiaEndStateReadyResponse.class);
   mappings.put("not_ready", OlympiaEndStateNotReadyResponse.class);
   mappings.put("ready", OlympiaEndStateReadyResponse.class);
-  mappings.put("OlympiaEndStateResponse", OlympiaEndStateResponse.class);
-  JSON.registerDiscriminator(OlympiaEndStateResponse.class, "status", mappings);
+  mappings.put("OlympiaEndStateReadyResponse", OlympiaEndStateReadyResponse.class);
+  JSON.registerDiscriminator(OlympiaEndStateReadyResponse.class, "status", mappings);
 }
 }
 
