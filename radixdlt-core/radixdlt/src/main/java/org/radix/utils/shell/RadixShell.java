@@ -100,6 +100,7 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.sync.CommittedReader;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.undertow.Undertow;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -258,6 +259,11 @@ public final class RadixShell {
       } catch (InterruptedException e) {
         log.error("Cannot start p2p server", e);
       }
+    }
+
+    public void startApiServer() {
+      final var undertow = injector.getInstance(Undertow.class);
+      undertow.start();
     }
 
     public RadixNodeUri self() {
