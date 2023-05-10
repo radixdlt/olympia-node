@@ -26,11 +26,11 @@ runs:
         if [[ ! -z $GH_EVENT_NAME ]] && [[ "$GH_EVENT_NAME" == "release" ]] ;then
           echo "Workflow triggered by a release event"
           echo "Release version ${{ github.event.release.tag_name }}"
-          echo "::set-output name=is_release::true"
-          echo "::set-output name=release_version::${{ github.event.release.tag_name }}"
-          echo "::set-output name=ref::${{ github.event.release.tag_name }}"
-          echo "::set-output name=radixdlt_image::radixdlt/radixdlt-core"
-          echo "::set-output name=keygen_image::radixdlt/keygen"
+          echo "is_release=true" >> $GITHUB_OUTPUT
+          echo "release_version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          echo "ref=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          echo "radixdlt_image=radixdlt/radixdlt-core" >> $GITHUB_OUTPUT
+          echo "keygen_image=radixdlt/keygen" >> $GITHUB_OUTPUT
 
           echo "is_release: true"
           echo "release_version: ${{ github.event.release.tag_name }}"
@@ -40,14 +40,14 @@ runs:
         else
           if [[ ! -z $GH_EVENT_NAME ]] && [[ "$GH_EVENT_NAME" == "pull_request" ]] ;then
             echo "Workflow triggered by push to a PR"
-            echo "::set-output name=ref::${{ github.head_ref  }}"
+            echo "ref=${{ github.head_ref }}" >> $GITHUB_OUTPUT
           else
             echo "Workflow triggered by push to a branch"
-            echo "::set-output name=ref::$(echo $GITHUB_REF)"
+            echo "ref=$(echo $GITHUB_REF)" >> $GITHUB_OUTPUT
           fi
-          echo "::set-output name=is_release::false"
-          echo "::set-output name=radixdlt_image::eu.gcr.io/dev-container-repo/radixdlt-core"
-          echo "::set-output name=keygen_image::eu.gcr.io/dev-container-repo/keygen"
+          echo "is_release=false" >> $GITHUB_OUTPUT
+          echo "radixdlt_image=eu.gcr.io/dev-container-repo/radixdlt-core" >> $GITHUB_OUTPUT
+          echo "keygen_image=eu.gcr.io/dev-container-repo/keygen" >> $GITHUB_OUTPUT
 
           echo "is_release: false"
           echo "ref: $GITHUB_REF"
