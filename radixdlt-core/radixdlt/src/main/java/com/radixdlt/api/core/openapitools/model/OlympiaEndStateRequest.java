@@ -13,24 +13,36 @@
 
 package com.radixdlt.api.core.openapitools.model;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.StringJoiner;
+import java.util.Objects;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.HashMap;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import io.swagger.annotations.ApiModelProperty;
-
-import java.util.Objects;
 
 
 /**
  * OlympiaEndStateRequest
  */
 @JsonPropertyOrder({
-  OlympiaEndStateRequest.JSON_PROPERTY_NETWORK_IDENTIFIER
+  OlympiaEndStateRequest.JSON_PROPERTY_NETWORK_IDENTIFIER,
+  OlympiaEndStateRequest.JSON_PROPERTY_USE_LARGE_PLACEHOLDER_PAYLOAD
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-07-06T21:16:58.881714945+02:00[Europe/Warsaw]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2023-05-10T17:05:47.884194673+02:00[Europe/Warsaw]")
 public class OlympiaEndStateRequest {
   public static final String JSON_PROPERTY_NETWORK_IDENTIFIER = "network_identifier";
   private NetworkIdentifier networkIdentifier;
+
+  public static final String JSON_PROPERTY_USE_LARGE_PLACEHOLDER_PAYLOAD = "use_large_placeholder_payload";
+  private Boolean useLargePlaceholderPayload;
 
   public OlympiaEndStateRequest() { 
   }
@@ -45,7 +57,6 @@ public class OlympiaEndStateRequest {
    * @return networkIdentifier
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -61,6 +72,31 @@ public class OlympiaEndStateRequest {
   }
 
 
+  public OlympiaEndStateRequest useLargePlaceholderPayload(Boolean useLargePlaceholderPayload) {
+    this.useLargePlaceholderPayload = useLargePlaceholderPayload;
+    return this;
+  }
+
+   /**
+   * Get useLargePlaceholderPayload
+   * @return useLargePlaceholderPayload
+  **/
+  @javax.annotation.Nullable
+  @JsonProperty(JSON_PROPERTY_USE_LARGE_PLACEHOLDER_PAYLOAD)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Boolean getUseLargePlaceholderPayload() {
+    return useLargePlaceholderPayload;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_USE_LARGE_PLACEHOLDER_PAYLOAD)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setUseLargePlaceholderPayload(Boolean useLargePlaceholderPayload) {
+    this.useLargePlaceholderPayload = useLargePlaceholderPayload;
+  }
+
+
   /**
    * Return true if this OlympiaEndStateRequest object is equal to o.
    */
@@ -73,12 +109,13 @@ public class OlympiaEndStateRequest {
       return false;
     }
     OlympiaEndStateRequest olympiaEndStateRequest = (OlympiaEndStateRequest) o;
-    return Objects.equals(this.networkIdentifier, olympiaEndStateRequest.networkIdentifier);
+    return Objects.equals(this.networkIdentifier, olympiaEndStateRequest.networkIdentifier) &&
+        Objects.equals(this.useLargePlaceholderPayload, olympiaEndStateRequest.useLargePlaceholderPayload);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(networkIdentifier);
+    return Objects.hash(networkIdentifier, useLargePlaceholderPayload);
   }
 
   @Override
@@ -86,6 +123,7 @@ public class OlympiaEndStateRequest {
     StringBuilder sb = new StringBuilder();
     sb.append("class OlympiaEndStateRequest {\n");
     sb.append("    networkIdentifier: ").append(toIndentedString(networkIdentifier)).append("\n");
+    sb.append("    useLargePlaceholderPayload: ").append(toIndentedString(useLargePlaceholderPayload)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -101,5 +139,49 @@ public class OlympiaEndStateRequest {
     return o.toString().replace("\n", "\n    ");
   }
 
+  /**
+   * Convert the instance into URL query string.
+   *
+   * @return URL query string
+   */
+  public String toUrlQueryString() {
+    return toUrlQueryString(null);
+  }
+
+  /**
+   * Convert the instance into URL query string.
+   *
+   * @param prefix prefix of the query string
+   * @return URL query string
+   */
+  public String toUrlQueryString(String prefix) {
+    String suffix = "";
+    String containerSuffix = "";
+    String containerPrefix = "";
+    if (prefix == null) {
+      // style=form, explode=true, e.g. /pet?name=cat&type=manx
+      prefix = "";
+    } else {
+      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
+      prefix = prefix + "[";
+      suffix = "]";
+      containerSuffix = "]";
+      containerPrefix = "[";
+    }
+
+    StringJoiner joiner = new StringJoiner("&");
+
+    // add `network_identifier` to the URL query string
+    if (getNetworkIdentifier() != null) {
+      joiner.add(getNetworkIdentifier().toUrlQueryString(prefix + "network_identifier" + suffix));
+    }
+
+    // add `use_large_placeholder_payload` to the URL query string
+    if (getUseLargePlaceholderPayload() != null) {
+      joiner.add(String.format("%suse_large_placeholder_payload%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getUseLargePlaceholderPayload()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    return joiner.toString();
+  }
 }
 

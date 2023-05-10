@@ -10,15 +10,23 @@
  * Do not edit the class manually.
  */
 
+
 package com.radixdlt.api.core.openapitools.model;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.StringJoiner;
 import java.util.Objects;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.HashMap;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 
 /**
  * OlympiaEndStateReadyResponseAllOf
@@ -28,7 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   OlympiaEndStateReadyResponseAllOf.JSON_PROPERTY_SIGNATURE,
   OlympiaEndStateReadyResponseAllOf.JSON_PROPERTY_CONTENTS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2023-03-20T18:40:33.467316201+01:00[Europe/Warsaw]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2023-05-10T17:05:47.884194673+02:00[Europe/Warsaw]")
 public class OlympiaEndStateReadyResponseAllOf {
   public static final String JSON_PROPERTY_HASH = "hash";
   private String hash;
