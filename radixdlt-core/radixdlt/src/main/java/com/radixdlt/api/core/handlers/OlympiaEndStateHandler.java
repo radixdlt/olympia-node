@@ -68,6 +68,7 @@ import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.api.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.model.CoreApiException;
+import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.openapitools.model.OlympiaEndStateNotReadyResponse;
 import com.radixdlt.api.core.openapitools.model.OlympiaEndStateReadyResponse;
 import com.radixdlt.api.core.openapitools.model.OlympiaEndStateRequest;
@@ -97,6 +98,7 @@ public final class OlympiaEndStateHandler
 
   private final Object endStateLock = new Object();
 
+  private final CoreModelMapper coreModelMapper;
   private final RadixEngine<LedgerAndBFTProof> radixEngine;
   private final EngineStore<LedgerAndBFTProof> engineStore;
   private final CurrentForkView currentForkView;
@@ -108,12 +110,14 @@ public final class OlympiaEndStateHandler
 
   @Inject
   OlympiaEndStateHandler(
+      CoreModelMapper coreModelMapper,
       RadixEngine<LedgerAndBFTProof> radixEngine,
       EngineStore<LedgerAndBFTProof> engineStore,
       CurrentForkView currentForkView,
       Hasher hasher,
       HashSigner hashSigner) {
     super(OlympiaEndStateRequest.class);
+    this.coreModelMapper = Objects.requireNonNull(coreModelMapper);
     this.radixEngine = Objects.requireNonNull(radixEngine);
     this.engineStore = Objects.requireNonNull(engineStore);
     this.currentForkView = Objects.requireNonNull(currentForkView);
@@ -130,9 +134,11 @@ public final class OlympiaEndStateHandler
   @Override
   public OlympiaEndStateResponse handleRequest(OlympiaEndStateRequest request)
       throws CoreApiException {
-    if (!radixEngine.isShutDown()) {
-      return this.cachedNotReadyResponse;
-    }
+    coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
+
+    //    if (!radixEngine.isShutDown()) {
+    //      return this.cachedNotReadyResponse;
+    //    }
 
     synchronized (endStateLock) {
       try {

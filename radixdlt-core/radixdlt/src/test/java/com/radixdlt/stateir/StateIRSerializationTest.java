@@ -65,23 +65,39 @@
 package com.radixdlt.stateir;
 
 import static com.radixdlt.atom.TxAction.CreateMutableToken;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
+import com.radixdlt.application.tokens.construction.MintTokenConstructor;
+import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
+import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.tokens.state.TokenResource;
+import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.MutableTokenDefinition;
+import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.atomos.ConstraintScrypt;
+import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.hotstuff.LedgerProof;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
@@ -94,6 +110,8 @@ import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.statecomputer.forks.modules.MainnetForksModule;
 import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.store.EngineStore;
+import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.Lists;
@@ -101,13 +119,18 @@ import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -175,6 +198,11 @@ public final class StateIRSerializationTest {
 
     final var serialized = new OlympiaStateIRSerializer().serialize(state);
 
+    try (FileOutputStream outputStream =
+        new FileOutputStream(new File("olympia-state-uncompressed.raw"))) {
+      outputStream.write(serialized);
+    }
+
     // Check the serialization/deserialization pipeline
     try (final var bais = new ByteArrayInputStream(serialized)) {
       final var deserialized = new OlympiaStateIRDeserializer().deserialize(bais);
@@ -188,7 +216,7 @@ public final class StateIRSerializationTest {
 
     // Check the accounts balances
     final var accountIdxMap =
-        Lists.toIndexedMap(state.accounts(), OlympiaStateIR.Account::publicKey);
+        Lists.toIndexedMap(state.accounts(), OlympiaStateIR.Account::publicKeyBytes);
     final var resourceIdxMap = Lists.toIndexedMap(state.resources(), OlympiaStateIR.Resource::addr);
     transfersSummary.transfersByAccountAndResource.forEach(
         (accountPubKey, transfersByResource) ->
@@ -354,4 +382,87 @@ public final class StateIRSerializationTest {
 
   private record TransfersSummary(
       Map<ECPublicKey, Map<REAddr, UInt256>> transfersByAccountAndResource) {}
+
+  @Test
+  public void testLargeSupply() throws Exception {
+
+    final ConstraintScrypt scrypt = new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+"));
+    final ActionConstructor<TxAction.TransferToken> transferTokensConstructor = new TransferTokensConstructorV2();
+    final EngineStore<Void> store = new InMemoryEngineStore<>();
+
+    var cmAtomOS = new CMAtomOS();
+    cmAtomOS.load(new SystemConstraintScrypt());
+    cmAtomOS.load(scrypt);
+    var cm =
+            new ConstraintMachine(
+                    cmAtomOS.getProcedures(),
+                    cmAtomOS.buildSubstateDeserialization(),
+                    cmAtomOS.buildVirtualSubstateDeserialization());
+    var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
+    var serialization = cmAtomOS.buildSubstateSerialization();
+    final var engine =
+            new RadixEngine<>(
+                    parser,
+                    serialization,
+                    REConstructor.newBuilder()
+                            .put(TxAction.CreateSystem.class, new CreateSystemConstructorV2())
+                            .put(TxAction.TransferToken.class, transferTokensConstructor)
+                            .put(
+                                    CreateMutableToken.class,
+                                    new CreateMutableTokenConstructor(SystemConstraintScrypt.MAX_SYMBOL_LENGTH))
+                            .put(TxAction.MintToken.class, new MintTokenConstructor())
+                            .build(),
+                    cm,
+                    store);
+    var genesis = engine.construct(new TxAction.CreateSystem(0)).buildWithoutSignature();
+    engine.execute(List.of(genesis), null, PermissionLevel.SYSTEM);
+
+
+
+    var key = ECKeyPair.generateNew();
+    var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
+    var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
+    var txn =
+            engine
+                    .construct(
+                            new CreateMutableToken(tokenAddr, "test", "Name", "", "", "", key.getPublicKey()))
+                    .signAndBuild(key::sign);
+    engine.execute(List.of(txn));
+
+    // Act and Assert
+    var processedTxns = new ArrayList<REProcessedTxn>();
+
+    for (var i = 0; i<10000; i++) {
+
+      var mint =
+              engine
+                      .construct(new TxAction.MintToken(tokenAddr, accountAddr, UInt256.MAX_VALUE))
+                      .signAndBuild(key::sign);
+      var proce = engine.execute(List.of(mint));
+      var acc =
+              REResourceAccounting.compute(
+                      proce.getProcessedTxn().getGroupedStateUpdates().get(0).stream());
+      processedTxns.add(proce.getProcessedTxn());
+      assertThat(acc.resourceAccounting())
+              .hasSize(1);
+    }
+
+    var accounting3 = REResourceAccounting.compute(processedTxns.stream().map(a -> a.getGroupedStateUpdates().get(0).stream())
+    .flatMap(a -> a));
+
+    assertThat(accounting3.resourceAccounting())
+            .hasSize(1);
+
+    // 115792089237316195423570985008687907853269984665640564039457584007913129639935
+    // 115792089237316195423570985008687907853269984665640564039457584007913129639935
+    //  57896044618658097711785492504343953926634992332820282019728792003956564819967    Decimal MAX
+    // 115792089237316195423570985008687907853269984665640564039457584007913129639935     0000
+    //
+    System.out.println("max    = " + UInt256.MAX_VALUE.toBigInt());
+    System.out.println("supply = " + accounting3.resourceAccounting().get(tokenAddr));
+
+    final var con = new StateIRConstructor(store, engine.getSubstateDeserialization());
+    final var stateIr = con.prepareOlympiaStateIR();
+    System.out.println("State IR = " + stateIr);
+  }
 }

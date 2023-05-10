@@ -96,6 +96,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -217,7 +218,11 @@ public class TransferTokensTest {
     this.engine.execute(List.of(txn));
 
     // Act
-    var to = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
+    final var hex = "0402f7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bdef7bd";
+    final var bytes = Hex.decode(hex);
+    final var addr = REAddr.of(bytes);
+    var to = addr;
+    //    var to = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
     var transfer =
         this.engine
             .construct(new TransferToken(tokenAddr, accountAddr, to, transferAmt))

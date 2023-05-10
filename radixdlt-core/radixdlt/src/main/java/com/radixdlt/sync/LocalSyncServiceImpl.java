@@ -401,6 +401,8 @@ public final class LocalSyncServiceImpl implements LocalSyncService {
   }
 
   private SyncState sendSyncRequest(SyncingState currentState, BFTNode peer) {
+    return currentState;
+    /*
     log.trace("LocalSync: Sending sync request to {}", peer);
 
     final var currentHeader = currentState.getCurrentHeader();
@@ -409,8 +411,8 @@ public final class LocalSyncServiceImpl implements LocalSyncService {
     this.syncRequestDispatcher.dispatch(peer, SyncRequest.create(currentHeader.toDto()));
     this.syncRequestTimeoutDispatcher.dispatch(
         SyncRequestTimeout.create(peer, requestId), this.syncConfig.syncRequestTimeout());
-
     return currentState.withPendingRequest(peer, requestId);
+     */
   }
 
   private boolean isFullySynced(SyncingState syncingState) {

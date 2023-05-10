@@ -65,13 +65,14 @@
 package com.radixdlt.stateir;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Optional;
@@ -112,7 +113,7 @@ public final class OlympiaStateIRDeserializer {
 
     private OlympiaStateIR.Validator readValidator() {
       return new OlympiaStateIR.Validator(
-          readPublicKey(),
+          readPublicKeyBytes(),
           readString(),
           readString(),
           readBool(),
@@ -141,11 +142,11 @@ public final class OlympiaStateIRDeserializer {
     }
 
     private ImmutableList<OlympiaStateIR.Account> readAccounts() {
-      return readList(() -> new OlympiaStateIR.Account(readPublicKey()));
+      return readList(() -> new OlympiaStateIR.Account(readPublicKeyBytes()));
     }
 
     private ImmutableList<OlympiaStateIR.AccountBalance> readBalances() {
-      return readList(() -> new OlympiaStateIR.AccountBalance(readInt(), readInt(), readUint256()));
+      return readList(() -> new OlympiaStateIR.AccountBalance(readInt(), readInt(), readBigInt()));
     }
 
     private ImmutableList<OlympiaStateIR.Stake> readStakes() {
@@ -165,12 +166,8 @@ public final class OlympiaStateIRDeserializer {
       return REAddr.of(addrBytes);
     }
 
-    private ECPublicKey readPublicKey() {
-      try {
-        return ECPublicKey.fromBytes(readNBytes(ECPublicKey.COMPRESSED_BYTES));
-      } catch (PublicKeyException e) {
-        throw new OlympiaStateIRSerializationException("Failed to read public key", e);
-      }
+    private HashCode readPublicKeyBytes() {
+      return HashCode.fromBytes(readNBytes(ECPublicKey.COMPRESSED_BYTES));
     }
 
     private Optional<Integer> readOptionalInt() {
@@ -179,6 +176,12 @@ public final class OlympiaStateIRDeserializer {
 
     private int readInt() {
       return Ints.fromByteArray(readNBytes(Integer.BYTES));
+    }
+
+    private BigInteger readBigInt() {
+      final var size = readInt();
+      final var bytes = readNBytes(size);
+      return new BigInteger(bytes);
     }
 
     private UInt256 readUint256() {

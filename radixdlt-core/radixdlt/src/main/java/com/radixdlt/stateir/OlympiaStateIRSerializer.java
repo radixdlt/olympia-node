@@ -64,12 +64,13 @@
 
 package com.radixdlt.stateir;
 
+import com.google.common.hash.HashCode;
 import com.google.common.primitives.Bytes;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Ints;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
@@ -95,7 +96,7 @@ public final class OlympiaStateIRSerializer {
 
   private static byte[] serializeValidator(OlympiaStateIR.Validator validator) {
     return Bytes.concat(
-        serializePublicKey(validator.validatorKey()),
+        serializePublicKeyBytes(validator.publicKeyBytes()),
         serializeString(validator.name()),
         serializeString(validator.url()),
         boolToByteArr(validator.allowsDelegation()),
@@ -126,7 +127,8 @@ public final class OlympiaStateIRSerializer {
 
   private static void writeAccounts(ByteArrayOutputStream baos, OlympiaStateIR state)
       throws IOException {
-    serializeList(baos, state.accounts(), account -> serializePublicKey(account.publicKey()));
+    serializeList(
+        baos, state.accounts(), account -> serializePublicKeyBytes(account.publicKeyBytes()));
   }
 
   private static void writeBalances(ByteArrayOutputStream baos, OlympiaStateIR state)
@@ -138,7 +140,7 @@ public final class OlympiaStateIRSerializer {
             Bytes.concat(
                 Ints.toByteArray(accountBalance.accountIndex()),
                 Ints.toByteArray(accountBalance.resourceIndex()),
-                accountBalance.amount().toByteArray()));
+                serializeBigInt(accountBalance.amount())));
   }
 
   private static void writeStakes(ByteArrayOutputStream baos, OlympiaStateIR state)
@@ -153,8 +155,8 @@ public final class OlympiaStateIRSerializer {
                 stake.stakeUnitAmount().toByteArray()));
   }
 
-  private static byte[] serializePublicKey(ECPublicKey publicKey) {
-    return publicKey.getCompressedBytes();
+  private static byte[] serializePublicKeyBytes(HashCode publicKeyBytes) {
+    return publicKeyBytes.asBytes();
   }
 
   private static byte[] serializeOptionalInt(Optional<Integer> optInt) {
@@ -191,5 +193,10 @@ public final class OlympiaStateIRSerializer {
 
   private static byte[] boolToByteArr(boolean b) {
     return b ? new byte[] {0x01} : new byte[] {0x00};
+  }
+
+  private static byte[] serializeBigInt(BigInteger bi) {
+    final var bytes = bi.toByteArray();
+    return Bytes.concat(Ints.toByteArray(bytes.length), bytes);
   }
 }
