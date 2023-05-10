@@ -36,7 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   OlympiaEndStateReadyResponseAllOf.JSON_PROPERTY_SIGNATURE,
   OlympiaEndStateReadyResponseAllOf.JSON_PROPERTY_CONTENTS
 })
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2023-05-10T17:05:47.884194673+02:00[Europe/Warsaw]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2023-05-10T18:05:13.417843654+02:00[Europe/Warsaw]")
 public class OlympiaEndStateReadyResponseAllOf {
   public static final String JSON_PROPERTY_HASH = "hash";
   private String hash;
