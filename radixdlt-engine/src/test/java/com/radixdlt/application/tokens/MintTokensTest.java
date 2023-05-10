@@ -65,10 +65,8 @@
 package com.radixdlt.application.tokens;
 
 import static com.radixdlt.atom.TxAction.*;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
@@ -92,13 +90,10 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
-import java.math.BigInteger;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -179,9 +174,7 @@ public final class MintTokensTest {
   public void mint_tokens_as_owner() throws Exception {
     // Arrange
 
-
-
-//        .containsEntry(tokenAddr, BigInteger.valueOf(10));
+    //        .containsEntry(tokenAddr, BigInteger.valueOf(10));
   }
 
   @Test

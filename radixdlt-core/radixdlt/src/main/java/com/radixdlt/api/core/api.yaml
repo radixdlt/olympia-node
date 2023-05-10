@@ -2494,7 +2494,7 @@ components:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
           description: The name of the network.
-        use_large_placeholder_payload:
+        include_test_payload:
           type: boolean
       example:
         network_identifier:
@@ -2535,19 +2535,15 @@ components:
       allOf:
         - $ref: "#/components/schemas/OlympiaEndStateResponse"
         - type: object
-          required:
-            - placeholder_payload
-            - placeholder_payload_hash
-            - signature
           properties:
-            placeholder_payload:
-              description: A base64-encoded placeholder payload
+            test_payload:
+              description: A base64-encoded test payload
               type: string
-            placeholder_payload_hash:
-              description: A hex-encoded hash of the placeholder_payload
+            test_payload_hash:
+              description: A hex-encoded hash of the test_payload
               type: string
             signature:
-              description: The hex-encoded DER signature of the placeholder hash, signed with the node's key
+              description: The hex-encoded DER signature of the test_payload_hash, signed with the node's key
               type: string
     PublicKeyEntry:
       type: object

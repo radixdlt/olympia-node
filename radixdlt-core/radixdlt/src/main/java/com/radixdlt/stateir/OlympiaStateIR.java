@@ -68,7 +68,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
-
 import java.math.BigInteger;
 import java.util.Optional;
 

@@ -87,10 +87,10 @@ import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.utils.Lists;
 import com.radixdlt.utils.UInt256;
-
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -108,7 +108,7 @@ import org.apache.logging.log4j.util.TriConsumer;
  * This class is responsible for constructing the Olympia state IR (intermediate representation)
  * from the substates stored on ledger.
  */
-public final class StateIRConstructor<T> {
+public final class StateIRConstructor {
   public static final class OlympiaStateIRConstructorException extends RuntimeException {
     public OlympiaStateIRConstructorException(String message, Throwable cause) {
       super(message, cause);
@@ -119,11 +119,11 @@ public final class StateIRConstructor<T> {
     return (a, b) -> Arrays.compare(extractor.apply(a), extractor.apply(b));
   }
 
-  private final EngineStore<T> engineStore;
+  private final EngineStore<LedgerAndBFTProof> engineStore;
   private final SubstateDeserialization substateDeserialization;
 
   public StateIRConstructor(
-      EngineStore<T> engineStore, SubstateDeserialization substateDeserialization) {
+      EngineStore<LedgerAndBFTProof> engineStore, SubstateDeserialization substateDeserialization) {
     this.engineStore = Objects.requireNonNull(engineStore);
     this.substateDeserialization = Objects.requireNonNull(substateDeserialization);
   }
@@ -143,7 +143,16 @@ public final class StateIRConstructor<T> {
 
     final var stakes = prepareStakes(validatorIdxMap, accountIdxMap);
 
-    return new OlympiaStateIR(validators, resources, accounts, balances, stakes);
+    final var lastProof = engineStore.getMetadata();
+
+    return new OlympiaStateIR(
+        validators,
+        resources,
+        accounts,
+        balances,
+        stakes,
+        lastProof.getProof().timestamp(),
+        lastProof.getProof().getEpoch());
   }
 
   private ImmutableList<OlympiaStateIR.Account> prepareAccounts() {
@@ -325,17 +334,21 @@ public final class StateIRConstructor<T> {
     processSubstatesOfType(
         SubstateTypeId.TOKENS,
         TokensInAccount.class,
-        s -> accumulateTokensToMap.accept(s.holdingAddress(), s.resourceAddr(), s.amount().toBigInt()));
+        s ->
+            accumulateTokensToMap.accept(
+                s.holdingAddress(), s.resourceAddr(), s.amount().toBigInt()));
 
     processSubstatesOfType(
         SubstateTypeId.PREPARED_STAKE,
         PreparedStake.class,
-        s -> accumulateTokensToMap.accept(s.owner(), REAddr.ofNativeToken(), s.amount().toBigInt()));
+        s ->
+            accumulateTokensToMap.accept(s.owner(), REAddr.ofNativeToken(), s.amount().toBigInt()));
 
     processSubstatesOfType(
         SubstateTypeId.EXITING_STAKE,
         ExitingStake.class,
-        s -> accumulateTokensToMap.accept(s.owner(), REAddr.ofNativeToken(), s.amount().toBigInt()));
+        s ->
+            accumulateTokensToMap.accept(s.owner(), REAddr.ofNativeToken(), s.amount().toBigInt()));
 
     return tokensByAccountAndResource.entrySet().stream()
         .flatMap(

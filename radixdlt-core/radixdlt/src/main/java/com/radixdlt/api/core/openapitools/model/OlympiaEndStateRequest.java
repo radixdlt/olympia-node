@@ -17,15 +17,9 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.HashMap;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -34,15 +28,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   OlympiaEndStateRequest.JSON_PROPERTY_NETWORK_IDENTIFIER,
-  OlympiaEndStateRequest.JSON_PROPERTY_USE_LARGE_PLACEHOLDER_PAYLOAD
+  OlympiaEndStateRequest.JSON_PROPERTY_INCLUDE_TEST_PAYLOAD
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2023-05-10T17:05:47.884194673+02:00[Europe/Warsaw]")
 public class OlympiaEndStateRequest {
   public static final String JSON_PROPERTY_NETWORK_IDENTIFIER = "network_identifier";
   private NetworkIdentifier networkIdentifier;
 
-  public static final String JSON_PROPERTY_USE_LARGE_PLACEHOLDER_PAYLOAD = "use_large_placeholder_payload";
-  private Boolean useLargePlaceholderPayload;
+  public static final String JSON_PROPERTY_INCLUDE_TEST_PAYLOAD = "include_test_payload";
+  private Boolean includeTestPayload;
 
   public OlympiaEndStateRequest() { 
   }
@@ -72,28 +66,28 @@ public class OlympiaEndStateRequest {
   }
 
 
-  public OlympiaEndStateRequest useLargePlaceholderPayload(Boolean useLargePlaceholderPayload) {
-    this.useLargePlaceholderPayload = useLargePlaceholderPayload;
+  public OlympiaEndStateRequest includeTestPayload(Boolean includeTestPayload) {
+    this.includeTestPayload = includeTestPayload;
     return this;
   }
 
    /**
-   * Get useLargePlaceholderPayload
-   * @return useLargePlaceholderPayload
+   * Get includeTestPayload
+   * @return includeTestPayload
   **/
   @javax.annotation.Nullable
-  @JsonProperty(JSON_PROPERTY_USE_LARGE_PLACEHOLDER_PAYLOAD)
+  @JsonProperty(JSON_PROPERTY_INCLUDE_TEST_PAYLOAD)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Boolean getUseLargePlaceholderPayload() {
-    return useLargePlaceholderPayload;
+  public Boolean getIncludeTestPayload() {
+    return includeTestPayload;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_USE_LARGE_PLACEHOLDER_PAYLOAD)
+  @JsonProperty(JSON_PROPERTY_INCLUDE_TEST_PAYLOAD)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setUseLargePlaceholderPayload(Boolean useLargePlaceholderPayload) {
-    this.useLargePlaceholderPayload = useLargePlaceholderPayload;
+  public void setIncludeTestPayload(Boolean includeTestPayload) {
+    this.includeTestPayload = includeTestPayload;
   }
 
 
@@ -110,12 +104,12 @@ public class OlympiaEndStateRequest {
     }
     OlympiaEndStateRequest olympiaEndStateRequest = (OlympiaEndStateRequest) o;
     return Objects.equals(this.networkIdentifier, olympiaEndStateRequest.networkIdentifier) &&
-        Objects.equals(this.useLargePlaceholderPayload, olympiaEndStateRequest.useLargePlaceholderPayload);
+        Objects.equals(this.includeTestPayload, olympiaEndStateRequest.includeTestPayload);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(networkIdentifier, useLargePlaceholderPayload);
+    return Objects.hash(networkIdentifier, includeTestPayload);
   }
 
   @Override
@@ -123,7 +117,7 @@ public class OlympiaEndStateRequest {
     StringBuilder sb = new StringBuilder();
     sb.append("class OlympiaEndStateRequest {\n");
     sb.append("    networkIdentifier: ").append(toIndentedString(networkIdentifier)).append("\n");
-    sb.append("    useLargePlaceholderPayload: ").append(toIndentedString(useLargePlaceholderPayload)).append("\n");
+    sb.append("    includeTestPayload: ").append(toIndentedString(includeTestPayload)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -176,9 +170,9 @@ public class OlympiaEndStateRequest {
       joiner.add(getNetworkIdentifier().toUrlQueryString(prefix + "network_identifier" + suffix));
     }
 
-    // add `use_large_placeholder_payload` to the URL query string
-    if (getUseLargePlaceholderPayload() != null) {
-      joiner.add(String.format("%suse_large_placeholder_payload%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getUseLargePlaceholderPayload()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    // add `include_test_payload` to the URL query string
+    if (getIncludeTestPayload() != null) {
+      joiner.add(String.format("%sinclude_test_payload%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getIncludeTestPayload()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
     }
 
     return joiner.toString();
