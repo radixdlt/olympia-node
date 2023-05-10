@@ -169,7 +169,7 @@ public final class OlympiaEndStateHandler
       final var testPayloadHash = hasher.hashBytes(testPayload);
       final var signature = hashSigner.sign(testPayloadHash);
       return new OlympiaEndStateNotReadyResponse()
-          .testPayload(Bytes.toBase64String(testPayload))
+          .testPayload(Hex.toHexString(testPayload))
           .testPayloadHash(Hex.toHexString(testPayloadHash.asBytes()))
           .signature(signature.toHexString())
           .status(OlympiaEndStateResponse.StatusEnum.NOT_READY);

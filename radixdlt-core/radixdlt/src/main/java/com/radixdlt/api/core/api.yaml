@@ -2537,7 +2537,7 @@ components:
         - type: object
           properties:
             test_payload:
-              description: A base64-encoded test payload
+              description: A hex-encoded test payload
               type: string
             test_payload_hash:
               description: A hex-encoded hash of the test_payload

@@ -68,6 +68,8 @@ import com.google.common.hash.HashCode;
 import com.google.common.primitives.Bytes;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.Longs;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -86,6 +88,8 @@ public final class OlympiaStateIRSerializer {
     writeAccounts(baos, state);
     writeBalances(baos, state);
     writeStakes(baos, state);
+    baos.write(Longs.toByteArray(state.lastConsensusTimestamp()));
+    baos.write(Longs.toByteArray(state.lastEpoch()));
     return baos.toByteArray();
   }
 
