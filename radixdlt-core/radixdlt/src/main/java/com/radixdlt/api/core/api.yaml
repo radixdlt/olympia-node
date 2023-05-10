@@ -2541,10 +2541,10 @@ components:
             - signature
           properties:
             placeholder_payload:
-              description: A hex-encoded placeholder hash (a constant shared with the Babylon node)
+              description: A base64-encoded placeholder payload
               type: string
             placeholder_payload_hash:
-              description:
+              description: A hex-encoded hash of the placeholder_payload
               type: string
             signature:
               description: The hex-encoded DER signature of the placeholder hash, signed with the node's key

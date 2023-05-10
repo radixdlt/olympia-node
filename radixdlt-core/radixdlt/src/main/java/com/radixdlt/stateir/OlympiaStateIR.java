@@ -78,7 +78,9 @@ public record OlympiaStateIR(
     ImmutableList<Resource> resources,
     ImmutableList<Account> accounts,
     ImmutableList<AccountBalance> balances,
-    ImmutableList<Stake> stakes) {
+    ImmutableList<Stake> stakes,
+    long lastConsensusTimestamp,
+    long lastEpoch) {
 
   public record Validator(
       HashCode publicKeyBytes,
