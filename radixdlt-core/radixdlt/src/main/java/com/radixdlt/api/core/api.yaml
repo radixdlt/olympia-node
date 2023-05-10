@@ -2494,6 +2494,8 @@ components:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
           description: The name of the network.
+        use_large_placeholder_payload:
+          type: boolean
       example:
         network_identifier:
           network: mainnet
@@ -2534,11 +2536,15 @@ components:
         - $ref: "#/components/schemas/OlympiaEndStateResponse"
         - type: object
           required:
-            - placeholder_hash
+            - placeholder_payload
+            - placeholder_payload_hash
             - signature
           properties:
-            placeholder_hash:
+            placeholder_payload:
               description: A hex-encoded placeholder hash (a constant shared with the Babylon node)
+              type: string
+            placeholder_payload_hash:
+              description:
               type: string
             signature:
               description: The hex-encoded DER signature of the placeholder hash, signed with the node's key
