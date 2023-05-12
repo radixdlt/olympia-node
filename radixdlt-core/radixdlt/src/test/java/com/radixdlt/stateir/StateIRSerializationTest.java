@@ -67,6 +67,7 @@ package com.radixdlt.stateir;
 import static com.radixdlt.atom.TxAction.CreateMutableToken;
 import static org.junit.Assert.assertEquals;
 
+import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -101,8 +102,7 @@ import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -177,11 +177,6 @@ public final class StateIRSerializationTest {
 
     final var serialized = new OlympiaStateIRSerializer().serialize(state);
 
-    try (FileOutputStream outputStream =
-        new FileOutputStream(new File("olympia-state-uncompressed.raw"))) {
-      outputStream.write(serialized);
-    }
-
     // Check the serialization/deserialization pipeline
     try (final var bais = new ByteArrayInputStream(serialized)) {
       final var deserialized = new OlympiaStateIRDeserializer().deserialize(bais);
@@ -230,7 +225,7 @@ public final class StateIRSerializationTest {
   private TransfersSummary makeRandomTokenTransfers(
       int numTokens, int transfersPerToken, List<REAddr> accounts)
       throws RadixEngineException, TxBuilderException {
-    final Map<ECPublicKey, Map<REAddr, UInt256>> transfersByAccountAndResource = new HashMap<>();
+    final Map<HashCode, Map<REAddr, BigInteger>> transfersByAccountAndResource = new HashMap<>();
     for (int i = 0; i < numTokens; i++) {
       final var tokenAddr = createMutableToken(VALIDATOR_KEY, UInt256.from(10_000_000_000L));
       final var transfersToMake = new ArrayList<Pair<REAddr, UInt256>>();
@@ -242,11 +237,11 @@ public final class StateIRSerializationTest {
         // Collect the data for result summary
         final var accountTransfersByResource =
             transfersByAccountAndResource.computeIfAbsent(
-                accountForTransfer.publicKey().orElseThrow(), unused -> new HashMap<>());
+                accountForTransfer.publicKeyBytes().orElseThrow(), unused -> new HashMap<>());
         final var accountTransfersForCurrentResource =
-            accountTransfersByResource.getOrDefault(tokenAddr, UInt256.ZERO);
+            accountTransfersByResource.getOrDefault(tokenAddr, BigInteger.ZERO);
         final var accountTransfersForCurrentResourceNewValue =
-            accountTransfersForCurrentResource.add(transferAmount);
+            accountTransfersForCurrentResource.add(transferAmount.toBigInt());
         accountTransfersByResource.put(tokenAddr, accountTransfersForCurrentResourceNewValue);
       }
       transferTokensToAccounts(VALIDATOR_KEY, tokenAddr, transfersToMake);
@@ -360,5 +355,5 @@ public final class StateIRSerializationTest {
   }
 
   private record TransfersSummary(
-      Map<ECPublicKey, Map<REAddr, UInt256>> transfersByAccountAndResource) {}
+      Map<HashCode, Map<REAddr, BigInteger>> transfersByAccountAndResource) {}
 }
