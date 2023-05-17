@@ -10,6 +10,7 @@
  * Do not edit the class manually.
  */
 
+
 package com.radixdlt.api.core.openapitools.model;
 
 import java.net.URLEncoder;
@@ -20,17 +21,22 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+
 /**
  * OlympiaEndStateNotReadyResponseAllOf
  */
 @JsonPropertyOrder({
-  OlympiaEndStateNotReadyResponseAllOf.JSON_PROPERTY_PLACEHOLDER_HASH,
+  OlympiaEndStateNotReadyResponseAllOf.JSON_PROPERTY_TEST_PAYLOAD,
+  OlympiaEndStateNotReadyResponseAllOf.JSON_PROPERTY_TEST_PAYLOAD_HASH,
   OlympiaEndStateNotReadyResponseAllOf.JSON_PROPERTY_SIGNATURE
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2023-03-20T18:40:33.467316201+01:00[Europe/Warsaw]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2023-05-10T18:05:13.417843654+02:00[Europe/Warsaw]")
 public class OlympiaEndStateNotReadyResponseAllOf {
-  public static final String JSON_PROPERTY_PLACEHOLDER_HASH = "placeholder_hash";
-  private String placeholderHash;
+  public static final String JSON_PROPERTY_TEST_PAYLOAD = "test_payload";
+  private String testPayload;
+
+  public static final String JSON_PROPERTY_TEST_PAYLOAD_HASH = "test_payload_hash";
+  private String testPayloadHash;
 
   public static final String JSON_PROPERTY_SIGNATURE = "signature";
   private String signature;
@@ -38,28 +44,53 @@ public class OlympiaEndStateNotReadyResponseAllOf {
   public OlympiaEndStateNotReadyResponseAllOf() { 
   }
 
-  public OlympiaEndStateNotReadyResponseAllOf placeholderHash(String placeholderHash) {
-    this.placeholderHash = placeholderHash;
+  public OlympiaEndStateNotReadyResponseAllOf testPayload(String testPayload) {
+    this.testPayload = testPayload;
     return this;
   }
 
    /**
-   * A hex-encoded placeholder hash (a constant shared with the Babylon node)
-   * @return placeholderHash
+   * A base64-encoded test payload
+   * @return testPayload
   **/
-  @javax.annotation.Nonnull
-  @JsonProperty(JSON_PROPERTY_PLACEHOLDER_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @JsonProperty(JSON_PROPERTY_TEST_PAYLOAD)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public String getPlaceholderHash() {
-    return placeholderHash;
+  public String getTestPayload() {
+    return testPayload;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PLACEHOLDER_HASH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPlaceholderHash(String placeholderHash) {
-    this.placeholderHash = placeholderHash;
+  @JsonProperty(JSON_PROPERTY_TEST_PAYLOAD)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setTestPayload(String testPayload) {
+    this.testPayload = testPayload;
+  }
+
+
+  public OlympiaEndStateNotReadyResponseAllOf testPayloadHash(String testPayloadHash) {
+    this.testPayloadHash = testPayloadHash;
+    return this;
+  }
+
+   /**
+   * A hex-encoded hash of the test_payload
+   * @return testPayloadHash
+  **/
+  @javax.annotation.Nullable
+  @JsonProperty(JSON_PROPERTY_TEST_PAYLOAD_HASH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getTestPayloadHash() {
+    return testPayloadHash;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TEST_PAYLOAD_HASH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setTestPayloadHash(String testPayloadHash) {
+    this.testPayloadHash = testPayloadHash;
   }
 
 
@@ -69,12 +100,12 @@ public class OlympiaEndStateNotReadyResponseAllOf {
   }
 
    /**
-   * The hex-encoded DER signature of the placeholder hash, signed with the node&#39;s key
+   * The hex-encoded DER signature of the test_payload_hash, signed with the node&#39;s key
    * @return signature
   **/
-  @javax.annotation.Nonnull
+  @javax.annotation.Nullable
   @JsonProperty(JSON_PROPERTY_SIGNATURE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public String getSignature() {
     return signature;
@@ -82,7 +113,7 @@ public class OlympiaEndStateNotReadyResponseAllOf {
 
 
   @JsonProperty(JSON_PROPERTY_SIGNATURE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setSignature(String signature) {
     this.signature = signature;
   }
@@ -100,20 +131,22 @@ public class OlympiaEndStateNotReadyResponseAllOf {
       return false;
     }
     OlympiaEndStateNotReadyResponseAllOf olympiaEndStateNotReadyResponseAllOf = (OlympiaEndStateNotReadyResponseAllOf) o;
-    return Objects.equals(this.placeholderHash, olympiaEndStateNotReadyResponseAllOf.placeholderHash) &&
+    return Objects.equals(this.testPayload, olympiaEndStateNotReadyResponseAllOf.testPayload) &&
+        Objects.equals(this.testPayloadHash, olympiaEndStateNotReadyResponseAllOf.testPayloadHash) &&
         Objects.equals(this.signature, olympiaEndStateNotReadyResponseAllOf.signature);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(placeholderHash, signature);
+    return Objects.hash(testPayload, testPayloadHash, signature);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class OlympiaEndStateNotReadyResponseAllOf {\n");
-    sb.append("    placeholderHash: ").append(toIndentedString(placeholderHash)).append("\n");
+    sb.append("    testPayload: ").append(toIndentedString(testPayload)).append("\n");
+    sb.append("    testPayloadHash: ").append(toIndentedString(testPayloadHash)).append("\n");
     sb.append("    signature: ").append(toIndentedString(signature)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -162,9 +195,14 @@ public class OlympiaEndStateNotReadyResponseAllOf {
 
     StringJoiner joiner = new StringJoiner("&");
 
-    // add `placeholder_hash` to the URL query string
-    if (getPlaceholderHash() != null) {
-      joiner.add(String.format("%splaceholder_hash%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getPlaceholderHash()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    // add `test_payload` to the URL query string
+    if (getTestPayload() != null) {
+      joiner.add(String.format("%stest_payload%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getTestPayload()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    // add `test_payload_hash` to the URL query string
+    if (getTestPayloadHash() != null) {
+      joiner.add(String.format("%stest_payload_hash%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getTestPayloadHash()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
     }
 
     // add `signature` to the URL query string

@@ -64,15 +64,14 @@
 
 package com.radixdlt.api.core.handlers;
 
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.api.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.model.CoreApiException;
+import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.openapitools.model.OlympiaEndStateNotReadyResponse;
 import com.radixdlt.api.core.openapitools.model.OlympiaEndStateReadyResponse;
 import com.radixdlt.api.core.openapitools.model.OlympiaEndStateRequest;
 import com.radixdlt.api.core.openapitools.model.OlympiaEndStateResponse;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.hotstuff.HashSigner;
@@ -92,46 +91,46 @@ import org.xerial.snappy.Snappy;
 public final class OlympiaEndStateHandler
     extends CoreJsonRpcHandler<OlympiaEndStateRequest, OlympiaEndStateResponse> {
 
-  private static final HashCode PLACEHOLDER_HASH_FOR_NOT_READY_RESPONSE =
-      HashUtils.sha256(new byte[] {1});
+  // The size of a test payload that's used (on the Babylon side) to check that:
+  // a) large response can be successfully received
+  // b) node public key matches configuration (signature verification)
+  private static final int TEST_PAYLOAD_SIZE = 50 * 1024 * 1024; // 50 MiB
 
   private final Object endStateLock = new Object();
 
+  private final CoreModelMapper coreModelMapper;
   private final RadixEngine<LedgerAndBFTProof> radixEngine;
   private final EngineStore<LedgerAndBFTProof> engineStore;
   private final CurrentForkView currentForkView;
   private final Hasher hasher;
   private final HashSigner hashSigner;
 
-  private final OlympiaEndStateResponse cachedNotReadyResponse;
   private Optional<OlympiaEndStateResponse> cachedEndStateReadyResponse = Optional.empty();
 
   @Inject
   OlympiaEndStateHandler(
+      CoreModelMapper coreModelMapper,
       RadixEngine<LedgerAndBFTProof> radixEngine,
       EngineStore<LedgerAndBFTProof> engineStore,
       CurrentForkView currentForkView,
       Hasher hasher,
       HashSigner hashSigner) {
     super(OlympiaEndStateRequest.class);
+    this.coreModelMapper = Objects.requireNonNull(coreModelMapper);
     this.radixEngine = Objects.requireNonNull(radixEngine);
     this.engineStore = Objects.requireNonNull(engineStore);
     this.currentForkView = Objects.requireNonNull(currentForkView);
     this.hasher = Objects.requireNonNull(hasher);
     this.hashSigner = Objects.requireNonNull(hashSigner);
-
-    this.cachedNotReadyResponse =
-        new OlympiaEndStateNotReadyResponse()
-            .placeholderHash(Hex.toHexString(PLACEHOLDER_HASH_FOR_NOT_READY_RESPONSE.asBytes()))
-            .signature(hashSigner.sign(PLACEHOLDER_HASH_FOR_NOT_READY_RESPONSE).toHexString())
-            .status(OlympiaEndStateResponse.StatusEnum.NOT_READY);
   }
 
   @Override
   public OlympiaEndStateResponse handleRequest(OlympiaEndStateRequest request)
       throws CoreApiException {
+    coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
+
     if (!radixEngine.isShutDown()) {
-      return this.cachedNotReadyResponse;
+      return createNotReadyResponse(request);
     }
 
     synchronized (endStateLock) {
@@ -157,6 +156,27 @@ public final class OlympiaEndStateHandler
             .contents(Bytes.toBase64String(endStateBytes))
             .status(OlympiaEndStateResponse.StatusEnum.READY);
     this.cachedEndStateReadyResponse = Optional.of(response);
+  }
+
+  private OlympiaEndStateResponse createNotReadyResponse(OlympiaEndStateRequest request) {
+    final var includeTestPayload =
+        Optional.ofNullable(request.getIncludeTestPayload()).orElse(false);
+    if (includeTestPayload) {
+      final var testPayload = new byte[TEST_PAYLOAD_SIZE];
+      // Just setting some bytes so that it's not all zeros
+      testPayload[0] = 0x01;
+      testPayload[testPayload.length - 1] = (byte) 0xff;
+      final var testPayloadHash = hasher.hashBytes(testPayload);
+      final var signature = hashSigner.sign(testPayloadHash);
+      return new OlympiaEndStateNotReadyResponse()
+          .testPayload(Hex.toHexString(testPayload))
+          .testPayloadHash(Hex.toHexString(testPayloadHash.asBytes()))
+          .signature(signature.toHexString())
+          .status(OlympiaEndStateResponse.StatusEnum.NOT_READY);
+    } else {
+      return new OlympiaEndStateNotReadyResponse()
+          .status(OlympiaEndStateResponse.StatusEnum.NOT_READY);
+    }
   }
 
   private byte[] prepareEndState() throws IOException {

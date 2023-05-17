@@ -13,24 +13,26 @@
 
 package com.radixdlt.api.core.openapitools.model;
 
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import io.swagger.annotations.ApiModelProperty;
-
-import java.util.Objects;
 
 
 /**
  * OlympiaEndStateRequest
  */
 @JsonPropertyOrder({
-  OlympiaEndStateRequest.JSON_PROPERTY_NETWORK_IDENTIFIER
+  OlympiaEndStateRequest.JSON_PROPERTY_NETWORK_IDENTIFIER,
+  OlympiaEndStateRequest.JSON_PROPERTY_INCLUDE_TEST_PAYLOAD
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2022-07-06T21:16:58.881714945+02:00[Europe/Warsaw]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2023-05-10T18:05:13.417843654+02:00[Europe/Warsaw]")
 public class OlympiaEndStateRequest {
   public static final String JSON_PROPERTY_NETWORK_IDENTIFIER = "network_identifier";
   private NetworkIdentifier networkIdentifier;
+
+  public static final String JSON_PROPERTY_INCLUDE_TEST_PAYLOAD = "include_test_payload";
+  private Boolean includeTestPayload;
 
   public OlympiaEndStateRequest() { 
   }
@@ -45,7 +47,6 @@ public class OlympiaEndStateRequest {
    * @return networkIdentifier
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -61,6 +62,31 @@ public class OlympiaEndStateRequest {
   }
 
 
+  public OlympiaEndStateRequest includeTestPayload(Boolean includeTestPayload) {
+    this.includeTestPayload = includeTestPayload;
+    return this;
+  }
+
+   /**
+   * Get includeTestPayload
+   * @return includeTestPayload
+  **/
+  @javax.annotation.Nullable
+  @JsonProperty(JSON_PROPERTY_INCLUDE_TEST_PAYLOAD)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Boolean getIncludeTestPayload() {
+    return includeTestPayload;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_INCLUDE_TEST_PAYLOAD)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setIncludeTestPayload(Boolean includeTestPayload) {
+    this.includeTestPayload = includeTestPayload;
+  }
+
+
   /**
    * Return true if this OlympiaEndStateRequest object is equal to o.
    */
@@ -73,12 +99,13 @@ public class OlympiaEndStateRequest {
       return false;
     }
     OlympiaEndStateRequest olympiaEndStateRequest = (OlympiaEndStateRequest) o;
-    return Objects.equals(this.networkIdentifier, olympiaEndStateRequest.networkIdentifier);
+    return Objects.equals(this.networkIdentifier, olympiaEndStateRequest.networkIdentifier) &&
+        Objects.equals(this.includeTestPayload, olympiaEndStateRequest.includeTestPayload);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(networkIdentifier);
+    return Objects.hash(networkIdentifier, includeTestPayload);
   }
 
   @Override
@@ -86,6 +113,7 @@ public class OlympiaEndStateRequest {
     StringBuilder sb = new StringBuilder();
     sb.append("class OlympiaEndStateRequest {\n");
     sb.append("    networkIdentifier: ").append(toIndentedString(networkIdentifier)).append("\n");
+    sb.append("    includeTestPayload: ").append(toIndentedString(includeTestPayload)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -100,6 +128,4 @@ public class OlympiaEndStateRequest {
     }
     return o.toString().replace("\n", "\n    ");
   }
-
 }
-
