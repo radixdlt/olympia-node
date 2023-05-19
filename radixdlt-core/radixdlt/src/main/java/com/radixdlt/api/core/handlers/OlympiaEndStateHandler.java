@@ -94,7 +94,7 @@ public final class OlympiaEndStateHandler
   // The size of a test payload that's used (on the Babylon side) to check that:
   // a) large response can be successfully received
   // b) node public key matches configuration (signature verification)
-  private static final int TEST_PAYLOAD_SIZE = 50 * 1024 * 1024; // 50 MiB
+  private static final int TEST_PAYLOAD_SIZE = 100 * 1024 * 1024; // 100 MiB
 
   private final Object endStateLock = new Object();
 
