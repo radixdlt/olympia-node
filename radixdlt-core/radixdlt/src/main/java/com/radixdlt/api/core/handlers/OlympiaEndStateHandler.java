@@ -162,7 +162,8 @@ public final class OlympiaEndStateHandler
     final var includeTestPayload =
         Optional.ofNullable(request.getIncludeTestPayload()).orElse(false);
     if (includeTestPayload) {
-      final var testPayload = new byte[TEST_PAYLOAD_SIZE];
+      // We're writing it as hex, so the size will double
+      final var testPayload = new byte[TEST_PAYLOAD_SIZE / 2];
       // Just setting some bytes so that it's not all zeros
       testPayload[0] = 0x01;
       testPayload[testPayload.length - 1] = (byte) 0xff;
