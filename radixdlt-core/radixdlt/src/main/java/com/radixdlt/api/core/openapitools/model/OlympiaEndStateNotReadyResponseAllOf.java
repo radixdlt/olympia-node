@@ -13,6 +13,9 @@
 
 package com.radixdlt.api.core.openapitools.model;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.StringJoiner;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -20,75 +23,104 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * OlympiaEndStateRequest
+ * OlympiaEndStateNotReadyResponseAllOf
  */
 @JsonPropertyOrder({
-  OlympiaEndStateRequest.JSON_PROPERTY_NETWORK_IDENTIFIER,
-  OlympiaEndStateRequest.JSON_PROPERTY_INCLUDE_TEST_PAYLOAD
+  OlympiaEndStateNotReadyResponseAllOf.JSON_PROPERTY_TEST_PAYLOAD,
+  OlympiaEndStateNotReadyResponseAllOf.JSON_PROPERTY_TEST_PAYLOAD_HASH,
+  OlympiaEndStateNotReadyResponseAllOf.JSON_PROPERTY_SIGNATURE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2023-05-10T18:05:13.417843654+02:00[Europe/Warsaw]")
-public class OlympiaEndStateRequest {
-  public static final String JSON_PROPERTY_NETWORK_IDENTIFIER = "network_identifier";
-  private NetworkIdentifier networkIdentifier;
+public class OlympiaEndStateNotReadyResponseAllOf {
+  public static final String JSON_PROPERTY_TEST_PAYLOAD = "test_payload";
+  private String testPayload;
 
-  public static final String JSON_PROPERTY_INCLUDE_TEST_PAYLOAD = "include_test_payload";
-  private Boolean includeTestPayload;
+  public static final String JSON_PROPERTY_TEST_PAYLOAD_HASH = "test_payload_hash";
+  private String testPayloadHash;
 
-  public OlympiaEndStateRequest() { 
+  public static final String JSON_PROPERTY_SIGNATURE = "signature";
+  private String signature;
+
+  public OlympiaEndStateNotReadyResponseAllOf() { 
   }
 
-  public OlympiaEndStateRequest networkIdentifier(NetworkIdentifier networkIdentifier) {
-    this.networkIdentifier = networkIdentifier;
+  public OlympiaEndStateNotReadyResponseAllOf testPayload(String testPayload) {
+    this.testPayload = testPayload;
     return this;
   }
 
    /**
-   * Get networkIdentifier
-   * @return networkIdentifier
-  **/
-  @javax.annotation.Nonnull
-  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public NetworkIdentifier getNetworkIdentifier() {
-    return networkIdentifier;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNetworkIdentifier(NetworkIdentifier networkIdentifier) {
-    this.networkIdentifier = networkIdentifier;
-  }
-
-
-  public OlympiaEndStateRequest includeTestPayload(Boolean includeTestPayload) {
-    this.includeTestPayload = includeTestPayload;
-    return this;
-  }
-
-   /**
-   * Get includeTestPayload
-   * @return includeTestPayload
+   * A base64-encoded test payload
+   * @return testPayload
   **/
   @javax.annotation.Nullable
-  @JsonProperty(JSON_PROPERTY_INCLUDE_TEST_PAYLOAD)
+  @JsonProperty(JSON_PROPERTY_TEST_PAYLOAD)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Boolean getIncludeTestPayload() {
-    return includeTestPayload;
+  public String getTestPayload() {
+    return testPayload;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_INCLUDE_TEST_PAYLOAD)
+  @JsonProperty(JSON_PROPERTY_TEST_PAYLOAD)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setIncludeTestPayload(Boolean includeTestPayload) {
-    this.includeTestPayload = includeTestPayload;
+  public void setTestPayload(String testPayload) {
+    this.testPayload = testPayload;
+  }
+
+
+  public OlympiaEndStateNotReadyResponseAllOf testPayloadHash(String testPayloadHash) {
+    this.testPayloadHash = testPayloadHash;
+    return this;
+  }
+
+   /**
+   * A hex-encoded hash of the test_payload
+   * @return testPayloadHash
+  **/
+  @javax.annotation.Nullable
+  @JsonProperty(JSON_PROPERTY_TEST_PAYLOAD_HASH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getTestPayloadHash() {
+    return testPayloadHash;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TEST_PAYLOAD_HASH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setTestPayloadHash(String testPayloadHash) {
+    this.testPayloadHash = testPayloadHash;
+  }
+
+
+  public OlympiaEndStateNotReadyResponseAllOf signature(String signature) {
+    this.signature = signature;
+    return this;
+  }
+
+   /**
+   * The hex-encoded DER signature of the test_payload_hash, signed with the node&#39;s key
+   * @return signature
+  **/
+  @javax.annotation.Nullable
+  @JsonProperty(JSON_PROPERTY_SIGNATURE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getSignature() {
+    return signature;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SIGNATURE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setSignature(String signature) {
+    this.signature = signature;
   }
 
 
   /**
-   * Return true if this OlympiaEndStateRequest object is equal to o.
+   * Return true if this OlympiaEndStateNotReadyResponse_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -98,22 +130,24 @@ public class OlympiaEndStateRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    OlympiaEndStateRequest olympiaEndStateRequest = (OlympiaEndStateRequest) o;
-    return Objects.equals(this.networkIdentifier, olympiaEndStateRequest.networkIdentifier) &&
-        Objects.equals(this.includeTestPayload, olympiaEndStateRequest.includeTestPayload);
+    OlympiaEndStateNotReadyResponseAllOf olympiaEndStateNotReadyResponseAllOf = (OlympiaEndStateNotReadyResponseAllOf) o;
+    return Objects.equals(this.testPayload, olympiaEndStateNotReadyResponseAllOf.testPayload) &&
+        Objects.equals(this.testPayloadHash, olympiaEndStateNotReadyResponseAllOf.testPayloadHash) &&
+        Objects.equals(this.signature, olympiaEndStateNotReadyResponseAllOf.signature);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(networkIdentifier, includeTestPayload);
+    return Objects.hash(testPayload, testPayloadHash, signature);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class OlympiaEndStateRequest {\n");
-    sb.append("    networkIdentifier: ").append(toIndentedString(networkIdentifier)).append("\n");
-    sb.append("    includeTestPayload: ").append(toIndentedString(includeTestPayload)).append("\n");
+    sb.append("class OlympiaEndStateNotReadyResponseAllOf {\n");
+    sb.append("    testPayload: ").append(toIndentedString(testPayload)).append("\n");
+    sb.append("    testPayloadHash: ").append(toIndentedString(testPayloadHash)).append("\n");
+    sb.append("    signature: ").append(toIndentedString(signature)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -128,4 +162,55 @@ public class OlympiaEndStateRequest {
     }
     return o.toString().replace("\n", "\n    ");
   }
+
+  /**
+   * Convert the instance into URL query string.
+   *
+   * @return URL query string
+   */
+  public String toUrlQueryString() {
+    return toUrlQueryString(null);
+  }
+
+  /**
+   * Convert the instance into URL query string.
+   *
+   * @param prefix prefix of the query string
+   * @return URL query string
+   */
+  public String toUrlQueryString(String prefix) {
+    String suffix = "";
+    String containerSuffix = "";
+    String containerPrefix = "";
+    if (prefix == null) {
+      // style=form, explode=true, e.g. /pet?name=cat&type=manx
+      prefix = "";
+    } else {
+      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
+      prefix = prefix + "[";
+      suffix = "]";
+      containerSuffix = "]";
+      containerPrefix = "[";
+    }
+
+    StringJoiner joiner = new StringJoiner("&");
+
+    // add `test_payload` to the URL query string
+    if (getTestPayload() != null) {
+      joiner.add(String.format("%stest_payload%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getTestPayload()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    // add `test_payload_hash` to the URL query string
+    if (getTestPayloadHash() != null) {
+      joiner.add(String.format("%stest_payload_hash%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getTestPayloadHash()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    // add `signature` to the URL query string
+    if (getSignature() != null) {
+      joiner.add(String.format("%ssignature%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getSignature()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    return joiner.toString();
+  }
 }
+

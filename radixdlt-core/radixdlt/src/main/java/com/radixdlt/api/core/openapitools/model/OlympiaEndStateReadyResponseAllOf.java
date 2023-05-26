@@ -13,6 +13,9 @@
 
 package com.radixdlt.api.core.openapitools.model;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.StringJoiner;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -20,75 +23,104 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * OlympiaEndStateRequest
+ * OlympiaEndStateReadyResponseAllOf
  */
 @JsonPropertyOrder({
-  OlympiaEndStateRequest.JSON_PROPERTY_NETWORK_IDENTIFIER,
-  OlympiaEndStateRequest.JSON_PROPERTY_INCLUDE_TEST_PAYLOAD
+  OlympiaEndStateReadyResponseAllOf.JSON_PROPERTY_HASH,
+  OlympiaEndStateReadyResponseAllOf.JSON_PROPERTY_SIGNATURE,
+  OlympiaEndStateReadyResponseAllOf.JSON_PROPERTY_CONTENTS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2023-05-10T18:05:13.417843654+02:00[Europe/Warsaw]")
-public class OlympiaEndStateRequest {
-  public static final String JSON_PROPERTY_NETWORK_IDENTIFIER = "network_identifier";
-  private NetworkIdentifier networkIdentifier;
+public class OlympiaEndStateReadyResponseAllOf {
+  public static final String JSON_PROPERTY_HASH = "hash";
+  private String hash;
 
-  public static final String JSON_PROPERTY_INCLUDE_TEST_PAYLOAD = "include_test_payload";
-  private Boolean includeTestPayload;
+  public static final String JSON_PROPERTY_SIGNATURE = "signature";
+  private String signature;
 
-  public OlympiaEndStateRequest() { 
+  public static final String JSON_PROPERTY_CONTENTS = "contents";
+  private String contents;
+
+  public OlympiaEndStateReadyResponseAllOf() { 
   }
 
-  public OlympiaEndStateRequest networkIdentifier(NetworkIdentifier networkIdentifier) {
-    this.networkIdentifier = networkIdentifier;
+  public OlympiaEndStateReadyResponseAllOf hash(String hash) {
+    this.hash = hash;
     return this;
   }
 
    /**
-   * Get networkIdentifier
-   * @return networkIdentifier
+   * The hex-encoded SHA2 hash of the end state content bytes
+   * @return hash
   **/
   @javax.annotation.Nonnull
-  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public NetworkIdentifier getNetworkIdentifier() {
-    return networkIdentifier;
+  public String getHash() {
+    return hash;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNetworkIdentifier(NetworkIdentifier networkIdentifier) {
-    this.networkIdentifier = networkIdentifier;
+  public void setHash(String hash) {
+    this.hash = hash;
   }
 
 
-  public OlympiaEndStateRequest includeTestPayload(Boolean includeTestPayload) {
-    this.includeTestPayload = includeTestPayload;
+  public OlympiaEndStateReadyResponseAllOf signature(String signature) {
+    this.signature = signature;
     return this;
   }
 
    /**
-   * Get includeTestPayload
-   * @return includeTestPayload
+   * The hex-encoded DER signature of the end state content bytes, signed with the node&#39;s key
+   * @return signature
   **/
-  @javax.annotation.Nullable
-  @JsonProperty(JSON_PROPERTY_INCLUDE_TEST_PAYLOAD)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @JsonProperty(JSON_PROPERTY_SIGNATURE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getIncludeTestPayload() {
-    return includeTestPayload;
+  public String getSignature() {
+    return signature;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_INCLUDE_TEST_PAYLOAD)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setIncludeTestPayload(Boolean includeTestPayload) {
-    this.includeTestPayload = includeTestPayload;
+  @JsonProperty(JSON_PROPERTY_SIGNATURE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setSignature(String signature) {
+    this.signature = signature;
+  }
+
+
+  public OlympiaEndStateReadyResponseAllOf contents(String contents) {
+    this.contents = contents;
+    return this;
+  }
+
+   /**
+   * The base64-encoded compressed end state
+   * @return contents
+  **/
+  @javax.annotation.Nonnull
+  @JsonProperty(JSON_PROPERTY_CONTENTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getContents() {
+    return contents;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_CONTENTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setContents(String contents) {
+    this.contents = contents;
   }
 
 
   /**
-   * Return true if this OlympiaEndStateRequest object is equal to o.
+   * Return true if this OlympiaEndStateReadyResponse_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -98,22 +130,24 @@ public class OlympiaEndStateRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    OlympiaEndStateRequest olympiaEndStateRequest = (OlympiaEndStateRequest) o;
-    return Objects.equals(this.networkIdentifier, olympiaEndStateRequest.networkIdentifier) &&
-        Objects.equals(this.includeTestPayload, olympiaEndStateRequest.includeTestPayload);
+    OlympiaEndStateReadyResponseAllOf olympiaEndStateReadyResponseAllOf = (OlympiaEndStateReadyResponseAllOf) o;
+    return Objects.equals(this.hash, olympiaEndStateReadyResponseAllOf.hash) &&
+        Objects.equals(this.signature, olympiaEndStateReadyResponseAllOf.signature) &&
+        Objects.equals(this.contents, olympiaEndStateReadyResponseAllOf.contents);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(networkIdentifier, includeTestPayload);
+    return Objects.hash(hash, signature, contents);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class OlympiaEndStateRequest {\n");
-    sb.append("    networkIdentifier: ").append(toIndentedString(networkIdentifier)).append("\n");
-    sb.append("    includeTestPayload: ").append(toIndentedString(includeTestPayload)).append("\n");
+    sb.append("class OlympiaEndStateReadyResponseAllOf {\n");
+    sb.append("    hash: ").append(toIndentedString(hash)).append("\n");
+    sb.append("    signature: ").append(toIndentedString(signature)).append("\n");
+    sb.append("    contents: ").append(toIndentedString(contents)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -128,4 +162,55 @@ public class OlympiaEndStateRequest {
     }
     return o.toString().replace("\n", "\n    ");
   }
+
+  /**
+   * Convert the instance into URL query string.
+   *
+   * @return URL query string
+   */
+  public String toUrlQueryString() {
+    return toUrlQueryString(null);
+  }
+
+  /**
+   * Convert the instance into URL query string.
+   *
+   * @param prefix prefix of the query string
+   * @return URL query string
+   */
+  public String toUrlQueryString(String prefix) {
+    String suffix = "";
+    String containerSuffix = "";
+    String containerPrefix = "";
+    if (prefix == null) {
+      // style=form, explode=true, e.g. /pet?name=cat&type=manx
+      prefix = "";
+    } else {
+      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
+      prefix = prefix + "[";
+      suffix = "]";
+      containerSuffix = "]";
+      containerPrefix = "[";
+    }
+
+    StringJoiner joiner = new StringJoiner("&");
+
+    // add `hash` to the URL query string
+    if (getHash() != null) {
+      joiner.add(String.format("%shash%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getHash()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    // add `signature` to the URL query string
+    if (getSignature() != null) {
+      joiner.add(String.format("%ssignature%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getSignature()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    // add `contents` to the URL query string
+    if (getContents() != null) {
+      joiner.add(String.format("%scontents%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getContents()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    return joiner.toString();
+  }
 }
+

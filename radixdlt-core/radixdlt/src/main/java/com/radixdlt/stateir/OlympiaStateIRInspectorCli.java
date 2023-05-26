@@ -68,14 +68,14 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.bouncycastle.util.encoders.Hex;
+import org.bouncycastle.util.encoders.Base64;
 import org.xerial.snappy.Snappy;
 
 public final class OlympiaStateIRInspectorCli {
 
   public static void main(String[] args) throws IOException {
     if (args.length != 1) {
-      System.out.println("Usage: ./olympia-state-inspector <path-to-hex-encoded-file>");
+      System.out.println("Usage: ./olympia-state-inspector <path-to-base64-encoded-file>");
       System.exit(-1);
     }
 
@@ -86,7 +86,7 @@ public final class OlympiaStateIRInspectorCli {
 
   private static FileSummary loadFromFile(Path path) throws IOException {
     final var content = Files.readString(path);
-    final var data = Hex.decode(content);
+    final var data = Base64.decode(content);
     final var uncompressed = Snappy.uncompress(data);
     try (final var bais = new ByteArrayInputStream(uncompressed)) {
       final var state = new OlympiaStateIRDeserializer().deserialize(bais);

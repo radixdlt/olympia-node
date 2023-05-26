@@ -22,19 +22,18 @@ import java.util.HashMap;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 import com.radixdlt.api.core.openapitools.JSON;
 /**
- * OlympiaEndStateResponse
+ * OlympiaEndStateNotReadyResponse
  */
 @JsonPropertyOrder({
-  OlympiaEndStateResponse.JSON_PROPERTY_STATUS
+  OlympiaEndStateNotReadyResponse.JSON_PROPERTY_TEST_PAYLOAD,
+  OlympiaEndStateNotReadyResponse.JSON_PROPERTY_TEST_PAYLOAD_HASH,
+  OlympiaEndStateNotReadyResponse.JSON_PROPERTY_SIGNATURE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2023-05-10T18:05:13.417843654+02:00[Europe/Warsaw]")
 @JsonIgnoreProperties(
@@ -42,80 +41,97 @@ import com.radixdlt.api.core.openapitools.JSON;
   allowSetters = true // allows the status to be set during deserialization
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "status", visible = true)
-@JsonSubTypes({
-  @JsonSubTypes.Type(value = OlympiaEndStateNotReadyResponse.class, name = "not_ready"),
-  @JsonSubTypes.Type(value = OlympiaEndStateReadyResponse.class, name = "ready"),
-})
 
-public class OlympiaEndStateResponse {
-  /**
-   * Gets or Sets status
-   */
-  public enum StatusEnum {
-    READY("ready"),
-    
-    NOT_READY("not_ready");
+public class OlympiaEndStateNotReadyResponse extends OlympiaEndStateResponse {
+  public static final String JSON_PROPERTY_TEST_PAYLOAD = "test_payload";
+  private String testPayload;
 
-    private String value;
+  public static final String JSON_PROPERTY_TEST_PAYLOAD_HASH = "test_payload_hash";
+  private String testPayloadHash;
 
-    StatusEnum(String value) {
-      this.value = value;
-    }
+  public static final String JSON_PROPERTY_SIGNATURE = "signature";
+  private String signature;
 
-    @JsonValue
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    @JsonCreator
-    public static StatusEnum fromValue(String value) {
-      for (StatusEnum b : StatusEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
+  public OlympiaEndStateNotReadyResponse() { 
   }
 
-  public static final String JSON_PROPERTY_STATUS = "status";
-  private StatusEnum status;
-
-  public OlympiaEndStateResponse() { 
-  }
-
-  public OlympiaEndStateResponse status(StatusEnum status) {
-    this.status = status;
+  public OlympiaEndStateNotReadyResponse testPayload(String testPayload) {
+    this.testPayload = testPayload;
     return this;
   }
 
    /**
-   * Get status
-   * @return status
+   * A base64-encoded test payload
+   * @return testPayload
   **/
-  @javax.annotation.Nonnull
-  @JsonProperty(JSON_PROPERTY_STATUS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @JsonProperty(JSON_PROPERTY_TEST_PAYLOAD)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public StatusEnum getStatus() {
-    return status;
+  public String getTestPayload() {
+    return testPayload;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_STATUS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setStatus(StatusEnum status) {
-    this.status = status;
+  @JsonProperty(JSON_PROPERTY_TEST_PAYLOAD)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setTestPayload(String testPayload) {
+    this.testPayload = testPayload;
+  }
+
+
+  public OlympiaEndStateNotReadyResponse testPayloadHash(String testPayloadHash) {
+    this.testPayloadHash = testPayloadHash;
+    return this;
+  }
+
+   /**
+   * A hex-encoded hash of the test_payload
+   * @return testPayloadHash
+  **/
+  @javax.annotation.Nullable
+  @JsonProperty(JSON_PROPERTY_TEST_PAYLOAD_HASH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getTestPayloadHash() {
+    return testPayloadHash;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TEST_PAYLOAD_HASH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setTestPayloadHash(String testPayloadHash) {
+    this.testPayloadHash = testPayloadHash;
+  }
+
+
+  public OlympiaEndStateNotReadyResponse signature(String signature) {
+    this.signature = signature;
+    return this;
+  }
+
+   /**
+   * The hex-encoded DER signature of the test_payload_hash, signed with the node&#39;s key
+   * @return signature
+  **/
+  @javax.annotation.Nullable
+  @JsonProperty(JSON_PROPERTY_SIGNATURE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getSignature() {
+    return signature;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SIGNATURE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setSignature(String signature) {
+    this.signature = signature;
   }
 
 
   /**
-   * Return true if this OlympiaEndStateResponse object is equal to o.
+   * Return true if this OlympiaEndStateNotReadyResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -125,20 +141,26 @@ public class OlympiaEndStateResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    OlympiaEndStateResponse olympiaEndStateResponse = (OlympiaEndStateResponse) o;
-    return Objects.equals(this.status, olympiaEndStateResponse.status);
+    OlympiaEndStateNotReadyResponse olympiaEndStateNotReadyResponse = (OlympiaEndStateNotReadyResponse) o;
+    return Objects.equals(this.testPayload, olympiaEndStateNotReadyResponse.testPayload) &&
+        Objects.equals(this.testPayloadHash, olympiaEndStateNotReadyResponse.testPayloadHash) &&
+        Objects.equals(this.signature, olympiaEndStateNotReadyResponse.signature) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(status);
+    return Objects.hash(testPayload, testPayloadHash, signature, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class OlympiaEndStateResponse {\n");
-    sb.append("    status: ").append(toIndentedString(status)).append("\n");
+    sb.append("class OlympiaEndStateNotReadyResponse {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    testPayload: ").append(toIndentedString(testPayload)).append("\n");
+    sb.append("    testPayloadHash: ").append(toIndentedString(testPayloadHash)).append("\n");
+    sb.append("    signature: ").append(toIndentedString(signature)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -191,15 +213,28 @@ public class OlympiaEndStateResponse {
       joiner.add(String.format("%sstatus%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getStatus()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
     }
 
+    // add `test_payload` to the URL query string
+    if (getTestPayload() != null) {
+      joiner.add(String.format("%stest_payload%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getTestPayload()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    // add `test_payload_hash` to the URL query string
+    if (getTestPayloadHash() != null) {
+      joiner.add(String.format("%stest_payload_hash%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getTestPayloadHash()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    // add `signature` to the URL query string
+    if (getSignature() != null) {
+      joiner.add(String.format("%ssignature%s=%s", prefix, suffix, URLEncoder.encode(String.valueOf(getSignature()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
     return joiner.toString();
   }
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("not_ready", OlympiaEndStateNotReadyResponse.class);
-  mappings.put("ready", OlympiaEndStateReadyResponse.class);
-  mappings.put("OlympiaEndStateResponse", OlympiaEndStateResponse.class);
-  JSON.registerDiscriminator(OlympiaEndStateResponse.class, "status", mappings);
+  mappings.put("OlympiaEndStateNotReadyResponse", OlympiaEndStateNotReadyResponse.class);
+  JSON.registerDiscriminator(OlympiaEndStateNotReadyResponse.class, "status", mappings);
 }
 }
 

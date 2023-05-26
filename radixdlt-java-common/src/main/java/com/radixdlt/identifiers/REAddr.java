@@ -64,6 +64,7 @@
 
 package com.radixdlt.identifiers;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -210,16 +211,23 @@ public final class REAddr {
     return getType() == REAddrType.PUB_KEY;
   }
 
-  public Optional<ECPublicKey> publicKey() {
+  public Optional<HashCode> publicKeyBytes() {
     if (!isAccount()) {
       return Optional.empty();
     }
+    return Optional.of(HashCode.fromBytes(Arrays.copyOfRange(addr, 1, addr.length)));
+  }
 
-    try {
-      return Optional.of(ECPublicKey.fromBytes(Arrays.copyOfRange(addr, 1, addr.length)));
-    } catch (PublicKeyException e) {
-      return Optional.empty();
-    }
+  public Optional<ECPublicKey> publicKey() {
+    return publicKeyBytes()
+        .flatMap(
+            publicKeyBytes -> {
+              try {
+                return Optional.of(ECPublicKey.fromBytes(publicKeyBytes.asBytes()));
+              } catch (PublicKeyException e) {
+                return Optional.empty();
+              }
+            });
   }
 
   // FIXME: Should use AuthorizationException instead but packages a bit of a mess at the moment
