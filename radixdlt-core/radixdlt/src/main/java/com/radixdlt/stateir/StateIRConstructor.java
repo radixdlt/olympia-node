@@ -203,8 +203,8 @@ public final class StateIRConstructor {
             validatorOwners.stream(),
             resourceOwners.stream())
         .flatMap(s -> s)
-        .distinct()
         .sorted(compareBytes(v -> v.publicKeyBytes().asBytes()))
+        .distinct()
         .collect(ImmutableList.toImmutableList());
   }
 
