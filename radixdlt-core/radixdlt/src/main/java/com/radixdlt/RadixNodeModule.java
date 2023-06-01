@@ -102,10 +102,7 @@ import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.modules.GenericTestnetForksModule;
-import com.radixdlt.statecomputer.forks.modules.MainnetForksModule;
-import com.radixdlt.statecomputer.forks.modules.ReleasenetForksModule;
-import com.radixdlt.statecomputer.forks.modules.StokenetForksModule;
+import com.radixdlt.statecomputer.forks.modules.*;
 import com.radixdlt.statecomputer.forks.modules.testing.TestingForksLoader;
 import com.radixdlt.statecomputer.substatehash.SubstateAccumulatorHashModule;
 import com.radixdlt.store.DatabasePropertiesModule;
@@ -134,7 +131,7 @@ public final class RadixNodeModule extends AbstractModule {
           Network.RCNET.getId(), new GenericTestnetForksModule(),
           Network.MILESTONENET.getId(), new GenericTestnetForksModule(),
           Network.DEVOPSNET.getId(), new GenericTestnetForksModule(),
-          Network.SANDPITNET.getId(), new GenericTestnetForksModule(),
+          Network.SANDPITNET.getId(), new SandpitnetForksModule(),
           Network.LOCALNET.getId(), new GenericTestnetForksModule());
 
   private static final int DEFAULT_CORE_PORT = 3333;
