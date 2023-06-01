@@ -165,7 +165,7 @@ public final class EpochManager {
       PersistentSafetyStateStore persistentSafetyStateStore) {
     var isValidator = initialEpoch.getBFTConfiguration().getValidatorSet().containsNode(self);
     // TODO: these should all be removed
-    if (!isValidator) {
+    if (!isValidator || initialEpoch.isShutdown()) {
       this.bftEventProcessor = EmptyBFTEventProcessor.INSTANCE;
       this.syncLedgerUpdateProcessor = update -> {};
       this.syncTimeoutProcessor = timeout -> {};

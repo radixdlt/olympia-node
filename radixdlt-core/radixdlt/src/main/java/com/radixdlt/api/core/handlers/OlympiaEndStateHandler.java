@@ -64,6 +64,7 @@
 
 package com.radixdlt.api.core.handlers;
 
+import com.google.common.base.Stopwatch;
 import com.google.inject.Inject;
 import com.radixdlt.api.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.model.CoreApiException;
@@ -84,12 +85,16 @@ import com.radixdlt.utils.Bytes;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
 import org.xerial.snappy.Snappy;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class OlympiaEndStateHandler
     extends CoreJsonRpcHandler<OlympiaEndStateRequest, OlympiaEndStateResponse> {
+  private static final Logger log = LogManager.getLogger();
 
   // The size of a test payload that's used (on the Babylon side) to check that:
   // a) large response can be successfully received
@@ -146,9 +151,12 @@ public final class OlympiaEndStateHandler
   }
 
   private void prepareEndStateResponseAndSaveToCache() throws IOException {
+    final var stopwatch = Stopwatch.createStarted();
+    log.info("Olympia end state preparation started (this may take a few minutes)...");
     final var endStateBytes = prepareEndState();
     final var hash = hasher.hashBytes(endStateBytes);
     final var signature = hashSigner.sign(hash);
+    log.info("Olympia end state prepared in {} s", stopwatch.elapsed(TimeUnit.SECONDS));
     final var response =
         new OlympiaEndStateReadyResponse()
             .hash(Bytes.toHexString(hash.asBytes()))

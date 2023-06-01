@@ -74,6 +74,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.hotstuff.bft.BFTNode;
 import com.radixdlt.hotstuff.bft.Self;
+import com.radixdlt.hotstuff.epoch.EpochChange;
 import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.network.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.properties.RuntimeProperties;
@@ -233,6 +234,14 @@ public final class Radix {
     Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(injector)));
 
     log.info("Node '{}' started successfully in {} seconds", self, (finish - start) / 1000);
+
+    if (injector.getInstance(Key.get(EpochChange.class)).isShutdown()) {
+      log.warn(
+          """
+                The king is dead, long live the king!
+                The time of the Olympia network has come to an end. It will no longer process any transactions.
+                Run the Babylon node to continue your Radix journey!""");
+    }
   }
 
   private static void shutdown(Injector injector) {
