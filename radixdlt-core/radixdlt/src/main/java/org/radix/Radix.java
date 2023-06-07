@@ -238,7 +238,6 @@ public final class Radix {
     if (injector.getInstance(Key.get(EpochChange.class)).isShutdown()) {
       log.warn(
           """
-                The king is dead, long live the king!
                 The time of the Olympia network has come to an end. It will no longer process any transactions.
                 Run the Babylon node to continue your Radix journey!""");
     }

@@ -474,7 +474,6 @@ public final class RadixEngineStateComputer implements StateComputer {
       this.radixEngine.shutDown();
       log.warn(
           """
-            The king is dead, long live the king!
             The time of the Olympia network has come to an end. It will no longer process any transactions.
             Run the Babylon node to continue your Radix journey!""");
     } else {
