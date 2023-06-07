@@ -82,6 +82,7 @@ import com.radixdlt.stateir.OlympiaStateIRSerializer;
 import com.radixdlt.stateir.StateIRConstructor;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.Compress;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;
@@ -89,7 +90,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
-import org.xerial.snappy.Snappy;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class OlympiaEndStateHandler
@@ -194,6 +194,6 @@ public final class OlympiaEndStateHandler
     final var state =
         new StateIRConstructor(engineStore, substateDeserialization).prepareOlympiaStateIR();
     final var serialized = new OlympiaStateIRSerializer().serialize(state);
-    return Snappy.compress(serialized);
+    return Compress.compress(serialized);
   }
 }

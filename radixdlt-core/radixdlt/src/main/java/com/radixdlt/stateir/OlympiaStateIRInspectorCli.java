@@ -64,12 +64,12 @@
 
 package com.radixdlt.stateir;
 
+import com.radixdlt.utils.Compress;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.bouncycastle.util.encoders.Base64;
-import org.xerial.snappy.Snappy;
 
 public final class OlympiaStateIRInspectorCli {
 
@@ -87,7 +87,7 @@ public final class OlympiaStateIRInspectorCli {
   private static FileSummary loadFromFile(Path path) throws IOException {
     final var content = Files.readString(path);
     final var data = Base64.decode(content);
-    final var uncompressed = Snappy.uncompress(data);
+    final var uncompressed = Compress.uncompress(data);
     try (final var bais = new ByteArrayInputStream(uncompressed)) {
       final var state = new OlympiaStateIRDeserializer().deserialize(bais);
       return new FileSummary(data.length, uncompressed.length, state);
