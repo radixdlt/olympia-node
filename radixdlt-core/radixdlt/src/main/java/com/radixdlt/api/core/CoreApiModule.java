@@ -120,7 +120,7 @@ public class CoreApiModule extends AbstractModule {
         .to(EngineConfigurationHandler.class);
     routeBinder.addBinding(HandlerRoute.post("/engine/status")).to(EngineStatusHandler.class);
     routeBinder
-        .addBinding(HandlerRoute.get("/engine/forks-voting-results"))
+        .addBinding(HandlerRoute.post("/engine/forks-voting-results"))
         .to(ForksVotingResultsHandler.class);
     if (transactionsEnable) {
       bind(BerkeleyRecoverableProcessedTxnStore.class).in(Scopes.SINGLETON);
