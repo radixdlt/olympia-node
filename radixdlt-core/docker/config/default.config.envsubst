@@ -15,6 +15,8 @@ db.location=$RADIXDLT_DB_LOCATION
 
 api.port=$RADIXDLT_API_PORT
 api.bind.address=$RADIXDLT_HTTP_BIND_ADDRESS
+api.end-state.port=$RADIXDLT_END_STATE_API_PORT
+api.end-state.bind.address=$RADIXDLT_END_STATE_API_BIND_ADDRESS
 api.transactions.enable=$RADIXDLT_TRANSACTIONS_API_ENABLE
 api.sign.enable=$RADIXDLT_SIGN_ENABLE
 

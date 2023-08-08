@@ -64,113 +64,14 @@
 
 package com.radixdlt.api;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.core.CoreApiModule;
-import com.radixdlt.api.core.handlers.OlympiaEndStateHandler;
-import com.radixdlt.api.service.EngineStatusService;
-import com.radixdlt.api.system.SystemApiModule;
-import io.undertow.Handlers;
-import io.undertow.Undertow;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.RequestLimitingHandler;
-import io.undertow.util.StatusCodes;
-import java.util.Map;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public final class ApiModule extends AbstractModule {
-  private static final int MAXIMUM_CONCURRENT_REQUESTS =
-      Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
-  private static final int QUEUE_SIZE = 2000;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  private final int port;
-  private final String bindAddress;
-  private final int endStateApiPort;
-  private final String endStateApiBindAddress;
-  private final boolean enableTransactions;
-  private final boolean enableSign;
-
-  public ApiModule(
-      String bindAddress,
-      int port,
-      String endStateApiBindAddress,
-      int endStateApiPort,
-      boolean enableTransactions,
-      boolean enableSign) {
-    this.bindAddress = bindAddress;
-    this.port = port;
-    this.endStateApiBindAddress = endStateApiBindAddress;
-    this.endStateApiPort = endStateApiPort;
-    this.enableTransactions = enableTransactions;
-    this.enableSign = enableSign;
-  }
-
-  @Override
-  public void configure() {
-    MapBinder.newMapBinder(binder(), String.class, HttpHandler.class);
-    bind(EngineStatusService.class).in(Scopes.SINGLETON);
-    install(new SystemApiModule());
-    install(new CoreApiModule(enableTransactions, enableSign));
-  }
-
-  private static void fallbackHandler(HttpServerExchange exchange) {
-    exchange.setStatusCode(StatusCodes.NOT_FOUND);
-    exchange
-        .getResponseSender()
-        .send(
-            "No matching path found for "
-                + exchange.getRequestMethod()
-                + " "
-                + exchange.getRequestPath());
-  }
-
-  private static void invalidMethodHandler(HttpServerExchange exchange) {
-    exchange.setStatusCode(StatusCodes.NOT_ACCEPTABLE);
-    exchange
-        .getResponseSender()
-        .send(
-            "Invalid method, path exists for "
-                + exchange.getRequestMethod()
-                + " "
-                + exchange.getRequestPath());
-  }
-
-  private HttpHandler configureRoutes(Map<HandlerRoute, HttpHandler> handlers) {
-    var handler = Handlers.routing(true); // add path params to query params with this flag
-    handlers.forEach((r, h) -> handler.add(r.method(), r.path(), h));
-    handler.setFallbackHandler(ApiModule::fallbackHandler);
-    handler.setInvalidMethodHandler(ApiModule::invalidMethodHandler);
-    var exceptionHandler = Handlers.exceptionHandler(handler);
-    exceptionHandler.addExceptionHandler(Exception.class, new UnhandledExceptionHandler());
-    return exceptionHandler;
-  }
-
-  @Provides
-  @Singleton
-  @PrimaryApiServer
-  public Undertow primaryApiServer(Map<HandlerRoute, HttpHandler> handlers) {
-    var handler =
-        new RequestLimitingHandler(
-            MAXIMUM_CONCURRENT_REQUESTS, QUEUE_SIZE, configureRoutes(handlers));
-
-    return Undertow.builder().addHttpListener(port, bindAddress).setHandler(handler).build();
-  }
-
-  @Provides
-  @Singleton
-  @EndStateApiServer
-  public Undertow endStateApiServer(OlympiaEndStateHandler endStateHandler) {
-    final var handler =
-        new RequestLimitingHandler(
-            2,
-            100,
-            configureRoutes(Map.of(HandlerRoute.post("/olympia-end-state"), endStateHandler)));
-    return Undertow.builder()
-        .addHttpListener(endStateApiPort, endStateApiBindAddress)
-        .setHandler(handler)
-        .build();
-  }
-}
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface EndStateApiServer {}
