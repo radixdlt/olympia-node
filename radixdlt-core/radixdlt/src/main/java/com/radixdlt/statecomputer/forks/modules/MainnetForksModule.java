@@ -66,6 +66,7 @@ package com.radixdlt.statecomputer.forks.modules;
 
 import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.system.FeeTable;
@@ -78,6 +79,7 @@ import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.statecomputer.forks.CandidateForkConfig;
 import com.radixdlt.statecomputer.forks.ForkBuilder;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RERulesVersion;
@@ -193,5 +195,33 @@ public final class MainnetForksModule extends AbstractModule {
             9800, // 98.00% threshold for completed proposals to get any rewards
             100, // 100 max validators
             MSG.maxLength()));
+  }
+
+  @ProvidesIntoSet
+  ForkBuilder olympiaShutdown() {
+    return new ForkBuilder(
+            "olympia-shutdown",
+            ImmutableSet.of(new CandidateForkConfig.Threshold((short) 7900, 1)),
+            // Estimated (as of 2023-08-08) to be at 2023-09-27 06:00:00 UTC
+            32914L,
+            // Estimated (as of 2023-08-08) to be at 2023-09-29 19:40:00 UTC
+            33014L,
+            RERulesVersion.OLYMPIA_V1,
+            new RERulesConfig(
+                RESERVED_SYMBOLS,
+                Pattern.compile("[a-z0-9]+"),
+                FeeTable.create(
+                    Amount.ofMicroTokens(Long.MAX_VALUE), Map.of()), // Highest possible fee
+                0L, // No txns allowed
+                OptionalInt.of(0),
+                Long.MAX_VALUE, // No more epochs
+                1,
+                Amount.ofTokens(90), // Same as prev fork
+                Long.MAX_VALUE, // No more unstaking
+                Amount.ofMicroTokens(0), // No more rewards
+                0, // Unused
+                100,
+                MSG.maxLength()))
+        .withShutdown();
   }
 }
