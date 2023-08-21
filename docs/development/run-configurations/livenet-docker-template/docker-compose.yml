@@ -6,6 +6,7 @@ services:
     restart: unless-stopped
     ports:
       - "${RADIXDLT_API_PORT}:3333"
+      - "${RADIXDLT_END_STATE_API_PORT}:3400"
     mem_limit: 12000m
     cap_add:
       - NET_ADMIN
@@ -17,6 +18,7 @@ services:
       JAVA_OPTS: -server -Xms8g -Xmx8g -XX:+HeapDumpOnOutOfMemoryError -XX:+UseCompressedOops -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=jks -Djava.security.egd=file:/dev/urandom -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector
       RADIXDLT_VALIDATOR_KEY_LOCATION: "/home/radixdlt/node-keystore.ks"
       RADIXDLT_API_PORT: 3333
+      RADIXDLT_END_STATE_API_PORT: 3400
       RADIXDLT_TRANSACTIONS_API_ENABLE: "true"
 
     volumes:

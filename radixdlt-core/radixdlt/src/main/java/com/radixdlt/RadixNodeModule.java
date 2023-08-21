@@ -137,8 +137,11 @@ public final class RadixNodeModule extends AbstractModule {
           Network.SANDPITNET.getId(), new GenericTestnetForksModule(),
           Network.LOCALNET.getId(), new GenericTestnetForksModule());
 
-  private static final int DEFAULT_CORE_PORT = 3333;
-  private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+  private static final int DEFAULT_PRIMARY_API_PORT = 3333;
+  private static final String DEFAULT_PRIMARY_API_BIND_ADDRESS = "127.0.0.1";
+  private static final int DEFAULT_END_STATE_API_PORT = 3400;
+  private static final String DEFAULT_END_STATE_API_BIND_ADDRESS = "0.0.0.0";
+
   private static final Logger log = LogManager.getLogger();
 
   private final RuntimeProperties properties;
@@ -328,11 +331,23 @@ public final class RadixNodeModule extends AbstractModule {
     install(new PeerLivenessMonitorModule());
 
     // API
-    var bindAddress = properties.get("api.bind.address", DEFAULT_BIND_ADDRESS);
-    var port = properties.get("api.port", DEFAULT_CORE_PORT);
+    var primaryApiBindAddress =
+        properties.get("api.bind.address", DEFAULT_PRIMARY_API_BIND_ADDRESS);
+    var primaryApiPort = properties.get("api.port", DEFAULT_PRIMARY_API_PORT);
+    var endStateApiBindAddress =
+        properties.get("api.end-state.bind.address", DEFAULT_END_STATE_API_BIND_ADDRESS);
+    var endStateApiPort = properties.get("api.end-state.port", DEFAULT_END_STATE_API_PORT);
     var enableTransactions = properties.get("api.transactions.enable", false);
     var enableSign = properties.get("api.sign.enable", false);
-    install(new ApiModule(bindAddress, port, enableTransactions, enableSign));
+
+    install(
+        new ApiModule(
+            primaryApiBindAddress,
+            primaryApiPort,
+            endStateApiBindAddress,
+            endStateApiPort,
+            enableTransactions,
+            enableSign));
 
     // Substate Hash Accumulator
     boolean isUpdateEpochHashFileEnabled =
