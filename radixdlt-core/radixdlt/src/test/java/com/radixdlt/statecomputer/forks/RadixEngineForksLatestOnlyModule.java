@@ -67,10 +67,11 @@ package com.radixdlt.statecomputer.forks;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
+import com.radixdlt.utils.Pair;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 
-/** For testing only, only tests the latest state computer configuration */
+/** For testing only, only tests the latest fixed epoch fork configuration */
 public class RadixEngineForksLatestOnlyModule extends AbstractModule {
   private final RERulesConfig config;
 
@@ -89,9 +90,15 @@ public class RadixEngineForksLatestOnlyModule extends AbstractModule {
         .setBinding()
         .toInstance(
             forkBuilders -> {
-              final var newestFork =
-                  forkBuilders.stream().max((a, b) -> (int) (a.minEpoch() - b.minEpoch()));
-              return Set.of(newestFork.get().withEngineRulesConfig(config).atFixedEpoch(0L));
+              final var newestFixedEpochFork =
+                  forkBuilders.stream()
+                      .map(builder -> Pair.of(builder, builder.build()))
+                      .filter(p -> p.getSecond() instanceof FixedEpochForkConfig)
+                      .map(p -> Pair.of(p.getFirst(), (FixedEpochForkConfig) p.getSecond()))
+                      .max((a, b) -> (int) (a.getSecond().epoch() - b.getSecond().epoch()))
+                      .get()
+                      .getFirst();
+              return Set.of(newestFixedEpochFork.withEngineRulesConfig(config).atFixedEpoch(0L));
             });
   }
 }

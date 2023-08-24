@@ -71,6 +71,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class ForkOverwritesWithShorterEpochsModule extends AbstractModule {
   private final RERulesConfig config;
@@ -88,10 +89,15 @@ public final class ForkOverwritesWithShorterEpochsModule extends AbstractModule 
         .toInstance(
             s ->
                 s.stream()
-                    .map(
+                    .flatMap(
                         fork -> {
+                          // Skip candidate forks
+                          if (fork.build() instanceof CandidateForkConfig) {
+                            return Stream.of();
+                          }
                           final var forkEpoch = epoch.getAndAdd(5);
-                          return fork.atFixedEpoch(forkEpoch).withEngineRulesConfig(config);
+                          return Stream.of(
+                              fork.atFixedEpoch(forkEpoch).withEngineRulesConfig(config));
                         })
                     .collect(Collectors.toSet()));
   }
