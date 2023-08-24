@@ -70,6 +70,8 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.RadixNodeModule;
+import com.radixdlt.api.EndStateApiServer;
+import com.radixdlt.api.PrimaryApiServer;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.hotstuff.bft.BFTNode;
@@ -220,8 +222,13 @@ public final class Radix {
       log.error("Cannot start p2p server", e);
     }
 
-    final var undertow = injector.getInstance(Undertow.class);
-    undertow.start();
+    final var primaryApiServer =
+        injector.getInstance(Key.get(Undertow.class, PrimaryApiServer.class));
+    primaryApiServer.start();
+
+    final var endStateApiServer =
+        injector.getInstance(Key.get(Undertow.class, EndStateApiServer.class));
+    endStateApiServer.start();
 
     final var consensusRunner = moduleRunners.get(Runners.CONSENSUS);
     consensusRunner.start();
@@ -266,6 +273,18 @@ public final class Radix {
 
     try {
       injector.getInstance(BerkeleyLedgerEntryStore.class).close();
+    } catch (Exception e) {
+      // no-op
+    }
+
+    try {
+      injector.getInstance(Key.get(Undertow.class, PrimaryApiServer.class)).stop();
+    } catch (Exception e) {
+      // no-op
+    }
+
+    try {
+      injector.getInstance(Key.get(Undertow.class, EndStateApiServer.class)).stop();
     } catch (Exception e) {
       // no-op
     }
