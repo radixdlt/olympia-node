@@ -204,11 +204,11 @@ public final class MainnetForksModule extends AbstractModule {
             ImmutableSet.of(
                 new CandidateForkConfig.Threshold(
                     (short) 7900, // 79% required
-                    10 /* for at least 10 consecutive epochs (around 6 hours) */)),
-            // Estimated (as of 2023-08-21) to be around 2023-09-27 06:00:00 UTC
-            34200L,
+                    1)),
+            // Estimated (as of 2023-08-24) to be around 2023-09-27 06:00:00 UTC
+            32718L,
             // +50 epochs
-            34250L,
+            32768L,
             RERulesVersion.OLYMPIA_V1,
             new RERulesConfig(
                 RESERVED_SYMBOLS,
