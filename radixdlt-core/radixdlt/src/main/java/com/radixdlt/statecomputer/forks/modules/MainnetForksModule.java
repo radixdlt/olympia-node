@@ -205,10 +205,10 @@ public final class MainnetForksModule extends AbstractModule {
                 new CandidateForkConfig.Threshold(
                     (short) 7900, // 79% required
                     1)),
-            // Estimated (as of 2023-08-24) to be around 2023-09-27 06:00:00 UTC
+            // Estimated (as of 2023-08-24) to be about 2023-09-27
             32718L,
-            // +50 epochs
-            32768L,
+            // +5 epochs
+            32723L,
             RERulesVersion.OLYMPIA_V1,
             new RERulesConfig(
                 RESERVED_SYMBOLS,
