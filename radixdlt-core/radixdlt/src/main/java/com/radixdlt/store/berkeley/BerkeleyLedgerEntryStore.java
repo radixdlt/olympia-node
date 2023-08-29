@@ -554,9 +554,12 @@ public final class BerkeleyLedgerEntryStore
       var key = entry();
       var value = entry();
       while (cursor.getNext(key, value, DEFAULT) == OperationStatus.SUCCESS) {
-        builder.put(
-            Longs.fromByteArray(key.getData()),
-            new String(value.getData(), ForkConfig.FORK_NAME_CHARSET));
+        final var forkName = new String(value.getData(), ForkConfig.FORK_NAME_CHARSET);
+        if (forkName.equals("stokenet-shtdwn")) {
+          // Skip the previous Stokenet shutdown fork
+          continue;
+        }
+        builder.put(Longs.fromByteArray(key.getData()), forkName);
       }
     }
     return builder.build();
