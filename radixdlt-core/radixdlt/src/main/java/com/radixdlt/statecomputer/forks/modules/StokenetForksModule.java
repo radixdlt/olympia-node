@@ -162,7 +162,7 @@ public final class StokenetForksModule extends AbstractModule {
   ForkBuilder shutdown() {
     return new ForkBuilder(
             "stok-shtdwn-v2",
-            ImmutableSet.of(new CandidateForkConfig.Threshold((short) 700, 3)),
+            ImmutableSet.of(new CandidateForkConfig.Threshold((short) 7800, 3)),
             16005L,
             Long.MAX_VALUE,
             RERulesVersion.OLYMPIA_V1,
