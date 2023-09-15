@@ -201,14 +201,7 @@ public final class MainnetForksModule extends AbstractModule {
   ForkBuilder olympiaShutdown() {
     return new ForkBuilder(
             "olympia-shutdown",
-            ImmutableSet.of(
-                new CandidateForkConfig.Threshold(
-                    (short) 7900, // 79% required
-                    1)),
-            // Estimated (as of 2023-08-24) to be about 2023-09-27
-            32718L,
-            // +5 epochs
-            32723L,
+            32278L,
             RERulesVersion.OLYMPIA_V1,
             new RERulesConfig(
                 RESERVED_SYMBOLS,
