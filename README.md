@@ -1,4 +1,4 @@
-# This repository has been superceded - Babylon is now live!
+# Babylon is now live!
 
 This repository was for the Olympia version of the Radix node and engine which powered the initial Olympia network.
 
